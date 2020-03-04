@@ -1,30 +1,57 @@
-class ImgPlus {
-    constructor(imgUrl, node, index) {
-        this.url = imgUrl;
+class IMGFetcher {
+    constructor(node) {
         this.node = node;
-        this.finsh = false;
-        this.index = index;
+        this.url = node.getAttribute("href");
+        //当前处理阶段，0: 什么也没做 1: 获取到大图地址 2: 完整的获取到大图
+        this.stage = 0;
     }
 
-    async fetchImg() {
-        if (this.finsh) return;
-        this.finsh = true;
-        const response = await window.fetch(this.url);
-        const text = await response.text();
-        this.bigImageUrl = this.node.src = ImgPlus.extractBigImgUrl.exec(text)[1];
-        return this.bigImageUrl;
+    async fetchImg(x) {
+        switch (this.stage) {
+            case 0://尝试获取大图地址
+                try {
+                    const response = await window.fetch(this.url);
+                    const text = await response.text();
+                    this.bigImageUrl = ImgPlus.extractBigImgUrl.exec(text)[1];
+                    this.stage = 1; this.fetchImg();
+                } catch (error) {
+                    this.stage = 0;
+                    if (error.name === "AbortError") {
+                        console.log("请求被中止，可能的原因是超时");
+                        if (x) return false; this.fetchImg();
+                    } else {
+                        console.log("出现其他的异常 => ", error);
+                    }
+                }
+            case 1://理论上获取到大图地址，尝试使用fetch获取大图数据
+                if (this.bigImageUrl) {
+                    try {
+                        const response = await window.fetch(this.bigImageUrl);
+                        this.imgBlob = await response.blob();
+                        this.bigImageUrl = URL.createObjectURL(this.imgBlob);
+                        this.stage = 2; this.fetchImg();
+                    } catch (error) {
+                        this.stage = 1;
+                        if (error.name === "AbortError") {
+                            console.log("请求被中止，可能的原因是超时");
+                            if (x) return false; this.fetchImg();
+                        } else {
+                            console.log("出现其他的异常 => ", error);
+                        }
+                    }
+                } else {//大图地址还不存在，不应该发生这样的事情
+                    this.stage = 0; this.fetchImg();
+                }
+                break;
+            case 2://已经完整的获取到大图，不再执行
+                this.node.src = this.bigImageUrl;
+                return true;
+        }
     }
 
-    retry() {
-        this.finsh = false;
-        this.set();
-        this.fetchImg().then(src => { bigImageElement.src = src });
-    }
-
-    set() {
-        bigImageFrame.style.display = "flex";
-        bigImageElement.src = this.bigImageUrl || this.node.src;
-        bigImageElement.setAttribute("index", this.index);
+    set(x) {
+        bigImageFrame.style.display = "flex"; bigImageElement.src = this.node.src;
+        this.fetchImg(x).then(flag => { flag && (bigImageElement.scr = this.node.scr) })
     }
 }
 
@@ -34,7 +61,7 @@ class ImgPlusList extends Array {
     }
 
     do(start, step) {
-        step = step || 5;
+        step = step || 3;
         for (let index = start + 1; (index < step + start) && (index < this.length); index++) { this[index].fetchImg() }
     }
 }
@@ -111,7 +138,7 @@ bigImageFrame.addEventListener("click", (event) => { if (event.target.tagName ==
 document.body.appendChild(fullViewPlane);
 let imgPlusList = new ImgPlusList();
 
-let putImgPlus = function (imgEleList, imgPlusList, fullViewPlane) {
+const putImgPlus = function (imgEleList, imgPlusList, fullViewPlane) {
     [].slice.call(imgEleList.childNodes).forEach((node) => {
         if (node.nodeType === 1 && node.hasChildNodes()) {
             let aE = node.firstChild;
@@ -128,24 +155,54 @@ let putImgPlus = function (imgEleList, imgPlusList, fullViewPlane) {
     });
 }
 
-
-let fetchSource = async function (href) {
+//通过地址请求该页的内容
+const fetchSource = async function (href, oriented) {
     const response = await window.fetch(href);
     const text = await response.text();
-    let ele = document.createElement("div");
-    ele.innerHTML = text;
-    return ele;
+    let ele = document.createElement("div"); ele.innerHTML = text;
+    return stepPageSource[oriented] = ele;
 }
 
-let nextPage = async function (source) {
-    let e1 = source.querySelector("table.ptb td.ptds");
-    if (!e1) return null;
-    let e2 = e1.nextElementSibling;
-    if (!e2 || e2.textContent === ">") return null;
+const stepPageSource = {
+    "prev": null,
+    "curr": document,
+    "next": null
+}
+
+//通过该页的内容获取下一页或上一页的地址 oriented : prev/next
+const stepPageUrl = function (source, oriented) {
+    let e1 = source.querySelector("table.ptb td.ptds"), stepE; if (!e1) return null;
+    switch (oriented) {
+        case "prev":
+            stepE = e1.previousElementSibling;
+            if (!stepE || stepE.textContent === "<") return null;
+            break;
+        case "next":
+            stepE = e1.nextElementSibling;
+            if (!stepE || stepE.textContent === ">") return null;
+            break;
+    }
     return e2.firstElementChild.href;
 }
 
-let processCurrPage = async function (href) {
+//将该页的图片列表提取出来，然后追加到全屏阅读元素(fullViewPlane)上
+const appendToFullViewPlane = function (source, oriented) {
+    let imageList = extractImageList(source);
+    if (oriented === "prev") {
+        fullViewPlane.firstElementChild.after(imageList);
+    } else if (oriented === "next") {
+        fullViewPlane.lastElementChild.after(imageList);
+    }
+}
+
+//提取当前页文档的图片列表
+const extractImageList = function (source) {
+    return [].slice.call(source.querySelector("#gdt").childNodes)
+        .filter(node => (node.nodeType === 1 && node.hasChildNodes()))
+        .map(node => node.firstChild.cloneNode(true))
+}
+
+const processCurrPage = async function (href) {
     const source = await fetchSource(href);
     putImgPlus(source.querySelector("#gdt"), imgPlusList, fullViewPlane);
     const nextHref = await nextPage(source);

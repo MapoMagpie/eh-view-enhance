@@ -1,7 +1,7 @@
 class IMGFetcher {
     constructor(node) {
         this.node = node;
-        this.url = node.getAttribute("href");
+        this.url = node.getAttribute("ahref");
         //当前处理阶段，0: 什么也没做 1: 获取到大图地址 2: 完整的获取到大图
         this.stage = 0;
     }
@@ -12,7 +12,7 @@ class IMGFetcher {
                 try {
                     const response = await window.fetch(this.url);
                     const text = await response.text();
-                    this.bigImageUrl = ImgPlus.extractBigImgUrl.exec(text)[1];
+                    this.bigImageUrl = IMGFetcher.extractBigImgUrl.exec(text)[1];
                     this.stage = 1; this.fetchImg();
                 } catch (error) {
                     this.stage = 0;
@@ -54,8 +54,9 @@ class IMGFetcher {
         this.fetchImg(x).then(flag => { flag && (bigImageElement.scr = this.node.scr) })
     }
 }
+IMGFetcher.extractBigImgUrl = /\<img\sid=\"img\"\ssrc=\"(.*)\"\sstyle/;
 
-class ImgPlusList extends Array {
+class IMGFetcherQueue extends Array {
     constructor() {
         super();
     }
@@ -66,10 +67,7 @@ class ImgPlusList extends Array {
     }
 }
 
-ImgPlus.extractBigImgUrl = /\<img\sid=\"img\"\ssrc=\"(.*)\"\sstyle/;
-
 let styleSheel = document.createElement("style");
-
 styleSheel.textContent =
     `
     .fullViewPlane {
@@ -89,8 +87,7 @@ styleSheel.textContent =
     .fullViewPlane > img:not(.bigImageFrame) {
         margin: 20px 0px 0px 22px;
         width: 10%;
-        border: 5px
-        gray solid;
+        border: 5px gray solid;
         box-sizing: border-box;
         height: max-content;
     }
@@ -111,49 +108,22 @@ styleSheel.textContent =
 
 document.head.appendChild(styleSheel);
 
+//创建一个全屏阅读元素
 let fullViewPlane = document.createElement("div");
 fullViewPlane.classList.add("fullViewPlane");
-
+//创建一个大图框架元素，追加到全屏阅读元素的第一个位置
 let bigImageFrame = document.createElement("div");
 bigImageFrame.classList.add("bigImageFrame");
 bigImageFrame.style.display = "none";
 fullViewPlane.appendChild(bigImageFrame);
 let bigImageElement = document.createElement("img");
 bigImageFrame.appendChild(bigImageElement);
-bigImageElement.addEventListener("wheel", (event) => {
-    let start = parseInt(event.target.getAttribute("index"));
-    imgPlusList.do(start, 5);
-    if (event.deltaY > 0) {
-        if (start > imgPlusList.length - 2) return;
-        imgPlusList[start + 1].set();
-    } else {
-        if (start - 1 < 0) return;
-        imgPlusList[start - 1].set();
-    }
-    event.stopPropagation();
-});
+//todo 大图框架元素的滚轮事件
 
 bigImageFrame.addEventListener("click", (event) => { if (event.target.tagName === "IMG") return; bigImageFrame.style.display = "none"; })
 
 document.body.appendChild(fullViewPlane);
-let imgPlusList = new ImgPlusList();
-
-const putImgPlus = function (imgEleList, imgPlusList, fullViewPlane) {
-    [].slice.call(imgEleList.childNodes).forEach((node) => {
-        if (node.nodeType === 1 && node.hasChildNodes()) {
-            let aE = node.firstChild;
-            let imgE = aE.firstChild.cloneNode(true);
-            fullViewPlane.appendChild(imgE);
-            let index = imgPlusList.push(new ImgPlus(aE.getAttribute("href"), imgE, imgPlusList.length)) - 1;
-            imgE.setAttribute("index", index);
-            imgE.addEventListener("click", (event) => {
-                let start = parseInt(event.target.getAttribute("index"));
-                imgPlusList[start].retry();
-                imgPlusList.do(start, 5);
-            });
-        }
-    });
-}
+let IFQ = new IMGFetcherQueue();
 
 //通过地址请求该页的内容
 const fetchSource = async function (href, oriented) {
@@ -187,19 +157,29 @@ const stepPageUrl = function (source, oriented) {
 
 //将该页的图片列表提取出来，然后追加到全屏阅读元素(fullViewPlane)上
 const appendToFullViewPlane = function (source, oriented) {
+    //从该页的文档中将图片列表提取出来
     let imageList = extractImageList(source);
-    if (oriented === "prev") {
-        fullViewPlane.firstElementChild.after(imageList);
-    } else if (oriented === "next") {
-        fullViewPlane.lastElementChild.after(imageList);
+    //每一个图片生成一个对应的大图处理器
+    let IFs = imageList.map(img => new IMGFetcher(img));
+    if (oriented === "prev") {//如果行动导向是上一页
+        fullViewPlane.firstElementChild.after(...imageList);//则已全屏阅读元素的第一个元素为锚点，追加所有元素
+        IFQ.unshift(...IFs);//则将所有的大图处理器添加到大图处理器数组的前部
+    } else if (oriented === "next") {//如果行动导向是下一页
+        fullViewPlane.lastElementChild.after(...imageList);
+        IFQ.push(...IFs);
     }
+    imageList.forEach(e => e.addEventListener("click", (event) => {
+        //获取该元素所在的索引
+        let index = [].slice.call(fullViewPlane.childNodes).indexOf(event.target) - 1;
+        IFQ[index].set();
+    }))
 }
 
 //提取当前页文档的图片列表
 const extractImageList = function (source) {
     return [].slice.call(source.querySelector("#gdt").childNodes)
         .filter(node => (node.nodeType === 1 && node.hasChildNodes()))
-        .map(node => node.firstChild.cloneNode(true))
+        .map(node => { let imgE = node.firstElementChild.firstElementChild.cloneNode(true); imgE.setAttribute("ahref", node.firstElementChild.href); return imgE; })
 }
 
 const processCurrPage = async function (href) {
@@ -209,17 +189,5 @@ const processCurrPage = async function (href) {
     return nextHref ? processCurrPage(nextHref) : true;
 }
 
-processCurrPage(document.querySelectorAll("table.ptb tr > td")[1].firstElementChild.href);
-/* let currPage = 0;
-let hrefs = [].slice.call(document.querySelectorAll("table.ptb tr > td"), 1).map((node, index) => { if (node.className === "ptds") currPage = index; return node.firstElementChild.href }); hrefs.pop();
-hrefs.forEach((href, index) => {
-     if (currPage === index) {
-        putImgPlus(document.querySelector("#gdt"), imgPlusList, fullViewPlane)
-    } else {
-        fetchSource(href).then(source => { putImgPlus(source, imgPlusList, fullViewPlane); });
-    }
-    fetchSource(href).then(source => { putImgPlus(source, imgPlusList, fullViewPlane); });
-}) */
 
-/* document.body.appendChild(fullViewPlane); */
-
+appendToFullViewPlane(document, "next");

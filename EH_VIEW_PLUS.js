@@ -1,3 +1,44 @@
+let styleSheel = document.createElement("style");
+styleSheel.textContent =
+    `
+    .fullViewPlane {
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        position: fixed;
+        top: 0px;
+        right: 0px;
+        z-index: 1000;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        overflow: scroll;
+    }
+
+    .fullViewPlane > img:not(.bigImageFrame) {
+        margin: 20px 0px 0px 22px;
+        width: 10%;
+        border: 5px gray solid;
+        box-sizing: border-box;
+        height: max-content;
+    }
+
+    .bigImageFrame {
+        position: fixed;
+        width: 100%;
+        z-index: 1001;
+        background-color: #000000d6;
+        justify-content: center;
+        height: 100%;
+    }
+
+    .bigImageFrame > img {
+        height: 100%;
+    }
+`;
+
+document.head.appendChild(styleSheel);
+
 class IMGFetcher {
     constructor(node) {
         this.node = node;
@@ -59,54 +100,21 @@ IMGFetcher.extractBigImgUrl = /\<img\sid=\"img\"\ssrc=\"(.*)\"\sstyle/;
 class IMGFetcherQueue extends Array {
     constructor() {
         super();
+        //可执行队列
+        this.executableQueue = [];
     }
+
+    async vefify(...index) {
+        //todo 使用时间帧管理队列执行
+    }
+
 
     do(start, step) {
         step = step || 3;
+        //将要执行获取器放置到队列中，由队列进行验证
         for (let index = start + 1; (index < step + start) && (index < this.length); index++) { this[index].fetchImg() }
     }
 }
-
-let styleSheel = document.createElement("style");
-styleSheel.textContent =
-    `
-    .fullViewPlane {
-        width: 100%;
-        height: 100%;
-        background-color: #000;
-        position: fixed;
-        top: 0px;
-        right: 0px;
-        z-index: 1000;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        overflow: scroll;
-    }
-
-    .fullViewPlane > img:not(.bigImageFrame) {
-        margin: 20px 0px 0px 22px;
-        width: 10%;
-        border: 5px gray solid;
-        box-sizing: border-box;
-        height: max-content;
-    }
-
-    .bigImageFrame {
-        position: fixed;
-        width: 100%;
-        z-index: 1001;
-        background-color: #000000d6;
-        justify-content: center;
-        height: 100%;
-    }
-
-    .bigImageFrame > img {
-        height: 100%;
-    }
-`;
-
-document.head.appendChild(styleSheel);
 
 //创建一个全屏阅读元素
 let fullViewPlane = document.createElement("div");
@@ -116,13 +124,28 @@ let bigImageFrame = document.createElement("div");
 bigImageFrame.classList.add("bigImageFrame");
 bigImageFrame.style.display = "none";
 fullViewPlane.appendChild(bigImageFrame);
+//大图框架图像容器，追加到大图框架里
 let bigImageElement = document.createElement("img");
 bigImageFrame.appendChild(bigImageElement);
 //todo 大图框架元素的滚轮事件
 
+//全屏阅读元素滚轮事件 todo超时事件
+fullViewPlane.addEventListener("wheel", async (event) => {
+    //确定导向，向下滚动还是向上滚动
+    let oriented = (fullViewPlane.scrollTop === fullViewPlane.scrollTopMax) ? "next" : (fullViewPlane.scrollTop === 0) ? "prev" : "stop";
+    //如果本事件还没有完成，则停止执行其他事件
+    if ((oriented === "stop") || !signal[oriented]) return;
+    signal[oriented] = false;
+    const source = await fetchSource(stepPageUrl(stepPageSource[oriented]));
+    appendToFullViewPlane(source, oriented);
+    signal[oriented] = true;
+});
+
+//大图框架点击事件，点击后隐藏大图框架
 bigImageFrame.addEventListener("click", (event) => { if (event.target.tagName === "IMG") return; bigImageFrame.style.display = "none"; })
 
 document.body.appendChild(fullViewPlane);
+
 let IFQ = new IMGFetcherQueue();
 
 //通过地址请求该页的内容
@@ -134,9 +157,14 @@ const fetchSource = async function (href, oriented) {
 }
 
 const stepPageSource = {
-    "prev": null,
+    "prev": document,
     "curr": document,
-    "next": null
+    "next": document
+}
+
+const signal = {
+    "prev": true,
+    "next": true
 }
 
 //通过该页的内容获取下一页或上一页的地址 oriented : prev/next
@@ -170,8 +198,7 @@ const appendToFullViewPlane = function (source, oriented) {
     }
     imageList.forEach(e => e.addEventListener("click", (event) => {
         //获取该元素所在的索引
-        let index = [].slice.call(fullViewPlane.childNodes).indexOf(event.target) - 1;
-        IFQ[index].set();
+        IFQ.do([].slice.call(fullViewPlane.childNodes).indexOf(event.target) - 1);
     }))
 }
 
@@ -181,13 +208,5 @@ const extractImageList = function (source) {
         .filter(node => (node.nodeType === 1 && node.hasChildNodes()))
         .map(node => { let imgE = node.firstElementChild.firstElementChild.cloneNode(true); imgE.setAttribute("ahref", node.firstElementChild.href); return imgE; })
 }
-
-const processCurrPage = async function (href) {
-    const source = await fetchSource(href);
-    putImgPlus(source.querySelector("#gdt"), imgPlusList, fullViewPlane);
-    const nextHref = await nextPage(source);
-    return nextHref ? processCurrPage(nextHref) : true;
-}
-
 
 appendToFullViewPlane(document, "next");

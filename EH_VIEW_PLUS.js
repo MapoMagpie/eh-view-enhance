@@ -39,6 +39,15 @@ styleSheel.textContent =
 
 document.head.appendChild(styleSheel);
 
+//创建一个请求头
+const header = {
+    "Accept": "image/webp,*/*",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Referer": "https://exhentai.org/s/d2d445c386/1583016-1",
+    "Pragma": "no-cache",
+    "Cache-Control": "no-cache",
+}
+
 class IMGFetcher {
     constructor(node) {
         this.node = node;
@@ -67,7 +76,19 @@ class IMGFetcher {
             case 1://理论上获取到大图地址，尝试使用fetch获取大图数据
                 if (this.bigImageUrl) {
                     try {
-                        const response = await window.fetch(this.bigImageUrl);
+                        let header = new Headers({
+                            "Accept": "image/webp,*/*",
+                            "Access-Control-Allow-origin": "https://exhentai.org",
+                            "Access-Control-Allow-Methods": "GET",
+                            "Host": /https?:\/\/([^\/]*)\//.exec(this.bigImageUrl)[1],
+                            "Accept-Encoding": "gzip, deflate, br",
+                            "Referer": this.url,
+                            "Pragma": "no-cache",
+                            "Cache-Control": "no-cache"
+                        });
+                        const response = await window.fetch(this.bigImageUrl, {
+                            Headers: header
+                        });
                         this.imgBlob = await response.blob();
                         this.bigImageUrl = URL.createObjectURL(this.imgBlob);
                         this.stage = 2; this.fetchImg();
@@ -130,15 +151,20 @@ bigImageFrame.appendChild(bigImageElement);
 //todo 大图框架元素的滚轮事件
 
 //全屏阅读元素滚轮事件 todo超时事件
-fullViewPlane.addEventListener("wheel", async (event) => {
+fullViewPlane.addEventListener("wheel", (event) => {
     //确定导向，向下滚动还是向上滚动
-    let oriented = (fullViewPlane.scrollTop === fullViewPlane.scrollTopMax) ? "next" : (fullViewPlane.scrollTop === 0) ? "prev" : "stop";
-    //如果本事件还没有完成，则停止执行其他事件
-    if ((oriented === "stop") || !signal[oriented]) return;
-    signal[oriented] = false;
-    const source = await fetchSource(stepPageUrl(stepPageSource[oriented]));
-    appendToFullViewPlane(source, oriented);
-    signal[oriented] = true;
+    let st = fullViewPlane.scrollTop, stm = fullViewPlane.scrollTopMax, oriented = (st === stm && st === 0) ? "prev.next" : (st === 0) ? "prev" : (st === stm) ? "next" : "stop";
+
+    oriented.split(".").forEach(async orie => {
+        //如果本事件还没有完成，则停止执行其他事件
+        if ((orie === "stop") || !signal[orie]) return;
+        signal[orie] = false;
+        const source = await fetchSource(stepPageUrl(stepPageSource[orie], orie), orie);
+        signal[orie] = true;
+        if (source === null) return;
+        appendToFullViewPlane(source, orie);
+    })
+
 });
 
 //大图框架点击事件，点击后隐藏大图框架
@@ -150,6 +176,7 @@ let IFQ = new IMGFetcherQueue();
 
 //通过地址请求该页的内容
 const fetchSource = async function (href, oriented) {
+    if (href === null || !oriented) return null;
     const response = await window.fetch(href);
     const text = await response.text();
     let ele = document.createElement("div"); ele.innerHTML = text;
@@ -180,7 +207,7 @@ const stepPageUrl = function (source, oriented) {
             if (!stepE || stepE.textContent === ">") return null;
             break;
     }
-    return e2.firstElementChild.href;
+    return stepE.firstElementChild.href;
 }
 
 //将该页的图片列表提取出来，然后追加到全屏阅读元素(fullViewPlane)上

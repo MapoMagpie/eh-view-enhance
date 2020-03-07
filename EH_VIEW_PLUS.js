@@ -141,7 +141,7 @@ class IMGFetcherQueue extends Array {
         this[start].setNow(); this.currIndex = start;
         //清理上一次调用时还没有执行的延迟器setTimeout
         this.tids.forEach(id => window.clearTimeout(id)); this.tids = [];
-        step = step || 1; oriented = oriented || "next";
+        step = step || 3; oriented = oriented || "next";
         //把要执行获取器先放置到队列中，延迟执行
         this.executableQueue = [];
         for (let index = start; ((oriented === "next") && ((index < this.length) && (index < start + step)) || ((oriented === "prev") && ((index > -1) && (index > start - step)))); (oriented === "next") ? index++ : index--) {//丧心病狂

@@ -4,7 +4,8 @@
 // @version      0.9.3
 // @description  强化E绅士看图体验
 // @author       kamo2020
-// @match        https://exhentai.org/*
+// @match        https://exhentai.org/g/*
+// @match        https://e-hentai.org/g/*
 // @icon         https://exhentai.org/favicon.ico
 // ==/UserScript==
 
@@ -109,8 +110,7 @@ class IMGFetcher {
     //立刻将当前元素的src赋值给大图元素
     setNow() {
         if (bigImageFrame.style.display === "none") bigImageFrame.style.display = "flex";
-        bigImageElement.src = this.oldSrc;
-        // bigImageElement.src = this.node.src;
+        bigImageElement.src = this.stage === 2 ? this.bigImageUrl : this.oldSrc;
         bigImageElement.style.border = "3px white solid";
     }
 }
@@ -239,7 +239,8 @@ const stepPageSource = {
 //线程锁，如果上一页或下一页正在获取中，则设置为false，即加锁。
 const signal = {
     "prev": true,
-    "next": true
+    "next": true,
+    "first": true
 }
 
 //通过该页的内容获取下一页或上一页的地址 oriented : prev/next
@@ -319,10 +320,20 @@ const fetchStepPage = async function (oriented) {
 //==================创建入口按钮，追加到tag面板的右侧=====================START
 let showBTNRoot = document.querySelector("#gd5");
 let tempContainer = document.createElement("div");
-tempContainer.innerHTML = `<img src="https://t.halu.lu/t/12" style="width: 125px; height: 30px; border: 2px solid #481d4f;">`;
-showBTNRoot.appendChild(tempContainer.firstElementChild);
-showBTNRoot.lastElementChild.addEventListener("click", (event) => {
-    fullViewPlane.style.display = "flex";
-    appendToFullViewPlane(document, "next");
-})
+
+//判断是否是Large模式，这样缩略图也算能看
+if (document.querySelector("div.ths:nth-child(2)") === null) {
+    tempContainer.innerHTML = `<p class="g2"><img src="https://exhentai.org/img/mr.gif"> <a id="renamelink" href="${window.location.href}?inline_set=ts_l">请切换至Large模式</a></p>`;
+    showBTNRoot.appendChild(tempContainer.firstElementChild);
+} else {
+    tempContainer.innerHTML = `<img src="https://t.halu.lu/t/12" style="width: 125px; height: 30px; border: 2px solid #481d4f;">`;
+    showBTNRoot.appendChild(tempContainer.firstElementChild);
+    showBTNRoot.lastElementChild.addEventListener("click", (event) => {
+        fullViewPlane.style.display = "flex";
+        if (signal.first) {
+            appendToFullViewPlane(document, "next");
+            signal.first = false;
+        }
+    })
+}
 //======================================================================FIN

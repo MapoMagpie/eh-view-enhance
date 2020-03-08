@@ -24,7 +24,7 @@ styleSheel.textContent =
         flex-wrap: wrap;
         justify-content: flex-start;
         overflow: scroll;
-        background-image: url(https://t.halu.lu/t/12);
+        background-image: url(https://tvax2.sinaimg.cn/large/6762c771gy1gcmqvrji4jg20dw0dwaww.gif);
     }
 
     .fullViewPlane > img:not(.bigImageFrame) {
@@ -38,14 +38,52 @@ styleSheel.textContent =
     .bigImageFrame {
         position: fixed;
         width: 100%;
+        height: 100%;
+        right: 0px;
         z-index: 1001;
         background-color: #000000d6;
         justify-content: center;
-        height: 100%;
+        transition: width 0.4s, height 0.7s;
     }
 
     .bigImageFrame > img {
         height: 100%;
+        position: relative;
+    }
+
+    .fetching {
+        animation: 0.5s linear infinite rrr;
+    }
+
+    @keyframes rrr { 
+        0% { border-image: linear-gradient(0deg, #fd696a, #5461f4) 1; } 
+        25% { border-image: linear-gradient(90deg, #fd696a, #5461f4) 1; } 
+        50% { border-image: linear-gradient(180deg, #fd696a, #5461f4) 1; } 
+        75% { border-image: linear-gradient(270deg, #fd696a, #5461f4) 1; } 
+        100% { border-image: linear-gradient(360deg, #fd696a, #5461f4) 1; }  
+    }
+
+    .retract {
+        width: 2%;
+        height: 3.6%;
+        transition: width 0.7s, height 0.4s;
+    }
+
+    .closeBTN {
+        width: 100%;
+        height: 100%;
+        background-color: #0000;
+        color: #f45b8d;
+        font-size: 30px;
+        font-weight: bold;
+        border: 4px #f45b8d solid;
+        border-bottom-left-radius: 60px;
+    }
+
+    .closeBTN > span {
+        position: fixed;
+        right: 11px;
+        top: 0px;
     }
 `;
 document.head.appendChild(styleSheel);
@@ -64,16 +102,19 @@ class IMGFetcher {
         //当前处理阶段，0: 什么也没做 1: 获取到大图地址 2: 完整的获取到大图
         this.stage = 0;
         this.tryTime = 0;
+        this.lock = false;
     }
 
     async fetchImg(x) {
         switch (this.stage) {
             case 0://尝试获取大图地址
                 try {
+                    this.node.classList.add("fetching");
                     const response = await window.fetch(this.url);
                     const text = await response.text();
                     this.bigImageUrl = IMGFetcher.extractBigImgUrl.exec(text)[1];
-                    this.stage = 1; this.node.style.border = "3px #2a5360 solid"; return/* 少写一个return，花了我4小时调试一个奇怪的bug */ this.fetchImg(x);
+                    this.stage = 1;
+                    return/* 少写一个return，花了我4小时调试一个奇怪的bug */ this.fetchImg(x);
                 } catch (error) {
                     this.stage = 0;
                     console.log("出现其他的异常 => ", error);
@@ -83,6 +124,7 @@ class IMGFetcher {
                 if (this.bigImageUrl) {
                     try {
                         const flag = await IMGFetcher.weirdFetch(this.node, this.bigImageUrl, this.oldSrc).then(result => result.flag);
+                        this.node.classList.remove("fetching");
                         if (flag) {
                             this.stage = 2; this.node.style.border = "3px #602a5c solid"; return this.fetchImg(x);
                         } else {
@@ -103,15 +145,17 @@ class IMGFetcher {
         }
     }
 
-    set(isCurr, x) {
-        this.fetchImg(x).then(flag => { if (flag && isCurr) { bigImageElement.style.border = "3px #602a5c solid"; bigImageElement.src = this.bigImageUrl; } })
+    set(index, x) {
+        if (this.lock) return;
+        this.lock = true;
+        this.fetchImg(x).then(flag => { if (flag) { IFQ.report(index, this.bigImageUrl, this.node.offsetTop); } else { console.log("没有获取到图片，这期间一定发生了什么异常的事情！") } this.lock = false; })
     }
 
     //立刻将当前元素的src赋值给大图元素
     setNow() {
         if (bigImageFrame.style.display === "none") bigImageFrame.style.display = "flex";
         bigImageElement.src = this.stage === 2 ? this.bigImageUrl : this.oldSrc;
-        bigImageElement.style.border = "3px white solid";
+        bigImageElement.classList.add("fetching");
     }
 }
 IMGFetcher.extractBigImgUrl = /\<img\sid=\"img\"\ssrc=\"(.*)\"\sstyle/;
@@ -151,8 +195,20 @@ class IMGFetcherQueue extends Array {
             在对大图元素使用滚轮事件的时候，由于速度非常快，大量的IMGFetcher图片请求器被添加到executableQueue队列中，如果调用这些图片请求器请求大图，可能会被认为是爬虫脚本
             因此会有一个时间上的延迟，在这段时间里，executableQueue中的IMGFetcher图片请求器会不断更替，100毫秒结束后，只调用最新的executableQueue中的IMGFetcher图片请求器。
         */
-        let tid = window.setTimeout((queue, firstIndex) => { queue.forEach(imgFetcherIndex => this[imgFetcherIndex].set(firstIndex === imgFetcherIndex)) }, 300, this.executableQueue, start);
+        let tid = window.setTimeout((queue, firstIndex) => { queue.forEach(imgFetcherIndex => this[imgFetcherIndex].set(imgFetcherIndex)) }, 300, this.executableQueue, start);
         this.tids.push(tid);//收集当前延迟器id,，如果本方法的下一次调用很快来临，而本次调用的延迟器还没有执行，则清理掉本次的延迟器
+    }
+
+    //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
+    report(index, imgSrc, offsetTop) {
+        if (index === this.currIndex) {
+            bigImageElement.classList.remove("fetching")
+            bigImageElement.style.border = "3px #602a5c solid";
+            bigImageElement.src = imgSrc;
+            let g = offsetTop - (window.screen.availHeight / 3);
+            g = g <= 0 ? 0 : g >= fullViewPlane.scrollHeight ? fullViewPlane.scrollHeight : g;
+            fullViewPlane.scrollTo({ top: g, behavior: "smooth" })
+        }
     }
 }
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================FIN
@@ -172,11 +228,15 @@ document.body.appendChild(fullViewPlane);
 //创建一个大图框架元素，追加到全屏阅读元素的第一个位置
 let bigImageFrame = document.createElement("div");
 bigImageFrame.classList.add("bigImageFrame");
-bigImageFrame.style.display = "none";
+bigImageFrame.classList.add("retract");
 fullViewPlane.appendChild(bigImageFrame);
 //大图框架图像容器，追加到大图框架里
+let fragment = document.createDocumentFragment();
 let bigImageElement = document.createElement("img");
-bigImageFrame.appendChild(bigImageElement);
+fragment.appendChild(bigImageElement);
+let closeButton = document.createElement("button");
+closeButton.innerHTML = "<span>Q</span>"; closeButton.classList.add("closeBTN");
+bigImageFrame.appendChild(closeButton);
 
 //大图框架元素的滚轮事件
 bigImageFrame.addEventListener("wheel", async (event) => {
@@ -202,10 +262,30 @@ fullViewPlane.addEventListener("wheel", (event) => {
 });
 
 //大图框架点击事件，点击后隐藏大图框架
-bigImageFrame.addEventListener("click", (event) => { if (event.target.tagName === "IMG") return; bigImageFrame.style.display = "none"; })
+bigImageFrame.addEventListener("click", (event) => {
+    if (event.target.tagName === "SPAN") return;
+    bigImageFrame.classList.add("retract");
+    window.setTimeout(() => {
+        fragment.appendChild(bigImageFrame.firstElementChild);
+        bigImageFrame.appendChild(fragment.firstElementChild);
+    }, 700);
+})
 
+//大图框架添加鼠标移动事件，该事件会将让大图跟随鼠标左右移动
+bigImageFrame.addEventListener("mousemove", (event) => {
+    if (bigImageFrame.moveEventLock) return;
+    bigImageFrame.moveEventLock = true;
+    window.setTimeout(() => { bigImageFrame.moveEventLock = false; }, 20)
+    bigImageElement.style.left = `${event.clientX - (window.screen.availWidth / 2)}px`;
+})
+
+//关闭按钮添加点击事件，点击后隐藏全屏阅览元素
 //全屏阅览元素点击事件，点击空白处隐藏
-fullViewPlane.addEventListener("click", (event) => { if (event.target === fullViewPlane) fullViewPlane.style.display = "none"; })
+fullViewPlane.addEventListener("click", (event) => {
+    if (event.target === fullViewPlane || event.target === closeButton || event.target === closeButton.firstElementChild) {
+        fullViewPlane.style.display = "none";
+    };
+})
 //========================================创建一个全屏阅读元素============================================FIN
 
 
@@ -274,6 +354,10 @@ const appendToFullViewPlane = function (source, oriented) {
             IFQ.push(...IFs);
         }
         imageList.forEach(e => e.addEventListener("click", (event) => {
+            //展开大图阅览元素
+            bigImageFrame.classList.remove("retract");
+            fragment.appendChild(bigImageFrame.firstElementChild);
+            bigImageFrame.appendChild(fragment.firstElementChild);
             //获取该元素所在的索引
             IFQ.do([].slice.call(fullViewPlane.childNodes).indexOf(event.target) - 1);
         }))
@@ -326,7 +410,7 @@ if (document.querySelector("div.ths:nth-child(2)") === null) {
     tempContainer.innerHTML = `<p class="g2"><img src="https://exhentai.org/img/mr.gif"> <a id="renamelink" href="${window.location.href}?inline_set=ts_l">请切换至Large模式</a></p>`;
     showBTNRoot.appendChild(tempContainer.firstElementChild);
 } else {
-    tempContainer.innerHTML = `<img src="https://t.halu.lu/t/12" style="width: 125px; height: 30px; border: 2px solid #481d4f;">`;
+    tempContainer.innerHTML = `<img src="https://tvax2.sinaimg.cn/large/6762c771gy1gcmqvrji4jg20dw0dwaww.gif" referrerpolicy="no-referrer" style="width: 125px; height: 30px;" class="fetching">`;
     showBTNRoot.appendChild(tempContainer.firstElementChild);
     showBTNRoot.lastElementChild.addEventListener("click", (event) => {
         fullViewPlane.style.display = "flex";

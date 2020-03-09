@@ -9,90 +9,6 @@
 // @icon         https://exhentai.org/favicon.ico
 // ==/UserScript==
 
-//=========================================创建样式表==================================================START
-let styleSheel = document.createElement("style");
-styleSheel.textContent =
-    `
-    .fullViewPlane {
-        width: 100%;
-        height: 100%;
-        background-color: #000;
-        position: fixed;
-        top: 0px;
-        right: 0px;
-        z-index: 1000;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        overflow: scroll;
-        background-image: url(https://tvax2.sinaimg.cn/large/6762c771gy1gcmqvrji4jg20dw0dwaww.gif);
-    }
-
-    .fullViewPlane > img:not(.bigImageFrame) {
-        margin: 20px 0px 0px 22px;
-        width: 10%;
-        border: 3px white solid;
-        box-sizing: border-box;
-        height: max-content;
-    }
-
-    .bigImageFrame {
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        right: 0px;
-        z-index: 1001;
-        background-color: #000000d6;
-        justify-content: center;
-        transition: width 0.4s, height 0.7s;
-    }
-
-    .bigImageFrame > img {
-        height: 100%;
-        position: relative;
-    }
-
-    .fetching {
-        animation: 0.5s linear infinite rrr;
-    }
-
-    @keyframes rrr { 
-        0% { border-image: linear-gradient(0deg, #fd696a, #5461f4) 1; } 
-        25% { border-image: linear-gradient(90deg, #fd696a, #5461f4) 1; } 
-        50% { border-image: linear-gradient(180deg, #fd696a, #5461f4) 1; } 
-        75% { border-image: linear-gradient(270deg, #fd696a, #5461f4) 1; } 
-        100% { border-image: linear-gradient(360deg, #fd696a, #5461f4) 1; }  
-    }
-
-    .retract {
-        width: 2%;
-        height: 3.6%;
-        transition: width 0.7s, height 0.4s;
-    }
-
-    .closeBTN {
-        width: 100%;
-        height: 100%;
-        background-color: #0000;
-        color: #f45b8d;
-        font-size: 30px;
-        font-weight: bold;
-        border: 4px #f45b8d solid;
-        border-bottom-left-radius: 60px;
-    }
-
-    .closeBTN > span {
-        position: fixed;
-        right: 11px;
-        top: 0px;
-    }
-`;
-document.head.appendChild(styleSheel);
-//=========================================创建样式表==================================================FIN
-
-
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================START
 class IMGFetcher {
     constructor(node) {
@@ -153,7 +69,6 @@ class IMGFetcher {
 
     //立刻将当前元素的src赋值给大图元素
     setNow() {
-        if (bigImageFrame.style.display === "none") bigImageFrame.style.display = "flex";
         bigImageElement.src = this.stage === 2 ? this.bigImageUrl : this.oldSrc;
         bigImageElement.classList.add("fetching");
     }
@@ -203,7 +118,6 @@ class IMGFetcherQueue extends Array {
     report(index, imgSrc, offsetTop) {
         if (index === this.currIndex) {
             bigImageElement.classList.remove("fetching")
-            bigImageElement.style.border = "3px #602a5c solid";
             bigImageElement.src = imgSrc;
             let g = offsetTop - (window.screen.availHeight / 3);
             g = g <= 0 ? 0 : g >= fullViewPlane.scrollHeight ? fullViewPlane.scrollHeight : g;
@@ -212,81 +126,6 @@ class IMGFetcherQueue extends Array {
     }
 }
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================FIN
-
-
-
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-//========================================创建一个全屏阅读元素============================================START
-let fullViewPlane = document.createElement("div");
-fullViewPlane.classList.add("fullViewPlane");
-fullViewPlane.style.display = "none";
-document.body.appendChild(fullViewPlane);
-
-//创建一个大图框架元素，追加到全屏阅读元素的第一个位置
-let bigImageFrame = document.createElement("div");
-bigImageFrame.classList.add("bigImageFrame");
-bigImageFrame.classList.add("retract");
-fullViewPlane.appendChild(bigImageFrame);
-//大图框架图像容器，追加到大图框架里
-let fragment = document.createDocumentFragment();
-let bigImageElement = document.createElement("img");
-fragment.appendChild(bigImageElement);
-let closeButton = document.createElement("button");
-closeButton.innerHTML = "<span>Q</span>"; closeButton.classList.add("closeBTN");
-bigImageFrame.appendChild(closeButton);
-
-//大图框架元素的滚轮事件
-bigImageFrame.addEventListener("wheel", async (event) => {
-    //确定导向
-    let oriented = event.deltaY > 0 ? "next" : "prev", oldLength = IFQ.length, start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
-    //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载，如果还有需要加载的页，则等待页加载完毕后再调用执行队列IFQ.do
-    let flag = true;
-    if (start < 0 || start > oldLength - 1) {//已经到达边界
-        flag = await fetchStepPage(oriented);
-        //如果IMGFetcherQueue扩容了，需要修复索引
-        start = (oriented === "prev") ? (IFQ.length - oldLength) + start : start;
-    }
-    if (flag) IFQ.do(start, null, oriented);
-})
-
-//全屏阅读元素滚轮事件
-fullViewPlane.addEventListener("wheel", (event) => {
-    //对冒泡的处理
-    if (event.target === bigImageFrame || event.target.parentElement === bigImageElement) return;
-    //确定导向，向下滚动还是向上滚动
-    let st = fullViewPlane.scrollTop, stm = fullViewPlane.scrollTopMax, oriented = (st === stm && st === 0) ? "prev.next" : (st === 0) ? "prev" : (st === stm) ? "next" : "stop";
-    oriented.split(".").forEach(fetchStepPage);
-});
-
-//大图框架点击事件，点击后隐藏大图框架
-bigImageFrame.addEventListener("click", (event) => {
-    if (event.target.tagName === "SPAN") return;
-    bigImageFrame.classList.add("retract");
-    window.setTimeout(() => {
-        fragment.appendChild(bigImageFrame.firstElementChild);
-        bigImageFrame.appendChild(fragment.firstElementChild);
-    }, 700);
-})
-
-//大图框架添加鼠标移动事件，该事件会将让大图跟随鼠标左右移动
-bigImageFrame.addEventListener("mousemove", (event) => {
-    if (bigImageFrame.moveEventLock) return;
-    bigImageFrame.moveEventLock = true;
-    window.setTimeout(() => { bigImageFrame.moveEventLock = false; }, 20)
-    bigImageElement.style.left = `${event.clientX - (window.screen.availWidth / 2)}px`;
-})
-
-//关闭按钮添加点击事件，点击后隐藏全屏阅览元素
-//全屏阅览元素点击事件，点击空白处隐藏
-fullViewPlane.addEventListener("click", (event) => {
-    if (event.target === fullViewPlane || event.target === closeButton || event.target === closeButton.firstElementChild) {
-        fullViewPlane.style.display = "none";
-    };
-})
-//========================================创建一个全屏阅读元素============================================FIN
 
 
 
@@ -356,7 +195,6 @@ const appendToFullViewPlane = function (source, oriented) {
         imageList.forEach(e => e.addEventListener("click", (event) => {
             //展开大图阅览元素
             bigImageFrame.classList.remove("retract");
-            fragment.appendChild(bigImageFrame.firstElementChild);
             bigImageFrame.appendChild(fragment.firstElementChild);
             //获取该元素所在的索引
             IFQ.do([].slice.call(fullViewPlane.childNodes).indexOf(event.target) - 1);
@@ -402,6 +240,8 @@ const fetchStepPage = async function (oriented) {
 
 
 //==================创建入口按钮，追加到tag面板的右侧=====================START
+const styleVal = {};
+
 let showBTNRoot = document.querySelector("#gd5");
 let tempContainer = document.createElement("div");
 
@@ -410,14 +250,182 @@ if (document.querySelector("div.ths:nth-child(2)") === null) {
     tempContainer.innerHTML = `<p class="g2"><img src="https://exhentai.org/img/mr.gif"> <a id="renamelink" href="${window.location.href}?inline_set=ts_l">请切换至Large模式</a></p>`;
     showBTNRoot.appendChild(tempContainer.firstElementChild);
 } else {
-    tempContainer.innerHTML = `<img src="https://tvax2.sinaimg.cn/large/6762c771gy1gcmqvrji4jg20dw0dwaww.gif" referrerpolicy="no-referrer" style="width: 125px; height: 30px;" class="fetching">`;
+    tempContainer.innerHTML = `<img src="https://tvax2.sinaimg.cn/large/6762c771gy1gcmqvrji4jg20dw0dwaww.gif" referrerpolicy="no-referrer" style="width: 125px; height: 30px;">`;
     showBTNRoot.appendChild(tempContainer.firstElementChild);
     showBTNRoot.lastElementChild.addEventListener("click", (event) => {
-        fullViewPlane.style.display = "flex";
+        fullViewPlane.classList.remove("retract_full_view");
         if (signal.first) {
             appendToFullViewPlane(document, "next");
             signal.first = false;
         }
     })
 }
-//======================================================================FIN
+
+styleVal.startPost_Top = showBTNRoot.lastElementChild.offsetTop;
+styleVal.startPost_Left = showBTNRoot.lastElementChild.offsetTop;
+//==================创建入口按钮，追加到tag面板的右侧=====================FIN
+
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+//========================================创建一个全屏阅读元素============================================START
+let fullViewPlane = document.createElement("div");
+fullViewPlane.classList.add("fullViewPlane");
+fullViewPlane.classList.add("retract_full_view");
+document.body.appendChild(fullViewPlane);
+
+//创建一个大图框架元素，追加到全屏阅读元素的第一个位置
+let bigImageFrame = document.createElement("div");
+bigImageFrame.classList.add("bigImageFrame");
+bigImageFrame.classList.add("retract");
+fullViewPlane.appendChild(bigImageFrame);
+//大图框架图像容器，追加到大图框架里
+let fragment = document.createDocumentFragment();
+let bigImageElement = document.createElement("img");
+bigImageFrame.appendChild(bigImageElement);
+fragment.appendChild(bigImageElement);
+
+//大图框架元素的滚轮事件
+bigImageFrame.addEventListener("wheel", async (event) => {
+    //确定导向
+    let oriented = event.deltaY > 0 ? "next" : "prev", oldLength = IFQ.length, start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
+    //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载，如果还有需要加载的页，则等待页加载完毕后再调用执行队列IFQ.do
+    let flag = true;
+    if (start < 0 || start > oldLength - 1) {//已经到达边界
+        flag = await fetchStepPage(oriented);
+        //如果IMGFetcherQueue扩容了，需要修复索引
+        start = (oriented === "prev") ? (IFQ.length - oldLength) + start : start;
+    }
+    if (flag) IFQ.do(start, null, oriented);
+})
+
+//全屏阅读元素滚轮事件
+fullViewPlane.addEventListener("wheel", (event) => {
+    //对冒泡的处理
+    if (event.target === bigImageFrame || event.target.parentElement === bigImageElement) return;
+    //确定导向，向下滚动还是向上滚动
+    let st = fullViewPlane.scrollTop, stm = fullViewPlane.scrollTopMax, oriented = (st === stm && st === 0) ? "prev.next" : (st === 0) ? "prev" : (st === stm) ? "next" : "stop";
+    oriented.split(".").forEach(fetchStepPage);
+});
+
+//大图框架点击事件，点击后隐藏大图框架
+bigImageFrame.addEventListener("click", (event) => {
+    if (event.target.tagName === "SPAN") return;
+    bigImageFrame.classList.add("retract");
+    window.setTimeout(() => {
+        fragment.appendChild(bigImageFrame.firstElementChild);
+    }, 700);
+})
+
+//大图框架添加鼠标移动事件，该事件会将让大图跟随鼠标左右移动
+bigImageFrame.addEventListener("mousemove", (event) => {
+    if (bigImageFrame.moveEventLock) return;
+    bigImageFrame.moveEventLock = true;
+    window.setTimeout(() => { bigImageFrame.moveEventLock = false; }, 20)
+    bigImageElement.style.left = `${event.clientX - (window.screen.availWidth / 2)}px`;
+})
+
+//关闭按钮添加点击事件，点击后隐藏全屏阅览元素
+//全屏阅览元素点击事件，点击空白处隐藏
+fullViewPlane.addEventListener("click", (event) => {
+    if (event.target === fullViewPlane) {
+        fullViewPlane.classList.add("retract_full_view");
+    };
+})
+
+//========================================创建一个全屏阅读元素============================================FIN
+
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+//=========================================创建样式表==================================================START
+let styleSheel = document.createElement("style");
+styleSheel.textContent =
+    `
+    .fullViewPlane {
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        position: fixed;
+        top: 0px;
+        right: 0px;
+        z-index: 1000;
+        overflow: scroll;
+        background-image: url(https://tvax2.sinaimg.cn/large/6762c771gy1gcmqvrji4jg20dw0dwaww.gif);
+        transition: width 0.7s, height 0.4s;
+    }
+
+    .fullViewPlane > img:not(.bigImageFrame) {
+        margin: 20px 0px 0px 20px;
+        width: 10%;
+        border: 3px white solid;
+        box-sizing: border-box;
+        height: max-content;
+    }
+
+    .retract_full_view {
+        width: 0%;
+        height: 0%;
+        transition: width 0.7s, height 0.4s;
+    }
+
+    .bigImageFrame {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        right: 0px;
+        z-index: 1001;
+        background-color: #000000d6;
+        justify-content: center;
+        transition: width 0.4s, height 0.7s;
+    }
+
+    .bigImageFrame > img {
+        height: 100%;
+        border: 3px #602a5c solid;
+        position: relative;
+    }
+
+    .fetching {
+        animation: 0.5s linear infinite rrr;
+    }
+
+    @keyframes rrr {
+        0% { border-image: linear-gradient(0deg, #fd696a, #5461f4) 1; }
+        25% { border-image: linear-gradient(90deg, #fd696a, #5461f4) 1; }
+        50% { border-image: linear-gradient(180deg, #fd696a, #5461f4) 1; }
+        75% { border-image: linear-gradient(270deg, #fd696a, #5461f4) 1; }
+        100% { border-image: linear-gradient(360deg, #fd696a, #5461f4) 1; }
+    }
+
+    .retract {
+        width: 0%;
+        height: 0%;
+        transition: width 0.7s, height 0.4s;
+    }
+
+    .closeBTN {
+        width: 100%;
+        height: 100%;
+        background-color: #0000;
+        color: #f45b8d;
+        font-size: 30px;
+        font-weight: bold;
+        border: 4px #f45b8d solid;
+        border-bottom-left-radius: 60px;
+    }
+
+    .closeBTN > span {
+        position: fixed;
+        right: 11px;
+        top: 0px;
+    }
+`;
+document.head.appendChild(styleSheel);
+//=========================================创建样式表==================================================FIN

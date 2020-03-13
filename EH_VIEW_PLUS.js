@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      0.9.3
+// @version      0.9.5
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -420,6 +420,12 @@ styleSheel.textContent =
         position: fixed;
         right: 11px;
         top: 0px;
+    }
+
+    @media screen and (max-width: 1920px) {
+        .fullViewPlane > img:not(.bigImageFrame) {
+            width: 12%;
+        }
     }
 `;
 document.head.appendChild(styleSheel);

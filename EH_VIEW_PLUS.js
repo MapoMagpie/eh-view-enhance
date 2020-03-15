@@ -70,7 +70,7 @@ class IMGFetcher {
     //立刻将当前元素的src赋值给大图元素
     setNow() {
         bigImageElement.src = this.stage === 2 ? this.bigImageUrl : this.oldSrc;
-        bigImageElement.classList.add("fetching");
+        if (this.stage !== 2) bigImageElement.classList.add("fetching");
     }
 }
 IMGFetcher.extractBigImgUrl = /\<img\sid=\"img\"\ssrc=\"(.*)\"\sstyle/;
@@ -100,24 +100,26 @@ class IMGFetcherQueue extends Array {
         this[start].setNow(); this.currIndex = start;
         //清理上一次调用时还没有执行的延迟器setTimeout
         this.tids.forEach(id => window.clearTimeout(id)); this.tids = [];
-        step = step || 3; oriented = oriented || "next";
+        step = step || 2; oriented = oriented || "next";
         //把要执行获取器先放置到队列中，延迟执行
-        this.executableQueue = [];
-        for (let index = start; ((oriented === "next") && ((index < this.length) && (index < start + step)) || ((oriented === "prev") && ((index > -1) && (index > start - step)))); (oriented === "next") ? index++ : index--) {//丧心病狂
+        this.executableQueue = new Array(step);
+        for (let index = start, count = 0; (((oriented === "next") && (index < this.length)) || ((oriented === "prev") && (index > -1))) && count < step; (oriented === "next") ? index++ : index--) {//丧心病狂
+            if (this[index].stage === 2) continue;
             this.executableQueue.push(index);
+            count++;
         }
         /* 100毫秒的延迟，在这100毫秒的时间里，可执行队列executableQueue可能随时都会变更，100毫秒过后，只执行最新的可执行队列executableQueue中的图片请求器
             在对大图元素使用滚轮事件的时候，由于速度非常快，大量的IMGFetcher图片请求器被添加到executableQueue队列中，如果调用这些图片请求器请求大图，可能会被认为是爬虫脚本
             因此会有一个时间上的延迟，在这段时间里，executableQueue中的IMGFetcher图片请求器会不断更替，100毫秒结束后，只调用最新的executableQueue中的IMGFetcher图片请求器。
         */
-        let tid = window.setTimeout((queue, firstIndex) => { queue.forEach(imgFetcherIndex => this[imgFetcherIndex].set(imgFetcherIndex)) }, 300, this.executableQueue, start);
+        let tid = window.setTimeout((queue) => { queue.forEach(imgFetcherIndex => this[imgFetcherIndex].set(imgFetcherIndex)) }, 300, this.executableQueue);
         this.tids.push(tid);//收集当前延迟器id,，如果本方法的下一次调用很快来临，而本次调用的延迟器还没有执行，则清理掉本次的延迟器
     }
 
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
     report(index, imgSrc, offsetTop) {
         if (index === this.currIndex) {
-            bigImageElement.classList.remove("fetching")
+            bigImageElement.classList.remove("fetching");
             bigImageElement.src = imgSrc;
             let g = offsetTop - (window.screen.availHeight / 3);
             g = g <= 0 ? 0 : g >= fullViewPlane.scrollHeight ? fullViewPlane.scrollHeight : g;

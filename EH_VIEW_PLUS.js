@@ -133,6 +133,61 @@ class IMGFetcherQueue extends Array {
 
 
 
+//===============================================配置管理器=================================================START
+let conf = JSON.parse(window.localStorage.getItem("cfg_"));
+//获取宽度
+const screenWidth = window.screen.availWidth;
+
+if (!conf) {//如果配置不存在则初始化一个
+    let rowCount = screenWidth > 2500 ? 9 : screenWidth > 1900 ? 7 : 5;
+    conf = {
+        backgroundImage: `data:image/png;base64,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`,
+        gateBackgroundImage: `https://tvax3.sinaimg.cn/mw690/6762c771gy1gcv2eydei3g20f00l7e87.gif`,
+        rowCount: rowCount,
+        followMouse: true
+    }
+    window.localStorage.setItem("cfg_", JSON.stringify(conf));
+}
+
+const modCFG = function (k, v) {
+    conf[k] = v;
+    window.localStorage.setItem("cfg_", JSON.stringify(conf));
+    updateEvent(k, v);
+}
+
+const updateEvent = function (k, v) {
+    switch (k) {
+        case "backgroundImage": {
+            let css_ = [].slice.call(styleSheel.sheet.rules).filter(rule => rule.selectorText === ".fullViewPlane")[0];
+            css_.style.backgroundImage = `url(${v})`;
+            break;
+        }
+        case "rowCount": {
+            let percent = (100 - (((v * 22) / window.screen.availWidth) * 100)) / v;
+            percent = Math.floor(percent * 10) / 10;
+            let css_ = [].slice.call(styleSheel.sheet.rules).filter(rule => rule.selectorText === ".fullViewPlane > img:not(.bigImageFrame)")[0];
+            css_.style.width = percent + "%";
+            break;
+        }
+        case "followMouse": {
+            if (v) {
+                bigImageFrame.addEventListener("mousemove", followMouseEvent);
+            } else {
+                bigImageFrame.removeEventListener("mousemove", followMouseEvent);
+            }
+            break;
+        }
+
+    }
+}
+//===============================================配置管理器=================================================FIN
+
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
 //===============================================方法区=================================================START
 //提取下一页或上一页的地址 > 获取该地址的文档对象模型 > 从文档对象模型中提取图片列表 > 将图片列表追加到全屏阅览元素以及图片获取器队列中
 
@@ -250,7 +305,7 @@ if (document.querySelector("div.ths:nth-child(2)") === null) {
     tempContainer.innerHTML = `<p class="g2"><img src="https://exhentai.org/img/mr.gif"> <a id="renamelink" href="${window.location.href}?inline_set=ts_l">请切换至Large模式</a></p>`;
     showBTNRoot.appendChild(tempContainer.firstElementChild);
 } else {
-    tempContainer.innerHTML = `<img src="https://tvax2.sinaimg.cn/large/6762c771gy1gcmqvrji4jg20dw0dwaww.gif" referrerpolicy="no-referrer" style="width: 125px; height: 30px;">`;
+    tempContainer.innerHTML = `<img src="${conf.gateBackgroundImage}" referrerpolicy="no-referrer" style="width: 125px; height: 30px;">`;
     showBTNRoot.appendChild(tempContainer.firstElementChild);
     showBTNRoot.lastElementChild.addEventListener("click", (event) => {
         fullViewPlane.classList.remove("retract_full_view");
@@ -279,6 +334,86 @@ let configPlane = document.createElement("div");
 configPlane.classList.add("configPlane");
 fullViewPlane.appendChild(configPlane);
 
+//修改背景图片
+let modBGElement = document.createElement("div");
+configPlane.appendChild(modBGElement);
+
+modBGElement.innerHTML = `<span>修改背景图 : </span><input type="text" placeholder="网络图片" style="width: 200px;"><button>确认</button>`;
+
+modBGElement.lastElementChild.addEventListener("click", (event) => {
+    let val = event.target.previousElementSibling.value;
+    if (val) {
+        modCFG("backgroundImage", val);
+    } else {
+        alert("请输入有效的网络图片地址！");
+    }
+});
+
+//修改入口图片
+let modGateBGElement = document.createElement("div");
+configPlane.appendChild(modGateBGElement);
+
+modGateBGElement.innerHTML = `<span>修改入口图 : </span><input type="text" placeholder="网络图片" style="width: 200px;"><button>确认</button>`;
+
+modGateBGElement.lastElementChild.addEventListener("click", (event) => {
+    let val = event.target.previousElementSibling.value;
+    if (val) {
+        modCFG("gateBackgroundImage", val);
+    } else {
+        alert("请输入有效的网络图片地址！");
+    }
+});
+
+//每行显示数量
+let modRowCount = document.createElement("div");
+configPlane.appendChild(modRowCount);
+
+modRowCount.innerHTML = `<span>每行数量 : </span><button>-</button><input type="text" style="width: 20px;" value="${conf.rowCount}"><button>+</button>`;
+
+[].slice.call(modRowCount.childNodes).filter(node => node.nodeType === Node.ELEMENT_NODE).forEach((node, index) => {
+    switch (index) {
+        case 1:
+        case 3: {
+            node.addEventListener("click", (event) => {
+                if (event.target.textContent === "-") {
+                    let val = event.target.nextElementSibling.value;
+                    event.target.nextElementSibling.value = parseInt(val) - 1;
+                    modCFG("rowCount", parseInt(val) - 1);
+                }
+                if (event.target.textContent === "+") {
+                    let val = event.target.previousElementSibling.value;
+                    event.target.previousElementSibling.value = parseInt(val) + 1;
+                    modCFG("rowCount", parseInt(val) + 1);
+                }
+            });
+            break;
+        }
+        case 2: {
+            node.addEventListener("input", (event) => {
+                let val = event.target.value || "7";
+                modCFG("rowCount", parseInt(val))
+            });
+            break;
+        }
+    }
+})
+
+//大图是否跟随鼠标
+let modfollowMouse = document.createElement("div");
+configPlane.appendChild(modfollowMouse);
+modfollowMouse.innerHTML = `<span>大图跟随鼠标 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" value="${conf.followMouse ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
+
+modfollowMouse.lastElementChild.previousElementSibling.addEventListener("click", (event) => {
+    event.target.blur();//让该输入框元素立即失去焦点
+    let val = event.target.value;
+    if (val === "✓") {
+        event.target.value = "X";
+        modCFG("followMouse", false);
+    } else {
+        event.target.value = "✓";
+        modCFG("followMouse", true);
+    }
+})
 
 //创建一个大图框架元素，追加到全屏阅读元素的第二个位置
 let bigImageFrame = document.createElement("div");
@@ -324,12 +459,12 @@ bigImageFrame.addEventListener("click", (event) => {
 })
 
 //大图框架添加鼠标移动事件，该事件会将让大图跟随鼠标左右移动
-bigImageFrame.addEventListener("mousemove", (event) => {
+const followMouseEvent = function (event) {
     if (bigImageFrame.moveEventLock) return;
     bigImageFrame.moveEventLock = true;
     window.setTimeout(() => { bigImageFrame.moveEventLock = false; }, 20)
     bigImageElement.style.left = `${event.clientX - (window.screen.availWidth / 2)}px`;
-})
+}
 
 //关闭按钮添加点击事件，点击后隐藏全屏阅览元素
 //全屏阅览元素点击事件，点击空白处隐藏
@@ -360,7 +495,6 @@ styleSheel.textContent =
         right: 0px;
         z-index: 1000;
         overflow: scroll;
-        background-image: url(data:image/png;base64,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);
         transition: height 0.4s;
         display: flex;
         flex-wrap: wrap;
@@ -368,7 +502,6 @@ styleSheel.textContent =
 
     .fullViewPlane > img:not(.bigImageFrame) {
         margin: 20px 0px 0px 20px;
-        width: 10%;
         border: 3px white solid;
         box-sizing: border-box;
         height: max-content;
@@ -380,10 +513,43 @@ styleSheel.textContent =
     }
 
     .configPlane {
-        height:  30px;
+        height: 30px;
         width: 100%;
-        background-color: #52ca67;
-        margin: 20px 20px 0px 20px;
+        background-color: #1e1c1c;
+        margin: 20px 20px 0px;
+    }
+
+    .configPlane > div {
+        display: inline-block;
+        background-color: #00ffff3d;
+        border: 1px solid black;
+        margin: 0px 5px;
+        box-sizing: border-box;
+        height: 30px;
+        padding: 0px 5px;
+    }
+
+    .configPlane > div > span {
+        line-height: 20px;
+        color: black;
+        font-size: 15px;
+        font-weight: bolder;
+    }
+
+    .configPlane > div > input {
+        border: 2px solid black;
+        border-radius: 0px;
+        margin-top: 0px !important;
+        vertical-align: bottom;
+    }
+
+    .configPlane > div > button {
+        height: 25px;
+        border: 2px solid black;
+        background-color: rgb(56, 57, 64);
+        margin-top: 1px;
+        box-sizing: border-box;
+        color: white;
     }
 
     .bigImageFrame {
@@ -436,12 +602,10 @@ styleSheel.textContent =
         right: 11px;
         top: 0px;
     }
-
-    @media screen and (max-width: 1920px) {
-        .fullViewPlane > img:not(.bigImageFrame) {
-            width: 12%;
-        }
-    }
 `;
 document.head.appendChild(styleSheel);
+
+updateEvent("backgroundImage", conf.backgroundImage);
+updateEvent("rowCount", conf.rowCount);
+updateEvent("followMouse", conf.followMouse);
 //=========================================创建样式表==================================================FIN

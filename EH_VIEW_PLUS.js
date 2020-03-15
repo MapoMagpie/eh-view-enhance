@@ -70,7 +70,11 @@ class IMGFetcher {
     //立刻将当前元素的src赋值给大图元素
     setNow() {
         bigImageElement.src = this.stage === 2 ? this.bigImageUrl : this.oldSrc;
-        if (this.stage !== 2) bigImageElement.classList.add("fetching");
+        if (this.stage === 2) {
+            bigImageElement.classList.remove("fetching");
+        } else {
+            bigImageElement.classList.add("fetching");
+        }
     }
 }
 IMGFetcher.extractBigImgUrl = /\<img\sid=\"img\"\ssrc=\"(.*)\"\sstyle/;

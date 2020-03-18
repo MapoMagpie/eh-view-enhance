@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      0.9.8
+// @version      0.9.9.1
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -348,7 +348,7 @@ const scaleImageEvent = function (event) {
 }
 
 //滚动加载上一张或下一张事件
-const stepImageEvent = function (event) {
+const stepImageEvent = async function (event) {
     //确定导向
     let oriented = event.deltaY > 0 ? "next" : "prev", oldLength = IFQ.length, start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
     //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载，如果还有需要加载的页，则等待页加载完毕后再调用执行队列IFQ.do
@@ -527,7 +527,7 @@ bigImageFrame.addEventListener("click", (event) => {
 });
 
 //大图框架元素的滚轮事件
-bigImageFrame.addEventListener("wheel", async (event) => {
+bigImageFrame.addEventListener("wheel", (event) => {
     if (event.buttons === 2) {
         scaleImageEvent(event);
     } else {

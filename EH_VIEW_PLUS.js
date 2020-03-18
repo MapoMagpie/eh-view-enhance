@@ -300,6 +300,74 @@ const fetchStepPage = async function (oriented) {
 
 
 
+//========================================事件库============================================START
+//大图框架添加鼠标移动事件，该事件会将让大图跟随鼠标左右移动
+const followMouseEvent = function (event) {
+    if (bigImageFrame.moveEventLock) return;
+    bigImageFrame.moveEventLock = true;
+    window.setTimeout(() => { bigImageFrame.moveEventLock = false; }, 20)
+    bigImageElement.style.left = `${event.clientX - (window.screen.availWidth / 2)}px`;
+}
+
+//修正图片top位置
+const fixImageTop = function (mouseY, isScale) {
+    //垂直轴中心锚点，用来计算鼠标距离垂直中心点的距离，值是一个正负数
+    const vertAnchor = bigImageFrame.offsetHeight >> 1;
+    //大图和父元素的高度差，用来修正图片的top值，让图片即使放大后也垂直居中在父元素上
+    const diffHeight = bigImageElement.offsetHeight - bigImageFrame.offsetHeight - 3;
+    //如果高度差为0，说明图片没缩放，不做处理
+    if (diffHeight === 0 && !isScale) return;
+    // 鼠标距离垂直中心的距离，正负值
+    const dist = mouseY - vertAnchor;
+    /* 移动比率，根据这个来决定imgE的top位置
+     1.6是一个比率放大因子，
+        比如鼠标向上移动时，移动到一定的距离就能看到图片的底部了，
+                          而不是鼠标移动到浏览器的顶部才能看到图片底部 */
+    const rate = Math.round((dist / vertAnchor * 1.6) * 100) / 100;
+    //如果移动比率到达1或者-1，说明图片到低或到顶，停止继续移动
+    if ((rate > 1 || rate < -1) && !isScale) return;
+    //根据移动比率和高度差的1/2来计算需要移动的距离
+    const topMove = Math.round((diffHeight >> 1) * rate);
+    /* -(diffHeight >> 1) 修正图片位置基准，让放大的图片也垂直居中在父元素上 */
+    bigImageElement.style.top = -(diffHeight >> 1) + topMove + "px";
+}
+
+//缩放图片事件
+const scaleImageEvent = function (event) {
+    //获取图片的高度, 值是百分比
+    let height = bigImageElement.style.height || "100%";
+    if (event.deltaY < 0) {//放大
+        height = parseInt(height) + 15 + "%";
+    } else {//缩小
+        height = parseInt(height) - 15 + "%";
+    }
+    if (parseInt(height) < 100 || parseInt(height) > 200) return;
+    bigImageElement.style.height = height;
+    //最后对图片top进行修正
+    fixImageTop(event.clientY, true);
+}
+
+//滚动加载上一张或下一张事件
+const stepImageEvent = function (event) {
+    //确定导向
+    let oriented = event.deltaY > 0 ? "next" : "prev", oldLength = IFQ.length, start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
+    //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载，如果还有需要加载的页，则等待页加载完毕后再调用执行队列IFQ.do
+    let flag = true;
+    if (start < 0 || start > oldLength - 1) {//已经到达边界
+        flag = await fetchStepPage(oriented);
+        //如果IMGFetcherQueue扩容了，需要修复索引
+        start = (oriented === "prev") ? (IFQ.length - oldLength) + start : start;
+    }
+    if (flag) IFQ.do(start, null, oriented);
+}
+//========================================事件库============================================FIN
+
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
 //==================创建入口按钮，追加到tag面板的右侧=====================START
 const styleVal = {};
 
@@ -426,25 +494,13 @@ let bigImageFrame = document.createElement("div");
 bigImageFrame.classList.add("bigImageFrame");
 bigImageFrame.classList.add("retract");
 fullViewPlane.appendChild(bigImageFrame);
+
 //大图框架图像容器，追加到大图框架里
 let fragment = document.createDocumentFragment();
 let bigImageElement = document.createElement("img");
 bigImageFrame.appendChild(bigImageElement);
 fragment.appendChild(bigImageElement);
 
-//大图框架元素的滚轮事件
-bigImageFrame.addEventListener("wheel", async (event) => {
-    //确定导向
-    let oriented = event.deltaY > 0 ? "next" : "prev", oldLength = IFQ.length, start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
-    //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载，如果还有需要加载的页，则等待页加载完毕后再调用执行队列IFQ.do
-    let flag = true;
-    if (start < 0 || start > oldLength - 1) {//已经到达边界
-        flag = await fetchStepPage(oriented);
-        //如果IMGFetcherQueue扩容了，需要修复索引
-        start = (oriented === "prev") ? (IFQ.length - oldLength) + start : start;
-    }
-    if (flag) IFQ.do(start, null, oriented);
-})
 
 //全屏阅读元素滚轮事件
 fullViewPlane.addEventListener("wheel", (event) => {
@@ -455,6 +511,12 @@ fullViewPlane.addEventListener("wheel", (event) => {
     oriented.split(".").forEach(fetchStepPage);
 });
 
+//全屏阅览元素点击事件，点击空白处隐藏
+fullViewPlane.addEventListener("click", (event) => { if (event.target === fullViewPlane) { fullViewPlane.classList.add("retract_full_view"); }; });
+
+//取消在大图框架元素上的右键事件
+bigImageFrame.addEventListener("contextmenu", (event) => { event.preventDefault(); });
+
 //大图框架点击事件，点击后隐藏大图框架
 bigImageFrame.addEventListener("click", (event) => {
     if (event.target.tagName === "SPAN") return;
@@ -462,23 +524,19 @@ bigImageFrame.addEventListener("click", (event) => {
     window.setTimeout(() => {
         fragment.appendChild(bigImageFrame.firstElementChild);
     }, 700);
-})
+});
 
-//大图框架添加鼠标移动事件，该事件会将让大图跟随鼠标左右移动
-const followMouseEvent = function (event) {
-    if (bigImageFrame.moveEventLock) return;
-    bigImageFrame.moveEventLock = true;
-    window.setTimeout(() => { bigImageFrame.moveEventLock = false; }, 20)
-    bigImageElement.style.left = `${event.clientX - (window.screen.availWidth / 2)}px`;
-}
+//大图框架元素的滚轮事件
+bigImageFrame.addEventListener("wheel", async (event) => {
+    if (event.buttons === 2) {
+        scaleImageEvent(event);
+    } else {
+        stepImageEvent(event);
+    }
+});
 
-//关闭按钮添加点击事件，点击后隐藏全屏阅览元素
-//全屏阅览元素点击事件，点击空白处隐藏
-fullViewPlane.addEventListener("click", (event) => {
-    if (event.target === fullViewPlane) {
-        fullViewPlane.classList.add("retract_full_view");
-    };
-})
+//大图放大后鼠标移动事件
+bigImageFrame.addEventListener("mousemove", (event) => { fixImageTop(event.clientY, false); })
 
 //========================================创建一个全屏阅读元素============================================FIN
 

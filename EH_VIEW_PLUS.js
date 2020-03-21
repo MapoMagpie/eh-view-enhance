@@ -298,7 +298,6 @@ const updateEvent = function (k, v) {
             }
             break;
         }
-
         case "pageHelper": {
             pageHelperHandler(0, "edge", "class");
             pageHelperHandler(1, "currPage", "class");
@@ -306,6 +305,13 @@ const updateEvent = function (k, v) {
             pageHelperHandler(3, "edge", "class");
             pageHelperHandler(1, IFQ.currIndex + 1);
             pageHelperHandler(2, IFQ.length);
+            break;
+        }
+        case "showGuide": {
+            if (conf.first) {
+                showGuideEvent();
+                modCFG("first", false);
+            }
             break;
         }
 
@@ -559,6 +565,14 @@ const modRowEvent = function () {
         }
     })
 }
+
+const showGuideEvent = function (event) {
+    let guideFull = document.createElement("div");
+    document.body.appendChild(guideFull);
+    guideFull.innerHTML = `<img src="https://tvax3.sinaimg.cn/mw690/6762c771gy1gd1wqc5j1vj20r70eytcd.jpg" style="margin-top: 200px;border: 10px #4e72b7 solid;">`;
+    guideFull.style = `position: absolute;width: 100%;height: 100%;background-color: #363c3c78;z-index: 2004;top: 0;`;
+    guideFull.addEventListener("click", () => guideFull.remove());
+}
 //========================================事件库============================================FIN
 
 
@@ -638,11 +652,17 @@ configPlane.appendChild(keepImageScale);
 keepImageScale.innerHTML = `<span>保留缩放 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="keepScale" value="${conf.keepScale ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
 keepImageScale.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
 
-//下一张是否保留图片放大
+//是否自动加载
 let autoLoad = document.createElement("div");
 configPlane.appendChild(autoLoad);
 autoLoad.innerHTML = `<span>自动加载 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="autoLoad"  value="${conf.autoLoad ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
 autoLoad.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
+
+//显示指南
+let showGuide = document.createElement("div");
+configPlane.appendChild(showGuide);
+showGuide.innerHTML = `<span>指南 : </span><button>打开</button>`
+showGuide.lastElementChild.addEventListener("click", showGuideEvent);
 
 //创建一个大图框架元素，追加到全屏阅读元素的第二个位置
 let bigImageFrame = document.createElement("div");
@@ -713,153 +733,12 @@ bigImageFrame.addEventListener("mousemove", (event) => { fixImageTop(event.clien
 //=========================================创建样式表==================================================START
 let styleSheel = document.createElement("style");
 styleSheel.textContent =
-    `
-    .fullViewPlane {
-        width: 100%;
-        height: 100%;
-        background-color: #000;
-        position: fixed;
-        top: 0px;
-        right: 0px;
-        z-index: 1000;
-        overflow: scroll;
-        transition: height 0.4s;
-        display: flex;
-        flex-wrap: wrap;
-    }
-
-    .fullViewPlane > img:not(.bigImageFrame) {
-        margin: 20px 0px 0px 20px;
-        border: 3px white solid;
-        box-sizing: border-box;
-        height: max-content;
-    }
-
-    .retract_full_view {
-        height: 0%;
-        transition: height 0.4s;
-    }
-
-    .configPlane {
-        height: 30px;
-        width: 100%;
-        background-color: #1e1c1c;
-        margin: 20px 20px 0px;
-    }
-
-    .configPlane > div {
-        display: inline-block;
-        background-color: #00ffff3d;
-        border: 1px solid black;
-        margin: 0px 5px;
-        box-sizing: border-box;
-        height: 30px;
-        padding: 0px 5px;
-    }
-
-    .configPlane > div > span {
-        line-height: 20px;
-        color: black;
-        font-size: 15px;
-        font-weight: bolder;
-    }
-
-    .configPlane > div > input {
-        border: 2px solid black;
-        border-radius: 0px;
-        margin-top: 0px !important;
-        vertical-align: bottom;
-    }
-
-    .configPlane > div > button {
-        height: 25px;
-        border: 2px solid black;
-        background-color: rgb(56, 57, 64);
-        margin-top: 1px;
-        box-sizing: border-box;
-        color: white;
-    }
-
-    .bigImageFrame {
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        right: 0px;
-        z-index: 1001;
-        background-color: #000000d6;
-        justify-content: center;
-        transition: width 0.4s;
-    }
-
-    .bigImageFrame > img {
-        height: 100%;
-        border: 3px #602a5c solid;
-        position: relative;
-    }
-
-    .bigImageFrame > .pageHelper {
-        position: absolute;
-        right: 100px;
-        bottom: 40px;
-        background-color: #1e1c1c;
-        z-index: 1003;
-        font-size: 22px;
-    }
-
-    .bigImageFrame > .pageHelper > .edge {
-        background-color: #00ffff3d;
-    }
-
-    .bigImageFrame > .pageHelper > .edgeFIN {
-        background-color: green;
-    }
-
-    .bigImageFrame > .pageHelper > .totalPage {
-        font-size: 17px;
-    }
-
-    .bigImageFrame > .pageHelper > .currPage{
-        color: orange;
-    }
-
-    .fetching {
-        animation: 0.5s linear infinite rrr;
-    }
-
-    @keyframes rrr {
-        0% { border-image: linear-gradient(0deg, #fd696a, #5461f4) 1; }
-        25% { border-image: linear-gradient(90deg, #fd696a, #5461f4) 1; }
-        50% { border-image: linear-gradient(180deg, #fd696a, #5461f4) 1; }
-        75% { border-image: linear-gradient(270deg, #fd696a, #5461f4) 1; }
-        100% { border-image: linear-gradient(360deg, #fd696a, #5461f4) 1; }
-    }
-
-    .retract {
-        width: 0%;
-        transition: width 0.7s;
-    }
-
-    .closeBTN {
-        width: 100%;
-        height: 100%;
-        background-color: #0000;
-        color: #f45b8d;
-        font-size: 30px;
-        font-weight: bold;
-        border: 4px #f45b8d solid;
-        border-bottom-left-radius: 60px;
-    }
-
-    .closeBTN > span {
-        position: fixed;
-        right: 11px;
-        top: 0px;
-    }
-`;
+    `.fullViewPlane{width:100%;height:100%;background-color:#000;position:fixed;top:0;right:0;z-index:1000;overflow:scroll;transition:height .4s;display:flex;flex-wrap:wrap}.fullViewPlane>img:not(.bigImageFrame){margin:20px 0 0 20px;border:3px white solid;box-sizing:border-box;height:max-content}.retract_full_view{height:0;transition:height .4s}.configPlane{height:30px;width:100%;background-color:#1e1c1c;margin:20px 20px 0}.configPlane>div{display:inline-block;background-color:#00ffff3d;border:1px solid black;margin:0 5px;box-sizing:border-box;height:30px;padding:0 5px}.configPlane>div>span{line-height:20px;color:black;font-size:15px;font-weight:bolder}.configPlane>div>input{border:2px solid black;border-radius:0;margin-top:0!important;vertical-align:bottom}.configPlane>div>button{height:25px;border:2px solid black;background-color:#383940;margin-top:1px;box-sizing:border-box;color:white}.bigImageFrame{position:fixed;width:100%;height:100%;right:0;z-index:1001;background-color:#000000d6;justify-content:center;transition:width .4s}.bigImageFrame>img{height:100%;border:3px #602a5c solid;position:relative}.bigImageFrame>.pageHelper{position:absolute;right:100px;bottom:40px;background-color:#1e1c1c;z-index:1003;font-size:22px}.bigImageFrame>.pageHelper>.edge{background-color:#00ffff3d}.bigImageFrame>.pageHelper>.edgeFIN{background-color:green}.bigImageFrame>.pageHelper>.totalPage{font-size:17px}.bigImageFrame>.pageHelper>.currPage{color:orange}.fetching{animation:.5s linear infinite rrr}@keyframes rrr{0%{border-image:linear-gradient(0deg,#fd696a,#5461f4) 1}25%{border-image:linear-gradient(90deg,#fd696a,#5461f4) 1}50%{border-image:linear-gradient(180deg,#fd696a,#5461f4) 1}75%{border-image:linear-gradient(270deg,#fd696a,#5461f4) 1}100%{border-image:linear-gradient(360deg,#fd696a,#5461f4) 1}}.retract{width:0;transition:width .7s}.closeBTN{width:100%;height:100%;background-color:#0000;color:#f45b8d;font-size:30px;font-weight:bold;border:4px #f45b8d solid;border-bottom-left-radius:60px}.closeBTN>span{position:fixed;right:11px;top:0}`;
 document.head.appendChild(styleSheel);
 
 updateEvent("backgroundImage", conf.backgroundImage);
 updateEvent("rowCount", conf.rowCount);
 updateEvent("followMouse", conf.followMouse);
 updateEvent("pageHelper", null);
+updateEvent("showGuide", null);
 //=========================================创建样式表==================================================FIN

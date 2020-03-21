@@ -68,11 +68,11 @@ class IMGFetcher {
     }
 
     //立刻将当前元素的src赋值给大图元素
-    setNow() {
-        bigImageElement.src = this.stage === 2 ? this.bigImageUrl : this.oldSrc;
+    setNow(index) {
         if (this.stage === 2) {
-            bigImageElement.classList.remove("fetching");
+            IFQ.report(index, this.bigImageUrl, this.node.offsetTop);
         } else {
+            bigImageElement.src = this.oldSrc;
             bigImageElement.classList.add("fetching");
         }
     }
@@ -98,26 +98,33 @@ class IMGFetcherQueue extends Array {
         this.tids = [];
         //当前的显示的大图的图片请求器所在的索引
         this.currIndex = 0;
+        //触发边界后的加载锁
+        this.edgeLock = false;
     }
 
     do(start, step, oriented) {
-        this[start].setNow(); this.currIndex = start;
+        this.currIndex = start;
+        this[start].setNow(start);
         //清理上一次调用时还没有执行的延迟器setTimeout
         this.tids.forEach(id => window.clearTimeout(id)); this.tids = [];
         step = step || 2; oriented = oriented || "next";
         //把要执行获取器先放置到队列中，延迟执行
-        this.executableQueue = new Array(step);
+        this.executableQueue = [];
         for (let index = start, count = 0; (((oriented === "next") && (index < this.length)) || ((oriented === "prev") && (index > -1))) && count < step; (oriented === "next") ? index++ : index--) {//丧心病狂
             if (this[index].stage === 2) continue;
             this.executableQueue.push(index);
             count++;
         }
+        if (this.executableQueue.length === 0) return;
         /* 100毫秒的延迟，在这100毫秒的时间里，可执行队列executableQueue可能随时都会变更，100毫秒过后，只执行最新的可执行队列executableQueue中的图片请求器
             在对大图元素使用滚轮事件的时候，由于速度非常快，大量的IMGFetcher图片请求器被添加到executableQueue队列中，如果调用这些图片请求器请求大图，可能会被认为是爬虫脚本
             因此会有一个时间上的延迟，在这段时间里，executableQueue中的IMGFetcher图片请求器会不断更替，100毫秒结束后，只调用最新的executableQueue中的IMGFetcher图片请求器。
         */
         let tid = window.setTimeout((queue) => { queue.forEach(imgFetcherIndex => this[imgFetcherIndex].set(imgFetcherIndex)) }, 300, this.executableQueue);
         this.tids.push(tid);//收集当前延迟器id,，如果本方法的下一次调用很快来临，而本次调用的延迟器还没有执行，则清理掉本次的延迟器
+
+        //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载
+        this.needExpansion(this.executableQueue[step - 1], oriented);
     }
 
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
@@ -130,6 +137,23 @@ class IMGFetcherQueue extends Array {
             fullViewPlane.scrollTo({ top: g, behavior: "smooth" })
         }
     }
+
+    //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载
+    needExpansion(last, oriented) {
+        if (this.edgeLock) return;
+        last = oriented === "next" ? last + 1 : oriented === "next" ? prev - 1 : 0;
+        if (last < 0 || last > this.length - 1) {
+            this.edgeLock = true;
+            fetchStepPage(oriented).then(done => {
+                if (done) {
+                    this.edgeLock = false;
+                } else {
+                    window.setTimeout(() => { this.edgeLock = false }, 2000);
+                }
+            });
+        }
+    }
+
 }
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================FIN
 
@@ -350,15 +374,11 @@ const scaleImageEvent = function (event) {
 //滚动加载上一张或下一张事件
 const stepImageEvent = async function (event) {
     //确定导向
-    let oriented = event.deltaY > 0 ? "next" : "prev", oldLength = IFQ.length, start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
+    const oriented = event.deltaY > 0 ? "next" : "prev";
+    //下一张索引
+    const start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
     //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载，如果还有需要加载的页，则等待页加载完毕后再调用执行队列IFQ.do
-    let flag = true;
-    if (start < 0 || start > oldLength - 1) {//已经到达边界
-        flag = await fetchStepPage(oriented);
-        //如果IMGFetcherQueue扩容了，需要修复索引
-        start = (oriented === "prev") ? (IFQ.length - oldLength) + start : start;
-    }
-    if (flag) IFQ.do(start, null, oriented);
+    IFQ.do(start, null, oriented);
 }
 //========================================事件库============================================FIN
 

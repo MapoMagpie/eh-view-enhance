@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      0.9.9.1
+// @version      1.0.0
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -112,6 +112,8 @@ class IMGFetcherQueue extends Array {
         this.currIndex = start = this.fixIndex(start, oriented);
         this[start].setNow(start);
         this.pushExecQueue(start, step, oriented);
+        //终止自动加载
+        this.abortIdleLoader();
         if (this.executableQueue.length === 0) return;
         /* 100毫秒的延迟，在这100毫秒的时间里，可执行队列executableQueue可能随时都会变更，100毫秒过后，只执行最新的可执行队列executableQueue中的图片请求器
             在对大图元素使用滚轮事件的时候，由于速度非常快，大量的IMGFetcher图片请求器被添加到executableQueue队列中，如果调用这些图片请求器请求大图，可能会被认为是爬虫脚本
@@ -178,7 +180,68 @@ class IMGFetcherQueue extends Array {
         }
         if (this.executableQueue.length === 0) return;
     }
+
+    abortIdleLoader() {
+        if (!conf.autoLoad) return;
+        idleLoader.abort = true;
+        //8s后重新开启
+        let tid = window.setTimeout((index) => { idleLoader.abort = false; idleLoader.start(index); }, 8000, this.currIndex);
+        this.tids.push(tid);
+    }
 }
+
+//空闲自加载
+class IdleLoader {
+    constructor(IFQ) {
+        //图片获取器队列
+        this.queue = IFQ;
+        //当前处理
+        this.currIndex = 0;
+        //是否终止
+        this.abort = false;
+        //已完成
+        this.finishedIF = [];
+    }
+    async start(index) {
+        this.currIndex = index;
+        //如果被中止了，则停止
+        if (this.abort || !conf.autoLoad) return;
+        //如果索引到达了队列最后，则检测是否还有下一页
+        if (index > this.queue.length - 1) {
+            let fetchDone = await fetchStepPage("next");
+            if (fetchDone || signal.nextFinished) {
+                this.currIndex = index = 0;
+            } else {
+                throw "获取下一页失败，但并非是最后一页";
+            }
+        }
+        //如果索引是0，则检测是否还有上一页
+        if (index === 0) {
+            let fetchDone = await fetchStepPage("prev");
+            if (fetchDone || signal.prevFinished) {
+                this.currIndex = index = 0;
+            } else {
+                throw "获取上一页失败，但并非是第一页";
+            }
+        }
+        //如果所有的图片都加载完毕，则停止
+        if (this.finishedIF.length === this.queue.length) {
+            this.abort = true;
+            console.log("所有页已经加载完毕！");
+            return;
+        }
+        if (!this.queue[index].lock) {
+            this.queue[index].lock = true;
+            const flag = await this.queue[index].fetchImg();
+            this.queue[index].lock = false;
+            if (flag && this.queue[index].stage === 2) {
+                (this.finishedIF.indexOf(this.queue[index]) === -1) && (this.finishedIF.push(this.queue[index]));
+            }
+        }
+        this.start(index + 1);
+    }
+}
+
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================FIN
 
 
@@ -192,14 +255,17 @@ let conf = JSON.parse(window.localStorage.getItem("cfg_"));
 //获取宽度
 const screenWidth = window.screen.availWidth;
 
-if (!conf) {//如果配置不存在则初始化一个
+if (!conf || conf.version !== "1.0.0") {//如果配置不存在则初始化一个
     let rowCount = screenWidth > 2500 ? 9 : screenWidth > 1900 ? 7 : 5;
     conf = {
         backgroundImage: `data:image/png;base64,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`,
         gateBackgroundImage: `https://tvax3.sinaimg.cn/mw690/6762c771gy1gcv2eydei3g20f00l7e87.gif`,
         rowCount: rowCount,
         followMouse: true,
-        keepScale: false
+        keepScale: false,
+        autoLoad: true,
+        version: "1.0.0",
+        first: true
     }
     window.localStorage.setItem("cfg_", JSON.stringify(conf));
 }
@@ -258,6 +324,8 @@ const updateEvent = function (k, v) {
 
 //图片获取器调用队列
 const IFQ = new IMGFetcherQueue();
+
+const idleLoader = new IdleLoader(IFQ);
 
 //通过地址请求该页的文档对象模型
 const fetchSource = async function (href, oriented) {
@@ -432,6 +500,27 @@ const stepImageEvent = function (event) {
     IFQ.do(start, null, oriented);
 }
 
+const boolElementEvent = function (event) {
+    event.target.blur();//让该输入框元素立即失去焦点
+    let val = event.target.value;
+    if (val === "✓") {
+        event.target.value = "X";
+        modCFG(event.target.getAttribute("confKey"), false);
+    } else {
+        event.target.value = "✓";
+        modCFG(event.target.getAttribute("confKey"), true);
+    }
+}
+
+const inputElementEvent = function (event) {
+    let val = event.target.previousElementSibling.value;
+    if (val) {
+        modCFG(event.target.previousElementSibling.getAttribute("confKey"), val);
+    } else {
+        alert("请输入有效的网络图片地址！");
+    }
+}
+
 const pageHelperHandler = function (index, value, type) {
     const node = [].filter.call(pageHelper.childNodes, (node) => node.nodeType === Node.ELEMENT_NODE)[index];
     if (type === "class") {
@@ -439,6 +528,36 @@ const pageHelperHandler = function (index, value, type) {
     } else {
         node.textContent = value;
     }
+}
+
+const modRowEvent = function () {
+    [].slice.call(modRowCount.childNodes).filter(node => node.nodeType === Node.ELEMENT_NODE).forEach((node, index) => {
+        switch (index) {
+            case 1:
+            case 3: {
+                node.addEventListener("click", (event) => {
+                    if (event.target.textContent === "-") {
+                        let val = event.target.nextElementSibling.value;
+                        event.target.nextElementSibling.value = parseInt(val) - 1;
+                        modCFG("rowCount", parseInt(val) - 1);
+                    }
+                    if (event.target.textContent === "+") {
+                        let val = event.target.previousElementSibling.value;
+                        event.target.previousElementSibling.value = parseInt(val) + 1;
+                        modCFG("rowCount", parseInt(val) + 1);
+                    }
+                });
+                break;
+            }
+            case 2: {
+                node.addEventListener("input", (event) => {
+                    let val = event.target.value || "7";
+                    modCFG("rowCount", parseInt(val))
+                });
+                break;
+            }
+        }
+    })
 }
 //========================================事件库============================================FIN
 
@@ -465,6 +584,7 @@ if (document.querySelector("div.ths:nth-child(2)") === null) {
         fullViewPlane.classList.remove("retract_full_view");
         if (signal.first) {
             appendToFullViewPlane(document, "next");
+            idleLoader.start(0);
             signal.first = false;
         }
     })
@@ -491,100 +611,38 @@ fullViewPlane.appendChild(configPlane);
 //修改背景图片
 let modBGElement = document.createElement("div");
 configPlane.appendChild(modBGElement);
-
-modBGElement.innerHTML = `<span>修改背景图 : </span><input type="text" placeholder="网络图片" style="width: 200px;"><button>确认</button>`;
-
-modBGElement.lastElementChild.addEventListener("click", (event) => {
-    let val = event.target.previousElementSibling.value;
-    if (val) {
-        modCFG("backgroundImage", val);
-    } else {
-        alert("请输入有效的网络图片地址！");
-    }
-});
+modBGElement.innerHTML = `<span>修改背景图 : </span><input type="text" placeholder="网络图片" style="width: 200px;" confKey="backgroundImage"><button>确认</button>`;
+modBGElement.lastElementChild.addEventListener("click", inputElementEvent);
 
 //修改入口图片
 let modGateBGElement = document.createElement("div");
 configPlane.appendChild(modGateBGElement);
-
-modGateBGElement.innerHTML = `<span>修改入口图 : </span><input type="text" placeholder="网络图片" style="width: 200px;"><button>确认</button>`;
-
-modGateBGElement.lastElementChild.addEventListener("click", (event) => {
-    let val = event.target.previousElementSibling.value;
-    if (val) {
-        modCFG("gateBackgroundImage", val);
-    } else {
-        alert("请输入有效的网络图片地址！");
-    }
-});
+modGateBGElement.innerHTML = `<span>修改入口图 : </span><input type="text" placeholder="网络图片" style="width: 200px;" confKey="gateBackgroundImage"><button>确认</button>`;
+modGateBGElement.lastElementChild.addEventListener("click", inputElementEvent);
 
 //每行显示数量
 let modRowCount = document.createElement("div");
 configPlane.appendChild(modRowCount);
-
 modRowCount.innerHTML = `<span>每行数量 : </span><button>-</button><input type="text" style="width: 20px;" value="${conf.rowCount}"><button>+</button>`;
-
-[].slice.call(modRowCount.childNodes).filter(node => node.nodeType === Node.ELEMENT_NODE).forEach((node, index) => {
-    switch (index) {
-        case 1:
-        case 3: {
-            node.addEventListener("click", (event) => {
-                if (event.target.textContent === "-") {
-                    let val = event.target.nextElementSibling.value;
-                    event.target.nextElementSibling.value = parseInt(val) - 1;
-                    modCFG("rowCount", parseInt(val) - 1);
-                }
-                if (event.target.textContent === "+") {
-                    let val = event.target.previousElementSibling.value;
-                    event.target.previousElementSibling.value = parseInt(val) + 1;
-                    modCFG("rowCount", parseInt(val) + 1);
-                }
-            });
-            break;
-        }
-        case 2: {
-            node.addEventListener("input", (event) => {
-                let val = event.target.value || "7";
-                modCFG("rowCount", parseInt(val))
-            });
-            break;
-        }
-    }
-})
+modRowEvent();
 
 //大图是否跟随鼠标
 let modfollowMouse = document.createElement("div");
 configPlane.appendChild(modfollowMouse);
-modfollowMouse.innerHTML = `<span>大图跟随鼠标 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" value="${conf.followMouse ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
-
-modfollowMouse.lastElementChild.previousElementSibling.addEventListener("click", (event) => {
-    event.target.blur();//让该输入框元素立即失去焦点
-    let val = event.target.value;
-    if (val === "✓") {
-        event.target.value = "X";
-        modCFG("followMouse", false);
-    } else {
-        event.target.value = "✓";
-        modCFG("followMouse", true);
-    }
-});
+modfollowMouse.innerHTML = `<span>大图跟随鼠标 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="followMouse"  value="${conf.followMouse ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
+modfollowMouse.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
 
 //下一张是否保留图片放大
 let keepImageScale = document.createElement("div");
 configPlane.appendChild(keepImageScale);
-keepImageScale.innerHTML = `<span>保留缩放 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" value="${conf.keepScale ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
+keepImageScale.innerHTML = `<span>保留缩放 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="keepScale" value="${conf.keepScale ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
+keepImageScale.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
 
-keepImageScale.lastElementChild.previousElementSibling.addEventListener("click", (event) => {
-    event.target.blur();//让该输入框元素立即失去焦点
-    let val = event.target.value;
-    if (val === "✓") {
-        event.target.value = "X";
-        modCFG("keepScale", false);
-    } else {
-        event.target.value = "✓";
-        modCFG("keepScale", true);
-    }
-});
+//下一张是否保留图片放大
+let autoLoad = document.createElement("div");
+configPlane.appendChild(autoLoad);
+autoLoad.innerHTML = `<span>自动加载 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="autoLoad"  value="${conf.autoLoad ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
+autoLoad.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
 
 //创建一个大图框架元素，追加到全屏阅读元素的第二个位置
 let bigImageFrame = document.createElement("div");

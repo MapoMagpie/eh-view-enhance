@@ -75,6 +75,7 @@ class IMGFetcher {
             bigImageElement.src = this.oldSrc;
             bigImageElement.classList.add("fetching");
         }
+        pageHelperHandler(1, index + 1);
     }
 }
 IMGFetcher.extractBigImgUrl = /\<img\sid=\"img\"\ssrc=\"(.*)\"\sstyle/;
@@ -107,22 +108,10 @@ class IMGFetcherQueue extends Array {
     }
 
     do(start, step, oriented) {
-        if (this.neexFixIndex) {
-            start = oriented === "prev" ? this.length - this.oldLength + start : start;
-            this.neexFixIndex = false;
-        }
-        this.currIndex = start;
-        this[start].setNow(start);
-        //清理上一次调用时还没有执行的延迟器setTimeout
-        this.tids.forEach(id => window.clearTimeout(id)); this.tids = [];
         step = step || 2; oriented = oriented || "next";
-        //把要执行获取器先放置到队列中，延迟执行
-        this.executableQueue = [];
-        for (let index = start, count = 0; (((oriented === "next") && (index < this.length)) || ((oriented === "prev") && (index > -1))) && count < step; (oriented === "next") ? index++ : index--) {//丧心病狂
-            if (this[index].stage === 2) continue;
-            this.executableQueue.push(index);
-            count++;
-        }
+        this.currIndex = start = this.fixIndex(start, oriented);
+        this[start].setNow(start);
+        this.pushExecQueue(start, step, oriented);
         if (this.executableQueue.length === 0) return;
         /* 100毫秒的延迟，在这100毫秒的时间里，可执行队列executableQueue可能随时都会变更，100毫秒过后，只执行最新的可执行队列executableQueue中的图片请求器
             在对大图元素使用滚轮事件的时候，由于速度非常快，大量的IMGFetcher图片请求器被添加到executableQueue队列中，如果调用这些图片请求器请求大图，可能会被认为是爬虫脚本
@@ -166,6 +155,28 @@ class IMGFetcherQueue extends Array {
                 }
             });
         }
+    }
+
+    fixIndex(start, oriented) {
+        start = start < 0 ? 0 : start > this.length - 1 ? this.length - 1 : start;
+        if (this.neexFixIndex) {
+            start = oriented === "prev" ? this.length - this.oldLength + start : start;
+            this.neexFixIndex = false;
+        }
+        return start;
+    }
+
+    pushExecQueue(start, step, oriented) {
+        //清理上一次调用时还没有执行的延迟器setTimeout
+        this.tids.forEach(id => window.clearTimeout(id)); this.tids = [];
+        //把要执行获取器先放置到队列中，延迟执行
+        this.executableQueue = [];
+        for (let index = start, count = 0; (((oriented === "next") && (index < this.length)) || ((oriented === "prev") && (index > -1))) && count < step; (oriented === "next") ? index++ : index--) {//丧心病狂
+            if (this[index].stage === 2) continue;
+            this.executableQueue.push(index);
+            count++;
+        }
+        if (this.executableQueue.length === 0) return;
     }
 }
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================FIN
@@ -222,6 +233,16 @@ const updateEvent = function (k, v) {
             break;
         }
 
+        case "pageHelper": {
+            pageHelperHandler(0, "edge", "class");
+            pageHelperHandler(1, "currPage", "class");
+            pageHelperHandler(2, "totalPage", "class");
+            pageHelperHandler(3, "edge", "class");
+            pageHelperHandler(1, IFQ.currIndex + 1);
+            pageHelperHandler(2, IFQ.length);
+            break;
+        }
+
     }
 }
 //===============================================配置管理器=================================================FIN
@@ -258,7 +279,9 @@ const stepPageSource = {
 const signal = {
     "prev": true,
     "next": true,
-    "first": true
+    "first": true,
+    "prevFinished": false,
+    "nextFinished": false
 }
 
 //通过该页的内容获取下一页或上一页的地址 oriented : prev/next
@@ -267,11 +290,21 @@ const stepPageUrl = function (source, oriented) {
     switch (oriented) {
         case "prev":
             stepE = e1.previousElementSibling;
-            if (!stepE || stepE.textContent === "<") return null;
+            if (!stepE || stepE.textContent === "<") {
+                signal.prevFinished = true;
+                pageHelperHandler(0, "O");
+                // pageHelperHandler(0, "edgeFIN", "class");
+                return null
+            };
             break;
         case "next":
             stepE = e1.nextElementSibling;
-            if (!stepE || stepE.textContent === ">") return null;
+            if (!stepE || stepE.textContent === ">") {
+                signal.nextFinished = true;
+                pageHelperHandler(3, "O");
+                // pageHelperHandler(3, "edgeFIN", "class");
+                return null
+            };
             break;
     }
     return stepE.firstElementChild.href;
@@ -291,10 +324,13 @@ const appendToFullViewPlane = function (source, oriented) {
             fullViewPlane.lastElementChild.after(...imageList);
             IFQ.push(...IFs);
         }
+        pageHelperHandler(2, IFQ.length);
         imageList.forEach(e => e.addEventListener("click", (event) => {
             //展开大图阅览元素
             bigImageFrame.classList.remove("retract");
-            bigImageFrame.appendChild(fragment.firstElementChild);
+            // bigImageFrame.appendChild(fragment.firstElementChild);
+            bigImageElement.hidden = false;
+            pageHelper.hidden = false;
             //获取该元素所在的索引
             IFQ.do([].slice.call(fullViewPlane.childNodes).indexOf(event.target) - 2);
         }))
@@ -317,6 +353,7 @@ const extractImageList = function (source) {
 //   此方法，当全屏阅览元素滚动时会被调用，动态加载上一页或下一页
 //   此方法，当大图被滚动到当前的第一张图或最后一张图时被调用，尝试获取上一页或下一页
 const fetchStepPage = async function (oriented) {
+    if ((oriented === "prev" && signal.prevFinished) || (oriented === "next" && signal.nextFinished)) return false;
     //如果本事件还没有完成，则停止执行其他事件
     if ((oriented === "stop") || !signal[oriented]) return false;
     //从当前已经存在的下一页或上一页文档中获取下下一页或上上一页的地址
@@ -386,13 +423,22 @@ const scaleImageEvent = function (event) {
 }
 
 //滚动加载上一张或下一张事件
-const stepImageEvent = async function (event) {
+const stepImageEvent = function (event) {
     //确定导向
     const oriented = event.deltaY > 0 ? "next" : "prev";
     //下一张索引
     const start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
     //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载，如果还有需要加载的页，则等待页加载完毕后再调用执行队列IFQ.do
     IFQ.do(start, null, oriented);
+}
+
+const pageHelperHandler = function (index, value, type) {
+    const node = [].filter.call(pageHelper.childNodes, (node) => node.nodeType === Node.ELEMENT_NODE)[index];
+    if (type === "class") {
+        node.classList.add(value);
+    } else {
+        node.textContent = value;
+    }
 }
 //========================================事件库============================================FIN
 
@@ -549,14 +595,21 @@ fullViewPlane.appendChild(bigImageFrame);
 //大图框架图像容器，追加到大图框架里
 let fragment = document.createDocumentFragment();
 let bigImageElement = document.createElement("img");
+let pageHelper = document.createElement("div");
 bigImageFrame.appendChild(bigImageElement);
-fragment.appendChild(bigImageElement);
+bigImageFrame.appendChild(pageHelper);
+// fragment.appendChild(bigImageElement);
+
+pageHelper.classList.add("pageHelper");
+pageHelper.innerHTML = `<span>...</span><span>${IFQ.currIndex}</span>/<span>${IFQ.length}</span><span>...</span>`;
+pageHelper.hidden = true;
+bigImageElement.hidden = true;
 
 
 //全屏阅读元素滚轮事件
 fullViewPlane.addEventListener("wheel", (event) => {
     //对冒泡的处理
-    if (event.target === bigImageFrame || event.target.parentElement === bigImageElement) return;
+    if (event.target === bigImageFrame || event.target === bigImageElement || [].slice.call(bigImageFrame.childNodes).indexOf(event.target) > 0) return;
     //确定导向，向下滚动还是向上滚动
     let st = fullViewPlane.scrollTop, stm = fullViewPlane.scrollTopMax, oriented = (st === stm && st === 0) ? "prev.next" : (st === 0) ? "prev" : (st === stm) ? "next" : "stop";
     oriented.split(".").forEach(fetchStepPage);
@@ -573,7 +626,9 @@ bigImageFrame.addEventListener("click", (event) => {
     if (event.target.tagName === "SPAN") return;
     bigImageFrame.classList.add("retract");
     window.setTimeout(() => {
-        fragment.appendChild(bigImageFrame.firstElementChild);
+        // fragment.appendChild(bigImageFrame.firstElementChild);
+        bigImageElement.hidden = true;
+        pageHelper.hidden = true;
     }, 700);
 });
 
@@ -684,6 +739,31 @@ styleSheel.textContent =
         position: relative;
     }
 
+    .bigImageFrame > .pageHelper {
+        position: absolute;
+        right: 100px;
+        bottom: 40px;
+        background-color: #1e1c1c;
+        z-index: 1003;
+        font-size: 22px;
+    }
+
+    .bigImageFrame > .pageHelper > .edge {
+        background-color: #00ffff3d;
+    }
+
+    .bigImageFrame > .pageHelper > .edgeFIN {
+        background-color: green;
+    }
+
+    .bigImageFrame > .pageHelper > .totalPage {
+        font-size: 17px;
+    }
+
+    .bigImageFrame > .pageHelper > .currPage{
+        color: orange;
+    }
+
     .fetching {
         animation: 0.5s linear infinite rrr;
     }
@@ -723,4 +803,5 @@ document.head.appendChild(styleSheel);
 updateEvent("backgroundImage", conf.backgroundImage);
 updateEvent("rowCount", conf.rowCount);
 updateEvent("followMouse", conf.followMouse);
+updateEvent("pageHelper", null);
 //=========================================创建样式表==================================================FIN

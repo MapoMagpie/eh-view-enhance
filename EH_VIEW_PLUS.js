@@ -100,9 +100,17 @@ class IMGFetcherQueue extends Array {
         this.currIndex = 0;
         //触发边界后的加载锁
         this.edgeLock = false;
+        //扩容后需要修复索引
+        this.neexFixIndex = false;
+        //旧长度记录
+        this.oldLength = this.length;
     }
 
     do(start, step, oriented) {
+        if (this.neexFixIndex) {
+            start = oriented === "prev" ? this.length - this.oldLength + start : start;
+            this.neexFixIndex = false;
+        }
         this.currIndex = start;
         this[start].setNow(start);
         //清理上一次调用时还没有执行的延迟器setTimeout
@@ -124,12 +132,16 @@ class IMGFetcherQueue extends Array {
         this.tids.push(tid);//收集当前延迟器id,，如果本方法的下一次调用很快来临，而本次调用的延迟器还没有执行，则清理掉本次的延迟器
 
         //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载
-        this.needExpansion(this.executableQueue[step - 1], oriented);
+        this.needExpansion(this.executableQueue[this.executableQueue.length - 1], oriented);
     }
 
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
     report(index, imgSrc, offsetTop) {
         if (index === this.currIndex) {
+            if (!conf.keepScale) {
+                bigImageElement.style.height = "100%";
+                bigImageElement.style.top = "0px";
+            }
             bigImageElement.classList.remove("fetching");
             bigImageElement.src = imgSrc;
             let g = offsetTop - (window.screen.availHeight / 3);
@@ -141,19 +153,20 @@ class IMGFetcherQueue extends Array {
     //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载
     needExpansion(last, oriented) {
         if (this.edgeLock) return;
-        last = oriented === "next" ? last + 1 : oriented === "next" ? prev - 1 : 0;
+        last = oriented === "next" ? last + 1 : oriented === "prev" ? last - 1 : 0;
         if (last < 0 || last > this.length - 1) {
             this.edgeLock = true;
+            this.oldLength = this.length;
             fetchStepPage(oriented).then(done => {
                 if (done) {
                     this.edgeLock = false;
+                    this.neexFixIndex = true;
                 } else {
                     window.setTimeout(() => { this.edgeLock = false }, 2000);
                 }
             });
         }
     }
-
 }
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================FIN
 
@@ -174,7 +187,8 @@ if (!conf) {//如果配置不存在则初始化一个
         backgroundImage: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANAAAAC4AgMAAADvbYrQAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFiUAABYlAUlSJPAAAAAJUExURQwMDA8PDxISEkrSJjgAAAVcSURBVGjevZqxjtwwDETZTOOvm2Yafp0aNvzKFJRsade3ycqHLA4IcMo70LRIDsk1iDZ/0P8VbTmAZGZmpGiejaBECpLcIUH0DAUpSpIgHZkuSfTchaIJBtk4ggTJnVL94DzJkJjZNqFsECUDjwhEQpKUyXAKExSHh0T3bYgASSNn8zLpomSSSYg4Mo58BEEETaz3N35OL3SoW0iREvcgAyHzGKfoEN4g1t+qS7UBlR2ZLfO8L5J0WQh3KOABybNJfADpDfIol88vF1I6n0Ev5kFyUWodCoSOCIgfnumfoVigk1CkQpCQAVG+D/VMAuuJQ+hXij2RaCQW1lWY0s93UGaTCCFTw7bziSvyM4/MI/pJZtuHnKIy5TmCkJ4tev7qUKZSDyFXQXGFOz1beFsh11OonvjNEeGUFJN5T6GIHh1azAu9OUKSLJN70P/7jHCvotbrTEZGG0EjTSfBDG5CQfX7uUC5QBF1IlFqm1A/4kdIOi6IDyHwA5SCApKcnk+hH82bat2/P9MN1PNUr1W3lwb3d+lbqF5XRpv0wFSomTlElmz8bh9yZt5Btl7Y34MwILvM0xIaTyF3ZsYE9VMOKMav7SFUFpakQRU1dp0lm65Rr3UPIPZ7UVUSpJmB9KBkhhkyjHDfgkb+nX1bmV5OCSGkwytP0/MhFD9BdkofjSL0DJqTb6n7zObeTzKh0CkJnkIvN7OXcMnjyDghD+5BZzM3pRDIxot8EVlrevkSIj3rysyOGIKKZx+UgQzQMtsehK56V+jUJAMaqoB8Avk7pBfIT/1h+xCZGXFnni/mRRyZvWXdg8SIiLgxz18cgQ5xD/r02dJo/KjCuJhXwb80/BRcJnpOQfg95KoCIAlmBkNQQZ3TBZsLwCPILwiCiKDEOC0kxEMBUfkIGiLxgkSVhWsnjnqSZ1DwhGCz+DhdngGZXNvQmZdWMfWa4+z+9BtoxPWiMoyekUlJqM44IchDEsWH0JIvK9m0KQhNkI+JyTNo1WhvEKQa1QFPIV+KWmZTNeiAdLhMPGv1HnQ3v5pEIs1MgsvMkMQ8bPoSMpYf+wCNFdo8U1WJLBEyOI0l/HcgjysGShCOsVZ3x3BOjR9JxS50PfTxDvncXx69NW/PIa0QLS7oiKjhrYt7kGJuEeahIGVrVa3hrWITmkdY0muykRnMNEauxJx5voS0DGpXkXglyzFFOXLuNb6GYploQjqiqd8hdt2W1YbXvGYb0hvkbbR8FxS1NXgOaZlxN+/maTLvFyB/FfMepyPMjvTRoOgJ9P8+ZcQ6vAL52rfUVKYGXnwC+Yg2Xzr7VaX6M8i7eeM0XsYlb3o4apX0PdQd4Yt55QjYEptEXzBsQq/mVXWjRKDyG/oAjbUM8V3oB9let5K80Vo/a/3PkNCVR6ZCRyRAXAuSNirCWWoy2x4EnP9hzop+C+Uj6FolHcpaLqIL/FcoUmdzvAPZnXnVHwzIZkf4NkTJlF0kesylpoIwZOybQMPliG+hGmuZGfEyP3WRNdbCuVDqV+tnqGr8PXTtlY1LARgrxt4ZD+kj8SPEv0MobQvxGKp3qJ9zR/IImiWBrRrtzjz7K4QfoPHEBhquXOUTFJd5lXL2IIyXu07UMaA+5MKSez5AnCZjb9Cc6X3xLUdO5jDcGTVj+R4aY+e5u5Iou/5WrWYjIGW0zLYHnYlFOnSpjLmoRcxF7QFkA5rME+dlfUA6ukhs7tvQ7Ai/M29Z/dDFPeg/byRXOxykJM96xZimqhJ5r5Z3oP61AHo2aCSbCeLvQTFB8xd6xmL4t6BjQF1i/zp0tg31PY0OmY1taUFYHfEV9K/7x/nzB/aTFFDPHGpXAAAAAElFTkSuQmCC`,
         gateBackgroundImage: `https://tvax3.sinaimg.cn/mw690/6762c771gy1gcv2eydei3g20f00l7e87.gif`,
         rowCount: rowCount,
-        followMouse: true
+        followMouse: true,
+        keepScale: false
     }
     window.localStorage.setItem("cfg_", JSON.stringify(conf));
 }
@@ -507,7 +521,24 @@ modfollowMouse.lastElementChild.previousElementSibling.addEventListener("click",
         event.target.value = "✓";
         modCFG("followMouse", true);
     }
-})
+});
+
+//下一张是否保留图片放大
+let keepImageScale = document.createElement("div");
+configPlane.appendChild(keepImageScale);
+keepImageScale.innerHTML = `<span>保留缩放 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" value="${conf.keepScale ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
+
+keepImageScale.lastElementChild.previousElementSibling.addEventListener("click", (event) => {
+    event.target.blur();//让该输入框元素立即失去焦点
+    let val = event.target.value;
+    if (val === "✓") {
+        event.target.value = "X";
+        modCFG("keepScale", false);
+    } else {
+        event.target.value = "✓";
+        modCFG("keepScale", true);
+    }
+});
 
 //创建一个大图框架元素，追加到全屏阅读元素的第二个位置
 let bigImageFrame = document.createElement("div");

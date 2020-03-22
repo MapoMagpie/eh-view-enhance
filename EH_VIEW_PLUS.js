@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      1.0.1
+// @version      1.0.2
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -25,36 +25,42 @@ class IMGFetcher {
         switch (this.stage) {
             case 0://尝试获取大图地址
                 try {
+                    //给当前缩略图元素添加一个获取中的边框样式
                     this.node.classList.add("fetching");
+                    //使用fetch获取该缩略图所指向的大图页面
                     const response = await window.fetch(this.url);
                     const text = await response.text();
+                    //从大图页面中提取大图的地址，todo 之后会加入重试换源的功能
                     this.bigImageUrl = IMGFetcher.extractBigImgUrl.exec(text)[1];
-                    this.stage = 1;
-                    return/* 少写一个return，花了我4小时调试一个奇怪的bug */ this.fetchImg(x);
+                    //成功获取到大图的地址后，将本图片获取器的状态修改为1，表示大图地址已经成功获取到
+                    if (this.bigImageUrl) {
+                        this.stage = 1;
+                        return/* 少写一个return，花了我4小时调试一个奇怪的bug */ this.fetchImg(x);
+                    } else {
+                        throw "大图地址不存在！";
+                    }
                 } catch (error) {
-                    this.stage = 0;
-                    console.log("出现其他的异常 => ", error);
+                    this.stage = 0;//如果失败后，则将图片获取器的状态修改为0，表示从0开始
+                    console.log("获取大图地址的时候出现了异常 => ", error);
                     return false;
                 }
             case 1://理论上获取到大图地址，尝试使用weirdFetch获取大图数据
-                if (this.bigImageUrl) {
-                    try {
-                        const flag = await IMGFetcher.weirdFetch(this.node, this.bigImageUrl, this.oldSrc).then(result => result.flag);
-                        this.node.classList.remove("fetching");
-                        if (flag) {
-                            this.stage = 2; this.node.style.border = "3px #602a5c solid"; return this.fetchImg(x);
-                        } else {
-                            ++this.tryTime; this.stage = 0; this.node.style.border = "3px white solid";
-                            if (this.tryTime > 2) { this.node.style.border = "3px red solid"; return false; }//重试2次后，直接失败，避免无限请求
-                            return this.fetchImg(x);
-                        }
-                    } catch (error) {
-                        this.stage = 1;
-                        console.log("出现其他的异常 => ", error);
-                        return false;
+                try {
+                    //使用奇怪的图片获取器来获取大图的数据
+                    const flag = await IMGFetcher.weirdFetch(this.node, this.bigImageUrl, this.oldSrc).then(result => result.flag);
+                    //当获取到内容，或者获取失败，则移除本缩略图的边框效果
+                    this.node.classList.remove("fetching");
+                    if (flag) {//如果成功获取到图片的内容，则将本图片获取器的状态修改为2，表示图片获取器的整体成功
+                        this.stage = 2; this.node.style.border = "3px #602a5c solid"; return this.fetchImg(x);
+                    } else {//如果失败了，则进行重试，重试会进行2次
+                        ++this.tryTime; this.stage = 0; this.node.style.border = "3px white solid";
+                        if (this.tryTime > 2) { this.node.style.border = "3px red solid"; return false; }//重试2次后，直接失败，避免无限请求
+                        return this.fetchImg(x);
                     }
-                } else {//大图地址还不存在，不应该发生这样的事情
-                    this.stage = 0; return this.fetchImg(x);
+                } catch (error) {
+                    this.stage = 1;
+                    console.log("在获取大图数据的时候出现了错误，一般来说不会出现这样的错误 => ", error);
+                    return false;
                 }
             case 2://大图已经加载完毕，已经走到这个IMGFetcher图片获取器的生命尽头，以后调用这个IMGFetcher图片获取器的时候，直接返回确认
                 return true;
@@ -184,7 +190,7 @@ class IMGFetcherQueue extends Array {
     abortIdleLoader() {
         if (!conf.autoLoad) return;
         idleLoader.abort = true;
-        //8s后重新开启
+        //8s后重新开启，todo 但这里可能会出现小概率的双线程危机
         let tid = window.setTimeout((index) => { idleLoader.abort = false; idleLoader.start(index); }, 8000, this.currIndex);
         this.tids.push(tid);
     }
@@ -201,6 +207,8 @@ class IdleLoader {
         this.abort = false;
         //已完成
         this.finishedIF = [];
+        //递归次数，防止无限递归
+        this.recuTimes = 0;
     }
     async start(index) {
         this.currIndex = index;
@@ -209,7 +217,7 @@ class IdleLoader {
         //如果索引到达了队列最后，则检测是否还有下一页
         if (index > this.queue.length - 1) {
             let fetchDone = await fetchStepPage("next");
-            if (fetchDone || signal.nextFinished) {
+            if (fetchDone && signal.nextFinished) {
                 this.currIndex = index = 0;
             } else {
                 throw "获取下一页失败，但并非是最后一页";
@@ -230,15 +238,28 @@ class IdleLoader {
             console.log("所有页已经加载完毕！");
             return;
         }
-        if (!this.queue[index].lock) {
-            this.queue[index].lock = true;
+        if (!this.queue[index].lock) {//当前的图片获取器没有被锁定
+            this.queue[index].lock = true;//加锁
             const flag = await this.queue[index].fetchImg();
             this.queue[index].lock = false;
             if (flag && this.queue[index].stage === 2) {
                 (this.finishedIF.indexOf(this.queue[index]) === -1) && (this.finishedIF.push(this.queue[index]));
             }
         }
-        this.start(index + 1);
+        //当前要处理的图片获取器被锁住了，可能正在获取图片中，则停止自动获取，5s后再次执行
+        if (this.queue[index].lock || this.recuTimes > 1000) {
+            this.recuTimes = 0;
+            window.setTimeout(this.start, 5000, index + 1);
+            return;
+        }
+        this.recuTimes++; this.timeOut(index + 1).then(index => this.start(index));
+    }
+
+    async timeOut(index) {
+        return new Promise(function (resolve, reject) {
+            const time = Math.floor((Math.random() * 1500) + 500);
+            window.setTimeout(resolve, time, index);
+        });
     }
 }
 
@@ -314,7 +335,6 @@ const updateEvent = function (k, v) {
             }
             break;
         }
-
     }
 }
 //===============================================配置管理器=================================================FIN
@@ -330,7 +350,7 @@ const updateEvent = function (k, v) {
 
 //图片获取器调用队列
 const IFQ = new IMGFetcherQueue();
-
+//空闲自加载器
 const idleLoader = new IdleLoader(IFQ);
 
 //通过地址请求该页的文档对象模型
@@ -505,7 +525,7 @@ const stepImageEvent = function (event) {
     //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载，如果还有需要加载的页，则等待页加载完毕后再调用执行队列IFQ.do
     IFQ.do(start, null, oriented);
 }
-
+//修改配置时的布尔值类型的事件
 const boolElementEvent = function (event) {
     event.target.blur();//让该输入框元素立即失去焦点
     let val = event.target.value;
@@ -517,7 +537,7 @@ const boolElementEvent = function (event) {
         modCFG(event.target.getAttribute("confKey"), true);
     }
 }
-
+//修改配置时的输入型类型事件
 const inputElementEvent = function (event) {
     let val = event.target.previousElementSibling.value;
     if (val) {
@@ -526,7 +546,7 @@ const inputElementEvent = function (event) {
         alert("请输入有效的网络图片地址！");
     }
 }
-
+//页码指示器通用修改事件
 const pageHelperHandler = function (index, value, type) {
     const node = [].filter.call(pageHelper.childNodes, (node) => node.nodeType === Node.ELEMENT_NODE)[index];
     if (type === "class") {
@@ -535,7 +555,7 @@ const pageHelperHandler = function (index, value, type) {
         node.textContent = value;
     }
 }
-
+//修改每行数量事件的添加
 const modRowEvent = function () {
     [].slice.call(modRowCount.childNodes).filter(node => node.nodeType === Node.ELEMENT_NODE).forEach((node, index) => {
         switch (index) {
@@ -565,7 +585,7 @@ const modRowEvent = function () {
         }
     })
 }
-
+//显示简易指南事件
 const showGuideEvent = function (event) {
     let guideFull = document.createElement("div");
     document.body.appendChild(guideFull);
@@ -582,8 +602,6 @@ const showGuideEvent = function (event) {
 
 
 //==================创建入口按钮，追加到tag面板的右侧=====================START
-const styleVal = {};
-
 let showBTNRoot = document.querySelector("#gd5");
 let tempContainer = document.createElement("div");
 
@@ -676,7 +694,6 @@ let bigImageElement = document.createElement("img");
 let pageHelper = document.createElement("div");
 bigImageFrame.appendChild(bigImageElement);
 bigImageFrame.appendChild(pageHelper);
-// fragment.appendChild(bigImageElement);
 
 pageHelper.classList.add("pageHelper");
 pageHelper.innerHTML = `<span>...</span><span>${IFQ.currIndex}</span>/<span>${IFQ.length}</span><span>...</span>`;

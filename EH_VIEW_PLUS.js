@@ -219,7 +219,7 @@ class IdleLoader {
             let fetchDone = await fetchStepPage("next");
             if (fetchDone && signal.nextFinished) {
                 this.currIndex = index = 0;
-            } else {
+            } else if (!fetchDone) {
                 throw "获取下一页失败，但并非是最后一页";
             }
         }

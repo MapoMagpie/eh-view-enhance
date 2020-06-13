@@ -461,6 +461,14 @@ const fetchStepPage = async function (oriented) {
     if (source === null) return false;
     return appendToFullViewPlane(source, oriented);
 }
+
+//向配置面板增加配置项
+const createChild = function (type, parent, innerHTML) {
+    let childElement = document.createElement(type);
+    parent.appendChild(childElement);
+    childElement.innerHTML = innerHTML;
+    return childElement;
+}
 //===============================================方法区=================================================FIN
 
 
@@ -525,6 +533,26 @@ const stepImageEvent = function (event) {
     //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载，如果还有需要加载的页，则等待页加载完毕后再调用执行队列IFQ.do
     IFQ.do(start, null, oriented);
 }
+//点击配置面板两侧的箭头滚动内容
+const scrollToArrow = function (event) {
+    let direction = event.target.getAttribute("direction");
+    if (!direction) return;
+    switch (direction) {
+        case "left":
+            configPlane.scrollTo({
+                left: configPlane.scrollLeft - (screenWidth / 2),
+                behavior: "smooth"
+            });
+            break;
+        case "rigth":
+            configPlane.scrollTo({
+                left: configPlane.scrollLeft + (screenWidth / 2),
+                behavior: "smooth"
+            });
+            break;
+    }
+}
+
 //修改配置时的布尔值类型的事件
 const boolElementEvent = function (event) {
     event.target.blur();//让该输入框元素立即失去焦点
@@ -537,6 +565,7 @@ const boolElementEvent = function (event) {
         modCFG(event.target.getAttribute("confKey"), true);
     }
 }
+
 //修改配置时的输入型类型事件
 const inputElementEvent = function (event) {
     let val = event.target.previousElementSibling.value;
@@ -555,6 +584,7 @@ const pageHelperHandler = function (index, value, type) {
         node.textContent = value;
     }
 }
+
 //修改每行数量事件的添加
 const modRowEvent = function () {
     [].slice.call(modRowCount.childNodes).filter(node => node.nodeType === Node.ELEMENT_NODE).forEach((node, index) => {
@@ -585,6 +615,7 @@ const modRowEvent = function () {
         }
     })
 }
+
 //显示简易指南事件
 const showGuideEvent = function (event) {
     let guideFull = document.createElement("div");
@@ -640,46 +671,49 @@ let configPlane = document.createElement("div");
 configPlane.classList.add("configPlane");
 fullViewPlane.appendChild(configPlane);
 
+//向前滚动
+let scrollToLeft = document.createElement("div");
+configPlane.appendChild(scrollToLeft);
+scrollToLeft.classList.add("scrollArrow");
+scrollToLeft.classList.add("l");
+scrollToLeft.addEventListener("click", scrollToArrow)
+scrollToLeft.setAttribute("direction", "left");
+
+//向前滚动
+let scrollToRigth = document.createElement("div");
+configPlane.appendChild(scrollToRigth);
+scrollToRigth.classList.add("scrollArrow");
+scrollToRigth.classList.add("r");
+scrollToRigth.addEventListener("click", scrollToArrow)
+scrollToRigth.setAttribute("direction", "rigth");
+
 //修改背景图片
-let modBGElement = document.createElement("div");
-configPlane.appendChild(modBGElement);
-modBGElement.innerHTML = `<span>修改背景图 : </span><input type="text" placeholder="网络图片" style="width: 200px;" confKey="backgroundImage"><button>确认</button>`;
+let modBGElement = createChild("div", configPlane, `<span>修改背景图 : </span><input type="text" placeholder="网络图片" style="width: 200px;" confKey="backgroundImage"><button>确认</button>`);
 modBGElement.lastElementChild.addEventListener("click", inputElementEvent);
 
 //修改入口图片
-let modGateBGElement = document.createElement("div");
-configPlane.appendChild(modGateBGElement);
-modGateBGElement.innerHTML = `<span>修改入口图 : </span><input type="text" placeholder="网络图片" style="width: 200px;" confKey="gateBackgroundImage"><button>确认</button>`;
+let modGateBGElement = createChild("div", configPlane, `<span>修改入口图 : </span><input type="text" placeholder="网络图片" style="width: 200px;" confKey="gateBackgroundImage"><button>确认</button>`);
 modGateBGElement.lastElementChild.addEventListener("click", inputElementEvent);
 
 //每行显示数量
-let modRowCount = document.createElement("div");
-configPlane.appendChild(modRowCount);
-modRowCount.innerHTML = `<span>每行数量 : </span><button>-</button><input type="text" style="width: 20px;" value="${conf.rowCount}"><button>+</button>`;
+let modRowCount = createChild("div", configPlane, `<span>每行数量 : </span><button>-</button><input type="text" style="width: 20px;" value="${conf.rowCount}"><button>+</button>`);
 modRowEvent();
 
 //大图是否跟随鼠标
-let modfollowMouse = document.createElement("div");
-configPlane.appendChild(modfollowMouse);
-modfollowMouse.innerHTML = `<span>大图跟随鼠标 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="followMouse"  value="${conf.followMouse ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
+let modfollowMouse = createChild("div", configPlane, `<span>大图跟随鼠标 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="followMouse"  value="${conf.followMouse ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`);
 modfollowMouse.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
 
 //下一张是否保留图片放大
-let keepImageScale = document.createElement("div");
-configPlane.appendChild(keepImageScale);
-keepImageScale.innerHTML = `<span>保留缩放 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="keepScale" value="${conf.keepScale ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
+let keepImageScale = createChild("div", configPlane, `<span>保留缩放 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="keepScale" value="${conf.keepScale ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`);
 keepImageScale.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
 
 //是否自动加载
-let autoLoad = document.createElement("div");
-configPlane.appendChild(autoLoad);
-autoLoad.innerHTML = `<span>自动加载 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="autoLoad"  value="${conf.autoLoad ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`
+let autoLoad = createChild("div", configPlane, `<span>自动加载 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="autoLoad"  value="${conf.autoLoad ? "✓" : "X"}" type="text"><button style="cursor: not-allowed;">装饰</button>`);;
 autoLoad.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
 
 //显示指南
-let showGuide = document.createElement("div");
-configPlane.appendChild(showGuide);
-showGuide.innerHTML = `<span>指南 : </span><button>打开</button>`
+let showGuide = createChild("div", configPlane, `<span>指南 : </span><button>打开</button>`);
+showGuide.style = "margin-right: 40px;"
 showGuide.lastElementChild.addEventListener("click", showGuideEvent);
 
 //创建一个大图框架元素，追加到全屏阅读元素的第二个位置
@@ -750,7 +784,162 @@ bigImageFrame.addEventListener("mousemove", (event) => { fixImageTop(event.clien
 //=========================================创建样式表==================================================START
 let styleSheel = document.createElement("style");
 styleSheel.textContent =
-    `.fullViewPlane{width:100%;height:100%;background-color:#000;position:fixed;top:0;right:0;z-index:1000;overflow:scroll;transition:height .4s;display:flex;flex-wrap:wrap}.fullViewPlane>img:not(.bigImageFrame){margin:20px 0 0 20px;border:3px white solid;box-sizing:border-box;height:max-content}.retract_full_view{height:0;transition:height .4s}.configPlane{height:30px;width:100%;background-color:#1e1c1c;margin:20px 20px 0}.configPlane>div{display:inline-block;background-color:#00ffff3d;border:1px solid black;margin:0 5px;box-sizing:border-box;height:30px;padding:0 5px}.configPlane>div>span{line-height:20px;color:black;font-size:15px;font-weight:bolder}.configPlane>div>input{border:2px solid black;border-radius:0;margin-top:0!important;vertical-align:bottom}.configPlane>div>button{height:25px;border:2px solid black;background-color:#383940;margin-top:1px;box-sizing:border-box;color:white}.bigImageFrame{position:fixed;width:100%;height:100%;right:0;z-index:1001;background-color:#000000d6;justify-content:center;transition:width .4s}.bigImageFrame>img{height:100%;border:3px #602a5c solid;position:relative}.bigImageFrame>.pageHelper{position:absolute;right:100px;bottom:40px;background-color:#1e1c1c;z-index:1003;font-size:22px}.bigImageFrame>.pageHelper>.edge{background-color:#00ffff3d}.bigImageFrame>.pageHelper>.edgeFIN{background-color:green}.bigImageFrame>.pageHelper>.totalPage{font-size:17px}.bigImageFrame>.pageHelper>.currPage{color:orange}.fetching{animation:.5s linear infinite rrr}@keyframes rrr{0%{border-image:linear-gradient(0deg,#fd696a,#5461f4) 1}25%{border-image:linear-gradient(90deg,#fd696a,#5461f4) 1}50%{border-image:linear-gradient(180deg,#fd696a,#5461f4) 1}75%{border-image:linear-gradient(270deg,#fd696a,#5461f4) 1}100%{border-image:linear-gradient(360deg,#fd696a,#5461f4) 1}}.retract{width:0;transition:width .7s}.closeBTN{width:100%;height:100%;background-color:#0000;color:#f45b8d;font-size:30px;font-weight:bold;border:4px #f45b8d solid;border-bottom-left-radius:60px}.closeBTN>span{position:fixed;right:11px;top:0}`;
+    `
+.fullViewPlane {
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1000;
+  overflow: scroll;
+  transition: height 0.4s;
+  display: flex;
+  flex-wrap: wrap;
+  scrollbar-width: thin !important;
+}
+.fullViewPlane > img:not(.bigImageFrame) {
+  margin: 20px 0 0 20px;
+  border: 3px white solid;
+  box-sizing: border-box;
+  height: max-content;
+}
+.retract_full_view {
+  height: 0;
+  transition: height 0.4s;
+}
+.configPlane {
+  height: 30px;
+  width: 100%;
+  background-color: #1e1c1c;
+  margin: 20px 20px 0;
+  overflow: scroll hidden;
+  white-space: nowrap;
+  scrollbar-width: none !important;
+  padding: 0px 35px;
+}
+.configPlane > div:not(.scrollArrow) {
+  display: inline-block;
+  background-color: #00ffff3d;
+  border: 1px solid black;
+  margin: 0 5px;
+  box-sizing: border-box;
+  height: 30px;
+  padding: 0 5px;
+}
+.configPlane > div > span {
+  line-height: 20px;
+  color: black;
+  font-size: 15px;
+  font-weight: bolder;
+}
+.configPlane > div > input {
+  border: 2px solid black;
+  border-radius: 0;
+  margin-top: 0 !important;
+  vertical-align: bottom;
+}
+.configPlane > div > button {
+  height: 25px;
+  border: 2px solid black;
+  background-color: #383940;
+  margin-top: 1px;
+  box-sizing: border-box;
+  color: white;
+}
+.bigImageFrame {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  right: 0;
+  z-index: 1001;
+  background-color: #000000d6;
+  justify-content: center;
+  transition: width 0.4s;
+}
+.bigImageFrame > img {
+  height: 100%;
+  border: 3px #602a5c solid;
+  position: relative;
+}
+.bigImageFrame > .pageHelper {
+  position: absolute;
+  right: 100px;
+  bottom: 40px;
+  background-color: #1e1c1c;
+  z-index: 1003;
+  font-size: 22px;
+}
+.bigImageFrame > .pageHelper > .edge {
+  background-color: #00ffff3d;
+}
+.bigImageFrame > .pageHelper > .edgeFIN {
+  background-color: green;
+}
+.bigImageFrame > .pageHelper > .totalPage {
+  font-size: 17px;
+}
+.bigImageFrame > .pageHelper > .currPage {
+  color: orange;
+}
+.fetching {
+  animation: 0.5s linear infinite rrr;
+}
+@keyframes rrr {
+  0% {
+    border-image: linear-gradient(0deg, #fd696a, #5461f4) 1;
+  }
+  25% {
+    border-image: linear-gradient(90deg, #fd696a, #5461f4) 1;
+  }
+  50% {
+    border-image: linear-gradient(180deg, #fd696a, #5461f4) 1;
+  }
+  75% {
+    border-image: linear-gradient(270deg, #fd696a, #5461f4) 1;
+  }
+  100% {
+    border-image: linear-gradient(360deg, #fd696a, #5461f4) 1;
+  }
+}
+.retract {
+  width: 0;
+  transition: width 0.7s;
+}
+.closeBTN {
+  width: 100%;
+  height: 100%;
+  background-color: #0000;
+  color: #f45b8d;
+  font-size: 30px;
+  font-weight: bold;
+  border: 4px #f45b8d solid;
+  border-bottom-left-radius: 60px;
+}
+.closeBTN > span {
+  position: fixed;
+  right: 11px;
+  top: 0;
+}
+.scrollArrow {
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  display: inline-block;
+  z-index: 1000;
+  background-size: contain;
+  background-color: #204444;
+}
+.scrollArrow.l {
+  left: 20px;
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAFRUlEQVR4nO3dT4hVZRjH8W8E4Xi7iUwugjLGhYs2RYtBCvKUg/sWFQRSLYJyVZuibdCuP2Q1o45CEEQk1cKglkowbWJqjITILEWDRIKgBtpYi5MR1ztzR+4593nP+34/8Nvf8/B7eOZ6nbkgSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZKk/9wK7AR2AbPADNALfUVSkB3AM8BBYAX4e51cBk4CbwOPRLxYaRK2AvuBJdZfiFH5E3gXqCb54qU2vQisMt5iDMs3wL4JPofUqPuA72h+MQazQv2+ReqEKeAA7S/GYOYn8XDSOO4HfmLyy3E1S8CW1p9Suk5TwFvELcb/8wNwZ7uPK21c9NUYljPAdJsPLY0yRf35xBXiF2JYlvHDRgXZDZwlfglG5eO2BiAN0wPeId2rMSxPtDIJaUAFnCe+8Neb34Hbmh+HVOtRf8bQpasxmA8an4pEd6/GYK4AdzU7GpUsh6sxmGONTkjFqsjjagy7Irc3NyaVpgcskNfVGMxLjU1LRanI82oM5seG5qVClHA1BrOjkckpexVlXI3BPNbA7JSxHvXvg0cXNSqvjj9C5WoPcI74kkbms7GnqOz0gEPElzOFfD3mLJWZijLfa6yVC2NNU9noA4eJL2SKUeEqvBouiK7h1XBBtIY54CLx5etCVJA+sEh86boUFcKr4YJoCK+GC6I1eDVcEA3RB44QX64cosx4NVwQDdEHjhJfqNyiDHg1XBAN4dVwQbSGWer/bRpdoNyjDtoH/EV8eUqIOuY14ktTUtQRNwIfEl+Y0qKOOEZ8WUqMOuB54otSapS4XcSXpOQoYTdRfxNrdElKjhL2CvEFKT1K1Azx5TBK1jzx5TBK0jb8pDyVKEHPEV8M44Ik6wTxxTAuSJKmKetLalKPEvMw8aUwLkiyXia+FMYFSdanxJfCuCDJOkV8KYwLkqyzxJfCuCDJukR8KYwLkqxfiC+FcUGSdZr4UhgXJFlLxJfCuCDJep/4UhgXJFkvEF8K44Ikay/xpTAuSLI24++CpBQl6HPii2FckGQ9S3wxjAuSrK3AKvHlMErWm8SXwyhZ24kvh1HSXie+IKVHCesDvxFfkpKjxD1OfElKjjrAH7VcEI1wnPiylBh1xCbgJPGFKS3qkM3Al8SXpqSoYzYBB/CvL7ogWtce4ALxBco96rA+cJT4EuUcZWAOuEh8mXKMMuE1cUG0AV4TF0Qj9IEjxJcrhyhjXhMXRCN4TVwQbYDXxAXRCH1gkfjSdSkqkNfEBdEIXhMXRBvgNXFBNMIt+C9dLohGmgPOE1/KVHJpvHEqRz3gMPHlTCHfjzlLZewh4BzxJY3M0thTVNZ6wCHiixqVxfFHqBJUlPne5OkGZqdClHhN7m5kcipKRRnX5FfghmZGptKUcE3eaGxaKlZFvtdktrkxqWR9YIH4QjeZ5UYnJJHXNdnd7GikWg84SLf/6uPxxqciDajo5jX5A7ij+XFI1+pRvzfp0jV5qpVJSOt4EPiZ+PKPyictPb80UurXZPnf1yiFqkjvvckZYLrFZ5auy82k87nJaXxTrkRVxF6TL4AtbT+kNI6r700mvRzzk3g4qSn3ACdofzFWgHsn80hS8/YCX9H8YnwLPDm5x5Da9QDwEeMtxSrwHvV3OUpZ2g7sp/6bXadYfyEuU3+P/ALwKPW3AUvF2QbsBHZR/87GDH7IJ0mSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSJEmSUvQPR50xzznuVTwAAAAASUVORK5CYII=");
+}
+.scrollArrow.r {
+  right: 20px;
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAFmElEQVR4nO3dTaiUZRjG8T8ZRX5AgVGbCl2IbaJNB+FQWUnQqmUFES76ggoKImjRqlZtClPP8YuMEqFF4DIXIUoQEZUYRBCKB4UIEwpUXKQtxpjy65lzzsxcz7zP/wfX2nnf+3q4mePMOyBJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJklSh5cAqYApYB6wBVkZfkRSyFHgamAEOAqeAi9fJj8BW4HngnsDrlcZiA7AHOMv1D0Qph4CXgBXjffnSaGwEjrC4Q3G1/AW8Or7LkIZrCjjM8A/G5Tl86d+SJsYORn8wLs8m4JZxXJy0ULcB3zD+w/FvjgHTI79KaQFWA0fJHY7/5iPcJqrIHcBx8gfDbaLqrGA0f6UaRi4Am3GbKGg/+YNQylHg4VHdAOlaXiNf/vlsky3AspHcCekyq4Fz5Is/38wB64d/O6T/+5J82RezTbbiNtGITJEvudtE1fqKfLndJqrSWvKldpuoWh+QL/Mot8kMbhMt0A3A7+SL7DZRlabJl9dtomq9Qb64bhNVay/5wqYyi9tEBeP4hmDNOQ48tui7qM6aI1/SGrINt4mu4k/y5awlvjfRFdKlrDHb8RFEuiRdxlrjNhGQL2LtcZs0Ll3ASchJek+RVIPS5Zuk7MBt0px06SYtbpPGpAs3qXGbNCJdtEmO26QB6ZJ1ITtxm3RWulxdiduko9LF6lp24TbplHShuhi3SYeky9TluE06IF2irucE8MDA01B10gVqIeeBpwYdiOqSLk9LeX/Amagi6dK0lt30HrWkCZEuTIv5bKDJqArpsrSaFwcZjvLSRWk154D7BpiPwtJFaTlHgCXlESkpXZLW81Z5REpKF6T1nANuL05JMemCGHivOCXFpMth4DT+7nu10uUwvTxbGpQy0sUwvXxeGpQy0sUwvZwBbirMSgHpYph+1hVmpYB0KUw/LxdmpYB0KUw/s4VZKSBdCtPP/sKsFJAuhenn+8KsFJAuhelnrjArBaRLYfo5WZiVAtKlMP38VJiVAtKlMP0cLMxKAelSmH4+KcxKAelSmH5eL8xKAelSmH4eKsxKAelSmF7O4ocVq5Quhunli9KglJEuhunludKglJEuhvErt1VLl8PAu8UpKSZdjtZzBlhZnJJi0gVpPe+UR6SkdEFazhxwc3lESkqXpOU8McB8FJYuSat5e5DhKC9dlBbz8UCTURXSZWkt+/AnDyZKujAtZR9w42BjUS3SpWkhf9N7grubYwKly9P1nAAeHHgaqk66QF3OLmDF4KNQjdIl6mJOAhvmMwTVK12mrsWt0THpQnUlbo2OSherC9mJW6Oz0uWa5Lg1GpAu2aRmB26NJqSLNmlxazQmXbhJilujQenSTULcGg1Ll6/2bMet0bR0AWvNHLB+4bdVXZEuYo2Zwa2hS06RL2QtcWvoCr+SL2YN2QYsW+S9VAd9S76cyRwHHl30XVRn7SZf0lRmcWuo4BXyRR13fK+hgU2RL+y4coHeX6jcGhrYEuAP8uV1a6has+QL7NZQtR4hX2S3hqr2C/lCDzMzwPKh3iE17UnypXZrqGpfky/4QnMB2IrvNTRCa4Hz5Mvu1lC13iRf+PlsjS24NTRmB8iXv5Sj+MxbhdxKvZ/yvQBsxt8VV9jdwG/kD8R/cwyYHuVFS/NxL73H96cPxkXgQ9waqtCdwA+4NaRrWgp8yvgPxybcGpog08DPjP5gHADuH88lScO3ETjC8A/Gd8Dj47sMabQ2AHtY/MHYi/+noQ5bCjxD73slh4DTXP9AHKb3uakXgLsCr1eKWw6soveV3nXAGmBl9BVJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiTV5B8KUjFl4mWmRgAAAABJRU5ErkJggg==");
+}
+`;
 document.head.appendChild(styleSheel);
 
 updateEvent("backgroundImage", conf.backgroundImage);

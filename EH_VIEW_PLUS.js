@@ -66,7 +66,14 @@ class IMGFetcher {
     set(index, x) {
         if (this.lock) return;
         this.lock = true;
-        this.fetchImg(x).then(flag => { if (flag) { IFQ.report(index, this.bigImageUrl, this.node.offsetTop); } else { console.log("没有获取到图片，这期间一定发生了什么异常的事情！") } this.lock = false; })
+        this.fetchImg(x).then(flag => {
+            if (flag) {
+                IFQ.report(index, this.bigImageUrl, this.node.offsetTop);
+            } else {
+                console.log("没有获取到图片，这期间一定发生了什么异常的事情！")
+            }
+            this.lock = false;
+        })
     }
 
     //立刻将当前元素的src赋值给大图元素
@@ -98,7 +105,7 @@ class IMGFetcher {
 }
 IMGFetcher.extractUrl = {
     normal: /\<img\sid=\"img\"\ssrc=\"(.*)\"\sstyle/,
-    original: /\<a\shref=\"http[s]?:\/\/(e-hentai\.org\/fullimg\.php\?[^"\\]*)\"\>/,
+    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg\.php\?[^"\\]*)\"\>/,
     nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/
 };
 
@@ -129,19 +136,20 @@ class IMGFetcherQueue extends Array {
         this.oldLength = this.length;
     }
 
-    do(start, step, oriented) {
-        step = step || 2; oriented = oriented || "next";
-        this.currIndex = start = this.fixIndex(start, oriented);
-        this[start].setNow(start);
-        this.pushExecQueue(start, step, oriented);
-        //终止自动加载
-        this.abortIdleLoader();
-        if (this.executableQueue.length === 0) return;
+    do(start, oriented) {
+        oriented = oriented || "next";
+        this.currIndex = this.fixIndex(start, oriented);
+        this[this.currIndex].setNow(this.currIndex);
+
+        //从当前索引开始往后,放入指定数量的图片获取器,如果该图片获取器已经获取完成则向后延伸.
+        //如果最后放入的数量为0,说明已经没有可以继续执行的图片获取器,可能意味着后面所有的图片都已经加载完毕,也可能意味着中间出现了什么错误
+        if (!this.pushExecQueue(oriented)) return;
+
         /* 100毫秒的延迟，在这100毫秒的时间里，可执行队列executableQueue可能随时都会变更，100毫秒过后，只执行最新的可执行队列executableQueue中的图片请求器
             在对大图元素使用滚轮事件的时候，由于速度非常快，大量的IMGFetcher图片请求器被添加到executableQueue队列中，如果调用这些图片请求器请求大图，可能会被认为是爬虫脚本
             因此会有一个时间上的延迟，在这段时间里，executableQueue中的IMGFetcher图片请求器会不断更替，100毫秒结束后，只调用最新的executableQueue中的IMGFetcher图片请求器。
         */
-        let tid = window.setTimeout((queue) => { queue.forEach(imgFetcherIndex => this[imgFetcherIndex].set(imgFetcherIndex)) }, 300, this.executableQueue);
+        let tid = window.setTimeout(() => { this.executableQueue.forEach(imgFetcherIndex => this[imgFetcherIndex].set(imgFetcherIndex)) }, 300);
         this.tids.push(tid);//收集当前延迟器id,，如果本方法的下一次调用很快来临，而本次调用的延迟器还没有执行，则清理掉本次的延迟器
 
         //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载
@@ -150,17 +158,16 @@ class IMGFetcherQueue extends Array {
 
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
     report(index, imgSrc, offsetTop) {
-        if (index === this.currIndex) {
-            if (!conf.keepScale) {
-                bigImageElement.style.height = "100%";
-                bigImageElement.style.top = "0px";
-            }
-            bigImageElement.classList.remove("fetching");
-            bigImageElement.src = imgSrc;
-            let g = offsetTop - (window.screen.availHeight / 3);
-            g = g <= 0 ? 0 : g >= fullViewPlane.scrollHeight ? fullViewPlane.scrollHeight : g;
-            fullViewPlane.scrollTo({ top: g, behavior: "smooth" })
+        if (index !== this.currIndex) return;
+        if (!conf.keepScale) {//是否保留缩放
+            bigImageElement.style.height = "100%";
+            bigImageElement.style.top = "0px";
         }
+        bigImageElement.classList.remove("fetching");
+        bigImageElement.src = imgSrc;
+        let scrollTo = offsetTop - (window.screen.availHeight / 3);
+        scrollTo = scrollTo <= 0 ? 0 : scrollTo >= fullViewPlane.scrollHeight ? fullViewPlane.scrollHeight : scrollTo;
+        fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" })
     }
 
     //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载
@@ -180,9 +187,11 @@ class IMGFetcherQueue extends Array {
             });
         }
     }
-
+    //修正索引
     fixIndex(start, oriented) {
+        //如果开始的索引小于0,则修正索引为0,如果开始的索引超过队列的长度,则修正索引为队列的最后一位
         start = start < 0 ? 0 : start > this.length - 1 ? this.length - 1 : start;
+        //是否需要修正索引,当队列被拓展后neexFixIndex被启用,此时需要根据导向和拓展的数量来修正到正确的下一张图的索引
         if (this.neexFixIndex) {
             start = oriented === "prev" ? this.length - this.oldLength + start : start;
             this.neexFixIndex = false;
@@ -190,25 +199,35 @@ class IMGFetcherQueue extends Array {
         return start;
     }
 
-    pushExecQueue(start, step, oriented) {
+    pushExecQueue(oriented) {
         //清理上一次调用时还没有执行的延迟器setTimeout
         this.tids.forEach(id => window.clearTimeout(id)); this.tids = [];
+
         //把要执行获取器先放置到队列中，延迟执行
         this.executableQueue = [];
-        for (let index = start, count = 0; (((oriented === "next") && (index < this.length)) || ((oriented === "prev") && (index > -1))) && count < step; (oriented === "next") ? index++ : index--) {//丧心病狂
-            if (this[index].stage === 2) continue;
-            this.executableQueue.push(index);
+        for (let count = 0; pushExecQueueSlave1(oriented, count); pushExecQueueSlave2(oriented)) {
+            if (this[this.currIndex].stage === 2) continue;
+            this.executableQueue.push(this.currIndex);
             count++;
         }
-        if (this.executableQueue.length === 0) return;
+        return this.executableQueue.length > 0;
     }
 
-    abortIdleLoader() {
-        if (!conf.autoLoad) return;
-        idleLoader.abort = true;
-        //8s后重新开启，todo 但这里可能会出现小概率的双线程危机
-        let tid = window.setTimeout((index) => { idleLoader.abort = false; idleLoader.start(index); }, 8000, this.currIndex);
-        this.tids.push(tid);
+    pushExecQueueSlave1(oriented, count) {
+        return (
+            (
+                ((oriented === "next") && (this.currIndex < this.length))
+                ||
+                ((oriented === "prev") && (this.currIndex > -1))
+            )
+            &&
+            (
+                count < conf["threads"]
+            )
+        );//丧心病
+    }
+    pushExecQueueSlave2(oriented) {
+        (oriented === "next") ? ++this.currIndex : --this.currIndex;
     }
 }
 
@@ -220,62 +239,65 @@ class IdleLoader {
         //当前处理
         this.currIndex = 0;
         //是否终止
-        this.abort = false;
+        this.abort_ = false;
         //已完成
         this.finishedIF = [];
         //递归次数，防止无限递归
         this.recuTimes = 0;
+        //中止后的用于重新启动的延迟器的id
+        this.restartId;
     }
     async start(index) {
-        this.currIndex = index;
+        index && (this.currIndex = index);
         //如果被中止了，则停止
-        if (this.abort || !conf.autoLoad) return;
+        if (this.abort_ || !conf["autoLoad"]) return;
+
+        //如果所有的图片都加载完毕，则停止
+        if (this.finishedIF.length === this.queue.length) return (this.abort_ = true);
+
+        //如果该当前索引的图片获取器已经存在于已完成列表里则直接递归到下一个索引
+        if (this.finishedIF.indexOf(this.currIndex) > -1) return this.start(++this.currIndex);
+
         //如果索引到达了队列最后，则检测是否还有下一页
-        if (index > this.queue.length - 1) {
+        if (this.currIndex > this.queue.length - 1) {
             let fetchDone = await fetchStepPage("next");
-            if (fetchDone || signal.nextFinished) {
-                this.currIndex = index = 0;
-            } else if (!fetchDone) {
-                throw "获取下一页失败，但并非是最后一页";
-            }
+            if (!fetchDone || signal["nextFinished"]) this.currIndex = 0;
         }
         //如果索引是0，则检测是否还有上一页
-        if (index === 0) {
+        if (this.currIndex === 0) {
             let fetchDone = await fetchStepPage("prev");
-            if (fetchDone || signal.prevFinished) {
-                this.currIndex = index = 0;
-            } else {
-                throw "获取上一页失败，但并非是第一页";
-            }
+            if (fetchDone || signal["prevFinished"]) this.currIndex = 0;
         }
-        //如果所有的图片都加载完毕，则停止
-        if (this.finishedIF.length === this.queue.length) {
-            this.abort = true;
-            console.log("所有页已经加载完毕！");
-            return;
-        }
-        if (!this.queue[index].lock) {//当前的图片获取器没有被锁定
-            this.queue[index].lock = true;//加锁
-            const flag = await this.queue[index].fetchImg();
-            this.queue[index].lock = false;
-            if (flag && this.queue[index].stage === 2) {
-                (this.finishedIF.indexOf(this.queue[index]) === -1) && (this.finishedIF.push(this.queue[index]));
-            }
+        //通过当前的索引获取队列中的图片获取器IMGFetcher,然后调用器获取图片的方法,在获取的过程中进行加锁
+        let imgFetcher = this.queue[this.currIndex];
+        if (!imgFetcher.lock && (imgFetcher.lock = true)) {
+            const flag = await imgFetcher.fetchImg().then(flag => (imgFetcher.lock = false) || flag);
+            (flag && imgFetcher.stage === 2) && this.finishedIF.push(this.currIndex);
+
         }
         //当前要处理的图片获取器被锁住了，可能正在获取图片中，则停止自动获取，5s后再次执行
-        if (this.queue[index].lock || this.recuTimes > 1000) {
+        else if (imgFetcher.lock || this.recuTimes > 1000) {
             this.recuTimes = 0;
-            window.setTimeout(() => this.start(index + 1), 5000);
-            return;
+            return window.setTimeout(() => this.start(this.currIndex), 5000);
         }
-        this.recuTimes++; this.timeOut(index + 1).then(index => this.start(index));
+
+        this.recuTimes++;
+        this.timeOut().then(() => this.start(++this.currIndex));
     }
 
-    async timeOut(index) {
+    async timeOut() {
         return new Promise(function (resolve, reject) {
             const time = Math.floor((Math.random() * 1500) + 500);
-            window.setTimeout(resolve, time, index);
+            window.setTimeout(() => resolve(), time);
         });
+    }
+
+    abort(newStart) {
+        if (!conf.autoLoad) return;
+        this.abort = true;
+        window.clearTimeout(this.restartId);
+        //8s后重新开启，todo 但这里可能会出现小概率的双线程危机
+        this.restartId = window.setTimeout(() => { this.abort = false; this.start(newStart); }, conf["restartIdleLoader"]);
     }
 }
 
@@ -292,17 +314,20 @@ let conf = JSON.parse(window.localStorage.getItem("cfg_"));
 //获取宽度
 const screenWidth = window.screen.availWidth;
 
-if (!conf || conf.version !== "1.1.1") {//如果配置不存在则初始化一个
+if (!conf || conf.version !== "1.1.2") {//如果配置不存在则初始化一个
     let rowCount = screenWidth > 2500 ? 9 : screenWidth > 1900 ? 7 : 5;
     conf = {
         backgroundImage: `data:image/png;base64,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`,
         gateBackgroundImage: `https://tvax3.sinaimg.cn/mw690/6762c771gy1gcv2eydei3g20f00l7e87.gif`,
-        rowCount: rowCount,
-        followMouse: true,
-        keepScale: false,
-        autoLoad: true,
-        fetchOriginal: false,
-        version: "1.1.1",
+        rowCount: rowCount,//每行显示的数量
+        followMouse: true,//大图是否跟随鼠标
+        keepScale: false,//是否保留缩放
+        autoLoad: true,//是否启用空闲加载器
+        fetchOriginal: false,//是否获取最佳质量的图片
+        restartIdleLoader: 8000,//中止空闲加载器后的重新启动时间
+        threads: 3,//同时加载的图片数量
+        autoLoadPage: true,//是否自动加载所有页
+        version: "1.1.2",
         first: true
     }
     window.localStorage.setItem("cfg_", JSON.stringify(conf));
@@ -374,8 +399,7 @@ const idleLoader = new IdleLoader(IFQ);
 //通过地址请求该页的文档对象模型
 const fetchSource = async function (href, oriented) {
     if (href === null || !oriented) return null;
-    const response = await window.fetch(href);
-    const text = await response.text();
+    const text = await window.fetch(href).then(response => response.text());
     let ele = document.createElement("div"); ele.innerHTML = text;
     return stepPageSource[oriented] = ele;
 }
@@ -389,8 +413,8 @@ const stepPageSource = {
 
 //线程锁，如果上一页或下一页正在获取中，则设置为false，即加锁。
 const signal = {
-    "prev": true,
-    "next": true,
+    "prev": false,
+    "next": false,
     "first": true,
     "prevFinished": false,
     "nextFinished": false
@@ -427,25 +451,17 @@ const appendToFullViewPlane = function (source, oriented) {
     try {
         //从该页的文档中将图片列表提取出来
         let imageList = extractImageList(source);
-        //每一个图片生成一个对应的大图处理器
+        //每一个图片生成一个对应的图片获取器
         let IFs = imageList.map(img => new IMGFetcher(img));
         if (oriented === "prev") {//如果行动导向是上一页
-            fullViewPlane.firstElementChild.nextElementSibling.after(...imageList);//则已全屏阅读元素的第一个元素为锚点，追加所有元素
+            fullViewPlane.firstElementChild.nextElementSibling.after(...imageList);//则以全屏阅读元素的第一个元素为锚点，追加所有元素
             IFQ.unshift(...IFs);//则将所有的大图处理器添加到大图处理器数组的前部
         } else if (oriented === "next") {//如果行动导向是下一页
             fullViewPlane.lastElementChild.after(...imageList);
             IFQ.push(...IFs);
         }
         pageHelperHandler(2, IFQ.length);
-        imageList.forEach(e => e.addEventListener("click", (event) => {
-            //展开大图阅览元素
-            bigImageFrame.classList.remove("retract");
-            // bigImageFrame.appendChild(fragment.firstElementChild);
-            bigImageElement.hidden = false;
-            pageHelper.hidden = false;
-            //获取该元素所在的索引
-            IFQ.do([].slice.call(fullViewPlane.childNodes).indexOf(event.target) - 2);
-        }))
+        imageList.forEach(e => e.addEventListener("click", showBigImageEvent))
         return true;
     } catch (error) {
         console.log("从下一页或上一页中提取图片元素时出现了错误！");
@@ -458,26 +474,39 @@ const appendToFullViewPlane = function (source, oriented) {
 const extractImageList = function (source) {
     return [].slice.call(source.querySelector("#gdt").childNodes)
         .filter(node => (node.nodeType === 1 && node.hasChildNodes()))
-        .map(node => { let imgE = node.firstElementChild.firstElementChild.cloneNode(true); imgE.setAttribute("ahref", node.firstElementChild.href); return imgE; })
+        .map(node => { let imgE = node.firstElementChild.firstElementChild.cloneNode(true); /* imgE.loading = "lazy"; */ imgE.setAttribute("ahref", node.firstElementChild.href); return imgE; })
 }
 
 //整合函数区的方法，提取下一页或上一页的地址 > 获取该地址的文档对象模型 > 从文档对象模型中提取图片列表 > 将图片列表追加到全屏阅览元素以及图片获取器队列中
 //   此方法，当全屏阅览元素滚动时会被调用，动态加载上一页或下一页
 //   此方法，当大图被滚动到当前的第一张图或最后一张图时被调用，尝试获取上一页或下一页
 const fetchStepPage = async function (oriented) {
-    if ((oriented === "prev" && signal.prevFinished) || (oriented === "next" && signal.nextFinished)) return false;
-    //如果本事件还没有完成，则停止执行其他事件
-    if ((oriented === "stop") || !signal[oriented]) return false;
+    if ((oriented === "prev" && signal["prevFinished"]) || (oriented === "next" && signal["nextFinished"])) return false;
+    //如果本事件还没有完成，则停止执行接下来的事件
+    if ((oriented === "stop") || signal[oriented]) return false;
     //从当前已经存在的下一页或上一页文档中获取下下一页或上上一页的地址
     let _stepPageUrl = stepPageUrl(stepPageSource[oriented], oriented);
     //如果下下一页或上上一页的地址不存在，停止执行下去
     if (_stepPageUrl === null) return false;
-    signal[oriented] = false;//加锁
+    signal[oriented] = true;//加锁
     const source = await fetchSource(_stepPageUrl, oriented);//获取下下一页或上上一页的文档
-    signal[oriented] = true;//解锁
+    signal[oriented] = false;//解锁
     //如果没有获取到下下一页或上上一页的文档则停止继续执行
     if (source === null) return false;
     return appendToFullViewPlane(source, oriented);
+}
+
+//自动加载所有页
+const loadPage = function (auto) {
+    appendToFullViewPlane(document, "next");
+    if (auto) {
+        ["prev", "next"].forEach(oriented => window.setTimeout(() => autoLoadPage(oriented), 0));
+    }
+
+}
+const autoLoadPage = async function (oriented) {
+    let flag = await fetchStepPage(oriented);
+    if (flag) return autoLoadPage(oriented);
 }
 
 //向配置面板增加配置项
@@ -496,6 +525,44 @@ const createChild = function (type, parent, innerHTML) {
 
 
 //========================================事件库============================================START
+//点击入口按钮事件
+const gateEvent = function (event) {
+    fullViewPlane.classList.remove("retract_full_view");
+    if (signal.first) {
+        loadPage(conf["autoLoadPage"]);
+        idleLoader.start(0);
+        signal.first = false;
+    }
+}
+//全屏阅览元素的滚轮事件
+const wheelEvent = function (event) {
+    //对冒泡的处理
+    if (event.target === bigImageFrame || event.target === bigImageElement || [].slice.call(bigImageFrame.childNodes).indexOf(event.target) > 0) return;
+    //确定导向，向下滚动还是向上滚动
+    let st = Math.ceil(fullViewPlane.scrollTop),
+        stm = fullViewPlane.scrollHeight - fullViewPlane.offsetHeight,
+        oriented = (st === stm && st === 0) ? "prev.next" : (st === 0) ? "prev" : (st >= stm) ? "next" : "stop";
+    oriented.split(".").forEach(fetchStepPage);
+}
+//大图框架点击事件，点击后隐藏大图框架
+const hiddenBigImageEvent = function (event) {
+    if (event.target.tagName === "SPAN") return;
+    bigImageFrame.classList.add("retract");
+    window.setTimeout(() => {
+        // fragment.appendChild(bigImageFrame.firstElementChild);
+        bigImageElement.hidden = true;
+        pageHelper.hidden = true;
+    }, 700);
+}
+
+//大图框架元素的滚轮事件/按下鼠标右键滚动则是缩放/直接滚动则是切换到下一张或上一张
+const bigImageWheelEvent = function (event) {
+    if (event.buttons === 2) {
+        scaleImageEvent(event);
+    } else {
+        stepImageEvent(event);
+    }
+}
 //大图框架添加鼠标移动事件，该事件会将让大图跟随鼠标左右移动
 const followMouseEvent = function (event) {
     if (bigImageFrame.moveEventLock) return;
@@ -503,7 +570,16 @@ const followMouseEvent = function (event) {
     window.setTimeout(() => { bigImageFrame.moveEventLock = false; }, 20)
     bigImageElement.style.left = `${event.clientX - (window.screen.availWidth / 2)}px`;
 }
-
+//点击缩略图后展示大图元素的事件
+const showBigImageEvent = function (event) {
+    //展开大图阅览元素
+    bigImageFrame.classList.remove("retract");
+    // bigImageFrame.appendChild(fragment.firstElementChild);
+    bigImageElement.hidden = false;
+    pageHelper.hidden = false;
+    //获取该元素所在的索引
+    IFQ.do([].slice.call(fullViewPlane.childNodes).indexOf(event.target) - 2);
+}
 //修正图片top位置
 const fixImageTop = function (mouseY, isScale) {
     //垂直轴中心锚点，用来计算鼠标距离垂直中心点的距离，值是一个正负数
@@ -526,7 +602,6 @@ const fixImageTop = function (mouseY, isScale) {
     /* -(diffHeight >> 1) 修正图片位置基准，让放大的图片也垂直居中在父元素上 */
     bigImageElement.style.top = -(diffHeight >> 1) + topMove + "px";
 }
-
 //缩放图片事件
 const scaleImageEvent = function (event) {
     //获取图片的高度, 值是百分比
@@ -570,7 +645,6 @@ const scrollToArrow = function (event) {
             break;
     }
 }
-
 //修改配置时的布尔值类型的事件
 const boolElementEvent = function (event) {
     event.target.blur();//让该输入框元素立即失去焦点
@@ -583,7 +657,6 @@ const boolElementEvent = function (event) {
         modCFG(event.target.getAttribute("confKey"), true);
     }
 }
-
 //修改配置时的输入型类型事件
 const inputElementEvent = function (event) {
     let val = event.target.previousElementSibling.value;
@@ -602,7 +675,6 @@ const pageHelperHandler = function (index, value, type) {
         node.textContent = value;
     }
 }
-
 //修改每行数量事件的添加
 const modRowEvent = function () {
     [].slice.call(modRowCount.childNodes).filter(node => node.nodeType === Node.ELEMENT_NODE).forEach((node, index) => {
@@ -633,7 +705,6 @@ const modRowEvent = function () {
         }
     })
 }
-
 //显示简易指南事件
 const showGuideEvent = function (event) {
     let guideFull = document.createElement("div");
@@ -661,14 +732,7 @@ if (document.querySelector("div.ths:nth-child(2)") === null) {
 } else {
     tempContainer.innerHTML = `<img src="${conf.gateBackgroundImage}" referrerpolicy="no-referrer" style="width: 125px; height: 30px;">`;
     showBTNRoot.appendChild(tempContainer.firstElementChild);
-    showBTNRoot.lastElementChild.addEventListener("click", (event) => {
-        fullViewPlane.classList.remove("retract_full_view");
-        if (signal.first) {
-            appendToFullViewPlane(document, "next");
-            idleLoader.start(0);
-            signal.first = false;
-        }
-    })
+    showBTNRoot.lastElementChild.addEventListener("click", gateEvent)
 }
 //==================创建入口按钮，追加到tag面板的右侧=====================FIN
 
@@ -758,15 +822,7 @@ bigImageElement.hidden = true;
 
 
 //全屏阅读元素滚轮事件
-fullViewPlane.addEventListener("wheel", (event) => {
-    //对冒泡的处理
-    if (event.target === bigImageFrame || event.target === bigImageElement || [].slice.call(bigImageFrame.childNodes).indexOf(event.target) > 0) return;
-    //确定导向，向下滚动还是向上滚动
-    let st = Math.ceil(fullViewPlane.scrollTop),
-        stm = fullViewPlane.scrollHeight - fullViewPlane.offsetHeight,
-        oriented = (st === stm && st === 0) ? "prev.next" : (st === 0) ? "prev" : (st >= stm) ? "next" : "stop";
-    oriented.split(".").forEach(fetchStepPage);
-});
+fullViewPlane.addEventListener("wheel", wheelEvent);
 
 //全屏阅览元素点击事件，点击空白处隐藏
 fullViewPlane.addEventListener("click", (event) => { if (event.target === fullViewPlane) { fullViewPlane.classList.add("retract_full_view"); }; });
@@ -775,24 +831,10 @@ fullViewPlane.addEventListener("click", (event) => { if (event.target === fullVi
 bigImageFrame.addEventListener("contextmenu", (event) => { event.preventDefault(); });
 
 //大图框架点击事件，点击后隐藏大图框架
-bigImageFrame.addEventListener("click", (event) => {
-    if (event.target.tagName === "SPAN") return;
-    bigImageFrame.classList.add("retract");
-    window.setTimeout(() => {
-        // fragment.appendChild(bigImageFrame.firstElementChild);
-        bigImageElement.hidden = true;
-        pageHelper.hidden = true;
-    }, 700);
-});
+bigImageFrame.addEventListener("click", hiddenBigImageEvent);
 
 //大图框架元素的滚轮事件
-bigImageFrame.addEventListener("wheel", (event) => {
-    if (event.buttons === 2) {
-        scaleImageEvent(event);
-    } else {
-        stepImageEvent(event);
-    }
-});
+bigImageFrame.addEventListener("wheel", bigImageWheelEvent);
 
 //大图放大后鼠标移动事件
 bigImageFrame.addEventListener("mousemove", (event) => { fixImageTop(event.clientY, false); })

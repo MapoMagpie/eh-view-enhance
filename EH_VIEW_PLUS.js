@@ -7,14 +7,15 @@
 // @match        https://exhentai.org/g/*
 // @match        https://e-hentai.org/g/*
 // @icon         https://exhentai.org/favicon.ico
+// @grant        GM.xmlHttpRequest
 // ==/UserScript==
 
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================START
 class IMGFetcher {
     constructor(node) {
         this.node = node;
-        this.url = node.getAttribute("ahref");
-        this.oldSrc = node.src;
+        this.pageUrl = node.getAttribute("ahref");
+        this.smallImageUrl = node.src;
         //当前处理阶段，0: 什么也没做 1: 获取到大图地址 2: 完整的获取到大图
         this.stage = 0;
         this.tryTime = 0;
@@ -25,15 +26,14 @@ class IMGFetcher {
         switch (this.stage) {
             case 0://尝试获取大图地址
                 try {
-                    //给当前缩略图元素添加一个获取中的边框样式
-                    this.node.classList.add("fetching");
+                    this.changeStyle("add");
                     await this.fetchBigImageUrl();
                     //成功获取到大图的地址后，将本图片获取器的状态修改为1，表示大图地址已经成功获取到
                     if (this.bigImageUrl) {
                         this.stage = 1;
-                        return/* 少写一个return，花了我4小时调试一个奇怪的bug */ this.fetchImg(x);
+                        return this.fetchImg(x);/* 少写一个return，花了我4小时调试一个奇怪的bug */
                     } else {
-                        throw "大图地址不存在！";
+                        throw new Error("大图地址不存在！");
                     }
                 } catch (error) {
                     this.stage = 0;//如果失败后，则将图片获取器的状态修改为0，表示从0开始
@@ -43,14 +43,18 @@ class IMGFetcher {
             case 1://理论上获取到大图地址，尝试使用weirdFetch获取大图数据
                 try {
                     //使用奇怪的图片获取器来获取大图的数据
-                    const flag = await IMGFetcher.weirdFetch(this.node, this.bigImageUrl, this.oldSrc).then(result => result.flag);
-                    //当获取到内容，或者获取失败，则移除本缩略图的边框效果
-                    this.node.classList.remove("fetching");
-                    if (flag) {//如果成功获取到图片的内容，则将本图片获取器的状态修改为2，表示图片获取器的整体成功
-                        this.stage = 2; this.node.style.border = "3px #602a5c solid"; return this.fetchImg(x);
+                    //如果成功获取到图片的内容，则将本图片获取器的状态修改为2，表示图片获取器的整体成功
+                    if (await this.weirdFetch().then(fetchDone => fetchDone.flag)) {
+                        this.stage = 2;
+                        this.changeStyle("remove", "success");
+                        return this.fetchImg(x);
                     } else {//如果失败了，则进行重试，重试会进行2次
-                        ++this.tryTime; this.stage = 0; this.node.style.border = "3px white solid";
-                        if (this.tryTime > 2) { this.node.style.border = "3px red solid"; return false; }//重试2次后，直接失败，避免无限请求
+                        ++this.tryTime; this.stage = 0;
+                        if (this.tryTime > 2) {
+                            this.changeStyle("remove", "failed");
+                            return false;
+                        }//重试2次后，直接失败，避免无限请求
+                        this.changeStyle("remove", "retry");
                         return this.fetchImg(x);
                     }
                 } catch (error) {
@@ -68,7 +72,7 @@ class IMGFetcher {
         this.lock = true;
         this.fetchImg(x).then(flag => {
             if (flag) {
-                IFQ.report(index, this.bigImageUrl, this.node.offsetTop);
+                IFQ.report(index, this.blobUrl, this.node.offsetTop);
             } else {
                 console.log("没有获取到图片，这期间一定发生了什么异常的事情！")
             }
@@ -79,45 +83,85 @@ class IMGFetcher {
     //立刻将当前元素的src赋值给大图元素
     setNow(index) {
         if (this.stage === 2) {
-            IFQ.report(index, this.bigImageUrl, this.node.offsetTop);
+            IFQ.report(index, this.blobUrl, this.node.offsetTop);
         } else {
-            bigImageElement.src = this.oldSrc;
-            bigImageElement.classList.add("fetching");
+            bigImageElement.src = this.smallImageUrl;
+            bigImageElement.classList.add("fetching")
         }
         pageHelperHandler(1, index + 1);
     }
     //获取大图地址
     async fetchBigImageUrl() {
         //使用fetch获取该缩略图所指向的大图页面
-        let text = await window.fetch(this.url).then(response => response.text());
+        let text = await window.fetch(this.pageUrl).then(response => response.text());
         if (conf["fetchOriginal"]) {//抽取最佳质量的图片的地址
             this.bigImageUrl = IMGFetcher.extractUrl["original"].exec(text)[1].replace(/&amp;/g, "&");
         } else if (this.tryTime === 0) {//抽取正常的有压缩的大图地址
             this.bigImageUrl = IMGFetcher.extractUrl["normal"].exec(text)[1];
         } else {//如果是重试状态,则进行换源 todo 异常处理
             let nlValue = IMGFetcher.extractUrl["nlValue"].exec(text)[1];
-            this.url += ((this.url + '').indexOf('?') > -1 ? '&' : '?') + 'nl=' + nlValue;
-            text = await window.fetch(this.url).then(response => response.text());
-            //从大图页面中提取大图的地址，todo 之后会加入重试换源的功能
+            this.pageUrl += ((this.pageUrl + '').indexOf('?') > -1 ? '&' : '?') + 'nl=' + nlValue;
+            text = await window.fetch(this.pageUrl).then(response => response.text());
+            //从大图页面中提取大图的地址
             this.bigImageUrl = IMGFetcher.extractUrl["normal"].exec(text)[1];
         }
     }
+
+    changeStyle(action, success) {
+        if (action === "remove") {
+            //当获取到内容，或者获取失败，则移除本缩略图的边框效果
+            this.node.classList.remove("fetching");
+        } else if (action === "add") {
+            //给当前缩略图元素添加一个获取中的边框样式
+            this.node.classList.add("fetching");
+        }
+        if (success === "success") {
+            this.node.style.border = "3px #602a5c solid";
+        } else if (success === "failed") {
+            this.node.style.border = "3px red solid";
+        } else if (success === "retry") {
+            this.node.style.border = "3px white solid";
+        }
+    }
+
+    weirdFetch() {
+        const imgFetcher = this;
+        return new Promise(function (resolve, reject) {
+            imgFetcher.xhr = GM.xmlHttpRequest({
+                method: "GET",
+                url: imgFetcher.bigImageUrl,
+                responseType: "blob",
+                timeout: conf["timeout"],
+                headers: { 'Referer': imgFetcher.pageUrl, 'X-Alt-Referer': imgFetcher.pageUrl },
+                onprogress: function (response) {
+                    // console.log("onprogress", response);
+                    //todo 速度展示
+                },
+                onload: function (response) {
+                    // console.log("onload", response);//打印会造成性能低下
+                    let data = response.response;
+                    if (!(data instanceof Blob)) throw new Error("未下载到有效的数据！");
+
+                    imgFetcher.blobData = data;
+                    imgFetcher.blobUrl = URL.createObjectURL(data);
+                    imgFetcher.node.src = imgFetcher.blobUrl;
+
+                    resolve({ flag: true });
+                },
+                onerror: function (response) {
+                    // console.log("onerror", response);
+                    resolve({ flag: false });
+                }
+            })
+        });
+    }
 }
+
 IMGFetcher.extractUrl = {
     normal: /\<img\sid=\"img\"\ssrc=\"(.*)\"\sstyle/,
     original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg\.php\?[^"\\]*)\"\>/,
     nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/
 };
-
-//奇怪的专门的图片请求器
-IMGFetcher.weirdFetch = function (imgE, url, oldUrl) {
-    return new Promise(function (resolve, reject) {
-        imgE.setAttribute("importance", "high");//提高图片加载优先级
-        imgE.onloadstart = function (event) { imgE.timeoutId = window.setTimeout(() => { imgE.onloadstart = null; imgE.onloadend = null; imgE.src = oldUrl; resolve({ flag: false }); }, 10000); };//10秒后直接请求失败，然后会重试2次
-        imgE.onloadend = function (event) { window.clearTimeout(imgE.timeoutId); resolve({ flag: true }); };
-        imgE.src = url;//将大图地址赋值给图片元素，如果图片加载完成后就会调用resolve函数，达到同步效果
-    });
-}
 
 class IMGFetcherQueue extends Array {
     constructor() {
@@ -139,6 +183,10 @@ class IMGFetcherQueue extends Array {
     do(start, oriented) {
         oriented = oriented || "next";
         this.currIndex = this.fixIndex(start, oriented);
+
+        //立即中止空闲加载器
+        idleLoader.abort(this.currIndex);
+
         this[this.currIndex].setNow(this.currIndex);
 
         //从当前索引开始往后,放入指定数量的图片获取器,如果该图片获取器已经获取完成则向后延伸.
@@ -205,20 +253,20 @@ class IMGFetcherQueue extends Array {
 
         //把要执行获取器先放置到队列中，延迟执行
         this.executableQueue = [];
-        for (let count = 0; pushExecQueueSlave1(oriented, count); pushExecQueueSlave2(oriented)) {
-            if (this[this.currIndex].stage === 2) continue;
-            this.executableQueue.push(this.currIndex);
+        for (let count = 0, index = this.currIndex; this.pushExecQueueSlave(index, oriented, count); (oriented === "next") ? ++index : --index) {
+            if (this[index].stage === 2) continue;
+            this.executableQueue.push(index);
             count++;
         }
         return this.executableQueue.length > 0;
     }
 
-    pushExecQueueSlave1(oriented, count) {
+    pushExecQueueSlave(index, oriented, count) {
         return (
             (
-                ((oriented === "next") && (this.currIndex < this.length))
+                ((oriented === "next") && (index < this.length))
                 ||
-                ((oriented === "prev") && (this.currIndex > -1))
+                ((oriented === "prev") && (index > -1))
             )
             &&
             (
@@ -226,16 +274,24 @@ class IMGFetcherQueue extends Array {
             )
         );//丧心病
     }
-    pushExecQueueSlave2(oriented) {
-        (oriented === "next") ? ++this.currIndex : --this.currIndex;
+
+    findIndex(node) {
+        for (let index = 0; index < this.length; index++) {
+            if (this[index] instanceof IMGFetcher && this[index].node === node) {
+                return index;
+            }
+        }
+        return 0;
     }
 }
 
 //空闲自加载
 class IdleLoader {
-    constructor(IFQ) {
+    constructor(IFQ, PF) {
         //图片获取器队列
         this.queue = IFQ;
+        //页获取器
+        this.PF = PF;
         //当前处理
         this.currIndex = 0;
         //是否终止
@@ -260,13 +316,13 @@ class IdleLoader {
 
         //如果索引到达了队列最后，则检测是否还有下一页
         if (this.currIndex > this.queue.length - 1) {
-            let fetchDone = await fetchStepPage("next");
-            if (!fetchDone || signal["nextFinished"]) this.currIndex = 0;
+            let fetchDone = await this.PF.appendStepPage("next");
+            fetchDone || (this.currIndex = 0);
         }
         //如果索引是0，则检测是否还有上一页
         if (this.currIndex === 0) {
-            let fetchDone = await fetchStepPage("prev");
-            if (fetchDone || signal["prevFinished"]) this.currIndex = 0;
+            let fetchDone = await this.PF.appendStepPage("prev");
+            fetchDone && (this.currIndex = 0);
         }
         //通过当前的索引获取队列中的图片获取器IMGFetcher,然后调用器获取图片的方法,在获取的过程中进行加锁
         let imgFetcher = this.queue[this.currIndex];
@@ -294,13 +350,169 @@ class IdleLoader {
 
     abort(newStart) {
         if (!conf.autoLoad) return;
-        this.abort = true;
+        this.abort_ = true;
         window.clearTimeout(this.restartId);
         //8s后重新开启，todo 但这里可能会出现小概率的双线程危机
-        this.restartId = window.setTimeout(() => { this.abort = false; this.start(newStart); }, conf["restartIdleLoader"]);
+        this.restartId = window.setTimeout(() => { this.abort_ = false; this.start(newStart); }, conf["restartIdleLoader"]);
     }
 }
 
+//页获取器，可获取下一个列表页，以及下一个图片页
+class PageFetcher {
+    constructor(IFQ) {
+        this.queue = IFQ;
+        //文档对象模型的引用，当前页的文档对象、下一个、上一个列表页的文档对象模型。
+        this.stepSource = { "prev": document, "next": document };
+        //是否正在获取上一页或者下一页中
+        this.fetching = { "prev": false, "next": false };
+        //第一页或者最后一页是否获取完毕
+        this.fetched = { "prev": false, "next": false };
+        //上一页或下一页的地址
+        this.stepUrl = { "prev": null, "next": null };
+        //每页的图片获取器列表，用于实现懒加载
+        this.imgAppends = { "prev": [], "next": [] };
+    }
+
+    //加载当前页的图片元素到全屏阅览元素和图片获取器队列中
+    appendDefaultPage() {
+        let imageList = this.extractImageList(document);
+        let IFs = imageList.map(img => new IMGFetcher(img));
+        fullViewPlane.firstElementChild.nextElementSibling.after(...imageList);
+        imageList.forEach(e => e.addEventListener("click", showBigImageEvent));
+        this.queue.push(...IFs);
+
+        if (conf["autoLoadPage"]) {//自动加载所有页
+            ["prev", "next"].forEach(oriented => window.setTimeout(() => this.autoLoadPage(oriented), 0));
+        }
+    }
+
+    //加载上一页或下一页
+    async appendStepPage(oriented) {
+        //弹出该方向的第一个元素，该元素是一个函数，用来将图片列表追加到全屏阅览元素中
+        let excutor = this.imgAppends[oriented].shift();
+
+        if (excutor) { excutor(); return true; }
+
+        if (this.fetched[oriented]) return true;
+
+        let fetchDone = await this.fetchStepPage(oriented);
+
+        if (fetchDone) return this.appendStepPage(oriented);
+
+        return false;
+    }
+
+    //通过该页的内容获取下一页或上一页的地址 oriented : prev/next
+    stepPageUrl(oriented) {
+        let e1 = this.stepSource[oriented].querySelector("table.ptb td.ptds"), e2;
+
+        if (!e1) throw new Error("无法获取页码指示器元素！");
+
+        switch (oriented) {
+            case "prev": e2 = e1.previousElementSibling;
+                if (!e2 || e2.textContent === "<") {
+                    this.fetched[oriented] = true;
+                    pageHelperHandler(0, "O");
+                    return null;
+                };
+                break;
+            case "next": e2 = e1.nextElementSibling;
+                if (!e2 || e2.textContent === ">") {
+                    this.fetched[oriented] = true;
+                    pageHelperHandler(3, "O");
+                    return null;
+                };
+                break;
+        }
+        //上一页或下一页的地址
+        return this.stepUrl[oriented] = e2.firstElementChild.href;
+    }
+
+    //将该页的图片列表提取出来，然后追加到全屏阅读元素(fullViewPlane)上
+    appendImgList(oriented) {
+        try {
+            //从该页的文档中将图片列表提取出来
+            let imageList = this.extractImageList(this.stepSource[oriented]);
+            //每一个图片生成一个对应的图片获取器
+            let IFs = imageList.map(img => new IMGFetcher(img));
+
+            switch (oriented) {
+                case "prev":
+                    this.imgAppends["prev"]
+                        .push(() => {
+                            fullViewPlane.firstElementChild.nextElementSibling.after(...imageList);
+                            imageList.forEach(e => e.addEventListener("click", showBigImageEvent));
+                        });
+
+                    this.queue.unshift(...IFs);
+                    this.queue.neexFixIndex = true;
+                    break;
+                case "next":
+                    this.imgAppends["next"]
+                        .push(() => {
+                            fullViewPlane.lastElementChild.after(...imageList);
+                            imageList.forEach(e => e.addEventListener("click", showBigImageEvent));
+                        });
+                    this.queue.push(...IFs);
+                    this.queue.neexFixIndex = true;
+                    break;
+            }
+
+            pageHelperHandler(2, this.queue.length);
+            return true;
+        } catch (error) {
+            console.log("从下一页或上一页中提取图片元素时出现了错误！");
+            console.log(error);
+            return false;
+        }
+    }
+
+    //提取传入的文档对象模型的图片列表
+    extractImageList(source) {
+        return [].slice.call(source.querySelector("#gdt").childNodes)
+            .filter(node => (node.nodeType === 1 && node.hasChildNodes()))
+            .map(node => {
+                let imgE = node.firstElementChild.firstElementChild.cloneNode(true);
+                imgE.loading = "lazy";
+                imgE.setAttribute("ahref", node.firstElementChild.href);
+                return imgE;
+            })
+    }
+
+    //通过地址请求该页的文档对象模型
+    async fetchSource(oriented) {
+        if (!this.stepUrl[oriented]) throw new Error("无效的方向或无效的下一页或上一页地址");
+
+        const text = await window.fetch(this.stepUrl[oriented]).then(response => response.text());
+
+        let ele = document.createElement("div"); ele.innerHTML = text;
+
+        this.stepSource[oriented] = ele;
+    }
+
+    //提取下一页或上一页的地址 > 获取该地址的文档对象模型 > 从文档对象模型中提取图片列表 > 将图片列表追加到全屏阅览元素以及图片获取器队列中
+    async fetchStepPage(oriented) {
+        //如果该方向的图片列表页全部加载完毕，则直接返回false
+        //如果本事件还没有完成，则停止执行接下来的事件
+        if (this.fetched[oriented] || this.fetching[oriented]) return false;
+
+        //从当前已经存在的下一页或上一页文档中获取下下一页或上上一页的地址
+        if (!this.stepPageUrl(oriented)) return false;
+
+        //获取下一页或上上一页的文档
+        this.fetching[oriented] = true;//加锁
+        await this.fetchSource(oriented);
+        this.fetching[oriented] = false;//解锁
+
+        return this.appendImgList(oriented);
+    }
+
+    //自动加载该方向的所有页
+    async autoLoadPage(oriented) {
+        let flag = await this.fetchStepPage(oriented);
+        if (flag) return this.autoLoadPage(oriented);
+    }
+}
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================FIN
 
 
@@ -310,11 +522,13 @@ class IdleLoader {
 
 
 //===============================================配置管理器=================================================START
+const signal = { "first": true };
+
 let conf = JSON.parse(window.localStorage.getItem("cfg_"));
 //获取宽度
 const screenWidth = window.screen.availWidth;
 
-if (!conf || conf.version !== "1.1.2") {//如果配置不存在则初始化一个
+if (!conf || conf.version !== "1.2.2") {//如果配置不存在则初始化一个
     let rowCount = screenWidth > 2500 ? 9 : screenWidth > 1900 ? 7 : 5;
     conf = {
         backgroundImage: `data:image/png;base64,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`,
@@ -327,7 +541,8 @@ if (!conf || conf.version !== "1.1.2") {//如果配置不存在则初始化一�
         restartIdleLoader: 8000,//中止空闲加载器后的重新启动时间
         threads: 3,//同时加载的图片数量
         autoLoadPage: true,//是否自动加载所有页
-        version: "1.1.2",
+        timeout: 8000,//超时时间，默认8秒
+        version: "1.2.2",
         first: true
     }
     window.localStorage.setItem("cfg_", JSON.stringify(conf));
@@ -389,125 +604,12 @@ const updateEvent = function (k, v) {
 
 
 //===============================================方法区=================================================START
-//提取下一页或上一页的地址 > 获取该地址的文档对象模型 > 从文档对象模型中提取图片列表 > 将图片列表追加到全屏阅览元素以及图片获取器队列中
-
 //图片获取器调用队列
 const IFQ = new IMGFetcherQueue();
+//页加载器
+const PF = new PageFetcher(IFQ);
 //空闲自加载器
-const idleLoader = new IdleLoader(IFQ);
-
-//通过地址请求该页的文档对象模型
-const fetchSource = async function (href, oriented) {
-    if (href === null || !oriented) return null;
-    const text = await window.fetch(href).then(response => response.text());
-    let ele = document.createElement("div"); ele.innerHTML = text;
-    return stepPageSource[oriented] = ele;
-}
-
-//上一页，起始页，下一页的文档对象模型，上一页和下一页会随着滚动加载而变更
-const stepPageSource = {
-    "prev": document,
-    "curr": document,
-    "next": document
-}
-
-//线程锁，如果上一页或下一页正在获取中，则设置为false，即加锁。
-const signal = {
-    "prev": false,
-    "next": false,
-    "first": true,
-    "prevFinished": false,
-    "nextFinished": false
-}
-
-//通过该页的内容获取下一页或上一页的地址 oriented : prev/next
-const stepPageUrl = function (source, oriented) {
-    let e1 = source.querySelector("table.ptb td.ptds"), stepE; if (!e1) return null;
-    switch (oriented) {
-        case "prev":
-            stepE = e1.previousElementSibling;
-            if (!stepE || stepE.textContent === "<") {
-                signal.prevFinished = true;
-                pageHelperHandler(0, "O");
-                // pageHelperHandler(0, "edgeFIN", "class");
-                return null
-            };
-            break;
-        case "next":
-            stepE = e1.nextElementSibling;
-            if (!stepE || stepE.textContent === ">") {
-                signal.nextFinished = true;
-                pageHelperHandler(3, "O");
-                // pageHelperHandler(3, "edgeFIN", "class");
-                return null
-            };
-            break;
-    }
-    return stepE.firstElementChild.href;
-}
-
-//将该页的图片列表提取出来，然后追加到全屏阅读元素(fullViewPlane)上
-const appendToFullViewPlane = function (source, oriented) {
-    try {
-        //从该页的文档中将图片列表提取出来
-        let imageList = extractImageList(source);
-        //每一个图片生成一个对应的图片获取器
-        let IFs = imageList.map(img => new IMGFetcher(img));
-        if (oriented === "prev") {//如果行动导向是上一页
-            fullViewPlane.firstElementChild.nextElementSibling.after(...imageList);//则以全屏阅读元素的第一个元素为锚点，追加所有元素
-            IFQ.unshift(...IFs);//则将所有的大图处理器添加到大图处理器数组的前部
-        } else if (oriented === "next") {//如果行动导向是下一页
-            fullViewPlane.lastElementChild.after(...imageList);
-            IFQ.push(...IFs);
-        }
-        pageHelperHandler(2, IFQ.length);
-        imageList.forEach(e => e.addEventListener("click", showBigImageEvent))
-        return true;
-    } catch (error) {
-        console.log("从下一页或上一页中提取图片元素时出现了错误！");
-        console.log(error);
-        return false;
-    }
-}
-
-//提取传入的文档对象模型的图片列表
-const extractImageList = function (source) {
-    return [].slice.call(source.querySelector("#gdt").childNodes)
-        .filter(node => (node.nodeType === 1 && node.hasChildNodes()))
-        .map(node => { let imgE = node.firstElementChild.firstElementChild.cloneNode(true); /* imgE.loading = "lazy"; */ imgE.setAttribute("ahref", node.firstElementChild.href); return imgE; })
-}
-
-//整合函数区的方法，提取下一页或上一页的地址 > 获取该地址的文档对象模型 > 从文档对象模型中提取图片列表 > 将图片列表追加到全屏阅览元素以及图片获取器队列中
-//   此方法，当全屏阅览元素滚动时会被调用，动态加载上一页或下一页
-//   此方法，当大图被滚动到当前的第一张图或最后一张图时被调用，尝试获取上一页或下一页
-const fetchStepPage = async function (oriented) {
-    if ((oriented === "prev" && signal["prevFinished"]) || (oriented === "next" && signal["nextFinished"])) return false;
-    //如果本事件还没有完成，则停止执行接下来的事件
-    if ((oriented === "stop") || signal[oriented]) return false;
-    //从当前已经存在的下一页或上一页文档中获取下下一页或上上一页的地址
-    let _stepPageUrl = stepPageUrl(stepPageSource[oriented], oriented);
-    //如果下下一页或上上一页的地址不存在，停止执行下去
-    if (_stepPageUrl === null) return false;
-    signal[oriented] = true;//加锁
-    const source = await fetchSource(_stepPageUrl, oriented);//获取下下一页或上上一页的文档
-    signal[oriented] = false;//解锁
-    //如果没有获取到下下一页或上上一页的文档则停止继续执行
-    if (source === null) return false;
-    return appendToFullViewPlane(source, oriented);
-}
-
-//自动加载所有页
-const loadPage = function (auto) {
-    appendToFullViewPlane(document, "next");
-    if (auto) {
-        ["prev", "next"].forEach(oriented => window.setTimeout(() => autoLoadPage(oriented), 0));
-    }
-
-}
-const autoLoadPage = async function (oriented) {
-    let flag = await fetchStepPage(oriented);
-    if (flag) return autoLoadPage(oriented);
-}
+const idleLoader = new IdleLoader(IFQ, PF);
 
 //向配置面板增加配置项
 const createChild = function (type, parent, innerHTML) {
@@ -528,10 +630,12 @@ const createChild = function (type, parent, innerHTML) {
 //点击入口按钮事件
 const gateEvent = function (event) {
     fullViewPlane.classList.remove("retract_full_view");
-    if (signal.first) {
-        loadPage(conf["autoLoadPage"]);
+    if (signal["first"]) {
+        PF.appendDefaultPage();
+
         idleLoader.start(0);
-        signal.first = false;
+
+        signal["first"] = false;
     }
 }
 //全屏阅览元素的滚轮事件
@@ -542,7 +646,8 @@ const wheelEvent = function (event) {
     let st = Math.ceil(fullViewPlane.scrollTop),
         stm = fullViewPlane.scrollHeight - fullViewPlane.offsetHeight,
         oriented = (st === stm && st === 0) ? "prev.next" : (st === 0) ? "prev" : (st >= stm) ? "next" : "stop";
-    oriented.split(".").forEach(fetchStepPage);
+    if (oriented === "stop") return;
+    oriented.split(".").forEach(orie => PF.appendStepPage(orie));
 }
 //大图框架点击事件，点击后隐藏大图框架
 const hiddenBigImageEvent = function (event) {
@@ -577,8 +682,8 @@ const showBigImageEvent = function (event) {
     // bigImageFrame.appendChild(fragment.firstElementChild);
     bigImageElement.hidden = false;
     pageHelper.hidden = false;
-    //获取该元素所在的索引
-    IFQ.do([].slice.call(fullViewPlane.childNodes).indexOf(event.target) - 2);
+    //获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
+    IFQ.do(IFQ.findIndex(event.target));
 }
 //修正图片top位置
 const fixImageTop = function (mouseY, isScale) {
@@ -624,7 +729,7 @@ const stepImageEvent = function (event) {
     //下一张索引
     const start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
     //是否达到最后一张或最前面的一张，如果是则判断是否还有上一页或者下一页需要加载，如果还有需要加载的页，则等待页加载完毕后再调用执行队列IFQ.do
-    IFQ.do(start, null, oriented);
+    IFQ.do(start, oriented);
 }
 //点击配置面板两侧的箭头滚动内容
 const scrollToArrow = function (event) {

@@ -6,6 +6,7 @@
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
 // @match        https://e-hentai.org/g/*
+// @connect      https://*hath.network*
 // @icon         https://exhentai.org/favicon.ico
 // @grant        GM.xmlHttpRequest
 // ==/UserScript==

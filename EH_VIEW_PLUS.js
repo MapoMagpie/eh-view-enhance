@@ -150,7 +150,9 @@ class IMGFetcher {
                     resolve({ flag: true });
                 },
                 onerror: function (response) {
-                    // console.log("onerror", response);
+                    resolve({ flag: false });
+                },
+                ontimeout: function (response) {
                     resolve({ flag: false });
                 }
             })

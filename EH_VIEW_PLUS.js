@@ -6,7 +6,7 @@
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
 // @match        https://e-hentai.org/g/*
-// @connect      https://*hath.network*
+// @connect      hath.network
 // @icon         https://exhentai.org/favicon.ico
 // @grant        GM.xmlHttpRequest
 // ==/UserScript==
@@ -139,7 +139,6 @@ class IMGFetcher {
                     //todo 速度展示
                 },
                 onload: function (response) {
-                    // console.log("onload", response);//打印会造成性能低下
                     let data = response.response;
                     if (!(data instanceof Blob)) throw new Error("未下载到有效的数据！");
 
@@ -150,8 +149,10 @@ class IMGFetcher {
                     resolve({ flag: true });
                 },
                 onerror: function (response) {
-                    // console.log("onerror", response);
                     resolve({ flag: false });
+                },
+                ontimeout: function (response) {
+                    resolve({ flag: false })
                 }
             })
         });

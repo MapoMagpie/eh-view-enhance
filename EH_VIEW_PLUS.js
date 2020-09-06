@@ -152,7 +152,7 @@ class IMGFetcher {
                     resolve({ flag: false });
                 },
                 ontimeout: function (response) {
-                    resolve({ flag: false })
+                    resolve({ flag: false });
                 }
             })
         });

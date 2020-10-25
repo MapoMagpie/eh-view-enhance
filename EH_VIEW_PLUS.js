@@ -631,6 +631,7 @@ const createChild = function (type, parent, innerHTML) {
 //========================================事件库============================================START
 //点击入口按钮事件
 const gateEvent = function (event) {
+    fullViewPlane.scroll(0, 0); //否则加载会触发滚动事件
     fullViewPlane.classList.remove("retract_full_view");
     if (signal["first"]) {
         PF.appendDefaultPage();
@@ -640,14 +641,15 @@ const gateEvent = function (event) {
         signal["first"] = false;
     }
 }
-//全屏阅览元素的滚轮事件
-const wheelEvent = function (event) {
+//全屏阅览元素的滚动事件
+const scrollEvent = function (event) {
     //对冒泡的处理
-    if (event.target === bigImageFrame || event.target === bigImageElement || [].slice.call(bigImageFrame.childNodes).indexOf(event.target) > 0) return;
+    if (fullViewPlane.classList.contains("retract_full_view")) return;
     //确定导向，向下滚动还是向上滚动
     let st = Math.ceil(fullViewPlane.scrollTop),
-        stm = fullViewPlane.scrollHeight - fullViewPlane.offsetHeight,
+        stm = fullViewPlane.scrollHeight - fullViewPlane.clientHeight,
         oriented = (st === stm && st === 0) ? "prev.next" : (st === 0) ? "prev" : (st >= stm) ? "next" : "stop";
+    console.log("【EHVE】滚动方向:", oriented);
     if (oriented === "stop") return;
     oriented.split(".").forEach(orie => PF.appendStepPage(orie));
 }
@@ -952,8 +954,8 @@ img_land_right.hidden = true;
 bigImageElement.hidden = true;
 
 
-//全屏阅读元素滚轮事件
-fullViewPlane.addEventListener("wheel", wheelEvent);
+//全屏阅读元素滚动事件
+fullViewPlane.addEventListener("scroll", scrollEvent);
 
 //全屏阅览元素点击事件，点击空白处隐藏
 fullViewPlane.addEventListener("click", (event) => { if (event.target === fullViewPlane) { fullViewPlane.classList.add("retract_full_view"); }; });

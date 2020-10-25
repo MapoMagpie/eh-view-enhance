@@ -672,6 +672,20 @@ const bigImageWheelEvent = function (event) {
         stepImageEvent(event.deltaY > 0 ? "next" : "prev");
     }
 }
+
+//按键事件
+const KeyEvent = function (event) {
+    if (img_land_left.hidden) return;
+    switch (event.key) {
+      case "ArrowLeft" : stepImageEvent("prev");
+        break;
+      case "ArrowRight" : stepImageEvent("next");
+        break;
+      case "Escape" : hiddenBigImageEvent(event);
+        break;
+    }
+}
+
 //大图框架添加鼠标移动事件，该事件会将让大图跟随鼠标左右移动
 const followMouseEvent = function (event) {
     if (bigImageFrame.moveEventLock) return;
@@ -956,8 +970,10 @@ bigImageFrame.addEventListener("wheel", bigImageWheelEvent);
 //大图放大后鼠标移动事件
 bigImageFrame.addEventListener("mousemove", (event) => { fixImageTop(event.clientY, false); });
 
+//按键事件
+document.addEventListener("keyup", KeyEvent);
+
 //点击左/右以切换上/下一张
-//img_land_left.addEventListener("click", (e) => stepImageEvent("prev"));
 img_land_left.onclick = (event) => { stepImageEvent("prev"); event.stopPropagation(); };
 img_land_right.onclick = (event) => { stepImageEvent("next"); event.stopPropagation(); };
 //========================================创建一个全屏阅读元素============================================FIN

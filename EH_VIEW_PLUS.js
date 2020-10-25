@@ -160,7 +160,7 @@ class IMGFetcher {
 }
 
 IMGFetcher.extractUrl = {
-    normal: /\<img\sid=\"img\"\ssrc=\"(.*)\"\sstyle/,
+    normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
     original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg\.php\?[^"\\]*)\"\>/,
     nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/
 };

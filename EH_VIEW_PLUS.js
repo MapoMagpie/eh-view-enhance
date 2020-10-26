@@ -652,6 +652,7 @@ const scrollEvent = function (event) {
     console.log("【EHVE】滚动方向:", oriented);
     if (oriented === "stop") return;
     oriented.split(".").forEach(orie => PF.appendStepPage(orie));
+    if (event.target === document) event.stopPropagation(); //若依靠document的scroll事件，则停止冒泡
 }
 //大图框架点击事件，点击后隐藏大图框架
 const hiddenBigImageEvent = function (event) {
@@ -954,8 +955,17 @@ img_land_right.hidden = true;
 bigImageElement.hidden = true;
 
 
-//全屏阅读元素滚动事件
-fullViewPlane.addEventListener("scroll", scrollEvent);
+//白名单太慢了，用腾讯CDN
+//减少scroll的处理
+const script = document.createElement('script');
+script.src = 'https://cdnjs.gtimg.com/cdnjs/libs/underscore.js/1.7.0/underscore-min.js';
+document.head.appendChild(script);
+script.addEventListener('load', function() {
+  //全屏阅读元素滚动事件
+  fullViewPlane.addEventListener("scroll", _.debounce(scrollEvent, 300));
+  //若没有溢出，靠document的scroll事件处理
+  document.addEventListener("scroll", (event) => _.debounce(fullViewPlane.clientHeight >= fullViewPlane.scrollHeight ? scrollEvent(event) : undefined, 300));
+});
 
 //全屏阅览元素点击事件，点击空白处隐藏
 fullViewPlane.addEventListener("click", (event) => { if (event.target === fullViewPlane) { fullViewPlane.classList.add("retract_full_view"); }; });

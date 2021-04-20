@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      2.0.2
+// @version      2.0.3
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -390,7 +390,7 @@ class PageFetcher {
 
   async init() {
     this.initPageUrls();
-    this.initPageAppend();
+    await this.initPageAppend();
     await this.loadAllPageImg();
     this.renderCurrView(fullViewPlane.scrollTop, fullViewPlane.clientHeight);
   }
@@ -418,11 +418,11 @@ class PageFetcher {
     evLog("所有页码地址加载完毕:", this.pageUrls);
   }
 
-  initPageAppend() {
+  async initPageAppend() {
     for (let i = 0; i < this.pageUrls.length; i++) {
       const pageUrl = this.pageUrls[i];
       if (i == this.currPage) {
-        this.appendDefaultPage();
+        await this.appendDefaultPage(pageUrl);
       } else {
         const oriented = i < this.currPage ? "prev" : "next";
         this.imgAppends[oriented].push(async () => await this.appendPageImg(pageUrl, oriented));
@@ -451,8 +451,9 @@ class PageFetcher {
     return 0;
   }
 
-  appendDefaultPage() {
-    const imgList = this.extractImageList(document.documentElement.innerHTML);
+  async appendDefaultPage(pageUrl) {
+    const document_ = await this.fetchDocument(pageUrl);
+    const imgList = this.extractImageList(document_);
     const IFs = imgList.map((imgNode) => new IMGFetcher(imgNode));
     fullViewPlane.firstElementChild.nextElementSibling.after(...imgList);
     IFs.forEach(({ node }) => node.addEventListener("click", showBigImageEvent));
@@ -465,8 +466,8 @@ class PageFetcher {
 
   async appendPageImg(pageUrl, oriented) {
     try {
-      const document = await this.fetchDocument(pageUrl);
-      const imgList = this.extractImageList(document);
+      const document_ = await this.fetchDocument(pageUrl);
+      const imgList = this.extractImageList(document_);
       const IFs = imgList.map((imgNode) => new IMGFetcher(imgNode));
       switch (oriented) {
         case "prev":

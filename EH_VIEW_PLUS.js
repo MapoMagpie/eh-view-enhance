@@ -772,8 +772,8 @@ const fixImageTop = function (mouseY, isScale) {
   const vertAnchor = bigImageFrame.offsetHeight >> 1;
   //大图和父元素的高度差，用来修正图片的top值，让图片即使放大后也垂直居中在父元素上
   const diffHeight = bigImageElement.offsetHeight - bigImageFrame.offsetHeight - 3;
-  //如果高度差为0，说明图片没缩放，不做处理
-  if (diffHeight === 0 && !isScale) return;
+  //如果高度差<=0，说明图片没放大，不做处理
+  if (diffHeight <= 0 && !isScale) return;
   // 鼠标距离垂直中心的距离，正负值
   const dist = mouseY - vertAnchor;
   /* 移动比率，根据这个来决定imgE的top位置

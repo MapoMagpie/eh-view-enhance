@@ -241,7 +241,8 @@ class IMGFetcherQueue extends Array {
     if (index !== this.currIndex) return;
     if (!conf.keepScale) {
       //是否保留缩放
-      bigImageElement.style.height = "";
+      bigImageElement.style.width = "100%";
+      bigImageElement.style.height = "100%";
       bigImageElement.style.top = "0px";
     }
     // bigImageElement.classList.remove("fetching");
@@ -801,6 +802,7 @@ const scaleImageEvent = function (event) {
   }
   if (parseInt(height) < 100 || parseInt(height) > 200) return;
   bigImageElement.style.height = height;
+  bigImageElement.style.width = height;
   //最后对图片top进行修正
   fixImageTop(event.clientY, true);
 };
@@ -1178,6 +1180,8 @@ styleSheel.textContent = `
   transition:width .4s
  }
  .bigImageFrame>img {
+  width: 100%;
+  height:100%;
   object-fit: contain;
   position:relative
  }

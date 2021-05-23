@@ -623,6 +623,7 @@ const updateEvent = function (k, v) {
         bigImageFrame.addEventListener("mousemove", followMouseEvent);
       } else {
         bigImageFrame.removeEventListener("mousemove", followMouseEvent);
+        bigImageElement.style.left = "";
       }
       break;
     }

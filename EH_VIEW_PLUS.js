@@ -1563,10 +1563,10 @@ const beforeDownload = async function () {
   }
   if (!IFQ.isFinised() || !conf.fetchOriginal) {
     downloader.autoDownload = true;
-    idleLoader.processingIndexList = [];
-    for (let i = 0; i < conf["threads"] && i < IFQ.length; i++) {
-      idleLoader.processingIndexList.push(i);
-    }
+    idleLoader.processingIndexList = [...IFQ]
+      .map((imgFetcher, index) => (!imgFetcher.lock && imgFetcher.stage === 1 ? index : -1))
+      .filter((index) => index >= 0)
+      .splice(0, conf["threads"]);
     idleLoader.start();
     const downloadHelper = createDownloadHelper(IFQ.isFinised(), conf.fetchOriginal);
     bigImageFrame.appendChild(downloadHelper);

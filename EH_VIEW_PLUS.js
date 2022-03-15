@@ -9,7 +9,7 @@
 // @connect      hath.network
 // @icon         https://exhentai.org/favicon.ico
 // @grant        GM.xmlHttpRequest
-// @require     https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js
+// @require     https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js
 // @require     https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js
 // ==/UserScript==
 
@@ -51,7 +51,10 @@ class IMGFetcher {
      * rate:下载速率
      */
     this.downloadState = { total: 100, loaded: 0, readyState: 0, rate: 0 };
-    this.onFinished = [];
+    /**
+     * 当获取完成时的回调函数，从其他地方进行事件注册
+     */
+    this.onFinishedEventContext = new Map();
   }
 
   // 刷新下载状态
@@ -89,9 +92,13 @@ class IMGFetcher {
       this.changeStyle("remove", "failed");
       evLog(`图片获取器获取失败:`, error);
     } finally {
-      IFQ.finishedReport(index);
       this.lock = false;
+      this.onFinishedEventContext.forEach((callback) => callback(index, this));
     }
+  }
+
+  onFinished(eventId, callback) {
+    this.onFinishedEventContext.set(eventId, callback);
   }
 
   async fetchImg() {
@@ -110,11 +117,13 @@ class IMGFetcher {
     try {
       this.changeStyle("add");
       if (!(await this.fetchBigImageUrl())) {
-        throw new Error("失败");
+        evLog("获取大图地址失败");
+        return false;
       }
       //成功获取到大图的地址后，将本图片获取器的状态修改为1，表示大图地址已经成功获取到
       if (!this.bigImageUrl) {
-        throw new Error("大图地址不存在！");
+        evLog("大图地址不存在！");
+        return false;
       }
       this.stage = 2;
       return this.fetchImg();
@@ -171,7 +180,7 @@ class IMGFetcher {
   //立刻将当前元素的src赋值给大图元素
   setNow(index) {
     if (this.stage === 3) {
-      IFQ.finishedReport(index);
+      this.onFinishedEventContext.forEach((callback) => callback(index, this));
     } else {
       bigImageElement.src = this.imgElement.getAttribute("asrc");
       pageHelperHandler(null, null, "fetching");
@@ -190,7 +199,8 @@ class IMGFetcher {
       const onload = (response) => {
         const text = response.response;
         if (!(typeof text === "string")) {
-          throw new Error("未获取到有效的文档！");
+          evLog("未获取到有效的文档！", response);
+          resolve(false);
         }
         //抽取最佳质量的图片的地址
         if (conf["fetchOriginal"]) {
@@ -283,6 +293,11 @@ class IMGFetcherQueue extends Array {
     return this.finishedIndex.length === this.length;
   }
 
+  push(...IFs) {
+    IFs.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
+    super.push(...IFs);
+  }
+
   do(start, oriented) {
     oriented = oriented || "next";
     //边界约束
@@ -311,6 +326,9 @@ class IMGFetcherQueue extends Array {
     const imgFetcher = this[index];
     if (downloader) {
       downloader.addToDownloadZip(imgFetcher);
+      if (downloader.autoDownload && this.isFinised()) {
+        download();
+      }
     }
     pageHelperHandler(3, `已加载${this.finishedIndex.length}张`);
     evLog(`第${index + 1}张完成，大图所在第${this.currIndex + 1}张`);
@@ -388,61 +406,77 @@ class IdleLoader {
   constructor(IFQ) {
     //图片获取器队列
     this.queue = IFQ;
-    //当前处理
-    this.currIndex = 0;
+    //当前处理的索引列表
+    this.processingIndexList = [0];
     //是否终止
     this.abort_ = false;
-    //已完成
-    this.finishedIF = [];
-    //递归次数，防止无限递归
-    this.recuTimes = 0;
     //中止后的用于重新启动的延迟器的id
     this.restartId;
+    this.maxWaitMS = 1000;
+    this.minWaitMS = 300;
   }
-  async start(index) {
-    evLog("空闲自加载启动:" + index);
-    const finishedIndex = this.queue.finishedIndex;
-    index && (this.currIndex = index);
-    //如果当前要开始的索引大于获取队列的长度，说明触底，从0开始
-    if (this.currIndex >= this.queue.length) this.currIndex = 0;
+
+  async start() {
+    evLog("空闲自加载启动:" + this.processingIndexList.toString());
     //如果被中止了，则停止
     if (this.abort_ || !conf["autoLoad"]) return;
-    //如果所有的图片都加载完毕，则停止
-    if (finishedIndex.length === this.queue.length) return (this.abort_ = true);
-    //如果该当前索引的图片获取器已经存在于已完成列表里则直接递归到下一个索引
-    if (finishedIndex.indexOf(this.currIndex) > -1) return this.start(++this.currIndex);
-
-    //通过当前的索引获取队列中的图片获取器IMGFetcher,然后调用器获取图片的方法,在获取的过程中进行加锁
-    const imgFetcher = this.queue[this.currIndex];
-    //如果当前图片获取器不在获取中
-    if (!imgFetcher.lock) {
-      await imgFetcher.start(this.currIndex);
+    // 如果已经没有要处理的列表
+    if (this.processingIndexList.length === 0) {
+      return;
     }
-    //当前要处理的图片获取器被锁住了，可能正在获取图片中，则停止自动获取，5s后再次执行
-    else if (imgFetcher.lock || this.recuTimes > 1000) {
-      this.recuTimes = 0;
-      return window.setTimeout(() => this.start(this.currIndex), 5000);
+    for (let i = 0; i < this.processingIndexList.length; i++) {
+      const processingIndex = this.processingIndexList[i];
+      // 获取索引所对应的图片获取器，并添加完成事件，当图片获取完成时，重新查找新的可获取的图片获取器，并递归
+      const imgFetcher = this.queue[processingIndex];
+      // 当图片获取器还没有获取图片时，则启动图片获取器
+      if (imgFetcher.lock || imgFetcher.stage === 3) {
+        continue;
+      }
+      imgFetcher.onFinished("IDLE-REPORT", () => {
+        this.wait().then(() => {
+          this.checkProcessingIndex(i);
+          this.start();
+        });
+      });
+      imgFetcher.start(processingIndex);
     }
-
-    this.recuTimes++;
-    this.waitSecond().then(() => this.start(++this.currIndex));
   }
 
-  async waitSecond() {
+  /**
+   * @param {当前处理列表中的位置} i
+   */
+  checkProcessingIndex(i) {
+    const processedIndex = this.processingIndexList[i];
+    // 从图片获取器队列中获取一个还未获取图片的获取器所对应的索引，如果不存在则从处理列表中删除该索引，缩减处理列表
+    for (let j = 0; j < this.queue.length; j++) {
+      const imgFetcher = this.queue[j];
+      // 如果图片获取器正在获取或者图片获取器已完成获取，
+      if (imgFetcher.stage === 3 || imgFetcher.lock || processedIndex === j) {
+        continue;
+      }
+      this.processingIndexList[i] = j;
+      return;
+    }
+    this.processingIndexList.splice(i, 1);
+  }
+
+  async wait() {
+    const { maxWaitMS, minWaitMS } = this;
     return new Promise(function (resolve) {
-      const time = Math.floor(Math.random() * 1500 + 500);
+      const time = Math.floor(Math.random() * maxWaitMS + minWaitMS);
       window.setTimeout(() => resolve(), time);
     });
   }
 
   abort(newStart) {
+    this.processingIndexList[0] = newStart;
     if (!conf.autoLoad) return;
     this.abort_ = true;
     window.clearTimeout(this.restartId);
-    //8s后重新开启，todo 但这里可能会出现小概率的双线程危机
+    // 中止空闲加载后，会在等待一段时间后再次重启空闲加载
     this.restartId = window.setTimeout(() => {
       this.abort_ = false;
-      this.start(newStart);
+      this.start();
     }, conf["restartIdleLoader"]);
   }
 }
@@ -753,30 +787,30 @@ const createChild = function (type, parent, innerHTML) {
 //点击入口按钮事件
 const gateEvent = function () {
   if (gateButton.textContent === "展开") {
-    showFullViewPlan();
+    showFullViewPlane();
     if (signal["first"]) {
       signal["first"] = false;
-      PF.init().then(() => idleLoader.start(0));
+      PF.init().then(() => idleLoader.start());
     }
   } else {
-    hiddenFullViewPlan();
+    hiddenFullViewPlane();
   }
 };
 
-const showFullViewPlan = function () {
+const showFullViewPlane = function () {
   fullViewPlane.scroll(0, 0); //否则加载会触发滚动事件
   fullViewPlane.classList.remove("retract_full_view");
   document.body.style.display = "none";
   gateButton.textContent = "收起";
 };
 
-const hiddenFullViewPlanEvent = function (event) {
+const hiddenFullViewPlaneEvent = function (event) {
   if (event.target === fullViewPlane) {
-    hiddenFullViewPlan();
+    hiddenFullViewPlane();
   }
 };
 
-const hiddenFullViewPlan = function () {
+const hiddenFullViewPlane = function () {
   fullViewPlane.classList.add("retract_full_view");
   document.body.style.display = "";
   gateButton.textContent = "展开";
@@ -1151,7 +1185,7 @@ const debouncer = new Debouncer();
 fullViewPlane.addEventListener("scroll", () => debouncer.addEvent(scrollEvent, 500));
 
 //全屏阅览元素点击事件，点击空白处隐藏
-fullViewPlane.addEventListener("click", hiddenFullViewPlanEvent);
+fullViewPlane.addEventListener("click", hiddenFullViewPlaneEvent);
 
 //取消在大图框架元素上的右键事件
 bigImageFrame.addEventListener("contextmenu", (event) => {
@@ -1413,7 +1447,7 @@ styleSheel.textContent = `
   padding: 3px;
   border: 1px solid black;
   justify-content: space-between;
-  background-color: rgba(90,100,120,.5);
+  background-color: rgba(90,100,120,.8);
 }
 .d-header {
   text-align: center;
@@ -1421,7 +1455,8 @@ styleSheel.textContent = `
   font-weight: 600;
 }
 .d-content {
-  text-align: center;
+  text-align: left;
+  padding-left: 10px;
 }
 .d-footer {
   display: flex;
@@ -1503,6 +1538,7 @@ class Downloader {
     this.title = this.meta.originTitle || this.meta.title;
     this.zipFolder = this.zip.folder(this.title);
     this.zipFolder.file("meta.json", JSON.stringify(this.meta));
+    this.autoDownload = false;
   }
   addToDownloadZip(imgFetcher) {
     let title = imgFetcher.title;
@@ -1515,13 +1551,23 @@ class Downloader {
     this.zipFolder.file(title, imgFetcher.blobData, { binary: true });
   }
   async generate() {
-    return this.zip.generateAsync({ type: "blob" });
+    return this.zip.generateAsync({ type: "arraybuffer", compression: "STORE" });
   }
 }
 const downloader = new Downloader();
 
-const beforeDownload = function () {
+const beforeDownload = async function () {
+  if (signal["first"]) {
+    signal["first"] = false;
+    await PF.init();
+  }
   if (!IFQ.isFinised() || !conf.fetchOriginal) {
+    downloader.autoDownload = true;
+    idleLoader.processingIndexList = [];
+    for (let i = 0; i < conf["threads"] && i < IFQ.length; i++) {
+      idleLoader.processingIndexList.push(i);
+    }
+    idleLoader.start();
     const downloadHelper = createDownloadHelper(IFQ.isFinised(), conf.fetchOriginal);
     bigImageFrame.appendChild(downloadHelper);
   } else {
@@ -1536,7 +1582,10 @@ const removeDownloadHelper = function () {
 const download = function () {
   downloader
     .generate()
-    .then((blob) => saveAs(blob, downloader.title))
+    .then(($data) => {
+      const blob = new Blob([$data], { type: "application/zip" });
+      saveAs(blob, downloader.title);
+    })
     .then(removeDownloadHelper);
 };
 
@@ -1547,11 +1596,14 @@ const createDownloadHelper = function (finished, fetchOriginal) {
 <div class="d-header"><span>下载<span></div>
 <div class="d-content">
 <div><span style="color:${fetchOriginal ? "green" : "red"}">${fetchOriginal ? "√" : "×"}</span><span>是否是最佳质量图片(原图)</span> </div>
-<div><span style="color:${finished ? "green" : "red"}">${finished ? "√" : "×"}</span><span>是否全部加载完成</span> </div>
+<div><span style="color:${finished ? "green" : "red"}">${finished ? "√" : "×"}</span><span>${
+    finished ? "已全部加载完成..." : "未全部加载完成，正在加速获取图片中，请等待。。。"
+  }</span> </div>
  </div>
 <div class="d-footer">
-<button id="d-btn-cancel" class="d-btn d-btn-cancel">取消</button>
-<button id="d-btn-confirm" class="d-btn">确认下载已加载的</button>
+<button id="d-btn-cancel" class="d-btn d-btn-cancel">关闭</button>
+或
+<button id="d-btn-confirm" class="d-btn">下载已加载的</button>
 </div>
 `;
   downloadHelper.querySelector("#d-btn-cancel").addEventListener("click", removeDownloadHelper);

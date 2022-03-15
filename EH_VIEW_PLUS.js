@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      2.1.0
+// @version      2.1.1
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -696,7 +696,7 @@ let conf = JSON.parse(window.localStorage.getItem("cfg_"));
 //获取宽度
 const screenWidth = window.screen.availWidth;
 
-if (!conf || conf.version !== "2.1.0") {
+if (!conf || conf.version !== "2.1.1") {
   //如果配置不存在则初始化一个
   let colCount = screenWidth > 2500 ? 8 : screenWidth > 1900 ? 7 : 5;
   conf = {
@@ -710,7 +710,7 @@ if (!conf || conf.version !== "2.1.0") {
     threads: 3, //同时加载的图片数量
     autoLoadPage: true, //是否自动加载所有页
     timeout: 8000, //超时时间，默认8秒
-    version: "2.1.0",
+    version: "2.1.1",
     debug: true,
     first: true,
   };

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      2.1.1
+// @version      2.1.2
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -322,13 +322,15 @@ class IMGFetcherQueue extends Array {
 
   //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
   finishedReport(index) {
-    this.pushFinishedIndex(index);
     const imgFetcher = this[index];
     if (downloader) {
-      downloader.addToDownloadZip(imgFetcher);
-      if (downloader.autoDownload && this.isFinised()) {
-        download();
+      if (this.finishedIndex.indexOf(index) < 0) {
+        downloader.addToDownloadZip(imgFetcher);
       }
+    }
+    this.pushFinishedIndex(index);
+    if (downloader && downloader.autoDownload && this.isFinised()) {
+      download();
     }
     pageHelperHandler(3, `已加载${this.finishedIndex.length}张`);
     evLog(`第${index + 1}张完成，大图所在第${this.currIndex + 1}张`);
@@ -1589,6 +1591,7 @@ const removeDownloadHelper = function () {
 };
 
 const download = function () {
+  downloader.autoDownload = false;
   downloader
     .generate()
     .then(($data) => {
@@ -1611,7 +1614,6 @@ const createDownloadHelper = function (finished, fetchOriginal) {
  </div>
 <div class="d-footer">
 <button id="d-btn-cancel" class="d-btn d-btn-cancel">关闭</button>
-或
 <button id="d-btn-confirm" class="d-btn">下载已加载的</button>
 </div>
 `;

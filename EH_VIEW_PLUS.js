@@ -15,13 +15,13 @@
 
 const regulars = {
   // 每页的缩略图元素
-  thumbnails: /<a\shref=\"([^"]*)\"[^>]*><img\s(?!class=\"ygm\").*?src=\"[^"]*\".*?>.*?<\/a>/g,
+  // thumbnails: /<a\shref=\"([^"]*)\"[^>]*><img\s(?!class=\"ygm\").*?src=\"[^"]*\".*?>.*?<\/a>/g,
   // 缩略图中的大图页面地址
-  thumbnailHref: /href="(.*?)".*/,
+  // thumbnailHref: /href="(.*?)".*/,
   // 图片标题
-  thumbnailTitle: /title="(.*?)".*/,
+  // thumbnailTitle: /title="(.*?)".*/,
   // 缩略图地址
-  thumbnailSrc: /src="(.*?)".*/,
+  // thumbnailSrc: /src="(.*?)".*/,
   // 有压缩的大图地址
   normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
   // 原图地址
@@ -608,18 +608,20 @@ class PageFetcher {
   obtainImageNodeList(documnt) {
     if (!documnt) return [];
     const list = [];
-    const iterator = documnt.matchAll(regulars.thumbnails);
-    while (true) {
-      const next = iterator.next();
-      if (next.done) break;
-      const [text] = next.value;
+    const domParser = new DOMParser()
+    const doc = domParser.parseFromString(documnt, "text/html")
+    const aNodes = doc.querySelectorAll("#gdt a");
+    if (!aNodes || aNodes.length == 0) {
+      evLog("wried to get a nodes from document, but failed!");
+    }
+    for (let i = 0; i < aNodes.length; i++) {
       const imgNode = document.createElement("div");
       imgNode.classList.add("img-node");
-      const img = new Image();
-      img.title = regulars.thumbnailTitle.exec(text)[1];
-      img.setAttribute("ahref", regulars.thumbnailHref.exec(text)[1]);
-      img.setAttribute("asrc", regulars.thumbnailSrc.exec(text)[1]);
-      img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
+      const aNode = aNodes[i];
+      const img = aNode.querySelector("img")
+      img.setAttribute("ahref", aNode.href);
+      img.setAttribute("asrc", img.src);
+      img.setAttribute("src", "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
       imgNode.appendChild(img);
       list.push(imgNode);
     }

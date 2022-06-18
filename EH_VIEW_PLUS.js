@@ -410,18 +410,17 @@ class IdleLoader {
     this.queue = IFQ;
     //当前处理的索引列表
     this.processingIndexList = [0];
-    //是否终止
-    this.abort_ = false;
+    this.lockVer = 0;
     //中止后的用于重新启动的延迟器的id
     this.restartId;
     this.maxWaitMS = 1000;
     this.minWaitMS = 300;
   }
 
-  async start() {
+  async start(lockVer) {
     evLog("空闲自加载启动:" + this.processingIndexList.toString());
     //如果被中止了，则停止
-    if (this.abort_ || !conf["autoLoad"]) return;
+    if (this.lockVer != lockVer || !conf["autoLoad"]) return;
     // 如果已经没有要处理的列表
     if (this.processingIndexList.length === 0) {
       return;
@@ -437,7 +436,7 @@ class IdleLoader {
       imgFetcher.onFinished("IDLE-REPORT", () => {
         this.wait().then(() => {
           this.checkProcessingIndex(i);
-          this.start();
+          this.start(lockVer);
         });
       });
       imgFetcher.start(processingIndex);
@@ -470,15 +469,14 @@ class IdleLoader {
     });
   }
 
-  abort(newStart) {
-    this.processingIndexList[0] = newStart;
+  abort(newIndex) {
+    this.lockVer++;
+    this.processingIndexList = [newIndex]
     if (!conf.autoLoad) return;
-    this.abort_ = true;
-    window.clearTimeout(this.restartId);
     // 中止空闲加载后，会在等待一段时间后再次重启空闲加载
+    window.clearTimeout(this.restartId);
     this.restartId = window.setTimeout(() => {
-      this.abort_ = false;
-      this.start();
+      this.start(this.lockVer);
     }, conf["restartIdleLoader"]);
   }
 }
@@ -792,7 +790,7 @@ const gateEvent = function () {
     showFullViewPlane();
     if (signal["first"]) {
       signal["first"] = false;
-      PF.init().then(() => idleLoader.start());
+      PF.init().then(() => idleLoader.start(idleLoader.lockVer));
     }
   } else {
     hiddenFullViewPlane();
@@ -1106,8 +1104,7 @@ modRowEvent();
 const fetchOriginal = createChild(
   "div",
   configPlane,
-  `<span>最佳质量图片 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="fetchOriginal"  value="${
-    conf.fetchOriginal ? "✓" : "X"
+  `<span>最佳质量图片 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="fetchOriginal"  value="${conf.fetchOriginal ? "✓" : "X"
   }" type="text"><button style="cursor: not-allowed;">装饰</button>`
 );
 fetchOriginal.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
@@ -1116,8 +1113,7 @@ fetchOriginal.lastElementChild.previousElementSibling.addEventListener("click", 
 const modfollowMouse = createChild(
   "div",
   configPlane,
-  `<span>大图跟随鼠标 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="followMouse"  value="${
-    conf.followMouse ? "✓" : "X"
+  `<span>大图跟随鼠标 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="followMouse"  value="${conf.followMouse ? "✓" : "X"
   }" type="text"><button style="cursor: not-allowed;">装饰</button>`
 );
 modfollowMouse.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
@@ -1126,8 +1122,7 @@ modfollowMouse.lastElementChild.previousElementSibling.addEventListener("click",
 const keepImageScale = createChild(
   "div",
   configPlane,
-  `<span>保留缩放 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="keepScale" value="${
-    conf.keepScale ? "✓" : "X"
+  `<span>保留缩放 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="keepScale" value="${conf.keepScale ? "✓" : "X"
   }" type="text"><button style="cursor: not-allowed;">装饰</button>`
 );
 keepImageScale.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
@@ -1136,8 +1131,7 @@ keepImageScale.lastElementChild.previousElementSibling.addEventListener("click",
 const autoLoad = createChild(
   "div",
   configPlane,
-  `<span>自动加载 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="autoLoad"  value="${
-    conf.autoLoad ? "✓" : "X"
+  `<span>自动加载 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="autoLoad"  value="${conf.autoLoad ? "✓" : "X"
   }" type="text"><button style="cursor: not-allowed;">装饰</button>`
 );
 autoLoad.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
@@ -1574,11 +1568,12 @@ const beforeDownload = async function () {
   }
   if (!IFQ.isFinised() || !conf.fetchOriginal) {
     downloader.autoDownload = true;
+    idleLoader.lockVer++;
     idleLoader.processingIndexList = [...IFQ]
       .map((imgFetcher, index) => (!imgFetcher.lock && imgFetcher.stage === 1 ? index : -1))
       .filter((index) => index >= 0)
       .splice(0, conf["threads"]);
-    idleLoader.start();
+    idleLoader.start(idleLoader.lockVer);
     const downloadHelper = createDownloadHelper(IFQ.isFinised(), conf.fetchOriginal);
     bigImageFrame.appendChild(downloadHelper);
   } else {
@@ -1608,9 +1603,8 @@ const createDownloadHelper = function (finished, fetchOriginal) {
 <div class="d-header"><span>下载<span></div>
 <div class="d-content">
 <div><span style="color:${fetchOriginal ? "green" : "red"}">${fetchOriginal ? "√" : "×"}</span><span>是否是最佳质量图片(原图)</span> </div>
-<div><span style="color:${finished ? "green" : "red"}">${finished ? "√" : "×"}</span><span>${
-    finished ? "已全部加载完成..." : "未全部加载完成，正在加速获取图片中，请等待。。。"
-  }</span> </div>
+<div><span style="color:${finished ? "green" : "red"}">${finished ? "√" : "×"}</span><span>${finished ? "已全部加载完成..." : "未全部加载完成，正在加速获取图片中，请等待。。。"
+    }</span> </div>
  </div>
 <div class="d-footer">
 <button id="d-btn-cancel" class="d-btn d-btn-cancel">关闭</button>

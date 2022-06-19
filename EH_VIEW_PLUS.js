@@ -496,11 +496,17 @@ class IdleLoader {
    */
   checkProcessingIndex(i) {
     const processedIndex = this.processingIndexList[i];
+    let restart = false;
     // 从图片获取器队列中获取一个还未获取图片的获取器所对应的索引，如果不存在则从处理列表中删除该索引，缩减处理列表
-    for (let j = 0; j < this.queue.length; j++) {
+    for (let j = processedIndex, max = this.queue.length - 1; j <= max; j++) {
       const imgFetcher = this.queue[j];
       // 如果图片获取器正在获取或者图片获取器已完成获取，
-      if (imgFetcher.stage === 3 || imgFetcher.lock || processedIndex === j) {
+      if (imgFetcher.stage === 3 || imgFetcher.lock) {
+        if (j === max && !restart) {
+          j = -1;
+          max = processedIndex - 1;
+          restart = true
+        }
         continue;
       }
       this.processingIndexList[i] = j;
@@ -519,11 +525,13 @@ class IdleLoader {
 
   abort(newIndex) {
     this.lockVer++;
-    this.processingIndexList = [newIndex]
+    evLog(`终止空闲自加载, 下次将从第${this.processingIndexList[0] + 1}张开始加载`);
     if (!conf.autoLoad) return;
     // 中止空闲加载后，会在等待一段时间后再次重启空闲加载
     window.clearTimeout(this.restartId);
     this.restartId = window.setTimeout(() => {
+      this.processingIndexList = [newIndex]
+      this.checkProcessingIndex(0)
       this.start(this.lockVer);
     }, conf["restartIdleLoader"]);
   }

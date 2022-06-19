@@ -336,6 +336,11 @@ class IMGFetcherQueue extends Array {
     super.push(...IFs);
   }
 
+  unshift(...IFs) {
+    IFs.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
+    super.unshift(...IFs);
+  }
+
   do(start, oriented) {
     oriented = oriented || "next";
     //边界约束
@@ -381,6 +386,11 @@ class IMGFetcherQueue extends Array {
     }
     pageHelperHandler(null, null, "fetched");
     bigImageElement.src = imgFetcher.blobUrl;
+    this.scrollTo(index)
+  }
+
+  scrollTo(index) {
+    const imgFetcher = this[index];
     let scrollTo = imgFetcher.node.offsetTop - window.screen.availHeight / 3;
     scrollTo = scrollTo <= 0 ? 0 : scrollTo >= fullViewPlane.scrollHeight ? fullViewPlane.scrollHeight : scrollTo;
     fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
@@ -630,6 +640,8 @@ class PageFetcher {
         case "prev":
           fullViewPlane.firstElementChild.nextElementSibling.after(...imgNodeList);
           this.queue.unshift(...IFs);
+          this.idleLoader.processingIndexList[0] += IFs.length
+          this.queue.scrollTo(this.idleLoader.processingIndexList[0]);
           break;
         case "next":
           fullViewPlane.lastElementChild.after(...imgNodeList);

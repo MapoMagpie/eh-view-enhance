@@ -30,6 +30,44 @@ const regulars = {
   nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
 };
 
+function removeExtremun(arr) {
+  const line = []
+  // sort arr
+  arr.sort((a, b) => a - b);
+  const arrCopy = [...arr];
+  computeLine(arrCopy, line);
+  const increaseLine = []
+  for (let i = 1; i < line.length; i++) {
+    increaseLine.push(line[i - 1][1] / line[i][1]);
+  }
+  // todo
+  // console.log("avgrage line => ", line)
+  // console.log("avgrage height => ", line[line.length - 1][0]);
+  // console.log("increase line => ", increaseLine);
+  return line[line.length - 1][0];
+}
+
+function computeLine(arr, line) {
+  if (arr.length < 1) {
+    return;
+  }
+  const avg = avgrage(arr);
+  const left = Math.abs(arr[0] - avg);
+  const right = Math.abs(arr[arr.length - 1] - avg);
+  if (left > right) {
+    line.push([arr[0], avg]);
+    arr.shift();
+  } else {
+    line.push([arr[arr.length - 1], avg]);
+    arr.pop();
+  }
+  computeLine(arr, line);
+}
+
+function avgrage(arr) {
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================START
 class IMGFetcher {
   constructor(node) {
@@ -166,12 +204,12 @@ class IMGFetcher {
   render() {
     if (this.stage === 3) {
       if (this.rendered) return;
-      this.imgElement.style.height = "auto";
+      // this.imgElement.style.height = "auto";
       this.imgElement.src = this.blobUrl;
       this.rendered = true;
     } else {
       if (this.rendered) return;
-      this.imgElement.style.height = "auto";
+      // this.imgElement.style.height = "auto";
       this.imgElement.src = this.imgElement.getAttribute("asrc");
       this.rendered = true;
     }
@@ -483,7 +521,7 @@ class IdleLoader {
 
 //页获取器，可获取下一个列表页，以及下一个图片页
 class PageFetcher {
-  constructor(IFQ) {
+  constructor(IFQ, idleLoader) {
     this.queue = IFQ;
     //文档对象模型的引用，当前页的文档对象、下一个、上一个列表页的文档对象模型。
     this.stepSource = { prev: document, next: document };
@@ -499,6 +537,7 @@ class PageFetcher {
     this.imgAppends = { prev: [], next: [] };
     //平均高度，用于渲染未加载的缩略图,单位px
     this.avgHeight = 100;
+    this.idleLoader = idleLoader
   }
 
   async init() {
@@ -572,7 +611,8 @@ class PageFetcher {
     IFs.forEach(({ imgElement }) => imgElement.addEventListener("click", showBigImageEvent));
     IFs.forEach((imgFetcher) => imgFetcher.render());
     this.queue.push(...IFs);
-    this.avgHeight = IFs.reduce((avg, { imgElement }) => Math.round((imgElement.height + avg) / 2), IFs[0].imgElement.height);
+    const heights = IFs.map((imgFetcher) => imgFetcher.imgElement.height)
+    this.avgHeight = removeExtremun(heights);
     evLog("平均高度为:" + this.avgHeight);
     pageHelperHandler(2, this.queue.length);
   }
@@ -621,6 +661,16 @@ class PageFetcher {
       const img = aNode.querySelector("img")
       img.setAttribute("ahref", aNode.href);
       img.setAttribute("asrc", img.src);
+      img.setAttribute("loading", "lazy");
+      img.setAttribute("decoding", "async");
+      img.setAttribute("first-load", "true")
+      img.addEventListener("load", ev => {
+        if (ev.target.getAttribute("first-load") == "true") {
+          ev.target.setAttribute("first-load", "false");
+        } else {
+          ev.target.style.height = "auto"
+        }
+      })
       img.setAttribute("src", "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
       imgNode.appendChild(img);
       list.push(imgNode);
@@ -769,10 +819,10 @@ const updateEvent = function (k, v) {
 //===============================================方法区=================================================START
 //图片获取器调用队列
 const IFQ = new IMGFetcherQueue();
-//页加载器
-const PF = new PageFetcher(IFQ);
 //空闲自加载器
 const idleLoader = new IdleLoader(IFQ);
+//页加载器
+const PF = new PageFetcher(IFQ, idleLoader);
 
 //向配置面板增加配置项
 const createChild = function (type, parent, innerHTML) {

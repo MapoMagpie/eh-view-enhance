@@ -239,14 +239,19 @@ class IMGFetcher {
         if (!(typeof text === "string")) {
           evLog("未获取到有效的文档！", response);
           resolve(false);
+          return
         }
         //抽取最佳质量的图片的地址
         if (conf["fetchOriginal"]) {
           const matchs = regulars["original"].exec(text);
-          if (!matchs || matchs.length === 0) {
+          if (matchs == null || matchs.length === 0) {
             imgFetcher.bigImageUrl = regulars["normal"].exec(text)[1];
-          } else {
+          } else if (matchs.length > 1) {
             imgFetcher.bigImageUrl = matchs[1].replace(/&amp;/g, "&");
+          } else {
+            evLog("抽取最佳质量图片地址失败，内容为: ", text)
+            resolve(false)
+            return
           }
         }
         //抽取正常的有压缩的大图地址

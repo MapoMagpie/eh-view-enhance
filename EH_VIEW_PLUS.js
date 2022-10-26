@@ -661,7 +661,7 @@ class PageFetcher {
         const newImgNode = imgNode.cloneNode(true);
         const newImg = newImgNode.firstChild;
         newImg.setAttribute("ahref", `${location.origin}/s/${match[1]}/${gid}-${i}`);
-        newImg.setAttribute("asrc", match[2]);
+        newImg.setAttribute("asrc", match[2].replaceAll("\\", ""));
         list.push(newImgNode);
       }
       this.fetched = true

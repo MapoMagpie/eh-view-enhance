@@ -28,45 +28,9 @@ const regulars = {
   original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg\.php\?[^"\\]*)\"\>/,
   // 大图重载地址
   nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
+  isMPV: /https?:\/\/e[-x]hentai.org\/mpv\/\w+\/\w+\/#page\w/,
+  mpvImageList: /\{.*?"k":"(\w+)","t":"(.*?)".*?\}/g,
 };
-
-function removeExtremun(arr) {
-  const line = []
-  // sort arr
-  arr.sort((a, b) => a - b);
-  const arrCopy = [...arr];
-  computeLine(arrCopy, line);
-  const increaseLine = []
-  for (let i = 1; i < line.length; i++) {
-    increaseLine.push(line[i - 1][1] / line[i][1]);
-  }
-  // todo
-  // console.log("avgrage line => ", line)
-  // console.log("avgrage height => ", line[line.length - 1][0]);
-  // console.log("increase line => ", increaseLine);
-  return line[line.length - 1][0];
-}
-
-function computeLine(arr, line) {
-  if (arr.length < 1) {
-    return;
-  }
-  const avg = avgrage(arr);
-  const left = Math.abs(arr[0] - avg);
-  const right = Math.abs(arr[arr.length - 1] - avg);
-  if (left > right) {
-    line.push([arr[0], avg]);
-    arr.shift();
-  } else {
-    line.push([arr[arr.length - 1], avg]);
-    arr.pop();
-  }
-  computeLine(arr, line);
-}
-
-function avgrage(arr) {
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
-}
 
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================START
 class IMGFetcher {
@@ -244,14 +208,15 @@ class IMGFetcher {
         //抽取最佳质量的图片的地址
         if (conf["fetchOriginal"]) {
           const matchs = regulars["original"].exec(text);
-          if (matchs == null || matchs.length === 0) {
-            imgFetcher.bigImageUrl = regulars["normal"].exec(text)[1];
-          } else if (matchs.length > 1) {
-            imgFetcher.bigImageUrl = matchs[1].replace(/&amp;/g, "&");
+          if (matchs == null || matchs.length < 1) {
+            const normalMatchs = regulars["normal"].exec(text)
+            if (normalMatchs == null || normalMatchs.length == 0) {
+              evLog("获取大图地址失败，内容为: ", text)
+            } else {
+              imgFetcher.bigImageUrl = normalMatchs[1];
+            }
           } else {
-            evLog("抽取最佳质量图片地址失败，内容为: ", text)
-            resolve(false)
-            return
+            imgFetcher.bigImageUrl = matchs[1].replace(/&amp;/g, "&");
           }
         }
         //抽取正常的有压缩的大图地址
@@ -546,12 +511,6 @@ class IdleLoader {
 class PageFetcher {
   constructor(IFQ, idleLoader) {
     this.queue = IFQ;
-    //文档对象模型的引用，当前页的文档对象、下一个、上一个列表页的文档对象模型。
-    this.stepSource = { prev: document, next: document };
-    //是否正在获取上一页或者下一页中
-    this.fetching = { prev: false, next: false };
-    //第一页或者最后一页是否获取完毕
-    this.fetched = { prev: false, next: false };
     //所有页的地址
     this.pageUrls = [];
     //当前页所在的索引
@@ -559,14 +518,14 @@ class PageFetcher {
     //每页的图片获取器列表，用于实现懒加载
     this.imgAppends = { prev: [], next: [] };
     //平均高度，用于渲染未加载的缩略图,单位px
-    this.avgHeight = 100;
     this.idleLoader = idleLoader
+    this.fetched = false
   }
 
   async init() {
     this.initPageUrls();
     await this.initPageAppend();
-    await this.loadAllPageImg();
+    this.loadAllPageImg();
     this.renderCurrView(fullViewPlane.scrollTop, fullViewPlane.clientHeight);
   }
 
@@ -606,6 +565,7 @@ class PageFetcher {
   }
 
   async loadAllPageImg() {
+    if (this.fetched) return
     for (let i = 0; i < this.imgAppends["next"].length; i++) {
       const executor = this.imgAppends["next"][i];
       await executor();
@@ -627,27 +587,23 @@ class PageFetcher {
   }
 
   async appendDefaultPage(pageUrl) {
-    const document_ = await this.fetchDocument(pageUrl);
-    const imgNodeList = this.obtainImageNodeList(document_);
+    const doc = await this.fetchDocument(pageUrl)
+    const imgNodeList = await this.obtainImageNodeList(doc);
     const IFs = imgNodeList.map((imgNode) => new IMGFetcher(imgNode));
     fullViewPlane.firstElementChild.nextElementSibling.after(...imgNodeList);
     IFs.forEach(({ imgElement }) => imgElement.addEventListener("click", showBigImageEvent));
-    IFs.forEach((imgFetcher) => imgFetcher.render());
     this.queue.push(...IFs);
-    const heights = IFs.map((imgFetcher) => imgFetcher.imgElement.height)
-    this.avgHeight = removeExtremun(heights);
-    evLog("平均高度为:" + this.avgHeight);
     pageHelperHandler(2, this.queue.length);
   }
 
   async appendPageImg(pageUrl, oriented) {
     try {
-      const document_ = await this.fetchDocument(pageUrl);
-      const imgNodeList = this.obtainImageNodeList(document_);
+      const doc = await this.fetchDocument(pageUrl)
+      const imgNodeList = await this.obtainImageNodeList(doc);
       const IFs = imgNodeList.map((imgNode) => new IMGFetcher(imgNode));
       IFs.forEach(({ imgElement }) => {
         imgElement.addEventListener("click", showBigImageEvent);
-        imgElement.height = this.avgHeight;
+        imgElement.style.height = "auto";
       });
       switch (oriented) {
         case "prev":
@@ -670,35 +626,53 @@ class PageFetcher {
   }
 
   //从文档的字符串中创建缩略图元素列表
-  obtainImageNodeList(documnt) {
-    if (!documnt) return [];
+  async obtainImageNodeList(documnt) {
     const list = [];
+    if (!documnt) return list;
     const domParser = new DOMParser()
     const doc = domParser.parseFromString(documnt, "text/html")
     const aNodes = doc.querySelectorAll("#gdt a");
     if (!aNodes || aNodes.length == 0) {
       evLog("wried to get a nodes from document, but failed!");
+      return list;
     }
-    for (let i = 0; i < aNodes.length; i++) {
-      const imgNode = document.createElement("div");
-      imgNode.classList.add("img-node");
-      const aNode = aNodes[i];
-      const img = aNode.querySelector("img")
-      img.setAttribute("ahref", aNode.href);
-      img.setAttribute("asrc", img.src);
-      img.setAttribute("loading", "lazy");
-      img.setAttribute("decoding", "async");
-      img.setAttribute("first-load", "true")
-      img.addEventListener("load", ev => {
-        if (ev.target.getAttribute("first-load") == "true") {
-          ev.target.setAttribute("first-load", "false");
-        } else {
-          ev.target.style.height = "auto"
-        }
-      })
-      img.setAttribute("src", "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
-      imgNode.appendChild(img);
-      list.push(imgNode);
+    const aNode = aNodes[0];
+
+    // make node template
+    const imgNode = document.createElement("div");
+    imgNode.classList.add("img-node");
+    const img = aNode.querySelector("img")
+    img.setAttribute("ahref", aNode.href);
+    img.setAttribute("asrc", img.src);
+    img.setAttribute("loading", "lazy");
+    img.setAttribute("decoding", "async");
+    img.setAttribute("first-load", "true")
+    img.style.height = "auto"
+    img.setAttribute("src", "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
+    imgNode.appendChild(img);
+
+    if (regulars.isMPV.test(aNode.href)) {
+      const mpvDoc = await this.fetchDocument(aNode.href);
+      const matchs = mpvDoc.matchAll(regulars.mpvImageList)
+      const gid = location.pathname.split("/")[2];
+      let i = 0;
+      for (const match of matchs) {
+        i++;
+        const newImgNode = imgNode.cloneNode(true);
+        const newImg = newImgNode.firstChild;
+        newImg.setAttribute("ahref", `${location.origin}/s/${match[1]}/${gid}-${i}`);
+        newImg.setAttribute("asrc", match[2]);
+        list.push(newImgNode);
+      }
+      this.fetched = true
+    } else {
+      for (let i = 1; i < aNodes.length; i++) {
+        const newImgNode = imgNode.cloneNode(true)
+        const newImg = newImgNode.firstChild
+        newImg.setAttribute("ahref", aNodes[i].href);
+        newImg.setAttribute("asrc", aNodes[i].querySelector("img").src);
+        list.push(newImgNode);
+      }
     }
     return list;
   }
@@ -744,7 +718,7 @@ class PageFetcher {
         }
       }
     }
-    evLog(`要渲染的范围是:${startRander + 1}- ${endRander + 1}`);
+    evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}`);
     IFs.slice(startRander, endRander + 1).forEach((f) => f.render());
   }
 }

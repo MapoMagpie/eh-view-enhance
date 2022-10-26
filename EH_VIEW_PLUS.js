@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      2.3.1
+// @version      2.3.2
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -709,13 +709,11 @@ class PageFetcher {
         }
       }
       // 查询最靠近当前试图下边的缩略图索引
-      else {
+      if (findBottom) {
         // 当前视图下边的位置 - (缩略图在父元素的位置 + 缩略图的高度)  =  缩略图与当前视图下边的距离，如果距离 <= 0 说明缩略图在当前视图内，但仍有部分图片内容在视图外，当然此缩略图之后的图片也符合这样的条件，但此为顺序遍历
         const distance = viewButtom - (node.offsetTop + node.offsetHeight);
-        if (distance <= 0) {
-          endRander = Math.min(i + colCount, IFQ.length);
-          break;
-        }
+        endRander = Math.min(i + colCount, IFQ.length);
+        if (distance <= 0) break;
       }
     }
     evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}`);
@@ -1319,11 +1317,13 @@ styleSheel.textContent = `
   margin: 20px 20px 0;
   overflow: scroll hidden;
   white-space: nowrap;
-  scrollbar-width: none !important;
   padding: 0 35px;
   display: flex;
   justify-content: center;
   grid-column: 1/7;
+}
+.configPlane::-webkit-scrollbar {
+  display: none;
 }
 .configPlane > div:not(.scrollArrow) {
   display: inline-block;
@@ -1484,12 +1484,6 @@ styleSheel.textContent = `
 }
 .scrollArrow.r {
   right: 20px;
-}
-::-webkit-scrollbar {
-  display: none !important;
-}
-* {
-  scrollbar-width: thin !important;
 }
 .downloadHelper {
   position: fixed;

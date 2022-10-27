@@ -14,21 +14,15 @@
 // ==/UserScript==
 
 const regulars = {
-  // 每页的缩略图元素
-  // thumbnails: /<a\shref=\"([^"]*)\"[^>]*><img\s(?!class=\"ygm\").*?src=\"[^"]*\".*?>.*?<\/a>/g,
-  // 缩略图中的大图页面地址
-  // thumbnailHref: /href="(.*?)".*/,
-  // 图片标题
-  // thumbnailTitle: /title="(.*?)".*/,
-  // 缩略图地址
-  // thumbnailSrc: /src="(.*?)".*/,
   // 有压缩的大图地址
   normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
   // 原图地址
   original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg\.php\?[^"\\]*)\"\>/,
   // 大图重载地址
   nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
+  // 是否开启自动多页查看器
   isMPV: /https?:\/\/e[-x]hentai.org\/mpv\/\w+\/\w+\/#page\w/,
+  // 多页查看器图片列表提取
   mpvImageList: /\{.*?"k":"(\w+)","t":"(.*?)".*?\}/g,
 };
 
@@ -650,7 +644,9 @@ class PageFetcher {
     img.style.height = "auto"
     img.setAttribute("src", "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
     imgNode.appendChild(img);
+    list.push(imgNode)
 
+    // MPV
     if (regulars.isMPV.test(aNode.href)) {
       const mpvDoc = await this.fetchDocument(aNode.href);
       const matchs = mpvDoc.matchAll(regulars.mpvImageList)
@@ -665,7 +661,9 @@ class PageFetcher {
         list.push(newImgNode);
       }
       this.fetched = true
-    } else {
+    }
+    // normal
+    else {
       for (let i = 1; i < aNodes.length; i++) {
         const newImgNode = imgNode.cloneNode(true)
         const newImg = newImgNode.firstChild

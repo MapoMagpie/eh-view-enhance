@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      2.3.3
+// @version      2.3.4
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -23,7 +23,7 @@ const regulars = {
   // 是否开启自动多页查看器
   isMPV: /https?:\/\/e[-x]hentai.org\/mpv\/\w+\/\w+\/#page\w/,
   // 多页查看器图片列表提取
-  mpvImageList: /\{.*?"k":"(\w+)","t":"(.*?)".*?\}/g,
+  mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g,
 };
 
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================START
@@ -620,11 +620,11 @@ class PageFetcher {
   }
 
   //从文档的字符串中创建缩略图元素列表
-  async obtainImageNodeList(documnt) {
+  async obtainImageNodeList(docString) {
     const list = [];
-    if (!documnt) return list;
+    if (!docString) return list;
     const domParser = new DOMParser()
-    const doc = domParser.parseFromString(documnt, "text/html")
+    const doc = domParser.parseFromString(docString, "text/html")
     const aNodes = doc.querySelectorAll("#gdt a");
     if (!aNodes || aNodes.length == 0) {
       evLog("wried to get a nodes from document, but failed!");
@@ -633,18 +633,13 @@ class PageFetcher {
     const aNode = aNodes[0];
 
     // make node template
-    const imgNode = document.createElement("div");
-    imgNode.classList.add("img-node");
-    const img = aNode.querySelector("img")
-    img.setAttribute("ahref", aNode.href);
-    img.setAttribute("asrc", img.src);
-    img.setAttribute("loading", "lazy");
-    img.setAttribute("decoding", "async");
-    img.setAttribute("first-load", "true")
-    img.style.height = "auto"
-    img.setAttribute("src", "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
-    imgNode.appendChild(img);
-    list.push(imgNode)
+    const imgNodeTemplate = document.createElement("div");
+    imgNodeTemplate.classList.add("img-node");
+    const imgTemplate = document.createElement("img")
+    imgTemplate.setAttribute("decoding", "async");
+    imgTemplate.style.height = "auto"
+    imgTemplate.setAttribute("src", "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
+    imgNodeTemplate.appendChild(imgTemplate);
 
     // MPV
     if (regulars.isMPV.test(aNode.href)) {
@@ -654,21 +649,24 @@ class PageFetcher {
       let i = 0;
       for (const match of matchs) {
         i++;
-        const newImgNode = imgNode.cloneNode(true);
+        const newImgNode = imgNodeTemplate.cloneNode(true);
         const newImg = newImgNode.firstChild;
-        newImg.setAttribute("ahref", `${location.origin}/s/${match[1]}/${gid}-${i}`);
-        newImg.setAttribute("asrc", match[2].replaceAll("\\", ""));
+        newImg.setAttribute("title", match[1])
+        newImg.setAttribute("ahref", `${location.origin}/s/${match[2]}/${gid}-${i}`);
+        newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
         list.push(newImgNode);
       }
       this.fetched = true
     }
     // normal
     else {
-      for (let i = 1; i < aNodes.length; i++) {
-        const newImgNode = imgNode.cloneNode(true)
+      for (const aNode of aNodes) {
+        const imgNode = aNode.querySelector("img")
+        const newImgNode = imgNodeTemplate.cloneNode(true)
         const newImg = newImgNode.firstChild
-        newImg.setAttribute("ahref", aNodes[i].href);
-        newImg.setAttribute("asrc", aNodes[i].querySelector("img").src);
+        newImg.setAttribute("ahref", aNode.href);
+        newImg.setAttribute("asrc", imgNode.src);
+        newImg.setAttribute("title", imgNode.getAttribute("title"));
         list.push(newImgNode);
       }
     }
@@ -1593,8 +1591,11 @@ class Downloader {
     if (title) {
       title = title.replace(/Page\s\d+_/, "");
     } else {
-      const mime = imgFetcher.bigImageUrl.split(".").pop();
-      title = `p-${i + 1}.${mime}`;
+      title = imgFetcher.node.childNodes?.[0]?.getAttribute("asrc")?.split("/").pop();
+    }
+    if (!title) {
+      evLog("无法解析图片文件名，因此该图片无法下载")
+      return
     }
     this.zipFolder.file(title, imgFetcher.blobData, { binary: true });
   }

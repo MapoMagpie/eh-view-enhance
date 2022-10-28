@@ -753,7 +753,6 @@ if (!conf || conf.version !== "2.1.1") {
     fetchOriginal: false, //是否获取最佳质量的图片
     restartIdleLoader: 8000, //中止空闲加载器后的重新启动时间
     threads: 3, //同时加载的图片数量
-    autoLoadPage: true, //是否自动加载所有页
     timeout: 8000, //超时时间，默认8秒
     version: "2.1.1",
     debug: true,

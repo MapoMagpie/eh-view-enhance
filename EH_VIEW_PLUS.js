@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      2.3.4
+// @version      3.0.0
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -179,9 +179,9 @@ class IMGFetcher {
       this.onFinishedEventContext.forEach((callback) => callback(index, this));
     } else {
       bigImageElement.src = this.imgElement.getAttribute("asrc");
-      pageHelperHandler(null, null, "fetching");
+      pageHandler("fetching");
     }
-    pageHelperHandler(1, index + 1);
+    pageHandler("updateCurrPage", index + 1);
   }
 
   /**
@@ -197,15 +197,15 @@ class IMGFetcher {
         if (!(typeof text === "string")) {
           evLog("未获取到有效的文档！", response);
           resolve(false);
-          return
+          return;
         }
         //抽取最佳质量的图片的地址
         if (conf["fetchOriginal"]) {
           const matchs = regulars["original"].exec(text);
           if (matchs == null || matchs.length < 1) {
-            const normalMatchs = regulars["normal"].exec(text)
+            const normalMatchs = regulars["normal"].exec(text);
             if (normalMatchs == null || normalMatchs.length == 0) {
-              evLog("获取大图地址失败，内容为: ", text)
+              evLog("获取大图地址失败，内容为: ", text);
             } else {
               imgFetcher.bigImageUrl = normalMatchs[1];
             }
@@ -339,7 +339,7 @@ class IMGFetcherQueue extends Array {
     if (downloader && downloader.autoDownload && this.isFinised()) {
       download();
     }
-    pageHelperHandler(3, `已加载${this.finishedIndex.length}张`);
+    pageHandler("updateFinished", this.finishedIndex.length);
     evLog(`第${index + 1}张完成，大图所在第${this.currIndex + 1}张`);
     if (index !== this.currIndex) return;
     if (!conf.keepScale) {
@@ -348,9 +348,9 @@ class IMGFetcherQueue extends Array {
       bigImageElement.style.height = "100%";
       bigImageElement.style.top = "0px";
     }
-    pageHelperHandler(null, null, "fetched");
+    pageHandler("fetched");
     bigImageElement.src = imgFetcher.blobUrl;
-    this.scrollTo(index)
+    this.scrollTo(index);
   }
 
   scrollTo(index) {
@@ -469,7 +469,7 @@ class IdleLoader {
         if (j === max && !restart) {
           j = -1;
           max = processedIndex - 1;
-          restart = true
+          restart = true;
         }
         continue;
       }
@@ -494,8 +494,8 @@ class IdleLoader {
     // 中止空闲加载后，会在等待一段时间后再次重启空闲加载
     window.clearTimeout(this.restartId);
     this.restartId = window.setTimeout(() => {
-      this.processingIndexList = [newIndex]
-      this.checkProcessingIndex(0)
+      this.processingIndexList = [newIndex];
+      this.checkProcessingIndex(0);
       this.start(this.lockVer);
     }, conf["restartIdleLoader"]);
   }
@@ -512,8 +512,8 @@ class PageFetcher {
     //每页的图片获取器列表，用于实现懒加载
     this.imgAppends = { prev: [], next: [] };
     //平均高度，用于渲染未加载的缩略图,单位px
-    this.idleLoader = idleLoader
-    this.fetched = false
+    this.idleLoader = idleLoader;
+    this.fetched = false;
   }
 
   async init() {
@@ -559,7 +559,7 @@ class PageFetcher {
   }
 
   async loadAllPageImg() {
-    if (this.fetched) return
+    if (this.fetched) return;
     for (let i = 0; i < this.imgAppends["next"].length; i++) {
       const executor = this.imgAppends["next"][i];
       await executor();
@@ -581,18 +581,18 @@ class PageFetcher {
   }
 
   async appendDefaultPage(pageUrl) {
-    const doc = await this.fetchDocument(pageUrl)
+    const doc = await this.fetchDocument(pageUrl);
     const imgNodeList = await this.obtainImageNodeList(doc);
     const IFs = imgNodeList.map((imgNode) => new IMGFetcher(imgNode));
     fullViewPlane.firstElementChild.nextElementSibling.after(...imgNodeList);
     IFs.forEach(({ imgElement }) => imgElement.addEventListener("click", showBigImageEvent));
     this.queue.push(...IFs);
-    pageHelperHandler(2, this.queue.length);
+    pageHandler("updateTotal", this.queue.length);
   }
 
   async appendPageImg(pageUrl, oriented) {
     try {
-      const doc = await this.fetchDocument(pageUrl)
+      const doc = await this.fetchDocument(pageUrl);
       const imgNodeList = await this.obtainImageNodeList(doc);
       const IFs = imgNodeList.map((imgNode) => new IMGFetcher(imgNode));
       IFs.forEach(({ imgElement }) => {
@@ -603,7 +603,7 @@ class PageFetcher {
         case "prev":
           fullViewPlane.firstElementChild.nextElementSibling.after(...imgNodeList);
           this.queue.unshift(...IFs);
-          this.idleLoader.processingIndexList[0] += IFs.length
+          this.idleLoader.processingIndexList[0] += IFs.length;
           this.queue.scrollTo(this.idleLoader.processingIndexList[0]);
           break;
         case "next":
@@ -611,7 +611,7 @@ class PageFetcher {
           this.queue.push(...IFs);
           break;
       }
-      pageHelperHandler(2, this.queue.length);
+      pageHandler("updateTotal", this.queue.length);
       return true;
     } catch (error) {
       evLog(`从下一页或上一页中提取图片元素时出现了错误！`, error);
@@ -623,8 +623,8 @@ class PageFetcher {
   async obtainImageNodeList(docString) {
     const list = [];
     if (!docString) return list;
-    const domParser = new DOMParser()
-    const doc = domParser.parseFromString(docString, "text/html")
+    const domParser = new DOMParser();
+    const doc = domParser.parseFromString(docString, "text/html");
     const aNodes = doc.querySelectorAll("#gdt a");
     if (!aNodes || aNodes.length == 0) {
       evLog("wried to get a nodes from document, but failed!");
@@ -635,35 +635,35 @@ class PageFetcher {
     // make node template
     const imgNodeTemplate = document.createElement("div");
     imgNodeTemplate.classList.add("img-node");
-    const imgTemplate = document.createElement("img")
+    const imgTemplate = document.createElement("img");
     imgTemplate.setAttribute("decoding", "async");
-    imgTemplate.style.height = "auto"
+    imgTemplate.style.height = "auto";
     imgTemplate.setAttribute("src", "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==");
     imgNodeTemplate.appendChild(imgTemplate);
 
     // MPV
     if (regulars.isMPV.test(aNode.href)) {
       const mpvDoc = await this.fetchDocument(aNode.href);
-      const matchs = mpvDoc.matchAll(regulars.mpvImageList)
+      const matchs = mpvDoc.matchAll(regulars.mpvImageList);
       const gid = location.pathname.split("/")[2];
       let i = 0;
       for (const match of matchs) {
         i++;
         const newImgNode = imgNodeTemplate.cloneNode(true);
         const newImg = newImgNode.firstChild;
-        newImg.setAttribute("title", match[1])
+        newImg.setAttribute("title", match[1]);
         newImg.setAttribute("ahref", `${location.origin}/s/${match[2]}/${gid}-${i}`);
         newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
         list.push(newImgNode);
       }
-      this.fetched = true
+      this.fetched = true;
     }
     // normal
     else {
       for (const aNode of aNodes) {
-        const imgNode = aNode.querySelector("img")
-        const newImgNode = imgNodeTemplate.cloneNode(true)
-        const newImg = newImgNode.firstChild
+        const imgNode = aNode.querySelector("img");
+        const newImgNode = imgNodeTemplate.cloneNode(true);
+        const newImg = newImgNode.firstChild;
         newImg.setAttribute("ahref", aNode.href);
         newImg.setAttribute("asrc", imgNode.src);
         newImg.setAttribute("title", imgNode.getAttribute("title"));
@@ -741,7 +741,7 @@ let conf = JSON.parse(window.localStorage.getItem("cfg_"));
 //获取宽度
 const screenWidth = window.screen.availWidth;
 
-if (!conf || conf.version !== "2.1.1") {
+if (!conf || conf.version !== "3.0.0") {
   //如果配置不存在则初始化一个
   let colCount = screenWidth > 2500 ? 8 : screenWidth > 1900 ? 7 : 5;
   conf = {
@@ -753,57 +753,22 @@ if (!conf || conf.version !== "2.1.1") {
     fetchOriginal: false, //是否获取最佳质量的图片
     restartIdleLoader: 8000, //中止空闲加载器后的重新启动时间
     threads: 3, //同时加载的图片数量
-    timeout: 8000, //超时时间，默认8秒
-    version: "2.1.1",
-    debug: true,
-    first: true,
+    timeout: 8, //超时时间(秒)，默认8秒
+    version: "3.0.0", //配置版本
+    debug: true, // 是否打印控制台日志
+    first: true, // 是否初次使用脚本
   };
   window.localStorage.setItem("cfg_", JSON.stringify(conf));
 }
 
-const modCFG = function (k, v) {
-  conf[k] = v;
-  window.localStorage.setItem("cfg_", JSON.stringify(conf));
-  updateEvent(k, v);
-};
-
-const updateEvent = function (k, v) {
-  switch (k) {
-    case "backgroundImage": {
-      let css_ = [].slice.call(styleSheel.sheet.cssRules).filter((rule) => rule.selectorText === ".fullViewPlane")[0];
-      css_.style.backgroundImage = `url(${v})`;
-      break;
-    }
-    case "colCount": {
-      const css_ = [].slice.call(styleSheel.sheet.cssRules).filter((rule) => rule.selectorText === ".fullViewPlane")[0];
-      css_.style.gridTemplateColumns = `repeat(${Math.max(v, 0)}, 1fr)`;
-      const configPlaneCss = [].slice.call(styleSheel.sheet.cssRules).filter((rule) => rule.selectorText === ".configPlane")[0];
-      configPlaneCss.style.gridColumn = `1/${Math.max(v, 0) + 1}`;
-      break;
-    }
-    case "followMouse": {
-      if (v) {
-        bigImageFrame.addEventListener("mousemove", followMouseEvent);
-      } else {
-        bigImageFrame.removeEventListener("mousemove", followMouseEvent);
-        bigImageElement.style.left = "";
-      }
-      break;
-    }
-    case "pageHelper": {
-      pageHelperHandler(1, IFQ.currIndex + 1);
-      pageHelperHandler(2, IFQ.length);
-      break;
-    }
-    case "showGuide": {
-      if (conf.first) {
-        showGuideEvent();
-        modCFG("first", false);
-      }
-      break;
-    }
-  }
-};
+// const updateEvent = function (k, v) {
+//   switch (k) {
+//     case "backgroundImage": {
+//       let css_ = [].slice.call(styleSheel.sheet.cssRules).filter((rule) => rule.selectorText === ".fullViewPlane")[0];
+//       css_.style.backgroundImage = `url(${v})`;
+//       break;
+//     }
+// };
 //===============================================配置管理器=================================================FIN
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -815,37 +780,100 @@ const IFQ = new IMGFetcherQueue();
 const idleLoader = new IdleLoader(IFQ);
 //页加载器
 const PF = new PageFetcher(IFQ, idleLoader);
-
-//向配置面板增加配置项
-const createChild = function (type, parent, innerHTML) {
-  const childElement = document.createElement(type);
-  parent.appendChild(childElement);
-  childElement.innerHTML = innerHTML;
-  return childElement;
-};
 //===============================================方法区=================================================FIN
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 //========================================事件库============================================START
-//点击入口按钮事件
-const gateEvent = function () {
-  if (gateButton.textContent === "展开") {
-    showFullViewPlane();
-    if (signal["first"]) {
-      signal["first"] = false;
-      PF.init().then(() => idleLoader.start(idleLoader.lockVer));
+// 修改配置事件
+function modConfEvent(ele, key, data) {
+  if (["timeout", "threads", "colCount"].indexOf(key) !== -1) {
+    const range = {
+      colCount: [1, 12],
+      threads: [1, 10],
+      timeout: [2, 20],
+    };
+    if (data === "add") {
+      if (conf[key] < range[key][1]) {
+        conf[key]++;
+      }
+    } else if (data === "minus") {
+      if (conf[key] > range[key][0]) {
+        conf[key]--;
+      }
     }
-  } else {
-    hiddenFullViewPlane();
+    document.querySelector(`#${key}Input`).value = conf[key];
+    if (key === "colCount") {
+      const css_ = [].slice.call(styleSheel.sheet.cssRules).filter((rule) => rule.selectorText === ".fullViewPlane")?.[0];
+      css_.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
+    }
   }
-};
+  if (["followMouse", "keepScale", "autoLoad", "fetchOriginal"].indexOf(key) !== -1) {
+    conf[key] = ele.checked;
+    if (key === "autoLoad") { }
+    if (key === "followMouse") {
+      if (conf[key]) {
+        bigImageFrame.addEventListener("mousemove", followMouseEvent);
+      } else {
+        bigImageFrame.removeEventListener("mousemove", followMouseEvent);
+        bigImageElement.style.left = "";
+      }
+    }
+  }
+  // todo backgroud image
+  window.localStorage.setItem("cfg_", JSON.stringify(conf));
+}
+
+// 入口
+function togglePageHelper(type) {
+  const ele = document.querySelector("#pageHelper #main");
+  if (ele) {
+    if (type == 1) {
+      ele.classList.add("b-collapse");
+      hiddenFullViewPlane();
+    } else {
+      ele.classList.remove("b-collapse");
+      showFullViewPlane();
+      if (signal["first"]) {
+        signal["first"] = false;
+        PF.init().then(() => idleLoader.start(idleLoader.lockVer));
+      }
+    }
+  }
+}
+
+function mouseoverPlaneEvent(target) {
+  target.setAttribute("foucs", "foucs");
+}
+
+function mouseleavePlaneEvent(target) {
+  target.removeAttribute("foucs");
+  target.classList.add("p-collapse");
+}
+
+function togglePlaneEvent(id, type) {
+  setTimeout(() => {
+    let ele = document.querySelector(`#${id}Plane`);
+    if (ele) {
+      if (type == 0) {
+        ele.classList.remove("p-collapse");
+      } else if (type == 1) {
+        if (ele.getAttribute("foucs") !== "foucs") {
+          mouseleavePlaneEvent(ele);
+          ele.classList.add("p-collapse");
+        }
+      } else {
+        ele.classList.toggle("p-collapse");
+        ["config", "downloader"].filter(k => k !== id).forEach(k => togglePlaneEvent(k, 1));
+      }
+    }
+  }, 10);
+}
 
 const showFullViewPlane = function () {
   fullViewPlane.scroll(0, 0); //否则加载会触发滚动事件
-  fullViewPlane.classList.remove("retract_full_view");
+  fullViewPlane.classList.remove("collspse_full_view");
   document.body.style.display = "none";
-  gateButton.textContent = "收起";
 };
 
 const hiddenFullViewPlaneEvent = function (event) {
@@ -855,15 +883,15 @@ const hiddenFullViewPlaneEvent = function (event) {
 };
 
 const hiddenFullViewPlane = function () {
-  fullViewPlane.classList.add("retract_full_view");
+  fullViewPlane.classList.add("collspse_full_view");
   document.body.style.display = "";
-  gateButton.textContent = "展开";
+  bigImageFrame.classList.add("collspse");
 };
 
 //全屏阅览元素的滚动事件
 const scrollEvent = function () {
   //对冒泡的处理
-  if (fullViewPlane.classList.contains("retract_full_view")) return;
+  if (fullViewPlane.classList.contains("collspse_full_view")) return;
   //根据currTop获取当前滚动高度对应的未渲染缩略图的图片元素
   PF.renderCurrView(fullViewPlane.scrollTop, fullViewPlane.clientHeight);
 };
@@ -871,13 +899,9 @@ const scrollEvent = function () {
 //大图框架点击事件，点击后隐藏大图框架
 const hiddenBigImageEvent = function (event) {
   if (event.target.tagName === "SPAN") return;
-  bigImageFrame.classList.add("retract");
-  img_land_left.hidden = true;
-  img_land_right.hidden = true;
+  bigImageFrame.classList.add("collspse");
   window.setTimeout(() => {
-    // fragment.appendChild(bigImageFrame.firstElementChild);
     bigImageElement.hidden = true;
-    pageHelper.hidden = true;
   }, 700);
 };
 
@@ -892,7 +916,6 @@ const bigImageWheelEvent = function (event) {
 
 //按键事件
 const KeyEvent = function (event) {
-  if (img_land_left.hidden) return;
   switch (event.key) {
     case "ArrowLeft":
       stepImageEvent("prev");
@@ -922,11 +945,8 @@ const showBigImageEvent = function (event) {
 };
 const showBigImage = function (start) {
   //展开大图阅览元素
-  bigImageFrame.classList.remove("retract");
+  bigImageFrame.classList.remove("collspse");
   bigImageElement.hidden = false;
-  img_land_left.hidden = false;
-  img_land_right.hidden = false;
-  pageHelper.hidden = false;
   //获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
   IFQ.do(start);
 };
@@ -976,94 +996,7 @@ const stepImageEvent = function (oriented) {
   const start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
   IFQ.do(start, oriented);
 };
-//点击配置面板两侧的箭头滚动内容
-const scrollToArrow = function (event) {
-  let direction = event.target.getAttribute("direction");
-  if (!direction) return;
-  switch (direction) {
-    case "left":
-      configPlane.scrollTo({
-        left: configPlane.scrollLeft - screenWidth / 2,
-        behavior: "smooth",
-      });
-      break;
-    case "rigth":
-      configPlane.scrollTo({
-        left: configPlane.scrollLeft + screenWidth / 2,
-        behavior: "smooth",
-      });
-      break;
-  }
-};
-//修改配置时的布尔值类型的事件
-const boolElementEvent = function (event) {
-  event.target.blur(); //让该输入框元素立即失去焦点
-  let val = event.target.value;
-  if (val === "✓") {
-    event.target.value = "X";
-    modCFG(event.target.getAttribute("confKey"), false);
-  } else {
-    event.target.value = "✓";
-    modCFG(event.target.getAttribute("confKey"), true);
-  }
-};
-//修改配置时的输入型类型事件
-const inputElementEvent = function (event) {
-  let val = event.target.previousElementSibling.value;
-  if (val) {
-    modCFG(event.target.previousElementSibling.getAttribute("confKey"), val);
-  } else {
-    alert("请输入有效的网络图片地址！");
-  }
-};
-//页码指示器通用修改事件
-const pageHelperHandler = function (index, value, type) {
-  if (type === "fetching") {
-    pageHelper.classList.add("pageHelperFetching");
-  } else if (type === "fetched") {
-    pageHelper.classList.remove("pageHelperFetching");
-  } else {
-    const node = [].filter.call(pageHelper.childNodes, (node) => node.nodeType === Node.ELEMENT_NODE)[index];
-    if (type === "class") {
-      node.classList.add(value);
-    } else {
-      node.textContent = value;
-    }
-  }
-};
-//修改每行数量事件的添加
-const modRowEvent = function () {
-  [].slice
-    .call(modRowCount.childNodes)
-    .filter((node) => node.nodeType === Node.ELEMENT_NODE)
-    .forEach((node, index) => {
-      switch (index) {
-        case 1:
-        case 3: {
-          node.addEventListener("click", (event) => {
-            if (event.target.textContent === "-") {
-              let val = event.target.nextElementSibling.value;
-              event.target.nextElementSibling.value = parseInt(val) - 1;
-              modCFG("colCount", parseInt(val) - 1);
-            }
-            if (event.target.textContent === "+") {
-              let val = event.target.previousElementSibling.value;
-              event.target.previousElementSibling.value = parseInt(val) + 1;
-              modCFG("colCount", parseInt(val) + 1);
-            }
-          });
-          break;
-        }
-        case 2: {
-          node.addEventListener("input", (event) => {
-            let val = event.target.value || "7";
-            modCFG("colCount", parseInt(val));
-          });
-          break;
-        }
-      }
-    });
-};
+
 //显示简易指南事件
 const showGuideEvent = function (event) {
   const guideFull = document.createElement("div");
@@ -1102,130 +1035,134 @@ if (document.querySelector("div.ths:nth-child(2)") === null) {
 //========================================创建一个全屏阅读元素============================================START
 const fullViewPlane = document.createElement("div");
 fullViewPlane.classList.add("fullViewPlane");
-fullViewPlane.classList.add("retract_full_view");
+fullViewPlane.classList.add("collspse_full_view");
 document.body.after(fullViewPlane);
-
-//创建一个配置面板，追加到全屏阅读元素的第一个位置
-const configPlane = document.createElement("div");
-configPlane.classList.add("configPlane");
-fullViewPlane.appendChild(configPlane);
-
-//向前滚动
-const scrollToLeft = document.createElement("div");
-configPlane.appendChild(scrollToLeft);
-scrollToLeft.classList.add("scrollArrow");
-scrollToLeft.classList.add("l");
-scrollToLeft.addEventListener("click", scrollToArrow);
-scrollToLeft.setAttribute("direction", "left");
-scrollToLeft.textContent = "❮";
-
-//向前滚动
-const scrollToRigth = document.createElement("div");
-configPlane.appendChild(scrollToRigth);
-scrollToRigth.classList.add("scrollArrow");
-scrollToRigth.classList.add("r");
-scrollToRigth.addEventListener("click", scrollToArrow);
-scrollToRigth.setAttribute("direction", "rigth");
-scrollToRigth.textContent = "❯";
-
-//修改背景图片
-const modBGElement = createChild(
-  "div",
-  configPlane,
-  `<span>修改背景图 : </span><input type="text" placeholder="网络图片" style="width: 200px;" confKey="backgroundImage"><button>确认</button>`
-);
-modBGElement.lastElementChild.addEventListener("click", inputElementEvent);
-
-//每行显示数量
-const modRowCount = createChild(
-  "div",
-  configPlane,
-  `<span>每行数量 : </span><button>-</button><input type="text" style="width: 20px;" value="${conf.colCount}"><button>+</button>`
-);
-modRowEvent();
-
-//获取最佳质量图片
-const fetchOriginal = createChild(
-  "div",
-  configPlane,
-  `<span>最佳质量图片 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="fetchOriginal"  value="${conf.fetchOriginal ? "✓" : "X"
-  }" type="text"><button style="cursor: not-allowed;">装饰</button>`
-);
-fetchOriginal.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
-
-//大图是否跟随鼠标
-const modfollowMouse = createChild(
-  "div",
-  configPlane,
-  `<span>大图跟随鼠标 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="followMouse"  value="${conf.followMouse ? "✓" : "X"
-  }" type="text"><button style="cursor: not-allowed;">装饰</button>`
-);
-modfollowMouse.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
-
-//下一张是否保留图片放大
-const keepImageScale = createChild(
-  "div",
-  configPlane,
-  `<span>保留缩放 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="keepScale" value="${conf.keepScale ? "✓" : "X"
-  }" type="text"><button style="cursor: not-allowed;">装饰</button>`
-);
-keepImageScale.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
-
-//是否自动加载
-const autoLoad = createChild(
-  "div",
-  configPlane,
-  `<span>自动加载 : </span><input style="width: 10px; cursor: pointer; font-weight: bold; padding-left: 3px;" confKey="autoLoad"  value="${conf.autoLoad ? "✓" : "X"
-  }" type="text"><button style="cursor: not-allowed;">装饰</button>`
-);
-autoLoad.lastElementChild.previousElementSibling.addEventListener("click", boolElementEvent);
-
-//显示指南
-const showGuide = createChild("div", configPlane, `<span>指南 : </span><button>打开</button>`);
-showGuide.style = "margin-right: 40px;";
-showGuide.lastElementChild.addEventListener("click", showGuideEvent);
-
-//创建一个大图框架元素，追加到全屏阅读元素的第二个位置
-const bigImageFrame = document.createElement("div");
-bigImageFrame.classList.add("bigImageFrame");
-bigImageFrame.classList.add("retract");
-fullViewPlane.appendChild(bigImageFrame);
-
-//大图框架图像容器，追加到大图框架里
-const fragment = document.createDocumentFragment();
-const bigImageElement = document.createElement("img");
-
-const img_land_left = document.createElement("a");
-img_land_left.classList.add("img_land_left");
-img_land_left.hidden = true;
-const img_land_right = document.createElement("a");
-img_land_right.classList.add("img_land_right");
-img_land_right.hidden = true;
-
-const pageHelper = document.createElement("div");
-pageHelper.classList.add("pageHelper");
-pageHelper.innerHTML = `
-<button class="btn" id="p-extend">展开</button>
-|<span class="currPage" id="p-currPage">${IFQ.currIndex}</span>
-/<span>${IFQ.length}</span>
-|<span>...</span>
-|<button class="btn" id="p-download">下载</button>
+fullViewPlane.innerHTML = `
+ <div id="bigImageFrame" class="bigImageFrame collspse">
+    <img id="bigImageElement" />
+ </div>
+ <div id="pageHelper" class="pageHelper">
+     <div style="position: relative">
+         <div id="configPlane" class="plane p-config p-collapse">
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px; margin-top: 5px;">
+                 <label>
+                     <span style="vertical-align: middle;">背景图片:</span>
+                     <input style="vertical-align: middle; width: auto;" type="text" />
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
+                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                     <span>每行数量:</span>
+                     <span>
+                         <button id="colCountMinusBTN" type="button">-</button>
+                         <input id="colCountInput" value="${conf.colCount}" disabled type="text" style="width: 15px;" />
+                         <button id="colCountAddBTN" type="button">+</button>
+                     </span>
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
+                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                     <span>最大同时加载:</span>
+                     <span>
+                         <button id="threadsMinusBTN" type="button">-</button>
+                         <input id="threadsInput" value="${conf.threads}" disabled type="text" style="width: 15px;" />
+                         <button id="threadsAddBTN" type="button">+</button>
+                     </span>
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
+                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                     <span>超时时间(秒):</span>
+                     <span>
+                         <button id="timeoutMinusBTN" type="button">-</button>
+                         <input id="timeoutInput" value="${conf.timeout}" disabled type="text" style="width: 15px;" />
+                         <button id="timeoutAddBTN" type="button">+</button>
+                     </span>
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
+                 <label>
+                     <span>最佳质量:</span>
+                     <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                 </label>
+             </div>
+             <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
+                 <label>
+                     <span>自动加载:</span>
+                     <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
+                 <label>
+                     <span>大图追随鼠标:</span>
+                     <input id="followMouseCheckbox" ${conf.followMouse ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                 </label>
+             </div>
+             <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
+                 <label>
+                     <span>保持缩放:</span>
+                     <input id="keepScaleCheckbox" ${conf.keepScale ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                 </label>
+             </div>
+         </div>
+         <div id="downloaderPlane" class="plane p-downloader p-collapse">
+             <canvas id="downloaderCanvas" width="300" height="260"></canvas>
+         </div>
+     </div>
+     <div>
+         <span id="gate" style="font-weight: 800; font-size: large; text-align: center;">&lessdot;📖</span>
+     </div>
+     <!-- <span>展开</span> -->
+     <div id="main" class="b-main b-collapse">
+         <div id="configPlaneBTN" class="clickable" style="z-index: 1111;"> 配置 </div>
+         <div id="downloaderPlaneBTN" class="clickable" style="z-index: 1111;"> 下载 </div>
+         <div class="page">
+             <span class="clickable" id="p-currPage"
+                 style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
+         </div>
+         <div id="collapseBTN" class="clickable">收起</div>
+     </div>
+     <div>
+         <span style="font-weight: 800; font-size: large; text-align: center;">&gtdot;</span>
+     </div>
+ </div>
 `;
+const bigImageElement = fullViewPlane.querySelector("#bigImageElement");
+const bigImageFrame = fullViewPlane.querySelector("#bigImageFrame");
+const pageHelper = fullViewPlane.querySelector("#pageHelper");
+bigImageFrame.addEventListener("click", hiddenBigImageEvent);
+bigImageFrame.addEventListener("wheel", bigImageWheelEvent);
+bigImageFrame.addEventListener("mousemove", (event) => fixImageTop(event.clientY, false));
+bigImageFrame.addEventListener("contextmenu", (event) => event.preventDefault());
 
-//入口
-const gateButton = pageHelper.querySelector("#p-extend");
-gateButton.addEventListener("click", gateEvent);
-//继续查看大图
-const continueBigImg = pageHelper.querySelector("#p-currPage");
-continueBigImg.addEventListener("click", () => showBigImage(IFQ.currIndex));
-//下载
-const downloadButton = pageHelper.querySelector("#p-download");
-downloadButton.addEventListener("click", () => beforeDownload());
 
-bigImageFrame.appendChild(bigImageElement);
-bigImageFrame.appendChild(img_land_left);
-bigImageFrame.appendChild(img_land_right);
-bigImageFrame.appendChild(pageHelper);
+const configPlane = fullViewPlane.querySelector("#configPlane");
+configPlane.addEventListener("mouseover", (event) => mouseoverPlaneEvent(event.target));
+configPlane.addEventListener("mouseleave", (event) => mouseleavePlaneEvent(event.target));
+const downloaderPlane = fullViewPlane.querySelector("#downloaderPlane");
+downloaderPlane.addEventListener("mouseover", (event) => mouseoverPlaneEvent(event.target));
+downloaderPlane.addEventListener("mouseleave", (event) => mouseleavePlaneEvent(event.target));
+
+// 配置按钮
+const configPlaneBTN = fullViewPlane.querySelector("#configPlaneBTN");
+configPlaneBTN.addEventListener("click", () => togglePlaneEvent("config"));
+// 下载按钮
+const downloaderPlaneBTN = fullViewPlane.querySelector("#downloaderPlaneBTN");
+downloaderPlaneBTN.addEventListener("click", () => togglePlaneEvent("downloader"));
+
+for (const key of ["colCount", "threads", "timeout"]) {
+  fullViewPlane.querySelector(`#${key}MinusBTN`).addEventListener("click", (event) => modConfEvent(event.target, key, 'minus'));
+  fullViewPlane.querySelector(`#${key}AddBTN`).addEventListener("click", (event) => modConfEvent(event.target, key, 'add'));
+}
+for (const key of ["fetchOriginal", "autoLoad", "followMouse", "keepScale"]) {
+  fullViewPlane.querySelector(`#${key}Checkbox`).addEventListener("input", (event) => modConfEvent(event.target, key));
+}
+
+const collapseBTN = fullViewPlane.querySelector("#collapseBTN");
+collapseBTN.addEventListener("click", () => togglePageHelper(1));
+
+const gate = fullViewPlane.querySelector("#gate");
+gate.addEventListener("click", () => togglePageHelper(0));
 
 bigImageElement.hidden = true;
 
@@ -1233,301 +1170,207 @@ const debouncer = new Debouncer();
 //全屏阅读元素滚动事件
 fullViewPlane.addEventListener("scroll", () => debouncer.addEvent(scrollEvent, 500));
 
-//全屏阅览元素点击事件，点击空白处隐藏
-fullViewPlane.addEventListener("click", hiddenFullViewPlaneEvent);
-
-//取消在大图框架元素上的右键事件
-bigImageFrame.addEventListener("contextmenu", (event) => {
-  event.preventDefault();
-});
-
-//大图框架点击事件，点击后隐藏大图框架
-bigImageFrame.addEventListener("click", hiddenBigImageEvent);
-
-//大图框架元素的滚轮事件
-bigImageFrame.addEventListener("wheel", bigImageWheelEvent);
-
-//大图放大后鼠标移动事件
-bigImageFrame.addEventListener("mousemove", (event) => {
-  fixImageTop(event.clientY, false);
-});
-
 //按键事件
 document.addEventListener("keyup", KeyEvent);
 
-//点击左/右以切换上/下一张
-img_land_left.onclick = (event) => {
-  stepImageEvent("prev");
-  event.stopPropagation();
+const currPageElement = fullViewPlane.querySelector("#p-currPage");
+currPageElement.addEventListener("click", () => showBigImage(IFQ.currIndex));
+currPageElement.addEventListener("wheel", bigImageWheelEvent);
+const totalPageElement = fullViewPlane.querySelector("#p-total");
+const finishedElement = fullViewPlane.querySelector("#p-finished");
+//页码指示器通用修改事件
+const pageHandler = function (type, data) {
+  switch (type) {
+    case "fetching":
+      pageHelper.classList.add("pageHelperFetching");
+      break;
+    case "fetched":
+      pageHelper.classList.remove("pageHelperFetching");
+      break;
+    case "updateTotal":
+      totalPageElement.textContent = data;
+      break;
+    case "updateCurrPage":
+      currPageElement.textContent = data;
+      break;
+    case "updateFinished":
+      finishedElement.textContent = data;
+      break;
+  }
 };
-img_land_right.onclick = (event) => {
-  stepImageEvent("next");
-  event.stopPropagation();
-};
-//========================================创建一个全屏阅读元素============================================FIN
 
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//========================================创建一个全屏阅读元素============================================FIN
 
 //=========================================创建样式表==================================================START
 let styleSheel = document.createElement("style");
 styleSheel.textContent = `
-.fullViewPlane {
-  width: 100vw;
-  height: 100vh;
-  background-color: rgb(0, 0, 0);
-  position: fixed;
-  top: 0px;
-  right: 0px;
-  z-index: 1000;
-  overflow: hidden scroll;
-  transition: height 0.4s ease 0s;
-  display: grid;
-  align-content: start;
-  grid-gap: 10px;
-  grid-template-columns: repeat(6, 1fr);
-}
-.fullViewPlane .img-node {
-  position: relative;
-}
-.fullViewPlane .img-node img {
-  width: 100%;
-  border: 2px solid white;
-  box-sizing: border-box;
-}
-.downloadBar {
-  background-color: rgba(100, 100, 100, .8);
-  height: 10px;
-  width: 100%;
-  position: absolute;
-  bottom: 0;
-}
-.retract_full_view {
-  height: 0;
-  transition: height 0.4s;
-}
-.configPlane {
-  height: 30px;
-  width: 100%;
-  background-color: #1e1c1c;
-  margin: 20px 20px 0;
-  overflow: scroll hidden;
-  white-space: nowrap;
-  padding: 0 35px;
-  display: flex;
-  justify-content: center;
-  grid-column: 1/7;
-}
-.configPlane::-webkit-scrollbar {
-  display: none;
-}
-.configPlane > div:not(.scrollArrow) {
-  display: inline-block;
-  background-color: #00ffff3d;
-  border: 1px solid black;
-  margin: 0 5px;
-  box-sizing: border-box;
-  height: 30px;
-  padding: 0 5px;
-}
-.configPlane > div > span {
-  line-height: 20px;
-  color: black;
-  font-size: 15px;
-  font-weight: bolder;
-}
-.configPlane > div > input {
-  border: 2px solid black;
-  border-radius: 0;
-  margin-top: 0 !important;
-  vertical-align: bottom;
-}
-.configPlane > div > button {
-  height: 25px;
-  border: 2px solid black;
-  background-color: #383940;
-  margin-top: 1px;
-  box-sizing: border-box;
-  color: white;
-}
-.bigImageFrame {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  right: 0;
-  display: flex;
-  z-index: 1001;
-  background-color: #000000d6;
-  justify-content: center;
-  transition: width 0.4s;
-}
-.bigImageFrame > img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  position: relative;
-}
-.img_land_left {
-  width: 33%;
-  height: 100%;
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 1002;
-  cursor: url("https://tb2.bdstatic.com/tb/static-album/img/mouseleft.cur"), auto;
-}
-.img_land_right {
-  width: 33%;
-  height: 100%;
-  position: fixed;
-  right: 0;
-  top: 0;
-  z-index: 1002;
-  cursor: url("https://tb2.bdstatic.com/tb/static-album/img/mouseright.cur"), auto;
-}
-.bigImageFrame > .pageHelper {
-  position: fixed;
-  display: block !important;
-  right: 100px;
-  bottom: 40px;
-  background-color: rgb(30, 28, 28);
-  z-index: 1003;
-  box-sizing: border-box;
-  font-weight: bold;
-  color: rgb(53, 170, 142);
-  font-size: 1rem;
-}
-.pageHelper .btn {
-  color: rgb(255, 232, 176);
-  cursor: pointer;
-  border: 1px solid rgb(0, 0, 0);
-  border-radius: 4px;
-  height: 30px;
-  font-weight: 900;
-  background: rgb(70, 69, 98) none repeat scroll 0% 0%;
-}
-.pageHelper .currPage {
-  color: orange;
-  font-size: 1.3rem;
-  text-decoration-line: underline;
-  text-decoration-style: double;
-  cursor: pointer;
-  text-decoration-color: #00c3ff;
-}
-.fetched {
-  border: 2px solid #602a5c !important;
-}
-.fetch-failed {
-  border: 2px solid red !important;
-}
-.fetching {
-  padding: 2px;
-  border: none !important;
-  animation: 1s linear infinite cco;
-  -webkit-animation: 1s linear infinite cco;
-}
-.pageHelperFetching {
-  border: none !important;
-  animation: 1s linear infinite cco;
-  -webkit-animation: 1s linear infinite cco;
-}
-@keyframes cco {
-  0% {
-    background-color: #f00;
-  }
-  50% {
-    background-color: #48ff00;
-  }
-  100% {
-    background-color: #ae00ff;
-  }
-}
-.retract {
-  width: 0;
-  transition: width 0.7s;
-}
-.closeBTN {
-  width: 100%;
-  height: 100%;
-  background-color: #0000;
-  color: #f45b8d;
-  font-size: 30px;
-  font-weight: bold;
-  border: 4px #f45b8d solid;
-  border-bottom-left-radius: 60px;
-}
-.closeBTN > span {
-  position: fixed;
-  right: 11px;
-  top: 0;
-}
-.scrollArrow {
-  width: 30px;
-  height: 30px;
-  position: absolute;
-  display: inline-block;
-  z-index: 1000;
-  background-size: contain;
-  background-color: #214e4e;
-  font-weight: 900;
-  font-size: 1.5rem;
-  text-align: center;
-  color: aquamarine;
-  line-height: 30px;
-}
-.scrollArrow.l {
-  left: 20px;
-}
-.scrollArrow.r {
-  right: 20px;
-}
-.downloadHelper {
-  position: fixed;
-  right: 100px;
-  bottom: 100px;
-  width: 300px;
-  height: 100px;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  padding: 3px;
-  border: 1px solid black;
-  justify-content: space-between;
-  background-color: rgba(90,100,120,.8);
-}
-.d-header {
-  text-align: center;
-  font-size: 30px
-  font-weight: 600;
-}
-.d-content {
-  text-align: left;
-  padding-left: 10px;
-}
-.d-footer {
-  display: flex;
-  justify-content: flex-end;
-}
-.d-btn {
-  color: rgb(255, 232, 176);
-  cursor: pointer;
-  border: 1px solid rgb(0, 0, 0);
-  border-radius: 4px;
-  height: 30px;
-  font-weight: 900;
-  background: rgb(70, 69, 98) none repeat scroll 0% 0%;
-}
-.d-btn-cancel {
-  background-color: rgba(200, 230, 100, .5) !important;
-}
+    .fullViewPlane {
+        width: 100vw;
+        height: 100vh;
+        background-color: rgb(0, 0, 0);
+        position: fixed;
+        top: 0px;
+        right: 0px;
+        z-index: 1000;
+        overflow: hidden scroll;
+        transition: height 0.4s ease 0s;
+        display: grid;
+        align-content: start;
+        grid-gap: 10px;
+        grid-template-columns: repeat(${conf.colCount}, 1fr);
+    }
+    .fullViewPlane .img-node {
+        position: relative;
+    }
+    .fullViewPlane .img-node img {
+        width: 100%;
+        border: 2px solid white;
+        box-sizing: border-box;
+    }
+    .collspse_full_view {
+        height: 0;
+        transition: height 0.4s;
+    }
+    .bigImageFrame {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        right: 0;
+        display: flex;
+        z-index: 1001;
+        background-color: #000000d6;
+        justify-content: center;
+        transition: width 0.4s;
+    }
+    .bigImageFrame>img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        position: relative;
+    }
+    .fullViewPlane>.pageHelper {
+        position: fixed;
+        display: flex !important;
+        justify-content: space-between;
+        right: 50px;
+        line-height: 25px;
+        bottom: 30px;
+        background-color: rgba(114, 114, 114, 0.8);
+        z-index: 1011 !important;
+        box-sizing: border-box;
+        font-weight: bold;
+        color: rgb(135, 255, 184);
+        font-size: 1rem;
+        cursor: pointer;
+    }
+    .pageHelper:hover {
+        background-color: rgba(40, 40, 40, 0.8);
+    }
+    .pageHelper .clickable {
+        text-decoration-line: underline;
+    }
+    .pageHelper .clickable:hover {
+        color: white;
+    }
+    .pageHelper .plane {
+        z-index: 1010 !important;
+        background-color: rgba(38, 20, 25, 0.8);
+        box-sizing: border-box;
+        /* border: 1px solid red; */
+        position: absolute;
+        left: 0;
+        bottom: 25px;
+        color: rgb(200, 222, 200);
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
+        transition: height 0.4s;
+        overflow: hidden;
+        width: 337px;
+    }
+    .p-collapse {
+        height: 0px !important;
+        transition: height 0.4s;
+    }
+    .pageHelper .b-main {
+        width: 284px;
+        overflow: hidden !important;
+        transition: width 0.4s;
+        display: flex;
+        justify-content: space-between;
+        white-space: nowrap !important;
+    }
+    .b-collapse {
+        width: 0px !important;
+        transition: width 0.4s;
+    }
+    .pageHelper .p-config {
+        height: 300px;
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        align-content: start;
+        grid-gap: 10px 0px;
+    }
+    .pageHelper .p-downloader {
+        height: 300px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+    }
+    .p-downloader canvas {
+        margin-bottom: 5px;
+        /* border: 1px solid greenyellow; */
+    }
+    .pageHelper .btn {
+        color: rgb(255, 232, 176);
+        cursor: pointer;
+        border: 1px solid rgb(0, 0, 0);
+        border-radius: 4px;
+        height: 30px;
+        font-weight: 900;
+        background: rgb(70, 69, 98) none repeat scroll 0% 0%;
+    }
+    .fetched {
+        border: 2px solid #602a5c !important;
+    }
+    .fetch-failed {
+        border: 2px solid red !important;
+    }
+    .fetching {
+        padding: 2px;
+        border: none !important;
+        animation: 1s linear infinite cco;
+        -webkit-animation: 1s linear infinite cco;
+    }
+    .pageHelperFetching {
+        border: none !important;
+        animation: 1s linear infinite cco;
+        -webkit-animation: 1s linear infinite cco;
+    }
+    @keyframes cco {
+        0% {
+            background-color: #f00;
+        }
 
+        50% {
+            background-color: #48ff00;
+        }
+
+        100% {
+            background-color: #ae00ff;
+        }
+    }
+    .collspse {
+        width: 0;
+        transition: width 0.7s;
+    }
+    .downloadBar {
+        background-color: rgba(100, 100, 100, .8);
+        height: 10px;
+        width: 100%;
+        position: absolute;
+        bottom: 0;
+    }
 `;
 document.head.appendChild(styleSheel);
-
-updateEvent("backgroundImage", conf.backgroundImage);
-updateEvent("colCount", conf.colCount);
-updateEvent("followMouse", conf.followMouse);
-updateEvent("pageHelper", null);
-updateEvent("showGuide", null);
 //=========================================创建样式表==================================================FIN
 
 function evLog(msg, ...info) {
@@ -1542,7 +1385,7 @@ function xhrWapper(url, refer, resType, { onprogress, onload, onerror, ontimeout
     method: "GET",
     url: url,
     responseType: resType,
-    timeout: conf["timeout"],
+    timeout: conf["timeout"] * 1000,
     headers: {
       Referer: refer,
       "X-Alt-Referer": refer,
@@ -1553,6 +1396,7 @@ function xhrWapper(url, refer, resType, { onprogress, onload, onerror, ontimeout
     ontimeout,
   });
 }
+
 //=========================================画廊信息==================================================START
 class GalleryMeta {
   constructor($doc) {
@@ -1593,8 +1437,8 @@ class Downloader {
       title = imgFetcher.node.childNodes?.[0]?.getAttribute("asrc")?.split("/").pop();
     }
     if (!title) {
-      evLog("无法解析图片文件名，因此该图片无法下载")
-      return
+      evLog("无法解析图片文件名，因此该图片无法下载");
+      return;
     }
     this.zipFolder.file(title, imgFetcher.blobData, { binary: true });
   }
@@ -1605,57 +1449,116 @@ class Downloader {
 const downloader = new Downloader();
 
 const beforeDownload = async function () {
-  if (signal["first"]) {
-    signal["first"] = false;
-    await PF.init();
-  }
-  if (!IFQ.isFinised() || !conf.fetchOriginal) {
+  if (!IFQ.isFinised() || !conf.fetchOriginal) { // 未加载完全部图片或图片质量非最高，进行提示
     downloader.autoDownload = true;
     idleLoader.lockVer++;
-    idleLoader.processingIndexList = [...IFQ]
-      .map((imgFetcher, index) => (!imgFetcher.lock && imgFetcher.stage === 1 ? index : -1))
+    idleLoader.processingIndexList = [...IFQ].map((imgFetcher, index) => (!imgFetcher.lock && imgFetcher.stage === 1 ? index : -1))
       .filter((index) => index >= 0)
       .splice(0, conf["threads"]);
     idleLoader.start(idleLoader.lockVer);
-    const downloadHelper = createDownloadHelper(IFQ.isFinised(), conf.fetchOriginal);
-    bigImageFrame.appendChild(downloadHelper);
+    // todo 下载提示
   } else {
     download();
   }
 };
 
-const removeDownloadHelper = function () {
-  document.querySelector(".downloadHelper").remove();
-};
-
 const download = function () {
   downloader.autoDownload = false;
-  downloader
-    .generate()
-    .then(($data) => {
-      const blob = new Blob([$data], { type: "application/zip" });
-      saveAs(blob, downloader.title);
-    })
-    .then(removeDownloadHelper);
-};
-
-const createDownloadHelper = function (finished, fetchOriginal) {
-  const downloadHelper = document.createElement("div");
-  downloadHelper.classList.add("downloadHelper");
-  downloadHelper.innerHTML = `
-<div class="d-header"><span>下载<span></div>
-<div class="d-content">
-<div><span style="color:${fetchOriginal ? "green" : "red"}">${fetchOriginal ? "√" : "×"}</span><span>是否是最佳质量图片(原图)</span> </div>
-<div><span style="color:${finished ? "green" : "red"}">${finished ? "√" : "×"}</span><span>${finished ? "已全部加载完成..." : "未全部加载完成，正在加速获取图片中，请等待。。。"
-    }</span> </div>
- </div>
-<div class="d-footer">
-<button id="d-btn-cancel" class="d-btn d-btn-cancel">关闭</button>
-<button id="d-btn-confirm" class="d-btn">下载已加载的</button>
-</div>
-`;
-  downloadHelper.querySelector("#d-btn-cancel").addEventListener("click", removeDownloadHelper);
-  downloadHelper.querySelector("#d-btn-confirm").addEventListener("click", download);
-  return downloadHelper;
+  downloader.generate().then(($data) => {
+    const blob = new Blob([$data], { type: "application/zip" });
+    saveAs(blob, downloader.title);
+  });
 };
 //=========================================下载功能==================================================FIN
+
+class DownloaderCanvas {
+  constructor(id) {
+    this.canvas = document.getElementById(id);
+    this.canvas.addEventListener("wheel", (event) => this.onwheel(event.deltaY));
+    this.ctx = this.canvas.getContext("2d");
+    this.list = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+    this.rectSize = 12; // 矩形大小(正方形)
+    this.rectGap = 6; // 矩形之间间隔
+    this.columns = 15; // 每行矩形数量
+    this.padding = 7; // 画布内边距
+    this.scrollTop = 0; // 滚动位置
+    this.scrollSize = 10; // 每次滚动粒度
+
+    for (let i = 0, j = 0; i < 600; i++) {
+      if ((i + j) % this.columns > 5) {
+        this.list.push(1);
+      } else {
+        this.list.push(0);
+      }
+      if (i % this.columns == 0) j++;
+    }
+  }
+
+  onwheel(deltaY) {
+    deltaY = deltaY >> 1;
+    this.scrollTop += deltaY;
+    if (this.scrollTop < 0) this.scrollTop = 0;
+    const clientHeight = Math.ceil(this.list.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
+    const [w, h] = this.getWH();
+    if (this.scrollTop + h > clientHeight + 20) this.scrollTop = clientHeight - h + 20;
+    this.draw();
+  }
+
+  draw() {
+    const [w, h] = this.getWH();
+    this.ctx.clearRect(0, 0, w, h);
+    const startX = this.computeStartX();
+    let startY = -this.scrollTop;
+    for (let i = 0, row = -1; i < this.list.length; i++) {
+      const currCol = i % this.columns;
+      if (currCol == 0) {
+        row++;
+      }
+      const atX = startX + ((this.rectSize + this.rectGap) * currCol);
+      const atY = startY + ((this.rectSize + this.rectGap) * row);
+      // if (currCol == 0) {
+      //     console.log(`atY:${atY}`)
+      // }
+
+      if (atY > h) {
+        break;
+      }
+      if (atY + this.rectSize < 0) {
+        continue;
+      }
+      this.drawSmallRect(
+        atX,
+        atY,
+        this.list[i]
+      );
+    }
+  }
+
+  computeStartX() {
+    const [w, h] = this.getWH();
+    const drawW = this.rectSize * this.columns + this.rectGap * this.columns - 1;
+    let startX = (w - drawW) >> 1;
+    return startX;
+  }
+
+  drawSmallRect(x, y, stat) {
+    if (stat == 1) {
+      this.ctx.fillStyle = "rgb(110, 200, 120)";
+    } else {
+      this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
+    }
+    this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
+    this.ctx.shadowColor = '#d53';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeStyle = "rgb(90, 90, 90)";
+    this.ctx.strokeRect(x, y, this.rectSize, this.rectSize);
+  }
+
+  getWH() {
+    return [this.canvas.width, this.canvas.height];
+  }
+
+}
+
+const dc = new DownloaderCanvas("downloaderCanvas");
+dc.draw();

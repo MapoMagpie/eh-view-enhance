@@ -10,7 +10,7 @@
 // @icon         https://exhentai.org/favicon.ico
 // @grant        GM.xmlHttpRequest
 // @require     https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js
-// @require     https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js
+// @require     https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js
 // ==/UserScript==
 
 const regulars = {
@@ -1472,8 +1472,7 @@ class Downloader {
     this.meta = new GalleryMeta(document);
     this.zip = new JSZip();
     this.title = this.meta.originTitle || this.meta.title;
-    this.zipFolder = this.zip.folder(this.title);
-    this.zipFolder.file("meta.json", JSON.stringify(this.meta));
+    this.zip.file("meta.json", JSON.stringify(this.meta));
     this.downloading = false;
     this.downloadForceElement = document.querySelector("#download-force");
     this.downloadStartElement = document.querySelector("#download-start");
@@ -1492,20 +1491,16 @@ class Downloader {
       evLog("无法解析图片文件名，因此该图片无法下载");
       return;
     }
-    this.zipFolder.file(title, imgFetcher.blobData, { binary: true });
-  }
-  async generate() {
-    return this.zip.generateAsync({ type: "arraybuffer", compression: "STORE" });
+    this.zip.file(title, imgFetcher.blobData, { binary: true });
   }
   // check > start > download
   check() {
-    if (IFQ.isFinised() && conf.fetchOriginal) return true;
+    if (conf.fetchOriginal) return;
     // append adviser element
     if (this.downloadNoticeElement && !this.downloading) {
       this.downloadNoticeElement.innerHTML = "<span>未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a></span>";
       this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
     }
-    return false;
   }
   fetchOriginalTemporarily() {
     IFQ.forEach(imgFetcher => {
@@ -1517,7 +1512,7 @@ class Downloader {
     this.start();
   }
   start() {
-    if (IFQ.isFinised) {
+    if (IFQ.isFinised()) {
       this.download();
       return;
     }
@@ -1533,11 +1528,13 @@ class Downloader {
   }
   download() {
     this.downloading = false;
-    this.downloadStartElement.textContent = "下载完成";
-    this.generate().then((data) => {
-      const blob = new Blob([data], { type: "application/zip" });
-      saveAs(blob, `${this.title}.zip`);
+    this.zip.generateAsync({ type: "blob" }, (metadata) => {
+      // console.log(metadata);
+      // todo update progress bar
+    }).then(data => {
+      saveAs(data, `${this.title}.zip`);
       if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "";
+      this.downloadStartElement.textContent = "下载完成";
     });
   };
 }

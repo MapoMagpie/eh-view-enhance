@@ -868,7 +868,7 @@ const showFullViewPlane = function () {
 
 const hiddenFullViewPlaneEvent = function (event) {
   if (event.target === fullViewPlane) {
-    hiddenFullViewPlane();
+    togglePageHelper(1);
   }
 };
 
@@ -892,6 +892,8 @@ const hiddenBigImageEvent = function (event) {
   bigImageFrame.classList.add("collspse");
   window.setTimeout(() => {
     bigImageElement.hidden = true;
+    imgLandLeft.hidden = true;
+    imgLandRight.hidden = true;
   }, 700);
 };
 
@@ -937,6 +939,8 @@ const showBigImage = function (start) {
   //展开大图阅览元素
   bigImageFrame.classList.remove("collspse");
   bigImageElement.hidden = false;
+  imgLandLeft.hidden = false;
+  imgLandRight.hidden = false;
   //获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
   IFQ.do(start);
 };
@@ -1024,6 +1028,8 @@ document.body.after(fullViewPlane);
 fullViewPlane.innerHTML = `
  <div id="bigImageFrame" class="bigImageFrame collspse">
     <img id="bigImageElement" />
+    <a id="imgLandLeft" hidden="true" class="imgLandLeft"></a>
+    <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
  </div>
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
@@ -1133,13 +1139,21 @@ bigImageFrame.addEventListener("click", hiddenBigImageEvent);
 bigImageFrame.addEventListener("wheel", bigImageWheelEvent);
 bigImageFrame.addEventListener("mousemove", (event) => fixImageTop(event.clientY, false));
 bigImageFrame.addEventListener("contextmenu", (event) => event.preventDefault());
+const imgLandLeft = fullViewPlane.querySelector("#imgLandLeft");
+imgLandLeft.addEventListener("click", (event) => {
+  stepImageEvent("prev");
+  event.stopPropagation();
+});
+const imgLandRight = fullViewPlane.querySelector("#imgLandRight");
+imgLandRight.addEventListener("click", (event) => {
+  stepImageEvent("next");
+  event.stopPropagation();
+});
 
 
 const configPlane = fullViewPlane.querySelector("#configPlane");
-configPlane.addEventListener("mouseover", (event) => mouseoverPlaneEvent(event.target));
 configPlane.addEventListener("mouseleave", (event) => mouseleavePlaneEvent(event.target));
 const downloaderPlane = fullViewPlane.querySelector("#downloaderPlane");
-downloaderPlane.addEventListener("mouseover", (event) => mouseoverPlaneEvent(event.target));
 downloaderPlane.addEventListener("mouseleave", (event) => mouseleavePlaneEvent(event.target));
 
 // 配置按钮
@@ -1171,6 +1185,7 @@ bigImageElement.hidden = true;
 const debouncer = new Debouncer();
 //全屏阅读元素滚动事件
 fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", scrollEvent, 500));
+fullViewPlane.addEventListener("click", hiddenFullViewPlaneEvent);
 
 //按键事件
 document.addEventListener("keyup", KeyEvent);
@@ -1382,6 +1397,24 @@ styleSheel.textContent = `
         width: 100%;
         position: absolute;
         bottom: 0;
+    }
+    .imgLandLeft {
+      width: 30%;
+      height: 100%;
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 1004;
+      cursor: url("https://tb2.bdstatic.com/tb/static-album/img/mouseleft.cur"), auto;
+    }
+    .imgLandRight {
+      width: 30%;
+      height: 100%;
+      position: fixed;
+      right: 0;
+      top: 0;
+      z-index: 1004;
+      cursor: url("https://tb2.bdstatic.com/tb/static-album/img/mouseright.cur"), auto;
     }
 `;
 document.head.appendChild(styleSheel);

@@ -32,7 +32,7 @@ class IMGFetcher {
     this.node = node;
     this.imgElement = node.childNodes[0];
     this.pageUrl = this.imgElement.getAttribute("ahref");
-    //当前处理阶段，1: 获取大图地址 2: 获取大图数据
+    //当前处理阶段，1: 获取大图地址 2: 获取大图数据 3: 加载完成
     this.stage = 1;
     this.tryTime = 0;
     this.lock = false;
@@ -51,6 +51,7 @@ class IMGFetcher {
      * 当获取完成时的回调函数，从其他地方进行事件注册
      */
     this.onFinishedEventContext = new Map();
+    this.fetchOriginal = false;
   }
 
   // 刷新下载状态
@@ -73,6 +74,7 @@ class IMGFetcher {
       this.node.appendChild(this.downloadBar);
     }
     [...this.downloadBar.childNodes].filter((node) => node.nodeType === 1)[0].value = (this.downloadState.loaded / this.downloadState.total) * 100;
+    downloaderCanvas.drawDebouce();
   }
 
   async start(index) {
@@ -200,7 +202,7 @@ class IMGFetcher {
           return;
         }
         //抽取最佳质量的图片的地址
-        if (conf["fetchOriginal"]) {
+        if (conf["fetchOriginal"] || imgFetcher.fetchOriginal) {
           const matchs = regulars["original"].exec(text);
           if (matchs == null || matchs.length < 1) {
             const normalMatchs = regulars["normal"].exec(text);
@@ -309,6 +311,11 @@ class IMGFetcherQueue extends Array {
     oriented = oriented || "next";
     //边界约束
     this.currIndex = this.fixIndex(start, oriented);
+    if (downloader.downloading) {
+      //立即加载和展示当前的元素
+      this[this.currIndex].setNow(this.currIndex);
+      return;
+    }
     //立即中止空闲加载器
     idleLoader.abort(this.currIndex);
     //立即加载和展示当前的元素
@@ -322,7 +329,7 @@ class IMGFetcherQueue extends Array {
             在对大图元素使用滚轮事件的时候，由于速度非常快，大量的IMGFetcher图片请求器被添加到executableQueue队列中，如果调用这些图片请求器请求大图，可能会被认为是爬虫脚本
             因此会有一个时间上的延迟，在这段时间里，executableQueue中的IMGFetcher图片请求器会不断更替，300毫秒结束后，只调用最新的executableQueue中的IMGFetcher图片请求器。
         */
-    this.debouncer.addEvent(() => {
+    this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
       this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(imgFetcherIndex));
     }, 300);
   }
@@ -336,8 +343,8 @@ class IMGFetcherQueue extends Array {
       }
     }
     this.pushFinishedIndex(index);
-    if (downloader && downloader.autoDownload && this.isFinised()) {
-      download();
+    if (downloader && downloader.downloading && this.isFinised()) {
+      downloader.download();
     }
     pageHandler("updateFinished", this.finishedIndex.length);
     evLog(`第${index + 1}张完成，大图所在第${this.currIndex + 1}张`);
@@ -585,7 +592,6 @@ class PageFetcher {
     const imgNodeList = await this.obtainImageNodeList(doc);
     const IFs = imgNodeList.map((imgNode) => new IMGFetcher(imgNode));
     fullViewPlane.firstElementChild.nextElementSibling.after(...imgNodeList);
-    IFs.forEach(({ imgElement }) => imgElement.addEventListener("click", showBigImageEvent));
     this.queue.push(...IFs);
     pageHandler("updateTotal", this.queue.length);
   }
@@ -595,10 +601,6 @@ class PageFetcher {
       const doc = await this.fetchDocument(pageUrl);
       const imgNodeList = await this.obtainImageNodeList(doc);
       const IFs = imgNodeList.map((imgNode) => new IMGFetcher(imgNode));
-      IFs.forEach(({ imgElement }) => {
-        imgElement.addEventListener("click", showBigImageEvent);
-        imgElement.style.height = "auto";
-      });
       switch (oriented) {
         case "prev":
           fullViewPlane.firstElementChild.nextElementSibling.after(...imgNodeList);
@@ -654,6 +656,7 @@ class PageFetcher {
         newImg.setAttribute("title", match[1]);
         newImg.setAttribute("ahref", `${location.origin}/s/${match[2]}/${gid}-${i}`);
         newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
+        newImg.addEventListener("click", showBigImageEvent);
         list.push(newImgNode);
       }
       this.fetched = true;
@@ -667,6 +670,7 @@ class PageFetcher {
         newImg.setAttribute("ahref", aNode.href);
         newImg.setAttribute("asrc", imgNode.src);
         newImg.setAttribute("title", imgNode.getAttribute("title"));
+        newImg.addEventListener("click", showBigImageEvent);
         list.push(newImgNode);
       }
     }
@@ -720,28 +724,24 @@ class PageFetcher {
 //防反跳，延迟执行，如果有新的事件则重置延迟时间，到达延迟时间后，只执行最后一次的事件
 class Debouncer {
   constructor() {
-    this.tids = [];
+    this.tids = {};
   }
-  addEvent(event, timeout) {
-    this.tids.forEach((tid) => window.clearTimeout(tid));
-    this.tids = [];
-    const tid = window.setTimeout(event, timeout);
-    this.tids.push(tid);
+  addEvent(id, event, timeout) {
+    window.clearTimeout(this.tids[id]);
+    this.tids[id] = window.setTimeout(event, timeout);
   }
 }
 
-//==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================FIN
+//==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================START
 
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-//===============================================配置管理器=================================================START
+//========================================配置管理器=================================================START
 const signal = { first: true };
 
 let conf = JSON.parse(window.localStorage.getItem("cfg_"));
 //获取宽度
 const screenWidth = window.screen.availWidth;
 
-if (!conf || conf.version !== "3.0.0") {
+if (!conf || conf.version !== "3.0.1") {
   //如果配置不存在则初始化一个
   let colCount = screenWidth > 2500 ? 8 : screenWidth > 1900 ? 7 : 5;
   conf = {
@@ -753,8 +753,9 @@ if (!conf || conf.version !== "3.0.0") {
     fetchOriginal: false, //是否获取最佳质量的图片
     restartIdleLoader: 8000, //中止空闲加载器后的重新启动时间
     threads: 3, //同时加载的图片数量
+    downloadThreads: 4, //同时下载的图片数量
     timeout: 8, //超时时间(秒)，默认8秒
-    version: "3.0.0", //配置版本
+    version: "3.0.1", //配置版本
     debug: true, // 是否打印控制台日志
     first: true, // 是否初次使用脚本
   };
@@ -769,28 +770,25 @@ if (!conf || conf.version !== "3.0.0") {
 //       break;
 //     }
 // };
-//===============================================配置管理器=================================================FIN
+//========================================配置管理器=================================================FIN
 
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-//===============================================方法区=================================================START
+//=========================================方法区===================================================START
 //图片获取器调用队列
 const IFQ = new IMGFetcherQueue();
 //空闲自加载器
 const idleLoader = new IdleLoader(IFQ);
 //页加载器
 const PF = new PageFetcher(IFQ, idleLoader);
-//===============================================方法区=================================================FIN
+//=========================================方法区===================================================FIN
 
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-//========================================事件库============================================START
+//=========================================事件库===================================================START
 // 修改配置事件
 function modConfEvent(ele, key, data) {
-  if (["timeout", "threads", "colCount"].indexOf(key) !== -1) {
+  if (["timeout", "threads", "downloadThreads", "colCount"].indexOf(key) !== -1) {
     const range = {
       colCount: [1, 12],
       threads: [1, 10],
+      downloadThreads: [1, 10],
       timeout: [2, 20],
     };
     if (data === "add") {
@@ -1014,12 +1012,9 @@ const showGuideEvent = function (event) {
   guideFull.style = `position: absolute;width: 100%;height: 100%;background-color: #363c3c78;z-index: 2004;top: 0; display: flex; justify-content: center;align-items: center;`;
   guideFull.addEventListener("click", () => guideFull.remove());
 };
-//========================================事件库============================================FIN
+//=========================================事件库===================================================FIN
 
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-//==================创建入口按钮，追加到tag面板的右侧=====================START
-
+//===============================创建入口按钮，追加到tag面板的右侧======================================START
 //判断是否是Large模式，这样缩略图也算能看
 if (document.querySelector("div.ths:nth-child(2)") === null) {
   const showBTNRoot = document.querySelector("#gd5");
@@ -1027,12 +1022,9 @@ if (document.querySelector("div.ths:nth-child(2)") === null) {
   tempContainer.innerHTML = `<p class="g2"><img src="https://exhentai.org/img/mr.gif"> <a id="renamelink" href="${window.location.href}?inline_set=ts_l">请切换至Large模式</a></p>`;
   showBTNRoot.appendChild(tempContainer.firstElementChild);
 }
+//===============================创建入口按钮，追加到tag面板的右侧======================================FIN
 
-//==================创建入口按钮，追加到tag面板的右侧=====================FIN
-
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-//========================================创建一个全屏阅读元素============================================START
+//====================================创建一个全屏阅读元素============================================START
 const fullViewPlane = document.createElement("div");
 fullViewPlane.classList.add("fullViewPlane");
 fullViewPlane.classList.add("collspse_full_view");
@@ -1072,6 +1064,16 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                     <span>最大同时下载:</span>
+                     <span>
+                         <button id="downloadThreadsMinusBTN" type="button">-</button>
+                         <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" style="width: 15px;" />
+                         <button id="downloadThreadsAddBTN" type="button">+</button>
+                     </span>
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
+                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
                      <span>超时时间(秒):</span>
                      <span>
                          <button id="timeoutMinusBTN" type="button">-</button>
@@ -1106,7 +1108,12 @@ fullViewPlane.innerHTML = `
              </div>
          </div>
          <div id="downloaderPlane" class="plane p-downloader p-collapse">
-             <canvas id="downloaderCanvas" width="300" height="260"></canvas>
+             <div id="download-notice" class="download-notice"></div>
+             <canvas id="downloaderCanvas" width="337" height="250"></canvas>
+             <div class="download-btn-group">
+                <a id="download-force" style="color: gray;">强制下载已完成的</a>
+                <a id="download-start">开始下载</a>
+             </div>
          </div>
      </div>
      <div>
@@ -1148,9 +1155,12 @@ const configPlaneBTN = fullViewPlane.querySelector("#configPlaneBTN");
 configPlaneBTN.addEventListener("click", () => togglePlaneEvent("config"));
 // 下载按钮
 const downloaderPlaneBTN = fullViewPlane.querySelector("#downloaderPlaneBTN");
-downloaderPlaneBTN.addEventListener("click", () => togglePlaneEvent("downloader"));
+downloaderPlaneBTN.addEventListener("click", () => {
+  togglePlaneEvent("downloader");
+  downloader.check();
+});
 
-for (const key of ["colCount", "threads", "timeout"]) {
+for (const key of ["colCount", "threads", "downloadThreads", "timeout"]) {
   fullViewPlane.querySelector(`#${key}MinusBTN`).addEventListener("click", (event) => modConfEvent(event.target, key, 'minus'));
   fullViewPlane.querySelector(`#${key}AddBTN`).addEventListener("click", (event) => modConfEvent(event.target, key, 'add'));
 }
@@ -1168,7 +1178,7 @@ bigImageElement.hidden = true;
 
 const debouncer = new Debouncer();
 //全屏阅读元素滚动事件
-fullViewPlane.addEventListener("scroll", () => debouncer.addEvent(scrollEvent, 500));
+fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", scrollEvent, 500));
 
 //按键事件
 document.addEventListener("keyup", KeyEvent);
@@ -1189,19 +1199,21 @@ const pageHandler = function (type, data) {
       break;
     case "updateTotal":
       totalPageElement.textContent = data;
+      downloaderCanvas.drawDebouce();
       break;
     case "updateCurrPage":
       currPageElement.textContent = data;
+      downloaderCanvas.drawDebouce();
       break;
     case "updateFinished":
       finishedElement.textContent = data;
+      downloaderCanvas.drawDebouce();
       break;
   }
 };
+//====================================创建一个全屏阅读元素============================================FIN
 
-//========================================创建一个全屏阅读元素============================================FIN
-
-//=========================================创建样式表==================================================START
+//=======================================创建样式表=================================================START
 let styleSheel = document.createElement("style");
 styleSheel.textContent = `
     .fullViewPlane {
@@ -1310,14 +1322,24 @@ styleSheel.textContent = `
         grid-gap: 10px 0px;
     }
     .pageHelper .p-downloader {
-        height: 300px;
+        height: 310px;
         display: flex;
-        justify-content: center;
-        align-items: flex-end;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
     }
     .p-downloader canvas {
-        margin-bottom: 5px;
         /* border: 1px solid greenyellow; */
+    }
+    .p-downloader .download-notice {
+        font-size: small;
+        text-align: center;
+        width: 100%;
+    }
+    .p-downloader .downloader-btn-group {
+        align-items: center;
+        text-align: right;
+        width: 100%;
     }
     .pageHelper .btn {
         color: rgb(255, 232, 176);
@@ -1371,7 +1393,7 @@ styleSheel.textContent = `
     }
 `;
 document.head.appendChild(styleSheel);
-//=========================================创建样式表==================================================FIN
+//=======================================创建样式表=================================================FIN
 
 function evLog(msg, ...info) {
   if (conf.debug) {
@@ -1397,7 +1419,7 @@ function xhrWapper(url, refer, resType, { onprogress, onload, onerror, ontimeout
   });
 }
 
-//=========================================画廊信息==================================================START
+//=======================================画廊信息==================================================START
 class GalleryMeta {
   constructor($doc) {
     this.url = $doc.location.href;
@@ -1417,9 +1439,9 @@ class GalleryMeta {
     console.log(this);
   }
 }
-//=========================================画廊信息==================================================FIN
+//=======================================画廊信息==================================================FIN
 
-//=========================================下载功能==================================================START
+//=======================================下载功能==================================================START
 class Downloader {
   constructor() {
     this.meta = new GalleryMeta(document);
@@ -1427,7 +1449,12 @@ class Downloader {
     this.title = this.meta.originTitle || this.meta.title;
     this.zipFolder = this.zip.folder(this.title);
     this.zipFolder.file("meta.json", JSON.stringify(this.meta));
-    this.autoDownload = false;
+    this.downloading = false;
+    this.downloadForceElement = document.querySelector("#download-force");
+    this.downloadStartElement = document.querySelector("#download-start");
+    this.downloadNoticeElement = document.querySelector("#download-notice");
+    this.downloadForceElement?.addEventListener("click", () => this.download());
+    this.downloadStartElement?.addEventListener("click", () => this.start());
   }
   addToDownloadZip(imgFetcher) {
     let title = imgFetcher.title;
@@ -1445,93 +1472,154 @@ class Downloader {
   async generate() {
     return this.zip.generateAsync({ type: "arraybuffer", compression: "STORE" });
   }
+  // check > start > download
+  check() {
+    if (IFQ.isFinised() && conf.fetchOriginal) return true;
+    // append adviser element
+    if (this.downloadNoticeElement && !this.downloading) {
+      this.downloadNoticeElement.innerHTML = "<span>未启用最佳质量图片，点击此处<a>临时开启最佳质量</a></span>";
+      this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+    }
+    return false;
+  }
+  fetchOriginalTemporarily() {
+    IFQ.forEach(imgFetcher => {
+      if (!imgFetcher.fetchOriginal || imgFetcher.stage !== 3) {
+        imgFetcher.fetchOriginal = true;
+        imgFetcher.stage = 1;
+      }
+    });
+    this.start();
+  }
+  start() {
+    if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "<span>正在下载中...</span>";
+    this.downloading = true;
+    idleLoader.lockVer++;
+    // find all of unloading imgFetcher and splice frist few imgFetchers
+    idleLoader.processingIndexList = [...IFQ].map((imgFetcher, index) => (!imgFetcher.lock && imgFetcher.stage === 1 ? index : -1))
+      .filter((index) => index >= 0)
+      .splice(0, conf["downloadThreads"]);
+    idleLoader.start(idleLoader.lockVer);
+  }
+  download() {
+    this.downloading = false;
+    this.generate().then((data) => {
+      const blob = new Blob([data], { type: "application/zip" });
+      saveAs(blob, this.title);
+      if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "";
+    });
+  };
 }
 const downloader = new Downloader();
 
-const beforeDownload = async function () {
-  if (!IFQ.isFinised() || !conf.fetchOriginal) { // 未加载完全部图片或图片质量非最高，进行提示
-    downloader.autoDownload = true;
-    idleLoader.lockVer++;
-    idleLoader.processingIndexList = [...IFQ].map((imgFetcher, index) => (!imgFetcher.lock && imgFetcher.stage === 1 ? index : -1))
-      .filter((index) => index >= 0)
-      .splice(0, conf["threads"]);
-    idleLoader.start(idleLoader.lockVer);
-    // todo 下载提示
-  } else {
-    download();
-  }
-};
-
-const download = function () {
-  downloader.autoDownload = false;
-  downloader.generate().then(($data) => {
-    const blob = new Blob([$data], { type: "application/zip" });
-    saveAs(blob, downloader.title);
-  });
-};
-//=========================================下载功能==================================================FIN
-
 class DownloaderCanvas {
-  constructor(id) {
+  constructor(id, queue) {
     this.canvas = document.getElementById(id);
     this.canvas.addEventListener("wheel", (event) => this.onwheel(event.deltaY));
+    this.mousemoveState = { x: 0, y: 0 };
+    this.canvas.addEventListener("mousemove", (event) => {
+      // console.log("canvas mousemove, X:", event.offsetX, ", Y:", event.offsetY);
+      this.mousemoveState = { x: event.offsetX, y: event.offsetY };
+      this.drawDebouce();
+    });
+    this.canvas.addEventListener("click", (event) => {
+      this.mousemoveState = { x: event.offsetX, y: event.offsetY };
+      const index = this.computeDrawList()?.find(state => state.isSelected).index;
+      showBigImage(index);
+    });
     this.ctx = this.canvas.getContext("2d");
-    this.list = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+    this.queue = queue;
     this.rectSize = 12; // 矩形大小(正方形)
     this.rectGap = 6; // 矩形之间间隔
     this.columns = 15; // 每行矩形数量
     this.padding = 7; // 画布内边距
     this.scrollTop = 0; // 滚动位置
     this.scrollSize = 10; // 每次滚动粒度
-
-    for (let i = 0, j = 0; i < 600; i++) {
-      if ((i + j) % this.columns > 5) {
-        this.list.push(1);
-      } else {
-        this.list.push(0);
-      }
-      if (i % this.columns == 0) j++;
-    }
   }
 
   onwheel(deltaY) {
-    deltaY = deltaY >> 1;
-    this.scrollTop += deltaY;
-    if (this.scrollTop < 0) this.scrollTop = 0;
-    const clientHeight = Math.ceil(this.list.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
     const [w, h] = this.getWH();
-    if (this.scrollTop + h > clientHeight + 20) this.scrollTop = clientHeight - h + 20;
-    this.draw();
+    const clientHeight = this.computeClientHeight();
+    if (clientHeight > h) {
+      deltaY = deltaY >> 1;
+      this.scrollTop += deltaY;
+      if (this.scrollTop < 0) this.scrollTop = 0;
+      if (this.scrollTop + h > clientHeight + 20) this.scrollTop = clientHeight - h + 20;
+      this.draw();
+    }
   }
 
-  draw() {
+  drawDebouce() {
+    debouncer.addEvent("DOWNLOADER-DRAW", () => this.draw(), 20);
+  }
+
+  computeDrawList() {
+    const list = [];
     const [w, h] = this.getWH();
-    this.ctx.clearRect(0, 0, w, h);
     const startX = this.computeStartX();
-    let startY = -this.scrollTop;
-    for (let i = 0, row = -1; i < this.list.length; i++) {
+    const startY = -this.scrollTop;
+    for (let i = 0, row = -1; i < this.queue.length; i++) {
       const currCol = i % this.columns;
       if (currCol == 0) {
         row++;
       }
       const atX = startX + ((this.rectSize + this.rectGap) * currCol);
       const atY = startY + ((this.rectSize + this.rectGap) * row);
-      // if (currCol == 0) {
-      //     console.log(`atY:${atY}`)
-      // }
-
-      if (atY > h) {
-        break;
-      }
       if (atY + this.rectSize < 0) {
         continue;
       }
+      if (atY > h) {
+        break;
+      }
+      list.push({ index: i, atX, atY, isSelected: this.isSelected(atX, atY) });
+    }
+    return list;
+  }
+
+  draw() {
+    const [w, h] = this.getWH();
+    this.ctx.clearRect(0, 0, w, h);
+    const list = this.computeDrawList();
+    for (const rectState of list) {
       this.drawSmallRect(
-        atX,
-        atY,
-        this.list[i]
+        rectState.atX,
+        rectState.atY,
+        this.queue[rectState.index],
+        rectState.index === this.queue.currIndex,
+        rectState.isSelected
       );
     }
+  }
+
+  computeClientHeight() {
+    return Math.ceil(this.queue.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
+  }
+
+  scrollTo(index) {
+    const clientHeight = this.computeClientHeight();
+    const [w, h] = this.getWH();
+    if (clientHeight <= h) {
+      return;
+    }
+
+    // compute offsetY of index in list
+    const rowNo = (Math.ceil((index + 1) / this.columns));
+    const offsetY = (rowNo - 1) * (this.rectSize + this.rectGap);
+
+    if (offsetY > h) {
+      this.scrollTop = offsetY + this.rectSize - h;
+      const maxScrollTop = clientHeight - h + 20;
+      if (this.scrollTop + 20 <= maxScrollTop) {
+        this.scrollTop += 20; //todo 
+      }
+    }
+  }
+
+  isSelected(atX, atY) {
+    return this.mousemoveState.x - atX >= 0
+      && this.mousemoveState.x - atX <= this.rectSize
+      && this.mousemoveState.y - atY >= 0
+      && this.mousemoveState.y - atY <= this.rectSize;
   }
 
   computeStartX() {
@@ -1541,16 +1629,27 @@ class DownloaderCanvas {
     return startX;
   }
 
-  drawSmallRect(x, y, stat) {
-    if (stat == 1) {
+  drawSmallRect(x, y, imgFetcher, isCurr, isSelected) {
+    if (imgFetcher.stage == 3) {
       this.ctx.fillStyle = "rgb(110, 200, 120)";
+    } else if (imgFetcher.stage === 2) {
+      const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
+      this.ctx.fillStyle = `rgba(110, ${Math.ceil(percent * 200)}, 120, ${Math.max(percent, 0.1)})`;
     } else {
       this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
     }
     this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
     this.ctx.shadowColor = '#d53';
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeStyle = "rgb(90, 90, 90)";
+    if (isSelected) {
+      this.ctx.strokeStyle = "rgb(60, 20, 200)";
+      this.ctx.lineWidth = 2;
+    } else if (isCurr) {
+      this.ctx.strokeStyle = "rgb(255, 60, 20)";
+      this.ctx.lineWidth = 2;
+    } else {
+      this.ctx.strokeStyle = "rgb(90, 90, 90)";
+      this.ctx.lineWidth = 1;
+    }
     this.ctx.strokeRect(x, y, this.rectSize, this.rectSize);
   }
 
@@ -1560,5 +1659,6 @@ class DownloaderCanvas {
 
 }
 
-const dc = new DownloaderCanvas("downloaderCanvas");
-dc.draw();
+const downloaderCanvas = new DownloaderCanvas("downloaderCanvas", IFQ);
+// downloaderCanvas.draw();
+//=======================================下载功能==================================================FIN

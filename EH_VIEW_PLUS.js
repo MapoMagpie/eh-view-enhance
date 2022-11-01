@@ -840,12 +840,7 @@ function togglePageHelper(type) {
   }
 }
 
-function mouseoverPlaneEvent(target) {
-  target.setAttribute("foucs", "foucs");
-}
-
 function mouseleavePlaneEvent(target) {
-  target.removeAttribute("foucs");
   target.classList.add("p-collapse");
 }
 
@@ -856,10 +851,7 @@ function togglePlaneEvent(id, type) {
       if (type == 0) {
         ele.classList.remove("p-collapse");
       } else if (type == 1) {
-        if (ele.getAttribute("foucs") !== "foucs") {
-          mouseleavePlaneEvent(ele);
-          ele.classList.add("p-collapse");
-        }
+        mouseleavePlaneEvent(ele);
       } else {
         ele.classList.toggle("p-collapse");
         ["config", "downloader"].filter(k => k !== id).forEach(k => togglePlaneEvent(k, 1));
@@ -1111,8 +1103,8 @@ fullViewPlane.innerHTML = `
              <div id="download-notice" class="download-notice"></div>
              <canvas id="downloaderCanvas" width="337" height="250"></canvas>
              <div class="download-btn-group">
-                <a id="download-force" style="color: gray;">强制下载已完成的</a>
-                <a id="download-start">开始下载</a>
+                <a id="download-force" style="color: gray;" class="clickable">强制下载已完成的</a>
+                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">开始下载</a>
              </div>
          </div>
      </div>
@@ -1281,8 +1273,8 @@ styleSheel.textContent = `
     .pageHelper .clickable {
         text-decoration-line: underline;
     }
-    .pageHelper .clickable:hover {
-        color: white;
+    .clickable:hover {
+        color: white !important;
     }
     .pageHelper .plane {
         z-index: 1010 !important;
@@ -1477,7 +1469,7 @@ class Downloader {
     if (IFQ.isFinised() && conf.fetchOriginal) return true;
     // append adviser element
     if (this.downloadNoticeElement && !this.downloading) {
-      this.downloadNoticeElement.innerHTML = "<span>未启用最佳质量图片，点击此处<a>临时开启最佳质量</a></span>";
+      this.downloadNoticeElement.innerHTML = "<span>未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a></span>";
       this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
     }
     return false;
@@ -1493,6 +1485,7 @@ class Downloader {
   }
   start() {
     if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "<span>正在下载中...</span>";
+    this.downloadStartElement.textContent = "正在下载中...";
     this.downloading = true;
     idleLoader.lockVer++;
     // find all of unloading imgFetcher and splice frist few imgFetchers
@@ -1503,6 +1496,7 @@ class Downloader {
   }
   download() {
     this.downloading = false;
+    this.downloadStartElement.textContent = "下载完成";
     this.generate().then((data) => {
       const blob = new Blob([data], { type: "application/zip" });
       saveAs(blob, this.title);

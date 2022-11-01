@@ -1517,6 +1517,10 @@ class Downloader {
     this.start();
   }
   start() {
+    if (IFQ.isFinised) {
+      this.download();
+      return;
+    }
     if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "<span>正在下载中...</span>";
     this.downloadStartElement.textContent = "正在下载中...";
     this.downloading = true;
@@ -1532,7 +1536,7 @@ class Downloader {
     this.downloadStartElement.textContent = "下载完成";
     this.generate().then((data) => {
       const blob = new Blob([data], { type: "application/zip" });
-      saveAs(blob, this.title);
+      saveAs(blob, `${this.title}.zip`);
       if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "";
     });
   };

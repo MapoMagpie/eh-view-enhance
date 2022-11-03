@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name          E-HENTAI-VIEW-ENHANCE
+// @name:zh-CN    E-HENTAI-VIEW-ENHANCE
 // @namespace     https://github.com/kamo2020/eh-view-enhance
 // @homepageURL   https://github.com/kamo2020/eh-view-enhance
-// @version       3.0.1
+// @version       3.0.3
 // @license       MIT
-// @description   强化E绅士看图体验
+// @description   e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
+// @description:zh-CN   强化E绅士看图体验
 // @author        kamo2020
 // @author        zsyjklive.cn
 // @match         https://exhentai.org/g/*
@@ -784,6 +786,60 @@ if (!conf || conf.version !== "3.0.3") {
   window.localStorage.setItem("cfg_", JSON.stringify(conf));
 }
 
+const i18in = {
+  download: ["DL", "下载"],
+  config: ["CONF", "配置"],
+  collapse: ["FOLD", "收起"],
+  columns: ["Columns", "每行数量"],
+  maxPreloadThreads: ["PreloadThreads", "最大同时加载"],
+  maxDownloadThreads: ["DonloadThreads", "最大同时下载"],
+  timeout: ["Timeout(second)", "超时时间(秒)"],
+  bestQuality: ["RawImage", "最佳质量"],
+  autoLoad: ["AutoLoad", "自动加载"],
+  followMouse: ["FollowMouse", "大图跟随鼠标"],
+  keepScale: ["KeepScale", "保持缩放"],
+  maxPreloadThreadsTooltip: ["Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"],
+  maxDownloadThreadsTooltip: ["Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"],
+  bestQualityTooltip: ["enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"],
+  autoLoadTooltip: ["", "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。"],
+  forceDownload: ["Take Loaded", "强制下载已加载的"],
+  startDownload: ["Start Download", "开始下载"],
+  downloading: ["Downloading...", "下载中..."],
+  downloaded: ["Downloaded", "下载完成"],
+  originalCheck: ["<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"],
+  help: [`
+    <h1>GUIDE:</h1>
+    <ol>
+      <li>Before use this script，make sure gallery switch to <a style="color: red" id="renamelink" href="${window.location.href}?inline_set=ts_l">Large</a> mode</li>
+      <li>Click bottom right corner<span style="background-color: gray;">&lessdot;📖&gtdot;</span>，enter into viewer mode</li>
+      <li>Just a moment，All of thumbnail images exhibited in grid，<strong style="color: red;">click</strong> one of thumbnail images, into big image mode</li>
+      <li><strong style="color: orange">Image quality:</strong>level 1、thumbnail； level 2、compressed image； level 3、original image；<br>
+        In default config，auto load compressed image，with low traffic consumption with good clarity。also you can enable best quality in config plane, This increases the consumption of traffic and browsing quotas。
+      </li>
+      <li><strong style="color: orange">Big image:</strong>click thumbnail image, into big image mode, use mouse wheel switch to next or prev</li>
+      <li><strong style="color: orange">Image zoom:</strong>right mouse button + mouse wheel</li>
+      <li><strong style="color: orange">Download:</strong>click download button，popup download plane，the loading status of all images is indicated by small squares.</li>
+    </ol>
+  `, `
+    <h1>操作说明:</h1>
+    <ol>
+      <li>在使用本脚本浏览前，请务必切换为<a style="color: red" id="renamelink" href="${window.location.href}?inline_set=ts_l">Large|大图</a>模式</li>
+      <li>点击右下角<span style="background-color: gray;">&lessdot;📖&gtdot;</span>展开，进入阅读模式</li>
+      <li>稍等片刻后，缩略图会全屏陈列在页面上，<strong style="color: red;">点击</strong>某一缩略图进入大图浏览模式</li>
+      <li><strong style="color: orange">图片质量:</strong>图片质量有三档，1、原始的缩略图(最模糊)；2、E绅士的压缩图；3、原图；<br>
+        默认配置下，脚本会自动加载压缩图，这也是E绅士默认的浏览行为，具有较小的流量消耗与良好的清晰度。也可以在配置中启用最佳质量，脚本会加载原图，这会增加流量与浏览配额的消耗。
+      </li>
+      <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
+      <li><strong style="color: orange">图片缩放:</strong>在大图上鼠标右键+滚轮<strong style="color: red">缩放</strong>图片</li>
+      <li><strong style="color: orange">下载功能:</strong>右下角点击下载按钮，弹出下载面板，内部通过小方块展示了所有图片的加载状态，点击开始下载按钮后，会加快图片加载效率并在所有图片加载完成后进行下载。 </li>
+    </ol>
+  `]
+};
+const lang = navigator.language;
+const i18InIndex = lang === "zh-CN" ? 1 : 0;
+function getI18in(i18inKey) {
+  return i18inKey[i18InIndex];
+}
 // const updateEvent = function (k, v) {
 //   switch (k) {
 //     case "backgroundImage": {
@@ -1010,20 +1066,7 @@ const showGuideEvent = function () {
   const guideFull = document.createElement("div");
   document.body.after(guideFull);
   guideFull.innerHTML = `
-  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">
-    <h1>操作说明:</h1>
-    <ol>
-      <li>在使用本脚本浏览前，请务必切换为<a style="color: red" id="renamelink" href="${window.location.href}?inline_set=ts_l">Large|大图</a>模式</li>
-      <li>点击右下角<span style="background-color: gray;">&lessdot;📖&gtdot;</span>展开，进入阅读模式</li>
-      <li>稍等片刻后，缩略图会全屏陈列在页面上，<strong style="color: red;">点击</strong>某一缩略图进入大图浏览模式</li>
-      <li><strong style="color: orange">图片质量:</strong>图片质量有三档，1、原始的缩略图(最模糊)；2、E绅士的压缩图；3、原图；<br>
-        默认配置下，脚本会自动加载压缩图，这也是E绅士默认的浏览行为，具有较小的流量消耗与良好的清晰度。也可以在配置中启用最佳质量，脚本会加载原图，这会增加流量与浏览配额的消耗。
-      </li>
-      <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
-      <li><strong style="color: orange">图片缩放:</strong>在大图上鼠标右键+滚轮<strong style="color: red">缩放</strong>图片</li>
-      <li><strong style="color: orange">下载功能:</strong>右下角点击下载按钮，弹出下载面板，内部通过小方块展示了所有图片的加载状态，点击开始下载按钮后，会加快图片加载效率并在所有图片加载完成后进行下载。 </li>
-    </ol>
-  </div>
+  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${getI18in(i18in.help)}</div>
   `;
   guideFull.style = `position: absolute;width: 100%;height: 100%;background-color: #363c3c78;z-index: 2004;top: 0; display: flex; justify-content: center;align-items: center;`;
   guideFull.addEventListener("click", () => guideFull.remove());
@@ -1056,7 +1099,7 @@ fullViewPlane.innerHTML = `
          <div id="configPlane" class="plane p-config p-collapse">
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
-                     <span>每行数量:</span>
+                     <span>${getI18in(i18in.columns)}:</span>
                      <span>
                          <button id="colCountMinusBTN" type="button">-</button>
                          <input id="colCountInput" value="${conf.colCount}" disabled type="text" style="width: 15px;" />
@@ -1066,8 +1109,8 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
-                     <span>最大同时加载
-                        <span class="tooltip"><span class="tooltiptext" style="width: 220px">大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。</span></span>:
+                     <span>${getI18in(i18in.maxPreloadThreads)}
+                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left: -100px">${getI18in(i18in.maxPreloadThreadsTooltip)}</span></span>:
                      </span>
                      <span>
                          <button id="threadsMinusBTN" type="button">-</button>
@@ -1078,8 +1121,8 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
-                     <span>最大同时下载
-                        <span class="tooltip"><span class="tooltiptext" style="width: 200px">下载模式下，同时加载的图片数量，建议小于等于5</span></span>:
+                     <span>${getI18in(i18in.maxDownloadThreads)}
+                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; left: -100px">${getI18in(i18in.maxDownloadThreadsTooltip)}</span></span>:
                      </span>
                      <span>
                          <button id="downloadThreadsMinusBTN" type="button">-</button>
@@ -1090,7 +1133,7 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
-                     <span>超时时间(秒):</span>
+                     <span>${getI18in(i18in.timeout)}:</span>
                      <span>
                          <button id="timeoutMinusBTN" type="button">-</button>
                          <input id="timeoutInput" value="${conf.timeout}" disabled type="text" style="width: 15px;" />
@@ -1100,42 +1143,42 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
-                     <span>最佳质量
-                        <span class="tooltip"><span class="tooltiptext" style="width: 220px">启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。</span></span>:
+                     <span>${getI18in(i18in.bestQuality)}
+                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left: -100px">${getI18in(i18in.bestQualityTooltip)}</span></span>:
                      </span>
                      <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
                  <label>
-                     <span>自动加载
-                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; right:0;">进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。</span></span>:
+                     <span>${getI18in(i18in.autoLoad)}
+                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; right:0;">${getI18in(i18in.autoLoadTooltip)}</span></span>:
                      </span>
                      <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
-                     <span>大图追随鼠标:</span>
+                     <span>${getI18in(i18in.followMouse)}:</span>
                      <input id="followMouseCheckbox" ${conf.followMouse ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
                  <label>
-                     <span>保持缩放:</span>
+                     <span>${getI18in(i18in.keepScale)}:</span>
                      <input id="keepScaleCheckbox" ${conf.keepScale ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 2; padding-left: 5px;">
-                  <a id="showGuideElement" class="clickable">帮助</a>
+                  <a id="showGuideElement" class="clickable">Help</a>
              </div>
          </div>
          <div id="downloaderPlane" class="plane p-downloader p-collapse">
              <div id="download-notice" class="download-notice"></div>
              <canvas id="downloaderCanvas" width="337" height="250"></canvas>
              <div class="download-btn-group">
-                <a id="download-force" style="color: gray;" class="clickable">强制下载已完成的</a>
-                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">开始下载</a>
+                <a id="download-force" style="color: gray;" class="clickable">${getI18in(i18in.forceDownload)}</a>
+                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${getI18in(i18in.startDownload)}</a>
              </div>
          </div>
      </div>
@@ -1144,13 +1187,13 @@ fullViewPlane.innerHTML = `
      </div>
      <!-- <span>展开</span> -->
      <div id="main" class="b-main b-collapse">
-         <div id="configPlaneBTN" class="clickable" style="z-index: 1111;"> 配置 </div>
-         <div id="downloaderPlaneBTN" class="clickable" style="z-index: 1111;"> 下载 </div>
+         <div id="configPlaneBTN" class="clickable" style="z-index: 1111;"> ${getI18in(i18in.config)} </div>
+         <div id="downloaderPlaneBTN" class="clickable" style="z-index: 1111;"> ${getI18in(i18in.download)} </div>
          <div class="page">
              <span class="clickable" id="p-currPage"
                  style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
          </div>
-         <div id="collapseBTN" class="clickable">收起</div>
+         <div id="collapseBTN" class="clickable">${getI18in(i18in.collapse)}</div>
      </div>
      <div>
          <span style="font-weight: 800; font-size: large; text-align: center;">&gtdot;</span>
@@ -1552,7 +1595,7 @@ class Downloader {
     if (conf.fetchOriginal) return;
     // append adviser element
     if (this.downloadNoticeElement && !this.downloading) {
-      this.downloadNoticeElement.innerHTML = "<span>未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a></span>";
+      this.downloadNoticeElement.innerHTML = `<span>${getI18in(i18in.originalCheck)}</span>`;
       this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
     }
     if (conf["disableDownload"]) {
@@ -1575,8 +1618,8 @@ class Downloader {
       this.download();
       return;
     }
-    if (this.downloadNoticeElement && !conf["disableDownload"]) this.downloadNoticeElement.innerHTML = "<span>正在下载中...</span>";
-    this.downloadStartElement.textContent = "正在下载中...";
+    if (this.downloadNoticeElement && !conf["disableDownload"]) this.downloadNoticeElement.innerHTML = `<span>${getI18in(i18in.downloading)}</span>`;
+    this.downloadStartElement.textContent = getI18in(i18in.downloading);
     this.downloading = true;
 
     if (!conf["autoLoad"]) conf["autoLoad"] = true;
@@ -1597,7 +1640,7 @@ class Downloader {
     }).then(data => {
       saveAs(data, `${this.title}.zip`);
       if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "";
-      this.downloadStartElement.textContent = "下载完成";
+      this.downloadStartElement.textContent = getI18in(i18in.downloaded);
     });
   };
 }

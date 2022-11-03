@@ -1,5 +1,7 @@
 # EH-VIEW-ENHANCE
 
+[中文](https://github.com/kamo2020/eh-view-enhance/blob/master/README_CN.md)
+
 > e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 
 ![预览](.assets/Preview_c.jpg "预览")
@@ -15,7 +17,8 @@
 
 - before installation: Modern Browser(Firefox\Chrome\Edge...)
 - before installation: [`TamperMonkey`](https://www.tampermonkey.net/)
-- install 1: [GreasyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)，需要登录账户查看
+- install 1: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)
+- install 1: [Sleazyfork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)
 - insatll 2: TamperMonkey > Utilities > Import From URL type in `https://raw.githubusercontent.com/kamo2020/eh-view-enhance/master/EH_VIEW_PLUS.js`
 
 ## Operates

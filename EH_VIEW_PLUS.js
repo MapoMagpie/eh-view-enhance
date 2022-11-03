@@ -1,16 +1,19 @@
 // ==UserScript==
-// @name         E-HENTAI-VIEW-ENHANCE
-// @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      3.0.1
-// @description  强化E绅士看图体验
-// @author       kamo2020
-// @match        https://exhentai.org/g/*
-// @match        https://e-hentai.org/g/*
-// @connect      hath.network
-// @icon         https://exhentai.org/favicon.ico
-// @grant        GM.xmlHttpRequest
-// @require     https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js
-// @require     https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js
+// @name          E-HENTAI-VIEW-ENHANCE
+// @namespace     https://github.com/kamo2020/eh-view-enhance
+// @homepageURL   https://github.com/kamo2020/eh-view-enhance
+// @version       3.0.1
+// @description   强化E绅士看图体验
+// @author        kamo2020
+// @author        zsyjklive.cn
+// @match         https://exhentai.org/g/*
+// @match         https://e-hentai.org/g/*
+// @connect       hath.network
+// @icon          https://exhentai.org/favicon.ico
+// @grant         GM.xmlHttpRequest
+// @require       https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js
+// @require       https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js
+// @updateURL     https://github.com/kamo2020/eh-view-enhance/raw/master/EH_VIEW_PLUS.js     
 // ==/UserScript==
 
 const regulars = {

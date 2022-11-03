@@ -3,6 +3,7 @@
 // @namespace     https://github.com/kamo2020/eh-view-enhance
 // @homepageURL   https://github.com/kamo2020/eh-view-enhance
 // @version       3.0.1
+// @license       MIT
 // @description   强化E绅士看图体验
 // @author        kamo2020
 // @author        zsyjklive.cn

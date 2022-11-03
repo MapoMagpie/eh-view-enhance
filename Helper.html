@@ -1,12 +1,44 @@
-<div style="position: absolute; width: 100%; height: 100%; background-color: #363c3c78; z-index: 2004; top: 0; display: flex; justify-content: center; align-items: center">
-  <div style="width: 50vw; height: 300px; border: 1px solid black; background-color: white; font-weight: bold; line-height: 30px">
-    <h1>操作说明</h1>
+<div
+  style="position: absolute; width: 100%; height: 100%; background-color: #363c3c78; z-index: 2004; top: 0; display: flex; justify-content: center; align-items: center">
+  <div
+    style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">
+    <h1>操作说明<span class="tooltip" title="操作说明"><span class="tooltiptext">操作说明</span></span>:</h1>
     <ol>
-      <li>点击展开，进入阅读模式</li>
-      <li>稍等片刻后，缩略图会全屏陈列在页面上，在顶部可调整每行显示的图片数量，每行数量越低，缩略图越大</li>
-      <li><strong style="color: orange">图片质量:</strong>默认配置下，会自动加载高质量的图片，点击缩略图也会立即加载高质量的图片</li>
+      <li>在使用本脚本浏览前，请务必切换为<a style="color: red" id="renamelink"
+          href="${window.location.href}?inline_set=ts_l">Large|大图</a>模式，配置中点击帮助再次展示此说明。</li>
+      <li>点击右下角<span style="background-color: gray;">&lessdot;📖&gtdot;</span>展开，进入阅读模式</li>
+      <li>稍等片刻后，缩略图会全屏陈列在页面上，<strong style="color: red;">点击</strong>某一缩略图进入大图浏览模式</li>
+      <li><strong style="color: orange">图片质量:</strong>图片质量有三档，1、原始的缩略图(最模糊)；2、E绅士的压缩图；3、原图；<br>
+        默认配置下，脚本会自动加载压缩图，这也是E绅士默认的浏览行为，具有较小的流量消耗与良好的清晰度。也可以在配置中启用最佳质量，脚本会加载原图，这会增加流量与浏览配额的消耗。
+      </li>
       <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
       <li><strong style="color: orange">图片缩放:</strong>在大图上鼠标右键+滚轮<strong style="color: red">缩放</strong>图片</li>
+      <li><strong
+          style="color: orange">下载功能:</strong>右下角点击下载按钮，弹出下载面板，内部通过小方块展示了所有图片的加载状态，点击开始下载按钮后，会加快图片加载效率并在所有图片加载完成后进行下载。
+      </li>
     </ol>
   </div>
 </div>
+<style>
+  .tooltip {
+    position: relative;
+    border-bottom: 1px dotted black;
+  }
+
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 100px;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+    font-size: small;
+  }
+
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+  }
+</style>

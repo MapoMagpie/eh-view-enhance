@@ -838,6 +838,7 @@ function togglePageHelper(type) {
     if (type == 1) {
       ele.classList.add("b-collapse");
       hiddenFullViewPlane();
+      ["config", "downloader"].forEach(id => togglePlaneEvent(id, 1));
     } else {
       ele.classList.remove("b-collapse");
       showFullViewPlane();
@@ -1004,16 +1005,22 @@ const stepImageEvent = function (oriented) {
 const showGuideEvent = function () {
   const guideFull = document.createElement("div");
   document.body.after(guideFull);
-  guideFull.innerHTML = `<div style="width: 50vw;height: 300px;border:1px solid black;background-color:white;font-weight:bold;line-height:30px;">
-  <h1>操作说明</h1>
-  <ol>
-  <li>点击展开，进入阅读模式</li>
-  <li>稍等片刻后，缩略图会全屏陈列在页面上，在顶部可调整每行显示的图片数量，每行数量越低，缩略图越大</li>
-  <li><strong style="color: orange">图片质量:</strong>默认配置下，会自动加载高质量的图片，点击缩略图也会立即加载高质量的图片</li>
-  <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
-  <li><strong style="color: orange">图片缩放:</strong>在大图上鼠标右键+滚轮<strong style="color: red;">缩放</strong>图片</li>
-  </ol>
-  </div>`;
+  guideFull.innerHTML = `
+  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">
+    <h1>操作说明:</h1>
+    <ol>
+      <li>在使用本脚本浏览前，请务必切换为<a style="color: red" id="renamelink" href="${window.location.href}?inline_set=ts_l">Large|大图</a>模式</li>
+      <li>点击右下角<span style="background-color: gray;">&lessdot;📖&gtdot;</span>展开，进入阅读模式</li>
+      <li>稍等片刻后，缩略图会全屏陈列在页面上，<strong style="color: red;">点击</strong>某一缩略图进入大图浏览模式</li>
+      <li><strong style="color: orange">图片质量:</strong>图片质量有三档，1、原始的缩略图(最模糊)；2、E绅士的压缩图；3、原图；<br>
+        默认配置下，脚本会自动加载压缩图，这也是E绅士默认的浏览行为，具有较小的流量消耗与良好的清晰度。也可以在配置中启用最佳质量，脚本会加载原图，这会增加流量与浏览配额的消耗。
+      </li>
+      <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
+      <li><strong style="color: orange">图片缩放:</strong>在大图上鼠标右键+滚轮<strong style="color: red">缩放</strong>图片</li>
+      <li><strong style="color: orange">下载功能:</strong>右下角点击下载按钮，弹出下载面板，内部通过小方块展示了所有图片的加载状态，点击开始下载按钮后，会加快图片加载效率并在所有图片加载完成后进行下载。 </li>
+    </ol>
+  </div>
+  `;
   guideFull.style = `position: absolute;width: 100%;height: 100%;background-color: #363c3c78;z-index: 2004;top: 0; display: flex; justify-content: center;align-items: center;`;
   guideFull.addEventListener("click", () => guideFull.remove());
 };
@@ -1055,7 +1062,9 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
-                     <span>最大同时加载:</span>
+                     <span>最大同时加载
+                        <span class="tooltip"><span class="tooltiptext" style="width: 220px">大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。</span></span>:
+                     </span>
                      <span>
                          <button id="threadsMinusBTN" type="button">-</button>
                          <input id="threadsInput" value="${conf.threads}" disabled type="text" style="width: 15px;" />
@@ -1065,7 +1074,9 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
-                     <span>最大同时下载:</span>
+                     <span>最大同时下载
+                        <span class="tooltip"><span class="tooltiptext" style="width: 200px">下载模式下，同时加载的图片数量，建议小于等于5</span></span>:
+                     </span>
                      <span>
                          <button id="downloadThreadsMinusBTN" type="button">-</button>
                          <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" style="width: 15px;" />
@@ -1085,13 +1096,17 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
-                     <span>最佳质量:</span>
+                     <span>最佳质量
+                        <span class="tooltip"><span class="tooltiptext" style="width: 220px">启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。</span></span>:
+                     </span>
                      <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
                  <label>
-                     <span>自动加载:</span>
+                     <span>自动加载
+                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; right:0;">进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。</span></span>:
+                     </span>
                      <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
@@ -1422,6 +1437,25 @@ styleSheel.textContent = `
       top: 0;
       z-index: 1004;
       cursor: url("https://tb2.bdstatic.com/tb/static-album/img/mouseright.cur"), auto;
+    }
+    .tooltip {
+      position: relative;
+      border-bottom: 1px dotted black;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 100px;
+      background-color: black;
+      color: #fff;
+      text-align: center;
+      padding: 5px 0;
+      border-radius: 6px;
+      position: absolute;
+      z-index: 1;
+      font-size: small;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
     }
 `;
 document.head.appendChild(styleSheel);

@@ -134,7 +134,13 @@ class IMGFetcher {
   async stage2FetchImg() {
     this.setDownloadState(this.downloadState);
     try {
-      if (!(await this.fetchBigImage())) {
+      let ok = false;
+      if (conf["disableDownload"]) {
+        ok = await this.fetchBigImageWeird();
+      } else {
+        ok = await this.fetchBigImage();
+      }
+      if (!ok) {
         throw new Error(`获取大图数据失败,大图地址:${this.bigImageUrl}`);
       }
       this.stage = 3;
@@ -154,25 +160,14 @@ class IMGFetcher {
   }
   // 阶段三：获取器结束
   stage3Done() {
-    this.rendered = false;
-    this.render();
     return true;
   }
 
-  //被滚动事件触发
-  //被获取大图数据成功时触发
   render() {
-    if (this.stage === 3) {
-      if (this.rendered) return;
-      // this.imgElement.style.height = "auto";
-      this.imgElement.src = this.blobUrl;
-      this.rendered = true;
-    } else {
-      if (this.rendered) return;
-      // this.imgElement.style.height = "auto";
-      this.imgElement.src = this.imgElement.getAttribute("asrc");
-      this.rendered = true;
-    }
+    if (this.rendered) return;
+    // this.imgElement.style.height = "auto";
+    this.imgElement.src = this.imgElement.getAttribute("asrc");
+    this.rendered = true;
   }
 
   //立刻将当前元素的src赋值给大图元素
@@ -188,63 +183,78 @@ class IMGFetcher {
 
   /**
    *  获取大图地址
-   * @param {是否为重新换源状态，为true时，不再进行新的换源动作，避免无限递归} changeOrigin
-   * @returns
+   * @param {是否为重新换源状态，为true时，不再进行新的换源动作，避免无限递归} originChanged
+   * @return boolean
    */
-  async fetchBigImageUrl(changeOrigin) {
+  async fetchBigImageUrl(originChanged) {
+    let text = "";
+    try {
+      text = await window.fetch(this.pageUrl).then(resp => resp.text());
+    } catch (error) {
+      evLog("获取大图页面内容失败！", error);
+    }
+    if (!text) return false;
+    //抽取最佳质量的图片的地址
+    if (conf["fetchOriginal"] || this.fetchOriginal) {
+      const matchs = regulars["original"].exec(text);
+      if (matchs && matchs.length > 0) {
+        this.bigImageUrl = matchs[1].replace(/&amp;/g, "&");
+      } else {
+        const normalMatchs = regulars["normal"].exec(text);
+        if (normalMatchs == null || normalMatchs.length == 0) {
+          evLog("获取大图地址失败，内容为: ", text);
+          return false;
+        } else {
+          this.bigImageUrl = normalMatchs[1];
+        }
+      }
+      return true;
+    }
+    //抽取正常的有压缩的大图地址
+    if (this.tryTime === 0 || originChanged) {
+      this.bigImageUrl = regulars["normal"].exec(text)[1];
+      return true;
+    } else { //如果是重试状态,则进行换源
+      const nlValue = regulars["nlValue"].exec(text)[1];
+      this.pageUrl += ((this.pageUrl + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
+      evLog(`获取到重试地址:${this.pageUrl}`);
+      return await this.fetchBigImageUrl(true);
+    }
+  }
+
+  async fetchBigImageWeird() {
     const imgFetcher = this;
     return new Promise(async (resolve) => {
-      const onload = (response) => {
-        const text = response.response;
-        if (!(typeof text === "string")) {
-          evLog("未获取到有效的文档！", response);
-          resolve(false);
-          return;
-        }
-        //抽取最佳质量的图片的地址
-        if (conf["fetchOriginal"] || imgFetcher.fetchOriginal) {
-          const matchs = regulars["original"].exec(text);
-          if (matchs == null || matchs.length < 1) {
-            const normalMatchs = regulars["normal"].exec(text);
-            if (normalMatchs == null || normalMatchs.length == 0) {
-              evLog("获取大图地址失败，内容为: ", text);
-            } else {
-              imgFetcher.bigImageUrl = normalMatchs[1];
-            }
-          } else {
-            imgFetcher.bigImageUrl = matchs[1].replace(/&amp;/g, "&");
-          }
-        }
-        //抽取正常的有压缩的大图地址
-        else if (imgFetcher.tryTime === 0 || changeOrigin) {
-          imgFetcher.bigImageUrl = regulars["normal"].exec(text)[1];
-        }
-        //如果是重试状态,则进行换源
-        else {
-          const nlValue = regulars["nlValue"].exec(text)[1];
-          imgFetcher.pageUrl += ((imgFetcher.pageUrl + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-          evLog(`获取到重试地址:${imgFetcher.pageUrl}`);
-          imgFetcher
-            .fetchBigImageUrl(true)
-            .then((ok) => resolve(ok))
-            .catch(() => resolve(false));
-          return;
-        }
+      imgFetcher.imgElement.onloadend = () => {
+        window.clearTimeout(imgFetcher.timeoutId);
+        imgFetcher.setDownloadState({ total: 1, loaded: 1, readyState: 4 });
         resolve(true);
       };
-      xhrWapper(imgFetcher.pageUrl, imgFetcher.pageUrl, "text", { onload, onerror: () => resolve(false), ontimeout: () => resolve(false) });
+      imgFetcher.imgElement.onloadstart = () => {
+        imgFetcher.timeoutId = window.setTimeout(() => {
+          imgFetcher.imgElement.onloadstart = null;
+          imgFetcher.imgElement.onloadend = null;
+          imgFetcher.imgElement.src = this.imgElement.getAttribute("asrc");
+          resolve(false);
+        }, conf["timeout"] * 1000);
+      };
+      imgFetcher.blobUrl = imgFetcher.bigImageUrl;
+      imgFetcher.imgElement.src = imgFetcher.blobUrl;
+      imgFetcher.rendered = true;
     });
   }
 
   async fetchBigImage() {
     const imgFetcher = this;
     return new Promise(async (resolve) => {
-      xhrWapper(imgFetcher.bigImageUrl, imgFetcher.bigImageUrl, "blob", {
+      xhrWapper(imgFetcher.bigImageUrl, "blob", {
         onload: function (response) {
           let data = response.response;
           if (!(data instanceof Blob)) throw new Error("未下载到有效的数据！");
           imgFetcher.blobData = data;
           imgFetcher.blobUrl = URL.createObjectURL(data);
+          imgFetcher.imgElement.src = imgFetcher.blobUrl;
+          imgFetcher.rendered = true;
           imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
           resolve(true);
         },
@@ -732,6 +742,13 @@ class Debouncer {
   }
 }
 
+//图片获取器调用队列
+const IFQ = new IMGFetcherQueue();
+//空闲自加载器
+const idleLoader = new IdleLoader(IFQ);
+//页加载器
+const PF = new PageFetcher(IFQ, idleLoader);
+
 //==================面向对象，图片获取器IMGFetcher，图片获取器调用队列IMGFetcherQueue=====================START
 
 //========================================配置管理器=================================================START
@@ -741,7 +758,7 @@ let conf = JSON.parse(window.localStorage.getItem("cfg_"));
 //获取宽度
 const screenWidth = window.screen.availWidth;
 
-if (!conf || conf.version !== "3.0.1") {
+if (!conf || conf.version !== "3.0.3") {
   //如果配置不存在则初始化一个
   let colCount = screenWidth > 2500 ? 8 : screenWidth > 1900 ? 7 : 5;
   conf = {
@@ -753,11 +770,12 @@ if (!conf || conf.version !== "3.0.1") {
     fetchOriginal: false, //是否获取最佳质量的图片
     restartIdleLoader: 8000, //中止空闲加载器后的重新启动时间
     threads: 3, //同时加载的图片数量
-    downloadThreads: 4, //同时下载的图片数量
+    downloadThreads: 3, //同时下载的图片数量
     timeout: 8, //超时时间(秒)，默认8秒
-    version: "3.0.1", //配置版本
+    version: "3.0.3", //配置版本
     debug: true, // 是否打印控制台日志
     first: true, // 是否初次使用脚本
+    disableDownload: false, // 禁用下载功能
   };
   window.localStorage.setItem("cfg_", JSON.stringify(conf));
 }
@@ -771,15 +789,6 @@ if (!conf || conf.version !== "3.0.1") {
 //     }
 // };
 //========================================配置管理器=================================================FIN
-
-//=========================================方法区===================================================START
-//图片获取器调用队列
-const IFQ = new IMGFetcherQueue();
-//空闲自加载器
-const idleLoader = new IdleLoader(IFQ);
-//页加载器
-const PF = new PageFetcher(IFQ, idleLoader);
-//=========================================方法区===================================================FIN
 
 //=========================================事件库===================================================START
 // 修改配置事件
@@ -992,7 +1001,7 @@ const stepImageEvent = function (oriented) {
 };
 
 //显示简易指南事件
-const showGuideEvent = function (event) {
+const showGuideEvent = function () {
   const guideFull = document.createElement("div");
   document.body.after(guideFull);
   guideFull.innerHTML = `<div style="width: 50vw;height: 300px;border:1px solid black;background-color:white;font-weight:bold;line-height:30px;">
@@ -1034,12 +1043,6 @@ fullViewPlane.innerHTML = `
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
          <div id="configPlane" class="plane p-config p-collapse">
-             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px; margin-top: 5px;">
-                 <label>
-                     <span style="vertical-align: middle;">背景图片:</span>
-                     <input style="vertical-align: middle; width: auto;" type="text" />
-                 </label>
-             </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
                      <span>每行数量:</span>
@@ -1103,6 +1106,9 @@ fullViewPlane.innerHTML = `
                      <span>保持缩放:</span>
                      <input id="keepScaleCheckbox" ${conf.keepScale ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 2; padding-left: 5px;">
+                  <a id="showGuideElement" class="clickable">帮助</a>
              </div>
          </div>
          <div id="downloaderPlane" class="plane p-downloader p-collapse">
@@ -1218,6 +1224,7 @@ const pageHandler = function (type, data) {
       break;
   }
 };
+fullViewPlane.querySelector("#showGuideElement")?.addEventListener("click", showGuideEvent);
 //====================================创建一个全屏阅读元素============================================FIN
 
 //=======================================创建样式表=================================================START
@@ -1427,15 +1434,23 @@ function evLog(msg, ...info) {
 }
 
 // GM.xhr简单包装
-function xhrWapper(url, refer, resType, { onprogress, onload, onerror, ontimeout }) {
+function xhrWapper(url, resType, { onprogress, onload, onerror, ontimeout }) {
   GM.xmlHttpRequest({
     method: "GET",
     url: url,
     responseType: resType,
     timeout: conf["timeout"] * 1000,
     headers: {
-      Referer: refer,
-      "X-Alt-Referer": refer,
+      "Host": url.replace("https://", "").split("/").shift(),
+      "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0",
+      "Accept": "image/avif,image/webp,*/*",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Connection": "keep-alive",
+      "Referer": window.location.href.replace("/g/", "/mpv/"),
+      "Sec-Fetch-Dest": "image",
+      "Sec-Fetch-Mode": "no-cors",
+      "Sec-Fetch-Site": "cross-site",
     },
     onprogress,
     onload,
@@ -1481,6 +1496,7 @@ class Downloader {
     this.downloadStartElement?.addEventListener("click", () => this.start());
   }
   addToDownloadZip(imgFetcher) {
+    if (conf["disableDownload"]) return;
     let title = imgFetcher.title;
     if (title) {
       title = title.replace(/Page\s\d+_/, "");
@@ -1501,6 +1517,11 @@ class Downloader {
       this.downloadNoticeElement.innerHTML = "<span>未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a></span>";
       this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
     }
+    if (conf["disableDownload"]) {
+      this.downloadNoticeElement.innerHTML = "<span>下载功能已禁用</span>";
+      this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+      this.downloadStartElement.disable = true;
+    }
   }
   fetchOriginalTemporarily() {
     IFQ.forEach(imgFetcher => {
@@ -1516,7 +1537,7 @@ class Downloader {
       this.download();
       return;
     }
-    if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "<span>正在下载中...</span>";
+    if (this.downloadNoticeElement && !conf["disableDownload"]) this.downloadNoticeElement.innerHTML = "<span>正在下载中...</span>";
     this.downloadStartElement.textContent = "正在下载中...";
     this.downloading = true;
     idleLoader.lockVer++;
@@ -1526,11 +1547,13 @@ class Downloader {
       .splice(0, conf["downloadThreads"]);
     idleLoader.start(idleLoader.lockVer);
   }
+
   download() {
+    if (conf["disableDownload"]) return;
     this.downloading = false;
     this.zip.generateAsync({ type: "blob" }, (metadata) => {
       // console.log(metadata);
-      // todo update progress bar
+      // todo progress bar
     }).then(data => {
       saveAs(data, `${this.title}.zip`);
       if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "";
@@ -1690,3 +1713,8 @@ class DownloaderCanvas {
 const downloaderCanvas = new DownloaderCanvas("downloaderCanvas", IFQ);
 // downloaderCanvas.draw();
 //=======================================下载功能==================================================FIN
+if (conf["first"]) {
+  showGuideEvent();
+  conf["first"] = false;
+  window.localStorage.setItem("cfg_", JSON.stringify(conf));
+}

@@ -2,8 +2,8 @@
 
 > E 绅士阅读体验增强
 
-![预览](.assets/Preview_c.png "预览")
-![大图](.assets/BigScreen_c.png "大图")
+![预览](.assets/Preview_c.jpg "预览")
+![大图](.assets/BigScreen_c.jpg "大图")
 
 ## 特性
 

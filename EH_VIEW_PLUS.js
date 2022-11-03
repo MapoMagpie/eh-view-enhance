@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E-HENTAI-VIEW-ENHANCE
 // @namespace    https://github.com/kamo2020/eh-view-enhance
-// @version      3.0.0
+// @version      3.0.1
 // @description  强化E绅士看图体验
 // @author       kamo2020
 // @match        https://exhentai.org/g/*
@@ -1540,6 +1540,8 @@ class Downloader {
     if (this.downloadNoticeElement && !conf["disableDownload"]) this.downloadNoticeElement.innerHTML = "<span>正在下载中...</span>";
     this.downloadStartElement.textContent = "正在下载中...";
     this.downloading = true;
+
+    if (!conf["autoLoad"]) conf["autoLoad"] = true;
     idleLoader.lockVer++;
     // find all of unloading imgFetcher and splice frist few imgFetchers
     idleLoader.processingIndexList = [...IFQ].map((imgFetcher, index) => (!imgFetcher.lock && imgFetcher.stage === 1 ? index : -1))

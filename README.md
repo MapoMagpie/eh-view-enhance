@@ -19,7 +19,7 @@
 - before installation: [`TamperMonkey`](https://www.tampermonkey.net/)
 - install 1: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)
 - install 1: [Sleazyfork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)
-- insatll 2: TamperMonkey > Utilities > Import From URL type in `https://raw.githubusercontent.com/kamo2020/eh-view-enhance/master/EH_VIEW_PLUS.js`
+- insatll 2: TamperMonkey > Utilities > Import From URL type in https://github.com/kamo2020/eh-view-enhance/raw/master/eh-view-enhance.user.js
 
 ## Operates
 

@@ -17,7 +17,7 @@
 - 前置条件: 安装且安装了拓展 [`TamperMonkey`](https://www.tampermonkey.net/)
 - 安装地址 1: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)，需要登录账户查看
 - 安装地址 1: [Sleazyfork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)
-- 安装地址 2: TamperMonkey 中新建脚本并手动粘贴，或通过 TamperMonkey > Utilities > Import From URL 安装 https://raw.githubusercontent.com/kamo2020/eh-view-enhance/master/EH_VIEW_PLUS.js
+- 安装地址 2: TamperMonkey 中新建脚本并手动粘贴，或通过 TamperMonkey > Utilities > Import From URL 安装 https://github.com/kamo2020/eh-view-enhance/raw/master/eh-view-enhance.user.js
 
 ## 操作
 

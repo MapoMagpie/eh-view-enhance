@@ -3,7 +3,7 @@
 // @name:zh-CN    E-HENTAI-VIEW-ENHANCE
 // @namespace     https://github.com/kamo2020/eh-view-enhance
 // @homepageURL   https://github.com/kamo2020/eh-view-enhance
-// @version       3.0.3
+// @version       3.0.4
 // @license       MIT
 // @description   e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN   强化E绅士看图体验
@@ -16,7 +16,7 @@
 // @grant         GM.xmlHttpRequest
 // @require       https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js
 // @require       https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js
-// @updateURL     https://github.com/kamo2020/eh-view-enhance/raw/master/EH_VIEW_PLUS.js     
+// @updateURL     https://github.com/kamo2020/eh-view-enhance/raw/master/eh-view-enhance.user.js     
 // ==/UserScript==
 
 const regulars = {
@@ -943,9 +943,9 @@ const hiddenFullViewPlaneEvent = function (event) {
 };
 
 const hiddenFullViewPlane = function () {
+  hiddenBigImageEvent();
   fullViewPlane.classList.add("collspse_full_view");
   document.body.style.display = "";
-  bigImageFrame.classList.add("collspse");
 };
 
 //全屏阅览元素的滚动事件

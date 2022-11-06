@@ -958,7 +958,7 @@ const scrollEvent = function () {
 
 //大图框架点击事件，点击后隐藏大图框架
 const hiddenBigImageEvent = function (event) {
-  if (event.target.tagName === "SPAN") return;
+  if (event && event.target.tagName === "SPAN") return;
   bigImageFrame.classList.add("collspse");
   window.setTimeout(() => {
     bigImageElement.hidden = true;

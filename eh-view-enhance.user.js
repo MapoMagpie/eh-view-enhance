@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name          E-HENTAI-VIEW-ENHANCE
 // @name:zh-CN    E-HENTAI-VIEW-ENHANCE
-// @namespace     https://github.com/kamo2020/eh-view-enhance
-// @homepageURL   https://github.com/kamo2020/eh-view-enhance
+// @namespace     https://github.com/MapoMagpie/eh-view-enhance
+// @homepageURL   https://github.com/MapoMagpie/eh-view-enhance
 // @version       3.0.4
 // @license       MIT
 // @description   e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN   强化E绅士看图体验
-// @author        kamo2020
+// @author        MapoMagpie
 // @author        zsyjklive.cn
 // @match         https://exhentai.org/g/*
 // @match         https://e-hentai.org/g/*
@@ -16,7 +16,7 @@
 // @grant         GM.xmlHttpRequest
 // @require       https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js
 // @require       https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js
-// @updateURL     https://github.com/kamo2020/eh-view-enhance/raw/master/eh-view-enhance.user.js     
+// @updateURL     https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js     
 // ==/UserScript==
 
 const regulars = {
@@ -92,12 +92,12 @@ class IMGFetcher {
         throw new Error("图片获取器失败，中止获取！");
       }
       this.changeStyle("remove", "success");
+      this.onFinishedEventContext.forEach((callback) => callback(index, this));
     } catch (error) {
       this.changeStyle("remove", "failed");
       evLog(`图片获取器获取失败:`, error);
     } finally {
       this.lock = false;
-      this.onFinishedEventContext.forEach((callback) => callback(index, this));
     }
   }
 

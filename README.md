@@ -1,6 +1,6 @@
 # EH-VIEW-ENHANCE
 
-[中文](https://github.com/kamo2020/eh-view-enhance/blob/master/README_CN.md)
+[中文](https://github.com/MapoMagpie/eh-view-enhance/blob/master/README_CN.md)
 
 > e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 
@@ -19,7 +19,7 @@
 - before installation: [`TamperMonkey`](https://www.tampermonkey.net/)
 - install 1: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)
 - install 1: [Sleazyfork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)
-- insatll 2: TamperMonkey > Utilities > Import From URL type in https://github.com/kamo2020/eh-view-enhance/raw/master/eh-view-enhance.user.js
+- insatll 2: TamperMonkey > Utilities > Import From URL type in https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
 
 ## Operates
 
@@ -34,4 +34,4 @@
 
 ## issues
 
-> https://github.com/kamo2020/eh-view-enhance/issues
+> https://github.com/MapoMagpie/eh-view-enhance/issues

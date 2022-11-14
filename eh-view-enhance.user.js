@@ -353,6 +353,7 @@ class IMGFetcherQueue extends Array {
   //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
   finishedReport(index) {
     const imgFetcher = this[index];
+    if (imgFetcher.stage !== 3) return;
     if (downloader) {
       if (this.finishedIndex.indexOf(index) < 0) {
         downloader.addToDownloadZip(imgFetcher);
@@ -764,7 +765,7 @@ let conf = JSON.parse(window.localStorage.getItem("cfg_"));
 //获取宽度
 const screenWidth = window.screen.availWidth;
 
-if (!conf || conf.version !== "3.0.3") {
+if (!conf || conf.version !== "3.0.4") {
   //如果配置不存在则初始化一个
   let colCount = screenWidth > 2500 ? 8 : screenWidth > 1900 ? 7 : 5;
   conf = {
@@ -777,8 +778,8 @@ if (!conf || conf.version !== "3.0.3") {
     restartIdleLoader: 8000, //中止空闲加载器后的重新启动时间
     threads: 3, //同时加载的图片数量
     downloadThreads: 3, //同时下载的图片数量
-    timeout: 8, //超时时间(秒)，默认8秒
-    version: "3.0.3", //配置版本
+    timeout: 16, //超时时间(秒)，默认16秒
+    version: "3.0.4", //配置版本
     debug: true, // 是否打印控制台日志
     first: true, // 是否初次使用脚本
     disableDownload: false, // 禁用下载功能
@@ -858,7 +859,7 @@ function modConfEvent(ele, key, data) {
       colCount: [1, 12],
       threads: [1, 10],
       downloadThreads: [1, 10],
-      timeout: [2, 20],
+      timeout: [8, 40],
     };
     if (data === "add") {
       if (conf[key] < range[key][1]) {

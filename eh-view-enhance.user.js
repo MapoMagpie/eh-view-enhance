@@ -788,7 +788,7 @@ if (!conf || conf.version !== "3.0.4") {
   window.localStorage.setItem("cfg_", JSON.stringify(conf));
 }
 
-const i18in = {
+const i18n = {
   download: ["DL", "下载"],
   config: ["CONF", "配置"],
   collapse: ["FOLD", "收起"],
@@ -838,9 +838,9 @@ const i18in = {
   `]
 };
 const lang = navigator.language;
-const i18InIndex = lang === "zh-CN" ? 1 : 0;
-function getI18in(i18inKey) {
-  return i18inKey[i18InIndex];
+const i18nIndex = lang === "zh-CN" ? 1 : 0;
+function geti18n(i18nKey) {
+  return i18nKey[i18nIndex];
 }
 // const updateEvent = function (k, v) {
 //   switch (k) {
@@ -1068,7 +1068,7 @@ const showGuideEvent = function () {
   const guideFull = document.createElement("div");
   document.body.after(guideFull);
   guideFull.innerHTML = `
-  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${getI18in(i18in.help)}</div>
+  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${geti18n(i18n.help)}</div>
   `;
   guideFull.style = `position: absolute;width: 100%;height: 100%;background-color: #363c3c78;z-index: 2004;top: 0; display: flex; justify-content: center;align-items: center;`;
   guideFull.addEventListener("click", () => guideFull.remove());
@@ -1101,7 +1101,7 @@ fullViewPlane.innerHTML = `
          <div id="configPlane" class="plane p-config p-collapse">
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
-                     <span>${getI18in(i18in.columns)}:</span>
+                     <span>${geti18n(i18n.columns)}:</span>
                      <span>
                          <button id="colCountMinusBTN" type="button">-</button>
                          <input id="colCountInput" value="${conf.colCount}" disabled type="text" style="width: 15px;" />
@@ -1111,8 +1111,8 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
-                     <span>${getI18in(i18in.maxPreloadThreads)}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left: -100px">${getI18in(i18in.maxPreloadThreadsTooltip)}</span></span>:
+                     <span>${geti18n(i18n.maxPreloadThreads)}
+                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left: -100px">${geti18n(i18n.maxPreloadThreadsTooltip)}</span></span>:
                      </span>
                      <span>
                          <button id="threadsMinusBTN" type="button">-</button>
@@ -1123,8 +1123,8 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
-                     <span>${getI18in(i18in.maxDownloadThreads)}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; left: -100px">${getI18in(i18in.maxDownloadThreadsTooltip)}</span></span>:
+                     <span>${geti18n(i18n.maxDownloadThreads)}
+                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; left: -100px">${geti18n(i18n.maxDownloadThreadsTooltip)}</span></span>:
                      </span>
                      <span>
                          <button id="downloadThreadsMinusBTN" type="button">-</button>
@@ -1135,7 +1135,7 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
-                     <span>${getI18in(i18in.timeout)}:</span>
+                     <span>${geti18n(i18n.timeout)}:</span>
                      <span>
                          <button id="timeoutMinusBTN" type="button">-</button>
                          <input id="timeoutInput" value="${conf.timeout}" disabled type="text" style="width: 15px;" />
@@ -1145,29 +1145,29 @@ fullViewPlane.innerHTML = `
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
-                     <span>${getI18in(i18in.bestQuality)}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left: -100px">${getI18in(i18in.bestQualityTooltip)}</span></span>:
+                     <span>${geti18n(i18n.bestQuality)}
+                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left: -100px">${geti18n(i18n.bestQualityTooltip)}</span></span>:
                      </span>
                      <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
                  <label>
-                     <span>${getI18in(i18in.autoLoad)}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; right:0;">${getI18in(i18in.autoLoadTooltip)}</span></span>:
+                     <span>${geti18n(i18n.autoLoad)}
+                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; right:0;">${geti18n(i18n.autoLoadTooltip)}</span></span>:
                      </span>
                      <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
-                     <span>${getI18in(i18in.followMouse)}:</span>
+                     <span>${geti18n(i18n.followMouse)}:</span>
                      <input id="followMouseCheckbox" ${conf.followMouse ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
                  <label>
-                     <span>${getI18in(i18in.keepScale)}:</span>
+                     <span>${geti18n(i18n.keepScale)}:</span>
                      <input id="keepScaleCheckbox" ${conf.keepScale ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
@@ -1179,8 +1179,8 @@ fullViewPlane.innerHTML = `
              <div id="download-notice" class="download-notice"></div>
              <canvas id="downloaderCanvas" width="337" height="250"></canvas>
              <div class="download-btn-group">
-                <a id="download-force" style="color: gray;" class="clickable">${getI18in(i18in.forceDownload)}</a>
-                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${getI18in(i18in.startDownload)}</a>
+                <a id="download-force" style="color: gray;" class="clickable">${geti18n(i18n.forceDownload)}</a>
+                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${geti18n(i18n.startDownload)}</a>
              </div>
          </div>
      </div>
@@ -1189,13 +1189,13 @@ fullViewPlane.innerHTML = `
      </div>
      <!-- <span>展开</span> -->
      <div id="main" class="b-main b-collapse">
-         <div id="configPlaneBTN" class="clickable" style="z-index: 1111;"> ${getI18in(i18in.config)} </div>
-         <div id="downloaderPlaneBTN" class="clickable" style="z-index: 1111;"> ${getI18in(i18in.download)} </div>
+         <div id="configPlaneBTN" class="clickable" style="z-index: 1111;"> ${geti18n(i18n.config)} </div>
+         <div id="downloaderPlaneBTN" class="clickable" style="z-index: 1111;"> ${geti18n(i18n.download)} </div>
          <div class="page">
              <span class="clickable" id="p-currPage"
                  style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
          </div>
-         <div id="collapseBTN" class="clickable">${getI18in(i18in.collapse)}</div>
+         <div id="collapseBTN" class="clickable">${geti18n(i18n.collapse)}</div>
      </div>
      <div>
          <span style="font-weight: 800; font-size: large; text-align: center;">&gtdot;</span>
@@ -1598,7 +1598,7 @@ class Downloader {
     if (conf.fetchOriginal) return;
     // append adviser element
     if (this.downloadNoticeElement && !this.downloading) {
-      this.downloadNoticeElement.innerHTML = `<span>${getI18in(i18in.originalCheck)}</span>`;
+      this.downloadNoticeElement.innerHTML = `<span>${geti18n(i18n.originalCheck)}</span>`;
       this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
     }
     if (conf["disableDownload"]) {
@@ -1621,8 +1621,8 @@ class Downloader {
       this.download();
       return;
     }
-    if (this.downloadNoticeElement && !conf["disableDownload"]) this.downloadNoticeElement.innerHTML = `<span>${getI18in(i18in.downloading)}</span>`;
-    this.downloadStartElement.textContent = getI18in(i18in.downloading);
+    if (this.downloadNoticeElement && !conf["disableDownload"]) this.downloadNoticeElement.innerHTML = `<span>${geti18n(i18n.downloading)}</span>`;
+    this.downloadStartElement.textContent = geti18n(i18n.downloading);
     this.downloading = true;
 
     if (!conf["autoLoad"]) conf["autoLoad"] = true;
@@ -1643,7 +1643,7 @@ class Downloader {
     }).then(data => {
       saveAs(data, `${this.title}.zip`);
       if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "";
-      this.downloadStartElement.textContent = getI18in(i18in.downloaded);
+      this.downloadStartElement.textContent = geti18n(i18n.downloaded);
     });
   };
 }

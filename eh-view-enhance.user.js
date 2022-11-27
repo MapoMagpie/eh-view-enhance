@@ -623,7 +623,8 @@ class PageFetcher {
           fullViewPlane.firstElementChild.nextElementSibling.after(...imgNodeList);
           this.queue.unshift(...IFs);
           this.idleLoader.processingIndexList[0] += IFs.length;
-          this.queue.scrollTo(this.idleLoader.processingIndexList[0]);
+          const { node } = this.queue[this.idleLoader.processingIndexList[0]];
+          fullViewPlane.scrollTo(0, node.offsetTop);
           break;
         case "next":
           fullViewPlane.lastElementChild.after(...imgNodeList);
@@ -1533,6 +1534,7 @@ function xhrWapper(url, resType, { onprogress, onload, onerror, ontimeout }) {
       "Sec-Fetch-Dest": "image",
       "Sec-Fetch-Mode": "no-cors",
       "Sec-Fetch-Site": "cross-site",
+      "Cache-Control": "public,max-age=3600,immutable",
     },
     onprogress,
     onload,

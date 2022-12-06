@@ -3,7 +3,7 @@
 // @name:zh-CN    E-HENTAI-VIEW-ENHANCE
 // @namespace     https://github.com/MapoMagpie/eh-view-enhance
 // @homepageURL   https://github.com/MapoMagpie/eh-view-enhance
-// @version       3.0.5
+// @version       3.1.0
 // @license       MIT
 // @description   e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN   强化E绅士看图体验

@@ -866,7 +866,7 @@ class BigImageFrameManager {
       imgNodes = this.getImgNodes();
       const frist = imgNodes[0];
       const fixTop = this.getRealOffsetTop(frist);
-      if (fixTop > this.frame.scrollTop) {
+      if (fixTop > this.frame.scrollTop || parseInt(frist.getAttribute("d-index")) === this.queue.length - 1) {
         const extended = this.extendImgNode(frist, "prev");
         if (extended) {
           indexOffset++;

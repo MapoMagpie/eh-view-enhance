@@ -3,7 +3,7 @@
 // @name:zh-CN    E-HENTAI-VIEW-ENHANCE
 // @namespace     https://github.com/MapoMagpie/eh-view-enhance
 // @homepageURL   https://github.com/MapoMagpie/eh-view-enhance
-// @version       3.1.0
+// @version       3.1.1
 // @license       MIT
 // @description   e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN   强化E绅士看图体验
@@ -16,7 +16,7 @@
 // @grant         GM.xmlHttpRequest
 // @require       https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js
 // @require       https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js
-// @updateURL     https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js     
+// @updateURL     https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
 // ==/UserScript==
 
 const regulars = {
@@ -837,7 +837,7 @@ class BigImageFrameManager {
 
     // fix scrolltop
     this.restoreScrollTop(centerNode, distance, event.deltaY);
-    // queue.do() > imgFetcher.setNow() > this.setNow() > this.init(); in here, this.init() will be called again, so we need to lock this.init() in this.setNow() 
+    // queue.do() > imgFetcher.setNow() > this.setNow() > this.init(); in here, this.init() will be called again, so we need to lock this.init() in this.setNow()
     this.lockInit = true;
     this.queue.do(indexOfQueue, oriented);
   }
@@ -960,7 +960,7 @@ let conf = JSON.parse(window.localStorage.getItem("cfg_"));
 //获取宽度
 const screenWidth = window.screen.availWidth;
 
-if (!conf || conf.version !== "3.0.5") {
+if (!conf || conf.version !== "3.0.6") {
   //如果配置不存在则初始化一个
   let colCount = screenWidth > 2500 ? 8 : screenWidth > 1900 ? 7 : 5;
   conf = {
@@ -973,10 +973,11 @@ if (!conf || conf.version !== "3.0.5") {
     threads: 3, //同时加载的图片数量
     downloadThreads: 3, //同时下载的图片数量
     timeout: 16, //超时时间(秒)，默认16秒
-    version: "3.0.5", //配置版本
+    version: "3.0.6", //配置版本
     debug: true, // 是否打印控制台日志
     first: true, // 是否初次使用脚本
     disableDownload: false, // 禁用下载功能
+    pageTurningMethod: false //逆转左右翻页，无论使用那种翻页方式，上下侧都代表上下
   };
   window.localStorage.setItem("cfg_", JSON.stringify(conf));
 }
@@ -1001,6 +1002,7 @@ const i18n = {
   startDownload: ["Start Download", "开始下载"],
   downloading: ["Downloading...", "下载中..."],
   downloaded: ["Downloaded", "下载完成"],
+  pageTurningMethod:["Reverse page turning","逆转翻页左右"],
   originalCheck: ["<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"],
   help: [`
     <h1>GUIDE:</h1>
@@ -1070,11 +1072,23 @@ function modConfEvent(ele, key, data) {
       css_.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
     }
   }
-  if (["autoLoad", "fetchOriginal", "scrollPage"].indexOf(key) !== -1) {
+  if (["autoLoad", "fetchOriginal", "scrollPage","pageTurningMethod"].indexOf(key) !== -1) {
     conf[key] = ele.checked;
     if (key === "autoLoad") { idleLoader; }
     if (key === "scrollPage") {
       BIFM.switchOnWheel = conf[key];
+    }
+    if(key === "pageTurningMethod"){
+      imgLandLeft.addEventListener("click", (event) => {
+        stepImageEvent(conf.pageTurningMethod?"next":"prev");
+        event.stopPropagation();
+      });
+      imgLandRight.addEventListener("click", (event) => {
+        stepImageEvent(conf.pageTurningMethod?"prev":"next");
+        event.stopPropagation();
+      });
+      imgLandTop.setAttribute("style",conf.pageTurningMethod? "left:25%":"left:0")
+      imgLandBottom.setAttribute("style",conf.pageTurningMethod? "left:0":"left:25%")
     }
   }
   // todo backgroud image
@@ -1222,6 +1236,9 @@ fullViewPlane.innerHTML = `
  <div id="bigImageFrame" class="bigImageFrame collapse">
     <a id="imgLandLeft" hidden="true" class="imgLandLeft"></a>
     <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
+    <a id="imgLandTop" hidden="true" class="imgLandTop"></a>
+    <a id="imgLandBottom" hidden="true" class="imgLandBottom"></a>
+    
  </div>
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
@@ -1294,6 +1311,13 @@ fullViewPlane.innerHTML = `
                      <input id="scrollPageCheckbox" ${conf.scrollPage ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
+             <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
+                 <label>
+                     <span>${geti18n(i18n.pageTurningMethod)}
+                     </span>
+                     <input id="pageTurningMethodCheckbox" ${conf.pageTurningMethod ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                 </label>
+             </div>
              <div style="grid-column-start: 1; grid-column-end: 2; padding-left: 5px;">
                   <a id="showGuideElement" class="clickable">Help</a>
              </div>
@@ -1330,18 +1354,30 @@ const pageHelper = fullViewPlane.querySelector("#pageHelper");
 bigImageFrame.addEventListener("click", hiddenBigImageEvent);
 // bigImageFrame.addEventListener("wheel", bigImageWheelEvent);
 bigImageFrame.addEventListener("contextmenu", (event) => event.preventDefault());
+// 左侧点击事件
 const imgLandLeft = fullViewPlane.querySelector("#imgLandLeft");
 imgLandLeft.addEventListener("click", (event) => {
-  stepImageEvent("prev");
+  stepImageEvent(conf.pageTurningMethod?"next":"prev");
   event.stopPropagation();
 });
+// 右侧点击事件
 const imgLandRight = fullViewPlane.querySelector("#imgLandRight");
 imgLandRight.addEventListener("click", (event) => {
-  stepImageEvent("next");
+  stepImageEvent(conf.pageTurningMethod?"prev":"next");
   event.stopPropagation();
 });
-
-
+// 上侧向前翻页动作
+const imgLandTop = fullViewPlane.querySelector("#imgLandTop")
+imgLandTop.addEventListener("click",(event)=>{
+  stepImageEvent("prev");
+  event.stopPropagation();
+})
+// 下侧向后翻页动作
+const imgLandBottom = fullViewPlane.querySelector("#imgLandBottom")
+imgLandBottom.addEventListener("click",(event)=>{
+  stepImageEvent("next");
+  event.stopPropagation();
+})
 const configPlane = fullViewPlane.querySelector("#configPlane");
 configPlane.addEventListener("mouseleave", (event) => mouseleavePlaneEvent(event.target));
 const downloaderPlane = fullViewPlane.querySelector("#downloaderPlane");
@@ -1361,7 +1397,7 @@ for (const key of ["colCount", "threads", "downloadThreads", "timeout"]) {
   fullViewPlane.querySelector(`#${key}MinusBTN`).addEventListener("click", (event) => modConfEvent(event.target, key, 'minus'));
   fullViewPlane.querySelector(`#${key}AddBTN`).addEventListener("click", (event) => modConfEvent(event.target, key, 'add'));
 }
-for (const key of ["fetchOriginal", "autoLoad", "scrollPage"]) {
+for (const key of ["fetchOriginal", "autoLoad", "scrollPage","pageTurningMethod"]) {
   fullViewPlane.querySelector(`#${key}Checkbox`).addEventListener("input", (event) => modConfEvent(event.target, key));
 }
 
@@ -1423,7 +1459,7 @@ const BIFM = new BigImageFrameManager(bigImageFrame, IFQ, conf["scrollPage"]);
 
 //=======================================创建样式表=================================================START
 let styleSheel = document.createElement("style");
-styleSheel.textContent = `
+function loadStyleShell(){styleSheel.textContent = `
     .fullViewPlane {
         width: 100vw;
         height: 100vh;
@@ -1614,10 +1650,29 @@ styleSheel.textContent = `
       height: 100%;
       position: fixed;
       right: 0;
-      top: 0;
+      top: 0%;
       z-index: 1004;
       cursor: url("https://tb2.bdstatic.com/tb/static-album/img/mouseright.cur"), auto;
     }
+    .imgLandTop{
+      width: 75%;
+      height: 20%;
+      position: fixed;
+      left: ${conf.pageTurningMethod? "25%":"0"};
+      top: 0;
+      z-index: 1005;
+      cursor: url("https://tb2.bdstatic.com/tb/static-album/img/mouseleft.cur"), auto;
+    }
+    .imgLandBottom{
+      width: 75%;
+      height: 20%;
+      position: fixed;
+      left: ${conf.pageTurningMethod?"0":"25%"};
+      bottom: 0;
+      z-index: 1005;
+      cursor: url("https://tb2.bdstatic.com/tb/static-album/img/mouseright.cur"), auto;
+    }
+      
     .tooltip {
       position: relative;
       border-bottom: 1px dotted black;
@@ -1638,7 +1693,10 @@ styleSheel.textContent = `
       visibility: visible;
     }
 `;
-document.head.appendChild(styleSheel);
+  document.head.appendChild(styleSheel);
+}
+loadStyleShell()
+
 //=======================================创建样式表=================================================FIN
 
 function evLog(msg, ...info) {
@@ -1878,7 +1936,7 @@ class DownloaderCanvas {
       this.scrollTop = offsetY + this.rectSize - h;
       const maxScrollTop = clientHeight - h + 20;
       if (this.scrollTop + 20 <= maxScrollTop) {
-        this.scrollTop += 20; //todo 
+        this.scrollTop += 20; //todo
       }
     }
   }

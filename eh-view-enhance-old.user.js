@@ -254,7 +254,7 @@ class IMGFetcher {
     const imgFetcher = this;
     return new Promise(async (resolve) => {
       xhrWapper(imgFetcher.bigImageUrl, "blob", {
-        onload: function (response) {
+        onload: function(response) {
           let data = response.response;
           if (!(data instanceof Blob)) throw new Error("未下载到有效的数据！");
           imgFetcher.blobData = data;
@@ -264,15 +264,15 @@ class IMGFetcher {
           imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
           resolve(true);
         },
-        onerror: function (response) {
+        onerror: function(response) {
           evLog("加载大图失败:", response);
           resolve(false);
         },
-        ontimeout: function (response) {
+        ontimeout: function(response) {
           evLog("加载大图超时:", response);
           resolve(false);
         },
-        onprogress: function (response) {
+        onprogress: function(response) {
           imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
         },
       });
@@ -498,7 +498,7 @@ class IdleLoader {
 
   async wait() {
     const { maxWaitMS, minWaitMS } = this;
-    return new Promise(function (resolve) {
+    return new Promise(function(resolve) {
       const time = Math.floor(Math.random() * maxWaitMS + minWaitMS);
       window.setTimeout(() => resolve(), time);
     });
@@ -1002,7 +1002,7 @@ const i18n = {
   startDownload: ["Start Download", "开始下载"],
   downloading: ["Downloading...", "下载中..."],
   downloaded: ["Downloaded", "下载完成"],
-  pageTurningMethod:["Reverse page turning","逆转翻页左右"],
+  pageTurningMethod: ["Reverse page turning", "逆转翻页左右"],
   originalCheck: ["<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"],
   help: [`
     <h1>GUIDE:</h1>
@@ -1072,23 +1072,23 @@ function modConfEvent(ele, key, data) {
       css_.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
     }
   }
-  if (["autoLoad", "fetchOriginal", "scrollPage","pageTurningMethod"].indexOf(key) !== -1) {
+  if (["autoLoad", "fetchOriginal", "scrollPage", "pageTurningMethod"].indexOf(key) !== -1) {
     conf[key] = ele.checked;
     if (key === "autoLoad") { idleLoader; }
     if (key === "scrollPage") {
       BIFM.switchOnWheel = conf[key];
     }
-    if(key === "pageTurningMethod"){
+    if (key === "pageTurningMethod") {
       imgLandLeft.addEventListener("click", (event) => {
-        stepImageEvent(conf.pageTurningMethod?"next":"prev");
+        stepImageEvent(conf.pageTurningMethod ? "next" : "prev");
         event.stopPropagation();
       });
       imgLandRight.addEventListener("click", (event) => {
-        stepImageEvent(conf.pageTurningMethod?"prev":"next");
+        stepImageEvent(conf.pageTurningMethod ? "prev" : "next");
         event.stopPropagation();
       });
-      imgLandTop.setAttribute("style",conf.pageTurningMethod? "left:25%":"left:0")
-      imgLandBottom.setAttribute("style",conf.pageTurningMethod? "left:0":"left:25%")
+      imgLandTop.setAttribute("style", conf.pageTurningMethod ? "left:25%" : "left:0")
+      imgLandBottom.setAttribute("style", conf.pageTurningMethod ? "left:0" : "left:25%")
     }
   }
   // todo backgroud image
@@ -1134,26 +1134,26 @@ function togglePlaneEvent(id, type) {
   }, 10);
 }
 
-const showFullViewPlane = function () {
+const showFullViewPlane = function() {
   fullViewPlane.scroll(0, 0); //否则加载会触发滚动事件
   fullViewPlane.classList.remove("collapse_full_view");
   document.body.style.display = "none";
 };
 
-const hiddenFullViewPlaneEvent = function (event) {
+const hiddenFullViewPlaneEvent = function(event) {
   if (event.target === fullViewPlane) {
     togglePageHelper(1);
   }
 };
 
-const hiddenFullViewPlane = function () {
+const hiddenFullViewPlane = function() {
   hiddenBigImageEvent();
   fullViewPlane.classList.add("collapse_full_view");
   document.body.style.display = "";
 };
 
 //全屏阅览元素的滚动事件
-const scrollEvent = function () {
+const scrollEvent = function() {
   //对冒泡的处理
   if (fullViewPlane.classList.contains("collapse_full_view")) return;
   //根据currTop获取当前滚动高度对应的未渲染缩略图的图片元素
@@ -1161,19 +1161,19 @@ const scrollEvent = function () {
 };
 
 //大图框架点击事件，点击后隐藏大图框架
-const hiddenBigImageEvent = function (event) {
+const hiddenBigImageEvent = function(event) {
   if (event && event.target.tagName === "SPAN") return;
   bigImageFrame.classList.add("collapse");
   window.setTimeout(() => BIFM.hidden(), 700);
 };
 
 //大图框架元素的滚轮事件/按下鼠标右键滚动则是缩放/直接滚动则是切换到下一张或上一张
-const bigImageWheelEvent = function (event) {
+const bigImageWheelEvent = function(event) {
   stepImageEvent(event.deltaY > 0 ? "next" : "prev");
 };
 
 //按键事件
-const KeyEvent = function (event) {
+const KeyEvent = function(event) {
   switch (event.key) {
     case "ArrowLeft":
       stepImageEvent("prev");
@@ -1188,10 +1188,10 @@ const KeyEvent = function (event) {
 };
 
 //点击缩略图后展示大图元素的事件
-const showBigImageEvent = function (event) {
+const showBigImageEvent = function(event) {
   showBigImage(IFQ.findIndex(event.target));
 };
-const showBigImage = function (start) {
+const showBigImage = function(start) {
   //展开大图阅览元素
   bigImageFrame.classList.remove("collapse");
   BIFM.show();
@@ -1200,13 +1200,13 @@ const showBigImage = function (start) {
 };
 
 //加载上一张或下一张事件
-const stepImageEvent = function (oriented) {
+const stepImageEvent = function(oriented) {
   const start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
   IFQ.do(start, oriented);
 };
 
 //显示简易指南事件
-const showGuideEvent = function () {
+const showGuideEvent = function() {
   const guideFull = document.createElement("div");
   document.body.after(guideFull);
   guideFull.innerHTML = `
@@ -1357,24 +1357,24 @@ bigImageFrame.addEventListener("contextmenu", (event) => event.preventDefault())
 // 左侧点击事件
 const imgLandLeft = fullViewPlane.querySelector("#imgLandLeft");
 imgLandLeft.addEventListener("click", (event) => {
-  stepImageEvent(conf.pageTurningMethod?"next":"prev");
+  stepImageEvent(conf.pageTurningMethod ? "next" : "prev");
   event.stopPropagation();
 });
 // 右侧点击事件
 const imgLandRight = fullViewPlane.querySelector("#imgLandRight");
 imgLandRight.addEventListener("click", (event) => {
-  stepImageEvent(conf.pageTurningMethod?"prev":"next");
+  stepImageEvent(conf.pageTurningMethod ? "prev" : "next");
   event.stopPropagation();
 });
 // 上侧向前翻页动作
 const imgLandTop = fullViewPlane.querySelector("#imgLandTop")
-imgLandTop.addEventListener("click",(event)=>{
+imgLandTop.addEventListener("click", (event) => {
   stepImageEvent("prev");
   event.stopPropagation();
 })
 // 下侧向后翻页动作
 const imgLandBottom = fullViewPlane.querySelector("#imgLandBottom")
-imgLandBottom.addEventListener("click",(event)=>{
+imgLandBottom.addEventListener("click", (event) => {
   stepImageEvent("next");
   event.stopPropagation();
 })
@@ -1397,7 +1397,7 @@ for (const key of ["colCount", "threads", "downloadThreads", "timeout"]) {
   fullViewPlane.querySelector(`#${key}MinusBTN`).addEventListener("click", (event) => modConfEvent(event.target, key, 'minus'));
   fullViewPlane.querySelector(`#${key}AddBTN`).addEventListener("click", (event) => modConfEvent(event.target, key, 'add'));
 }
-for (const key of ["fetchOriginal", "autoLoad", "scrollPage","pageTurningMethod"]) {
+for (const key of ["fetchOriginal", "autoLoad", "scrollPage", "pageTurningMethod"]) {
   fullViewPlane.querySelector(`#${key}Checkbox`).addEventListener("input", (event) => modConfEvent(event.target, key));
 }
 
@@ -1421,7 +1421,7 @@ currPageElement.addEventListener("wheel", bigImageWheelEvent);
 const totalPageElement = fullViewPlane.querySelector("#p-total");
 const finishedElement = fullViewPlane.querySelector("#p-finished");
 //页码指示器通用修改事件
-const pageHandler = function (type, data) {
+const pageHandler = function(type, data) {
   switch (type) {
     case "fetching":
       pageHelper.classList.add("pageHelperFetching");
@@ -1459,7 +1459,8 @@ const BIFM = new BigImageFrameManager(bigImageFrame, IFQ, conf["scrollPage"]);
 
 //=======================================创建样式表=================================================START
 let styleSheel = document.createElement("style");
-function loadStyleShell(){styleSheel.textContent = `
+function loadStyleShell() {
+  styleSheel.textContent = `
     .fullViewPlane {
         width: 100vw;
         height: 100vh;
@@ -1658,7 +1659,7 @@ function loadStyleShell(){styleSheel.textContent = `
       width: 75%;
       height: 20%;
       position: fixed;
-      left: ${conf.pageTurningMethod? "25%":"0"};
+      left: ${conf.pageTurningMethod ? "25%" : "0"};
       top: 0;
       z-index: 1005;
       cursor: url("https://tb2.bdstatic.com/tb/static-album/img/mouseleft.cur"), auto;
@@ -1667,7 +1668,7 @@ function loadStyleShell(){styleSheel.textContent = `
       width: 75%;
       height: 20%;
       position: fixed;
-      left: ${conf.pageTurningMethod?"0":"25%"};
+      left: ${conf.pageTurningMethod ? "0" : "25%"};
       bottom: 0;
       z-index: 1005;
       cursor: url("https://tb2.bdstatic.com/tb/static-album/img/mouseright.cur"), auto;

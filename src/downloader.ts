@@ -1,5 +1,3 @@
-import { saveAs } from "file-saver";
-import JSZip from "jszip";
 import { FetchState, IMGFetcher } from "./img-fetcher";
 import { conf } from "./config";
 import { evLog } from "./utils/ev-log";
@@ -8,6 +6,8 @@ import { IMGFetcherQueue } from "./fetcher-queue";
 import { Debouncer } from "./utils/debouncer";
 import { IdleLoader } from "./idle-loader";
 import { events } from "./ui/event";
+import JSZip from "jszip";
+import saveAs from "file-saver";
 
 class GalleryMeta {
   url: string;

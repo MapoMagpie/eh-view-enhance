@@ -13,16 +13,17 @@ export default defineConfig({
         name: 'E HENTAI VIEW ENHANCE',
         version: '4.0.0',
         license: 'MIT',
+        author: 'MapoMagpie',
         description: 'e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.',
         connect: ['exhentai.org', 'e-hentai.org', 'hath.network'],
         grant: ['GM_xmlhttpRequest', 'GM_setValue', 'GM_getValue'],
-        // require: ['https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js', 'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js'],
+        require: ['https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js', 'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js'],
         // 'description:zh-CN': 'e-hentai.org 更好的浏览器，所有的缩略图都会被展示在网格中，并且显示最高质量的图片。',
       },
       build: {
         externalGlobals: {
-          "jszip": cdn.jsdelivr('jszip', 'dist/jszip.min.js'),
-          "file-saver": cdn.jsdelivr('file-saver', 'dist/FileSaver.min.js'),
+          "jszip": "JSZip",
+          "file-saver": "saveAs",
         }
       },
       server: { mountGmApi: true },

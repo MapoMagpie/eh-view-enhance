@@ -2,7 +2,7 @@
 // @name         E HENTAI VIEW ENHANCE
 // @namespace    https://github.com/MapoMagpie/eh-view-enhance
 // @version      4.0.0
-// @author       monkey
+// @author       MapoMagpie
 // @description  e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @license      MIT
 // @icon         https://exhentai.org/favicon.ico
@@ -18,7 +18,7 @@
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
-(function (fileSaver, JSZip) {
+(function (JSZip, saveAs) {
   'use strict';
 
   var __defProp = Object.defineProperty;
@@ -735,7 +735,7 @@
       this.downloading = false;
       this.zip.generateAsync({ type: "blob" }, (_metadata) => {
       }).then((data) => {
-        fileSaver.saveAs(data, `${this.title}.zip`);
+        saveAs(data, `${this.title}.zip`);
         if (this.downloadNoticeElement)
           this.downloadNoticeElement.innerHTML = "";
         if (this.downloadStartElement)
@@ -2008,4 +2008,4 @@
   };
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
 
-})(file-saver, jszip);
+})(JSZip, saveAs);

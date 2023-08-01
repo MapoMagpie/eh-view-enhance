@@ -1,21 +1,23 @@
 // ==UserScript==
-// @name         E HENTAI VIEW ENHANCE
-// @namespace    https://github.com/MapoMagpie/eh-view-enhance
-// @version      4.0.0
-// @author       MapoMagpie
-// @description  e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
-// @license      MIT
-// @icon         https://exhentai.org/favicon.ico
-// @match        https://exhentai.org/g/*
-// @match        https://e-hentai.org/g/*
-// @require      https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
-// @require      https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
-// @connect      exhentai.org
-// @connect      e-hentai.org
-// @connect      hath.network
-// @grant        GM_getValue
-// @grant        GM_setValue
-// @grant        GM_xmlhttpRequest
+// @name               E HENTAI VIEW ENHANCE
+// @name:zh-CN         E绅士阅读强化
+// @namespace          https://github.com/MapoMagpie/eh-view-enhance
+// @version            4.0.0
+// @author             MapoMagpie
+// @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
+// @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
+// @license            MIT
+// @icon               https://exhentai.org/favicon.ico
+// @match              https://exhentai.org/g/*
+// @match              https://e-hentai.org/g/*
+// @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
+// @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
+// @connect            exhentai.org
+// @connect            e-hentai.org
+// @connect            hath.network
+// @grant              GM_getValue
+// @grant              GM_setValue
+// @grant              GM_xmlhttpRequest
 // ==/UserScript==
 
 (function (JSZip, saveAs) {

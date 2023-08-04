@@ -2,9 +2,10 @@ import { conf } from "./config";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
 import { IMGFetcher } from "./img-fetcher";
-import { HTML, Oriented, updatePageHelper } from "./main";
+import { HTML, Oriented } from "./main";
 import { regulars } from "./regulars";
 import { events } from "./ui/event";
+import { updatePageHelper } from "./ui/page-helper";
 import { evLog } from "./utils/ev-log";
 
 type AsyncAppendFunc = () => Promise<boolean>;

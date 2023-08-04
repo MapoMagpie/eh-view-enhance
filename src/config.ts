@@ -26,6 +26,14 @@ export type Config = {
   disableDownload: boolean,
   /** 逆转左右翻页，无论使用那种翻页方式，上下侧都代表上下 */
   reversePages: boolean
+  /** 页码指示器位置 */
+  pageHelperAbTop: string
+  /** 页码指示器位置 */
+  pageHelperAbLeft: string
+  /** 页码指示器位置 */
+  pageHelperAbBottom: string
+  /** 页码指示器位置 */
+  pageHelperAbRight: string
 };
 
 function defaultConf(): Config {
@@ -41,15 +49,19 @@ function defaultConf(): Config {
     threads: 3,
     downloadThreads: 3,
     timeout: 16,
-    version: "4.0.0",
+    version: "4.0.1",
     debug: true,
     first: true,
     disableDownload: false,
-    reversePages: false
+    reversePages: false,
+    pageHelperAbTop: "unset",
+    pageHelperAbLeft: "unset",
+    pageHelperAbBottom: "50px",
+    pageHelperAbRight: "50px",
   };
 }
 
-export const VERSION = "4.0.0";
+export const VERSION = "4.0.1";
 export const signal = { first: true };
 
 function getConf(): Config {

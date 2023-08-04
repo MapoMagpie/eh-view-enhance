@@ -52,9 +52,11 @@ export function loadStyleSheel() {
   position: fixed;
   display: flex !important;
   justify-content: space-between;
-  right: 50px;
   line-height: 25px;
-  bottom: 30px;
+  top: ${conf.pageHelperAbTop};
+  left: ${conf.pageHelperAbLeft};
+  bottom: ${conf.pageHelperAbBottom};
+  right: ${conf.pageHelperAbRight};
   background-color: rgba(114, 114, 114, 0.8);
   z-index: 1011 !important;
   box-sizing: border-box;
@@ -79,7 +81,7 @@ export function loadStyleSheel() {
   /* border: 1px solid red; */
   position: absolute;
   left: 0;
-  bottom: 25px;
+  bottom: 26px;
   color: rgb(200, 222, 200);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   transition: height 0.4s;

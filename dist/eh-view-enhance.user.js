@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.0.0
+// @version            4.0.1
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -42,14 +42,18 @@
       threads: 3,
       downloadThreads: 3,
       timeout: 16,
-      version: "4.0.0",
+      version: "4.0.1",
       debug: true,
       first: true,
       disableDownload: false,
-      reversePages: false
+      reversePages: false,
+      pageHelperAbTop: "unset",
+      pageHelperAbLeft: "unset",
+      pageHelperAbBottom: "50px",
+      pageHelperAbRight: "50px"
     };
   }
-  const VERSION = "4.0.0";
+  const VERSION = "4.0.1";
   function getConf() {
     let confStr = window.localStorage.getItem("cfg_");
     if (confStr) {
@@ -77,6 +81,37 @@
     // 
     /** 多页查看器图片列表提取 */
     mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g
+  };
+  const updatePageHelper = function(state, data) {
+    switch (state) {
+      case "fetching":
+        HTML.pageHelper.classList.add("pageHelperFetching");
+        break;
+      case "fetched":
+        HTML.pageHelper.classList.remove("pageHelperFetching");
+        break;
+      case "updateTotal":
+        if (!data) {
+          throw new Error("updateTotal data is undefined");
+        }
+        HTML.totalPageElement.textContent = data;
+        DLC.drawDebouce();
+        break;
+      case "updateCurrPage":
+        if (!data) {
+          throw new Error("updateCurrPage data is undefined");
+        }
+        HTML.currPageElement.textContent = data;
+        DLC.drawDebouce();
+        break;
+      case "updateFinished":
+        if (!data) {
+          throw new Error("updateFinished data is undefined");
+        }
+        HTML.finishedElement.textContent = data;
+        DLC.drawDebouce();
+        break;
+    }
   };
   function evLog(msg, ...info) {
     if (conf.debug) {
@@ -432,6 +467,7 @@
     downloading: new I18nValue("Downloading...", "下载中..."),
     downloaded: new I18nValue("Downloaded", "下载完成"),
     reversePages: new I18nValue("Reverse Pages", "反向翻页"),
+    dragToMove: new I18nValue("Drag to Move", "拖动移动"),
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
     help: new I18nValue(`
     <h1>GUIDE:</h1>
@@ -470,6 +506,14 @@
       window.clearTimeout(this.tids[id]);
       this.tids[id] = window.setTimeout(event, timeout);
     }
+  }
+  function modPageHelperPostion() {
+    const style = HTML.pageHelper.style;
+    conf.pageHelperAbTop = style.top;
+    conf.pageHelperAbLeft = style.left;
+    conf.pageHelperAbBottom = style.bottom;
+    conf.pageHelperAbRight = style.right;
+    window.localStorage.setItem("cfg_", JSON.stringify(conf));
   }
   function modNumberConfigEvent(key, data) {
     var _a;
@@ -560,10 +604,10 @@
   function keyboardEvent(event) {
     switch (event.key) {
       case "ArrowLeft":
-        stepImageEvent("prev");
+        stepImageEvent(conf.reversePages ? "next" : "prev");
         break;
       case "ArrowRight":
-        stepImageEvent("next");
+        stepImageEvent(conf.reversePages ? "prev" : "next");
         break;
       case "Escape":
         hiddenBigImageEvent();
@@ -594,6 +638,7 @@
   const events = {
     modNumberConfigEvent,
     modBooleanConfigEvent,
+    modPageHelperPostion,
     togglePlaneEvent,
     showFullViewPlane,
     hiddenFullViewPlaneEvent,
@@ -1376,7 +1421,10 @@
   justify-content: space-between;
   right: 50px;
   line-height: 25px;
-  bottom: 30px;
+  top: ${conf.pageHelperAbTop};
+  left: ${conf.pageHelperAbLeft};
+  bottom: ${conf.pageHelperAbBottom};
+  right: ${conf.pageHelperAbRight};
   background-color: rgba(114, 114, 114, 0.8);
   z-index: 1011 !important;
   box-sizing: border-box;
@@ -1401,7 +1449,7 @@
   /* border: 1px solid red; */
   position: absolute;
   left: 0;
-  bottom: 25px;
+  bottom: 26px;
   color: rgb(200, 222, 200);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   transition: height 0.4s;
@@ -1569,7 +1617,6 @@
     <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
     <a id="imgLandTop" hidden="true" class="imgLandTop"></a>
     <a id="imgLandBottom" hidden="true" class="imgLandBottom"></a>
-    
  </div>
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
@@ -1647,6 +1694,13 @@
                      <span>${i18n.reversePages.get()}
                      </span>
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                 </label>
+             </div>
+             <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
+                 <label>
+                     <span>${i18n.dragToMove.get()}
+                     </span>
+                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px" title="Drag This To Move The Bar">
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 2; padding-left: 5px;">
@@ -1907,6 +1961,42 @@
       return 0;
     }
   }
+  function dragElement(element, dragHub, callback) {
+    let mouseX = 0, mouseY = 0;
+    (dragHub ?? element).addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      mouseX = event.clientX;
+      mouseY = event.clientY;
+      const wh = window.innerHeight;
+      const ww = window.innerWidth;
+      const mouseMove = (event2) => {
+        event2.preventDefault();
+        const newTop = element.offsetTop - (mouseY - event2.clientY);
+        const newLeft = element.offsetLeft - (mouseX - event2.clientX);
+        mouseX = event2.clientX;
+        mouseY = event2.clientY;
+        if (newTop <= wh / 2) {
+          element.style.top = newTop + "px";
+          element.style.bottom = "unset";
+        } else {
+          element.style.bottom = wh - newTop - element.clientHeight + "px";
+          element.style.top = "unset";
+        }
+        if (newLeft <= ww / 2) {
+          element.style.left = newLeft + "px";
+          element.style.right = "unset";
+        } else {
+          element.style.right = ww - newLeft - element.clientWidth + "px";
+          element.style.left = "unset";
+        }
+      };
+      document.addEventListener("mousemove", mouseMove);
+      document.addEventListener("mouseup", () => {
+        document.removeEventListener("mousemove", mouseMove);
+        callback && callback(element.offsetTop, element.offsetLeft);
+      }, { once: true });
+    });
+  }
   const HTML = createHTML();
   const IFQ = new IMGFetcherQueue();
   const IL = new IdleLoader(IFQ);
@@ -1958,9 +2048,9 @@
   const debouncer = new Debouncer();
   HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 500));
   HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
-  document.addEventListener("keyup", events.keyboardEvent);
   HTML.currPageElement.addEventListener("click", () => events.showBigImage(IFQ.currIndex));
   HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event));
+  document.addEventListener("keyup", events.keyboardEvent);
   HTML.imgLandLeft.addEventListener("click", (event) => {
     events.stepImageEvent(conf.reversePages ? "next" : "prev");
     event.stopPropagation();
@@ -1977,37 +2067,7 @@
     events.stepImageEvent("next");
     event.stopPropagation();
   });
-  const updatePageHelper = function(state, data) {
-    switch (state) {
-      case "fetching":
-        HTML.pageHelper.classList.add("pageHelperFetching");
-        break;
-      case "fetched":
-        HTML.pageHelper.classList.remove("pageHelperFetching");
-        break;
-      case "updateTotal":
-        if (!data) {
-          throw new Error("updateTotal data is undefined");
-        }
-        HTML.totalPageElement.textContent = data;
-        DLC.drawDebouce();
-        break;
-      case "updateCurrPage":
-        if (!data) {
-          throw new Error("updateCurrPage data is undefined");
-        }
-        HTML.currPageElement.textContent = data;
-        DLC.drawDebouce();
-        break;
-      case "updateFinished":
-        if (!data) {
-          throw new Error("updateFinished data is undefined");
-        }
-        HTML.finishedElement.textContent = data;
-        DLC.drawDebouce();
-        break;
-    }
-  };
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
+  dragElement(HTML.pageHelper, HTML.pageHelper.querySelector("#dragHub") ?? void 0, events.modPageHelperPostion);
 
 })(JSZip, saveAs);

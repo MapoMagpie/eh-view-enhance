@@ -2,6 +2,15 @@ import { ConfigBooleanType, ConfigNumberType, conf } from "../config";
 import { HTML, BIFM, IFQ, Oriented, PF, main } from "../main";
 import { i18n } from "../utils/i18n";
 
+function modPageHelperPostion() {
+  const style = HTML.pageHelper.style;
+  conf.pageHelperAbTop = style.top;
+  conf.pageHelperAbLeft = style.left;
+  conf.pageHelperAbBottom = style.bottom;
+  conf.pageHelperAbRight = style.right;
+  window.localStorage.setItem("cfg_", JSON.stringify(conf));
+}
+
 // modify config
 function modNumberConfigEvent(key: ConfigNumberType, data?: "add" | "minus") {
   const range = {
@@ -108,10 +117,10 @@ function bigImageWheelEvent(event: WheelEvent) {
 function keyboardEvent(event: KeyboardEvent) {
   switch (event.key) {
     case "ArrowLeft":
-      stepImageEvent("prev");
+      stepImageEvent(conf.reversePages ? "next" : "prev");
       break;
     case "ArrowRight":
-      stepImageEvent("next");
+      stepImageEvent(conf.reversePages ? "prev" : "next");
       break;
     case "Escape":
       hiddenBigImageEvent();
@@ -152,6 +161,7 @@ function showGuideEvent() {
 export const events = {
   modNumberConfigEvent,
   modBooleanConfigEvent,
+  modPageHelperPostion,
   togglePlaneEvent,
   showFullViewPlane,
   hiddenFullViewPlaneEvent,

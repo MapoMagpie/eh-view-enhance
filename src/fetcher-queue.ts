@@ -1,8 +1,9 @@
 import { Debouncer } from "./utils/debouncer";
 import { IMGFetcher } from "./img-fetcher";
-import { HTML, DL, IL, Oriented, updatePageHelper } from "./main";
+import { HTML, DL, IL, Oriented } from "./main";
 import { evLog } from "./utils/ev-log";
 import { conf } from "./config";
+import { updatePageHelper } from "./ui/page-helper";
 
 export class IMGFetcherQueue extends Array<IMGFetcher> {
   executableQueue: number[];

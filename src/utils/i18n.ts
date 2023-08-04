@@ -29,6 +29,7 @@ export const i18n = {
   downloading: new I18nValue("Downloading...", "下载中..."),
   downloaded: new I18nValue("Downloaded", "下载完成"),
   reversePages: new I18nValue("Reverse Pages", "反向翻页"),
+  dragToMove: new I18nValue("Drag to Move", "拖动移动"),
   originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
   help: new I18nValue(`
     <h1>GUIDE:</h1>

@@ -7,6 +7,7 @@ import { events } from "./ui/event";
 import { createHTML } from "./ui/html";
 import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
 import { Debouncer } from "./utils/debouncer";
+import { dragElement } from "./utils/drag-element";
 
 export type Oriented = "prev" | "next";
 
@@ -48,6 +49,7 @@ export function main(collapse: boolean) {
 HTML.bigImageFrame.addEventListener("click", events.hiddenBigImageEvent);
 // bigImageFrame.addEventListener("wheel", bigImageWheelEvent);
 HTML.bigImageFrame.addEventListener("contextmenu", (event) => event.preventDefault());
+
 HTML.configPlaneBTN.addEventListener("click", () => events.togglePlaneEvent("config"));
 HTML.configPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
 HTML.downloaderPlaneBTN.addEventListener("click", () => {
@@ -55,6 +57,8 @@ HTML.downloaderPlaneBTN.addEventListener("click", () => {
   events.togglePlaneEvent("downloader");
 });
 HTML.downloaderPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
+
+// modify config event
 for (const key of ConfigNumberKeys) {
   HTML.fullViewPlane.querySelector(`#${key}MinusBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
   HTML.fullViewPlane.querySelector(`#${key}AddBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
@@ -62,17 +66,21 @@ for (const key of ConfigNumberKeys) {
 for (const key of ConfigBooleanKeys) {
   HTML.fullViewPlane.querySelector(`#${key}Checkbox`)!.addEventListener("input", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
 }
+
 HTML.collapseBTN.addEventListener("click", () => main(true));
 HTML.gate.addEventListener("click", () => main(false));
+
 const debouncer = new Debouncer();
 //全屏阅读元素滚动事件
 HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 500));
 HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
-//按键事件
-document.addEventListener("keyup", events.keyboardEvent);
+
 HTML.currPageElement.addEventListener("click", () => events.showBigImage(IFQ.currIndex));
 HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event as WheelEvent));
 
+// 按键导航
+document.addEventListener("keyup", events.keyboardEvent);
+// 箭头导航
 HTML.imgLandLeft.addEventListener("click", (event) => {
   events.stepImageEvent(conf.reversePages ? "next" : "prev");
   event.stopPropagation();
@@ -90,37 +98,6 @@ HTML.imgLandBottom.addEventListener("click", (event) => {
   event.stopPropagation();
 });
 
-export type PageState = "fetching" | "fetched" | "updateTotal" | "updateCurrPage" | "updateFinished";
-//页码指示器通用修改事件
-export const updatePageHelper = function(state: PageState, data?: string) {
-  switch (state) {
-    case "fetching":
-      HTML.pageHelper.classList.add("pageHelperFetching");
-      break;
-    case "fetched":
-      HTML.pageHelper.classList.remove("pageHelperFetching");
-      break;
-    case "updateTotal":
-      if (!data) {
-        throw new Error("updateTotal data is undefined");
-      }
-      HTML.totalPageElement.textContent = data;
-      DLC.drawDebouce();
-      break;
-    case "updateCurrPage":
-      if (!data) {
-        throw new Error("updateCurrPage data is undefined");
-      }
-      HTML.currPageElement.textContent = data;
-      DLC.drawDebouce();
-      break;
-    case "updateFinished":
-      if (!data) {
-        throw new Error("updateFinished data is undefined");
-      }
-      HTML.finishedElement.textContent = data;
-      DLC.drawDebouce();
-      break;
-  }
-};
 HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
+
+dragElement(HTML.pageHelper, HTML.pageHelper.querySelector<HTMLElement>("#dragHub") ?? undefined, events.modPageHelperPostion);

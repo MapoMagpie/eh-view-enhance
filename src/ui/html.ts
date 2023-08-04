@@ -15,7 +15,6 @@ export function createHTML() {
     <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
     <a id="imgLandTop" hidden="true" class="imgLandTop"></a>
     <a id="imgLandBottom" hidden="true" class="imgLandBottom"></a>
-    
  </div>
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
@@ -95,6 +94,13 @@ export function createHTML() {
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
+             <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
+                 <label>
+                     <span>${i18n.dragToMove.get()}
+                     </span>
+                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px" title="Drag This To Move The Bar">
+                 </label>
+             </div>
              <div style="grid-column-start: 1; grid-column-end: 2; padding-left: 5px;">
                   <a id="showGuideElement" class="clickable">Help</a>
              </div>
@@ -133,25 +139,25 @@ export function createHTML() {
         // root element
         bigImageFrame: fullViewPlane.querySelector<HTMLElement>("#bigImageFrame")!,
         // page helper
-        pageHelper: fullViewPlane.querySelector("#pageHelper")!,
+        pageHelper: fullViewPlane.querySelector<HTMLElement>("#pageHelper")!,
         // config button in pageHelper
-        configPlaneBTN: fullViewPlane.querySelector("#configPlaneBTN")!,
+        configPlaneBTN: fullViewPlane.querySelector<HTMLElement>("#configPlaneBTN")!,
         // config plane mouse leave event
-        configPlane: fullViewPlane.querySelector("#configPlane")!,
+        configPlane: fullViewPlane.querySelector<HTMLElement>("#configPlane")!,
         // download button in pageHelper
-        downloaderPlaneBTN: fullViewPlane.querySelector("#downloaderPlaneBTN")!,
+        downloaderPlaneBTN: fullViewPlane.querySelector<HTMLElement>("#downloaderPlaneBTN")!,
         // download plane mouse leave event
-        downloaderPlane: fullViewPlane.querySelector("#downloaderPlane")!,
-        collapseBTN: fullViewPlane.querySelector("#collapseBTN")!,
-        gate: fullViewPlane.querySelector("#gate")!,
-        currPageElement: fullViewPlane.querySelector("#p-currPage")!,
-        totalPageElement: fullViewPlane.querySelector("#p-total")!,
-        finishedElement: fullViewPlane.querySelector("#p-finished")!,
-        showGuideElement: fullViewPlane.querySelector("#showGuideElement")!,
-        imgLandLeft: fullViewPlane.querySelector("#imgLandLeft")!,
-        imgLandRight: fullViewPlane.querySelector("#imgLandRight")!,
-        imgLandTop: fullViewPlane.querySelector("#imgLandTop")!,
-        imgLandBottom: fullViewPlane.querySelector("#imgLandBottom")!,
+        downloaderPlane: fullViewPlane.querySelector<HTMLElement>("#downloaderPlane")!,
+        collapseBTN: fullViewPlane.querySelector<HTMLElement>("#collapseBTN")!,
+        gate: fullViewPlane.querySelector<HTMLElement>("#gate")!,
+        currPageElement: fullViewPlane.querySelector<HTMLElement>("#p-currPage")!,
+        totalPageElement: fullViewPlane.querySelector<HTMLElement>("#p-total")!,
+        finishedElement: fullViewPlane.querySelector<HTMLElement>("#p-finished")!,
+        showGuideElement: fullViewPlane.querySelector<HTMLElement>("#showGuideElement")!,
+        imgLandLeft: fullViewPlane.querySelector<HTMLElement>("#imgLandLeft")!,
+        imgLandRight: fullViewPlane.querySelector<HTMLElement>("#imgLandRight")!,
+        imgLandTop: fullViewPlane.querySelector<HTMLElement>("#imgLandTop")!,
+        imgLandBottom: fullViewPlane.querySelector<HTMLElement>("#imgLandBottom")!,
         styleSheel,
     };
 }

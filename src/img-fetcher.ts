@@ -1,6 +1,7 @@
 import { conf } from "./config";
-import { BIFM, DLC, updatePageHelper } from "./main";
+import { BIFM, DLC } from "./main";
 import { regulars } from "./regulars";
+import { updatePageHelper } from "./ui/page-helper";
 import { evLog } from "./utils/ev-log";
 import { xhrWapper } from "./utils/query";
 

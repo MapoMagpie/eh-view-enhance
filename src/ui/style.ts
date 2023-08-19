@@ -39,16 +39,16 @@ export function loadStyleSheel() {
   z-index: 1001;
   background-color: #000000d6;
   transition: width 0.4s;
-  display: flex;
-  flex-direction: column;
+  // scroll-behavior: smooth; // only firefox is better this
 }
 .bigImageFrame > img {
-  width: 100%;
-  height: 100vh;
+  ${(conf.imgScale === 0 || !conf.imgScale) ? "height: 100vh;" : "width: " + conf.imgScale + "%;"}
   object-fit: contain;
-  border-bottom: 1px solid #ffffff;
+  // border-bottom: 1px solid #ffffff;
+  display: block;
+  margin: 0 auto;
 }
-.fullViewPlane > .pageHelper {
+.pageHelper {
   position: fixed;
   display: flex !important;
   justify-content: space-between;
@@ -64,6 +64,12 @@ export function loadStyleSheel() {
   color: rgb(135, 255, 184);
   font-size: 1rem;
   cursor: pointer;
+  transition: min-width 0.4s ease;
+  min-width: 0px;
+}
+.pageHelper.pageHelperExtend {
+  min-width: 337px;
+  transition: min-width 0.4s ease;
 }
 .pageHelper:hover {
   background-color: rgba(40, 40, 40, 0.8);
@@ -88,24 +94,46 @@ export function loadStyleSheel() {
   overflow: hidden;
   width: 337px;
 }
+.pageHelper .p-img-scale {
+  bottom: 30px;
+  display: flex;
+}
+.p-img-scale .scale-btn {
+  width: 30px;
+  text-align: center;
+  user-select: none;
+}
+.p-img-scale .scale-btn:hover {
+  color: white;
+  background-color: rgb(255, 200, 200);
+}
+.p-img-scale .scale-progress {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+}
+.scale-progress .scale-progress-inner {
+  height: 50%;
+  background-color: #ffffffa0;
+}
 .p-collapse {
   height: 0px !important;
   transition: height 0.4s;
 }
 .pageHelper .b-main {
-  width: 284px;
+  width: 0px;
   overflow: hidden !important;
-  transition: width 0.4s;
   display: flex;
   justify-content: space-between;
   white-space: nowrap !important;
+  transition: flex-grow 0.6s ease;
 }
-.b-collapse {
-  width: 0px !important;
-  transition: width 0.4s;
+.pageHelperExtend .b-main {
+  flex-grow: 1;
+  transition: flex-grow 0.6s ease;
 }
 .pageHelper .p-config {
-  height: 300px;
+  height: 340px;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
@@ -215,12 +243,13 @@ export function loadStyleSheel() {
   cursor: url("https://exhentai.org/img/b.png"), auto;
 }
 .tooltip {
-  position: relative;
   border-bottom: 1px dotted black;
 }
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 100px;
+  width: 337px;
+  top: 0px;
+  right: 0px;
   background-color: black;
   color: #fff;
   text-align: center;

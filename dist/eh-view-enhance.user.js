@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.0.1
+// @version            4.0.2
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -35,14 +35,14 @@
     return {
       backgroundImage: `data:image/png;base64,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`,
       colCount,
-      consecutiveMode: false,
+      readMode: "consecutively",
       autoLoad: true,
       fetchOriginal: false,
       restartIdleLoader: 8e3,
       threads: 3,
       downloadThreads: 3,
-      timeout: 16,
-      version: "4.0.1",
+      timeout: 24,
+      version: "4.0.5",
       debug: true,
       first: true,
       disableDownload: false,
@@ -50,10 +50,12 @@
       pageHelperAbTop: "unset",
       pageHelperAbLeft: "unset",
       pageHelperAbBottom: "50px",
-      pageHelperAbRight: "50px"
+      pageHelperAbRight: "50px",
+      imgScale: 0,
+      stickyMouse: "enable"
     };
   }
-  const VERSION = "4.0.1";
+  const VERSION = "4.0.5";
   function getConf() {
     let confStr = window.localStorage.getItem("cfg_");
     if (confStr) {
@@ -67,7 +69,8 @@
     return conf2;
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout"];
-  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "consecutiveMode", "reversePages"];
+  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages"];
+  const ConfigSelectKeys = ["readMode", "stickyMouse"];
   const conf = getConf();
   const regulars = {
     /** 有压缩的大图地址 */
@@ -194,15 +197,11 @@
         downloadBar.innerHTML = `
       <progress style="position: absolute; width: 100%; height: 10px;" value="0" max="100" />
       `;
-        for (let i = 0; i < downloadBar.childNodes.length; i++) {
-          const node = downloadBar.childNodes[i];
-          if (node.nodeType === 1) {
-            node.nodeValue = this.downloadState.loaded / this.downloadState.total * 100 + "";
-            break;
-          }
-        }
         this.downloadBar = downloadBar;
         this.root.appendChild(this.downloadBar);
+      }
+      if (this.downloadBar) {
+        this.downloadBar.querySelector("progress").setAttribute("value", this.downloadState.loaded / this.downloadState.total * 100 + "");
       }
       DLC.drawDebouce();
     }
@@ -447,26 +446,30 @@
     }
   }
   const i18n = {
+    imageScale: new I18nValue("SCALE", "缩放"),
     download: new I18nValue("DL", "下载"),
     config: new I18nValue("CONF", "配置"),
     collapse: new I18nValue("FOLD", "收起"),
     columns: new I18nValue("Columns", "每行数量"),
-    consecutiveMode: new I18nValue("Consecutive Mode", "滚屏模式"),
+    readMode: new I18nValue("Consecutive Mode", "滚屏模式"),
+    readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
     maxPreloadThreads: new I18nValue("PreloadThreads", "最大同时加载"),
+    maxPreloadThreadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
     maxDownloadThreads: new I18nValue("DonloadThreads", "最大同时下载"),
+    maxDownloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
     timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
     bestQuality: new I18nValue("RawImage", "最佳质量"),
     autoLoad: new I18nValue("AutoLoad", "自动加载"),
-    consecutiveModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
-    maxPreloadThreadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
-    maxDownloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
-    bestQualityTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
     autoLoadTooltip: new I18nValue("", "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。"),
+    bestQualityTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
     forceDownload: new I18nValue("Take Loaded", "强制下载已加载的"),
     startDownload: new I18nValue("Start Download", "开始下载"),
     downloading: new I18nValue("Downloading...", "下载中..."),
     downloaded: new I18nValue("Downloaded", "下载完成"),
     reversePages: new I18nValue("Reverse Pages", "反向翻页"),
+    reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
+    stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
+    stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
     help: new I18nValue(`
@@ -498,13 +501,25 @@
   `)
   };
   class Debouncer {
-    constructor() {
+    constructor(mode) {
       __publicField(this, "tids");
+      __publicField(this, "mode");
+      __publicField(this, "lastExecTime");
       this.tids = {};
+      this.lastExecTime = Date.now();
+      this.mode = mode || "debounce";
     }
     addEvent(id, event, timeout) {
-      window.clearTimeout(this.tids[id]);
-      this.tids[id] = window.setTimeout(event, timeout);
+      if (this.mode === "throttle") {
+        const now = Date.now();
+        if (now - this.lastExecTime >= timeout) {
+          this.lastExecTime = now;
+          event();
+        }
+      } else if (this.mode === "debounce") {
+        window.clearTimeout(this.tids[id]);
+        this.tids[id] = window.setTimeout(event, timeout);
+      }
     }
   }
   function modPageHelperPostion() {
@@ -554,7 +569,17 @@
     conf[key] = (inputElement == null ? void 0 : inputElement.checked) || false;
     window.localStorage.setItem("cfg_", JSON.stringify(conf));
   }
+  function modSelectConfigEvent(key) {
+    const inputElement = document.querySelector(`#${key}Select`);
+    const value = inputElement == null ? void 0 : inputElement.value;
+    if (value) {
+      conf[key] = value;
+      window.localStorage.setItem("cfg_", JSON.stringify(conf));
+    }
+  }
   function mouseleavePlaneEvent(target) {
+    const optionElement = target.closest("select");
+    console.log("closest: ", optionElement);
     target.classList.add("p-collapse");
   }
   function togglePlaneEvent(id, collapse) {
@@ -595,8 +620,7 @@
   function hiddenBigImageEvent(event) {
     if (event && event.target && event.target.tagName === "SPAN")
       return;
-    HTML.bigImageFrame.classList.add("collapse");
-    window.setTimeout(() => BIFM.hidden(), 700);
+    BIFM.hidden();
   }
   function bigImageWheelEvent(event) {
     stepImageEvent(event.deltaY > 0 ? "next" : "prev");
@@ -618,7 +642,6 @@
     showBigImage(IFQ.findImgIndex(event.target));
   }
   function showBigImage(start) {
-    HTML.bigImageFrame.classList.remove("collapse");
     BIFM.show();
     IFQ.do(start);
   }
@@ -638,6 +661,7 @@
   const events = {
     modNumberConfigEvent,
     modBooleanConfigEvent,
+    modSelectConfigEvent,
     modPageHelperPostion,
     togglePlaneEvent,
     showFullViewPlane,
@@ -985,7 +1009,7 @@
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
     finishedReport(index) {
       const imgFetcher = this[index];
-      if (imgFetcher.stage !== 3)
+      if (imgFetcher.stage !== FetchState.DONE)
         return;
       if (DL) {
         if (this.finishedIndex.indexOf(index) < 0) {
@@ -1024,7 +1048,7 @@
     pushInExecutableQueue(oriented) {
       this.executableQueue = [];
       for (let count = 0, index = this.currIndex; this.pushExecQueueSlave(index, oriented, count); oriented === "next" ? ++index : --index) {
-        if (this[index].stage === 3)
+        if (this[index].stage === FetchState.DONE)
           continue;
         this.executableQueue.push(index);
         count++;
@@ -1084,7 +1108,7 @@
       for (let i = 0; i < this.processingIndexList.length; i++) {
         const processingIndex = this.processingIndexList[i];
         const imgFetcher = this.queue[processingIndex];
-        if (imgFetcher.lock || imgFetcher.stage === 3) {
+        if (imgFetcher.lock || imgFetcher.stage === FetchState.DONE) {
           continue;
         }
         imgFetcher.onFinished("IDLE-REPORT", () => {
@@ -1104,7 +1128,7 @@
       let restart = false;
       for (let j = processedIndex, max = this.queue.length - 1; j <= max; j++) {
         const imgFetcher = this.queue[j];
-        if (imgFetcher.stage === 3 || imgFetcher.lock) {
+        if (imgFetcher.stage === FetchState.DONE || imgFetcher.lock) {
           if (j === max && !restart) {
             j = -1;
             max = processedIndex - 1;
@@ -1406,20 +1430,19 @@
   z-index: 1001;
   background-color: #000000d6;
   transition: width 0.4s;
-  display: flex;
-  flex-direction: column;
+  // scroll-behavior: smooth; // only firefox is better this
 }
 .bigImageFrame > img {
-  width: 100%;
-  height: 100vh;
+  ${conf.imgScale === 0 || !conf.imgScale ? "height: 100vh;" : "width: " + conf.imgScale + "%;"}
   object-fit: contain;
-  border-bottom: 1px solid #ffffff;
+  // border-bottom: 1px solid #ffffff;
+  display: block;
+  margin: 0 auto;
 }
-.fullViewPlane > .pageHelper {
+.pageHelper {
   position: fixed;
   display: flex !important;
   justify-content: space-between;
-  right: 50px;
   line-height: 25px;
   top: ${conf.pageHelperAbTop};
   left: ${conf.pageHelperAbLeft};
@@ -1432,6 +1455,12 @@
   color: rgb(135, 255, 184);
   font-size: 1rem;
   cursor: pointer;
+  transition: min-width 0.4s ease;
+  min-width: 0px;
+}
+.pageHelper.pageHelperExtend {
+  min-width: 337px;
+  transition: min-width 0.4s ease;
 }
 .pageHelper:hover {
   background-color: rgba(40, 40, 40, 0.8);
@@ -1456,24 +1485,46 @@
   overflow: hidden;
   width: 337px;
 }
+.pageHelper .p-img-scale {
+  bottom: 30px;
+  display: flex;
+}
+.p-img-scale .scale-btn {
+  width: 30px;
+  text-align: center;
+  user-select: none;
+}
+.p-img-scale .scale-btn:hover {
+  color: white;
+  background-color: rgb(255, 200, 200);
+}
+.p-img-scale .scale-progress {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+}
+.scale-progress .scale-progress-inner {
+  height: 50%;
+  background-color: #ffffffa0;
+}
 .p-collapse {
   height: 0px !important;
   transition: height 0.4s;
 }
 .pageHelper .b-main {
-  width: 284px;
+  width: 0px;
   overflow: hidden !important;
-  transition: width 0.4s;
   display: flex;
   justify-content: space-between;
   white-space: nowrap !important;
+  transition: flex-grow 0.6s ease;
 }
-.b-collapse {
-  width: 0px !important;
-  transition: width 0.4s;
+.pageHelperExtend .b-main {
+  flex-grow: 1;
+  transition: flex-grow 0.6s ease;
 }
 .pageHelper .p-config {
-  height: 300px;
+  height: 340px;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
@@ -1583,12 +1634,13 @@
   cursor: url("https://exhentai.org/img/b.png"), auto;
 }
 .tooltip {
-  position: relative;
   border-bottom: 1px dotted black;
 }
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 100px;
+  width: 337px;
+  top: 0px;
+  right: 0px;
   background-color: black;
   color: #fff;
   text-align: center;
@@ -1620,6 +1672,14 @@
  </div>
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
+        <div id="imgScaleBar" class="plane p-img-scale" style="display: none;">
+            <div><span>${i18n.imageScale.get()}:</span></div>
+            <div class="scale-status"><span id="imgScaleStatus">${conf.imgScale}%</span></div>
+            <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
+            <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
+            <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
+            <div id="imgScaleResetBTN" class="scale-btn" style="width: 50px;"><span>RESET</span></div>
+        </div>
          <div id="configPlane" class="plane p-config p-collapse">
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
@@ -1634,7 +1694,7 @@
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
                      <span>${i18n.maxPreloadThreads.get()}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left: -100px">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
+                        <span class="tooltip"><span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
                          <button id="threadsMinusBTN" type="button">-</button>
@@ -1646,7 +1706,7 @@
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
                      <span>${i18n.maxDownloadThreads.get()}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; left: -100px">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
+                        <span class="tooltip"><span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
                          <button id="downloadThreadsMinusBTN" type="button">-</button>
@@ -1668,42 +1728,57 @@
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
                      <span>${i18n.bestQuality.get()}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left: -100px">${i18n.bestQualityTooltip.get()}</span></span>:
+                        <span class="tooltip"><span class="tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
                      </span>
                      <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
+             <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
                  <label>
                      <span>${i18n.autoLoad.get()}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; right:0;">${i18n.autoLoadTooltip.get()}</span></span>:
+                        <span class="tooltip"><span class="tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
                      </span>
                      <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <label>
-                     <span>${i18n.consecutiveMode.get()}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left:0;">${i18n.consecutiveModeTooltip.get()}</span></span>:
+                     <span>${i18n.readMode.get()}
+                        <span class="tooltip"><span class="tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
                      </span>
-                     <input id="consecutiveModeCheckbox" ${conf.consecutiveMode ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                     <select id="readModeSelect" style="height: 18px; width: 100px; border-radius: 0px;">
+                        <option value="singlePage" ${conf.readMode == "singlePage" ? "selected" : ""}>Single Page</option>
+                        <option value="consecutively" ${conf.readMode == "consecutively" ? "selected" : ""}>Consecutively</option>
+                     </select>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
                  <label>
                      <span>${i18n.reversePages.get()}
+                        <span class="tooltip"><span class="tooltiptext">${i18n.reversePages.get()}</span></span>:
                      </span>
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
                  <label>
-                     <span>${i18n.dragToMove.get()}
+                     <span>${i18n.stickyMouse.get()}
+                        <span class="tooltip"><span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
                      </span>
+                     <select id="stickyMouseSelect" style="height: 18px; width: 70px; border-radius: 0px;">
+                        <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
+                        <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
+                        <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
+                     </select>
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 5; padding-left: 5px;">
+                 <label>
+                     <span>${i18n.dragToMove.get()}:</span>
                      <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px" title="Drag This To Move The Bar">
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 2; padding-left: 5px;">
+             <div style="grid-column-start: 5; grid-column-end: 8; padding-left: 5px;">
                   <a id="showGuideElement" class="clickable">Help</a>
              </div>
          </div>
@@ -1717,7 +1792,7 @@
          </div>
      </div>
      <div>
-         <span id="gate" style="font-weight: 800; font-size: large; text-align: center;">&lessdot;📖</span>
+         <span id="gate" style="font-weight: 800; font-size: large; text-align: center; white-space: nowrap;">&lessdot;📖</span>
      </div>
      <!-- <span>展开</span> -->
      <div id="main" class="b-main b-collapse">
@@ -1760,19 +1835,59 @@
       imgLandRight: fullViewPlane.querySelector("#imgLandRight"),
       imgLandTop: fullViewPlane.querySelector("#imgLandTop"),
       imgLandBottom: fullViewPlane.querySelector("#imgLandBottom"),
+      imgScaleBar: fullViewPlane.querySelector("#imgScaleBar"),
       styleSheel
     };
   }
   class BigImageFrameManager {
-    constructor(frame, queue) {
+    constructor(frame, queue, imgScaleBar) {
       __publicField(this, "frame");
       __publicField(this, "queue");
-      __publicField(this, "currImageNode");
       __publicField(this, "lockInit");
+      __publicField(this, "currImageNode");
+      __publicField(this, "lastMouseY");
+      __publicField(this, "imgScaleBar");
       this.frame = frame;
       this.queue = queue;
+      this.imgScaleBar = imgScaleBar;
       this.frame.addEventListener("wheel", (event) => this.onwheel(event));
+      this.frame.addEventListener("click", events.hiddenBigImageEvent);
+      const debouncer2 = new Debouncer("throttle");
+      this.frame.addEventListener("mousemove", (event) => {
+        debouncer2.addEvent("BIG-IMG-MOUSE-MOVE", () => {
+          if (this.lastMouseY) {
+            this.stickyMouse(event, this.lastMouseY);
+          }
+          this.lastMouseY = event.clientY;
+        }, 5);
+      });
       this.lockInit = false;
+      this.initImgScaleBar();
+    }
+    initImgScaleBar() {
+      var _a, _b, _c;
+      (_a = this.imgScaleBar.querySelector("#imgIncreaseBTN")) == null ? void 0 : _a.addEventListener("click", () => {
+        conf.imgScale = this.scaleBigImages(1, 5);
+        window.localStorage.setItem("cfg_", JSON.stringify(conf));
+        this.flushImgScaleBar();
+      });
+      (_b = this.imgScaleBar.querySelector("#imgDecreaseBTN")) == null ? void 0 : _b.addEventListener("click", () => {
+        var _a2;
+        conf.imgScale = this.scaleBigImages(-1, 5);
+        evLog("conf.imgScale: ", conf.imgScale, ", currImageNode width: ", (_a2 = this.currImageNode) == null ? void 0 : _a2.style.width);
+        window.localStorage.setItem("cfg_", JSON.stringify(conf));
+        this.flushImgScaleBar();
+      });
+      (_c = this.imgScaleBar.querySelector("#imgScaleResetBTN")) == null ? void 0 : _c.addEventListener("click", () => {
+        this.resetScaleBigImages();
+        conf.imgScale = 0;
+        window.localStorage.setItem("cfg_", JSON.stringify(conf));
+        this.flushImgScaleBar();
+      });
+    }
+    flushImgScaleBar() {
+      this.imgScaleBar.querySelector("#imgScaleStatus").innerHTML = `${conf.imgScale}%`;
+      this.imgScaleBar.querySelector("#imgScaleProgressInner").style.width = `${conf.imgScale}%`;
     }
     setNow(index) {
       if (this.lockInit) {
@@ -1794,10 +1909,12 @@
       for (let i = 0; i < indices.length; i++) {
         const index = indices[i];
         const imgNode = imgNodes[i];
-        if (index === start)
-          this.currImageNode = imgNode;
         this.setImgNode(imgNode, index);
+        if (index == start) {
+          this.currImageNode = imgNode;
+        }
       }
+      this.frame.scrollTo({ top: 0, behavior: "smooth" });
     }
     createImgElement() {
       const img = document.createElement("img");
@@ -1805,19 +1922,20 @@
       return img;
     }
     hidden() {
-      this.frame.childNodes.forEach((child) => child.hidden = true);
+      this.frame.classList.add("collapse");
+      window.setTimeout(() => this.frame.childNodes.forEach((child) => child.hidden = true), 700);
+      this.imgScaleBar.style.display = "none";
     }
     show() {
+      this.frame.classList.remove("collapse");
       this.frame.childNodes.forEach((child) => child.hidden = false);
+      this.imgScaleBar.style.display = "";
     }
     getImgNodes() {
       return Array.from(this.frame.querySelectorAll("img"));
     }
     onwheel(event) {
-      if (event.buttons === 2) {
-        event.preventDefault();
-        this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 10);
-      } else if (conf.consecutiveMode) {
+      if (conf.readMode === "consecutively") {
         this.consecutive(event);
       } else {
         event.preventDefault();
@@ -1830,8 +1948,8 @@
       let imgNodes = this.getImgNodes();
       let index = this.findImgNodeIndexOnCenter(imgNodes, event.deltaY);
       const centerNode = imgNodes[index];
+      this.currImageNode = centerNode;
       const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
-      console.log("before extend, offsetTop is", centerNode.offsetTop);
       const indexOffset = this.tryExtend();
       index = index + indexOffset;
       if (indexOffset !== 0) {
@@ -1839,6 +1957,10 @@
       }
       imgNodes = this.getImgNodes();
       const indexOfQueue = parseInt(imgNodes[index].getAttribute("d-index"));
+      if (indexOfQueue != this.queue.currIndex) {
+        this.lockInit = true;
+        this.queue.do(indexOfQueue, oriented);
+      }
       if (oriented === "next" && index !== imgNodes.length - 1)
         return;
       if (oriented === "prev" && index !== 0)
@@ -1855,13 +1977,16 @@
         this.setImgNode(imgNodes[imgNodes.length - 1], parseInt(centerNode.getAttribute("d-index")) - 1);
       }
       this.restoreScrollTop(centerNode, distance, event.deltaY);
-      this.lockInit = true;
-      this.queue.do(indexOfQueue, oriented);
     }
     restoreScrollTop(imgNode, distance, deltaY) {
-      this.frame.scrollTo(0, imgNode.offsetTop - distance);
-      this.frame.scrollTo({ top: imgNode.offsetTop - distance + deltaY, behavior: "smooth" });
+      this.frame.scrollTo({ top: imgNode.offsetTop - distance + deltaY, behavior: "instant" });
     }
+    /**
+     * Usually, when the central image occupies the full height of the screen, 
+     * it is simple to obtain the offsetTop of that image element. 
+     * However, when encountering images with aspect ratios that exceed the screen's aspect ratio, 
+     * it is necessary to rely on natureWidth and natureHeight to obtain the actual offsetTop.
+     */
     getRealOffsetTop(imgNode) {
       const naturalRatio = imgNode.naturalWidth / imgNode.naturalHeight;
       const clientRatio = imgNode.clientWidth / imgNode.clientHeight;
@@ -1928,7 +2053,7 @@
     setImgNode(imgNode, index) {
       imgNode.setAttribute("d-index", index.toString());
       const imgFetcher = this.queue[index];
-      if (imgFetcher.stage === 3) {
+      if (imgFetcher.stage === FetchState.DONE) {
         imgNode.src = imgFetcher.blobUrl;
       } else {
         imgNode.src = imgFetcher.imgElement.getAttribute("asrc");
@@ -1939,24 +2064,77 @@
         });
       }
     }
+    /**
+     * @param fix: 1 or -1, means scale up or down
+     * @param rate: step of scale, eg: current scale is 80, rate is 10, then new scale is 90
+     */
     scaleBigImages(fix, rate) {
+      var _a;
+      let percent = 0;
+      const cssRules = Array.from(((_a = HTML.styleSheel.sheet) == null ? void 0 : _a.cssRules) ?? []);
+      for (const cssRule of cssRules) {
+        if (cssRule instanceof CSSStyleRule) {
+          if (cssRule.selectorText === ".bigImageFrame > img") {
+            if (cssRule.style.height === "100vh") {
+              if (this.currImageNode) {
+                const vw = this.frame.offsetWidth;
+                const width = this.currImageNode.offsetWidth;
+                percent = Math.round(width / vw * 100);
+                cssRule.style.width = `${percent}vw`;
+                cssRule.style.height = "unset";
+              } else {
+                evLog("ultra image frame manager > scaleBigImages > currImageNode is null");
+              }
+            }
+            percent = Math.max(parseInt(cssRule.style.width) + rate * fix, 10);
+            cssRule.style.width = `${percent}vw`;
+            break;
+          }
+        }
+      }
+      return percent;
+    }
+    resetScaleBigImages() {
       var _a;
       const cssRules = Array.from(((_a = HTML.styleSheel.sheet) == null ? void 0 : _a.cssRules) ?? []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
           if (cssRule.selectorText === ".bigImageFrame > img") {
-            cssRule.style.height = `${Math.max(parseInt(cssRule.style.height) + rate * fix, 100)}vh`;
+            cssRule.style.height = "100vh";
+            cssRule.style.width = "unset";
             break;
           }
         }
+      }
+    }
+    stickyMouse(event, lastMouseY) {
+      if (conf.readMode === "singlePage" && this.frame.scrollHeight > this.frame.offsetHeight && conf.stickyMouse !== "disable") {
+        let distance = event.clientY - lastMouseY;
+        if (conf.stickyMouse === "enable") {
+          distance = -distance;
+        }
+        const rate = (this.frame.scrollHeight - this.frame.offsetHeight) / (this.frame.offsetHeight / 4) * 3;
+        let scrollTop = this.frame.scrollTop + distance * rate;
+        if (distance > 0) {
+          if (scrollTop > this.frame.scrollHeight - this.frame.offsetHeight) {
+            scrollTop = this.frame.scrollHeight - this.frame.offsetHeight;
+          }
+        } else {
+          if (scrollTop < 0) {
+            scrollTop = 0;
+          }
+        }
+        this.frame.scrollTo({ top: scrollTop, behavior: "auto" });
       }
     }
     findImgNodeIndexOnCenter(imgNodes, fixOffset) {
       const centerLine = this.frame.offsetHeight / 2;
       for (let i = 0; i < imgNodes.length; i++) {
         const imgNode = imgNodes[i];
-        if (imgNode.offsetTop + imgNode.offsetHeight + fixOffset - this.frame.scrollTop > centerLine)
+        const realOffsetTop = imgNode.offsetTop + fixOffset - this.frame.scrollTop;
+        if (realOffsetTop < centerLine && realOffsetTop + imgNode.offsetHeight >= centerLine) {
           return i;
+        }
       }
       return 0;
     }
@@ -2000,7 +2178,7 @@
   const HTML = createHTML();
   const IFQ = new IMGFetcherQueue();
   const IL = new IdleLoader(IFQ);
-  const BIFM = new BigImageFrameManager(HTML.bigImageFrame, IFQ);
+  const BIFM = new BigImageFrameManager(HTML.bigImageFrame, IFQ, HTML.imgScaleBar);
   const PF = new PageFetcher(IFQ, IL);
   const DL = new Downloader(IFQ, IL);
   const DLC = new DownloaderCanvas("downloaderCanvas", IFQ);
@@ -2011,14 +2189,14 @@
   }
   const signal = { first: true };
   function main(collapse) {
-    const pageHelperEle = document.querySelector("#pageHelper #main");
+    const pageHelperEle = document.querySelector("#pageHelper");
     if (pageHelperEle) {
       if (collapse) {
-        pageHelperEle.classList.add("b-collapse");
+        pageHelperEle.classList.remove("pageHelperExtend");
         events.hiddenFullViewPlane();
         ["config", "downloader"].forEach((id) => events.togglePlaneEvent(id, true));
       } else {
-        pageHelperEle.classList.remove("b-collapse");
+        pageHelperEle.classList.add("pageHelperExtend");
         events.showFullViewPlane();
         if (signal.first) {
           signal.first = false;
@@ -2027,10 +2205,10 @@
       }
     }
   }
-  HTML.bigImageFrame.addEventListener("click", events.hiddenBigImageEvent);
-  HTML.bigImageFrame.addEventListener("contextmenu", (event) => event.preventDefault());
   HTML.configPlaneBTN.addEventListener("click", () => events.togglePlaneEvent("config"));
-  HTML.configPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target));
+  HTML.configPlane.addEventListener("mouseleave", (event) => {
+    events.mouseleavePlaneEvent(event.target);
+  });
   HTML.downloaderPlaneBTN.addEventListener("click", () => {
     DL.check();
     events.togglePlaneEvent("downloader");
@@ -2042,6 +2220,9 @@
   }
   for (const key of ConfigBooleanKeys) {
     HTML.fullViewPlane.querySelector(`#${key}Checkbox`).addEventListener("input", () => events.modBooleanConfigEvent(key));
+  }
+  for (const key of ConfigSelectKeys) {
+    HTML.fullViewPlane.querySelector(`#${key}Select`).addEventListener("change", () => events.modSelectConfigEvent(key));
   }
   HTML.collapseBTN.addEventListener("click", () => main(true));
   HTML.gate.addEventListener("click", () => main(false));

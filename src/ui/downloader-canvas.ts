@@ -1,5 +1,5 @@
 import { IMGFetcherQueue } from "../fetcher-queue";
-import { IMGFetcher } from "../img-fetcher";
+import { FetchState, IMGFetcher } from "../img-fetcher";
 import { Debouncer } from "../utils/debouncer";
 import { events } from "./event";
 
@@ -168,9 +168,9 @@ export class DownloaderCanvas {
     isCurr: boolean,
     isSelected: boolean
   ) {
-    if (imgFetcher.stage == 3) {
+    if (imgFetcher.stage == FetchState.DONE) {
       this.ctx.fillStyle = "rgb(110, 200, 120)";
-    } else if (imgFetcher.stage === 2) {
+    } else if (imgFetcher.stage === FetchState.DATA) {
       const percent =
         imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
       this.ctx.fillStyle = `rgba(110, ${Math.ceil(

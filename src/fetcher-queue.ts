@@ -1,5 +1,5 @@
 import { Debouncer } from "./utils/debouncer";
-import { IMGFetcher } from "./img-fetcher";
+import { FetchState, IMGFetcher } from "./img-fetcher";
 import { HTML, DL, IL, Oriented } from "./main";
 import { evLog } from "./utils/ev-log";
 import { conf } from "./config";
@@ -65,7 +65,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
   finishedReport(index: number) {
     const imgFetcher = this[index];
-    if (imgFetcher.stage !== 3) return;
+    if (imgFetcher.stage !== FetchState.DONE) return;
     if (DL) {
       if (this.finishedIndex.indexOf(index) < 0) {
         DL.addToDownloadZip(imgFetcher);
@@ -106,7 +106,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     //把要执行获取器先放置到队列中，延迟执行
     this.executableQueue = [];
     for (let count = 0, index = this.currIndex; this.pushExecQueueSlave(index, oriented, count); oriented === "next" ? ++index : --index) {
-      if (this[index].stage === 3) continue;
+      if (this[index].stage === FetchState.DONE) continue;
       this.executableQueue.push(index);
       count++;
     }

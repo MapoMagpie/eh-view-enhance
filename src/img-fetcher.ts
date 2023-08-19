@@ -89,16 +89,11 @@ export class IMGFetcher {
       downloadBar.innerHTML = `
       <progress style="position: absolute; width: 100%; height: 10px;" value="0" max="100" />
       `;
-      for (let i = 0; i < downloadBar.childNodes.length; i++) {
-        const node = downloadBar.childNodes[i];
-        if (node.nodeType === 1) {
-          node.nodeValue = (this.downloadState.loaded / this.downloadState.total) * 100 + "";
-          break;
-        }
-      }
-      // .filter((node) => node.nodeType === 1)[0].value = (this.downloadState.loaded / this.downloadState.total) * 100;
       this.downloadBar = downloadBar;
       this.root.appendChild(this.downloadBar);
+    }
+    if (this.downloadBar) {
+      this.downloadBar.querySelector("progress")!.setAttribute("value", (this.downloadState.loaded / this.downloadState.total) * 100 + "");
     }
     DLC.drawDebouce();
   }
@@ -227,6 +222,7 @@ export class IMGFetcher {
       evLog("获取大图页面内容失败！", error);
     }
     if (!text) return false;
+    // todo Your IP address has been temporarily banned for excessive pageloads which indicates that you are using automated mirroring/harvesting software. The ban expires in 2 days and 23 hours
     //抽取最佳质量的图片的地址
     if (conf.fetchOriginal || this.fetchOriginal) {
       const matchs = regulars.original.exec(text);

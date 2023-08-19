@@ -1,4 +1,4 @@
-import { ConfigBooleanKeys, ConfigBooleanType, ConfigNumberKeys, ConfigNumberType, conf } from "./config";
+import { ConfigBooleanKeys, ConfigBooleanType, ConfigNumberKeys, ConfigNumberType, ConfigSelectKeys, ConfigSelectType, conf } from "./config";
 import { Downloader, DownloaderCanvas } from "./downloader";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
@@ -14,7 +14,7 @@ export type Oriented = "prev" | "next";
 export const HTML = createHTML();
 export const IFQ: IMGFetcherQueue = new IMGFetcherQueue();
 export const IL: IdleLoader = new IdleLoader(IFQ);
-export const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML.bigImageFrame, IFQ);
+export const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML.bigImageFrame, IFQ, HTML.imgScaleBar);
 export const PF: PageFetcher = new PageFetcher(IFQ, IL);
 export const DL: Downloader = new Downloader(IFQ, IL);
 export const DLC: DownloaderCanvas = new DownloaderCanvas("downloaderCanvas", IFQ);
@@ -28,14 +28,14 @@ if (conf["first"]) {
 const signal = { first: true };
 // 入口
 export function main(collapse: boolean) {
-  const pageHelperEle = document.querySelector("#pageHelper #main");
+  const pageHelperEle = document.querySelector("#pageHelper");
   if (pageHelperEle) {
     if (collapse) {
-      pageHelperEle.classList.add("b-collapse");
+      pageHelperEle.classList.remove("pageHelperExtend");
       events.hiddenFullViewPlane();
       ["config", "downloader"].forEach(id => events.togglePlaneEvent(id, true));
     } else {
-      pageHelperEle.classList.remove("b-collapse");
+      pageHelperEle.classList.add("pageHelperExtend");
       events.showFullViewPlane();
       if (signal.first) {
         signal.first = false;
@@ -46,12 +46,11 @@ export function main(collapse: boolean) {
   }
 }
 
-HTML.bigImageFrame.addEventListener("click", events.hiddenBigImageEvent);
-// bigImageFrame.addEventListener("wheel", bigImageWheelEvent);
-HTML.bigImageFrame.addEventListener("contextmenu", (event) => event.preventDefault());
 
 HTML.configPlaneBTN.addEventListener("click", () => events.togglePlaneEvent("config"));
-HTML.configPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
+HTML.configPlane.addEventListener("mouseleave", (event) => {
+  events.mouseleavePlaneEvent(event.target as HTMLElement);
+});
 HTML.downloaderPlaneBTN.addEventListener("click", () => {
   DL.check();
   events.togglePlaneEvent("downloader");
@@ -65,6 +64,9 @@ for (const key of ConfigNumberKeys) {
 }
 for (const key of ConfigBooleanKeys) {
   HTML.fullViewPlane.querySelector(`#${key}Checkbox`)!.addEventListener("input", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
+}
+for (const key of ConfigSelectKeys) {
+  HTML.fullViewPlane.querySelector(`#${key}Select`)!.addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
 }
 
 HTML.collapseBTN.addEventListener("click", () => main(true));

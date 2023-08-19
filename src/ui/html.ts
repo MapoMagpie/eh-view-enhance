@@ -18,6 +18,14 @@ export function createHTML() {
  </div>
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
+        <div id="imgScaleBar" class="plane p-img-scale" style="display: none;">
+            <div><span>${i18n.imageScale.get()}:</span></div>
+            <div class="scale-status"><span id="imgScaleStatus">${conf.imgScale}%</span></div>
+            <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
+            <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
+            <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
+            <div id="imgScaleResetBTN" class="scale-btn" style="width: 50px;"><span>RESET</span></div>
+        </div>
          <div id="configPlane" class="plane p-config p-collapse">
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
@@ -32,7 +40,7 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
                      <span>${i18n.maxPreloadThreads.get()}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left: -100px">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
+                        <span class="tooltip"><span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
                          <button id="threadsMinusBTN" type="button">-</button>
@@ -44,7 +52,7 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
                      <span>${i18n.maxDownloadThreads.get()}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; left: -100px">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
+                        <span class="tooltip"><span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
                          <button id="downloadThreadsMinusBTN" type="button">-</button>
@@ -66,42 +74,57 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
                      <span>${i18n.bestQuality.get()}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left: -100px">${i18n.bestQualityTooltip.get()}</span></span>:
+                        <span class="tooltip"><span class="tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
                      </span>
                      <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
+             <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
                  <label>
                      <span>${i18n.autoLoad.get()}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 200px; right:0;">${i18n.autoLoadTooltip.get()}</span></span>:
+                        <span class="tooltip"><span class="tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
                      </span>
                      <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <label>
-                     <span>${i18n.consecutiveMode.get()}
-                        <span class="tooltip"><span class="tooltiptext" style="width: 220px; left:0;">${i18n.consecutiveModeTooltip.get()}</span></span>:
+                     <span>${i18n.readMode.get()}
+                        <span class="tooltip"><span class="tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
                      </span>
-                     <input id="consecutiveModeCheckbox" ${conf.consecutiveMode ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                     <select id="readModeSelect" style="height: 18px; width: 100px; border-radius: 0px;">
+                        <option value="singlePage" ${conf.readMode == "singlePage" ? "selected" : ""}>Single Page</option>
+                        <option value="consecutively" ${conf.readMode == "consecutively" ? "selected" : ""}>Consecutively</option>
+                     </select>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
                  <label>
                      <span>${i18n.reversePages.get()}
+                        <span class="tooltip"><span class="tooltiptext">${i18n.reversePages.get()}</span></span>:
                      </span>
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
                  <label>
-                     <span>${i18n.dragToMove.get()}
+                     <span>${i18n.stickyMouse.get()}
+                        <span class="tooltip"><span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
                      </span>
+                     <select id="stickyMouseSelect" style="height: 18px; width: 70px; border-radius: 0px;">
+                        <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
+                        <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
+                        <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
+                     </select>
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 5; padding-left: 5px;">
+                 <label>
+                     <span>${i18n.dragToMove.get()}:</span>
                      <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px" title="Drag This To Move The Bar">
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 2; padding-left: 5px;">
+             <div style="grid-column-start: 5; grid-column-end: 8; padding-left: 5px;">
                   <a id="showGuideElement" class="clickable">Help</a>
              </div>
          </div>
@@ -115,7 +138,7 @@ export function createHTML() {
          </div>
      </div>
      <div>
-         <span id="gate" style="font-weight: 800; font-size: large; text-align: center;">&lessdot;📖</span>
+         <span id="gate" style="font-weight: 800; font-size: large; text-align: center; white-space: nowrap;">&lessdot;📖</span>
      </div>
      <!-- <span>展开</span> -->
      <div id="main" class="b-main b-collapse">
@@ -158,6 +181,7 @@ export function createHTML() {
         imgLandRight: fullViewPlane.querySelector<HTMLElement>("#imgLandRight")!,
         imgLandTop: fullViewPlane.querySelector<HTMLElement>("#imgLandTop")!,
         imgLandBottom: fullViewPlane.querySelector<HTMLElement>("#imgLandBottom")!,
+        imgScaleBar: fullViewPlane.querySelector<HTMLElement>("#imgScaleBar")!,
         styleSheel,
     };
 }

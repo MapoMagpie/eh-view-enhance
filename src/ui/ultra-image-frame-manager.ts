@@ -1,19 +1,60 @@
 import { conf } from "../config";
 import { IMGFetcherQueue } from "../fetcher-queue";
+import { FetchState } from "../img-fetcher";
 import { HTML, Oriented } from "../main";
+import { Debouncer } from "../utils/debouncer";
+import { evLog } from "../utils/ev-log";
 import { events } from "./event";
 
 export class BigImageFrameManager {
   frame: HTMLElement;
   queue: IMGFetcherQueue;
-  currImageNode?: Element;
   lockInit: boolean;
-  constructor(frame: HTMLElement, queue: IMGFetcherQueue) {
+  currImageNode?: HTMLImageElement;
+  lastMouseY?: number;
+  imgScaleBar: HTMLElement;
+  constructor(frame: HTMLElement, queue: IMGFetcherQueue, imgScaleBar: HTMLElement) {
     this.frame = frame;
     this.queue = queue;
-    // this.currImageNode = null;
-    this.frame.addEventListener("wheel", event => this.onwheel(event as WheelEvent));
+    this.imgScaleBar = imgScaleBar;
+    this.frame.addEventListener("wheel", event => this.onwheel(event));
+    this.frame.addEventListener("click", events.hiddenBigImageEvent);
+    const debouncer = new Debouncer("throttle");
+    this.frame.addEventListener("mousemove", event => {
+      debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
+        if (this.lastMouseY) {
+          this.stickyMouse(event, this.lastMouseY);
+        }
+        this.lastMouseY = event.clientY;
+      }, 5);
+    });
     this.lockInit = false;
+    this.initImgScaleBar();
+  }
+
+  initImgScaleBar() {
+    this.imgScaleBar.querySelector("#imgIncreaseBTN")?.addEventListener("click", () => {
+      conf.imgScale = this.scaleBigImages(1, 5);
+      window.localStorage.setItem("cfg_", JSON.stringify(conf));
+      this.flushImgScaleBar();
+    });
+    this.imgScaleBar.querySelector("#imgDecreaseBTN")?.addEventListener("click", () => {
+      conf.imgScale = this.scaleBigImages(-1, 5);
+      evLog("conf.imgScale: ", conf.imgScale, ", currImageNode width: ", this.currImageNode?.style.width);
+      window.localStorage.setItem("cfg_", JSON.stringify(conf));
+      this.flushImgScaleBar();
+    });
+    this.imgScaleBar.querySelector("#imgScaleResetBTN")?.addEventListener("click", () => {
+      this.resetScaleBigImages();
+      conf.imgScale = 0;
+      window.localStorage.setItem("cfg_", JSON.stringify(conf));
+      this.flushImgScaleBar();
+    });
+  }
+
+  flushImgScaleBar() {
+    this.imgScaleBar.querySelector<HTMLElement>("#imgScaleStatus")!.innerHTML = `${conf.imgScale}%`;
+    this.imgScaleBar.querySelector<HTMLElement>("#imgScaleProgressInner")!.style.width = `${conf.imgScale}%`;
   }
 
   setNow(index: number) {
@@ -27,20 +68,27 @@ export class BigImageFrameManager {
 
   init(start: number) {
     let imgNodes = this.getImgNodes() || [];
-    const indices = [start]; // now just show one image, maybe change to show more
+    const indices = [start];
+    // keeep the number of img nodes equal to the number of indices, 
+    // in here look like number of indices is 1;
     for (let i = indices.length - 1; i < imgNodes.length - 1; i++) {
       imgNodes[i].remove();
     }
+    // still keep the number of img nodes equal to the number of indices,
     for (let i = 0; i < indices.length - imgNodes.length; i++) {
       this.frame.appendChild(this.createImgElement());
     }
     imgNodes = this.getImgNodes();
+    // set the src to img nodes, one by one
     for (let i = 0; i < indices.length; i++) {
       const index = indices[i];
       const imgNode = imgNodes[i];
-      if (index === start) this.currImageNode = imgNode;
       this.setImgNode(imgNode, index);
+      if (index == start) {
+        this.currImageNode = imgNode;
+      }
     }
+    this.frame.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   createImgElement(): HTMLImageElement {
@@ -50,11 +98,15 @@ export class BigImageFrameManager {
   }
 
   hidden() {
-    this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
+    this.frame.classList.add("collapse");
+    window.setTimeout(() => this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true), 700);
+    this.imgScaleBar.style.display = "none";
   }
 
   show() {
+    this.frame.classList.remove("collapse");
     this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = false);
+    this.imgScaleBar.style.display = "";
   }
 
   getImgNodes(): HTMLImageElement[] {
@@ -62,10 +114,7 @@ export class BigImageFrameManager {
   }
 
   onwheel(event: WheelEvent) {
-    if (event.buttons === 2) {
-      event.preventDefault();
-      this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 10);
-    } else if (conf.consecutiveMode) {
+    if (conf.readMode === "consecutively") {
       this.consecutive(event);
     } else {
       event.preventDefault();
@@ -77,15 +126,17 @@ export class BigImageFrameManager {
   consecutive(event: WheelEvent) {
     const oriented = event.deltaY > 0 ? "next" : "prev";
 
+    // find the center image node
     let imgNodes = this.getImgNodes();
     let index = this.findImgNodeIndexOnCenter(imgNodes, event.deltaY);
     const centerNode = imgNodes[index];
+    this.currImageNode = centerNode;
 
     // before switch imgNodes, record the distance of the centerNode from the top of the screen
     const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
-    console.log("before extend, offsetTop is", centerNode.offsetTop);
+    // console.log("before extend, offsetTop is", centerNode.offsetTop);
 
-    // extend imgNodes
+    // try extend imgNodes, if success, index will be changed
     const indexOffset = this.tryExtend();
     index = index + indexOffset;
     if (indexOffset !== 0) {
@@ -93,14 +144,20 @@ export class BigImageFrameManager {
     }
     imgNodes = this.getImgNodes();
 
-    // boundary check
     const indexOfQueue = parseInt(imgNodes[index].getAttribute("d-index")!);
+    // queue.do() > imgFetcher.setNow() > this.setNow() > this.init(); 
+    // in here, this.init() will be called again, set this.lockInit to prevent it
+    if (indexOfQueue != this.queue.currIndex) {
+      this.lockInit = true;
+      this.queue.do(indexOfQueue, oriented);
+    }
+
+    // try switch imgNodes
     if (oriented === "next" && index !== imgNodes.length - 1) return;
     if (oriented === "prev" && index !== 0) return;
     if (indexOfQueue === 0 || indexOfQueue === this.queue.length - 1) return;
     if (imgNodes.length < 2) return; // should be extended greater than 2
 
-    // switch imgNodes
     if (oriented === "next") {
       imgNodes[imgNodes.length - 1].after(imgNodes[0]);
       this.setImgNode(imgNodes[0], parseInt(centerNode.getAttribute("d-index")!) + 1);
@@ -108,19 +165,21 @@ export class BigImageFrameManager {
       imgNodes[0].before(imgNodes[imgNodes.length - 1]);
       this.setImgNode(imgNodes[imgNodes.length - 1], parseInt(centerNode.getAttribute("d-index")!) - 1);
     }
-
-    // fix scrolltop
+    // after switch, fix scrolltop
     this.restoreScrollTop(centerNode, distance, event.deltaY);
-    // queue.do() > imgFetcher.setNow() > this.setNow() > this.init(); in here, this.init() will be called again, so we need to lock this.init() in this.setNow()
-    this.lockInit = true;
-    this.queue.do(indexOfQueue, oriented);
   }
 
   restoreScrollTop(imgNode: HTMLImageElement, distance: number, deltaY: number) {
-    this.frame.scrollTo(0, imgNode.offsetTop - distance);
-    this.frame.scrollTo({ top: imgNode.offsetTop - distance + deltaY, behavior: "smooth" });
+    // this.frame.scrollTo(0, imgNode.offsetTop - distance);
+    this.frame.scrollTo({ top: imgNode.offsetTop - distance + deltaY, behavior: "instant" });
   }
 
+  /**
+   * Usually, when the central image occupies the full height of the screen, 
+   * it is simple to obtain the offsetTop of that image element. 
+   * However, when encountering images with aspect ratios that exceed the screen's aspect ratio, 
+   * it is necessary to rely on natureWidth and natureHeight to obtain the actual offsetTop.
+   */
   getRealOffsetTop(imgNode: HTMLImageElement) {
     const naturalRatio = imgNode.naturalWidth / imgNode.naturalHeight;
     const clientRatio = imgNode.clientWidth / imgNode.clientHeight;
@@ -187,7 +246,7 @@ export class BigImageFrameManager {
   setImgNode(imgNode: HTMLImageElement, index: number) {
     imgNode.setAttribute("d-index", index.toString());
     const imgFetcher = this.queue[index];
-    if (imgFetcher.stage === 3) {
+    if (imgFetcher.stage === FetchState.DONE) {
       imgNode.src = imgFetcher.blobUrl!;
     } else {
       imgNode.src = imgFetcher.imgElement.getAttribute("asrc")!;
@@ -199,15 +258,69 @@ export class BigImageFrameManager {
     }
   }
 
-  scaleBigImages(fix: number, rate: number) {
+  /**
+   * @param fix: 1 or -1, means scale up or down
+   * @param rate: step of scale, eg: current scale is 80, rate is 10, then new scale is 90
+   */
+  scaleBigImages(fix: number, rate: number): number {
+    let percent = 0;
     const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules ?? []);
     for (const cssRule of cssRules) {
       if (cssRule instanceof CSSStyleRule) {
         if (cssRule.selectorText === ".bigImageFrame > img") {
-          cssRule.style.height = `${Math.max(parseInt(cssRule.style.height) + rate * fix, 100)}vh`;
+          // if is default scale, then set height to unset, and compute current width percent
+          if (cssRule.style.height === "100vh") {
+            // compute current width percent
+            if (this.currImageNode) {
+              const vw = this.frame.offsetWidth;
+              const width = this.currImageNode.offsetWidth;
+              percent = Math.round(width / vw * 100);
+              cssRule.style.width = `${percent}vw`;
+              cssRule.style.height = "unset";
+            } else {
+              evLog("ultra image frame manager > scaleBigImages > currImageNode is null")
+            }
+          }
+          percent = Math.max(parseInt(cssRule.style.width) + rate * fix, 10);
+          cssRule.style.width = `${percent}vw`;
           break;
         }
       }
+    }
+    return percent;
+  }
+
+  resetScaleBigImages() {
+    const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules ?? []);
+    for (const cssRule of cssRules) {
+      if (cssRule instanceof CSSStyleRule) {
+        if (cssRule.selectorText === ".bigImageFrame > img") {
+          cssRule.style.height = "100vh"
+          cssRule.style.width = "unset"
+          break;
+        }
+      }
+    }
+  }
+
+  stickyMouse(event: MouseEvent, lastMouseY: number) {
+    if (conf.readMode === "singlePage" && this.frame.scrollHeight > this.frame.offsetHeight && conf.stickyMouse !== "disable") {
+      let distance = event.clientY - lastMouseY;
+      if (conf.stickyMouse === "enable") {
+        distance = -distance;
+      }
+      const rate = (this.frame.scrollHeight - this.frame.offsetHeight) / (this.frame.offsetHeight / 4) * 3;
+      let scrollTop = this.frame.scrollTop + distance * rate;
+      if (distance > 0) {
+        if (scrollTop > this.frame.scrollHeight - this.frame.offsetHeight) {
+          scrollTop = this.frame.scrollHeight - this.frame.offsetHeight;
+        }
+      } else {
+        if (scrollTop < 0) {
+          scrollTop = 0;
+        }
+      }
+      this.frame.scrollTo({ top: scrollTop, behavior: "auto" });
     }
   }
 
@@ -215,7 +328,10 @@ export class BigImageFrameManager {
     const centerLine = this.frame.offsetHeight / 2;
     for (let i = 0; i < imgNodes.length; i++) {
       const imgNode = imgNodes[i];
-      if (imgNode.offsetTop + imgNode.offsetHeight + fixOffset - this.frame.scrollTop > centerLine) return i;
+      const realOffsetTop = imgNode.offsetTop + fixOffset - this.frame.scrollTop;
+      if (realOffsetTop < centerLine && realOffsetTop + imgNode.offsetHeight >= centerLine) {
+        return i;
+      }
     }
     return 0;
   }

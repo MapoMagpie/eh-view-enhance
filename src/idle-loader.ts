@@ -1,5 +1,6 @@
 import { conf } from "./config";
 import { IMGFetcherQueue } from "./fetcher-queue";
+import { FetchState } from "./img-fetcher";
 import { evLog } from "./utils/ev-log";
 
 export class IdleLoader {
@@ -34,7 +35,7 @@ export class IdleLoader {
       // 获取索引所对应的图片获取器，并添加完成事件，当图片获取完成时，重新查找新的可获取的图片获取器，并递归
       const imgFetcher = this.queue[processingIndex];
       // 当图片获取器还没有获取图片时，则启动图片获取器
-      if (imgFetcher.lock || imgFetcher.stage === 3) {
+      if (imgFetcher.lock || imgFetcher.stage === FetchState.DONE) {
         continue;
       }
       imgFetcher.onFinished("IDLE-REPORT", () => {
@@ -57,7 +58,7 @@ export class IdleLoader {
     for (let j = processedIndex, max = this.queue.length - 1; j <= max; j++) {
       const imgFetcher = this.queue[j];
       // 如果图片获取器正在获取或者图片获取器已完成获取，
-      if (imgFetcher.stage === 3 || imgFetcher.lock) {
+      if (imgFetcher.stage === FetchState.DONE || imgFetcher.lock) {
         if (j === max && !restart) {
           j = -1;
           max = processedIndex - 1;

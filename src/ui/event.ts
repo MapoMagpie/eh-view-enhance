@@ -1,4 +1,4 @@
-import { ConfigBooleanType, ConfigNumberType, conf } from "../config";
+import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, conf } from "../config";
 import { HTML, BIFM, IFQ, Oriented, PF, main } from "../main";
 import { i18n } from "../utils/i18n";
 
@@ -53,9 +53,21 @@ function modBooleanConfigEvent(key: ConfigBooleanType) {
   window.localStorage.setItem("cfg_", JSON.stringify(conf));
 }
 
+// modify config
+function modSelectConfigEvent(key: ConfigSelectType) {
+  const inputElement = document.querySelector<HTMLSelectElement>(`#${key}Select`);
+  const value = inputElement?.value;
+  if (value) {
+    (conf[key] as any) = value;
+    window.localStorage.setItem("cfg_", JSON.stringify(conf));
+  }
+}
+
 // todo backgroud image
 
 function mouseleavePlaneEvent(target: HTMLElement) {
+  const optionElement = target.closest("select");
+  console.log("closest: ", optionElement);
   target.classList.add("p-collapse");
 }
 
@@ -104,8 +116,7 @@ function scrollEvent() {
 //大图框架点击事件，点击后隐藏大图框架
 function hiddenBigImageEvent(event?: MouseEvent) {
   if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
-  HTML.bigImageFrame.classList.add("collapse");
-  window.setTimeout(() => BIFM.hidden(), 700);
+  BIFM.hidden()
 };
 
 //大图框架元素的滚轮事件/按下鼠标右键滚动则是缩放/直接滚动则是切换到下一张或上一张
@@ -135,7 +146,6 @@ function showBigImageEvent(event: Event) {
 
 function showBigImage(start: number) {
   //展开大图阅览元素
-  HTML.bigImageFrame.classList.remove("collapse");
   BIFM.show();
   //获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
   IFQ.do(start);
@@ -161,6 +171,7 @@ function showGuideEvent() {
 export const events = {
   modNumberConfigEvent,
   modBooleanConfigEvent,
+  modSelectConfigEvent,
   modPageHelperPostion,
   togglePlaneEvent,
   showFullViewPlane,

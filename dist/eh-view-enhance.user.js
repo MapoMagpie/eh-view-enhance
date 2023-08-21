@@ -763,7 +763,7 @@
         return;
       let title = imgFetcher.title;
       if (title) {
-        title = title.replace(/Page\s\d+_/, "");
+        title = title.replace(/Page\s\d+[:_]\s*/, "");
       } else {
         title = (_b = (_a = imgFetcher.root.firstElementChild) == null ? void 0 : _a.getAttribute("asrc")) == null ? void 0 : _b.split("/").pop();
       }

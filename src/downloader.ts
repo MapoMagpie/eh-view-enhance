@@ -74,7 +74,7 @@ export class Downloader {
     if (conf.disableDownload) return;
     let title = imgFetcher.title;
     if (title) {
-      title = title.replace(/Page\s\d+_/, "");
+      title = title.replace(/Page\s\d+[:_]\s*/, "");
     } else {
       title = imgFetcher.root.firstElementChild?.getAttribute("asrc")?.split("/").pop();
     }

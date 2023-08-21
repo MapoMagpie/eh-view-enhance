@@ -451,7 +451,7 @@
     config: new I18nValue("CONF", "配置"),
     collapse: new I18nValue("FOLD", "收起"),
     columns: new I18nValue("Columns", "每行数量"),
-    readMode: new I18nValue("Consecutive Mode", "滚屏模式"),
+    readMode: new I18nValue("Read Mode", "阅读模式"),
     readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
     maxPreloadThreads: new I18nValue("PreloadThreads", "最大同时加载"),
     maxPreloadThreadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
@@ -575,6 +575,9 @@
     if (value) {
       conf[key] = value;
       window.localStorage.setItem("cfg_", JSON.stringify(conf));
+    }
+    if (key === "readMode" && conf.readMode === "singlePage") {
+      BIFM.init(IFQ.currIndex);
     }
   }
   function mouseleavePlaneEvent(target) {
@@ -1495,6 +1498,11 @@
   color: white;
   background-color: rgb(255, 200, 200);
 }
+.p-img-scale .scale-status {
+  width: 40px;
+  white-space: nowrap;
+  overflow: hidden;
+}
 .p-img-scale .scale-progress {
   flex-grow: 1;
   display: flex;
@@ -1691,7 +1699,7 @@
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
                      <span>${i18n.maxPreloadThreads.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
                          <button id="threadsMinusBTN" type="button">-</button>
@@ -1703,7 +1711,7 @@
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
                      <span>${i18n.maxDownloadThreads.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
                          <button id="downloadThreadsMinusBTN" type="button">-</button>
@@ -1725,7 +1733,7 @@
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
                      <span>${i18n.bestQuality.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
                      </span>
                      <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
@@ -1733,7 +1741,7 @@
              <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
                  <label>
                      <span>${i18n.autoLoad.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
                      </span>
                      <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
@@ -1741,9 +1749,9 @@
              <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <label>
                      <span>${i18n.readMode.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
                      </span>
-                     <select id="readModeSelect" style="height: 18px; width: 100px; border-radius: 0px;">
+                     <select id="readModeSelect" style="height: 18px; width: 130px; border-radius: 0px;">
                         <option value="singlePage" ${conf.readMode == "singlePage" ? "selected" : ""}>Single Page</option>
                         <option value="consecutively" ${conf.readMode == "consecutively" ? "selected" : ""}>Consecutively</option>
                      </select>
@@ -1752,7 +1760,7 @@
              <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
                  <label>
                      <span>${i18n.reversePages.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.reversePages.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.reversePages.get()}</span></span>:
                      </span>
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
@@ -1760,7 +1768,7 @@
              <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
                  <label>
                      <span>${i18n.stickyMouse.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
                      </span>
                      <select id="stickyMouseSelect" style="height: 18px; width: 70px; border-radius: 0px;">
                         <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
@@ -1899,6 +1907,23 @@
       });
       (_c = this.imgScaleBar.querySelector("#imgScaleResetBTN")) == null ? void 0 : _c.addEventListener("click", () => {
         this.resetScaleBigImages();
+      });
+      const progress = this.imgScaleBar.querySelector("#imgScaleProgress");
+      progress.addEventListener("mousedown", (event) => {
+        const { left } = progress.getBoundingClientRect();
+        const mouseMove = (event2) => {
+          const xInProgress = event2.clientX - left;
+          const percent = Math.round(xInProgress / progress.clientWidth * 100);
+          this.scaleBigImages(0, 0, percent);
+        };
+        mouseMove(event);
+        progress.addEventListener("mousemove", mouseMove);
+        progress.addEventListener("mouseup", () => {
+          progress.removeEventListener("mousemove", mouseMove);
+        }, { once: true });
+        progress.addEventListener("mouseleave", () => {
+          progress.removeEventListener("mousemove", mouseMove);
+        }, { once: true });
       });
     }
     createImgElement() {
@@ -2082,8 +2107,9 @@
     /**
      * @param fix: 1 or -1, means scale up or down
      * @param rate: step of scale, eg: current scale is 80, rate is 10, then new scale is 90
+     * @param _percent: directly set width percent
      */
-    scaleBigImages(fix, rate) {
+    scaleBigImages(fix, rate, _percent) {
       var _a;
       let percent = 0;
       const cssRules = Array.from(((_a = HTML.styleSheel.sheet) == null ? void 0 : _a.cssRules) ?? []);
@@ -2093,17 +2119,18 @@
             if (!conf.imgScale)
               conf.imgScale = 0;
             if (conf.imgScale == 0 && this.currImageNode) {
-              const vw = this.frame.offsetWidth;
-              const width = this.currImageNode.offsetWidth;
-              percent = Math.round(width / vw * 100);
-              cssRule.style.width = `${percent}vw`;
+              percent = _percent ?? Math.round(this.currImageNode.offsetWidth / this.frame.offsetWidth * 100);
               if (conf.readMode === "consecutively") {
                 cssRule.style.minHeight = "";
+              } else {
+                cssRule.style.minHeight = "100vh";
               }
               cssRule.style.maxWidth = "";
               cssRule.style.height = "";
+            } else {
+              percent = _percent ?? conf.imgScale;
             }
-            percent = Math.max(parseInt(cssRule.style.width) + rate * fix, 10);
+            percent = Math.max(percent + rate * fix, 10);
             percent = Math.min(percent, 100);
             cssRule.style.width = `${percent}vw`;
             break;

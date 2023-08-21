@@ -106,6 +106,11 @@ export function loadStyleSheel() {
   color: white;
   background-color: rgb(255, 200, 200);
 }
+.p-img-scale .scale-status {
+  width: 40px;
+  white-space: nowrap;
+  overflow: hidden;
+}
 .p-img-scale .scale-progress {
   flex-grow: 1;
   display: flex;

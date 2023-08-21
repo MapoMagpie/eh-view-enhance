@@ -40,7 +40,7 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
                      <span>${i18n.maxPreloadThreads.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
                          <button id="threadsMinusBTN" type="button">-</button>
@@ -52,7 +52,7 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label style="display: flex; justify-content: space-between; padding-right: 10px;">
                      <span>${i18n.maxDownloadThreads.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
                          <button id="downloadThreadsMinusBTN" type="button">-</button>
@@ -74,7 +74,7 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
                      <span>${i18n.bestQuality.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
                      </span>
                      <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
@@ -82,7 +82,7 @@ export function createHTML() {
              <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
                  <label>
                      <span>${i18n.autoLoad.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
                      </span>
                      <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
@@ -90,9 +90,9 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <label>
                      <span>${i18n.readMode.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
                      </span>
-                     <select id="readModeSelect" style="height: 18px; width: 100px; border-radius: 0px;">
+                     <select id="readModeSelect" style="height: 18px; width: 130px; border-radius: 0px;">
                         <option value="singlePage" ${conf.readMode == "singlePage" ? "selected" : ""}>Single Page</option>
                         <option value="consecutively" ${conf.readMode == "consecutively" ? "selected" : ""}>Consecutively</option>
                      </select>
@@ -101,7 +101,7 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
                  <label>
                      <span>${i18n.reversePages.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.reversePages.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.reversePages.get()}</span></span>:
                      </span>
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
@@ -109,7 +109,7 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
                  <label>
                      <span>${i18n.stickyMouse.get()}
-                        <span class="tooltip"><span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
                      </span>
                      <select id="stickyMouseSelect" style="height: 18px; width: 70px; border-radius: 0px;">
                         <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>

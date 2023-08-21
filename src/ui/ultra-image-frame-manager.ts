@@ -76,6 +76,23 @@ export class BigImageFrameManager {
     this.imgScaleBar.querySelector("#imgScaleResetBTN")?.addEventListener("click", () => {
       this.resetScaleBigImages();
     });
+    const progress = this.imgScaleBar.querySelector<HTMLElement>("#imgScaleProgress")!;
+    progress.addEventListener("mousedown", (event) => {
+      const { left } = progress.getBoundingClientRect();
+      const mouseMove = (event: MouseEvent) => {
+        const xInProgress = event.clientX - left;
+        const percent = Math.round(xInProgress / progress.clientWidth * 100);
+        this.scaleBigImages(0, 0, percent);
+      }
+      mouseMove(event);
+      progress.addEventListener("mousemove", mouseMove);
+      progress.addEventListener("mouseup", () => {
+        progress.removeEventListener("mousemove", mouseMove);
+      }, { once: true });
+      progress.addEventListener("mouseleave", () => {
+        progress.removeEventListener("mousemove", mouseMove);
+      }, { once: true });
+    });
   }
 
   createImgElement(): HTMLImageElement {
@@ -280,8 +297,9 @@ export class BigImageFrameManager {
   /**
    * @param fix: 1 or -1, means scale up or down
    * @param rate: step of scale, eg: current scale is 80, rate is 10, then new scale is 90
+   * @param _percent: directly set width percent
    */
-  scaleBigImages(fix: number, rate: number): number {
+  scaleBigImages(fix: number, rate: number, _percent?: number): number {
     let percent = 0;
     const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules ?? []);
     for (const cssRule of cssRules) {
@@ -291,17 +309,18 @@ export class BigImageFrameManager {
           if (!conf.imgScale) conf.imgScale = 0; // fix imgScale if it is null
           if (conf.imgScale == 0 && this.currImageNode) {
             // compute current width percent
-            const vw = this.frame.offsetWidth;
-            const width = this.currImageNode.offsetWidth;
-            percent = Math.round(width / vw * 100);
-            cssRule.style.width = `${percent}vw`;
+            percent = _percent ?? Math.round(this.currImageNode.offsetWidth / this.frame.offsetWidth * 100);
             if (conf.readMode === "consecutively") {
               cssRule.style.minHeight = "";
+            } else {
+              cssRule.style.minHeight = "100vh";
             }
             cssRule.style.maxWidth = "";
             cssRule.style.height = "";
+          } else {
+            percent = _percent ?? conf.imgScale;
           }
-          percent = Math.max(parseInt(cssRule.style.width) + rate * fix, 10);
+          percent = Math.max(percent + rate * fix, 10);
           percent = Math.min(percent, 100);
           cssRule.style.width = `${percent}vw`;
           break;

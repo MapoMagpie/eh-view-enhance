@@ -61,6 +61,9 @@ function modSelectConfigEvent(key: ConfigSelectType) {
     (conf[key] as any) = value;
     window.localStorage.setItem("cfg_", JSON.stringify(conf));
   }
+  if (key === "readMode" && conf.readMode === "singlePage") {
+    BIFM.init(IFQ.currIndex);
+  }
 }
 
 function mouseleavePlaneEvent(target: HTMLElement) {

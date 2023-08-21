@@ -1878,6 +1878,7 @@
     initFrame() {
       this.frame.addEventListener("wheel", (event) => this.onwheel(event));
       this.frame.addEventListener("click", events.hiddenBigImageEvent);
+      this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
       const debouncer2 = new Debouncer("throttle");
       this.frame.addEventListener("mousemove", (event) => {
         debouncer2.addEvent("BIG-IMG-MOUSE-MOVE", () => {
@@ -1891,22 +1892,13 @@
     initImgScaleBar() {
       var _a, _b, _c;
       (_a = this.imgScaleBar.querySelector("#imgIncreaseBTN")) == null ? void 0 : _a.addEventListener("click", () => {
-        conf.imgScale = this.scaleBigImages(1, 5);
-        window.localStorage.setItem("cfg_", JSON.stringify(conf));
-        this.flushImgScaleBar();
+        this.scaleBigImages(1, 5);
       });
       (_b = this.imgScaleBar.querySelector("#imgDecreaseBTN")) == null ? void 0 : _b.addEventListener("click", () => {
-        var _a2;
-        conf.imgScale = this.scaleBigImages(-1, 5);
-        evLog("conf.imgScale: ", conf.imgScale, ", currImageNode width: ", (_a2 = this.currImageNode) == null ? void 0 : _a2.style.width);
-        window.localStorage.setItem("cfg_", JSON.stringify(conf));
-        this.flushImgScaleBar();
+        this.scaleBigImages(-1, 5);
       });
       (_c = this.imgScaleBar.querySelector("#imgScaleResetBTN")) == null ? void 0 : _c.addEventListener("click", () => {
         this.resetScaleBigImages();
-        conf.imgScale = 0;
-        window.localStorage.setItem("cfg_", JSON.stringify(conf));
-        this.flushImgScaleBar();
       });
     }
     createImgElement() {
@@ -1938,7 +1930,10 @@
       return Array.from(this.frame.querySelectorAll("img"));
     }
     onwheel(event) {
-      if (conf.readMode === "consecutively") {
+      if (event.buttons === 2) {
+        event.preventDefault();
+        this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
+      } else if (conf.readMode === "consecutively") {
         this.consecutive(event);
       } else {
         event.preventDefault();
@@ -2115,6 +2110,9 @@
           }
         }
       }
+      conf.imgScale = percent;
+      window.localStorage.setItem("cfg_", JSON.stringify(conf));
+      this.flushImgScaleBar();
       return percent;
     }
     resetScaleBigImages() {
@@ -2137,6 +2135,9 @@
           }
         }
       }
+      conf.imgScale = 0;
+      window.localStorage.setItem("cfg_", JSON.stringify(conf));
+      this.flushImgScaleBar();
     }
     initImgScaleStyle() {
       if (conf.imgScale && conf.imgScale > 0) {

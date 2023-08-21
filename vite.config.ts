@@ -11,7 +11,7 @@ export default defineConfig({
         namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
         match: ['https://exhentai.org/g/*', 'https://e-hentai.org/g/*'],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.0.2',
+        version: '4.0.5',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {
@@ -20,7 +20,10 @@ export default defineConfig({
         },
         connect: ['exhentai.org', 'e-hentai.org', 'hath.network'],
         grant: ['GM_xmlhttpRequest', 'GM_setValue', 'GM_getValue'],
-        require: ['https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js', 'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js'],
+        require: [
+          'https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js',
+          'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js',
+        ],
         // 'description:zh-CN': 'e-hentai.org 更好的浏览器，所有的缩略图都会被展示在网格中，并且显示最高质量的图片。',
       },
       build: {

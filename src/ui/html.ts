@@ -111,21 +111,22 @@ export function createHTML() {
                      <span>${i18n.stickyMouse.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
                      </span>
-                     <select id="stickyMouseSelect" style="height: 18px; width: 70px; border-radius: 0px;">
+                     <select id="stickyMouseSelect" style="height: 18px; width: 80px; border-radius: 0px;">
                         <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
                         <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
                         <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
                      </select>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 5; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
                      <span>${i18n.dragToMove.get()}:</span>
                      <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px" title="Drag This To Move The Bar">
                  </label>
              </div>
-             <div style="grid-column-start: 5; grid-column-end: 8; padding-left: 5px;">
-                  <a id="showGuideElement" class="clickable">Help</a>
+             <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
+                  <a id="showGuideElement" class="clickable">HELP</a>
+                  <a style="" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
              </div>
          </div>
          <div id="downloaderPlane" class="plane p-downloader p-collapse">

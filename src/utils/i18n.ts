@@ -47,6 +47,16 @@ export const i18n = {
       <li><strong style="color: orange">Big image:</strong>click thumbnail image, into big image mode, use mouse wheel switch to next or prev</li>
       <li><strong style="color: orange">Image zoom:</strong>right mouse button + mouse wheel</li>
       <li><strong style="color: orange">Download:</strong>click download button，popup download plane，the loading status of all images is indicated by small squares.</li>
+      <li><strong style="color: orange">Feedback:</strong>
+        Click 
+        <span>
+        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance/issues" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-issue-opened" aria-label="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
+        </span>
+        to provide feedback on issues, Give me a star if you like this script.
+        <span>
+        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
+        </span>
+      </li>
     </ol>
   `, `
     <h1>操作说明:</h1>
@@ -60,6 +70,16 @@ export const i18n = {
       <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
       <li><strong style="color: orange">图片缩放:</strong>在大图上鼠标右键+滚轮<strong style="color: red">缩放</strong>图片</li>
       <li><strong style="color: orange">下载功能:</strong>右下角点击下载按钮，弹出下载面板，内部通过小方块展示了所有图片的加载状态，点击开始下载按钮后，会加快图片加载效率并在所有图片加载完成后进行下载。 </li>
+      <li><strong style="color: orange">问题反馈:</strong>
+        点击 
+        <span>
+        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance/issues" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-issue-opened" aria-label="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
+        </span>
+        反馈你的问题或建议，如果你喜欢这个脚本，给我一个star吧。 
+        <span>
+        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
+        </span>
+      </li>
     </ol>
   `)
 };

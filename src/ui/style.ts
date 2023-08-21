@@ -269,5 +269,12 @@ export function loadStyleSheel() {
 `
   style.textContent = css;
   document.head.appendChild(style);
+  /*`<!-- Place this tag in your head or just before your close body tag. -->
+<script async defer src="https://buttons.github.io/buttons.js"></script>` */
+  const githubButtonScript = document.createElement('script');
+  githubButtonScript.src = 'https://buttons.github.io/buttons.js';
+  githubButtonScript.async = true;
+  githubButtonScript.defer = true;
+  document.head.appendChild(githubButtonScript);
   return style;
 }

@@ -42,7 +42,6 @@ export function loadStyleSheel() {
   // scroll-behavior: smooth; // only firefox is better this
 }
 .bigImageFrame > img {
-  ${(conf.imgScale === 0 || !conf.imgScale) ? "height: 100vh;" : "width: " + conf.imgScale + "%;"}
   object-fit: contain;
   // border-bottom: 1px solid #ffffff;
   display: block;

@@ -63,11 +63,8 @@ function modSelectConfigEvent(key: ConfigSelectType) {
   }
 }
 
-// todo backgroud image
-
 function mouseleavePlaneEvent(target: HTMLElement) {
-  const optionElement = target.closest("select");
-  console.log("closest: ", optionElement);
+  // fixme; in firefox, mouseleave event will be triggered when mouse move to child element, like <option>
   target.classList.add("p-collapse");
 }
 

@@ -13,10 +13,46 @@ export class BigImageFrameManager {
   currImageNode?: HTMLImageElement;
   lastMouseY?: number;
   imgScaleBar: HTMLElement;
+  reduceDebouncer: Debouncer;
   constructor(frame: HTMLElement, queue: IMGFetcherQueue, imgScaleBar: HTMLElement) {
     this.frame = frame;
     this.queue = queue;
     this.imgScaleBar = imgScaleBar;
+    this.reduceDebouncer = new Debouncer();
+    this.lockInit = false;
+    this.initFrame();
+    this.initImgScaleBar();
+    this.initImgScaleStyle();
+  }
+
+  flushImgScaleBar() {
+    this.imgScaleBar.querySelector<HTMLElement>("#imgScaleStatus")!.innerHTML = `${conf.imgScale}%`;
+    this.imgScaleBar.querySelector<HTMLElement>("#imgScaleProgressInner")!.style.width = `${conf.imgScale}%`;
+  }
+
+  setNow(index: number) {
+    // every time call this.onWheel(), will set this.lockInit to true
+    if (this.lockInit) {
+      this.lockInit = false;
+      return
+    }
+    this.init(index);
+  }
+
+  init(start: number) {
+    // remove frame's img children
+    this.removeImgNodes();
+    this.currImageNode = this.createImgElement();
+    this.frame.appendChild(this.currImageNode);
+    this.setImgNode(this.currImageNode, start);
+
+    if (conf.readMode === "consecutively") {
+      this.tryExtend();
+      this.restoreScrollTop(this.currImageNode, 0, 0);
+    }
+  }
+
+  initFrame() {
     this.frame.addEventListener("wheel", event => this.onwheel(event));
     this.frame.addEventListener("click", events.hiddenBigImageEvent);
     const debouncer = new Debouncer("throttle");
@@ -28,8 +64,6 @@ export class BigImageFrameManager {
         this.lastMouseY = event.clientY;
       }, 5);
     });
-    this.lockInit = false;
-    this.initImgScaleBar();
   }
 
   initImgScaleBar() {
@@ -52,54 +86,26 @@ export class BigImageFrameManager {
     });
   }
 
-  flushImgScaleBar() {
-    this.imgScaleBar.querySelector<HTMLElement>("#imgScaleStatus")!.innerHTML = `${conf.imgScale}%`;
-    this.imgScaleBar.querySelector<HTMLElement>("#imgScaleProgressInner")!.style.width = `${conf.imgScale}%`;
-  }
-
-  setNow(index: number) {
-    // every time call this.onWheel(), will set this.lockInit to true
-    if (this.lockInit) {
-      this.lockInit = false;
-    } else {
-      this.init(index);
-    }
-  }
-
-  init(start: number) {
-    let imgNodes = this.getImgNodes() || [];
-    const indices = [start];
-    // keeep the number of img nodes equal to the number of indices, 
-    // in here look like number of indices is 1;
-    for (let i = indices.length - 1; i < imgNodes.length - 1; i++) {
-      imgNodes[i].remove();
-    }
-    // still keep the number of img nodes equal to the number of indices,
-    for (let i = 0; i < indices.length - imgNodes.length; i++) {
-      this.frame.appendChild(this.createImgElement());
-    }
-    imgNodes = this.getImgNodes();
-    // set the src to img nodes, one by one
-    for (let i = 0; i < indices.length; i++) {
-      const index = indices[i];
-      const imgNode = imgNodes[i];
-      this.setImgNode(imgNode, index);
-      if (index == start) {
-        this.currImageNode = imgNode;
-      }
-    }
-    this.frame.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
   createImgElement(): HTMLImageElement {
     const img = document.createElement("img");
     img.addEventListener("click", events.hiddenBigImageEvent);
     return img;
   }
 
+  removeImgNodes() {
+    for (const child of Array.from(this.frame.children)) {
+      if (child.nodeName.toLowerCase() === "img") {
+        child.remove();
+      }
+    }
+  }
+
   hidden() {
     this.frame.classList.add("collapse");
-    window.setTimeout(() => this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true), 700);
+    window.setTimeout(() => {
+      this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
+      this.removeImgNodes();
+    }, 700);
     this.imgScaleBar.style.display = "none";
   }
 
@@ -124,54 +130,47 @@ export class BigImageFrameManager {
   }
 
   consecutive(event: WheelEvent) {
-    const oriented = event.deltaY > 0 ? "next" : "prev";
+    this.reduceDebouncer.addEvent("REDUCE", () => {
+      let imgNodes = this.getImgNodes();
+      let index = this.findImgNodeIndexOnCenter(imgNodes, 0);
+      const centerNode = imgNodes[index];
+      const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
+      if (this.tryReduce()) {
+        this.restoreScrollTop(centerNode, distance, 0);
+      }
+    }, 200);
 
+    const oriented = event.deltaY > 0 ? "next" : "prev";
     // find the center image node
     let imgNodes = this.getImgNodes();
     let index = this.findImgNodeIndexOnCenter(imgNodes, event.deltaY);
     const centerNode = imgNodes[index];
     this.currImageNode = centerNode;
 
-    // before switch imgNodes, record the distance of the centerNode from the top of the screen
+    // record the distance of the centerNode from the top of the screen
     const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
-    // console.log("before extend, offsetTop is", centerNode.offsetTop);
 
     // try extend imgNodes, if success, index will be changed
     const indexOffset = this.tryExtend();
-    index = index + indexOffset;
     if (indexOffset !== 0) {
-      this.restoreScrollTop(centerNode, distance, event.deltaY);
+      this.restoreScrollTop(centerNode, distance, 0);
     }
-    imgNodes = this.getImgNodes();
 
-    const indexOfQueue = parseInt(imgNodes[index].getAttribute("d-index")!);
+    const indexOfQueue = parseInt(this.currImageNode.getAttribute("d-index")!);
     // queue.do() > imgFetcher.setNow() > this.setNow() > this.init(); 
     // in here, this.init() will be called again, set this.lockInit to prevent it
     if (indexOfQueue != this.queue.currIndex) {
       this.lockInit = true;
       this.queue.do(indexOfQueue, oriented);
     }
-
-    // try switch imgNodes
-    if (oriented === "next" && index !== imgNodes.length - 1) return;
-    if (oriented === "prev" && index !== 0) return;
-    if (indexOfQueue === 0 || indexOfQueue === this.queue.length - 1) return;
-    if (imgNodes.length < 2) return; // should be extended greater than 2
-
-    if (oriented === "next") {
-      imgNodes[imgNodes.length - 1].after(imgNodes[0]);
-      this.setImgNode(imgNodes[0], parseInt(centerNode.getAttribute("d-index")!) + 1);
-    } else {
-      imgNodes[0].before(imgNodes[imgNodes.length - 1]);
-      this.setImgNode(imgNodes[imgNodes.length - 1], parseInt(centerNode.getAttribute("d-index")!) - 1);
-    }
-    // after switch, fix scrolltop
-    this.restoreScrollTop(centerNode, distance, event.deltaY);
   }
 
   restoreScrollTop(imgNode: HTMLImageElement, distance: number, deltaY: number) {
-    // this.frame.scrollTo(0, imgNode.offsetTop - distance);
-    this.frame.scrollTo({ top: imgNode.offsetTop - distance + deltaY, behavior: "instant" });
+    imgNode.scrollIntoView();
+    if (distance !== 0 || deltaY !== 0) {
+      imgNode.scrollIntoView({});
+      this.frame.scrollTo({ top: imgNode.offsetTop - distance + deltaY, behavior: "instant" });
+    }
   }
 
   /**
@@ -185,62 +184,87 @@ export class BigImageFrameManager {
     const clientRatio = imgNode.clientWidth / imgNode.clientHeight;
     if (naturalRatio > clientRatio) {
       const clientHeight = Math.round(imgNode.naturalHeight * (imgNode.clientWidth / imgNode.naturalWidth));
-      console.log(`clientHeigh should be: ${clientHeight}`);
+      // console.log(`clientHeigh should be: ${clientHeight}`);
       return (imgNode.clientHeight - clientHeight) / 2 + imgNode.offsetTop;
     }
     return imgNode.offsetTop;
   }
 
-  tryExtend() {
+  tryExtend(): number {
     let indexOffset = 0;
     let imgNodes = [];
-    let offsetAfterSwap = 0;
+    let scrollTopFix = 0;
+    // try extend prev, until has enough scroll up space
     while (true) {
       imgNodes = this.getImgNodes();
       const frist = imgNodes[0];
-      const fixTop = this.getRealOffsetTop(frist);
-      if (fixTop > this.frame.scrollTop || parseInt(frist.getAttribute("d-index")!) === this.queue.length - 1) {
+      if (frist.offsetTop + frist.offsetHeight > this.frame.scrollTop + scrollTopFix) {
         const extended = this.extendImgNode(frist, "prev");
-        if (extended) {
-          indexOffset++;
-          continue;
-        } else {
+        if (extended === null) {
           break;
+        } else {
+          scrollTopFix += extended.offsetHeight;
         }
+        indexOffset++;
       } else {
-        if (fixTop + frist.offsetHeight <= this.frame.scrollTop) {
-          offsetAfterSwap = frist.offsetHeight;
-        }
         break;
       }
     }
+    // try extend next, until has enough scroll down space
     while (true) {
       imgNodes = this.getImgNodes();
       const last = imgNodes[imgNodes.length - 1];
-      if (last.offsetTop + last.offsetHeight + offsetAfterSwap < this.frame.scrollTop + this.frame.offsetHeight + this.frame.offsetHeight / 2) {
-        if (!this.extendImgNode(last, "next")) break;
+      if (last.offsetTop < this.frame.scrollTop + this.frame.offsetHeight) {
+        if (this.extendImgNode(last, "next") === null) break;
       } else {
         break;
       }
-    }
-    if (imgNodes.length == 2) {
-      this.extendImgNode(imgNodes[imgNodes.length - 1], "next");
     }
     return indexOffset;
   }
 
-  extendImgNode(imgNode: HTMLImageElement, oriented: Oriented) {
-    const index = parseInt(imgNode.getAttribute("d-index")!);
-    if (oriented === "prev") {
-      if (index === 0) return false;
-      imgNode.before(this.createImgElement());
-      this.setImgNode(imgNode.previousElementSibling as HTMLImageElement, index - 1);
-    } else {
-      if (index === this.queue.length - 1) return false;
-      imgNode.after(this.createImgElement());
-      this.setImgNode(imgNode.nextElementSibling as HTMLImageElement, index + 1);
+  tryReduce(): boolean {
+    const imgNodes = this.getImgNodes();
+    const shouldRemoveNodes = [];
+    let oriented: Oriented | "remove" = "prev";
+    for (const imgNode of imgNodes) {
+      if (oriented === "prev") {
+        if (imgNode.offsetTop + imgNode.offsetHeight < this.frame.scrollTop) {
+          shouldRemoveNodes.push(imgNode);
+        } else {
+          oriented = "next";
+          shouldRemoveNodes.pop();
+        }
+      } else if (oriented === "next") {
+        if (imgNode.offsetTop > this.frame.scrollTop + this.frame.offsetHeight) {
+          oriented = "remove";
+        }
+      } else {
+        shouldRemoveNodes.push(imgNode);
+      }
+    }
+    if (shouldRemoveNodes.length === 0) return false;
+    for (const imgNode of shouldRemoveNodes) {
+      imgNode.remove();
     }
     return true;
+  }
+
+  extendImgNode(imgNode: HTMLImageElement, oriented: Oriented): HTMLImageElement | null {
+    let extendedImgNode: HTMLImageElement | null;
+    const index = parseInt(imgNode.getAttribute("d-index")!);
+    if (oriented === "prev") {
+      if (index === 0) return null;
+      extendedImgNode = this.createImgElement();
+      imgNode.before(extendedImgNode);
+      this.setImgNode(extendedImgNode, index - 1);
+    } else {
+      if (index === this.queue.length - 1) return null;
+      extendedImgNode = this.createImgElement();
+      imgNode.after(extendedImgNode);
+      this.setImgNode(extendedImgNode, index + 1);
+    }
+    return extendedImgNode;
   }
 
   setImgNode(imgNode: HTMLImageElement, index: number) {
@@ -269,19 +293,21 @@ export class BigImageFrameManager {
       if (cssRule instanceof CSSStyleRule) {
         if (cssRule.selectorText === ".bigImageFrame > img") {
           // if is default scale, then set height to unset, and compute current width percent
-          if (cssRule.style.height === "100vh") {
+          if (!conf.imgScale) conf.imgScale = 0; // fix imgScale if it is null
+          if (conf.imgScale == 0 && this.currImageNode) {
             // compute current width percent
-            if (this.currImageNode) {
-              const vw = this.frame.offsetWidth;
-              const width = this.currImageNode.offsetWidth;
-              percent = Math.round(width / vw * 100);
-              cssRule.style.width = `${percent}vw`;
-              cssRule.style.height = "unset";
-            } else {
-              evLog("ultra image frame manager > scaleBigImages > currImageNode is null")
+            const vw = this.frame.offsetWidth;
+            const width = this.currImageNode.offsetWidth;
+            percent = Math.round(width / vw * 100);
+            cssRule.style.width = `${percent}vw`;
+            if (conf.readMode === "consecutively") {
+              cssRule.style.minHeight = "";
             }
+            cssRule.style.maxWidth = "";
+            cssRule.style.height = "";
           }
           percent = Math.max(parseInt(cssRule.style.width) + rate * fix, 10);
+          percent = Math.min(percent, 100);
           cssRule.style.width = `${percent}vw`;
           break;
         }
@@ -295,11 +321,27 @@ export class BigImageFrameManager {
     for (const cssRule of cssRules) {
       if (cssRule instanceof CSSStyleRule) {
         if (cssRule.selectorText === ".bigImageFrame > img") {
-          cssRule.style.height = "100vh"
-          cssRule.style.width = "unset"
+          cssRule.style.maxWidth = "100vw";
+          if (conf.readMode === "singlePage") {
+            cssRule.style.minHeight = "100vh";
+            cssRule.style.height = "100vh";
+            cssRule.style.width = "";
+          } else {
+            cssRule.style.minHeight = "";
+            cssRule.style.height = "";
+            cssRule.style.width = "80vw";
+          }
           break;
         }
       }
+    }
+  }
+
+  initImgScaleStyle() {
+    if (conf.imgScale && conf.imgScale > 0) {
+      this.scaleBigImages(1, 0);
+    } else {
+      this.resetScaleBigImages();
     }
   }
 
@@ -324,7 +366,7 @@ export class BigImageFrameManager {
     }
   }
 
-  findImgNodeIndexOnCenter(imgNodes: HTMLImageElement[], fixOffset: number) {
+  findImgNodeIndexOnCenter(imgNodes: HTMLImageElement[], fixOffset: number): number {
     const centerLine = this.frame.offsetHeight / 2;
     for (let i = 0; i < imgNodes.length; i++) {
       const imgNode = imgNodes[i];

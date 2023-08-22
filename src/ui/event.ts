@@ -90,7 +90,11 @@ function togglePlaneEvent(id: string, collapse?: boolean) {
 function showFullViewPlane() {
   HTML.fullViewPlane.scroll(0, 0); //否则加载会触发滚动事件
   HTML.fullViewPlane.classList.remove("collapse_full_view");
-  document.body.style.display = "none";
+  for (const node of Array.from(document.body.children)) {
+    if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains("fullViewPlane")) {
+      (node as HTMLElement).style.display = "none";
+    }
+  }
 };
 
 function hiddenFullViewPlaneEvent(event: Event) {
@@ -102,7 +106,11 @@ function hiddenFullViewPlaneEvent(event: Event) {
 function hiddenFullViewPlane() {
   hiddenBigImageEvent();
   HTML.fullViewPlane.classList.add("collapse_full_view");
-  document.body.style.display = "";
+  for (const node of Array.from(document.body.children)) {
+    if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains("fullViewPlane")) {
+      (node as HTMLElement).style.display = "";
+    }
+  }
 };
 
 //全屏阅览元素的滚动事件
@@ -125,17 +133,107 @@ function bigImageWheelEvent(event: WheelEvent) {
 };
 
 //按键事件
+let numberRecord: number[] | null = null;
 function keyboardEvent(event: KeyboardEvent) {
-  switch (event.key) {
-    case "ArrowLeft":
-      stepImageEvent(conf.reversePages ? "next" : "prev");
-      break;
-    case "ArrowRight":
-      stepImageEvent(conf.reversePages ? "prev" : "next");
-      break;
-    case "Escape":
-      hiddenBigImageEvent();
-      break;
+  if (!HTML.bigImageFrame.classList.contains("collapse")) {
+    const b = HTML.bigImageFrame;
+    switch (event.key) {
+      case "ArrowLeft":
+        event.preventDefault();
+        stepImageEvent(conf.reversePages ? "next" : "prev");
+        break;
+      case "ArrowRight":
+        event.preventDefault();
+        stepImageEvent(conf.reversePages ? "prev" : "next");
+        break;
+      case "Escape":
+      case "Enter":
+        event.preventDefault();
+        hiddenBigImageEvent();
+        break;
+      case " ":
+      case "ArrowUp":
+      case "ArrowDown": {
+        event.preventDefault();
+        let deltaY = HTML.fullViewPlane.clientHeight / (event.key === " " ? 1 : 2);
+        if (event.key === "ArrowUp" || event.shiftKey) {
+          deltaY = -deltaY;
+        }
+        const stepImage = () => {
+          if (conf.readMode === "singlePage") {
+            if (event.key === "ArrowUp" || (event.key === " " && event.shiftKey)) {
+              if (b.scrollTop <= 0) {
+                return true;
+              }
+            }
+            if (event.key === "ArrowDown" || (event.key === " " && !event.shiftKey)) {
+              if (b.scrollTop >= b.scrollHeight - b.offsetHeight) {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+        if (stepImage()) {
+          b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+        } else {
+          b.scrollBy({ top: deltaY, behavior: "smooth" });
+          if (conf.readMode === "consecutively") {
+            b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+          }
+        }
+        break;
+      }
+      case "-":
+        BIFM.scaleBigImages(-1, 5);
+        break;
+      case "=":
+        BIFM.scaleBigImages(1, 5);
+        break;
+    }
+  } else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) {
+    switch (event.key) {
+      case "Enter": {
+        let start = IFQ.currIndex;
+        if (numberRecord && numberRecord.length > 0) {
+          start = Number(numberRecord.join("")) - 1;
+          numberRecord = null;
+          if (start < 0 || start >= IFQ.length) {
+            break;
+          }
+        }
+        IFQ[start].imgElement.dispatchEvent(new MouseEvent("click"));
+        break;
+      }
+      case "Escape":
+        hiddenFullViewPlane();
+        break;
+      case "Space":
+      case " ": {
+        if (event.shiftKey) {
+          HTML.fullViewPlane.scrollBy({ top: -HTML.fullViewPlane.clientHeight, behavior: "smooth" });
+        } else {
+          HTML.fullViewPlane.scrollBy({ top: HTML.fullViewPlane.clientHeight, behavior: "smooth" });
+        }
+        break;
+      }
+      case "ArrowUp": {
+        const [top, _] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+        top.scrollIntoView({ behavior: "smooth", block: "start" });
+        break;
+      }
+      case "ArrowDown": {
+        const [_, bot] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+        bot.scrollIntoView({ behavior: "smooth", block: "end" });
+        break;
+      }
+      default: {
+        // if event.key is number, then record it
+        if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+          numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
+        }
+      }
+    }
   }
 };
 

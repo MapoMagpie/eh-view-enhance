@@ -45,7 +45,16 @@ export const i18n = {
         In default config，auto load compressed image，with low traffic consumption with good clarity。also you can enable best quality in config plane, This increases the consumption of traffic and browsing quotas。
       </li>
       <li><strong style="color: orange">Big image:</strong>click thumbnail image, into big image mode, use mouse wheel switch to next or prev</li>
-      <li><strong style="color: orange">Image zoom:</strong>right mouse button + mouse wheel</li>
+      <li><strong style="color: orange">Keyboard:</strong>
+      <table>
+      <tr><td>Scale Image</td><td>mouse right + wheel or -/=</td></tr>
+      <tr><td>Open  Image(In thumbnails)</td><td>Enter</td></tr>
+      <tr><td>Exit  Image(In big mode)</td><td>Enter/Esc</td></tr>
+      <tr><td>Open Specific Page(In thumbnails)</td><td>Input number(no echo) + Enter</td></tr>
+      <tr><td>Switch Page</td><td>→/←</td></tr>
+      <tr><td>Scroll Image</td><td>↑/↓/Space</td></tr>
+      </table>
+      </li>
       <li><strong style="color: orange">Download:</strong>click download button，popup download plane，the loading status of all images is indicated by small squares.</li>
       <li><strong style="color: orange">Feedback:</strong>
         Click 
@@ -68,7 +77,16 @@ export const i18n = {
         默认配置下，脚本会自动加载压缩图，这也是E绅士默认的浏览行为，具有较小的流量消耗与良好的清晰度。也可以在配置中启用最佳质量，脚本会加载原图，这会增加流量与浏览配额的消耗。
       </li>
       <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
-      <li><strong style="color: orange">图片缩放:</strong>在大图上鼠标右键+滚轮<strong style="color: red">缩放</strong>图片</li>
+      <li><strong style="color: orange">键盘操作:</strong>
+      <table>
+      <tr><td>图片缩放</td><td>鼠标右键+滚轮 或 -/=</td></tr>
+      <tr><td>打开大图(缩略图模式下)</td><td>回车</td></tr>
+      <tr><td>退出大图(大图模式下)</td><td>回车/Esc</td></tr>
+      <tr><td>打开指定图片(缩略图模式下)</td><td>直接输入数字(不回显) + 回车</td></tr>
+      <tr><td>切换图片</td><td>→/←</td></tr>
+      <tr><td>滚动图片</td><td>↑/↓</td></tr>
+      </table>
+      </li>
       <li><strong style="color: orange">下载功能:</strong>右下角点击下载按钮，弹出下载面板，内部通过小方块展示了所有图片的加载状态，点击开始下载按钮后，会加快图片加载效率并在所有图片加载完成后进行下载。 </li>
       <li><strong style="color: orange">问题反馈:</strong>
         点击 

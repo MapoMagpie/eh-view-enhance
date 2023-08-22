@@ -53,7 +53,7 @@ function defaultConf(): Config {
     threads: 3,
     downloadThreads: 3,
     timeout: 24,
-    version: "4.0.5",
+    version: "4.0.6",
     debug: true,
     first: true,
     disableDownload: false,
@@ -67,7 +67,7 @@ function defaultConf(): Config {
   };
 }
 
-export const VERSION = "4.0.5";
+export const VERSION = "4.0.6";
 export const signal = { first: true };
 
 function getConf(): Config {

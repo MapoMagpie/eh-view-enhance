@@ -7,7 +7,7 @@ export function createHTML() {
     const fullViewPlane = document.createElement("div");
     fullViewPlane.classList.add("fullViewPlane");
     fullViewPlane.classList.add("collapse_full_view");
-    document.body.after(fullViewPlane);
+    document.body.appendChild(fullViewPlane);
 
     const HTML_STRINGS = `
  <div id="bigImageFrame" class="bigImageFrame collapse">
@@ -24,11 +24,11 @@ export function createHTML() {
             <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
             <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
             <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
-            <div id="imgScaleResetBTN" class="scale-btn" style="width: 50px;"><span>RESET</span></div>
+            <div id="imgScaleResetBTN" class="scale-btn" style="width: 55px;"><span>RESET</span></div>
         </div>
          <div id="configPlane" class="plane p-config p-collapse">
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                 <label>
                      <span>${i18n.columns.get()}:</span>
                      <span>
                          <button id="colCountMinusBTN" type="button">-</button>
@@ -38,7 +38,7 @@ export function createHTML() {
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                 <label>
                      <span>${i18n.maxPreloadThreads.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
                      </span>
@@ -50,7 +50,7 @@ export function createHTML() {
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                 <label>
                      <span>${i18n.maxDownloadThreads.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
                      </span>
@@ -62,7 +62,7 @@ export function createHTML() {
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                 <label>
                      <span>${i18n.timeout.get()}:</span>
                      <span>
                          <button id="timeoutMinusBTN" type="button">-</button>
@@ -87,7 +87,7 @@ export function createHTML() {
                      <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label>
                      <span>${i18n.readMode.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
@@ -98,7 +98,7 @@ export function createHTML() {
                      </select>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 5; padding-left: 5px;">
                  <label>
                      <span>${i18n.reversePages.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.reversePages.get()}</span></span>:
@@ -106,7 +106,7 @@ export function createHTML() {
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label>
                      <span>${i18n.stickyMouse.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
@@ -121,7 +121,7 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
                      <span>${i18n.dragToMove.get()}:</span>
-                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px" title="Drag This To Move The Bar">
+                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">

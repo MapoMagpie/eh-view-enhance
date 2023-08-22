@@ -235,37 +235,37 @@ export class PageFetcher {
    * @param {窗口高度} clientHeight
    */
   renderCurrView(currTop: number, clientHeight: number) {
-    // 当前视图，即浏览器显示的内容、滚动到的区域
-    // 当前视图上边位置
-    const viewTop = currTop;
-    // 当前视图下边位置
+    const [startRander, endRander] = this.findOutsideRoundView(currTop, clientHeight);
+    evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}`);
+    this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
+  }
+
+  findOutsideRoundViewNode(currTop: number, clientHeight: number): [HTMLElement, HTMLElement] {
+    const [outsideTop, outsideBottom] = this.findOutsideRoundView(currTop, clientHeight);
+    return [this.queue[outsideTop].root, this.queue[outsideBottom].root];
+  }
+
+  findOutsideRoundView(currTop: number, clientHeight: number): [number, number] {
     const viewButtom = currTop + clientHeight;
-    const colCount = conf.colCount;
-    // const IFs = this.queue;
-    let startRander = 0;
-    let endRander = 0;
-    for (let i = 0, findBottom = false; i < this.queue.length; i += colCount) {
+    let outsideTop: number = 0;
+    let outsideBottom: number = 0;
+    for (let i = 0; i < this.queue.length; i += conf.colCount) {
       const { root } = this.queue[i];
       // 查询最靠近当前视图上边的缩略图索引
       // 缩略图在父元素的位置 - 当前视图上边位置 = 缩略图与当前视图上边的距离，如果距离 >= 0，说明缩略图在当前视图内
-      if (!findBottom) {
-        const distance = root.offsetTop - viewTop;
-        if (distance >= 0) {
-          startRander = Math.max(i - colCount, 0);
-          findBottom = true;
+      if (outsideBottom === 0) {
+        if (root.offsetTop + 2 >= currTop) { // +2 for deviation
+          outsideBottom = i + 1; // +1 for skip current condition
+        } else {
+          outsideTop = i;
+        }
+      } else {
+        outsideBottom = i;
+        if (root.offsetTop + root.offsetHeight > viewButtom) {
+          break;
         }
       }
-      // 查询最靠近当前试图下边的缩略图索引
-      if (findBottom) {
-        // 当前视图下边的位置 - (缩略图在父元素的位置 + 缩略图的高度)  =  缩略图与当前视图下边的距离，如果距离 <= 0 说明缩略图在当前视图内，但仍有部分图片内容在视图外，当然此缩略图之后的图片也符合这样的条件，但此为顺序遍历
-        const distance = viewButtom - (root.offsetTop + root.offsetHeight);
-        endRander = Math.min(i + colCount, this.queue.length);
-        if (distance <= 0) break;
-      }
     }
-    evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}`);
-    this.queue
-      .slice(startRander, endRander + 1)
-      .forEach((imgFetcher) => imgFetcher.render());
+    return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
   }
 }

@@ -11,7 +11,7 @@ export default defineConfig({
         namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
         match: ['https://exhentai.org/g/*', 'https://e-hentai.org/g/*'],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.0.5',
+        version: '4.0.6',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {

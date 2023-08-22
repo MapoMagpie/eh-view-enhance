@@ -47,8 +47,8 @@ export class BigImageFrameManager {
 
     if (conf.readMode === "consecutively") {
       this.tryExtend();
-      this.restoreScrollTop(this.currImageNode, 0, 0);
     }
+    this.restoreScrollTop(this.currImageNode, 0, 0);
   }
 
   initFrame() {
@@ -135,9 +135,14 @@ export class BigImageFrameManager {
     } else if (conf.readMode === "consecutively") {
       this.consecutive(event);
     } else {
-      event.preventDefault();
-      const oriented: Oriented = event.deltaY > 0 ? "next" : "prev";
-      events.stepImageEvent(oriented);
+      const oriented = event.deltaY > 0 ? "next" : "prev"
+      if (
+        (oriented === "next" && this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight) ||
+        (oriented === "prev" && this.frame.scrollTop === 0)
+      ) {
+        event.preventDefault();
+        events.stepImageEvent(oriented);
+      }
     }
   }
 

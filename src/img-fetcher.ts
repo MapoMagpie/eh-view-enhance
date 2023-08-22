@@ -87,7 +87,7 @@ export class IMGFetcher {
       const downloadBar = document.createElement("div");
       downloadBar.classList.add("downloadBar");
       downloadBar.innerHTML = `
-      <progress style="position: absolute; width: 100%; height: 10px;" value="0" max="100" />
+      <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
       `;
       this.downloadBar = downloadBar;
       this.root.appendChild(this.downloadBar);

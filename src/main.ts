@@ -81,7 +81,7 @@ HTML.currPageElement.addEventListener("click", () => events.showBigImage(IFQ.cur
 HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event as WheelEvent));
 
 // 按键导航
-document.addEventListener("keyup", events.keyboardEvent);
+document.addEventListener("keydown", (event) => events.keyboardEvent(event));
 // 箭头导航
 HTML.imgLandLeft.addEventListener("click", (event) => {
   events.stepImageEvent(conf.reversePages ? "next" : "prev");

@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.0.5
+// @version            4.0.6
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -42,7 +42,7 @@
       threads: 3,
       downloadThreads: 3,
       timeout: 24,
-      version: "4.0.5",
+      version: "4.0.6",
       debug: true,
       first: true,
       disableDownload: false,
@@ -55,7 +55,7 @@
       stickyMouse: "enable"
     };
   }
-  const VERSION = "4.0.5";
+  const VERSION = "4.0.6";
   function getConf() {
     let confStr = window.localStorage.getItem("cfg_");
     if (confStr) {
@@ -195,7 +195,7 @@
         const downloadBar = document.createElement("div");
         downloadBar.classList.add("downloadBar");
         downloadBar.innerHTML = `
-      <progress style="position: absolute; width: 100%; height: 10px;" value="0" max="100" />
+      <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
       `;
         this.downloadBar = downloadBar;
         this.root.appendChild(this.downloadBar);
@@ -482,7 +482,16 @@
         In default config，auto load compressed image，with low traffic consumption with good clarity。also you can enable best quality in config plane, This increases the consumption of traffic and browsing quotas。
       </li>
       <li><strong style="color: orange">Big image:</strong>click thumbnail image, into big image mode, use mouse wheel switch to next or prev</li>
-      <li><strong style="color: orange">Image zoom:</strong>right mouse button + mouse wheel</li>
+      <li><strong style="color: orange">Keyboard:</strong>
+      <table>
+      <tr><td>Scale Image</td><td>mouse right + wheel or -/=</td></tr>
+      <tr><td>Open  Image(In thumbnails)</td><td>Enter</td></tr>
+      <tr><td>Exit  Image(In big mode)</td><td>Enter/Esc</td></tr>
+      <tr><td>Open Specific Page(In thumbnails)</td><td>Input number(no echo) + Enter</td></tr>
+      <tr><td>Switch Page</td><td>→/←</td></tr>
+      <tr><td>Scroll Image</td><td>↑/↓/Space</td></tr>
+      </table>
+      </li>
       <li><strong style="color: orange">Download:</strong>click download button，popup download plane，the loading status of all images is indicated by small squares.</li>
       <li><strong style="color: orange">Feedback:</strong>
         Click 
@@ -505,7 +514,16 @@
         默认配置下，脚本会自动加载压缩图，这也是E绅士默认的浏览行为，具有较小的流量消耗与良好的清晰度。也可以在配置中启用最佳质量，脚本会加载原图，这会增加流量与浏览配额的消耗。
       </li>
       <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
-      <li><strong style="color: orange">图片缩放:</strong>在大图上鼠标右键+滚轮<strong style="color: red">缩放</strong>图片</li>
+      <li><strong style="color: orange">键盘操作:</strong>
+      <table>
+      <tr><td>图片缩放</td><td>鼠标右键+滚轮 或 -/=</td></tr>
+      <tr><td>打开大图(缩略图模式下)</td><td>回车</td></tr>
+      <tr><td>退出大图(大图模式下)</td><td>回车/Esc</td></tr>
+      <tr><td>打开指定图片(缩略图模式下)</td><td>直接输入数字(不回显) + 回车</td></tr>
+      <tr><td>切换图片</td><td>→/←</td></tr>
+      <tr><td>滚动图片</td><td>↑/↓</td></tr>
+      </table>
+      </li>
       <li><strong style="color: orange">下载功能:</strong>右下角点击下载按钮，弹出下载面板，内部通过小方块展示了所有图片的加载状态，点击开始下载按钮后，会加快图片加载效率并在所有图片加载完成后进行下载。 </li>
       <li><strong style="color: orange">问题反馈:</strong>
         点击 
@@ -621,7 +639,11 @@
   function showFullViewPlane() {
     HTML.fullViewPlane.scroll(0, 0);
     HTML.fullViewPlane.classList.remove("collapse_full_view");
-    document.body.style.display = "none";
+    for (const node of Array.from(document.body.children)) {
+      if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains("fullViewPlane")) {
+        node.style.display = "none";
+      }
+    }
   }
   function hiddenFullViewPlaneEvent(event) {
     if (event.target === HTML.fullViewPlane) {
@@ -631,7 +653,11 @@
   function hiddenFullViewPlane() {
     hiddenBigImageEvent();
     HTML.fullViewPlane.classList.add("collapse_full_view");
-    document.body.style.display = "";
+    for (const node of Array.from(document.body.children)) {
+      if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains("fullViewPlane")) {
+        node.style.display = "";
+      }
+    }
   }
   function scrollEvent() {
     if (HTML.fullViewPlane.classList.contains("collapse_full_view"))
@@ -646,17 +672,106 @@
   function bigImageWheelEvent(event) {
     stepImageEvent(event.deltaY > 0 ? "next" : "prev");
   }
+  let numberRecord = null;
   function keyboardEvent(event) {
-    switch (event.key) {
-      case "ArrowLeft":
-        stepImageEvent(conf.reversePages ? "next" : "prev");
-        break;
-      case "ArrowRight":
-        stepImageEvent(conf.reversePages ? "prev" : "next");
-        break;
-      case "Escape":
-        hiddenBigImageEvent();
-        break;
+    if (!HTML.bigImageFrame.classList.contains("collapse")) {
+      const b = HTML.bigImageFrame;
+      switch (event.key) {
+        case "ArrowLeft":
+          event.preventDefault();
+          stepImageEvent(conf.reversePages ? "next" : "prev");
+          break;
+        case "ArrowRight":
+          event.preventDefault();
+          stepImageEvent(conf.reversePages ? "prev" : "next");
+          break;
+        case "Escape":
+        case "Enter":
+          event.preventDefault();
+          hiddenBigImageEvent();
+          break;
+        case " ":
+        case "ArrowUp":
+        case "ArrowDown": {
+          event.preventDefault();
+          let deltaY = HTML.fullViewPlane.clientHeight / (event.key === " " ? 1 : 2);
+          if (event.key === "ArrowUp" || event.shiftKey) {
+            deltaY = -deltaY;
+          }
+          const stepImage = () => {
+            if (conf.readMode === "singlePage") {
+              if (event.key === "ArrowUp" || event.key === " " && event.shiftKey) {
+                if (b.scrollTop <= 0) {
+                  return true;
+                }
+              }
+              if (event.key === "ArrowDown" || event.key === " " && !event.shiftKey) {
+                if (b.scrollTop >= b.scrollHeight - b.offsetHeight) {
+                  return true;
+                }
+              }
+            }
+            return false;
+          };
+          if (stepImage()) {
+            b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+          } else {
+            b.scrollBy({ top: deltaY, behavior: "smooth" });
+            if (conf.readMode === "consecutively") {
+              b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+            }
+          }
+          break;
+        }
+        case "-":
+          BIFM.scaleBigImages(-1, 5);
+          break;
+        case "=":
+          BIFM.scaleBigImages(1, 5);
+          break;
+      }
+    } else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) {
+      switch (event.key) {
+        case "Enter": {
+          let start = IFQ.currIndex;
+          if (numberRecord && numberRecord.length > 0) {
+            start = Number(numberRecord.join("")) - 1;
+            numberRecord = null;
+            if (start < 0 || start >= IFQ.length) {
+              break;
+            }
+          }
+          IFQ[start].imgElement.dispatchEvent(new MouseEvent("click"));
+          break;
+        }
+        case "Escape":
+          hiddenFullViewPlane();
+          break;
+        case "Space":
+        case " ": {
+          if (event.shiftKey) {
+            HTML.fullViewPlane.scrollBy({ top: -HTML.fullViewPlane.clientHeight, behavior: "smooth" });
+          } else {
+            HTML.fullViewPlane.scrollBy({ top: HTML.fullViewPlane.clientHeight, behavior: "smooth" });
+          }
+          break;
+        }
+        case "ArrowUp": {
+          const [top, _] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+          top.scrollIntoView({ behavior: "smooth", block: "start" });
+          break;
+        }
+        case "ArrowDown": {
+          const [_, bot] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+          bot.scrollIntoView({ behavior: "smooth", block: "end" });
+          break;
+        }
+        default: {
+          if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+            numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
+          }
+        }
+      }
     }
   }
   function showBigImageEvent(event) {
@@ -1387,29 +1502,34 @@
      * @param {窗口高度} clientHeight
      */
     renderCurrView(currTop, clientHeight) {
-      const viewTop = currTop;
-      const viewButtom = currTop + clientHeight;
-      const colCount = conf.colCount;
-      let startRander = 0;
-      let endRander = 0;
-      for (let i = 0, findBottom = false; i < this.queue.length; i += colCount) {
-        const { root } = this.queue[i];
-        if (!findBottom) {
-          const distance = root.offsetTop - viewTop;
-          if (distance >= 0) {
-            startRander = Math.max(i - colCount, 0);
-            findBottom = true;
-          }
-        }
-        if (findBottom) {
-          const distance = viewButtom - (root.offsetTop + root.offsetHeight);
-          endRander = Math.min(i + colCount, this.queue.length);
-          if (distance <= 0)
-            break;
-        }
-      }
+      const [startRander, endRander] = this.findOutsideRoundView(currTop, clientHeight);
       evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}`);
       this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
+    }
+    findOutsideRoundViewNode(currTop, clientHeight) {
+      const [outsideTop, outsideBottom] = this.findOutsideRoundView(currTop, clientHeight);
+      return [this.queue[outsideTop].root, this.queue[outsideBottom].root];
+    }
+    findOutsideRoundView(currTop, clientHeight) {
+      const viewButtom = currTop + clientHeight;
+      let outsideTop = 0;
+      let outsideBottom = 0;
+      for (let i = 0; i < this.queue.length; i += conf.colCount) {
+        const { root } = this.queue[i];
+        if (outsideBottom === 0) {
+          if (root.offsetTop + 2 >= currTop) {
+            outsideBottom = i + 1;
+          } else {
+            outsideTop = i;
+          }
+        } else {
+          outsideBottom = i;
+          if (root.offsetTop + root.offsetHeight > viewButtom) {
+            break;
+          }
+        }
+      }
+      return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
     }
   }
   function loadStyleSheel() {
@@ -1555,6 +1675,11 @@
   align-content: start;
   grid-gap: 10px 0px;
 }
+.pageHelper .p-config label {
+  display: flex;
+  justify-content: space-between;
+  padding-right: 10px;
+}
 .pageHelper .p-downloader {
   height: 310px;
   display: flex;
@@ -1692,7 +1817,7 @@
     const fullViewPlane = document.createElement("div");
     fullViewPlane.classList.add("fullViewPlane");
     fullViewPlane.classList.add("collapse_full_view");
-    document.body.after(fullViewPlane);
+    document.body.appendChild(fullViewPlane);
     const HTML_STRINGS = `
  <div id="bigImageFrame" class="bigImageFrame collapse">
     <a id="imgLandLeft" hidden="true" class="imgLandLeft"></a>
@@ -1708,11 +1833,11 @@
             <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
             <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
             <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
-            <div id="imgScaleResetBTN" class="scale-btn" style="width: 50px;"><span>RESET</span></div>
+            <div id="imgScaleResetBTN" class="scale-btn" style="width: 55px;"><span>RESET</span></div>
         </div>
          <div id="configPlane" class="plane p-config p-collapse">
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                 <label>
                      <span>${i18n.columns.get()}:</span>
                      <span>
                          <button id="colCountMinusBTN" type="button">-</button>
@@ -1722,7 +1847,7 @@
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                 <label>
                      <span>${i18n.maxPreloadThreads.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
                      </span>
@@ -1734,7 +1859,7 @@
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                 <label>
                      <span>${i18n.maxDownloadThreads.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
                      </span>
@@ -1746,7 +1871,7 @@
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label style="display: flex; justify-content: space-between; padding-right: 10px;">
+                 <label>
                      <span>${i18n.timeout.get()}:</span>
                      <span>
                          <button id="timeoutMinusBTN" type="button">-</button>
@@ -1771,7 +1896,7 @@
                      <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label>
                      <span>${i18n.readMode.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
@@ -1782,7 +1907,7 @@
                      </select>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 5; padding-left: 5px;">
                  <label>
                      <span>${i18n.reversePages.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.reversePages.get()}</span></span>:
@@ -1790,7 +1915,7 @@
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
+             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label>
                      <span>${i18n.stickyMouse.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
@@ -1805,7 +1930,7 @@
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label>
                      <span>${i18n.dragToMove.get()}:</span>
-                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px" title="Drag This To Move The Bar">
+                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
@@ -1906,8 +2031,8 @@
       this.setImgNode(this.currImageNode, start);
       if (conf.readMode === "consecutively") {
         this.tryExtend();
-        this.restoreScrollTop(this.currImageNode, 0, 0);
       }
+      this.restoreScrollTop(this.currImageNode, 0, 0);
     }
     initFrame() {
       this.frame.addEventListener("wheel", (event) => this.onwheel(event));
@@ -1987,9 +2112,11 @@
       } else if (conf.readMode === "consecutively") {
         this.consecutive(event);
       } else {
-        event.preventDefault();
         const oriented = event.deltaY > 0 ? "next" : "prev";
-        events.stepImageEvent(oriented);
+        if (oriented === "next" && this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight || oriented === "prev" && this.frame.scrollTop === 0) {
+          event.preventDefault();
+          events.stepImageEvent(oriented);
+        }
       }
     }
     consecutive(event) {
@@ -2323,7 +2450,7 @@
   HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
   HTML.currPageElement.addEventListener("click", () => events.showBigImage(IFQ.currIndex));
   HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event));
-  document.addEventListener("keyup", events.keyboardEvent);
+  document.addEventListener("keydown", (event) => events.keyboardEvent(event));
   HTML.imgLandLeft.addEventListener("click", (event) => {
     events.stepImageEvent(conf.reversePages ? "next" : "prev");
     event.stopPropagation();

@@ -143,6 +143,11 @@ export function loadStyleSheel() {
   align-content: start;
   grid-gap: 10px 0px;
 }
+.pageHelper .p-config label {
+  display: flex;
+  justify-content: space-between;
+  padding-right: 10px;
+}
 .pageHelper .p-downloader {
   height: 310px;
   display: flex;

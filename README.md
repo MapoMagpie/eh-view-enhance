@@ -19,8 +19,8 @@
 - before installation: [`TamperMonkey`](https://www.tampermonkey.net/)
 - install 1: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)
 - install 1: [Sleazyfork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)
-- insatll 2: TamperMonkey > Utilities > Import From URL type in https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
-
+- insatll 2: TamperMonkey > Utilities > Import From URL type in [https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
+](https://github.com/MapoMagpie/eh-view-enhance/raw/master/dist/eh-view-enhance.user.js)
 ## Operates
 
 1. Before use this script，make sure gallery switch to `Large` mode

@@ -2002,6 +2002,8 @@
       __publicField(this, "lockInit");
       __publicField(this, "currImageNode");
       __publicField(this, "lastMouseY");
+      __publicField(this, "reachBottom");
+      // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
       __publicField(this, "imgScaleBar");
       __publicField(this, "reduceDebouncer");
       this.frame = frame;
@@ -2009,6 +2011,7 @@
       this.imgScaleBar = imgScaleBar;
       this.reduceDebouncer = new Debouncer();
       this.lockInit = false;
+      this.reachBottom = false;
       this.initFrame();
       this.initImgScaleBar();
       this.initImgScaleStyle();
@@ -2042,7 +2045,10 @@
       this.frame.addEventListener("mousemove", (event) => {
         debouncer2.addEvent("BIG-IMG-MOUSE-MOVE", () => {
           if (this.lastMouseY) {
-            this.stickyMouse(event, this.lastMouseY);
+            const stepImage = this.stickyMouse(event, this.lastMouseY);
+            if (stepImage) {
+              events.stepImageEvent("next");
+            }
           }
           this.lastMouseY = event.clientY;
         }, 5);
@@ -2327,6 +2333,7 @@
       }
     }
     stickyMouse(event, lastMouseY) {
+      let stepImage = false;
       if (conf.readMode === "singlePage" && this.frame.scrollHeight > this.frame.offsetHeight && conf.stickyMouse !== "disable") {
         let distance = event.clientY - lastMouseY;
         if (conf.stickyMouse === "enable") {
@@ -2337,14 +2344,18 @@
         if (distance > 0) {
           if (scrollTop > this.frame.scrollHeight - this.frame.offsetHeight) {
             scrollTop = this.frame.scrollHeight - this.frame.offsetHeight;
+            this.reachBottom = true;
           }
         } else {
           if (scrollTop < 0) {
             scrollTop = 0;
+            stepImage = this.reachBottom;
+            this.reachBottom = false;
           }
         }
         this.frame.scrollTo({ top: scrollTop, behavior: "auto" });
       }
+      return stepImage;
     }
     findImgNodeIndexOnCenter(imgNodes, fixOffset) {
       const centerLine = this.frame.offsetHeight / 2;

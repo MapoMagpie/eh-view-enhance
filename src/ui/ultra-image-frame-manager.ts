@@ -11,6 +11,7 @@ export class BigImageFrameManager {
   lockInit: boolean;
   currImageNode?: HTMLImageElement;
   lastMouseY?: number;
+  reachBottom: boolean; // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
   imgScaleBar: HTMLElement;
   reduceDebouncer: Debouncer;
   constructor(frame: HTMLElement, queue: IMGFetcherQueue, imgScaleBar: HTMLElement) {
@@ -19,6 +20,7 @@ export class BigImageFrameManager {
     this.imgScaleBar = imgScaleBar;
     this.reduceDebouncer = new Debouncer();
     this.lockInit = false;
+    this.reachBottom = false;
     this.initFrame();
     this.initImgScaleBar();
     this.initImgScaleStyle();
@@ -59,7 +61,10 @@ export class BigImageFrameManager {
     this.frame.addEventListener("mousemove", event => {
       debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
         if (this.lastMouseY) {
-          this.stickyMouse(event, this.lastMouseY);
+          const stepImage = this.stickyMouse(event, this.lastMouseY);
+          if (stepImage) {
+            events.stepImageEvent("next");
+          }
         }
         this.lastMouseY = event.clientY;
       }, 5);
@@ -370,7 +375,8 @@ export class BigImageFrameManager {
     }
   }
 
-  stickyMouse(event: MouseEvent, lastMouseY: number) {
+  stickyMouse(event: MouseEvent, lastMouseY: number): boolean {
+    let stepImage = false;
     if (conf.readMode === "singlePage" && this.frame.scrollHeight > this.frame.offsetHeight && conf.stickyMouse !== "disable") {
       let distance = event.clientY - lastMouseY;
       if (conf.stickyMouse === "enable") {
@@ -381,14 +387,18 @@ export class BigImageFrameManager {
       if (distance > 0) {
         if (scrollTop > this.frame.scrollHeight - this.frame.offsetHeight) {
           scrollTop = this.frame.scrollHeight - this.frame.offsetHeight;
+          this.reachBottom = true;
         }
       } else {
         if (scrollTop < 0) {
           scrollTop = 0;
+          stepImage = this.reachBottom;
+          this.reachBottom = false;
         }
       }
       this.frame.scrollTo({ top: scrollTop, behavior: "auto" });
     }
+    return stepImage;
   }
 
   findImgNodeIndexOnCenter(imgNodes: HTMLImageElement[], fixOffset: number): number {

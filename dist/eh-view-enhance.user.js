@@ -1910,7 +1910,7 @@
              <div style="grid-column-start: 1; grid-column-end: 5; padding-left: 5px;">
                  <label>
                      <span>${i18n.reversePages.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.reversePages.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
                      </span>
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
@@ -2044,13 +2044,31 @@
       const debouncer2 = new Debouncer("throttle");
       this.frame.addEventListener("mousemove", (event) => {
         debouncer2.addEvent("BIG-IMG-MOUSE-MOVE", () => {
+          var _a;
+          let stepImage = false;
           if (this.lastMouseY) {
-            const stepImage = this.stickyMouse(event, this.lastMouseY);
-            if (stepImage) {
-              events.stepImageEvent("next");
-            }
+            stepImage = this.stickyMouse(event, this.lastMouseY);
           }
-          this.lastMouseY = event.clientY;
+          if (stepImage) {
+            (_a = this.frame.querySelector("#nextLand")) == null ? void 0 : _a.remove();
+            const nextLand = document.createElement("div");
+            nextLand.setAttribute("id", "nextLand");
+            const svg_bg = `<svg version="1.1" width="150" height="40" viewBox="0 0 256 256" xml:space="preserve" id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"><defs id="defs1"/><g style="opacity:1;fill:none;fill-rule:nonzero;stroke:none;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none" transform="matrix(10.669941,0,0,8.3690402,-353.48284,-227.27389)" id="g1"><polygon points="45,69.52 0,30.25 8.52,20.48 45,52.31 81.48,20.48 90,30.25 " style="opacity:1;fill:#2fb57a;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1.04253;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none" id="polygon1" transform="matrix(0.99969313,0,0,0.62375473,0.13897358,14.382009)" /></g></svg> `;
+            nextLand.setAttribute(
+              "style",
+              `position: fixed; width: 150px; height: 40px; top: ${event.clientY + this.frame.clientHeight / 8}px; left: ${event.clientX - 75}px;`
+            );
+            nextLand.innerHTML = svg_bg;
+            nextLand.addEventListener("mouseover", () => {
+              nextLand.remove();
+              events.stepImageEvent("next");
+            });
+            this.frame.appendChild(nextLand);
+            window.setTimeout(() => nextLand.remove(), 1500);
+            this.lastMouseY = void 0;
+          } else {
+            this.lastMouseY = event.clientY;
+          }
         }, 5);
       });
     }
@@ -2277,7 +2295,7 @@
           if (cssRule.selectorText === ".bigImageFrame > img") {
             if (!conf.imgScale)
               conf.imgScale = 0;
-            if (conf.imgScale == 0 && this.currImageNode) {
+            if (conf.imgScale == 0 && (_percent || this.currImageNode)) {
               percent = _percent ?? Math.round(this.currImageNode.offsetWidth / this.frame.offsetWidth * 100);
               if (conf.readMode === "consecutively") {
                 cssRule.style.minHeight = "";
@@ -2327,14 +2345,16 @@
     }
     initImgScaleStyle() {
       if (conf.imgScale && conf.imgScale > 0) {
-        this.scaleBigImages(1, 0);
+        const imgScale = conf.imgScale;
+        conf.imgScale = 0;
+        this.scaleBigImages(1, 0, imgScale);
       } else {
         this.resetScaleBigImages();
       }
     }
     stickyMouse(event, lastMouseY) {
       let stepImage = false;
-      if (conf.readMode === "singlePage" && this.frame.scrollHeight > this.frame.offsetHeight && conf.stickyMouse !== "disable") {
+      if (conf.readMode === "singlePage" && conf.stickyMouse !== "disable") {
         let distance = event.clientY - lastMouseY;
         if (conf.stickyMouse === "enable") {
           distance = -distance;
@@ -2342,12 +2362,12 @@
         const rate = (this.frame.scrollHeight - this.frame.offsetHeight) / (this.frame.offsetHeight / 4) * 3;
         let scrollTop = this.frame.scrollTop + distance * rate;
         if (distance > 0) {
-          if (scrollTop > this.frame.scrollHeight - this.frame.offsetHeight) {
+          if (scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight) {
             scrollTop = this.frame.scrollHeight - this.frame.offsetHeight;
             this.reachBottom = true;
           }
-        } else {
-          if (scrollTop < 0) {
+        } else if (distance < 0) {
+          if (scrollTop <= 0) {
             scrollTop = 0;
             stepImage = this.reachBottom;
             this.reachBottom = false;

@@ -4,12 +4,12 @@ import { loadStyleSheel } from "./style";
 
 
 export function createHTML() {
-    const fullViewPlane = document.createElement("div");
-    fullViewPlane.classList.add("fullViewPlane");
-    fullViewPlane.classList.add("collapse_full_view");
-    document.body.appendChild(fullViewPlane);
+  const fullViewPlane = document.createElement("div");
+  fullViewPlane.classList.add("fullViewPlane");
+  fullViewPlane.classList.add("collapse_full_view");
+  document.body.appendChild(fullViewPlane);
 
-    const HTML_STRINGS = `
+  const HTML_STRINGS = `
  <div id="bigImageFrame" class="bigImageFrame collapse">
     <a id="imgLandLeft" hidden="true" class="imgLandLeft"></a>
     <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
@@ -101,7 +101,7 @@ export function createHTML() {
              <div style="grid-column-start: 1; grid-column-end: 5; padding-left: 5px;">
                  <label>
                      <span>${i18n.reversePages.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.reversePages.get()}</span></span>:
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
                      </span>
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
@@ -156,33 +156,33 @@ export function createHTML() {
      </div>
  </div>
 `;
-    fullViewPlane.innerHTML = HTML_STRINGS;
-    const styleSheel = loadStyleSheel();
-    return {
-        fullViewPlane,
-        // root element
-        bigImageFrame: fullViewPlane.querySelector<HTMLElement>("#bigImageFrame")!,
-        // page helper
-        pageHelper: fullViewPlane.querySelector<HTMLElement>("#pageHelper")!,
-        // config button in pageHelper
-        configPlaneBTN: fullViewPlane.querySelector<HTMLElement>("#configPlaneBTN")!,
-        // config plane mouse leave event
-        configPlane: fullViewPlane.querySelector<HTMLElement>("#configPlane")!,
-        // download button in pageHelper
-        downloaderPlaneBTN: fullViewPlane.querySelector<HTMLElement>("#downloaderPlaneBTN")!,
-        // download plane mouse leave event
-        downloaderPlane: fullViewPlane.querySelector<HTMLElement>("#downloaderPlane")!,
-        collapseBTN: fullViewPlane.querySelector<HTMLElement>("#collapseBTN")!,
-        gate: fullViewPlane.querySelector<HTMLElement>("#gate")!,
-        currPageElement: fullViewPlane.querySelector<HTMLElement>("#p-currPage")!,
-        totalPageElement: fullViewPlane.querySelector<HTMLElement>("#p-total")!,
-        finishedElement: fullViewPlane.querySelector<HTMLElement>("#p-finished")!,
-        showGuideElement: fullViewPlane.querySelector<HTMLElement>("#showGuideElement")!,
-        imgLandLeft: fullViewPlane.querySelector<HTMLElement>("#imgLandLeft")!,
-        imgLandRight: fullViewPlane.querySelector<HTMLElement>("#imgLandRight")!,
-        imgLandTop: fullViewPlane.querySelector<HTMLElement>("#imgLandTop")!,
-        imgLandBottom: fullViewPlane.querySelector<HTMLElement>("#imgLandBottom")!,
-        imgScaleBar: fullViewPlane.querySelector<HTMLElement>("#imgScaleBar")!,
-        styleSheel,
-    };
+  fullViewPlane.innerHTML = HTML_STRINGS;
+  const styleSheel = loadStyleSheel();
+  return {
+    fullViewPlane,
+    // root element
+    bigImageFrame: fullViewPlane.querySelector<HTMLElement>("#bigImageFrame")!,
+    // page helper
+    pageHelper: fullViewPlane.querySelector<HTMLElement>("#pageHelper")!,
+    // config button in pageHelper
+    configPlaneBTN: fullViewPlane.querySelector<HTMLElement>("#configPlaneBTN")!,
+    // config plane mouse leave event
+    configPlane: fullViewPlane.querySelector<HTMLElement>("#configPlane")!,
+    // download button in pageHelper
+    downloaderPlaneBTN: fullViewPlane.querySelector<HTMLElement>("#downloaderPlaneBTN")!,
+    // download plane mouse leave event
+    downloaderPlane: fullViewPlane.querySelector<HTMLElement>("#downloaderPlane")!,
+    collapseBTN: fullViewPlane.querySelector<HTMLElement>("#collapseBTN")!,
+    gate: fullViewPlane.querySelector<HTMLElement>("#gate")!,
+    currPageElement: fullViewPlane.querySelector<HTMLElement>("#p-currPage")!,
+    totalPageElement: fullViewPlane.querySelector<HTMLElement>("#p-total")!,
+    finishedElement: fullViewPlane.querySelector<HTMLElement>("#p-finished")!,
+    showGuideElement: fullViewPlane.querySelector<HTMLElement>("#showGuideElement")!,
+    imgLandLeft: fullViewPlane.querySelector<HTMLElement>("#imgLandLeft")!,
+    imgLandRight: fullViewPlane.querySelector<HTMLElement>("#imgLandRight")!,
+    imgLandTop: fullViewPlane.querySelector<HTMLElement>("#imgLandTop")!,
+    imgLandBottom: fullViewPlane.querySelector<HTMLElement>("#imgLandBottom")!,
+    imgScaleBar: fullViewPlane.querySelector<HTMLElement>("#imgScaleBar")!,
+    styleSheel,
+  };
 }

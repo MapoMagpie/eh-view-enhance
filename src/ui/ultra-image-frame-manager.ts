@@ -11,7 +11,8 @@ export class BigImageFrameManager {
   lockInit: boolean;
   currImageNode?: HTMLImageElement;
   lastMouseY?: number;
-  reachBottom: boolean; // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
+  recordedDistance!: number;
+  reachBottom!: boolean; // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
   imgScaleBar: HTMLElement;
   reduceDebouncer: Debouncer;
   constructor(frame: HTMLElement, queue: IMGFetcherQueue, imgScaleBar: HTMLElement) {
@@ -20,10 +21,16 @@ export class BigImageFrameManager {
     this.imgScaleBar = imgScaleBar;
     this.reduceDebouncer = new Debouncer();
     this.lockInit = false;
-    this.reachBottom = false;
+    this.resetStickyMouse();
     this.initFrame();
     this.initImgScaleBar();
     this.initImgScaleStyle();
+  }
+
+  resetStickyMouse() {
+    this.reachBottom = false;
+    this.recordedDistance = 0;
+    this.lastMouseY = undefined;
   }
 
   flushImgScaleBar() {
@@ -32,6 +39,7 @@ export class BigImageFrameManager {
   }
 
   setNow(index: number) {
+    this.resetStickyMouse();
     // every time call this.onWheel(), will set this.lockInit to true
     if (this.lockInit) {
       this.lockInit = false;
@@ -60,28 +68,15 @@ export class BigImageFrameManager {
     const debouncer = new Debouncer("throttle");
     this.frame.addEventListener("mousemove", event => {
       debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
-        let stepImage = false;
+        let [stepImage, distance] = [false, 0];
         if (this.lastMouseY) {
-          stepImage = this.stickyMouse(event, this.lastMouseY);
+          [stepImage, distance] = this.stickyMouse(event, this.lastMouseY);
         }
         if (stepImage) {
           // create element position at the bottom of the cursor
           // after 3 seconds, remove the element
           // if mouseover the element, step next image and remove itself
-          this.frame.querySelector<HTMLElement>("#nextLand")?.remove();
-          const nextLand = document.createElement("div");
-          nextLand.setAttribute("id", "nextLand");
-          const svg_bg = `<svg version="1.1" width="150" height="40" viewBox="0 0 256 256" xml:space="preserve" id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"><defs id="defs1"/><g style="opacity:1;fill:none;fill-rule:nonzero;stroke:none;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none" transform="matrix(10.669941,0,0,8.3690402,-353.48284,-227.27389)" id="g1"><polygon points="45,69.52 0,30.25 8.52,20.48 45,52.31 81.48,20.48 90,30.25 " style="opacity:1;fill:#2fb57a;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1.04253;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none" id="polygon1" transform="matrix(0.99969313,0,0,0.62375473,0.13897358,14.382009)" /></g></svg> `;
-          nextLand.setAttribute("style",
-            `position: fixed; width: 150px; height: 40px; top: ${event.clientY + this.frame.clientHeight / 8}px; left: ${event.clientX - 75}px;`);
-          nextLand.innerHTML = svg_bg;
-          nextLand.addEventListener("mouseover", () => {
-            nextLand.remove();
-            events.stepImageEvent("next");
-          });
-          this.frame.appendChild(nextLand);
-          window.setTimeout(() => nextLand.remove(), 1500)
-          this.lastMouseY = undefined;
+          this.createNextLand(event.clientX, event.clientY);
         } else {
           this.lastMouseY = event.clientY;
         }
@@ -116,6 +111,26 @@ export class BigImageFrameManager {
         progress.removeEventListener("mousemove", mouseMove);
       }, { once: true });
     });
+  }
+
+  createNextLand(x: number, y: number) {
+    this.frame.querySelector<HTMLElement>("#nextLand")?.remove();
+    const nextLand = document.createElement("div");
+    nextLand.setAttribute("id", "nextLand");
+    const svg_bg = `<svg version="1.1" width="150" height="40" viewBox="0 0 256 256" xml:space="preserve" id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"><defs id="defs1" /><path style="color:#000000;display:inline;mix-blend-mode:normal;fill:#86e690;fill-opacity:0.942853;fill-rule:evenodd;stroke:#000000;stroke-width:2.56;stroke-linejoin:bevel;stroke-miterlimit:10;stroke-dasharray:61.44, 2.56;stroke-dashoffset:0.768;stroke-opacity:0.319655" d="M -0.07467348,3.2775653 -160.12951,3.3501385 127.96339,156.87088 415.93447,3.2743495 255.93798,3.2807133 128.00058,48.081351 Z" id="path15" /></svg>`;
+    let yFix = this.frame.clientHeight / 9;
+    if (conf.stickyMouse === "reverse") {
+      yFix = -yFix
+    }
+    nextLand.setAttribute("style",
+      `position: fixed; width: 150px; height: 40px; top: ${y + yFix}px; left: ${x - 75}px; z-index: 1006;`);
+    nextLand.innerHTML = svg_bg;
+    nextLand.addEventListener("mouseover", () => {
+      nextLand.remove();
+      events.stepImageEvent("next");
+    });
+    this.frame.appendChild(nextLand);
+    window.setTimeout(() => nextLand.remove(), 1500)
   }
 
   createImgElement(): HTMLImageElement {
@@ -395,19 +410,19 @@ export class BigImageFrameManager {
     }
   }
 
-  stickyMouse(event: MouseEvent, lastMouseY: number): boolean {
-    let stepImage = false;
+  stickyMouse(event: MouseEvent, lastMouseY: number): [boolean, number] {
+    let [stepImage, distance] = [false, 0];
     if (conf.readMode === "singlePage" && conf.stickyMouse !== "disable") {
-      let distance = event.clientY - lastMouseY;
-      if (conf.stickyMouse === "enable") {
-        distance = -distance;
-      }
+      distance = event.clientY - lastMouseY;
+      distance = conf.stickyMouse === "enable" ? -distance : distance;
       const rate = (this.frame.scrollHeight - this.frame.offsetHeight) / (this.frame.offsetHeight / 4) * 3;
       let scrollTop = this.frame.scrollTop + distance * rate;
       if (distance > 0) {
+        this.recordedDistance += distance;
         if (scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight) {
           scrollTop = this.frame.scrollHeight - this.frame.offsetHeight;
-          this.reachBottom = true;
+          // At least (screenHeight / 9)px of movement is required to confirm reaching the bottom.
+          this.reachBottom = this.recordedDistance >= (this.frame.clientHeight / 9);
         }
       } else if (distance < 0) {
         if (scrollTop <= 0) {
@@ -418,7 +433,7 @@ export class BigImageFrameManager {
       }
       this.frame.scrollTo({ top: scrollTop, behavior: "auto" });
     }
-    return stepImage;
+    return [stepImage, distance];
   }
 
   findImgNodeIndexOnCenter(imgNodes: HTMLImageElement[], fixOffset: number): number {

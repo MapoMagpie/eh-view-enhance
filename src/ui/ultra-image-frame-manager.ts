@@ -3,6 +3,7 @@ import { IMGFetcherQueue } from "../fetcher-queue";
 import { FetchState } from "../img-fetcher";
 import { HTML, Oriented } from "../main";
 import { Debouncer } from "../utils/debouncer";
+import { sleep } from "../utils/sleep";
 import { events } from "./event";
 
 export class BigImageFrameManager {
@@ -68,9 +69,9 @@ export class BigImageFrameManager {
     const debouncer = new Debouncer("throttle");
     this.frame.addEventListener("mousemove", event => {
       debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
-        let [stepImage, distance] = [false, 0];
+        let stepImage = false;
         if (this.lastMouseY) {
-          [stepImage, distance] = this.stickyMouse(event, this.lastMouseY);
+          [stepImage] = this.stickyMouse(event, this.lastMouseY);
         }
         if (stepImage) {
           // create element position at the bottom of the cursor
@@ -448,3 +449,60 @@ export class BigImageFrameManager {
     return 0;
   }
 }
+
+// 自动翻页
+export class AutoPage {
+  frameManager: BigImageFrameManager;
+  status: 'stop' | 'running';
+  button: HTMLElement;
+  constructor(frameManager: BigImageFrameManager, root: HTMLElement) {
+    this.frameManager = frameManager;
+    this.status = "stop";
+    this.button = root;
+    this.initPlayButton();
+  }
+
+  initPlayButton() {
+    this.button.addEventListener("click", () => {
+      if (this.status === "stop") {
+        this.start();
+      } else {
+        this.stop();
+      }
+    });
+  }
+
+  async start() {
+    this.status = "running";
+    this.button.innerText = "⏹️";
+    const b = this.frameManager.frame;
+    if (this.frameManager.frame.classList.contains("collapse")) {
+      events.showBigImage(this.frameManager.queue.currIndex);
+    }
+    while (true) {
+      await sleep(conf.autoPageInterval ?? 10000);
+      if (this.status !== "running") {
+        break;
+      }
+      if (this.frameManager.queue.currIndex >= this.frameManager.queue.length - 1) {
+        break;
+      }
+      const deltaY = this.frameManager.frame.offsetHeight / 1;
+      if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
+        b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+      } else {
+        b.scrollBy({ top: deltaY, behavior: "smooth" });
+        if (conf.readMode === "consecutively") {
+          b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+        }
+      }
+    }
+    this.stop();
+  }
+
+  stop() {
+    this.status = "stop";
+    this.button.innerText = "▶️";
+  }
+}
+

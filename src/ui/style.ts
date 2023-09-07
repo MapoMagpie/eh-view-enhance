@@ -67,7 +67,7 @@ export function loadStyleSheel() {
   min-width: 0px;
 }
 .pageHelper.pageHelperExtend {
-  min-width: 337px;
+  min-width: 377px;
   transition: min-width 0.4s ease;
 }
 .pageHelper:hover {
@@ -75,6 +75,12 @@ export function loadStyleSheel() {
 }
 .pageHelper .clickable {
   text-decoration-line: underline;
+}
+.b-main .main-btn {
+  height: 25px;
+  width: 25px;
+  border: 1px solid white;
+  background-color: #3aefaa44
 }
 .clickable:hover {
   color: white !important;
@@ -91,7 +97,7 @@ export function loadStyleSheel() {
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   transition: height 0.4s;
   overflow: hidden;
-  width: 337px;
+  width: 377px;
 }
 .pageHelper .p-img-scale {
   bottom: 30px;
@@ -137,7 +143,7 @@ export function loadStyleSheel() {
   transition: flex-grow 0.6s ease;
 }
 .pageHelper .p-config {
-  height: 340px;
+  height: 377px;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
@@ -169,13 +175,14 @@ export function loadStyleSheel() {
   width: 100%;
 }
 .pageHelper .btn {
-  color: rgb(255, 232, 176);
+  color: rgb(255, 255, 255);
   cursor: pointer;
   border: 1px solid rgb(0, 0, 0);
   border-radius: 4px;
-  height: 30px;
+  height: 24px;
   font-weight: 900;
-  background: rgb(70, 69, 98) none repeat scroll 0% 0%;
+  background: rgb(81, 81, 81);
+  width: 24px;
 }
 .fetched {
   border: 2px solid #602a5c !important;
@@ -256,7 +263,7 @@ export function loadStyleSheel() {
 }
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 337px;
+  width: 377px;
   top: 0px;
   right: 0px;
   background-color: black;

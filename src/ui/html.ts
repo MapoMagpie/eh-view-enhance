@@ -31,9 +31,9 @@ export function createHTML() {
                  <label>
                      <span>${i18n.columns.get()}:</span>
                      <span>
-                         <button id="colCountMinusBTN" type="button">-</button>
+                         <button id="colCountMinusBTN" class="btn" type="button">-</button>
                          <input id="colCountInput" value="${conf.colCount}" disabled type="text" style="width: 15px;" />
-                         <button id="colCountAddBTN" type="button">+</button>
+                         <button id="colCountAddBTN" class="btn" type="button">+</button>
                      </span>
                  </label>
              </div>
@@ -43,9 +43,9 @@ export function createHTML() {
                         <span class="tooltip">?<span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
-                         <button id="threadsMinusBTN" type="button">-</button>
+                         <button id="threadsMinusBTN" class="btn" type="button">-</button>
                          <input id="threadsInput" value="${conf.threads}" disabled type="text" style="width: 15px;" />
-                         <button id="threadsAddBTN" type="button">+</button>
+                         <button id="threadsAddBTN" class="btn" type="button">+</button>
                      </span>
                  </label>
              </div>
@@ -55,9 +55,9 @@ export function createHTML() {
                         <span class="tooltip">?<span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
-                         <button id="downloadThreadsMinusBTN" type="button">-</button>
+                         <button id="downloadThreadsMinusBTN" class="btn" type="button">-</button>
                          <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" style="width: 15px;" />
-                         <button id="downloadThreadsAddBTN" type="button">+</button>
+                         <button id="downloadThreadsAddBTN" class="btn" type="button">+</button>
                      </span>
                  </label>
              </div>
@@ -65,9 +65,9 @@ export function createHTML() {
                  <label>
                      <span>${i18n.timeout.get()}:</span>
                      <span>
-                         <button id="timeoutMinusBTN" type="button">-</button>
+                         <button id="timeoutMinusBTN" class="btn" type="button">-</button>
                          <input id="timeoutInput" value="${conf.timeout}" disabled type="text" style="width: 15px;" />
-                         <button id="timeoutAddBTN" type="button">+</button>
+                         <button id="timeoutAddBTN" class="btn" type="button">+</button>
                      </span>
                  </label>
              </div>
@@ -79,12 +79,20 @@ export function createHTML() {
                      <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
+             <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
                  <label>
                      <span>${i18n.autoLoad.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
                      </span>
                      <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
+                 <label>
+                     <span>${i18n.reversePages.get()}
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
+                     </span>
+                     <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
@@ -98,24 +106,26 @@ export function createHTML() {
                      </select>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 5; padding-left: 5px;">
-                 <label>
-                     <span>${i18n.reversePages.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
-                     </span>
-                     <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
-                 </label>
-             </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label>
                      <span>${i18n.stickyMouse.get()}
                         <span class="tooltip">?<span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
                      </span>
-                     <select id="stickyMouseSelect" style="height: 18px; width: 80px; border-radius: 0px;">
+                     <select id="stickyMouseSelect" style="height: 18px; width: 130px; border-radius: 0px;">
                         <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
                         <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
                         <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
                      </select>
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
+                 <label>
+                     <span>${i18n.autoPageInterval.get()}:</span>
+                     <span>
+                         <button id="autoPageIntervalMinusBTN" class="btn" type="button">-</button>
+                         <input id="autoPageIntervalInput" value="${conf.autoPageInterval}" disabled type="text" style="width: 50px;" />
+                         <button id="autoPageIntervalAddBTN" class="btn" type="button">+</button>
+                     </span>
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
@@ -149,6 +159,7 @@ export function createHTML() {
              <span class="clickable" id="p-currPage"
                  style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
          </div>
+         <div id="autoPageBTN" class="clickable main-btn">▶️</div>
          <div id="collapseBTN" class="clickable">${i18n.collapse.get()}</div>
      </div>
      <div>
@@ -183,6 +194,7 @@ export function createHTML() {
     imgLandTop: fullViewPlane.querySelector<HTMLElement>("#imgLandTop")!,
     imgLandBottom: fullViewPlane.querySelector<HTMLElement>("#imgLandBottom")!,
     imgScaleBar: fullViewPlane.querySelector<HTMLElement>("#imgScaleBar")!,
+    autoPageBTN: fullViewPlane.querySelector<HTMLElement>("#autoPageBTN")!,
     styleSheel,
   };
 }

@@ -38,6 +38,8 @@ export type Config = {
   imgScale: number
   /** 图片缩放比例 */
   stickyMouse: "enable" | "disable" | "reverse"
+  /** 自动翻页间隔 */
+  autoPageInterval: number
 };
 
 function defaultConf(): Config {
@@ -53,7 +55,7 @@ function defaultConf(): Config {
     threads: 3,
     downloadThreads: 3,
     timeout: 24,
-    version: "4.0.6",
+    version: "4.0.7",
     debug: true,
     first: true,
     disableDownload: false,
@@ -64,10 +66,11 @@ function defaultConf(): Config {
     pageHelperAbRight: "50px",
     imgScale: 0,
     stickyMouse: "enable",
+    autoPageInterval: 10000,
   };
 }
 
-export const VERSION = "4.0.6";
+export const VERSION = "4.0.7";
 export const signal = { first: true };
 
 function getConf(): Config {
@@ -82,8 +85,8 @@ function getConf(): Config {
   window.localStorage.setItem("cfg_", JSON.stringify(conf));
   return conf;
 }
-export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout";
-export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout"];
+export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval";
+export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval"];
 export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages";
 export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages"];
 export type ConfigSelectType = "readMode" | "stickyMouse";

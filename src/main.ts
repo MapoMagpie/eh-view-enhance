@@ -5,7 +5,7 @@ import { IdleLoader } from "./idle-loader";
 import { PageFetcher } from "./page-fetcher";
 import { events } from "./ui/event";
 import { createHTML } from "./ui/html";
-import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
+import { AutoPage, BigImageFrameManager } from "./ui/ultra-image-frame-manager";
 import { Debouncer } from "./utils/debouncer";
 import { dragElement } from "./utils/drag-element";
 
@@ -18,6 +18,7 @@ export const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML.bigImage
 export const PF: PageFetcher = new PageFetcher(IFQ, IL);
 export const DL: Downloader = new Downloader(IFQ, IL);
 export const DLC: DownloaderCanvas = new DownloaderCanvas("downloaderCanvas", IFQ);
+export const AP: AutoPage = new AutoPage(BIFM, HTML.autoPageBTN);
 
 if (conf["first"]) {
   events.showGuideEvent();

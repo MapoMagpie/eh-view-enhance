@@ -15,6 +15,7 @@ export const i18n = {
   collapse: new I18nValue("FOLD", "收起"),
   columns: new I18nValue("Columns", "每行数量"),
   readMode: new I18nValue("Read Mode", "阅读模式"),
+  autoPageInterval: new I18nValue("Auto Page Interval", "自动翻页间隔"),
   readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
   maxPreloadThreads: new I18nValue("PreloadThreads", "最大同时加载"),
   maxPreloadThreadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),

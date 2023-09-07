@@ -18,14 +18,16 @@ function modNumberConfigEvent(key: ConfigNumberType, data?: "add" | "minus") {
     threads: [1, 10],
     downloadThreads: [1, 10],
     timeout: [8, 40],
+    autoPageInterval: [500, 90000],
   };
+  let mod = key === "autoPageInterval" ? 100 : 1;
   if (data === "add") {
     if (conf[key] < range[key][1]) {
-      conf[key]++;
+      conf[key] += mod;
     }
   } else if (data === "minus") {
     if (conf[key] > range[key][0]) {
-      conf[key]--;
+      conf[key] -= mod;
     }
   }
   const inputElement = document.querySelector<HTMLInputElement>(`#${key}Input`);
@@ -135,7 +137,7 @@ function bigImageWheelEvent(event: WheelEvent) {
 //按键事件
 let numberRecord: number[] | null = null;
 function keyboardEvent(event: KeyboardEvent) {
-  if (!HTML.bigImageFrame.classList.contains("collapse")) {
+  if (!HTML.bigImageFrame.classList.contains("collapse")) { // in big image mode
     const b = HTML.bigImageFrame;
     switch (event.key) {
       case "ArrowLeft":
@@ -160,16 +162,17 @@ function keyboardEvent(event: KeyboardEvent) {
           deltaY = -deltaY;
         }
         const stepImage = () => {
-          if (conf.readMode === "singlePage") {
-            if (event.key === "ArrowUp" || (event.key === " " && event.shiftKey)) {
-              if (b.scrollTop <= 0) {
-                return true;
-              }
+          if (conf.readMode !== "singlePage") {
+            return false;
+          }
+          if (event.key === "ArrowUp" || (event.key === " " && event.shiftKey)) {
+            if (b.scrollTop <= 0) {
+              return true;
             }
-            if (event.key === "ArrowDown" || (event.key === " " && !event.shiftKey)) {
-              if (b.scrollTop >= b.scrollHeight - b.offsetHeight) {
-                return true;
-              }
+          }
+          if (event.key === "ArrowDown" || (event.key === " " && !event.shiftKey)) {
+            if (b.scrollTop >= b.scrollHeight - b.offsetHeight) {
+              return true;
             }
           }
           return false;
@@ -191,7 +194,7 @@ function keyboardEvent(event: KeyboardEvent) {
         BIFM.scaleBigImages(1, 5);
         break;
     }
-  } else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) {
+  } else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) { // in thumbnails mode
     switch (event.key) {
       case "Enter": {
         let start = IFQ.currIndex;

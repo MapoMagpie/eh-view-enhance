@@ -56,34 +56,37 @@ export function loadStyleSheel() {
   left: ${conf.pageHelperAbLeft};
   bottom: ${conf.pageHelperAbBottom};
   right: ${conf.pageHelperAbRight};
-  background-color: rgba(114, 114, 114, 0.8);
+  background-color: #4a4a4ae6;
   z-index: 1011 !important;
   box-sizing: border-box;
   font-weight: bold;
-  color: rgb(135, 255, 184);
+  color: #fff;
   font-size: 1rem;
   cursor: pointer;
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
 .pageHelper.pageHelperExtend {
-  min-width: 377px;
+  min-width: 347px;
   transition: min-width 0.4s ease;
 }
 .pageHelper:hover {
-  background-color: rgba(40, 40, 40, 0.8);
+  background-color: #3a3a3ae6;
 }
 .pageHelper .clickable {
   text-decoration-line: underline;
+  z-index: 1111;
+  user-select: none;
 }
 .b-main .main-btn {
   height: 25px;
-  width: 25px;
-  border: 1px solid white;
-  background-color: #3aefaa44
+  background-color: #a1a1a1aa;
+}
+.main-btn:hover {
+  background-color: #7e917eaa;
 }
 .clickable:hover {
-  color: white !important;
+  color: #90ea90 !important;
 }
 .pageHelper .plane {
   z-index: 1010 !important;
@@ -97,7 +100,7 @@ export function loadStyleSheel() {
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   transition: height 0.4s;
   overflow: hidden;
-  width: 377px;
+  width: 347px;
 }
 .pageHelper .p-img-scale {
   bottom: 30px;
@@ -143,7 +146,7 @@ export function loadStyleSheel() {
   transition: flex-grow 0.6s ease;
 }
 .pageHelper .p-config {
-  height: 377px;
+  height: 387px;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
@@ -205,13 +208,19 @@ export function loadStyleSheel() {
   0% {
     background-color: #f00;
   }
-
   50% {
     background-color: #48ff00;
   }
-
   100% {
     background-color: #ae00ff;
+  }
+}
+@keyframes main-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
   }
 }
 .collapse {
@@ -263,7 +272,7 @@ export function loadStyleSheel() {
 }
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 377px;
+  width: 347px;
   top: 0px;
   right: 0px;
   background-color: black;

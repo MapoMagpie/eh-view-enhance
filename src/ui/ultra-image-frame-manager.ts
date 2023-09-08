@@ -3,6 +3,7 @@ import { IMGFetcherQueue } from "../fetcher-queue";
 import { FetchState } from "../img-fetcher";
 import { HTML, Oriented } from "../main";
 import { Debouncer } from "../utils/debouncer";
+import { i18n } from "../utils/i18n";
 import { sleep } from "../utils/sleep";
 import { events } from "./event";
 
@@ -70,13 +71,10 @@ export class BigImageFrameManager {
     this.frame.addEventListener("mousemove", event => {
       debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
         let stepImage = false;
-        if (this.lastMouseY) {
+        if (this.lastMouseY && conf.imgScale > 0) {
           [stepImage] = this.stickyMouse(event, this.lastMouseY);
         }
         if (stepImage) {
-          // create element position at the bottom of the cursor
-          // after 3 seconds, remove the element
-          // if mouseover the element, step next image and remove itself
           this.createNextLand(event.clientX, event.clientY);
         } else {
           this.lastMouseY = event.clientY;
@@ -371,7 +369,11 @@ export class BigImageFrameManager {
         }
       }
     }
-    conf.imgScale = percent;
+    if (conf.readMode === "singlePage" && this.currImageNode && this.currImageNode.offsetHeight <= this.frame.offsetHeight) {
+      this.resetScaleBigImages();
+    } else {
+      conf.imgScale = percent;
+    }
     window.localStorage.setItem("cfg_", JSON.stringify(conf));
     this.flushImgScaleBar();
     return percent;
@@ -455,39 +457,47 @@ export class AutoPage {
   frameManager: BigImageFrameManager;
   status: 'stop' | 'running';
   button: HTMLElement;
+  lockVer: number;
   constructor(frameManager: BigImageFrameManager, root: HTMLElement) {
     this.frameManager = frameManager;
     this.status = "stop";
     this.button = root;
+    this.lockVer = 0;
     this.initPlayButton();
   }
 
   initPlayButton() {
     this.button.addEventListener("click", () => {
       if (this.status === "stop") {
-        this.start();
+        this.start(this.lockVer);
       } else {
         this.stop();
       }
     });
   }
 
-  async start() {
+  async start(lockVer: number) {
     this.status = "running";
-    this.button.innerText = "⏹️";
+    (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
     const b = this.frameManager.frame;
     if (this.frameManager.frame.classList.contains("collapse")) {
       events.showBigImage(this.frameManager.queue.currIndex);
     }
+    const progress = this.button.querySelector<HTMLDivElement>("#autoPageProgress")!;
     while (true) {
+      progress.style.animation = `${conf.autoPageInterval ?? 10000}ms linear main-progress`;
       await sleep(conf.autoPageInterval ?? 10000);
+      if (this.lockVer !== lockVer) {
+        return;
+      }
+      progress.style.animation = ``;
       if (this.status !== "running") {
         break;
       }
       if (this.frameManager.queue.currIndex >= this.frameManager.queue.length - 1) {
         break;
       }
-      const deltaY = this.frameManager.frame.offsetHeight / 1;
+      const deltaY = this.frameManager.frame.offsetHeight / 2;
       if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
         b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
       } else {
@@ -502,7 +512,10 @@ export class AutoPage {
 
   stop() {
     this.status = "stop";
-    this.button.innerText = "▶️";
+    this.lockVer += 1;
+    (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePlay.get();
+    const progress = this.button.querySelector<HTMLDivElement>("#autoPageProgress")!;
+    progress.style.animation = ``;
   }
 }
 

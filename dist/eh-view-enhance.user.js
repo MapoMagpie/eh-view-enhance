@@ -450,6 +450,8 @@
     imageScale: new I18nValue("SCALE", "缩放"),
     download: new I18nValue("DL", "下载"),
     config: new I18nValue("CONF", "配置"),
+    autoPagePlay: new I18nValue("PLAY", "播放"),
+    autoPagePause: new I18nValue("PAUSE", "暂停"),
     collapse: new I18nValue("FOLD", "收起"),
     columns: new I18nValue("Columns", "每行数量"),
     readMode: new I18nValue("Read Mode", "阅读模式"),
@@ -1593,34 +1595,37 @@
   left: ${conf.pageHelperAbLeft};
   bottom: ${conf.pageHelperAbBottom};
   right: ${conf.pageHelperAbRight};
-  background-color: rgba(114, 114, 114, 0.8);
+  background-color: #4a4a4ae6;
   z-index: 1011 !important;
   box-sizing: border-box;
   font-weight: bold;
-  color: rgb(135, 255, 184);
+  color: #fff;
   font-size: 1rem;
   cursor: pointer;
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
 .pageHelper.pageHelperExtend {
-  min-width: 377px;
+  min-width: 347px;
   transition: min-width 0.4s ease;
 }
 .pageHelper:hover {
-  background-color: rgba(40, 40, 40, 0.8);
+  background-color: #3a3a3ae6;
 }
 .pageHelper .clickable {
   text-decoration-line: underline;
+  z-index: 1111;
+  user-select: none;
 }
 .b-main .main-btn {
   height: 25px;
-  width: 25px;
-  border: 1px solid white;
-  background-color: #3aefaa44
+  background-color: #a1a1a1aa;
+}
+.main-btn:hover {
+  background-color: #7e917eaa;
 }
 .clickable:hover {
-  color: white !important;
+  color: #90ea90 !important;
 }
 .pageHelper .plane {
   z-index: 1010 !important;
@@ -1634,7 +1639,7 @@
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   transition: height 0.4s;
   overflow: hidden;
-  width: 377px;
+  width: 347px;
 }
 .pageHelper .p-img-scale {
   bottom: 30px;
@@ -1680,7 +1685,7 @@
   transition: flex-grow 0.6s ease;
 }
 .pageHelper .p-config {
-  height: 377px;
+  height: 387px;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
@@ -1742,13 +1747,19 @@
   0% {
     background-color: #f00;
   }
-
   50% {
     background-color: #48ff00;
   }
-
   100% {
     background-color: #ae00ff;
+  }
+}
+@keyframes main-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
   }
 }
 .collapse {
@@ -1800,7 +1811,7 @@
 }
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 377px;
+  width: 347px;
   top: 0px;
   right: 0px;
   background-color: black;
@@ -1974,13 +1985,16 @@
      </div>
      <!-- <span>展开</span> -->
      <div id="main" class="b-main b-collapse">
-         <div id="configPlaneBTN" class="clickable" style="z-index: 1111;"> ${i18n.config.get()} </div>
-         <div id="downloaderPlaneBTN" class="clickable" style="z-index: 1111;"> ${i18n.download.get()} </div>
+         <div id="configPlaneBTN" class="clickable">${i18n.config.get()}</div>
+         <div id="downloaderPlaneBTN" class="clickable">${i18n.download.get()}</div>
          <div class="page">
              <span class="clickable" id="p-currPage"
                  style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
          </div>
-         <div id="autoPageBTN" class="clickable main-btn">▶️</div>
+         <div id="autoPageBTN" class="clickable" style="width: 70px; position: relative; border: 1px solid #777;">
+            <span>${i18n.autoPagePlay.get()}</span>
+            <div id="autoPageProgress" style="z-index: -1; height: 25px; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
+         </div>
          <div id="collapseBTN" class="clickable">${i18n.collapse.get()}</div>
      </div>
      <div>
@@ -2079,7 +2093,7 @@
       this.frame.addEventListener("mousemove", (event) => {
         debouncer2.addEvent("BIG-IMG-MOUSE-MOVE", () => {
           let stepImage = false;
-          if (this.lastMouseY) {
+          if (this.lastMouseY && conf.imgScale > 0) {
             [stepImage] = this.stickyMouse(event, this.lastMouseY);
           }
           if (stepImage) {
@@ -2354,7 +2368,11 @@
           }
         }
       }
-      conf.imgScale = percent;
+      if (conf.readMode === "singlePage" && this.currImageNode && this.currImageNode.offsetHeight <= this.frame.offsetHeight) {
+        this.resetScaleBigImages();
+      } else {
+        conf.imgScale = percent;
+      }
       window.localStorage.setItem("cfg_", JSON.stringify(conf));
       this.flushImgScaleBar();
       return percent;
@@ -2433,36 +2451,44 @@
       __publicField(this, "frameManager");
       __publicField(this, "status");
       __publicField(this, "button");
+      __publicField(this, "lockVer");
       this.frameManager = frameManager;
       this.status = "stop";
       this.button = root;
+      this.lockVer = 0;
       this.initPlayButton();
     }
     initPlayButton() {
       this.button.addEventListener("click", () => {
         if (this.status === "stop") {
-          this.start();
+          this.start(this.lockVer);
         } else {
           this.stop();
         }
       });
     }
-    async start() {
+    async start(lockVer) {
       this.status = "running";
-      this.button.innerText = "⏹️";
+      this.button.firstElementChild.innerText = i18n.autoPagePause.get();
       const b = this.frameManager.frame;
       if (this.frameManager.frame.classList.contains("collapse")) {
         events.showBigImage(this.frameManager.queue.currIndex);
       }
+      const progress = this.button.querySelector("#autoPageProgress");
       while (true) {
+        progress.style.animation = `${conf.autoPageInterval ?? 1e4}ms linear main-progress`;
         await sleep(conf.autoPageInterval ?? 1e4);
+        if (this.lockVer !== lockVer) {
+          return;
+        }
+        progress.style.animation = ``;
         if (this.status !== "running") {
           break;
         }
         if (this.frameManager.queue.currIndex >= this.frameManager.queue.length - 1) {
           break;
         }
-        const deltaY = this.frameManager.frame.offsetHeight / 1;
+        const deltaY = this.frameManager.frame.offsetHeight / 2;
         if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
           b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
         } else {
@@ -2476,7 +2502,10 @@
     }
     stop() {
       this.status = "stop";
-      this.button.innerText = "▶️";
+      this.lockVer += 1;
+      this.button.firstElementChild.innerText = i18n.autoPagePlay.get();
+      const progress = this.button.querySelector("#autoPageProgress");
+      progress.style.animation = ``;
     }
   }
   function dragElement(element, dragHub, callback) {

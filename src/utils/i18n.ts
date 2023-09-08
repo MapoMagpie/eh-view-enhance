@@ -12,6 +12,8 @@ export const i18n = {
   imageScale: new I18nValue("SCALE", "缩放"),
   download: new I18nValue("DL", "下载"),
   config: new I18nValue("CONF", "配置"),
+  autoPagePlay: new I18nValue("PLAY", "播放"),
+  autoPagePause: new I18nValue("PAUSE", "暂停"),
   collapse: new I18nValue("FOLD", "收起"),
   columns: new I18nValue("Columns", "每行数量"),
   readMode: new I18nValue("Read Mode", "阅读模式"),

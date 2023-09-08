@@ -153,13 +153,16 @@ export function createHTML() {
      </div>
      <!-- <span>展开</span> -->
      <div id="main" class="b-main b-collapse">
-         <div id="configPlaneBTN" class="clickable" style="z-index: 1111;"> ${i18n.config.get()} </div>
-         <div id="downloaderPlaneBTN" class="clickable" style="z-index: 1111;"> ${i18n.download.get()} </div>
+         <div id="configPlaneBTN" class="clickable">${i18n.config.get()}</div>
+         <div id="downloaderPlaneBTN" class="clickable">${i18n.download.get()}</div>
          <div class="page">
              <span class="clickable" id="p-currPage"
                  style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
          </div>
-         <div id="autoPageBTN" class="clickable main-btn">▶️</div>
+         <div id="autoPageBTN" class="clickable" style="width: 70px; position: relative; border: 1px solid #777;">
+            <span>${i18n.autoPagePlay.get()}</span>
+            <div id="autoPageProgress" style="z-index: -1; height: 25px; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
+         </div>
          <div id="collapseBTN" class="clickable">${i18n.collapse.get()}</div>
      </div>
      <div>

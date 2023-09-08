@@ -474,8 +474,10 @@ export class AutoPage {
     this.lockVer = 0;
     this.restart = false;
     this.frameManager.callbackOnWheel = () => {
-      this.stop();
-      this.start(this.lockVer);
+      if (this.status === "running") {
+        this.stop();
+        this.start(this.lockVer);
+      }
     };
     this.frameManager.callbackOnHidden = () => {
       this.stop();

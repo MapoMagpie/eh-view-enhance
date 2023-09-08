@@ -40,6 +40,8 @@ export type Config = {
   stickyMouse: "enable" | "disable" | "reverse"
   /** 自动翻页间隔 */
   autoPageInterval: number
+  /** 自动开始 */
+  autoPlay: boolean
 };
 
 function defaultConf(): Config {
@@ -55,7 +57,7 @@ function defaultConf(): Config {
     threads: 3,
     downloadThreads: 3,
     timeout: 24,
-    version: "4.0.7",
+    version: "4.0.8",
     debug: true,
     first: true,
     disableDownload: false,
@@ -67,10 +69,11 @@ function defaultConf(): Config {
     imgScale: 0,
     stickyMouse: "enable",
     autoPageInterval: 10000,
+    autoPlay: false,
   };
 }
 
-export const VERSION = "4.0.7";
+export const VERSION = "4.0.8";
 export const signal = { first: true };
 
 function getConf(): Config {
@@ -87,8 +90,8 @@ function getConf(): Config {
 }
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval";
 export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval"];
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages";
-export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages"];
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay";
+export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay"];
 export type ConfigSelectType = "readMode" | "stickyMouse";
 export const ConfigSelectKeys: (keyof Config)[] = ["readMode", "stickyMouse"];
 export const conf = getConf();

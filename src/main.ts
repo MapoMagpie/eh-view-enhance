@@ -60,8 +60,15 @@ HTML.downloaderPlane.addEventListener("mouseleave", (event) => events.mouseleave
 
 // modify config event
 for (const key of ConfigNumberKeys) {
-  HTML.fullViewPlane.querySelector(`#${key}MinusBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
-  HTML.fullViewPlane.querySelector(`#${key}AddBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
+  HTML.fullViewPlane.querySelector<HTMLButtonElement>(`#${key}MinusBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
+  HTML.fullViewPlane.querySelector<HTMLButtonElement>(`#${key}AddBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
+  HTML.fullViewPlane.querySelector<HTMLInputElement>(`#${key}Input`)!.addEventListener("wheel", (event: WheelEvent) => {
+    if (event.deltaY < 0) {
+      events.modNumberConfigEvent(key as ConfigNumberType, 'add');
+    } else if (event.deltaY > 0) {
+      events.modNumberConfigEvent(key as ConfigNumberType, 'minus');
+    }
+  });
 }
 for (const key of ConfigBooleanKeys) {
   HTML.fullViewPlane.querySelector(`#${key}Checkbox`)!.addEventListener("input", () => events.modBooleanConfigEvent(key as ConfigBooleanType));

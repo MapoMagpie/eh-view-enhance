@@ -95,6 +95,14 @@ export function createHTML() {
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
+             <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
+                 <label>
+                     <span>${i18n.autoPlay.get()}
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
+                     </span>
+                     <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                 </label>
+             </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label>
                      <span>${i18n.readMode.get()}

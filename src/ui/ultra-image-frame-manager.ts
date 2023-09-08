@@ -17,6 +17,9 @@ export class BigImageFrameManager {
   reachBottom!: boolean; // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
   imgScaleBar: HTMLElement;
   reduceDebouncer: Debouncer;
+  callbackOnWheel?: (event: WheelEvent) => void;
+  callbackOnHidden?: () => void;
+  callbackOnShow?: () => void;
   constructor(frame: HTMLElement, queue: IMGFetcherQueue, imgScaleBar: HTMLElement) {
     this.frame = frame;
     this.queue = queue;
@@ -64,7 +67,10 @@ export class BigImageFrameManager {
   }
 
   initFrame() {
-    this.frame.addEventListener("wheel", event => this.onwheel(event));
+    this.frame.addEventListener("wheel", event => {
+      this.callbackOnWheel?.(event);
+      this.onwheel(event);
+    });
     this.frame.addEventListener("click", events.hiddenBigImageEvent);
     this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
     const debouncer = new Debouncer("throttle");
@@ -147,6 +153,7 @@ export class BigImageFrameManager {
   }
 
   hidden() {
+    this.callbackOnHidden?.();
     this.frame.classList.add("collapse");
     window.setTimeout(() => {
       this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
@@ -159,6 +166,7 @@ export class BigImageFrameManager {
     this.frame.classList.remove("collapse");
     this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = false);
     this.imgScaleBar.style.display = "";
+    this.callbackOnShow?.();
   }
 
   getImgNodes(): HTMLImageElement[] {
@@ -458,11 +466,25 @@ export class AutoPage {
   status: 'stop' | 'running';
   button: HTMLElement;
   lockVer: number;
+  restart: boolean;
   constructor(frameManager: BigImageFrameManager, root: HTMLElement) {
     this.frameManager = frameManager;
     this.status = "stop";
     this.button = root;
     this.lockVer = 0;
+    this.restart = false;
+    this.frameManager.callbackOnWheel = () => {
+      this.stop();
+      this.start(this.lockVer);
+    };
+    this.frameManager.callbackOnHidden = () => {
+      this.stop();
+    }
+    this.frameManager.callbackOnShow = () => {
+      if (conf.autoPlay) {
+        this.start(this.lockVer);
+      }
+    }
     this.initPlayButton();
   }
 
@@ -485,10 +507,15 @@ export class AutoPage {
     }
     const progress = this.button.querySelector<HTMLDivElement>("#autoPageProgress")!;
     while (true) {
+      await sleep(10);
       progress.style.animation = `${conf.autoPageInterval ?? 10000}ms linear main-progress`;
       await sleep(conf.autoPageInterval ?? 10000);
       if (this.lockVer !== lockVer) {
         return;
+      }
+      if (this.restart) {
+        this.restart = false;
+        continue;
       }
       progress.style.animation = ``;
       if (this.status !== "running") {
@@ -499,11 +526,11 @@ export class AutoPage {
       }
       const deltaY = this.frameManager.frame.offsetHeight / 2;
       if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
-        b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+        this.frameManager.onwheel(new WheelEvent("wheel", { deltaY }));
       } else {
         b.scrollBy({ top: deltaY, behavior: "smooth" });
         if (conf.readMode === "consecutively") {
-          b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+          this.frameManager.onwheel(new WheelEvent("wheel", { deltaY }));
         }
       }
     }
@@ -512,10 +539,10 @@ export class AutoPage {
 
   stop() {
     this.status = "stop";
-    this.lockVer += 1;
-    (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePlay.get();
     const progress = this.button.querySelector<HTMLDivElement>("#autoPageProgress")!;
     progress.style.animation = ``;
+    this.lockVer += 1;
+    (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePlay.get();
   }
 }
 

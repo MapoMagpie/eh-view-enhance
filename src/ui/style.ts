@@ -67,7 +67,7 @@ export function loadStyleSheel() {
   min-width: 0px;
 }
 .pageHelper.pageHelperExtend {
-  min-width: 347px;
+  min-width: 367px;
   transition: min-width 0.4s ease;
 }
 .pageHelper:hover {
@@ -100,7 +100,7 @@ export function loadStyleSheel() {
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   transition: height 0.4s;
   overflow: hidden;
-  width: 347px;
+  width: 367px;
 }
 .pageHelper .p-img-scale {
   bottom: 30px;
@@ -156,6 +156,9 @@ export function loadStyleSheel() {
   display: flex;
   justify-content: space-between;
   padding-right: 10px;
+}
+.pageHelper .p-config input {
+  cursor: ns-resize;
 }
 .pageHelper .p-downloader {
   height: 310px;
@@ -272,7 +275,7 @@ export function loadStyleSheel() {
 }
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 347px;
+  width: 367px;
   top: 0px;
   right: 0px;
   background-color: black;

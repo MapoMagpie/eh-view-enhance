@@ -14,6 +14,8 @@ export const i18n = {
   config: new I18nValue("CONF", "配置"),
   autoPagePlay: new I18nValue("PLAY", "播放"),
   autoPagePause: new I18nValue("PAUSE", "暂停"),
+  autoPlay: new I18nValue("Auto Page", "自动翻页"),
+  autoPlayTooltip: new I18nValue("Auto Page when entering the big image readmode.", "当阅读大图时，开启自动播放模式。"),
   collapse: new I18nValue("FOLD", "收起"),
   columns: new I18nValue("Columns", "每行数量"),
   readMode: new I18nValue("Read Mode", "阅读模式"),

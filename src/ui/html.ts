@@ -128,7 +128,9 @@ export function createHTML() {
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label>
-                     <span>${i18n.autoPageInterval.get()}:</span>
+                     <span>${i18n.autoPageInterval.get()}
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoPageIntervalTooltip.get()}</span></span>:
+                     </span>
                      <span>
                          <button id="autoPageIntervalMinusBTN" class="btn" type="button">-</button>
                          <input id="autoPageIntervalInput" value="${conf.autoPageInterval}" disabled type="text" style="width: 50px;" />

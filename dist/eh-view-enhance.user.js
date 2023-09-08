@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.0.7
+// @version            4.0.8
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -42,7 +42,7 @@
       threads: 3,
       downloadThreads: 3,
       timeout: 24,
-      version: "4.0.7",
+      version: "4.0.8",
       debug: true,
       first: true,
       disableDownload: false,
@@ -53,10 +53,11 @@
       pageHelperAbRight: "50px",
       imgScale: 0,
       stickyMouse: "enable",
-      autoPageInterval: 1e4
+      autoPageInterval: 1e4,
+      autoPlay: false
     };
   }
-  const VERSION = "4.0.7";
+  const VERSION = "4.0.8";
   function getConf() {
     let confStr = window.localStorage.getItem("cfg_");
     if (confStr) {
@@ -70,7 +71,7 @@
     return conf2;
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval"];
-  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages"];
+  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay"];
   const ConfigSelectKeys = ["readMode", "stickyMouse"];
   const conf = getConf();
   const regulars = {
@@ -452,10 +453,13 @@
     config: new I18nValue("CONF", "配置"),
     autoPagePlay: new I18nValue("PLAY", "播放"),
     autoPagePause: new I18nValue("PAUSE", "暂停"),
+    autoPlay: new I18nValue("Auto Page", "自动翻页"),
+    autoPlayTooltip: new I18nValue("Auto Page when entering the big image readmode.", "当阅读大图时，开启自动播放模式。"),
     collapse: new I18nValue("FOLD", "收起"),
     columns: new I18nValue("Columns", "每行数量"),
     readMode: new I18nValue("Read Mode", "阅读模式"),
     autoPageInterval: new I18nValue("Auto Page Interval", "自动翻页间隔"),
+    autoPageIntervalTooltip: new I18nValue("Use the mouse wheel on Input box to adjust the interval time.", "在输入框上使用鼠标滚轮快速修改间隔时间"),
     readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
     maxPreloadThreads: new I18nValue("PreloadThreads", "最大同时加载"),
     maxPreloadThreadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
@@ -1606,7 +1610,7 @@
   min-width: 0px;
 }
 .pageHelper.pageHelperExtend {
-  min-width: 347px;
+  min-width: 367px;
   transition: min-width 0.4s ease;
 }
 .pageHelper:hover {
@@ -1639,7 +1643,7 @@
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   transition: height 0.4s;
   overflow: hidden;
-  width: 347px;
+  width: 367px;
 }
 .pageHelper .p-img-scale {
   bottom: 30px;
@@ -1695,6 +1699,9 @@
   display: flex;
   justify-content: space-between;
   padding-right: 10px;
+}
+.pageHelper .p-config input {
+  cursor: ns-resize;
 }
 .pageHelper .p-downloader {
   height: 310px;
@@ -1811,7 +1818,7 @@
 }
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 347px;
+  width: 367px;
   top: 0px;
   right: 0px;
   background-color: black;
@@ -1927,6 +1934,14 @@
                      <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
                  </label>
              </div>
+             <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
+                 <label>
+                     <span>${i18n.autoPlay.get()}
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
+                     </span>
+                     <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                 </label>
+             </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label>
                      <span>${i18n.readMode.get()}
@@ -1952,7 +1967,9 @@
              </div>
              <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
                  <label>
-                     <span>${i18n.autoPageInterval.get()}:</span>
+                     <span>${i18n.autoPageInterval.get()}
+                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoPageIntervalTooltip.get()}</span></span>:
+                     </span>
                      <span>
                          <button id="autoPageIntervalMinusBTN" class="btn" type="button">-</button>
                          <input id="autoPageIntervalInput" value="${conf.autoPageInterval}" disabled type="text" style="width: 50px;" />
@@ -2048,6 +2065,9 @@
       // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
       __publicField(this, "imgScaleBar");
       __publicField(this, "reduceDebouncer");
+      __publicField(this, "callbackOnWheel");
+      __publicField(this, "callbackOnHidden");
+      __publicField(this, "callbackOnShow");
       this.frame = frame;
       this.queue = queue;
       this.imgScaleBar = imgScaleBar;
@@ -2086,7 +2106,11 @@
       this.restoreScrollTop(this.currImageNode, 0, 0);
     }
     initFrame() {
-      this.frame.addEventListener("wheel", (event) => this.onwheel(event));
+      this.frame.addEventListener("wheel", (event) => {
+        var _a;
+        (_a = this.callbackOnWheel) == null ? void 0 : _a.call(this, event);
+        this.onwheel(event);
+      });
       this.frame.addEventListener("click", events.hiddenBigImageEvent);
       this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
       const debouncer2 = new Debouncer("throttle");
@@ -2168,6 +2192,8 @@
       }
     }
     hidden() {
+      var _a;
+      (_a = this.callbackOnHidden) == null ? void 0 : _a.call(this);
       this.frame.classList.add("collapse");
       window.setTimeout(() => {
         this.frame.childNodes.forEach((child) => child.hidden = true);
@@ -2176,9 +2202,11 @@
       this.imgScaleBar.style.display = "none";
     }
     show() {
+      var _a;
       this.frame.classList.remove("collapse");
       this.frame.childNodes.forEach((child) => child.hidden = false);
       this.imgScaleBar.style.display = "";
+      (_a = this.callbackOnShow) == null ? void 0 : _a.call(this);
     }
     getImgNodes() {
       return Array.from(this.frame.querySelectorAll("img"));
@@ -2452,10 +2480,24 @@
       __publicField(this, "status");
       __publicField(this, "button");
       __publicField(this, "lockVer");
+      __publicField(this, "restart");
       this.frameManager = frameManager;
       this.status = "stop";
       this.button = root;
       this.lockVer = 0;
+      this.restart = false;
+      this.frameManager.callbackOnWheel = () => {
+        this.stop();
+        this.start(this.lockVer);
+      };
+      this.frameManager.callbackOnHidden = () => {
+        this.stop();
+      };
+      this.frameManager.callbackOnShow = () => {
+        if (conf.autoPlay) {
+          this.start(this.lockVer);
+        }
+      };
       this.initPlayButton();
     }
     initPlayButton() {
@@ -2476,10 +2518,15 @@
       }
       const progress = this.button.querySelector("#autoPageProgress");
       while (true) {
+        await sleep(10);
         progress.style.animation = `${conf.autoPageInterval ?? 1e4}ms linear main-progress`;
         await sleep(conf.autoPageInterval ?? 1e4);
         if (this.lockVer !== lockVer) {
           return;
+        }
+        if (this.restart) {
+          this.restart = false;
+          continue;
         }
         progress.style.animation = ``;
         if (this.status !== "running") {
@@ -2490,11 +2537,11 @@
         }
         const deltaY = this.frameManager.frame.offsetHeight / 2;
         if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
-          b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+          this.frameManager.onwheel(new WheelEvent("wheel", { deltaY }));
         } else {
           b.scrollBy({ top: deltaY, behavior: "smooth" });
           if (conf.readMode === "consecutively") {
-            b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+            this.frameManager.onwheel(new WheelEvent("wheel", { deltaY }));
           }
         }
       }
@@ -2502,10 +2549,10 @@
     }
     stop() {
       this.status = "stop";
-      this.lockVer += 1;
-      this.button.firstElementChild.innerText = i18n.autoPagePlay.get();
       const progress = this.button.querySelector("#autoPageProgress");
       progress.style.animation = ``;
+      this.lockVer += 1;
+      this.button.firstElementChild.innerText = i18n.autoPagePlay.get();
     }
   }
   function dragElement(element, dragHub, callback) {
@@ -2587,6 +2634,13 @@
   for (const key of ConfigNumberKeys) {
     HTML.fullViewPlane.querySelector(`#${key}MinusBTN`).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
     HTML.fullViewPlane.querySelector(`#${key}AddBTN`).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
+    HTML.fullViewPlane.querySelector(`#${key}Input`).addEventListener("wheel", (event) => {
+      if (event.deltaY < 0) {
+        events.modNumberConfigEvent(key, "add");
+      } else if (event.deltaY > 0) {
+        events.modNumberConfigEvent(key, "minus");
+      }
+    });
   }
   for (const key of ConfigBooleanKeys) {
     HTML.fullViewPlane.querySelector(`#${key}Checkbox`).addEventListener("input", () => events.modBooleanConfigEvent(key));

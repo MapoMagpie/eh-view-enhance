@@ -1573,16 +1573,20 @@
   height: 0;
   transition: height 0.4s;
 }
+.bigImageFrame::-webkit-scrollbar {
+  display: none;
+}
 .bigImageFrame {
   position: fixed;
   width: 100%;
   height: 100%;
+  top: 0;
   right: 0;
-  overflow: scroll;
+  overflow: hidden scroll;
   z-index: 1001;
   background-color: #000000d6;
   transition: width 0.4s;
-  // scroll-behavior: smooth; // only firefox is better this
+  scrollbar-width: none;
 }
 .bigImageFrame > img {
   object-fit: contain;

@@ -1,22 +1,23 @@
-import { GM_xmlhttpRequest, XhrRequest } from "$";
+import { GM_xmlhttpRequest, GmXhrRequest } from "$";
 import { conf } from "../config";
 
-export type ResponseType = XhrRequest["responseType"];
+type RespType = keyof {
+  text: string;
+  json: any;
+  arraybuffer: ArrayBuffer;
+  blob: Blob;
+  document: Document;
+  stream: ReadableStream<Uint8Array>;
+};
 
-export type Callback = {
-  onload?: XhrRequest["onload"],
-  onprogress?: XhrRequest["onprogress"],
-  onerror?: XhrRequest["onerror"],
-  ontimeout?: XhrRequest["ontimeout"],
-}
+type EventListener<T extends RespType> = Pick<GmXhrRequest<unknown, T>, "onload" | "onprogress" | "onerror" | "ontimeout" | "onloadstart">;
 
-// { onprogress, onload, onerror, ontimeout }
-export function xhrWapper(url: string, responseType: ResponseType, cb: Callback) {
-  let request: XhrRequest = {
+export function xhrWapper<T extends RespType>(url: string, respType: T, cb: EventListener<T>) {
+  GM_xmlhttpRequest<unknown, T>({
     method: "GET",
     url,
-    responseType,
     timeout: conf.timeout * 1000,
+    responseType: respType,
     headers: {
       // "Host": url.replace("https://", "").split("/").shift()!,
       // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0",
@@ -30,7 +31,6 @@ export function xhrWapper(url: string, responseType: ResponseType, cb: Callback)
       // "Sec-Fetch-Site": "cross-site",
       "Cache-Control": "public,max-age=3600,immutable",
     },
-    ...cb,
-  };
-  GM_xmlhttpRequest(request);
+    ...cb
+  });
 }

@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 *.local
 *.lock
+*lock.json
 
 # Editor directories and files
 .vscode/*

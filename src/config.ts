@@ -22,8 +22,6 @@ export type Config = {
   debug: boolean,
   /** 是否初次使用脚本 */
   first: boolean,
-  /** 禁用下载功能 */
-  disableDownload: boolean,
   /** 逆转左右翻页，无论使用那种翻页方式，上下侧都代表上下 */
   reversePages: boolean
   /** 页码指示器位置 */
@@ -60,7 +58,6 @@ function defaultConf(): Config {
     version: "4.0.8",
     debug: true,
     first: true,
-    disableDownload: false,
     reversePages: false,
     pageHelperAbTop: "unset",
     pageHelperAbLeft: "unset",

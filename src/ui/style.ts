@@ -61,7 +61,7 @@ export function loadStyleSheel() {
   bottom: ${conf.pageHelperAbBottom};
   right: ${conf.pageHelperAbRight};
   background-color: #4a4a4ae6;
-  z-index: 1011 !important;
+  z-index: 2011 !important;
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
@@ -230,7 +230,7 @@ export function loadStyleSheel() {
     width: 100%;
   }
 }
-.collapse {
+.b-f-collapse {
   width: 0px !important;
   transition: width 0.4s;
 }

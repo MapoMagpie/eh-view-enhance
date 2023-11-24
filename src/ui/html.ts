@@ -7,10 +7,10 @@ export function createHTML() {
   const fullViewPlane = document.createElement("div");
   fullViewPlane.classList.add("fullViewPlane");
   fullViewPlane.classList.add("collapse_full_view");
-  document.body.appendChild(fullViewPlane);
+  document.body.after(fullViewPlane);
 
   const HTML_STRINGS = `
- <div id="bigImageFrame" class="bigImageFrame collapse">
+ <div id="bigImageFrame" class="bigImageFrame b-f-collapse">
     <a id="imgLandLeft" hidden="true" class="imgLandLeft"></a>
     <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
     <a id="imgLandTop" hidden="true" class="imgLandTop"></a>

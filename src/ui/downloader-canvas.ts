@@ -9,6 +9,7 @@ type DrawNode = {
   y: number;
   selected: boolean;
 };
+
 export class DownloaderCanvas {
   canvas: HTMLCanvasElement;
   mousemoveState: { x: number; y: number };

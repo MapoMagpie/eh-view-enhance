@@ -154,7 +154,7 @@ export class BigImageFrameManager {
 
   hidden() {
     this.callbackOnHidden?.();
-    this.frame.classList.add("collapse");
+    this.frame.classList.add("b-f-collapse");
     window.setTimeout(() => {
       this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
       this.removeImgNodes();
@@ -163,7 +163,7 @@ export class BigImageFrameManager {
   }
 
   show() {
-    this.frame.classList.remove("collapse");
+    this.frame.classList.remove("b-f-collapse");
     this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = false);
     this.imgScaleBar.style.display = "";
     this.callbackOnShow?.();
@@ -504,7 +504,7 @@ export class AutoPage {
     this.status = "running";
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
     const b = this.frameManager.frame;
-    if (this.frameManager.frame.classList.contains("collapse")) {
+    if (this.frameManager.frame.classList.contains("b-f-collapse")) {
       events.showBigImage(this.frameManager.queue.currIndex);
     }
     const progress = this.button.querySelector<HTMLDivElement>("#autoPageProgress")!;

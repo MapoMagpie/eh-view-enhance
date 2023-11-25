@@ -14,6 +14,9 @@ export function adaptMatcher(): Matcher {
   if (host === "nhentai.net") {
     return new NHMatcher();
   }
+  if (host === "steamcommunity.com") {
+    return new SteamMatcher();
+  }
   return new EHMatcher();
 }
 
@@ -280,6 +283,83 @@ export class NHMatcher implements Matcher {
 
   public parsePageURLs(): Iterable<string> {
     return [window.location.href];
+  }
+
+}
+
+const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
+export class SteamMatcher implements Matcher {
+
+  public async matchImgURL(url: string): Promise<string> {
+    let raw = "";
+    try {
+      raw = await window.fetch(url).then(resp => resp.text());
+      if (!raw) throw new Error("[text] is empty");
+    } catch (error) {
+      throw new Error(`Fetch source page error, expected [text]！ ${error}`);
+    }
+    const domParser = new DOMParser();
+    const doc = domParser.parseFromString(raw, "text/html");
+    let imgURL = doc.querySelector(".actualmediactn > a")?.getAttribute("href");
+    if (!imgURL) {
+      throw new Error("Cannot Query Steam original Image URL");
+    }
+    return imgURL;
+  }
+
+  public async parseImgNodes(url: string, template: HTMLElement): Promise<HTMLElement[]> {
+    const list: HTMLElement[] = [];
+    const raw = await window.fetch(url).then((response) => response.text());
+    if (!raw) return list;
+
+    const domParser = new DOMParser();
+    const doc = domParser.parseFromString(raw, "text/html");
+    const nodes = doc.querySelectorAll(".profile_media_item");
+    if (!nodes || nodes.length == 0) {
+      evLog("wried to get a nodes from document, but failed!");
+      return list;
+    }
+    for (const node of Array.from(nodes)) {
+      const src = STEAM_THUMB_IMG_URL_REGEX.exec(node.innerHTML)?.[1];
+      if (!src) {
+        throw new Error(`Cannot Match Steam Image URL, Content: ${node.innerHTML}`);
+      }
+      const newImgNode = template.cloneNode(true) as HTMLDivElement;
+      const newImg = newImgNode.firstElementChild as HTMLImageElement;
+      newImg.setAttribute("ahref", node.getAttribute("href")!);
+      newImg.setAttribute("asrc", src);
+      newImg.setAttribute("title", node.getAttribute("data-publishedfileid")! + ".jpg");
+      list.push(newImgNode);
+    }
+    return list;
+  }
+
+  parsePageURLs(): Iterable<string> {
+    let totalPages = 1;
+    document.querySelectorAll(".pagingPageLink").forEach(ele => {
+      totalPages = Number(ele.textContent);
+    });
+    let page = 0;
+    let url = new URL(window.location.href);
+    url.searchParams.set("view", "grid");
+    return {
+      [Symbol.iterator]() {
+        return {
+          next() {
+            if (page++ <= totalPages) {
+              url.searchParams.set("p", page.toString());
+              return { done: false, value: url.href };
+            } else {
+              return { done: true, value: "DONE" };
+            }
+          }
+        }
+      }
+    }
+  }
+
+  parseGalleryMeta(_: Document): GalleryMeta {
+    return new GalleryMeta(window.location.href, "UNTITLE");
   }
 
 }

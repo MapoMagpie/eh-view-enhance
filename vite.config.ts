@@ -9,7 +9,8 @@ export default defineConfig({
       userscript: {
         icon: 'https://exhentai.org/favicon.ico',
         namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
-        match: ['https://exhentai.org/g/*', 'https://e-hentai.org/g/*', 'https://nhentai.net/g/*'],
+        exclude: ['https://nhentai.net/g/*/*/'],
+        match: ['https://exhentai.org/g/*', 'https://e-hentai.org/g/*', 'https://nhentai.net/g/*', 'https://steamcommunity.com/id/*/screenshots*'],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
         version: '4.1.0',
         license: 'MIT',

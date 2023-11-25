@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.0.9
+// @version            4.1.0
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -10,11 +10,15 @@
 // @icon               https://exhentai.org/favicon.ico
 // @match              https://exhentai.org/g/*
 // @match              https://e-hentai.org/g/*
+// @match              https://nhentai.net/g/*
+// @match              https://steamcommunity.com/id/*/screenshots*
+// @exclude            https://nhentai.net/g/*/*/
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @connect            exhentai.org
 // @connect            e-hentai.org
 // @connect            hath.network
+// @connect            nhentai.net
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -29,9 +33,12 @@
     __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
     return value;
   };
+  var _GM_getValue = /* @__PURE__ */ (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
+  var _GM_setValue = /* @__PURE__ */ (() => typeof GM_setValue != "undefined" ? GM_setValue : void 0)();
+  var _GM_xmlhttpRequest = /* @__PURE__ */ (() => typeof GM_xmlhttpRequest != "undefined" ? GM_xmlhttpRequest : void 0)();
   function defaultConf() {
     const screenWidth = window.screen.width;
-    const colCount = screenWidth > 2500 ? 8 : screenWidth > 1900 ? 7 : 5;
+    const colCount = screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : 5;
     return {
       backgroundImage: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANAAAAC4AgMAAADvbYrQAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFi/guUAABYlAUlSJPAAAAAJUExURQwMDA8PDxISEkrSJjgAAAVcSURBVGjevZqxjtwwDETZTOOvm2Yafp0aNvzKFJRsade3ycqHLA4IcMo70LRIDsk1iDZ/0P8VbTmAZGZmpGiejaBECpLcIUH0DAUpSpIgHZkuSfTchaIJBtk4ggTJnVL94DzJkJjZNqFsECUDjwhEQpKUyXAKExSHh0T3bYgASSNn8zLpomSSSYg4Mo58BEEETaz3N35OL3SoW0iREvcgAyHzGKfoEN4g1t+qS7UBlR2ZLfO8L5J0WQh3KOABybNJfADpDfIol88vF1I6n0Ev5kFyUWodCoSOCIgfnumfoVigk1CkQpCQAVG+D/VMAuuJQ+hXij2RaCQW1lWY0s93UGaTCCFTw7bziSvyM4/MI/pJZtuHnKIy5TmCkJ4tev7qUKZSDyFXQXGFOz1beFsh11OonvjNEeGUFJN5T6GIHh1azAu9OUKSLJN70P/7jHCvotbrTEZGG0EjTSfBDG5CQfX7uUC5QBF1IlFqm1A/4kdIOi6IDyHwA5SCApKcnk+hH82bat2/P9MN1PNUr1W3lwb3d+lbqF5XRpv0wFSomTlElmz8bh9yZt5Btl7Y34MwILvM0xIaTyF3ZsYE9VMOKMav7SFUFpakQRU1dp0lm65Rr3UPIPZ7UVUSpJmB9KBkhhkyjHDfgkb+nX1bmV5OCSGkwytP0/MhFD9BdkofjSL0DJqTb6n7zObeTzKh0CkJnkIvN7OXcMnjyDghD+5BZzM3pRDIxot8EVlrevkSIj3rysyOGIKKZx+UgQzQMtsehK56V+jUJAMaqoB8Avk7pBfIT/1h+xCZGXFnni/mRRyZvWXdg8SIiLgxz18cgQ5xD/r02dJo/KjCuJhXwb80/BRcJnpOQfg95KoCIAlmBkNQQZ3TBZsLwCPILwiCiKDEOC0kxEMBUfkIGiLxgkSVhWsnjnqSZ1DwhGCz+DhdngGZXNvQmZdWMfWa4+z+9BtoxPWiMoyekUlJqM44IchDEsWH0JIvK9m0KQhNkI+JyTNo1WhvEKQa1QFPIV+KWmZTNeiAdLhMPGv1HnQ3v5pEIs1MgsvMkMQ8bPoSMpYf+wCNFdo8U1WJLBEyOI0l/HcgjysGShCOsVZ3x3BOjR9JxS50PfTxDvncXx69NW/PIa0QLS7oiKjhrYt7kGJuEeahIGVrVa3hrWITmkdY0muykRnMNEauxJx5voS0DGpXkXglyzFFOXLuNb6GYploQjqiqd8hdt2W1YbXvGYb0hvkbbR8FxS1NXgOaZlxN+/maTLvFyB/FfMepyPMjvTRoOgJ9P8+ZcQ6vAL52rfUVKYGXnwC+Yg2Xzr7VaX6M8i7eeM0XsYlb3o4apX0PdQd4Yt55QjYEptEXzBsQq/mVXWjRKDyG/oAjbUM8V3oB9let5K80Vo/a/3PkNCVR6ZCRyRAXAuSNirCWWoy2x4EnP9hzop+C+Uj6FolHcpaLqIL/FcoUmdzvAPZnXnVHwzIZkf4NkTJlF0kesylpoIwZOybQMPliG+hGmuZGfEyP3WRNdbCuVDqV+tnqGr8PXTtlY1LARgrxt4ZD+kj8SPEv0MobQvxGKp3qJ9zR/IImiWBrRrtzjz7K4QfoPHEBhquXOUTFJd5lXL2IIyXu07UMaA+5MKSez5AnCZjb9Cc6X3xLUdO5jDcGTVj+R4aY+e5u5Iou/5WrWYjIGW0zLYHnYlFOnSpjLmoRcxF7QFkA5rME+dlfUA6ukhs7tvQ7Ai/M29Z/dDFPeg/byRXOxykJM96xZimqhJ5r5Z3oP61AHo2aCSbCeLvQTFB8xd6xmL4t6BjQF1i/zp0tg31PY0OmY1taUFYHfEV9K/7x/nzB/aTFFDPHGpXAAAAAElFTkSuQmCC`,
       colCount,
@@ -42,10 +49,9 @@
       threads: 3,
       downloadThreads: 3,
       timeout: 24,
-      version: "4.0.8",
+      version: "4.1.0",
       debug: true,
       first: true,
-      disableDownload: false,
       reversePages: false,
       pageHelperAbTop: "unset",
       pageHelperAbLeft: "unset",
@@ -57,36 +63,27 @@
       autoPlay: false
     };
   }
-  const VERSION = "4.0.8";
+  const VERSION = "4.1.0";
+  const CONFIG_KEY = "ehvh_cfg_";
   function getConf() {
-    let confStr = window.localStorage.getItem("cfg_");
-    if (confStr) {
-      let conf3 = JSON.parse(confStr);
-      if (conf3.version === VERSION) {
-        return conf3;
+    let cfgStr = _GM_getValue(CONFIG_KEY);
+    if (cfgStr) {
+      let cfg2 = JSON.parse(cfgStr);
+      if (cfg2.version === VERSION) {
+        return cfg2;
       }
     }
-    let conf2 = defaultConf();
-    window.localStorage.setItem("cfg_", JSON.stringify(conf2));
-    return conf2;
+    let cfg = defaultConf();
+    saveConf(cfg);
+    return cfg;
+  }
+  function saveConf(c) {
+    _GM_setValue(CONFIG_KEY, JSON.stringify(c));
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval"];
   const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay"];
   const ConfigSelectKeys = ["readMode", "stickyMouse"];
   const conf = getConf();
-  const regulars = {
-    /** 有压缩的大图地址 */
-    normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
-    /** 原图地址 */
-    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg\.php\?[^"\\]*)\"\>/,
-    /** 大图重载地址 */
-    nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
-    /** 是否开启自动多页查看器 */
-    isMPV: /https?:\/\/e[-x]hentai.org\/mpv\/\w+\/\w+\/#page\w/,
-    // 
-    /** 多页查看器图片列表提取 */
-    mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g
-  };
   const updatePageHelper = function(state, data) {
     switch (state) {
       case "fetching":
@@ -123,13 +120,12 @@
       console.log((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
     }
   }
-  var _GM_xmlhttpRequest = /* @__PURE__ */ (() => typeof GM_xmlhttpRequest != "undefined" ? GM_xmlhttpRequest : void 0)();
-  function xhrWapper(url, responseType, cb) {
-    let request = {
+  function xhrWapper(url, respType, cb) {
+    _GM_xmlhttpRequest({
       method: "GET",
       url,
-      responseType,
       timeout: conf.timeout * 1e3,
+      responseType: respType,
       headers: {
         // "Host": url.replace("https://", "").split("/").shift()!,
         // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0",
@@ -144,8 +140,7 @@
         "Cache-Control": "public,max-age=3600,immutable"
       },
       ...cb
-    };
-    _GM_xmlhttpRequest(request);
+    });
   }
   var FetchState = /* @__PURE__ */ ((FetchState2) => {
     FetchState2[FetchState2["URL"] = 1] = "URL";
@@ -154,14 +149,13 @@
     return FetchState2;
   })(FetchState || {});
   class IMGFetcher {
-    constructor(node) {
+    constructor(node, matcher2) {
       __publicField(this, "root");
       __publicField(this, "imgElement");
       __publicField(this, "pageUrl");
       __publicField(this, "bigImageUrl");
-      /** 1:获取大图地址 2:获取大图数据 3:加载完成 */
       __publicField(this, "stage");
-      __publicField(this, "tryTime");
+      __publicField(this, "tryTimes");
       __publicField(this, "lock");
       __publicField(this, "rendered");
       __publicField(this, "blobData");
@@ -169,20 +163,21 @@
       __publicField(this, "title");
       __publicField(this, "downloadState");
       __publicField(this, "onFinishedEventContext");
-      __publicField(this, "fetchOriginal");
+      // TODO: onFailedEventContext
       __publicField(this, "downloadBar");
       __publicField(this, "timeoutId");
+      __publicField(this, "matcher");
       this.root = node;
       this.imgElement = node.firstChild;
       this.pageUrl = this.imgElement.getAttribute("ahref");
       this.stage = 1;
-      this.tryTime = 0;
+      this.tryTimes = 0;
       this.lock = false;
       this.rendered = false;
       this.title = this.imgElement.getAttribute("title") || void 0;
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
       this.onFinishedEventContext = /* @__PURE__ */ new Map();
-      this.fetchOriginal = false;
+      this.matcher = matcher2;
     }
     // 刷新下载状态
     setDownloadState(newState) {
@@ -216,10 +211,7 @@
           0
           /* ADD */
         );
-        const ok = await this.fetchImg();
-        if (!ok) {
-          throw new Error("图片获取器失败，中止获取！");
-        }
+        await this.fetchImage();
         this.changeStyle(
           1,
           0
@@ -232,7 +224,7 @@
           1
           /* FAILED */
         );
-        evLog(`图片获取器获取失败:`, error);
+        evLog(`IMG-FETCHER ERROR:`, error);
       } finally {
         this.lock = false;
       }
@@ -240,68 +232,62 @@
     onFinished(eventId, callback) {
       this.onFinishedEventContext.set(eventId, callback);
     }
-    async fetchImg() {
-      switch (this.stage) {
-        case 1:
-          return await this.stage1FetchUrl();
-        case 2:
-          return await this.stage2FetchImg();
-        case 3:
-          return this.stage3Done();
+    async fetchImage() {
+      this.tryTimes = 0;
+      while (this.tryTimes < 3) {
+        switch (this.stage) {
+          case 1:
+            let url = await this.fetchImageURL();
+            if (url !== null) {
+              this.bigImageUrl = url;
+              this.stage = 2;
+            } else {
+              this.tryTimes++;
+            }
+            break;
+          case 2:
+            let data = await this.fetchImageData();
+            if (data !== null) {
+              this.blobData = data;
+              this.blobUrl = URL.createObjectURL(data);
+              this.imgElement.src = this.blobUrl;
+              this.rendered = true;
+              this.stage = 3;
+            } else {
+              this.stage = 1;
+              this.tryTimes++;
+            }
+            break;
+          case 3:
+            return;
+        }
       }
+      throw new Error(`Fetch image failed, reach max try times, current stage: ${this.stage}`);
     }
-    // 阶段一：获取大图的地址
-    async stage1FetchUrl() {
+    async fetchImageURL() {
       try {
-        this.changeStyle(
-          0
-          /* ADD */
-        );
-        const ok = await this.fetchBigImageUrl(false);
-        if (!ok) {
-          evLog("获取大图地址失败");
-          return false;
+        const imageURL = await this.matcher.matchImgURL(this.pageUrl);
+        if (!imageURL) {
+          evLog("Fetch URL failed, the URL is empty");
+          return null;
         }
-        if (!this.bigImageUrl) {
-          evLog("大图地址不存在！");
-          return false;
-        }
-        this.stage = 2;
-        return this.fetchImg();
+        return imageURL;
       } catch (error) {
-        evLog(`获取大图地址时出现了异常:`, error);
-        return false;
+        evLog(`Fetch URL error:`, error);
+        return null;
       }
     }
-    // 阶段二：获取大图数据
-    async stage2FetchImg() {
-      this.setDownloadState(this.downloadState);
+    async fetchImageData() {
       try {
-        let ok = false;
-        if (conf.disableDownload) {
-          ok = await this.fetchBigImageWeird();
-        } else {
-          ok = await this.fetchBigImage();
+        const data = await this.fetchBigImage();
+        if (data == null) {
+          throw new Error(`Data is null, image url:${this.bigImageUrl}`);
         }
-        if (!ok) {
-          throw new Error(`获取大图数据失败,大图地址:${this.bigImageUrl}`);
-        }
-        this.stage = 3;
-        return this.fetchImg();
+        return data;
       } catch (error) {
-        evLog(`获取大图数据时出现了异常:`, error);
-        ++this.tryTime;
-        this.stage = 1;
-        evLog(`当前重试第${this.tryTime}次`);
-        if (this.tryTime > 2) {
-          return false;
-        }
-        return this.fetchImg();
+        evLog(`Fetch image data error:`, error);
+        return null;
       }
-    }
-    // 阶段三：获取器结束
-    stage3Done() {
-      return true;
     }
     render() {
       if (this.rendered)
@@ -324,94 +310,26 @@
       }
       updatePageHelper("updateCurrPage", (index + 1).toString());
     }
-    /**
-     *  获取大图地址
-     * @param originChanged 是否为重新换源状态，为true时，不再进行新的换源动作，避免无限递归
-     * @return boolean
-     */
-    async fetchBigImageUrl(originChanged) {
-      let text = "";
-      try {
-        text = await window.fetch(this.pageUrl).then((resp) => resp.text());
-      } catch (error) {
-        evLog("获取大图页面内容失败！", error);
-      }
-      if (!text)
-        return false;
-      if (conf.fetchOriginal || this.fetchOriginal) {
-        const matchs = regulars.original.exec(text);
-        if (matchs && matchs.length > 0) {
-          this.bigImageUrl = matchs[1].replace(/&amp;/g, "&");
-        } else {
-          const normalMatchs = regulars["normal"].exec(text);
-          if (normalMatchs == null || normalMatchs.length == 0) {
-            evLog("获取大图地址失败，内容为: ", text);
-            return false;
-          } else {
-            this.bigImageUrl = normalMatchs[1];
-          }
-        }
-        return true;
-      }
-      if (this.tryTime === 0 || originChanged) {
-        this.bigImageUrl = regulars.normal.exec(text)[1];
-        return true;
-      } else {
-        const nlValue = regulars.nlValue.exec(text)[1];
-        this.pageUrl += ((this.pageUrl + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-        evLog(`获取到重试地址:${this.pageUrl}`);
-        return await this.fetchBigImageUrl(true);
-      }
-    }
-    async fetchBigImageWeird() {
-      const imgFetcher = this;
-      return new Promise(async (resolve) => {
-        imgFetcher.imgElement.onload = () => {
-          window.clearTimeout(imgFetcher.timeoutId);
-          imgFetcher.setDownloadState({ total: 1, loaded: 1, readyState: 4 });
-          resolve(true);
-        };
-        imgFetcher.imgElement.onloadstart = () => {
-          imgFetcher.timeoutId = window.setTimeout(() => {
-            imgFetcher.imgElement.onloadstart = null;
-            imgFetcher.imgElement.onload = null;
-            const src = this.imgElement.getAttribute("asrc");
-            if (src) {
-              imgFetcher.imgElement.src = src;
-            }
-            resolve(false);
-          }, conf.timeout * 1e3);
-        };
-        imgFetcher.blobUrl = imgFetcher.bigImageUrl;
-        imgFetcher.imgElement.src = imgFetcher.blobUrl;
-        imgFetcher.rendered = true;
-      });
-    }
     async fetchBigImage() {
       const imgFetcher = this;
-      return new Promise(async (resolve) => {
+      return new Promise(async (resolve, reject) => {
         xhrWapper(imgFetcher.bigImageUrl, "blob", {
           onload: function(response) {
             let data = response.response;
-            if (!(data instanceof Blob))
-              throw new Error("未下载到有效的数据！");
-            imgFetcher.blobData = data;
-            imgFetcher.blobUrl = URL.createObjectURL(data);
-            imgFetcher.imgElement.src = imgFetcher.blobUrl;
-            imgFetcher.rendered = true;
             imgFetcher.setDownloadState({ readyState: response.readyState });
-            resolve(true);
+            resolve(data);
           },
           onerror: function(response) {
-            evLog("加载大图失败:", response);
-            resolve(false);
+            reject(`error:${response.error}, response:${response.response}`);
           },
           ontimeout: function() {
-            evLog("加载大图超时:");
-            resolve(false);
+            reject("timeout");
           },
           onprogress: function(response) {
             imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
+          },
+          onloadstart: function() {
+            imgFetcher.setDownloadState(imgFetcher.downloadState);
           }
         });
       });
@@ -546,6 +464,107 @@
     </ol>
   `)
   };
+  class GalleryMeta {
+    constructor(url, title) {
+      __publicField(this, "url");
+      __publicField(this, "title");
+      __publicField(this, "originTitle");
+      __publicField(this, "tags");
+      this.url = url;
+      this.title = title;
+      this.tags = {};
+    }
+  }
+  class Downloader {
+    constructor(queue, idleLoader, matcher2) {
+      __publicField(this, "meta");
+      __publicField(this, "zip");
+      __publicField(this, "title");
+      __publicField(this, "downloading");
+      __publicField(this, "downloadForceElement");
+      __publicField(this, "downloadStartElement");
+      __publicField(this, "downloadNoticeElement");
+      __publicField(this, "queue");
+      __publicField(this, "idleLoader");
+      var _a, _b;
+      this.queue = queue;
+      this.idleLoader = idleLoader;
+      this.meta = matcher2.parseGalleryMeta(document);
+      this.zip = new JSZip();
+      this.title = this.meta.originTitle || this.meta.title;
+      this.zip.file("meta.json", JSON.stringify(this.meta));
+      this.downloading = false;
+      this.downloadForceElement = document.querySelector("#download-force") || void 0;
+      this.downloadStartElement = document.querySelector("#download-start") || void 0;
+      this.downloadNoticeElement = document.querySelector("#download-notice") || void 0;
+      (_a = this.downloadForceElement) == null ? void 0 : _a.addEventListener("click", () => this.download());
+      (_b = this.downloadStartElement) == null ? void 0 : _b.addEventListener("click", () => this.start());
+    }
+    addToDownloadZip(imgFetcher) {
+      var _a, _b;
+      let title = imgFetcher.title;
+      if (title) {
+        title = title.replace(/Page\s\d+[:_]\s*/, "");
+      } else {
+        title = (_b = (_a = imgFetcher.root.firstElementChild) == null ? void 0 : _a.getAttribute("asrc")) == null ? void 0 : _b.split("/").pop();
+      }
+      if (!title) {
+        evLog("无法解析图片文件名，因此该图片无法下载");
+        return;
+      }
+      if (!imgFetcher.blobData) {
+        evLog("无法获取图片数据，因此该图片无法下载");
+        return;
+      }
+      this.zip.file(title, imgFetcher.blobData, { binary: true });
+    }
+    // check > start > download
+    check() {
+      var _a;
+      if (conf.fetchOriginal)
+        return;
+      if (this.downloadNoticeElement && !this.downloading) {
+        this.downloadNoticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
+        (_a = this.downloadNoticeElement.querySelector("a")) == null ? void 0 : _a.addEventListener("click", () => this.fetchOriginalTemporarily());
+      }
+    }
+    fetchOriginalTemporarily() {
+      conf.fetchOriginal = true;
+      this.queue.forEach((imgFetcher) => {
+        imgFetcher.stage = FetchState.URL;
+      });
+      this.start();
+    }
+    start() {
+      if (this.queue.isFinised()) {
+        this.download();
+        return;
+      }
+      if (this.downloadNoticeElement) {
+        this.downloadNoticeElement.innerHTML = `<span>${i18n.downloading.get()}</span>`;
+      }
+      if (this.downloadStartElement) {
+        this.downloadStartElement.textContent = i18n.downloading.get();
+      }
+      this.downloading = true;
+      if (!conf.autoLoad)
+        conf.autoLoad = true;
+      this.idleLoader.lockVer++;
+      this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
+      this.idleLoader.start(this.idleLoader.lockVer);
+    }
+    download() {
+      this.downloading = false;
+      this.zip.generateAsync({ type: "blob" }, (_metadata) => {
+      }).then((data) => {
+        saveAs(data, `${this.title}.zip`);
+        if (this.downloadNoticeElement)
+          this.downloadNoticeElement.innerHTML = "";
+        if (this.downloadStartElement)
+          this.downloadStartElement.textContent = i18n.download.get();
+      });
+    }
+  }
   class Debouncer {
     constructor(mode) {
       __publicField(this, "tids");
@@ -566,553 +585,6 @@
         window.clearTimeout(this.tids[id]);
         this.tids[id] = window.setTimeout(event, timeout);
       }
-    }
-  }
-  function modPageHelperPostion() {
-    const style = HTML.pageHelper.style;
-    conf.pageHelperAbTop = style.top;
-    conf.pageHelperAbLeft = style.left;
-    conf.pageHelperAbBottom = style.bottom;
-    conf.pageHelperAbRight = style.right;
-    window.localStorage.setItem("cfg_", JSON.stringify(conf));
-  }
-  function modNumberConfigEvent(key, data) {
-    var _a;
-    const range = {
-      colCount: [1, 12],
-      threads: [1, 10],
-      downloadThreads: [1, 10],
-      timeout: [8, 40],
-      autoPageInterval: [500, 9e4]
-    };
-    let mod = key === "autoPageInterval" ? 100 : 1;
-    if (data === "add") {
-      if (conf[key] < range[key][1]) {
-        conf[key] += mod;
-      }
-    } else if (data === "minus") {
-      if (conf[key] > range[key][0]) {
-        conf[key] -= mod;
-      }
-    }
-    const inputElement = document.querySelector(`#${key}Input`);
-    if (inputElement) {
-      inputElement.value = conf[key].toString();
-    }
-    if (key === "colCount") {
-      const cssRules = Array.from(((_a = HTML.styleSheel.sheet) == null ? void 0 : _a.cssRules) || []);
-      for (const cssRule of cssRules) {
-        if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".fullViewPlane") {
-            cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
-            break;
-          }
-        }
-      }
-    }
-    window.localStorage.setItem("cfg_", JSON.stringify(conf));
-  }
-  function modBooleanConfigEvent(key) {
-    const inputElement = document.querySelector(`#${key}Checkbox`);
-    conf[key] = (inputElement == null ? void 0 : inputElement.checked) || false;
-    window.localStorage.setItem("cfg_", JSON.stringify(conf));
-  }
-  function modSelectConfigEvent(key) {
-    const inputElement = document.querySelector(`#${key}Select`);
-    const value = inputElement == null ? void 0 : inputElement.value;
-    if (value) {
-      conf[key] = value;
-      window.localStorage.setItem("cfg_", JSON.stringify(conf));
-    }
-    if (key === "readMode" && conf.readMode === "singlePage") {
-      BIFM.init(IFQ.currIndex);
-    }
-  }
-  function mouseleavePlaneEvent(target) {
-    target.classList.add("p-collapse");
-  }
-  function togglePlaneEvent(id, collapse) {
-    setTimeout(() => {
-      let element = document.querySelector(`#${id}Plane`);
-      if (element) {
-        if (collapse === false) {
-          element.classList.remove("p-collapse");
-        } else if (collapse === true) {
-          mouseleavePlaneEvent(element);
-        } else {
-          element.classList.toggle("p-collapse");
-          ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePlaneEvent(k, true));
-        }
-      }
-    }, 10);
-  }
-  function showFullViewPlane() {
-    HTML.fullViewPlane.scroll(0, 0);
-    HTML.fullViewPlane.classList.remove("collapse_full_view");
-    for (const node of Array.from(document.body.children)) {
-      if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains("fullViewPlane")) {
-        node.style.display = "none";
-      }
-    }
-  }
-  function hiddenFullViewPlaneEvent(event) {
-    if (event.target === HTML.fullViewPlane) {
-      main(true);
-    }
-  }
-  function hiddenFullViewPlane() {
-    hiddenBigImageEvent();
-    HTML.fullViewPlane.classList.add("collapse_full_view");
-    for (const node of Array.from(document.body.children)) {
-      if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains("fullViewPlane")) {
-        node.style.display = "";
-      }
-    }
-  }
-  function scrollEvent() {
-    if (HTML.fullViewPlane.classList.contains("collapse_full_view"))
-      return;
-    PF.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
-  }
-  function hiddenBigImageEvent(event) {
-    if (event && event.target && event.target.tagName === "SPAN")
-      return;
-    BIFM.hidden();
-  }
-  function bigImageWheelEvent(event) {
-    stepImageEvent(event.deltaY > 0 ? "next" : "prev");
-  }
-  let numberRecord = null;
-  function keyboardEvent(event) {
-    if (!HTML.bigImageFrame.classList.contains("collapse")) {
-      const b = HTML.bigImageFrame;
-      switch (event.key) {
-        case "ArrowLeft":
-          event.preventDefault();
-          stepImageEvent(conf.reversePages ? "next" : "prev");
-          break;
-        case "ArrowRight":
-          event.preventDefault();
-          stepImageEvent(conf.reversePages ? "prev" : "next");
-          break;
-        case "Escape":
-        case "Enter":
-          event.preventDefault();
-          hiddenBigImageEvent();
-          break;
-        case " ":
-        case "ArrowUp":
-        case "ArrowDown": {
-          event.preventDefault();
-          let deltaY = HTML.fullViewPlane.clientHeight / (event.key === " " ? 1 : 2);
-          if (event.key === "ArrowUp" || event.shiftKey) {
-            deltaY = -deltaY;
-          }
-          const stepImage = () => {
-            if (conf.readMode !== "singlePage") {
-              return false;
-            }
-            if (event.key === "ArrowUp" || event.key === " " && event.shiftKey) {
-              if (b.scrollTop <= 0) {
-                return true;
-              }
-            }
-            if (event.key === "ArrowDown" || event.key === " " && !event.shiftKey) {
-              if (b.scrollTop >= b.scrollHeight - b.offsetHeight) {
-                return true;
-              }
-            }
-            return false;
-          };
-          if (stepImage()) {
-            b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
-          } else {
-            b.scrollBy({ top: deltaY, behavior: "smooth" });
-            if (conf.readMode === "consecutively") {
-              b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
-            }
-          }
-          break;
-        }
-        case "-":
-          BIFM.scaleBigImages(-1, 5);
-          break;
-        case "=":
-          BIFM.scaleBigImages(1, 5);
-          break;
-      }
-    } else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) {
-      switch (event.key) {
-        case "Enter": {
-          let start = IFQ.currIndex;
-          if (numberRecord && numberRecord.length > 0) {
-            start = Number(numberRecord.join("")) - 1;
-            numberRecord = null;
-            if (start < 0 || start >= IFQ.length) {
-              break;
-            }
-          }
-          IFQ[start].imgElement.dispatchEvent(new MouseEvent("click"));
-          break;
-        }
-        case "Escape":
-          hiddenFullViewPlane();
-          break;
-        case "Space":
-        case " ": {
-          if (event.shiftKey) {
-            HTML.fullViewPlane.scrollBy({ top: -HTML.fullViewPlane.clientHeight, behavior: "smooth" });
-          } else {
-            HTML.fullViewPlane.scrollBy({ top: HTML.fullViewPlane.clientHeight, behavior: "smooth" });
-          }
-          break;
-        }
-        case "ArrowUp": {
-          const [top, _] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
-          top.scrollIntoView({ behavior: "smooth", block: "start" });
-          break;
-        }
-        case "ArrowDown": {
-          const [_, bot] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
-          bot.scrollIntoView({ behavior: "smooth", block: "end" });
-          break;
-        }
-        default: {
-          if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
-            numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
-          }
-        }
-      }
-    }
-  }
-  function showBigImageEvent(event) {
-    showBigImage(IFQ.findImgIndex(event.target));
-  }
-  function showBigImage(start) {
-    BIFM.show();
-    IFQ.do(start);
-  }
-  function stepImageEvent(oriented) {
-    const start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
-    IFQ.do(start, oriented);
-  }
-  function showGuideEvent() {
-    const guideElement = document.createElement("div");
-    document.body.after(guideElement);
-    guideElement.innerHTML = `
-  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>
-  `;
-    guideElement.setAttribute("style", `position: absolute;width: 100%;height: 100%;background-color: #363c3c78;z-index: 2004;top: 0; display: flex; justify-content: center;align-items: center;`);
-    guideElement.addEventListener("click", () => guideElement.remove());
-  }
-  const events = {
-    modNumberConfigEvent,
-    modBooleanConfigEvent,
-    modSelectConfigEvent,
-    modPageHelperPostion,
-    togglePlaneEvent,
-    showFullViewPlane,
-    hiddenFullViewPlaneEvent,
-    hiddenFullViewPlane,
-    scrollEvent,
-    hiddenBigImageEvent,
-    bigImageWheelEvent,
-    keyboardEvent,
-    showBigImageEvent,
-    showBigImage,
-    stepImageEvent,
-    showGuideEvent,
-    mouseleavePlaneEvent
-  };
-  class GalleryMeta {
-    constructor($doc) {
-      __publicField(this, "url");
-      __publicField(this, "title");
-      __publicField(this, "originTitle");
-      __publicField(this, "tags");
-      this.url = $doc.location.href;
-      const titleList = $doc.querySelectorAll("#gd2 h1");
-      if (titleList && titleList.length > 0) {
-        this.title = titleList[0].textContent || void 0;
-        if (titleList.length > 1) {
-          this.originTitle = titleList[1].textContent || void 0;
-        }
-      }
-      this.tags = GalleryMeta.parser_tags($doc);
-    }
-    static parser_tags($doc) {
-      const tagTrList = $doc.querySelectorAll("#taglist tr");
-      const tags = {};
-      tagTrList.forEach((tr) => {
-        const tds = tr.childNodes;
-        const cat = tds[0].textContent;
-        if (cat) {
-          const list = [];
-          tds[1].childNodes.forEach((ele) => {
-            if (ele.textContent)
-              list.push(ele.textContent);
-          });
-          tags[cat] = list;
-        }
-      });
-      return tags;
-    }
-  }
-  class Downloader {
-    constructor(queue, idleLoader) {
-      __publicField(this, "meta");
-      __publicField(this, "zip");
-      __publicField(this, "title");
-      __publicField(this, "downloading");
-      __publicField(this, "downloadForceElement");
-      __publicField(this, "downloadStartElement");
-      __publicField(this, "downloadNoticeElement");
-      __publicField(this, "queue");
-      __publicField(this, "idleLoader");
-      var _a, _b;
-      this.queue = queue;
-      this.idleLoader = idleLoader;
-      this.meta = new GalleryMeta(document);
-      this.zip = new JSZip();
-      this.title = this.meta.originTitle || this.meta.title;
-      this.zip.file("meta.json", JSON.stringify(this.meta));
-      this.downloading = false;
-      this.downloadForceElement = document.querySelector("#download-force") || void 0;
-      this.downloadStartElement = document.querySelector("#download-start") || void 0;
-      this.downloadNoticeElement = document.querySelector("#download-notice") || void 0;
-      (_a = this.downloadForceElement) == null ? void 0 : _a.addEventListener("click", () => this.download());
-      (_b = this.downloadStartElement) == null ? void 0 : _b.addEventListener("click", () => this.start());
-    }
-    addToDownloadZip(imgFetcher) {
-      var _a, _b;
-      if (conf.disableDownload)
-        return;
-      let title = imgFetcher.title;
-      if (title) {
-        title = title.replace(/Page\s\d+[:_]\s*/, "");
-      } else {
-        title = (_b = (_a = imgFetcher.root.firstElementChild) == null ? void 0 : _a.getAttribute("asrc")) == null ? void 0 : _b.split("/").pop();
-      }
-      if (!title) {
-        evLog("无法解析图片文件名，因此该图片无法下载");
-        return;
-      }
-      if (!imgFetcher.blobData) {
-        evLog("无法获取图片数据，因此该图片无法下载");
-        return;
-      }
-      this.zip.file(title, imgFetcher.blobData, { binary: true });
-    }
-    // check > start > download
-    check() {
-      var _a, _b;
-      if (conf.fetchOriginal)
-        return;
-      if (this.downloadNoticeElement && !this.downloading) {
-        this.downloadNoticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-        (_a = this.downloadNoticeElement.querySelector("a")) == null ? void 0 : _a.addEventListener("click", () => this.fetchOriginalTemporarily());
-      }
-      if (conf.disableDownload && this.downloadNoticeElement) {
-        this.downloadNoticeElement.innerHTML = "<span>下载功能已禁用</span>";
-        (_b = this.downloadNoticeElement.querySelector("a")) == null ? void 0 : _b.addEventListener("click", () => this.fetchOriginalTemporarily());
-        if (this.downloadStartElement) {
-          this.downloadStartElement.setAttribute("disabled", "true");
-        }
-      }
-    }
-    fetchOriginalTemporarily() {
-      this.queue.forEach((imgFetcher) => {
-        if (!imgFetcher.fetchOriginal || imgFetcher.stage !== FetchState.DONE) {
-          imgFetcher.fetchOriginal = true;
-          imgFetcher.stage = FetchState.URL;
-        }
-      });
-      this.start();
-    }
-    start() {
-      if (this.queue.isFinised()) {
-        this.download();
-        return;
-      }
-      if (this.downloadNoticeElement && !conf.disableDownload) {
-        this.downloadNoticeElement.innerHTML = `<span>${i18n.downloading.get()}</span>`;
-      }
-      if (this.downloadStartElement) {
-        this.downloadStartElement.textContent = i18n.downloading.get();
-      }
-      this.downloading = true;
-      if (!conf.autoLoad)
-        conf.autoLoad = true;
-      this.idleLoader.lockVer++;
-      this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
-      this.idleLoader.start(this.idleLoader.lockVer);
-    }
-    download() {
-      if (conf.disableDownload)
-        return;
-      this.downloading = false;
-      this.zip.generateAsync({ type: "blob" }, (_metadata) => {
-      }).then((data) => {
-        saveAs(data, `${this.title}.zip`);
-        if (this.downloadNoticeElement)
-          this.downloadNoticeElement.innerHTML = "";
-        if (this.downloadStartElement)
-          this.downloadStartElement.textContent = i18n.download.get();
-      });
-    }
-  }
-  class DownloaderCanvas {
-    constructor(id, queue) {
-      __publicField(this, "canvas");
-      __publicField(this, "mousemoveState");
-      __publicField(this, "ctx");
-      __publicField(this, "queue");
-      __publicField(this, "rectSize");
-      __publicField(this, "rectGap");
-      __publicField(this, "columns");
-      __publicField(this, "padding");
-      __publicField(this, "scrollSize");
-      __publicField(this, "scrollTop");
-      __publicField(this, "debouncer");
-      this.queue = queue;
-      const canvas = document.querySelector(`#${id}`);
-      if (!canvas) {
-        throw new Error("canvas not found");
-      }
-      this.canvas = canvas;
-      this.canvas.addEventListener("wheel", (event) => this.onwheel(event.deltaY));
-      this.mousemoveState = { x: 0, y: 0 };
-      this.canvas.addEventListener("mousemove", (event) => {
-        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
-        this.drawDebouce();
-      });
-      this.canvas.addEventListener("click", (event) => {
-        var _a;
-        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
-        const index = (_a = this.computeDrawList()) == null ? void 0 : _a.find((state) => state.isSelected).index;
-        events.showBigImage(index);
-      });
-      const ctx = this.canvas.getContext("2d");
-      if (!ctx) {
-        throw new Error("canvas context not found");
-      }
-      this.ctx = ctx;
-      this.rectSize = 12;
-      this.rectGap = 6;
-      this.columns = 15;
-      this.padding = 7;
-      this.scrollTop = 0;
-      this.scrollSize = 10;
-      this.debouncer = new Debouncer();
-    }
-    onwheel(deltaY) {
-      const [_, h] = this.getWH();
-      const clientHeight = this.computeClientHeight();
-      if (clientHeight > h) {
-        deltaY = deltaY >> 1;
-        this.scrollTop += deltaY;
-        if (this.scrollTop < 0)
-          this.scrollTop = 0;
-        if (this.scrollTop + h > clientHeight + 20)
-          this.scrollTop = clientHeight - h + 20;
-        this.draw();
-      }
-    }
-    drawDebouce() {
-      this.debouncer.addEvent("DOWNLOADER-DRAW", () => this.draw(), 20);
-    }
-    computeDrawList() {
-      const list = [];
-      const [_, h] = this.getWH();
-      const startX = this.computeStartX();
-      const startY = -this.scrollTop;
-      for (let i = 0, row = -1; i < this.queue.length; i++) {
-        const currCol = i % this.columns;
-        if (currCol == 0) {
-          row++;
-        }
-        const atX = startX + (this.rectSize + this.rectGap) * currCol;
-        const atY = startY + (this.rectSize + this.rectGap) * row;
-        if (atY + this.rectSize < 0) {
-          continue;
-        }
-        if (atY > h) {
-          break;
-        }
-        list.push({ index: i, atX, atY, isSelected: this.isSelected(atX, atY) });
-      }
-      return list;
-    }
-    draw() {
-      const [w, h] = this.getWH();
-      this.ctx.clearRect(0, 0, w, h);
-      const list = this.computeDrawList();
-      for (const rectState of list) {
-        this.drawSmallRect(
-          rectState.atX,
-          rectState.atY,
-          this.queue[rectState.index],
-          rectState.index === this.queue.currIndex,
-          rectState.isSelected
-        );
-      }
-    }
-    computeClientHeight() {
-      return Math.ceil(this.queue.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
-    }
-    scrollTo(index) {
-      const clientHeight = this.computeClientHeight();
-      const [_, h] = this.getWH();
-      if (clientHeight <= h) {
-        return;
-      }
-      const rowNo = Math.ceil((index + 1) / this.columns);
-      const offsetY = (rowNo - 1) * (this.rectSize + this.rectGap);
-      if (offsetY > h) {
-        this.scrollTop = offsetY + this.rectSize - h;
-        const maxScrollTop = clientHeight - h + 20;
-        if (this.scrollTop + 20 <= maxScrollTop) {
-          this.scrollTop += 20;
-        }
-      }
-    }
-    isSelected(atX, atY) {
-      return this.mousemoveState.x - atX >= 0 && this.mousemoveState.x - atX <= this.rectSize && this.mousemoveState.y - atY >= 0 && this.mousemoveState.y - atY <= this.rectSize;
-    }
-    computeStartX() {
-      const [w, _] = this.getWH();
-      const drawW = this.rectSize * this.columns + this.rectGap * this.columns - 1;
-      let startX = w - drawW >> 1;
-      return startX;
-    }
-    drawSmallRect(x, y, imgFetcher, isCurr, isSelected) {
-      switch (imgFetcher.stage) {
-        case FetchState.DONE:
-          this.ctx.fillStyle = "rgb(110, 200, 120)";
-          break;
-        case FetchState.DATA:
-          const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
-          this.ctx.fillStyle = `rgba(110, ${Math.ceil(percent * 200)}, 120, ${Math.max(percent, 0.1)})`;
-          break;
-        default:
-          this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
-      }
-      this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
-      this.ctx.shadowColor = "#d53";
-      if (isSelected) {
-        this.ctx.strokeStyle = "rgb(60, 20, 200)";
-        this.ctx.lineWidth = 2;
-      } else if (isCurr) {
-        this.ctx.strokeStyle = "rgb(255, 60, 20)";
-        this.ctx.lineWidth = 2;
-      } else {
-        this.ctx.strokeStyle = "rgb(90, 90, 90)";
-        this.ctx.lineWidth = 1;
-      }
-      this.ctx.strokeRect(x, y, this.rectSize, this.rectSize);
-    }
-    getWH() {
-      return [this.canvas.width, this.canvas.height];
     }
   }
   class IMGFetcherQueue extends Array {
@@ -1252,6 +724,9 @@
       if (this.processingIndexList.length === 0) {
         return;
       }
+      if (this.queue.length === 0) {
+        return;
+      }
       for (let i = 0; i < this.processingIndexList.length; i++) {
         const processingIndex = this.processingIndexList[i];
         const imgFetcher = this.queue[processingIndex];
@@ -1308,75 +783,304 @@
       }, conf.restartIdleLoader);
     }
   }
+  function modPageHelperPostion() {
+    const style = HTML.pageHelper.style;
+    conf.pageHelperAbTop = style.top;
+    conf.pageHelperAbLeft = style.left;
+    conf.pageHelperAbBottom = style.bottom;
+    conf.pageHelperAbRight = style.right;
+    saveConf(conf);
+  }
+  function modNumberConfigEvent(key, data) {
+    var _a;
+    const range = {
+      colCount: [1, 12],
+      threads: [1, 10],
+      downloadThreads: [1, 10],
+      timeout: [8, 40],
+      autoPageInterval: [500, 9e4]
+    };
+    let mod = key === "autoPageInterval" ? 100 : 1;
+    if (data === "add") {
+      if (conf[key] < range[key][1]) {
+        conf[key] += mod;
+      }
+    } else if (data === "minus") {
+      if (conf[key] > range[key][0]) {
+        conf[key] -= mod;
+      }
+    }
+    const inputElement = document.querySelector(`#${key}Input`);
+    if (inputElement) {
+      inputElement.value = conf[key].toString();
+    }
+    if (key === "colCount") {
+      const cssRules = Array.from(((_a = HTML.styleSheel.sheet) == null ? void 0 : _a.cssRules) || []);
+      for (const cssRule of cssRules) {
+        if (cssRule instanceof CSSStyleRule) {
+          if (cssRule.selectorText === ".fullViewPlane") {
+            cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
+            break;
+          }
+        }
+      }
+    }
+    saveConf(conf);
+  }
+  function modBooleanConfigEvent(key) {
+    const inputElement = document.querySelector(`#${key}Checkbox`);
+    conf[key] = (inputElement == null ? void 0 : inputElement.checked) || false;
+    saveConf(conf);
+  }
+  function modSelectConfigEvent(key) {
+    const inputElement = document.querySelector(`#${key}Select`);
+    const value = inputElement == null ? void 0 : inputElement.value;
+    if (value) {
+      conf[key] = value;
+      saveConf(conf);
+    }
+    if (key === "readMode" && conf.readMode === "singlePage") {
+      BIFM.init(IFQ.currIndex);
+    }
+  }
+  function mouseleavePlaneEvent(target) {
+    target.classList.add("p-collapse");
+  }
+  function togglePlaneEvent(id, collapse) {
+    setTimeout(() => {
+      let element = document.querySelector(`#${id}Plane`);
+      if (element) {
+        if (collapse === false) {
+          element.classList.remove("p-collapse");
+        } else if (collapse === true) {
+          mouseleavePlaneEvent(element);
+        } else {
+          element.classList.toggle("p-collapse");
+          ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePlaneEvent(k, true));
+        }
+      }
+    }, 10);
+  }
+  function showFullViewPlane() {
+    HTML.fullViewPlane.scroll(0, 0);
+    HTML.fullViewPlane.classList.remove("collapse_full_view");
+    document.body.style.display = "none";
+  }
+  function hiddenFullViewPlaneEvent(event) {
+    if (event.target === HTML.fullViewPlane) {
+      main(true);
+    }
+  }
+  function hiddenFullViewPlane() {
+    hiddenBigImageEvent();
+    HTML.fullViewPlane.classList.add("collapse_full_view");
+    document.body.style.display = "";
+  }
+  function scrollEvent() {
+    if (HTML.fullViewPlane.classList.contains("collapse_full_view"))
+      return;
+    PF.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+  }
+  function hiddenBigImageEvent(event) {
+    if (event && event.target && event.target.tagName === "SPAN")
+      return;
+    BIFM.hidden();
+  }
+  function bigImageWheelEvent(event) {
+    stepImageEvent(event.deltaY > 0 ? "next" : "prev");
+  }
+  let numberRecord = null;
+  function keyboardEvent(event) {
+    if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) {
+      const b = HTML.bigImageFrame;
+      switch (event.key) {
+        case "ArrowLeft":
+          event.preventDefault();
+          stepImageEvent(conf.reversePages ? "next" : "prev");
+          break;
+        case "ArrowRight":
+          event.preventDefault();
+          stepImageEvent(conf.reversePages ? "prev" : "next");
+          break;
+        case "Escape":
+        case "Enter":
+          event.preventDefault();
+          hiddenBigImageEvent();
+          break;
+        case " ":
+        case "ArrowUp":
+        case "ArrowDown": {
+          event.preventDefault();
+          let deltaY = HTML.fullViewPlane.clientHeight / (event.key === " " ? 1 : 2);
+          if (event.key === "ArrowUp" || event.shiftKey) {
+            deltaY = -deltaY;
+          }
+          const stepImage = () => {
+            if (conf.readMode !== "singlePage") {
+              return false;
+            }
+            if (event.key === "ArrowUp" || event.key === " " && event.shiftKey) {
+              if (b.scrollTop <= 0) {
+                return true;
+              }
+            }
+            if (event.key === "ArrowDown" || event.key === " " && !event.shiftKey) {
+              if (b.scrollTop >= b.scrollHeight - b.offsetHeight) {
+                return true;
+              }
+            }
+            return false;
+          };
+          if (stepImage()) {
+            b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+          } else {
+            b.scrollBy({ top: deltaY, behavior: "smooth" });
+            if (conf.readMode === "consecutively") {
+              b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+            }
+          }
+          break;
+        }
+        case "-":
+          BIFM.scaleBigImages(-1, 5);
+          break;
+        case "=":
+          BIFM.scaleBigImages(1, 5);
+          break;
+      }
+    } else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) {
+      switch (event.key) {
+        case "Enter": {
+          let start = IFQ.currIndex;
+          if (numberRecord && numberRecord.length > 0) {
+            start = Number(numberRecord.join("")) - 1;
+            numberRecord = null;
+            if (start < 0 || start >= IFQ.length) {
+              break;
+            }
+          }
+          IFQ[start].imgElement.dispatchEvent(new MouseEvent("click"));
+          break;
+        }
+        case "Escape":
+          hiddenFullViewPlane();
+          break;
+        case "Space":
+        case " ": {
+          if (event.shiftKey) {
+            HTML.fullViewPlane.scrollBy({ top: -HTML.fullViewPlane.clientHeight, behavior: "smooth" });
+          } else {
+            HTML.fullViewPlane.scrollBy({ top: HTML.fullViewPlane.clientHeight, behavior: "smooth" });
+          }
+          break;
+        }
+        case "ArrowUp": {
+          const [top, _] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+          top.scrollIntoView({ behavior: "smooth", block: "start" });
+          break;
+        }
+        case "ArrowDown": {
+          const [_, bot] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+          bot.scrollIntoView({ behavior: "smooth", block: "end" });
+          break;
+        }
+        default: {
+          if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+            numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
+          }
+        }
+      }
+    }
+  }
+  function showBigImageEvent(event) {
+    showBigImage(IFQ.findImgIndex(event.target));
+  }
+  function showBigImage(start) {
+    BIFM.show();
+    IFQ.do(start);
+  }
+  function stepImageEvent(oriented) {
+    const start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
+    IFQ.do(start, oriented);
+  }
+  function showGuideEvent() {
+    const guideElement = document.createElement("div");
+    document.body.after(guideElement);
+    guideElement.innerHTML = `
+  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>
+  `;
+    guideElement.setAttribute(
+      "style",
+      `
+position: absolute;
+width: 100%;
+height: 100%;
+background-color: #363c3c78;
+z-index: 2004;
+top: 0;
+display: flex;
+justify-content: center;
+align-items: center;
+color: black;
+text-align: left;
+`
+    );
+    guideElement.addEventListener("click", () => guideElement.remove());
+  }
+  const events = {
+    modNumberConfigEvent,
+    modBooleanConfigEvent,
+    modSelectConfigEvent,
+    modPageHelperPostion,
+    togglePlaneEvent,
+    showFullViewPlane,
+    hiddenFullViewPlaneEvent,
+    hiddenFullViewPlane,
+    scrollEvent,
+    hiddenBigImageEvent,
+    bigImageWheelEvent,
+    keyboardEvent,
+    showBigImageEvent,
+    showBigImage,
+    stepImageEvent,
+    showGuideEvent,
+    mouseleavePlaneEvent
+  };
   class PageFetcher {
-    constructor(queue, idleLoader) {
+    constructor(queue, idleLoader, matcher2) {
       __publicField(this, "queue");
       __publicField(this, "pageURLs");
       __publicField(this, "currPage");
       __publicField(this, "idleLoader");
       __publicField(this, "fetched");
       __publicField(this, "imgAppends");
+      __publicField(this, "matcher");
       this.queue = queue;
       this.idleLoader = idleLoader;
       this.pageURLs = [];
       this.currPage = 0;
       this.imgAppends = { prev: [], next: [] };
       this.fetched = false;
+      this.matcher = matcher2;
     }
     async init() {
-      this.initPageURLs();
       await this.initPageAppend();
-      this.loadAllPageImg();
-      this.renderCurrView(
-        HTML.fullViewPlane.scrollTop,
-        HTML.fullViewPlane.clientHeight
-      );
-    }
-    initPageURLs() {
-      var _a, _b, _c;
-      const pager = document.querySelector(".gtb");
-      if (!pager) {
-        throw new Error("未获取到分页元素！");
-      }
-      const tds = Array.from(pager.querySelectorAll("td"));
-      if (!tds || tds.length == 0) {
-        throw new Error("未获取到有效的分页元素！");
-      }
-      const ptds = tds.filter((p) => p.className.indexOf("ptds") != -1);
-      if (!ptds || ptds.length == 0) {
-        throw new Error("未获取到有效的分页元素！");
-      }
-      const currPageNum = PageFetcher.findPageNum(
-        ((_a = ptds[0].firstElementChild) == null ? void 0 : _a.getAttribute("href")) || void 0
-      );
-      const firstPageUrl = ((_b = tds[1].firstElementChild) == null ? void 0 : _b.getAttribute("href")) || void 0;
-      if (!firstPageUrl) {
-        throw new Error("未获取到有效的分页地址！");
-      }
-      this.pageURLs.push(firstPageUrl);
-      const lastPage = PageFetcher.findPageNum(
-        ((_c = tds[tds.length - 2].firstElementChild) == null ? void 0 : _c.getAttribute("href")) || void 0
-      );
-      for (let i = 1; i <= lastPage; i++) {
-        this.pageURLs.push(`${firstPageUrl}?p=${i}`);
-        if (i == currPageNum) {
-          this.currPage = i;
-        }
-      }
-      evLog("所有页码地址加载完毕:", this.pageURLs);
     }
     async initPageAppend() {
-      for (let i = 0; i < this.pageURLs.length; i++) {
-        const pageURL = this.pageURLs[i];
-        if (i == this.currPage) {
-          await this.appendDefaultPage(pageURL);
-        } else {
-          const oriented = i < this.currPage ? "prev" : "next";
-          this.imgAppends[oriented].push(
-            async () => await this.appendPageImg(pageURL, oriented)
-          );
-        }
+      for (const pageURL of this.matcher.parsePageURLs()) {
+        console.log("pageURL: ", pageURL);
+        this.imgAppends["next"].push(
+          async () => {
+            let ok = await this.appendPageImg(pageURL, "next");
+            this.renderCurrView(
+              HTML.fullViewPlane.scrollTop,
+              HTML.fullViewPlane.clientHeight
+            );
+            return ok;
+          }
+        );
       }
+      this.loadAllPageImg();
     }
     async loadAllPageImg() {
       if (this.fetched)
@@ -1390,46 +1094,24 @@
         await executor();
       }
     }
-    static findPageNum(pageURL) {
-      if (pageURL) {
-        const arr = pageURL.split("?");
-        if (arr && arr.length > 1) {
-          let matchs = /p=(\d*)/.exec(arr[1]);
-          if (matchs && matchs.length > 1) {
-            return parseInt(matchs.pop());
-          }
-        }
-      }
-      return 0;
-    }
-    async appendDefaultPage(pageURL) {
-      const doc = await this.fetchDocument(pageURL);
-      const imgNodeList = await this.obtainImageNodeList(doc);
-      const IFs = imgNodeList.map(
-        (imgNode) => new IMGFetcher(imgNode)
-      );
-      HTML.fullViewPlane.firstElementChild.nextElementSibling.after(
-        ...imgNodeList
-      );
-      this.queue.push(...IFs);
-      updatePageHelper("updateTotal", this.queue.length.toString());
-    }
-    async appendPageImg(pageURL, oriented) {
+    async appendPageImg(url, oriented) {
       try {
-        const doc = await this.fetchDocument(pageURL);
-        const imgNodeList = await this.obtainImageNodeList(doc);
+        const imgNodeList = await this.obtainImageNodeList(url);
         const IFs = imgNodeList.map(
-          (imgNode) => new IMGFetcher(imgNode)
+          (imgNode) => new IMGFetcher(imgNode, this.matcher)
         );
         switch (oriented) {
           case "prev":
             HTML.fullViewPlane.firstElementChild.nextElementSibling.after(
               ...imgNodeList
             );
+            const len = this.queue.length;
             this.queue.unshift(...IFs);
-            this.idleLoader.processingIndexList[0] += IFs.length;
-            const { root } = this.queue[this.idleLoader.processingIndexList[0]];
-            HTML.fullViewPlane.scrollTo(0, root.offsetTop);
+            if (len > 0) {
+              this.idleLoader.processingIndexList[0] += IFs.length;
+              const { root } = this.queue[this.idleLoader.processingIndexList[0]];
+              HTML.fullViewPlane.scrollTo(0, root.offsetTop);
+            }
             break;
           case "next":
             HTML.fullViewPlane.lastElementChild.after(...imgNodeList);
@@ -1444,18 +1126,7 @@
       }
     }
     //从文档的字符串中创建缩略图元素列表
-    async obtainImageNodeList(docString) {
-      const list = [];
-      if (!docString)
-        return list;
-      const domParser = new DOMParser();
-      const doc = domParser.parseFromString(docString, "text/html");
-      const aNodes = doc.querySelectorAll("#gdt a");
-      if (!aNodes || aNodes.length == 0) {
-        evLog("wried to get a nodes from document, but failed!");
-        return list;
-      }
-      const aNode = aNodes[0];
+    async obtainImageNodeList(url) {
       const imgNodeTemplate = document.createElement("div");
       imgNodeTemplate.classList.add("img-node");
       const imgTemplate = document.createElement("img");
@@ -1466,41 +1137,10 @@
         "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
       );
       imgNodeTemplate.appendChild(imgTemplate);
-      const href = aNode.getAttribute("href");
-      if (regulars.isMPV.test(href)) {
-        const mpvDoc = await this.fetchDocument(href);
-        const matchs = mpvDoc.matchAll(regulars.mpvImageList);
-        const gid = location.pathname.split("/")[2];
-        let i = 0;
-        for (const match of matchs) {
-          i++;
-          const newImgNode = imgNodeTemplate.cloneNode(true);
-          const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("title", match[1]);
-          newImg.setAttribute(
-            "ahref",
-            `${location.origin}/s/${match[2]}/${gid}-${i}`
-          );
-          newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
-          newImg.addEventListener("click", events.showBigImageEvent);
-          list.push(newImgNode);
-        }
-        this.fetched = true;
-      } else {
-        for (const aNode2 of Array.from(aNodes)) {
-          const imgNode = aNode2.querySelector("img");
-          if (!imgNode) {
-            throw new Error("Cannot find Image");
-          }
-          const newImgNode = imgNodeTemplate.cloneNode(true);
-          const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("ahref", aNode2.getAttribute("href"));
-          newImg.setAttribute("asrc", imgNode.src);
-          newImg.setAttribute("title", imgNode.getAttribute("title") || "");
-          newImg.addEventListener("click", events.showBigImageEvent);
-          list.push(newImgNode);
-        }
-      }
+      const list = await this.matcher.parseImgNodes(url, imgNodeTemplate);
+      list.forEach((imgNode) => {
+        imgNode.addEventListener("click", events.showBigImageEvent);
+      });
       return list;
     }
     //通过地址请求该页的文档
@@ -1543,6 +1183,487 @@
       return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
     }
   }
+  function adaptMatcher() {
+    const host = window.location.host;
+    if (host === "nhentai.net") {
+      return new NHMatcher();
+    }
+    if (host === "steamcommunity.com") {
+      return new SteamMatcher();
+    }
+    return new EHMatcher();
+  }
+  const regulars = {
+    /** 有压缩的大图地址 */
+    normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
+    /** 原图地址 */
+    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg?[^"\\]*)\"\>/,
+    /** 大图重载地址 */
+    nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
+    /** 是否开启自动多页查看器 */
+    isMPV: /https?:\/\/e[-x]hentai.org\/mpv\/\w+\/\w+\/#page\w/,
+    /** 多页查看器图片列表提取 */
+    mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g
+  };
+  class EHMatcher {
+    parseGalleryMeta(doc) {
+      const titleList = doc.querySelectorAll("#gd2 h1");
+      let title;
+      let originTitle;
+      if (titleList && titleList.length > 0) {
+        title = titleList[0].textContent || void 0;
+        if (titleList.length > 1) {
+          originTitle = titleList[1].textContent || void 0;
+        }
+      }
+      const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+      meta.originTitle = originTitle;
+      const tagTrList = doc.querySelectorAll("#taglist tr");
+      const tags = {};
+      tagTrList.forEach((tr) => {
+        const tds = tr.childNodes;
+        const cat = tds[0].textContent;
+        if (cat) {
+          const list = [];
+          tds[1].childNodes.forEach((ele) => {
+            if (ele.textContent)
+              list.push(ele.textContent);
+          });
+          tags[cat] = list;
+        }
+      });
+      meta.tags = tags;
+      return meta;
+    }
+    async matchImgURL(url) {
+      return await this.fetchImgURL(url, false);
+    }
+    async parseImgNodes(url, template) {
+      const list = [];
+      const raw = await window.fetch(url).then((response) => response.text());
+      if (!raw)
+        return list;
+      const domParser = new DOMParser();
+      const doc = domParser.parseFromString(raw, "text/html");
+      const aNodes = doc.querySelectorAll("#gdt a");
+      if (!aNodes || aNodes.length == 0) {
+        evLog("wried to get a nodes from document, but failed!");
+        return list;
+      }
+      const aNode = aNodes[0];
+      const href = aNode.getAttribute("href");
+      if (regulars.isMPV.test(href)) {
+        const mpvDoc = await window.fetch(href).then((response) => response.text());
+        const matchs = mpvDoc.matchAll(regulars.mpvImageList);
+        const gid = location.pathname.split("/")[2];
+        let i = 0;
+        for (const match of matchs) {
+          i++;
+          const newImgNode = template.cloneNode(true);
+          const newImg = newImgNode.firstElementChild;
+          newImg.setAttribute("title", match[1]);
+          newImg.setAttribute(
+            "ahref",
+            `${location.origin}/s/${match[2]}/${gid}-${i}`
+          );
+          newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
+          list.push(newImgNode);
+        }
+      } else {
+        for (const aNode2 of Array.from(aNodes)) {
+          const imgNode = aNode2.querySelector("img");
+          if (!imgNode) {
+            throw new Error("Cannot find Image");
+          }
+          const newImgNode = template.cloneNode(true);
+          const newImg = newImgNode.firstElementChild;
+          newImg.setAttribute("ahref", aNode2.getAttribute("href"));
+          newImg.setAttribute("asrc", imgNode.src);
+          newImg.setAttribute("title", imgNode.getAttribute("title") || "");
+          list.push(newImgNode);
+        }
+      }
+      return list;
+    }
+    parsePageURLs() {
+      var _a, _b;
+      const pager = document.querySelector(".gtb");
+      if (!pager) {
+        throw new Error("未获取到分页元素！");
+      }
+      const tds = Array.from(pager.querySelectorAll("td"));
+      if (!tds || tds.length == 0) {
+        throw new Error("未获取到有效的分页元素！");
+      }
+      const ptds = tds.filter((p) => p.className.indexOf("ptds") != -1);
+      if (!ptds || ptds.length == 0) {
+        throw new Error("未获取到有效的分页元素！");
+      }
+      const firstPage = ((_a = tds[1].firstElementChild) == null ? void 0 : _a.getAttribute("href")) || void 0;
+      if (!firstPage) {
+        throw new Error("未获取到有效的分页地址！");
+      }
+      const lastPage = this.findPageNum(
+        ((_b = tds[tds.length - 2].firstElementChild) == null ? void 0 : _b.getAttribute("href")) || void 0
+      );
+      const pageURLs = [firstPage];
+      for (let i = 1; i <= lastPage; i++) {
+        pageURLs.push(`${firstPage}?p=${i}`);
+      }
+      return pageURLs;
+    }
+    findPageNum(pageURL) {
+      if (pageURL) {
+        const arr = pageURL.split("?");
+        if (arr && arr.length > 1) {
+          let matchs = /p=(\d*)/.exec(arr[1]);
+          if (matchs && matchs.length > 1) {
+            return parseInt(matchs.pop());
+          }
+        }
+      }
+      return 0;
+    }
+    async fetchImgURL(url, originChanged) {
+      let text = "";
+      try {
+        text = await window.fetch(url).then((resp) => resp.text());
+        if (!text)
+          throw new Error("[text] is empty");
+      } catch (error) {
+        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
+      }
+      if (conf.fetchOriginal) {
+        const matchs = regulars.original.exec(text);
+        if (matchs && matchs.length > 0) {
+          return matchs[1].replace(/&amp;/g, "&");
+        } else {
+          const normalMatchs = regulars["normal"].exec(text);
+          if (normalMatchs == null || normalMatchs.length == 0) {
+            throw new Error(`Cannot matching the image url, content: ${text}`);
+          } else {
+            return normalMatchs[1];
+          }
+        }
+      }
+      if (originChanged) {
+        const nlValue = regulars.nlValue.exec(text)[1];
+        const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
+        evLog(`IMG-FETCHER retry url:${newUrl}`);
+        return await this.fetchImgURL(url, false);
+      } else {
+        return regulars.normal.exec(text)[1];
+      }
+    }
+  }
+  const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
+  class NHMatcher {
+    parseGalleryMeta(doc) {
+      let title;
+      let originTitle;
+      doc.querySelectorAll("#info .title").forEach((ele) => {
+        if (!title) {
+          title = ele.textContent || void 0;
+        } else {
+          originTitle = ele.textContent || void 0;
+        }
+      });
+      const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+      meta.originTitle = originTitle;
+      const tagTrList = doc.querySelectorAll(".tag-container");
+      const tags = {};
+      tagTrList.forEach((tr) => {
+        var _a, _b;
+        const cat = (_b = (_a = tr.firstChild) == null ? void 0 : _a.textContent) == null ? void 0 : _b.trim().replace(":", "");
+        if (cat) {
+          const list = [];
+          tr.querySelectorAll(".tag .name").forEach((tag) => {
+            var _a2;
+            const t = (_a2 = tag.textContent) == null ? void 0 : _a2.trim();
+            if (t) {
+              list.push(t);
+            }
+          });
+          if (list.length > 0) {
+            tags[cat] = list;
+          }
+        }
+      });
+      meta.tags = tags;
+      return meta;
+    }
+    async matchImgURL(url) {
+      let text = "";
+      try {
+        text = await window.fetch(url).then((resp) => resp.text());
+        if (!text)
+          throw new Error("[text] is empty");
+      } catch (error) {
+        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
+      }
+      return NH_IMG_URL_REGEX.exec(text)[1];
+    }
+    async parseImgNodes(_, template) {
+      const list = [];
+      const aNodes = document.querySelectorAll(".thumb-container > .gallerythumb");
+      if (!aNodes || aNodes.length == 0) {
+        evLog("wried to get a nodes from document, but failed!");
+        return list;
+      }
+      for (const aNode of Array.from(aNodes)) {
+        const imgNode = aNode.querySelector("img");
+        if (!imgNode) {
+          throw new Error("Cannot find Image");
+        }
+        const newImgNode = template.cloneNode(true);
+        const newImg = newImgNode.firstElementChild;
+        newImg.setAttribute("ahref", location.origin + aNode.getAttribute("href"));
+        newImg.setAttribute("asrc", imgNode.getAttribute("data-src"));
+        newImg.setAttribute("title", imgNode.getAttribute("title") || "");
+        list.push(newImgNode);
+      }
+      return list;
+    }
+    parsePageURLs() {
+      return [window.location.href];
+    }
+  }
+  const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
+  class SteamMatcher {
+    async matchImgURL(url) {
+      var _a;
+      let raw = "";
+      try {
+        raw = await window.fetch(url).then((resp) => resp.text());
+        if (!raw)
+          throw new Error("[text] is empty");
+      } catch (error) {
+        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
+      }
+      const domParser = new DOMParser();
+      const doc = domParser.parseFromString(raw, "text/html");
+      let imgURL = (_a = doc.querySelector(".actualmediactn > a")) == null ? void 0 : _a.getAttribute("href");
+      if (!imgURL) {
+        throw new Error("Cannot Query Steam original Image URL");
+      }
+      return imgURL;
+    }
+    async parseImgNodes(url, template) {
+      var _a;
+      const list = [];
+      const raw = await window.fetch(url).then((response) => response.text());
+      if (!raw)
+        return list;
+      const domParser = new DOMParser();
+      const doc = domParser.parseFromString(raw, "text/html");
+      const nodes = doc.querySelectorAll(".profile_media_item");
+      if (!nodes || nodes.length == 0) {
+        evLog("wried to get a nodes from document, but failed!");
+        return list;
+      }
+      for (const node of Array.from(nodes)) {
+        const src = (_a = STEAM_THUMB_IMG_URL_REGEX.exec(node.innerHTML)) == null ? void 0 : _a[1];
+        if (!src) {
+          throw new Error(`Cannot Match Steam Image URL, Content: ${node.innerHTML}`);
+        }
+        const newImgNode = template.cloneNode(true);
+        const newImg = newImgNode.firstElementChild;
+        newImg.setAttribute("ahref", node.getAttribute("href"));
+        newImg.setAttribute("asrc", src);
+        newImg.setAttribute("title", node.getAttribute("data-publishedfileid") + ".jpg");
+        list.push(newImgNode);
+      }
+      return list;
+    }
+    parsePageURLs() {
+      let totalPages = 1;
+      document.querySelectorAll(".pagingPageLink").forEach((ele) => {
+        totalPages = Number(ele.textContent);
+      });
+      let page = 0;
+      let url = new URL(window.location.href);
+      url.searchParams.set("view", "grid");
+      return {
+        [Symbol.iterator]() {
+          return {
+            next() {
+              if (page++ <= totalPages) {
+                url.searchParams.set("p", page.toString());
+                return { done: false, value: url.href };
+              } else {
+                return { done: true, value: "DONE" };
+              }
+            }
+          };
+        }
+      };
+    }
+    parseGalleryMeta(_) {
+      return new GalleryMeta(window.location.href, "UNTITLE");
+    }
+  }
+  class DownloaderCanvas {
+    constructor(id, queue) {
+      __publicField(this, "canvas");
+      __publicField(this, "mousemoveState");
+      __publicField(this, "ctx");
+      __publicField(this, "queue");
+      __publicField(this, "rectSize");
+      __publicField(this, "rectGap");
+      __publicField(this, "columns");
+      __publicField(this, "padding");
+      __publicField(this, "scrollTop");
+      __publicField(this, "scrollSize");
+      __publicField(this, "debouncer");
+      this.queue = queue;
+      const canvas = document.getElementById(id);
+      if (!canvas) {
+        throw new Error("canvas not found");
+      }
+      this.canvas = canvas;
+      this.canvas.addEventListener(
+        "wheel",
+        (event) => this.onwheel(event.deltaY)
+      );
+      this.mousemoveState = { x: 0, y: 0 };
+      this.canvas.addEventListener("mousemove", (event) => {
+        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
+        this.drawDebouce();
+      });
+      this.canvas.addEventListener("click", (event) => {
+        var _a, _b;
+        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
+        const index = (_b = (_a = this.computeDrawList()) == null ? void 0 : _a.find(
+          (state) => state.selected
+        )) == null ? void 0 : _b.index;
+        if (index) {
+          events.showBigImage(index);
+        }
+      });
+      this.ctx = this.canvas.getContext("2d");
+      this.rectSize = 12;
+      this.rectGap = 6;
+      this.columns = 15;
+      this.padding = 7;
+      this.scrollTop = 0;
+      this.scrollSize = 10;
+      this.debouncer = new Debouncer();
+    }
+    onwheel(deltaY) {
+      const [_, h] = this.getWH();
+      const clientHeight = this.computeClientHeight();
+      if (clientHeight > h) {
+        deltaY = deltaY >> 1;
+        this.scrollTop += deltaY;
+        if (this.scrollTop < 0)
+          this.scrollTop = 0;
+        if (this.scrollTop + h > clientHeight + 20)
+          this.scrollTop = clientHeight - h + 20;
+        this.draw();
+      }
+    }
+    drawDebouce() {
+      this.debouncer.addEvent("DOWNLOADER-DRAW", () => this.draw(), 20);
+    }
+    computeDrawList() {
+      const list = [];
+      const [_, h] = this.getWH();
+      const startX = this.computeStartX();
+      const startY = -this.scrollTop;
+      for (let i = 0, row = -1; i < this.queue.length; i++) {
+        const currCol = i % this.columns;
+        if (currCol == 0) {
+          row++;
+        }
+        const atX = startX + (this.rectSize + this.rectGap) * currCol;
+        const atY = startY + (this.rectSize + this.rectGap) * row;
+        if (atY + this.rectSize < 0) {
+          continue;
+        }
+        if (atY > h) {
+          break;
+        }
+        list.push({
+          index: i,
+          x: atX,
+          y: atY,
+          selected: this.isSelected(atX, atY)
+        });
+      }
+      return list;
+    }
+    // this function should be called by drawDebouce
+    draw() {
+      const [w, h] = this.getWH();
+      this.ctx.clearRect(0, 0, w, h);
+      const drawList = this.computeDrawList();
+      for (const node of drawList) {
+        this.drawSmallRect(
+          node.x,
+          node.y,
+          this.queue[node.index],
+          node.index === this.queue.currIndex,
+          node.selected
+        );
+      }
+    }
+    computeClientHeight() {
+      return Math.ceil(this.queue.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
+    }
+    scrollTo(index) {
+      const clientHeight = this.computeClientHeight();
+      const [_, h] = this.getWH();
+      if (clientHeight <= h) {
+        return;
+      }
+      const rowNo = Math.ceil((index + 1) / this.columns);
+      const offsetY = (rowNo - 1) * (this.rectSize + this.rectGap);
+      if (offsetY > h) {
+        this.scrollTop = offsetY + this.rectSize - h;
+        const maxScrollTop = clientHeight - h + 20;
+        if (this.scrollTop + 20 <= maxScrollTop) {
+          this.scrollTop += 20;
+        }
+      }
+    }
+    isSelected(atX, atY) {
+      return this.mousemoveState.x - atX >= 0 && this.mousemoveState.x - atX <= this.rectSize && this.mousemoveState.y - atY >= 0 && this.mousemoveState.y - atY <= this.rectSize;
+    }
+    computeStartX() {
+      const [w, _] = this.getWH();
+      const drawW = this.rectSize * this.columns + this.rectGap * this.columns - 1;
+      let startX = w - drawW >> 1;
+      return startX;
+    }
+    drawSmallRect(x, y, imgFetcher, isCurr, isSelected) {
+      if (imgFetcher.stage == FetchState.DONE) {
+        this.ctx.fillStyle = "rgb(110, 200, 120)";
+      } else if (imgFetcher.stage === FetchState.DATA) {
+        const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
+        this.ctx.fillStyle = `rgba(110, ${Math.ceil(
+        percent * 200
+      )}, 120, ${Math.max(percent, 0.1)})`;
+      } else {
+        this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
+      }
+      this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
+      this.ctx.shadowColor = "#d53";
+      if (isSelected) {
+        this.ctx.strokeStyle = "rgb(60, 20, 200)";
+        this.ctx.lineWidth = 2;
+      } else if (isCurr) {
+        this.ctx.strokeStyle = "rgb(255, 60, 20)";
+        this.ctx.lineWidth = 2;
+      } else {
+        this.ctx.strokeStyle = "rgb(90, 90, 90)";
+        this.ctx.lineWidth = 1;
+      }
+      this.ctx.strokeRect(x, y, this.rectSize, this.rectSize);
+    }
+    getWH() {
+      return [this.canvas.width, this.canvas.height];
+    }
+  }
   function loadStyleSheel() {
     const style = document.createElement("style");
     const css = `
@@ -1560,6 +1681,22 @@
   align-content: start;
   grid-gap: 10px;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
+}
+.fullViewPlane input, .fullViewPlane select {
+  color: #f1f1f1;
+  background-color: #34353b !important;
+  outline: none;
+  border: 1px solid #000000;
+  border-radius: 4px;
+  margin: 0px;
+  padding: 0px;
+  text-align: center;
+  position: unset !important;
+  top: unset !important;
+}
+.p-label {
+  // position: relative;
+  cursor: pointer;
 }
 .fullViewPlane .img-node {
   position: relative;
@@ -1604,12 +1741,12 @@
   bottom: ${conf.pageHelperAbBottom};
   right: ${conf.pageHelperAbRight};
   background-color: #4a4a4ae6;
-  z-index: 1011 !important;
+  z-index: 2011 !important;
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  font-size: 1rem;
-  cursor: pointer;
+  font-size: 11pt;
+  // cursor: pointer;
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
@@ -1624,6 +1761,7 @@
   text-decoration-line: underline;
   z-index: 1111;
   user-select: none;
+  text-align: center;
 }
 .b-main .main-btn {
   height: 25px;
@@ -1727,10 +1865,10 @@
   text-align: right;
   width: 100%;
 }
-.pageHelper .btn {
+.pageHelper .p-btn {
   color: rgb(255, 255, 255);
   cursor: pointer;
-  border: 1px solid rgb(0, 0, 0);
+  border: 1px solid #000000;
   border-radius: 4px;
   height: 24px;
   font-weight: 900;
@@ -1773,7 +1911,7 @@
     width: 100%;
   }
 }
-.collapse {
+.b-f-collapse {
   width: 0px !important;
   transition: width 0.4s;
 }
@@ -1802,6 +1940,7 @@
   cursor: url("https://exhentai.org/img/n.png"), auto;
 }
 .imgLandTop, .imgLandBottom {
+  left: 0px;
   width: 100%;
   height: 20%;
   position: fixed;
@@ -1817,10 +1956,10 @@
   z-index: 1005;
   cursor: url("https://exhentai.org/img/b.png"), auto;
 }
-.tooltip {
+.p-tooltip {
   border-bottom: 1px dotted black;
 }
-.tooltip .tooltiptext {
+.p-tooltip .p-tooltiptext {
   visibility: hidden;
   width: 367px;
   top: 0px;
@@ -1833,8 +1972,9 @@
   position: absolute;
   z-index: 1;
   font-size: small;
+  white-space: normal;
 }
-.tooltip:hover .tooltiptext {
+.p-tooltip:hover .p-tooltiptext {
   visibility: visible;
 }
 `;
@@ -1851,9 +1991,9 @@
     const fullViewPlane = document.createElement("div");
     fullViewPlane.classList.add("fullViewPlane");
     fullViewPlane.classList.add("collapse_full_view");
-    document.body.appendChild(fullViewPlane);
+    document.body.after(fullViewPlane);
     const HTML_STRINGS = `
- <div id="bigImageFrame" class="bigImageFrame collapse">
+ <div id="bigImageFrame" class="bigImageFrame b-f-collapse">
     <a id="imgLandLeft" hidden="true" class="imgLandLeft"></a>
     <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
     <a id="imgLandTop" hidden="true" class="imgLandTop"></a>
@@ -1870,119 +2010,119 @@
             <div id="imgScaleResetBTN" class="scale-btn" style="width: 55px;"><span>RESET</span></div>
         </div>
          <div id="configPlane" class="plane p-config p-collapse">
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.columns.get()}:</span>
                      <span>
-                         <button id="colCountMinusBTN" class="btn" type="button">-</button>
-                         <input id="colCountInput" value="${conf.colCount}" disabled type="text" style="width: 15px;" />
-                         <button id="colCountAddBTN" class="btn" type="button">+</button>
+                         <button id="colCountMinusBTN" class="p-btn" type="button">-</button>
+                         <input id="colCountInput" value="${conf.colCount}" disabled type="text" style="width: 25px;" />
+                         <button id="colCountAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.maxPreloadThreads.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
-                         <button id="threadsMinusBTN" class="btn" type="button">-</button>
-                         <input id="threadsInput" value="${conf.threads}" disabled type="text" style="width: 15px;" />
-                         <button id="threadsAddBTN" class="btn" type="button">+</button>
+                         <button id="threadsMinusBTN" class="p-btn" type="button">-</button>
+                         <input id="threadsInput" value="${conf.threads}" disabled type="text" style="width: 25px;" />
+                         <button id="threadsAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.maxDownloadThreads.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
-                         <button id="downloadThreadsMinusBTN" class="btn" type="button">-</button>
-                         <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" style="width: 15px;" />
-                         <button id="downloadThreadsAddBTN" class="btn" type="button">+</button>
+                         <button id="downloadThreadsMinusBTN" class="p-btn" type="button">-</button>
+                         <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" style="width: 25px;" />
+                         <button id="downloadThreadsAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.timeout.get()}:</span>
                      <span>
-                         <button id="timeoutMinusBTN" class="btn" type="button">-</button>
-                         <input id="timeoutInput" value="${conf.timeout}" disabled type="text" style="width: 15px;" />
-                         <button id="timeoutAddBTN" class="btn" type="button">+</button>
+                         <button id="timeoutMinusBTN" class="p-btn" type="button">-</button>
+                         <input id="timeoutInput" value="${conf.timeout}" disabled type="text" style="width: 25px;" />
+                         <button id="timeoutAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
-                 <label>
+                 <label class="p-label">
                      <span>${i18n.bestQuality.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
                      </span>
-                     <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                     <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
-                 <label>
+                 <label class="p-label">
                      <span>${i18n.autoLoad.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
                      </span>
-                     <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                     <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
-                 <label>
+                 <label class="p-label">
                      <span>${i18n.reversePages.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
                      </span>
-                     <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                     <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
-                 <label>
+                 <label class="p-label">
                      <span>${i18n.autoPlay.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
                      </span>
-                     <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                     <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" style="width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.readMode.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
                      </span>
-                     <select id="readModeSelect" style="height: 18px; width: 130px; border-radius: 0px;">
+                     <select id="readModeSelect" style="width: 130px; border-radius: 0px;">
                         <option value="singlePage" ${conf.readMode == "singlePage" ? "selected" : ""}>Single Page</option>
                         <option value="consecutively" ${conf.readMode == "consecutively" ? "selected" : ""}>Consecutively</option>
                      </select>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.stickyMouse.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
                      </span>
-                     <select id="stickyMouseSelect" style="height: 18px; width: 130px; border-radius: 0px;">
+                     <select id="stickyMouseSelect" style="width: 130px; border-radius: 0px;">
                         <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
                         <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
                         <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
                      </select>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.autoPageInterval.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoPageIntervalTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPageIntervalTooltip.get()}</span></span>:
                      </span>
                      <span>
-                         <button id="autoPageIntervalMinusBTN" class="btn" type="button">-</button>
+                         <button id="autoPageIntervalMinusBTN" class="p-btn" type="button">-</button>
                          <input id="autoPageIntervalInput" value="${conf.autoPageInterval}" disabled type="text" style="width: 50px;" />
-                         <button id="autoPageIntervalAddBTN" class="btn" type="button">+</button>
+                         <button id="autoPageIntervalAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
-                 <label>
+                 <label class="p-label">
                      <span>${i18n.dragToMove.get()}:</span>
                      <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                  </label>
@@ -2005,7 +2145,7 @@
          <span id="gate" style="font-weight: 800; font-size: large; text-align: center; white-space: nowrap;">&lessdot;📖</span>
      </div>
      <!-- <span>展开</span> -->
-     <div id="main" class="b-main b-collapse">
+     <div id="b-main" class="b-main b-collapse">
          <div id="configPlaneBTN" class="clickable">${i18n.config.get()}</div>
          <div id="downloaderPlaneBTN" class="clickable">${i18n.download.get()}</div>
          <div class="page">
@@ -2198,7 +2338,7 @@
     hidden() {
       var _a;
       (_a = this.callbackOnHidden) == null ? void 0 : _a.call(this);
-      this.frame.classList.add("collapse");
+      this.frame.classList.add("b-f-collapse");
       window.setTimeout(() => {
         this.frame.childNodes.forEach((child) => child.hidden = true);
         this.removeImgNodes();
@@ -2207,7 +2347,7 @@
     }
     show() {
       var _a;
-      this.frame.classList.remove("collapse");
+      this.frame.classList.remove("b-f-collapse");
       this.frame.childNodes.forEach((child) => child.hidden = false);
       this.imgScaleBar.style.display = "";
       (_a = this.callbackOnShow) == null ? void 0 : _a.call(this);
@@ -2430,7 +2570,7 @@
         }
       }
       conf.imgScale = 0;
-      window.localStorage.setItem("cfg_", JSON.stringify(conf));
+      saveConf(conf);
       this.flushImgScaleBar();
     }
     initImgScaleStyle() {
@@ -2519,7 +2659,7 @@
       this.status = "running";
       this.button.firstElementChild.innerText = i18n.autoPagePause.get();
       const b = this.frameManager.frame;
-      if (this.frameManager.frame.classList.contains("collapse")) {
+      if (this.frameManager.frame.classList.contains("b-f-collapse")) {
         events.showBigImage(this.frameManager.queue.currIndex);
       }
       const progress = this.button.querySelector("#autoPageProgress");
@@ -2601,14 +2741,15 @@
   const IFQ = new IMGFetcherQueue();
   const IL = new IdleLoader(IFQ);
   const BIFM = new BigImageFrameManager(HTML.bigImageFrame, IFQ, HTML.imgScaleBar);
-  const PF = new PageFetcher(IFQ, IL);
-  const DL = new Downloader(IFQ, IL);
+  const matcher = adaptMatcher();
+  const PF = new PageFetcher(IFQ, IL, matcher);
+  const DL = new Downloader(IFQ, IL, matcher);
   const DLC = new DownloaderCanvas("downloaderCanvas", IFQ);
   new AutoPage(BIFM, HTML.autoPageBTN);
   if (conf["first"]) {
     events.showGuideEvent();
     conf["first"] = false;
-    window.localStorage.setItem("cfg_", JSON.stringify(conf));
+    saveConf(conf);
   }
   const signal = { first: true };
   function main(collapse) {

@@ -162,7 +162,7 @@ export function createHTML() {
          <span id="gate" style="font-weight: 800; font-size: large; text-align: center; white-space: nowrap;">&lessdot;📖</span>
      </div>
      <!-- <span>展开</span> -->
-     <div id="main" class="b-main b-collapse">
+     <div id="b-main" class="b-main b-collapse">
          <div id="configPlaneBTN" class="clickable">${i18n.config.get()}</div>
          <div id="downloaderPlaneBTN" class="clickable">${i18n.download.get()}</div>
          <div class="page">

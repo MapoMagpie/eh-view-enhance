@@ -30,6 +30,9 @@ export class IdleLoader {
     if (this.processingIndexList.length === 0) {
       return;
     }
+    if (this.queue.length === 0) {
+      return;
+    }
     for (let i = 0; i < this.processingIndexList.length; i++) {
       const processingIndex = this.processingIndexList[i];
       // 获取索引所对应的图片获取器，并添加完成事件，当图片获取完成时，重新查找新的可获取的图片获取器，并递归

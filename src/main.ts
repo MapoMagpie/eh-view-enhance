@@ -1,4 +1,4 @@
-import { ConfigBooleanKeys, ConfigBooleanType, ConfigNumberKeys, ConfigNumberType, ConfigSelectKeys, ConfigSelectType, conf } from "./config";
+import { ConfigBooleanKeys, ConfigBooleanType, ConfigNumberKeys, ConfigNumberType, ConfigSelectKeys, ConfigSelectType, conf, saveConf } from "./config";
 import { Downloader } from "./downloader";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
@@ -17,15 +17,16 @@ export const HTML = createHTML();
 export const IFQ: IMGFetcherQueue = new IMGFetcherQueue();
 export const IL: IdleLoader = new IdleLoader(IFQ);
 export const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML.bigImageFrame, IFQ, HTML.imgScaleBar);
-export const PF: PageFetcher = new PageFetcher(IFQ, IL, adaptMatcher());
-export const DL: Downloader = new Downloader(IFQ, IL);
+const matcher = adaptMatcher();
+export const PF: PageFetcher = new PageFetcher(IFQ, IL, matcher);
+export const DL: Downloader = new Downloader(IFQ, IL, matcher);
 export const DLC: DownloaderCanvas = new DownloaderCanvas("downloaderCanvas", IFQ);
 export const AP: AutoPage = new AutoPage(BIFM, HTML.autoPageBTN);
 
 if (conf["first"]) {
   events.showGuideEvent();
   conf["first"] = false;
-  window.localStorage.setItem("cfg_", JSON.stringify(conf));
+  saveConf(conf);
 }
 
 const signal = { first: true };

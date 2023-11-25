@@ -1,13 +1,15 @@
 import { conf } from "../config";
+import { GalleryMeta } from "../downloader";
 import { evLog } from "../utils/ev-log";
 
-export interface DifferentialMatcher {
+export interface Matcher {
   matchImgURL(url: string): Promise<string>;
-  parseImgNodes(raw: string, template: HTMLElement): Promise<HTMLElement[]>;
+  parseImgNodes(url: string, template: HTMLElement): Promise<HTMLElement[]>;
   parsePageURLs(): Iterable<string>;
+  parseGalleryMeta(doc: Document): GalleryMeta;
 }
 
-export function adaptMatcher(): DifferentialMatcher {
+export function adaptMatcher(): Matcher {
   const host = window.location.host;
   if (host === "nhentai.net") {
     return new NHMatcher();
@@ -20,7 +22,7 @@ const regulars = {
   /** 有压缩的大图地址 */
   normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
   /** 原图地址 */
-  original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg\.php\?[^"\\]*)\"\>/,
+  original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg?[^"\\]*)\"\>/,
   /** 大图重载地址 */
   nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
   /** 是否开启自动多页查看器 */
@@ -29,13 +31,44 @@ const regulars = {
   mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g,
 }
 
-export class EHMatcher implements DifferentialMatcher {
+export class EHMatcher implements Matcher {
+
+  public parseGalleryMeta(doc: Document): GalleryMeta {
+    const titleList = doc.querySelectorAll<HTMLElement>("#gd2 h1");
+    let title: string | undefined;
+    let originTitle: string | undefined;
+    if (titleList && titleList.length > 0) {
+      title = titleList[0].textContent || undefined;
+      if (titleList.length > 1) {
+        originTitle = titleList[1].textContent || undefined;
+      }
+    }
+    const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+    meta.originTitle = originTitle;
+    const tagTrList = doc.querySelectorAll<HTMLElement>("#taglist tr");
+    const tags: Record<string, string[]> = {};
+    tagTrList.forEach((tr) => {
+      const tds = tr.childNodes;
+      const cat = tds[0].textContent;
+      if (cat) {
+        const list: string[] = [];
+        tds[1].childNodes.forEach((ele) => {
+          if (ele.textContent) list.push(ele.textContent);
+        });
+        tags[cat] = list;
+      }
+    });
+    meta.tags = tags;
+    return meta;
+  }
+
   public async matchImgURL(url: string): Promise<string> {
     return await this.fetchImgURL(url, false);
   }
 
-  public async parseImgNodes(raw: string, template: HTMLElement): Promise<HTMLElement[]> {
+  public async parseImgNodes(url: string, template: HTMLElement): Promise<HTMLElement[]> {
     const list: HTMLElement[] = [];
+    const raw = await window.fetch(url).then((response) => response.text());
     if (!raw) return list;
 
     const domParser = new DOMParser();
@@ -104,7 +137,7 @@ export class EHMatcher implements DifferentialMatcher {
     const lastPage = this.findPageNum(
       tds[tds.length - 2].firstElementChild?.getAttribute("href") || undefined
     );
-    const pageURLs: string[] = [];
+    const pageURLs: string[] = [firstPage];
     for (let i = 1; i <= lastPage; i++) {
       pageURLs.push(`${firstPage}?p=${i}`);
     }
@@ -162,19 +195,54 @@ export class EHMatcher implements DifferentialMatcher {
         }
       }
     }
-    if (!originChanged) {
+    if (originChanged) {
+      // EH change the url
+      const nlValue = regulars.nlValue.exec(text)![1];
+      const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
+      evLog(`IMG-FETCHER retry url:${newUrl}`);
+      return await this.fetchImgURL(url, false);
+    } else {
       return regulars.normal.exec(text)![1];
     }
-    // EH change the url
-    const nlValue = regulars.nlValue.exec(text)![1];
-    const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-    evLog(`IMG-FETCHER retry url:${newUrl}`);
-    return await this.fetchImgURL(url, true);
   }
 }
 
 const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
-export class NHMatcher implements DifferentialMatcher {
+export class NHMatcher implements Matcher {
+
+  public parseGalleryMeta(doc: Document): GalleryMeta {
+    let title: string | undefined;
+    let originTitle: string | undefined;
+    doc.querySelectorAll("#info .title").forEach(ele => {
+      if (!title) {
+        title = ele.textContent || undefined;
+      } else {
+        originTitle = ele.textContent || undefined;
+      }
+    });
+    const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+    meta.originTitle = originTitle;
+    const tagTrList = doc.querySelectorAll<HTMLElement>(".tag-container");
+    const tags: Record<string, string[]> = {};
+    tagTrList.forEach((tr) => {
+      const cat = tr.firstChild?.textContent?.trim().replace(":", "");
+      if (cat) {
+        const list: string[] = [];
+        tr.querySelectorAll(".tag .name").forEach(tag => {
+          const t = tag.textContent?.trim();
+          if (t) {
+            list.push(t);
+          }
+        })
+        if (list.length > 0) {
+          tags[cat] = list;
+        }
+      }
+    });
+    meta.tags = tags;
+    return meta;
+  }
+
   public async matchImgURL(url: string): Promise<string> {
     let text = "";
     try {
@@ -186,13 +254,9 @@ export class NHMatcher implements DifferentialMatcher {
     return NH_IMG_URL_REGEX.exec(text)![1];
   }
 
-  public async parseImgNodes(raw: string, template: HTMLElement): Promise<HTMLElement[]> {
+  public async parseImgNodes(_: string, template: HTMLElement): Promise<HTMLElement[]> {
     const list: HTMLElement[] = [];
-    if (!raw) return list;
-
-    const domParser = new DOMParser();
-    const doc = domParser.parseFromString(raw, "text/html");
-    const aNodes = doc.querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb");
+    const aNodes = document.querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb");
     if (!aNodes || aNodes.length == 0) {
       evLog("wried to get a nodes from document, but failed!");
       return list;

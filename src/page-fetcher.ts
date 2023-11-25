@@ -3,7 +3,7 @@ import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
 import { IMGFetcher } from "./img-fetcher";
 import { HTML, Oriented } from "./main";
-import { DifferentialMatcher } from "./platform/platform";
+import { Matcher } from "./platform/platform";
 import { events } from "./ui/event";
 import { updatePageHelper } from "./ui/page-helper";
 import { evLog } from "./utils/ev-log";
@@ -17,8 +17,8 @@ export class PageFetcher {
   idleLoader: IdleLoader;
   fetched: boolean;
   imgAppends: Record<"prev" | "next", AsyncAppendFunc[]>;
-  matcher: DifferentialMatcher;
-  constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: DifferentialMatcher) {
+  matcher: Matcher;
+  constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher) {
     this.queue = queue;
     this.idleLoader = idleLoader;
     //所有页的地址
@@ -38,6 +38,7 @@ export class PageFetcher {
 
   async initPageAppend() {
     for (const pageURL of this.matcher.parsePageURLs()) {
+      console.log("pageURL: ", pageURL)
       this.imgAppends["next"].push(
         async () => {
           let ok = await this.appendPageImg(pageURL, "next");
@@ -64,10 +65,9 @@ export class PageFetcher {
     }
   }
 
-  async appendPageImg(pageURL: string, oriented: Oriented): Promise<boolean> {
+  async appendPageImg(url: string, oriented: Oriented): Promise<boolean> {
     try {
-      const doc = await this.fetchDocument(pageURL);
-      const imgNodeList = await this.obtainImageNodeList(doc);
+      const imgNodeList = await this.obtainImageNodeList(url);
       const IFs = imgNodeList.map(
         (imgNode) => new IMGFetcher(imgNode as HTMLElement, this.matcher)
       );
@@ -98,7 +98,7 @@ export class PageFetcher {
   }
 
   //从文档的字符串中创建缩略图元素列表
-  async obtainImageNodeList(docString: string): Promise<Element[]> {
+  async obtainImageNodeList(url: string): Promise<Element[]> {
     // make node template
     const imgNodeTemplate = document.createElement("div");
     imgNodeTemplate.classList.add("img-node");
@@ -111,7 +111,7 @@ export class PageFetcher {
     );
     imgNodeTemplate.appendChild(imgTemplate);
 
-    const list = await this.matcher.parseImgNodes(docString, imgNodeTemplate);
+    const list = await this.matcher.parseImgNodes(url, imgNodeTemplate);
     list.forEach((imgNode) => {
       imgNode.addEventListener("click", events.showBigImageEvent);
     })

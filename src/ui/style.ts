@@ -18,6 +18,22 @@ export function loadStyleSheel() {
   grid-gap: 10px;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
 }
+.fullViewPlane input, .fullViewPlane select {
+  color: #f1f1f1;
+  background-color: #34353b !important;
+  outline: none;
+  border: 1px solid #000000;
+  border-radius: 4px;
+  margin: 0px;
+  padding: 0px;
+  text-align: center;
+  position: unset !important;
+  top: unset !important;
+}
+.p-label {
+  // position: relative;
+  cursor: pointer;
+}
 .fullViewPlane .img-node {
   position: relative;
 }
@@ -65,8 +81,8 @@ export function loadStyleSheel() {
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  font-size: 1rem;
-  cursor: pointer;
+  font-size: 11pt;
+  // cursor: pointer;
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
@@ -81,6 +97,7 @@ export function loadStyleSheel() {
   text-decoration-line: underline;
   z-index: 1111;
   user-select: none;
+  text-align: center;
 }
 .b-main .main-btn {
   height: 25px;
@@ -184,10 +201,10 @@ export function loadStyleSheel() {
   text-align: right;
   width: 100%;
 }
-.pageHelper .btn {
+.pageHelper .p-btn {
   color: rgb(255, 255, 255);
   cursor: pointer;
-  border: 1px solid rgb(0, 0, 0);
+  border: 1px solid #000000;
   border-radius: 4px;
   height: 24px;
   font-weight: 900;
@@ -259,6 +276,7 @@ export function loadStyleSheel() {
   cursor: url("https://exhentai.org/img/n.png"), auto;
 }
 .imgLandTop, .imgLandBottom {
+  left: 0px;
   width: 100%;
   height: 20%;
   position: fixed;
@@ -274,10 +292,10 @@ export function loadStyleSheel() {
   z-index: 1005;
   cursor: url("https://exhentai.org/img/b.png"), auto;
 }
-.tooltip {
+.p-tooltip {
   border-bottom: 1px dotted black;
 }
-.tooltip .tooltiptext {
+.p-tooltip .p-tooltiptext {
   visibility: hidden;
   width: 367px;
   top: 0px;
@@ -290,8 +308,9 @@ export function loadStyleSheel() {
   position: absolute;
   z-index: 1;
   font-size: small;
+  white-space: normal;
 }
-.tooltip:hover .tooltiptext {
+.p-tooltip:hover .p-tooltiptext {
   visibility: visible;
 }
 `

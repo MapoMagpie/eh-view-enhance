@@ -6,40 +6,17 @@ import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
 import JSZip from "jszip";
 import saveAs from "file-saver";
+import { Matcher } from "./platform/platform";
 
-class GalleryMeta {
+export class GalleryMeta {
   url: string;
   title?: string;
   originTitle?: string;
   tags: Record<string, string[]>;
-  constructor($doc: Document) {
-    this.url = $doc.location.href;
-    const titleList = $doc.querySelectorAll<HTMLElement>("#gd2 h1");
-    if (titleList && titleList.length > 0) {
-      this.title = titleList[0].textContent || undefined;
-      if (titleList.length > 1) {
-        this.originTitle = titleList[1].textContent || undefined;
-      }
-    }
-    this.tags = GalleryMeta.parser_tags($doc);
-    // console.log(this);
-  }
-
-  static parser_tags($doc: Document): Record<string, string[]> {
-    const tagTrList = $doc.querySelectorAll<HTMLElement>("#taglist tr");
-    const tags: Record<string, string[]> = {};
-    tagTrList.forEach((tr) => {
-      const tds = tr.childNodes;
-      const cat = tds[0].textContent;
-      if (cat) {
-        const list: string[] = [];
-        tds[1].childNodes.forEach((ele) => {
-          if (ele.textContent) list.push(ele.textContent);
-        });
-        tags[cat] = list;
-      }
-    });
-    return tags;
+  constructor(url: string, title: string) {
+    this.url = url;
+    this.title = title;
+    this.tags = {};
   }
 }
 
@@ -53,10 +30,10 @@ export class Downloader {
   downloadNoticeElement?: HTMLElement;
   queue: IMGFetcherQueue;
   idleLoader: IdleLoader;
-  constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader) {
+  constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher) {
     this.queue = queue;
     this.idleLoader = idleLoader;
-    this.meta = new GalleryMeta(document);
+    this.meta = matcher.parseGalleryMeta(document);
     this.zip = new JSZip();
     this.title = this.meta.originTitle || this.meta.title;
     this.zip.file("meta.json", JSON.stringify(this.meta));
@@ -97,6 +74,7 @@ export class Downloader {
   }
 
   fetchOriginalTemporarily() {
+    conf.fetchOriginal = true; // May result in incorrect persistence of the conf
     this.queue.forEach(imgFetcher => {
       imgFetcher.stage = FetchState.URL;
     });

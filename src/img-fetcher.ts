@@ -1,5 +1,5 @@
 import { BIFM, DLC } from "./main";
-import { DifferentialMatcher } from "./platform/platform";
+import { Matcher } from "./platform/platform";
 import { updatePageHelper } from "./ui/page-helper";
 import { evLog } from "./utils/ev-log";
 import { xhrWapper } from "./utils/query";
@@ -39,11 +39,12 @@ export class IMGFetcher {
   title?: string;
   downloadState: DownloadState;
   onFinishedEventContext: Map<string, OnFinishedEvent>;
+  // TODO: onFailedEventContext
   downloadBar?: HTMLElement;
   timeoutId?: number;
-  matcher: DifferentialMatcher;
+  matcher: Matcher;
 
-  constructor(node: HTMLElement, matcher: DifferentialMatcher) {
+  constructor(node: HTMLElement, matcher: Matcher) {
     this.root = node;
     this.imgElement = node.firstChild as HTMLImageElement;
     this.pageUrl = this.imgElement.getAttribute("ahref")!;

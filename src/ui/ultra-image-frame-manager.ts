@@ -1,4 +1,4 @@
-import { conf } from "../config";
+import { conf, saveConf } from "../config";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { FetchState } from "../img-fetcher";
 import { HTML, Oriented } from "../main";
@@ -407,7 +407,7 @@ export class BigImageFrameManager {
       }
     }
     conf.imgScale = 0;
-    window.localStorage.setItem("cfg_", JSON.stringify(conf));
+    saveConf(conf);
     this.flushImgScaleBar();
   }
 

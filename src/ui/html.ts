@@ -27,119 +27,119 @@ export function createHTML() {
             <div id="imgScaleResetBTN" class="scale-btn" style="width: 55px;"><span>RESET</span></div>
         </div>
          <div id="configPlane" class="plane p-config p-collapse">
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.columns.get()}:</span>
                      <span>
-                         <button id="colCountMinusBTN" class="btn" type="button">-</button>
-                         <input id="colCountInput" value="${conf.colCount}" disabled type="text" style="width: 15px;" />
-                         <button id="colCountAddBTN" class="btn" type="button">+</button>
+                         <button id="colCountMinusBTN" class="p-btn" type="button">-</button>
+                         <input id="colCountInput" value="${conf.colCount}" disabled type="text" style="width: 25px;" />
+                         <button id="colCountAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.maxPreloadThreads.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
-                         <button id="threadsMinusBTN" class="btn" type="button">-</button>
-                         <input id="threadsInput" value="${conf.threads}" disabled type="text" style="width: 15px;" />
-                         <button id="threadsAddBTN" class="btn" type="button">+</button>
+                         <button id="threadsMinusBTN" class="p-btn" type="button">-</button>
+                         <input id="threadsInput" value="${conf.threads}" disabled type="text" style="width: 25px;" />
+                         <button id="threadsAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.maxDownloadThreads.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
                      </span>
                      <span>
-                         <button id="downloadThreadsMinusBTN" class="btn" type="button">-</button>
-                         <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" style="width: 15px;" />
-                         <button id="downloadThreadsAddBTN" class="btn" type="button">+</button>
+                         <button id="downloadThreadsMinusBTN" class="p-btn" type="button">-</button>
+                         <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" style="width: 25px;" />
+                         <button id="downloadThreadsAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.timeout.get()}:</span>
                      <span>
-                         <button id="timeoutMinusBTN" class="btn" type="button">-</button>
-                         <input id="timeoutInput" value="${conf.timeout}" disabled type="text" style="width: 15px;" />
-                         <button id="timeoutAddBTN" class="btn" type="button">+</button>
+                         <button id="timeoutMinusBTN" class="p-btn" type="button">-</button>
+                         <input id="timeoutInput" value="${conf.timeout}" disabled type="text" style="width: 25px;" />
+                         <button id="timeoutAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
-                 <label>
+                 <label class="p-label">
                      <span>${i18n.bestQuality.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
                      </span>
-                     <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                     <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
-                 <label>
+                 <label class="p-label">
                      <span>${i18n.autoLoad.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
                      </span>
-                     <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                     <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
-                 <label>
+                 <label class="p-label">
                      <span>${i18n.reversePages.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
                      </span>
-                     <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                     <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="width: 18px;" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
-                 <label>
+                 <label class="p-label">
                      <span>${i18n.autoPlay.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
                      </span>
-                     <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" style="height: 18px; width: 18px;" />
+                     <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" style="width: 18px;" />
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.readMode.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
                      </span>
-                     <select id="readModeSelect" style="height: 18px; width: 130px; border-radius: 0px;">
+                     <select id="readModeSelect" style="width: 130px; border-radius: 0px;">
                         <option value="singlePage" ${conf.readMode == "singlePage" ? "selected" : ""}>Single Page</option>
                         <option value="consecutively" ${conf.readMode == "consecutively" ? "selected" : ""}>Consecutively</option>
                      </select>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.stickyMouse.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
                      </span>
-                     <select id="stickyMouseSelect" style="height: 18px; width: 130px; border-radius: 0px;">
+                     <select id="stickyMouseSelect" style="width: 130px; border-radius: 0px;">
                         <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
                         <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
                         <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
                      </select>
                  </label>
              </div>
-             <div style="grid-column-start: 1; grid-column-end: 6; padding-left: 5px;">
-                 <label>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
                      <span>${i18n.autoPageInterval.get()}
-                        <span class="tooltip">?<span class="tooltiptext">${i18n.autoPageIntervalTooltip.get()}</span></span>:
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPageIntervalTooltip.get()}</span></span>:
                      </span>
                      <span>
-                         <button id="autoPageIntervalMinusBTN" class="btn" type="button">-</button>
+                         <button id="autoPageIntervalMinusBTN" class="p-btn" type="button">-</button>
                          <input id="autoPageIntervalInput" value="${conf.autoPageInterval}" disabled type="text" style="width: 50px;" />
-                         <button id="autoPageIntervalAddBTN" class="btn" type="button">+</button>
+                         <button id="autoPageIntervalAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
-                 <label>
+                 <label class="p-label">
                      <span>${i18n.dragToMove.get()}:</span>
                      <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                  </label>

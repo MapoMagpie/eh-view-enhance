@@ -1,4 +1,4 @@
-import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, conf } from "../config";
+import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, conf, saveConf } from "../config";
 import { HTML, BIFM, IFQ, Oriented, PF, main } from "../main";
 import { i18n } from "../utils/i18n";
 
@@ -8,7 +8,7 @@ function modPageHelperPostion() {
   conf.pageHelperAbLeft = style.left;
   conf.pageHelperAbBottom = style.bottom;
   conf.pageHelperAbRight = style.right;
-  window.localStorage.setItem("cfg_", JSON.stringify(conf));
+  saveConf(conf);
 }
 
 // modify config
@@ -45,14 +45,14 @@ function modNumberConfigEvent(key: ConfigNumberType, data?: "add" | "minus") {
       }
     }
   }
-  window.localStorage.setItem("cfg_", JSON.stringify(conf));
+  saveConf(conf);
 }
 
 // modify config
 function modBooleanConfigEvent(key: ConfigBooleanType) {
   const inputElement = document.querySelector<HTMLInputElement>(`#${key}Checkbox`);
   conf[key] = inputElement?.checked || false;
-  window.localStorage.setItem("cfg_", JSON.stringify(conf));
+  saveConf(conf);
 }
 
 // modify config
@@ -61,7 +61,7 @@ function modSelectConfigEvent(key: ConfigSelectType) {
   const value = inputElement?.value;
   if (value) {
     (conf[key] as any) = value;
-    window.localStorage.setItem("cfg_", JSON.stringify(conf));
+    saveConf(conf);
   }
   if (key === "readMode" && conf.readMode === "singlePage") {
     BIFM.init(IFQ.currIndex);
@@ -267,7 +267,20 @@ function showGuideEvent() {
   guideElement.innerHTML = `
   <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>
   `;
-  guideElement.setAttribute("style", `position: absolute;width: 100%;height: 100%;background-color: #363c3c78;z-index: 2004;top: 0; display: flex; justify-content: center;align-items: center;`);
+  guideElement.setAttribute("style",
+    `
+position: absolute;
+width: 100%;
+height: 100%;
+background-color: #363c3c78;
+z-index: 2004;
+top: 0;
+display: flex;
+justify-content: center;
+align-items: center;
+color: black;
+text-align: left;
+`);
   guideElement.addEventListener("click", () => guideElement.remove());
 };
 

@@ -48,15 +48,15 @@
       restartIdleLoader: 8e3,
       threads: 3,
       downloadThreads: 3,
-      timeout: 24,
+      timeout: 40,
       version: "4.1.0",
       debug: true,
       first: true,
       reversePages: false,
       pageHelperAbTop: "unset",
-      pageHelperAbLeft: "unset",
-      pageHelperAbBottom: "50px",
-      pageHelperAbRight: "50px",
+      pageHelperAbLeft: "20px",
+      pageHelperAbBottom: "20px",
+      pageHelperAbRight: "unset",
       imgScale: 0,
       stickyMouse: "enable",
       autoPageInterval: 1e4,
@@ -889,6 +889,7 @@
     if (event && event.target && event.target.tagName === "SPAN")
       return;
     BIFM.hidden();
+    HTML.pageHelper.classList.remove("p-minify");
   }
   function bigImageWheelEvent(event) {
     stepImageEvent(event.deltaY > 0 ? "next" : "prev");
@@ -1001,6 +1002,7 @@
   }
   function showBigImage(start) {
     BIFM.show();
+    HTML.pageHelper.classList.add("p-minify");
     IFQ.do(start);
   }
   function stepImageEvent(oriented) {
@@ -1789,18 +1791,16 @@ text-align: left;
   z-index: 1010 !important;
   background-color: rgba(38, 20, 25, 0.8);
   box-sizing: border-box;
-  /* border: 1px solid red; */
   position: absolute;
-  left: 0;
   bottom: 26px;
   color: rgb(200, 222, 200);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
-  transition: height 0.4s;
   overflow: hidden;
   width: 367px;
+  transition: width 0.4s ease 0s, height 0.4s ease 0s;
 }
 .pageHelper .p-img-scale {
-  bottom: 30px;
+  // bottom: 30px;
   display: flex;
 }
 .p-img-scale .scale-btn {
@@ -1816,6 +1816,7 @@ text-align: left;
   width: 40px;
   white-space: nowrap;
   overflow: hidden;
+  text-align: center;
 }
 .p-img-scale .scale-progress {
   flex-grow: 1;
@@ -1989,6 +1990,23 @@ text-align: left;
 .p-tooltip:hover .p-tooltiptext {
   visibility: visible;
 }
+.p-minify:not(:hover) {
+  min-width: 0px !important;
+}
+.p-minify:not(:hover) .b-m-page {
+  position: absolute;
+  ${conf.pageHelperAbRight === "unset" ? "left" : "right"}: 47px;
+  height: 27px;
+  background-color: rgba(74, 74, 74, 0.9);
+}
+.p-minify:not(:hover) .p-img-scale .scale-btn, .p-minify:not(:hover) .p-img-scale .scale-progress {
+  display: none;
+}
+.p-minify:not(:hover) .p-img-scale {
+  width: 90px;
+  ${conf.pageHelperAbRight === "unset" ? "" : "right: -48px;"}
+  transition: width 0.4s ease 0s;
+}
 `;
     style.textContent = css;
     document.head.appendChild(style);
@@ -2160,7 +2178,7 @@ text-align: left;
      <div id="b-main" class="b-main b-collapse">
          <div id="configPlaneBTN" class="clickable">${i18n.config.get()}</div>
          <div id="downloaderPlaneBTN" class="clickable">${i18n.download.get()}</div>
-         <div class="page">
+         <div class="b-m-page">
              <span class="clickable" id="p-currPage"
                  style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
          </div>

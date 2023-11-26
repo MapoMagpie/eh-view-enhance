@@ -165,7 +165,7 @@ export function createHTML() {
      <div id="b-main" class="b-main b-collapse">
          <div id="configPlaneBTN" class="clickable">${i18n.config.get()}</div>
          <div id="downloaderPlaneBTN" class="clickable">${i18n.download.get()}</div>
-         <div class="page">
+         <div class="b-m-page">
              <span class="clickable" id="p-currPage"
                  style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
          </div>

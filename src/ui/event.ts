@@ -128,7 +128,8 @@ function scrollEvent() {
 //大图框架点击事件，点击后隐藏大图框架
 function hiddenBigImageEvent(event?: MouseEvent) {
   if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
-  BIFM.hidden()
+  BIFM.hidden();
+  HTML.pageHelper.classList.remove("p-minify");
 };
 
 //大图框架元素的滚轮事件/按下鼠标右键滚动则是缩放/直接滚动则是切换到下一张或上一张
@@ -250,6 +251,7 @@ function showBigImageEvent(event: Event) {
 function showBigImage(start: number) {
   //展开大图阅览元素
   BIFM.show();
+  HTML.pageHelper.classList.add("p-minify")
   //获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
   IFQ.do(start);
 };

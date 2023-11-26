@@ -112,43 +112,27 @@ export class EHMatcher implements Matcher {
   }
 
   public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    const pager = document.querySelector(".gtb");
-    if (!pager) {
+    let fristHref = document.querySelector(".gdtl a")?.getAttribute("href");
+    if (fristHref && regulars.isMPV.test(fristHref)) {
+      yield { raw: window.location.href, typ: "url" };
+      return;
+    }
+    const ps = Array.from(document.querySelectorAll(".gtb td a"));
+    if (ps.length === 0) {
       throw new Error("未获取到分页元素！");
     }
-    const tds = Array.from(pager.querySelectorAll("td"));
-    if (!tds || tds.length == 0) {
-      throw new Error("未获取到有效的分页元素！");
+    const lastP = ps[ps.length - 2];
+    if (!lastP) {
+      throw new Error("未获取到分页元素！x2");
     }
-    const ptds = tds.filter((p) => p.className.indexOf("ptds") != -1);
-    if (!ptds || ptds.length == 0) {
-      throw new Error("未获取到有效的分页元素！");
+    const u = new URL(lastP.getAttribute("href")!);
+    const total = Number(u.searchParams.get("p")) + 1;
+    u.searchParams.delete("p");
+    yield { raw: u.href, typ: "url" };
+    for (let p = 1; p < total; p++) {
+      u.searchParams.set("p", p.toString());
+      yield { raw: u.href, typ: "url" };
     }
-    const firstPage =
-      tds[1].firstElementChild?.getAttribute("href") || undefined;
-    if (!firstPage) {
-      throw new Error("未获取到有效的分页地址！");
-    }
-    const lastPage = this.findPageNum(
-      tds[tds.length - 2].firstElementChild?.getAttribute("href") || undefined
-    );
-    yield { raw: firstPage, typ: "url" };
-    for (let i = 1; i <= lastPage; i++) {
-      yield { raw: `${firstPage}?p=${i}`, typ: "url" };
-    }
-  }
-
-  private findPageNum(pageURL?: string): number {
-    if (pageURL) {
-      const arr = pageURL.split("?");
-      if (arr && arr.length > 1) {
-        let matchs = /p=(\d*)/.exec(arr[1]);
-        if (matchs && matchs.length > 1) {
-          return parseInt(matchs.pop()!);
-        }
-      }
-    }
-    return 0;
   }
 
   private async fetchImgURL(url: string, originChanged: boolean): Promise<string> {

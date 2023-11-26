@@ -183,8 +183,8 @@
     setDownloadState(newState) {
       this.downloadState = { ...this.downloadState, ...newState };
       if (this.downloadState.readyState === 4) {
-        if (this.downloadBar) {
-          this.downloadBar.remove();
+        if (this.downloadBar && this.downloadBar.parentNode) {
+          this.downloadBar.parentNode.removeChild(this.downloadBar);
         }
         return;
       }
@@ -266,7 +266,7 @@
     }
     async fetchImageURL() {
       try {
-        const imageURL = await this.matcher.matchImgURL(this.pageUrl);
+        const imageURL = await this.matcher.matchImgURL(this.pageUrl, this.tryTimes > 0);
         if (!imageURL) {
           evLog("Fetch URL failed, the URL is empty");
           return null;
@@ -316,7 +316,11 @@
         xhrWapper(imgFetcher.bigImageUrl, "blob", {
           onload: function(response) {
             let data = response.response;
-            imgFetcher.setDownloadState({ readyState: response.readyState });
+            try {
+              imgFetcher.setDownloadState({ readyState: response.readyState });
+            } catch (error) {
+              evLog("warn: fetch big image data onload setDownloadState error:", error);
+            }
             resolve(data);
           },
           onerror: function(response) {
@@ -1067,36 +1071,30 @@ text-align: left;
       await this.initPageAppend();
     }
     async initPageAppend() {
-      for (const pageURL of this.matcher.parsePageURLs()) {
-        console.log("pageURL: ", pageURL);
-        this.imgAppends["next"].push(
-          async () => {
-            let ok = await this.appendPageImg(pageURL, "next");
-            this.renderCurrView(
-              HTML.fullViewPlane.scrollTop,
-              HTML.fullViewPlane.clientHeight
-            );
-            return ok;
-          }
+      let fetchIter = this.matcher.fetchPagesSource();
+      let first = await fetchIter.next();
+      if (!first.done) {
+        await this.appendPageImg(first.value, "next");
+        this.renderCurrView(
+          HTML.fullViewPlane.scrollTop,
+          HTML.fullViewPlane.clientHeight
         );
       }
-      this.loadAllPageImg();
+      this.loadAllPageImg(fetchIter);
     }
-    async loadAllPageImg() {
-      if (this.fetched)
-        return;
-      for (let i = 0; i < this.imgAppends["next"].length; i++) {
-        const executor = this.imgAppends["next"][i];
-        await executor();
-      }
-      for (let i = this.imgAppends["prev"].length - 1; i > -1; i--) {
-        const executor = this.imgAppends["prev"][i];
-        await executor();
+    async loadAllPageImg(iter) {
+      for await (const page of iter) {
+        console.log("page source: ", page);
+        await this.appendPageImg(page, "next");
+        this.renderCurrView(
+          HTML.fullViewPlane.scrollTop,
+          HTML.fullViewPlane.clientHeight
+        );
       }
     }
-    async appendPageImg(url, oriented) {
+    async appendPageImg(page, oriented) {
       try {
-        const imgNodeList = await this.obtainImageNodeList(url);
+        const imgNodeList = await this.obtainImageNodeList(page);
         const IFs = imgNodeList.map(
           (imgNode) => new IMGFetcher(imgNode, this.matcher)
         );
@@ -1126,7 +1124,7 @@ text-align: left;
       }
     }
     //从文档的字符串中创建缩略图元素列表
-    async obtainImageNodeList(url) {
+    async obtainImageNodeList(page) {
       const imgNodeTemplate = document.createElement("div");
       imgNodeTemplate.classList.add("img-node");
       const imgTemplate = document.createElement("img");
@@ -1137,11 +1135,21 @@ text-align: left;
         "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
       );
       imgNodeTemplate.appendChild(imgTemplate);
-      const list = await this.matcher.parseImgNodes(url, imgNodeTemplate);
-      list.forEach((imgNode) => {
-        imgNode.addEventListener("click", events.showBigImageEvent);
-      });
-      return list;
+      let tryTimes = 0;
+      while (tryTimes < 3) {
+        try {
+          const list = await this.matcher.parseImgNodes(page, imgNodeTemplate);
+          list.forEach((imgNode) => {
+            imgNode.addEventListener("click", events.showBigImageEvent);
+          });
+          return list;
+        } catch (error) {
+          evLog("warn: parse image nodes failed, retrying: ", error);
+          tryTimes++;
+        }
+      }
+      evLog("warn: parse image nodes failed: reached max try times!");
+      return [];
     }
     //通过地址请求该页的文档
     async fetchDocument(pageURL) {
@@ -1182,16 +1190,6 @@ text-align: left;
       }
       return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
     }
-  }
-  function adaptMatcher() {
-    const host = window.location.host;
-    if (host === "nhentai.net") {
-      return new NHMatcher();
-    }
-    if (host === "steamcommunity.com") {
-      return new SteamMatcher();
-    }
-    return new EHMatcher();
   }
   const regulars = {
     /** 有压缩的大图地址 */
@@ -1235,23 +1233,31 @@ text-align: left;
       meta.tags = tags;
       return meta;
     }
-    async matchImgURL(url) {
-      return await this.fetchImgURL(url, false);
+    async matchImgURL(url, retry) {
+      return await this.fetchImgURL(url, retry);
     }
-    async parseImgNodes(url, template) {
+    async parseImgNodes(page, template) {
       const list = [];
-      const raw = await window.fetch(url).then((response) => response.text());
-      if (!raw)
-        return list;
-      const domParser = new DOMParser();
-      const doc = domParser.parseFromString(raw, "text/html");
-      const aNodes = doc.querySelectorAll("#gdt a");
-      if (!aNodes || aNodes.length == 0) {
-        evLog("wried to get a nodes from document, but failed!");
-        return list;
+      let doc = await (async () => {
+        if (page.raw instanceof Document) {
+          return page.raw;
+        } else {
+          const raw = await window.fetch(page.raw).then((response) => response.text());
+          if (!raw)
+            return null;
+          const domParser = new DOMParser();
+          return domParser.parseFromString(raw, "text/html");
+        }
+      })();
+      if (!doc) {
+        throw new Error("warn: eh matcher failed to get document from source page!");
       }
-      const aNode = aNodes[0];
-      const href = aNode.getAttribute("href");
+      const nodes = doc.querySelectorAll("#gdt a");
+      if (!nodes || nodes.length == 0) {
+        throw new Error("warn: failed query image nodes!");
+      }
+      const node0 = nodes[0];
+      const href = node0.getAttribute("href");
       if (regulars.isMPV.test(href)) {
         const mpvDoc = await window.fetch(href).then((response) => response.text());
         const matchs = mpvDoc.matchAll(regulars.mpvImageList);
@@ -1270,14 +1276,14 @@ text-align: left;
           list.push(newImgNode);
         }
       } else {
-        for (const aNode2 of Array.from(aNodes)) {
-          const imgNode = aNode2.querySelector("img");
+        for (const node of Array.from(nodes)) {
+          const imgNode = node.querySelector("img");
           if (!imgNode) {
             throw new Error("Cannot find Image");
           }
           const newImgNode = template.cloneNode(true);
           const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("ahref", aNode2.getAttribute("href"));
+          newImg.setAttribute("ahref", node.getAttribute("href"));
           newImg.setAttribute("asrc", imgNode.src);
           newImg.setAttribute("title", imgNode.getAttribute("title") || "");
           list.push(newImgNode);
@@ -1285,7 +1291,7 @@ text-align: left;
       }
       return list;
     }
-    parsePageURLs() {
+    async *fetchPagesSource() {
       var _a, _b;
       const pager = document.querySelector(".gtb");
       if (!pager) {
@@ -1306,11 +1312,10 @@ text-align: left;
       const lastPage = this.findPageNum(
         ((_b = tds[tds.length - 2].firstElementChild) == null ? void 0 : _b.getAttribute("href")) || void 0
       );
-      const pageURLs = [firstPage];
+      yield { raw: firstPage, typ: "url" };
       for (let i = 1; i <= lastPage; i++) {
-        pageURLs.push(`${firstPage}?p=${i}`);
+        yield { raw: `${firstPage}?p=${i}`, typ: "url" };
       }
-      return pageURLs;
     }
     findPageNum(pageURL) {
       if (pageURL) {
@@ -1392,7 +1397,7 @@ text-align: left;
       meta.tags = tags;
       return meta;
     }
-    async matchImgURL(url) {
+    async matchImgURL(url, _) {
       let text = "";
       try {
         text = await window.fetch(url).then((resp) => resp.text());
@@ -1403,34 +1408,33 @@ text-align: left;
       }
       return NH_IMG_URL_REGEX.exec(text)[1];
     }
-    async parseImgNodes(_, template) {
+    async parseImgNodes(page, template) {
       const list = [];
-      const aNodes = document.querySelectorAll(".thumb-container > .gallerythumb");
-      if (!aNodes || aNodes.length == 0) {
-        evLog("wried to get a nodes from document, but failed!");
-        return list;
+      const nodes = page.raw.querySelectorAll(".thumb-container > .gallerythumb");
+      if (!nodes || nodes.length == 0) {
+        throw new Error("warn: failed query image nodes!");
       }
-      for (const aNode of Array.from(aNodes)) {
-        const imgNode = aNode.querySelector("img");
+      for (const node of Array.from(nodes)) {
+        const imgNode = node.querySelector("img");
         if (!imgNode) {
           throw new Error("Cannot find Image");
         }
         const newImgNode = template.cloneNode(true);
         const newImg = newImgNode.firstElementChild;
-        newImg.setAttribute("ahref", location.origin + aNode.getAttribute("href"));
+        newImg.setAttribute("ahref", location.origin + node.getAttribute("href"));
         newImg.setAttribute("asrc", imgNode.getAttribute("data-src"));
         newImg.setAttribute("title", imgNode.getAttribute("title") || "");
         list.push(newImgNode);
       }
       return list;
     }
-    parsePageURLs() {
-      return [window.location.href];
+    async *fetchPagesSource() {
+      yield { raw: document, typ: "doc" };
     }
   }
   const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
   class SteamMatcher {
-    async matchImgURL(url) {
+    async matchImgURL(url, _) {
       var _a;
       let raw = "";
       try {
@@ -1448,18 +1452,26 @@ text-align: left;
       }
       return imgURL;
     }
-    async parseImgNodes(url, template) {
+    async parseImgNodes(page, template) {
       var _a;
       const list = [];
-      const raw = await window.fetch(url).then((response) => response.text());
-      if (!raw)
-        return list;
-      const domParser = new DOMParser();
-      const doc = domParser.parseFromString(raw, "text/html");
+      const doc = await (async () => {
+        if (page.raw instanceof Document) {
+          return page.raw;
+        } else {
+          const raw = await window.fetch(page.raw).then((response) => response.text());
+          if (!raw)
+            return null;
+          const domParser = new DOMParser();
+          return domParser.parseFromString(raw, "text/html");
+        }
+      })();
+      if (!doc) {
+        throw new Error("warn: steam matcher failed to get document from source page!");
+      }
       const nodes = doc.querySelectorAll(".profile_media_item");
       if (!nodes || nodes.length == 0) {
-        evLog("wried to get a nodes from document, but failed!");
-        return list;
+        throw new Error("warn: failed query image nodes!");
       }
       for (const node of Array.from(nodes)) {
         const src = (_a = STEAM_THUMB_IMG_URL_REGEX.exec(node.innerHTML)) == null ? void 0 : _a[1];
@@ -1475,32 +1487,46 @@ text-align: left;
       }
       return list;
     }
-    parsePageURLs() {
-      let totalPages = 1;
+    async *fetchPagesSource() {
+      let totalPages = -1;
       document.querySelectorAll(".pagingPageLink").forEach((ele) => {
         totalPages = Number(ele.textContent);
       });
-      let page = 0;
       let url = new URL(window.location.href);
       url.searchParams.set("view", "grid");
-      return {
-        [Symbol.iterator]() {
-          return {
-            next() {
-              if (page++ <= totalPages) {
-                url.searchParams.set("p", page.toString());
-                return { done: false, value: url.href };
-              } else {
-                return { done: true, value: "DONE" };
-              }
-            }
-          };
+      if (totalPages === -1) {
+        const doc = await window.fetch(url.href).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
+        if (!doc) {
+          throw new Error("warn: steam matcher failed to get document from source page!");
         }
-      };
+        doc.querySelectorAll(".pagingPageLink").forEach((ele) => {
+          totalPages = Number(ele.textContent);
+        });
+      }
+      if (totalPages > 0) {
+        for (let p = 1; p <= totalPages; p++) {
+          url.searchParams.set("p", p.toString());
+          yield { raw: url.href, typ: "url" };
+        }
+      } else {
+        yield { raw: url.href, typ: "url" };
+      }
     }
     parseGalleryMeta(_) {
-      return new GalleryMeta(window.location.href, "UNTITLE");
+      const url = new URL(window.location.href);
+      let appid = url.searchParams.get("appid");
+      return new GalleryMeta(window.location.href, "steam-" + appid || "all");
     }
+  }
+  function adaptMatcher() {
+    const host = window.location.host;
+    if (host === "nhentai.net") {
+      return new NHMatcher();
+    }
+    if (host === "steamcommunity.com") {
+      return new SteamMatcher();
+    }
+    return new EHMatcher();
   }
   class DownloaderCanvas {
     constructor(id, queue) {

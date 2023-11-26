@@ -101,6 +101,7 @@ export class Downloader {
       .filter((index) => index >= 0)
       .splice(0, conf.downloadThreads);
     this.idleLoader.start(this.idleLoader.lockVer);
+    // TODO: handle the throw error
   }
 
   download() {

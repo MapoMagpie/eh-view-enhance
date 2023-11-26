@@ -3,7 +3,7 @@ import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
 import { IMGFetcher } from "./img-fetcher";
 import { HTML, Oriented } from "./main";
-import { Matcher } from "./platform/platform";
+import { Matcher, PagesSource } from "./platform/platform";
 import { events } from "./ui/event";
 import { updatePageHelper } from "./ui/page-helper";
 import { evLog } from "./utils/ev-log";
@@ -37,37 +37,32 @@ export class PageFetcher {
   }
 
   async initPageAppend() {
-    for (const pageURL of this.matcher.parsePageURLs()) {
-      console.log("pageURL: ", pageURL)
-      this.imgAppends["next"].push(
-        async () => {
-          let ok = await this.appendPageImg(pageURL, "next");
-          this.renderCurrView(
-            HTML.fullViewPlane.scrollTop,
-            HTML.fullViewPlane.clientHeight
-          );
-          return ok;
-        }
+    let fetchIter = this.matcher.fetchPagesSource();
+    let first = await fetchIter.next();
+    if (!first.done) {
+      await this.appendPageImg(first.value, "next");
+      this.renderCurrView(
+        HTML.fullViewPlane.scrollTop,
+        HTML.fullViewPlane.clientHeight
       );
     }
-    this.loadAllPageImg();
+    this.loadAllPageImg(fetchIter);
   }
 
-  async loadAllPageImg() {
-    if (this.fetched) return;
-    for (let i = 0; i < this.imgAppends["next"].length; i++) {
-      const executor = this.imgAppends["next"][i];
-      await executor();
-    }
-    for (let i = this.imgAppends["prev"].length - 1; i > -1; i--) {
-      const executor = this.imgAppends["prev"][i];
-      await executor();
+  async loadAllPageImg(iter: AsyncGenerator<PagesSource>) {
+    for await (const page of iter) {
+      console.log("page source: ", page)
+      await this.appendPageImg(page, "next");
+      this.renderCurrView(
+        HTML.fullViewPlane.scrollTop,
+        HTML.fullViewPlane.clientHeight
+      );
     }
   }
 
-  async appendPageImg(url: string, oriented: Oriented): Promise<boolean> {
+  async appendPageImg(page: PagesSource, oriented: Oriented): Promise<boolean> {
     try {
-      const imgNodeList = await this.obtainImageNodeList(url);
+      const imgNodeList = await this.obtainImageNodeList(page);
       const IFs = imgNodeList.map(
         (imgNode) => new IMGFetcher(imgNode as HTMLElement, this.matcher)
       );
@@ -98,7 +93,7 @@ export class PageFetcher {
   }
 
   //从文档的字符串中创建缩略图元素列表
-  async obtainImageNodeList(url: string): Promise<Element[]> {
+  async obtainImageNodeList(page: PagesSource): Promise<Element[]> {
     // make node template
     const imgNodeTemplate = document.createElement("div");
     imgNodeTemplate.classList.add("img-node");
@@ -111,11 +106,21 @@ export class PageFetcher {
     );
     imgNodeTemplate.appendChild(imgTemplate);
 
-    const list = await this.matcher.parseImgNodes(url, imgNodeTemplate);
-    list.forEach((imgNode) => {
-      imgNode.addEventListener("click", events.showBigImageEvent);
-    })
-    return list;
+    let tryTimes = 0;
+    while (tryTimes < 3) {
+      try {
+        const list = await this.matcher.parseImgNodes(page, imgNodeTemplate);
+        list.forEach((imgNode) => {
+          imgNode.addEventListener("click", events.showBigImageEvent);
+        })
+        return list;
+      } catch (error) {
+        evLog("warn: parse image nodes failed, retrying: ", error)
+        tryTimes++;
+      }
+    }
+    evLog("warn: parse image nodes failed: reached max try times!");
+    return [];
   }
 
   //通过地址请求该页的文档

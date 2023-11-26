@@ -66,8 +66,9 @@ export class IMGFetcher {
   setDownloadState(newState: Partial<DownloadState>) {
     this.downloadState = { ...this.downloadState, ...newState };
     if (this.downloadState.readyState === 4) {
-      if (this.downloadBar) {
-        this.downloadBar.remove();
+      if (this.downloadBar && this.downloadBar.parentNode) {
+        // this.downloadBar.remove(); // in steam, it randomly throw parentNode is null
+        this.downloadBar.parentNode.removeChild(this.downloadBar);
       }
       return;
     }
@@ -142,7 +143,7 @@ export class IMGFetcher {
 
   async fetchImageURL(): Promise<string | null> {
     try {
-      const imageURL = await this.matcher.matchImgURL(this.pageUrl);
+      const imageURL = await this.matcher.matchImgURL(this.pageUrl, this.tryTimes > 0);
       if (!imageURL) {
         evLog("Fetch URL failed, the URL is empty");
         return null;
@@ -197,7 +198,11 @@ export class IMGFetcher {
       xhrWapper<"blob">(imgFetcher.bigImageUrl!, "blob", {
         onload: function(response) {
           let data = response.response;
-          imgFetcher.setDownloadState({ readyState: response.readyState });
+          try {
+            imgFetcher.setDownloadState({ readyState: response.readyState });
+          } catch (error) {
+            evLog("warn: fetch big image data onload setDownloadState error:", error);
+          }
           resolve(data);
         },
         onerror: function(response) {

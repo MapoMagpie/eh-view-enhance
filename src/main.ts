@@ -91,7 +91,7 @@ HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
 HTML.currPageElement.addEventListener("click", () => events.showBigImage(IFQ.currIndex));
 HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event as WheelEvent));
 
-// 按键导航
+// Shortcut
 document.addEventListener("keydown", (event) => events.keyboardEvent(event));
 // 箭头导航
 HTML.imgLandLeft.addEventListener("click", (event) => {

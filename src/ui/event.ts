@@ -92,12 +92,7 @@ function togglePlaneEvent(id: string, collapse?: boolean) {
 function showFullViewPlane() {
   HTML.fullViewPlane.scroll(0, 0); //否则加载会触发滚动事件
   HTML.fullViewPlane.classList.remove("collapse_full_view");
-  document.body.style.display = "none";
-  // for (const node of Array.from(document.body.children)) {
-  //   if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains("fullViewPlane")) {
-  //     (node as HTMLElement).style.display = "none";
-  //   }
-  // }
+  // document.body.style.display = "none";
 };
 
 function hiddenFullViewPlaneEvent(event: Event) {
@@ -109,12 +104,7 @@ function hiddenFullViewPlaneEvent(event: Event) {
 function hiddenFullViewPlane() {
   hiddenBigImageEvent();
   HTML.fullViewPlane.classList.add("collapse_full_view");
-  document.body.style.display = "";
-  // for (const node of Array.from(document.body.children)) {
-  //   if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains("fullViewPlane")) {
-  //     (node as HTMLElement).style.display = "";
-  //   }
-  // }
+  // document.body.style.display = "";
 };
 
 //全屏阅览元素的滚动事件

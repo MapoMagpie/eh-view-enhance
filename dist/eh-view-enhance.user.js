@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.0
+// @version            4.1.1
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -12,13 +12,17 @@
 // @match              https://e-hentai.org/g/*
 // @match              https://nhentai.net/g/*
 // @match              https://steamcommunity.com/id/*/screenshots*
+// @match              https://hitomi.la/*
 // @exclude            https://nhentai.net/g/*/*/
+// @exclude            https://hitomi.la/reader/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @connect            exhentai.org
 // @connect            e-hentai.org
 // @connect            hath.network
 // @connect            nhentai.net
+// @connect            hitomi.la
+// @connect            akamaihd.net
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -120,6 +124,7 @@
       console.log((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
     }
   }
+  const HOST_REGEX = /\/\/([^\/]*)\//;
   function xhrWapper(url, respType, cb) {
     _GM_xmlhttpRequest({
       method: "GET",
@@ -127,14 +132,14 @@
       timeout: conf.timeout * 1e3,
       responseType: respType,
       headers: {
-        // "Host": url.replace("https://", "").split("/").shift()!,
+        "Host": HOST_REGEX.exec(url)[1],
         // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0",
-        // "Accept": "image/avif,image/webp,*/*",
+        "Accept": "image/avif,image/webp,*/*",
         // "Accept-Language": "en-US,en;q=0.5",
         // "Accept-Encoding": "gzip, deflate, br",
         "Connection": "keep-alive",
-        // "Referer": window.location.href.replace("/g/", "/mpv/"),
-        "Sec-Fetch-Dest": "image",
+        "Referer": window.location.href,
+        // "Sec-Fetch-Dest": "image",
         // "Sec-Fetch-Mode": "no-cors",
         // "Sec-Fetch-Site": "cross-site",
         "Cache-Control": "public,max-age=3600,immutable"
@@ -316,6 +321,8 @@
         xhrWapper(imgFetcher.bigImageUrl, "blob", {
           onload: function(response) {
             let data = response.response;
+            if (data.type === "text/html")
+              ;
             try {
               imgFetcher.setDownloadState({ readyState: response.readyState });
             } catch (error) {
@@ -483,7 +490,6 @@
     constructor(queue, idleLoader, matcher2) {
       __publicField(this, "meta");
       __publicField(this, "zip");
-      __publicField(this, "title");
       __publicField(this, "downloading");
       __publicField(this, "downloadForceElement");
       __publicField(this, "downloadStartElement");
@@ -493,10 +499,8 @@
       var _a, _b;
       this.queue = queue;
       this.idleLoader = idleLoader;
-      this.meta = matcher2.parseGalleryMeta(document);
+      this.meta = () => matcher2.parseGalleryMeta(document);
       this.zip = new JSZip();
-      this.title = this.meta.originTitle || this.meta.title;
-      this.zip.file("meta.json", JSON.stringify(this.meta));
       this.downloading = false;
       this.downloadForceElement = document.querySelector("#download-force") || void 0;
       this.downloadStartElement = document.querySelector("#download-start") || void 0;
@@ -559,9 +563,11 @@
     }
     download() {
       this.downloading = false;
+      const meta = this.meta();
+      this.zip.file("meta.json", JSON.stringify(meta));
       this.zip.generateAsync({ type: "blob" }, (_metadata) => {
       }).then((data) => {
-        saveAs(data, `${this.title}.zip`);
+        saveAs(data, `${meta.originTitle || meta.title}.zip`);
         if (this.downloadNoticeElement)
           this.downloadNoticeElement.innerHTML = "";
         if (this.downloadStartElement)
@@ -1075,21 +1081,14 @@ text-align: left;
       let first = await fetchIter.next();
       if (!first.done) {
         await this.appendPageImg(first.value, "next");
-        this.renderCurrView(
-          HTML.fullViewPlane.scrollTop,
-          HTML.fullViewPlane.clientHeight
-        );
+        setTimeout(() => this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight), 200);
       }
       this.loadAllPageImg(fetchIter);
     }
     async loadAllPageImg(iter) {
       for await (const page of iter) {
-        console.log("page source: ", page);
         await this.appendPageImg(page, "next");
-        this.renderCurrView(
-          HTML.fullViewPlane.scrollTop,
-          HTML.fullViewPlane.clientHeight
-        );
+        this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
       }
     }
     async appendPageImg(page, oriented) {
@@ -1347,6 +1346,126 @@ text-align: left;
       }
     }
   }
+  class HitomiGG {
+    constructor(b, m) {
+      __publicField(this, "base", "a");
+      __publicField(this, "ext", "webp");
+      __publicField(this, "b");
+      __publicField(this, "m");
+      this.b = b;
+      this.m = new Function("g", m);
+    }
+    s(h) {
+      const m = /(..)(.)$/.exec(h);
+      return parseInt(m[2] + m[1], 16).toString(10);
+    }
+    subdomain_from_url(url, base) {
+      var retval = "b";
+      if (base) {
+        retval = base;
+      }
+      var b = 16;
+      var r = /\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])/;
+      var m = r.exec(url);
+      if (!m) {
+        return "a";
+      }
+      let g = parseInt(m[2] + m[1], b);
+      if (!isNaN(g)) {
+        retval = String.fromCharCode(97 + this.m(g)) + retval;
+      }
+      return retval;
+    }
+    url(hash) {
+      let url = "https://a.hitomi.la/" + this.ext + "/" + this.b + this.s(hash) + "/" + hash + "." + this.ext;
+      url = url.replace(/\/\/..?\.hitomi\.la\//, "//" + this.subdomain_from_url(url, this.base) + ".hitomi.la/");
+      return url;
+    }
+  }
+  const HASH_REGEX = /#(\d*)$/;
+  const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
+  const GG_B_REGEX = /b:\s'(\d*\/)'/;
+  class HitomiMather {
+    constructor() {
+      __publicField(this, "gg");
+      __publicField(this, "meta");
+      __publicField(this, "info");
+    }
+    async matchImgURL(hash, _) {
+      const url = this.gg.url(hash);
+      console.log("hitomi image url: " + url);
+      return url;
+    }
+    async parseImgNodes(page, template) {
+      if (!this.info) {
+        throw new Error("warn: hitomi gallery info is null!");
+      }
+      const list = [];
+      const doc = page.raw;
+      const nodes = doc.querySelectorAll(".simplePagerContainer .thumbnail-container a");
+      if (!nodes || nodes.length == 0) {
+        throw new Error("warn: failed query image nodes!");
+      }
+      for (const node of Array.from(nodes)) {
+        const sceneIndex = Number(HASH_REGEX.exec(node.href)[1]) - 1;
+        const img = node.querySelector("img");
+        if (!img) {
+          throw new Error("warn: failed query image node!");
+        }
+        const src = img.src;
+        if (!src) {
+          throw new Error(`warn: failed get Image Src`);
+        }
+        const badge = (() => {
+          const badge2 = node.querySelector(".badge");
+          return badge2 ? Number(badge2.textContent) : 1;
+        })();
+        for (let i = 0; i < badge; i++) {
+          const newImgNode = template.cloneNode(true);
+          const newImg = newImgNode.firstElementChild;
+          newImg.setAttribute("ahref", this.info.files[i + sceneIndex].hash);
+          newImg.setAttribute("asrc", src);
+          newImg.setAttribute("title", this.info.files[i + sceneIndex].name);
+          list.push(newImgNode);
+        }
+      }
+      return list;
+    }
+    async *fetchPagesSource() {
+      var _a, _b, _c;
+      const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then((resp) => resp.text());
+      this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)[1], GG_M_REGEX.exec(ggRaw)[1]);
+      const galleryID = (_c = (_b = (_a = document.querySelector("#gallery-brand a")) == null ? void 0 : _a.href) == null ? void 0 : _b.split("/").pop()) == null ? void 0 : _c.replace(".html", "");
+      if (!galleryID) {
+        throw new Error("cannot query hitomi gallery id");
+      }
+      const infoRaw = await window.fetch(`https://ltn.hitomi.la/galleries/${galleryID}.js`).then((resp) => resp.text()).then((text) => text.replace("var galleryinfo = ", ""));
+      if (!infoRaw) {
+        throw new Error("cannot query hitomi gallery info");
+      }
+      const info = JSON.parse(infoRaw);
+      this.setGalleryMeta(info, galleryID);
+      this.info = {
+        files: info.files,
+        scene_indexes: info.scene_indexes
+      };
+      yield { raw: document, typ: "doc" };
+    }
+    setGalleryMeta(info, galleryID) {
+      this.meta = new GalleryMeta(window.location.href, info["title"] || "hitomi-" + galleryID);
+      this.meta.originTitle = info["japanese_title"];
+      const excludes = ["scene_indexes", "files"];
+      for (const key in info) {
+        if (excludes.indexOf(key) > -1) {
+          continue;
+        }
+        this.meta.tags[key] = info[key];
+      }
+    }
+    parseGalleryMeta(_) {
+      return this.meta || new GalleryMeta(window.location.href, "hitomi");
+    }
+  }
   const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
   class NHMatcher {
     parseGalleryMeta(doc) {
@@ -1511,6 +1630,9 @@ text-align: left;
     }
     if (host === "steamcommunity.com") {
       return new SteamMatcher();
+    }
+    if (host === "hitomi.la") {
+      return new HitomiMather();
     }
     return new EHMatcher();
   }

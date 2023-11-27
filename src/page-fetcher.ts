@@ -41,22 +41,16 @@ export class PageFetcher {
     let first = await fetchIter.next();
     if (!first.done) {
       await this.appendPageImg(first.value, "next");
-      this.renderCurrView(
-        HTML.fullViewPlane.scrollTop,
-        HTML.fullViewPlane.clientHeight
-      );
+      setTimeout(() => this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight), 200)
     }
     this.loadAllPageImg(fetchIter);
   }
 
   async loadAllPageImg(iter: AsyncGenerator<PagesSource>) {
     for await (const page of iter) {
-      console.log("page source: ", page)
+      // console.log("page source: ", page)
       await this.appendPageImg(page, "next");
-      this.renderCurrView(
-        HTML.fullViewPlane.scrollTop,
-        HTML.fullViewPlane.clientHeight
-      );
+      this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
     }
   }
 

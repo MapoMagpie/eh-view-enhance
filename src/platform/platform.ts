@@ -1,5 +1,6 @@
 import { GalleryMeta } from "../downloader";
 import { EHMatcher } from "./ehentai";
+import { HitomiMather } from "./hitomi";
 import { NHMatcher } from "./nhentai";
 import { SteamMatcher } from "./steam";
 
@@ -22,6 +23,9 @@ export function adaptMatcher(): Matcher {
   }
   if (host === "steamcommunity.com") {
     return new SteamMatcher();
+  }
+  if (host === "hitomi.la") {
+    return new HitomiMather();
   }
   return new EHMatcher();
 }

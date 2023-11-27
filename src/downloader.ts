@@ -12,7 +12,7 @@ export class GalleryMeta {
   url: string;
   title?: string;
   originTitle?: string;
-  tags: Record<string, string[]>;
+  tags: Record<string, any[]>;
   constructor(url: string, title: string) {
     this.url = url;
     this.title = title;
@@ -21,9 +21,8 @@ export class GalleryMeta {
 }
 
 export class Downloader {
-  meta: GalleryMeta;
+  meta: () => GalleryMeta;
   zip: JSZip;
-  title?: string;
   downloading: boolean;
   downloadForceElement?: HTMLElement;
   downloadStartElement?: HTMLAnchorElement;
@@ -33,10 +32,8 @@ export class Downloader {
   constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher) {
     this.queue = queue;
     this.idleLoader = idleLoader;
-    this.meta = matcher.parseGalleryMeta(document);
+    this.meta = () => matcher.parseGalleryMeta(document);
     this.zip = new JSZip();
-    this.title = this.meta.originTitle || this.meta.title;
-    this.zip.file("meta.json", JSON.stringify(this.meta));
     this.downloading = false;
     this.downloadForceElement = document.querySelector("#download-force") || undefined;
     this.downloadStartElement = document.querySelector("#download-start") || undefined;
@@ -106,11 +103,13 @@ export class Downloader {
 
   download() {
     this.downloading = false;
+    const meta = this.meta();
+    this.zip.file("meta.json", JSON.stringify(meta));
     this.zip.generateAsync({ type: "blob" }, (_metadata) => {
       // console.log(metadata);
       // TODO: progress bar
     }).then(data => {
-      saveAs(data, `${this.title}.zip`);
+      saveAs(data, `${meta.originTitle || meta.title}.zip`);
       if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "";
       if (this.downloadStartElement) this.downloadStartElement.textContent = i18n.download.get();
     });

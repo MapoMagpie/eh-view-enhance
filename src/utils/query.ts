@@ -12,6 +12,7 @@ type RespType = keyof {
 
 type EventListener<T extends RespType> = Pick<GmXhrRequest<unknown, T>, "onload" | "onprogress" | "onerror" | "ontimeout" | "onloadstart">;
 
+const HOST_REGEX = /\/\/([^\/]*)\//;
 export function xhrWapper<T extends RespType>(url: string, respType: T, cb: EventListener<T>) {
   GM_xmlhttpRequest<unknown, T>({
     method: "GET",
@@ -19,14 +20,14 @@ export function xhrWapper<T extends RespType>(url: string, respType: T, cb: Even
     timeout: conf.timeout * 1000,
     responseType: respType,
     headers: {
-      // "Host": url.replace("https://", "").split("/").shift()!,
+      "Host": HOST_REGEX.exec(url)![1],
       // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0",
-      // "Accept": "image/avif,image/webp,*/*",
+      "Accept": "image/avif,image/webp,*/*",
       // "Accept-Language": "en-US,en;q=0.5",
       // "Accept-Encoding": "gzip, deflate, br",
       "Connection": "keep-alive",
-      // "Referer": window.location.href.replace("/g/", "/mpv/"),
-      "Sec-Fetch-Dest": "image",
+      "Referer": window.location.href,
+      // "Sec-Fetch-Dest": "image",
       // "Sec-Fetch-Mode": "no-cors",
       // "Sec-Fetch-Site": "cross-site",
       "Cache-Control": "public,max-age=3600,immutable",

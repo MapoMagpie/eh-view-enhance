@@ -198,6 +198,10 @@ export class IMGFetcher {
       xhrWapper<"blob">(imgFetcher.bigImageUrl!, "blob", {
         onload: function(response) {
           let data = response.response;
+          if (data.type === "text/html") {
+            // TODO: check response type, e.g. status code
+            // console.error("warn: fetch big image data type is not blob: ", data);
+          }
           try {
             imgFetcher.setDownloadState({ readyState: response.readyState });
           } catch (error) {

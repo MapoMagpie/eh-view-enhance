@@ -1,6 +1,7 @@
 import { conf } from "../config";
 
 export function loadStyleSheel() {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
   const style = document.createElement('style');
   const css = `
 .fullViewPlane {
@@ -31,7 +32,6 @@ export function loadStyleSheel() {
   top: unset !important;
 }
 .p-label {
-  // position: relative;
   cursor: pointer;
 }
 .fullViewPlane .img-node {
@@ -63,7 +63,7 @@ export function loadStyleSheel() {
 }
 .bigImageFrame > img {
   object-fit: contain;
-  // border-bottom: 1px solid #ffffff;
+  /* border-bottom: 1px solid #ffffff; */
   display: block;
   margin: 0 auto;
 }
@@ -71,24 +71,69 @@ export function loadStyleSheel() {
   position: fixed;
   display: flex !important;
   justify-content: space-between;
-  line-height: 25px;
-  top: ${conf.pageHelperAbTop};
-  left: ${conf.pageHelperAbLeft};
-  bottom: ${conf.pageHelperAbBottom};
-  right: ${conf.pageHelperAbRight};
   background-color: #4a4a4ae6;
   z-index: 2011 !important;
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  font-size: 11pt;
-  // cursor: pointer;
+  font-size: ${isMobile ? "40pt" : "11pt"};
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
+.pageHelper .plane {
+  z-index: 1010 !important;
+  background-color: rgba(38, 20, 25, 0.8);
+  box-sizing: border-box;
+  position: absolute;
+  bottom: 32px;
+  color: rgb(200, 222, 200);
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: width 0.4s ease 0s, height 0.4s ease 0s;
+  padding: 3px;
+}
 .pageHelper.pageHelperExtend {
-  min-width: 367px;
-  transition: min-width 0.4s ease;
+  font-size: ${isMobile ? "20pt" : "11pt"};
+}
+@media (width > ${isMobile ? "1440px" : "720px"}) {
+  .pageHelper.pageHelperExtend {
+    min-width: 367px;
+    transition: min-width 0.4s ease;
+  }
+  .pageHelper {
+    top: ${conf.pageHelperAbTop};
+    left: ${conf.pageHelperAbLeft};
+    bottom: ${conf.pageHelperAbBottom};
+    right: ${conf.pageHelperAbRight};
+    line-height: 26px;
+  }
+  .pageHelper .plane {
+    width: 367px;
+    height: 420px;
+  }
+}
+@media (width < ${isMobile ? "1440px" : "720px"}) {
+  .pageHelper.pageHelperExtend {
+    min-width: 100vw;
+    transition: min-width 0.4s ease;
+  }
+  .pageHelper {
+    bottom: 0px;
+    left: 0px;
+  }
+  .pageHelper .plane {
+    width: 100vw;
+    height: 60vh;
+  }
+}
+.p-minify:not(:hover) {
+  min-width: 0px !important;
+}
+.p-minify:not(:hover) .b-main {
+  width: auto;
+}
+.p-minify:not(:hover) .b-main > :not(.b-m-page) {
+  display: none;
 }
 .pageHelper:hover {
   background-color: #3a3a3ae6;
@@ -109,20 +154,7 @@ export function loadStyleSheel() {
 .clickable:hover {
   color: #90ea90 !important;
 }
-.pageHelper .plane {
-  z-index: 1010 !important;
-  background-color: rgba(38, 20, 25, 0.8);
-  box-sizing: border-box;
-  position: absolute;
-  bottom: 26px;
-  color: rgb(200, 222, 200);
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  width: 367px;
-  transition: width 0.4s ease 0s, height 0.4s ease 0s;
-}
 .pageHelper .p-img-scale {
-  // bottom: 30px;
   display: flex;
 }
 .p-img-scale .scale-btn {
@@ -152,6 +184,7 @@ export function loadStyleSheel() {
 .p-collapse {
   height: 0px !important;
   transition: height 0.4s;
+  padding: 0px !important;
 }
 .pageHelper .b-main {
   width: 0px;
@@ -166,7 +199,6 @@ export function loadStyleSheel() {
   transition: flex-grow 0.6s ease;
 }
 .pageHelper .p-config {
-  height: 387px;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
@@ -181,10 +213,9 @@ export function loadStyleSheel() {
   cursor: ns-resize;
 }
 .pageHelper .p-downloader {
-  height: 310px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
 }
 .p-downloader canvas {
@@ -257,9 +288,7 @@ export function loadStyleSheel() {
   position: absolute;
   bottom: 0;
 }
-
 .imgLandLeft, .imgLandRight {
-  width: 20%;
   height: 100%;
   position: fixed;
   z-index: 1004;
@@ -277,7 +306,6 @@ export function loadStyleSheel() {
 .imgLandTop, .imgLandBottom {
   left: 0px;
   width: 100%;
-  height: 20%;
   position: fixed;
   z-index: 1005;
 }
@@ -291,12 +319,18 @@ export function loadStyleSheel() {
   z-index: 1005;
   cursor: url("https://exhentai.org/img/b.png"), auto;
 }
+.imgLandTop, .imgLandBottom {
+  height: 30%;
+}
+.imgLandLeft, .imgLandRight {
+  width: 30%;
+}
 .p-tooltip {
   border-bottom: 1px dotted black;
 }
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
-  width: 367px;
+  width: 100%;
   top: 0px;
   right: 0px;
   background-color: black;
@@ -311,23 +345,6 @@ export function loadStyleSheel() {
 }
 .p-tooltip:hover .p-tooltiptext {
   visibility: visible;
-}
-.p-minify:not(:hover) {
-  min-width: 0px !important;
-}
-.p-minify:not(:hover) .b-m-page {
-  position: absolute;
-  ${conf.pageHelperAbRight === "unset" ? "left" : "right"}: 47px;
-  height: 27px;
-  background-color: rgba(74, 74, 74, 0.9);
-}
-.p-minify:not(:hover) .p-img-scale .scale-btn, .p-minify:not(:hover) .p-img-scale .scale-progress {
-  display: none;
-}
-.p-minify:not(:hover) .p-img-scale {
-  width: 90px;
-  ${conf.pageHelperAbRight === "unset" ? "" : "right: -48px;"}
-  transition: width 0.4s ease 0s;
 }
 `
   style.textContent = css;

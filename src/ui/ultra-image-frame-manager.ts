@@ -159,13 +159,11 @@ export class BigImageFrameManager {
       this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
       this.removeImgNodes();
     }, 700);
-    this.imgScaleBar.style.display = "none";
   }
 
   show() {
     this.frame.classList.remove("b-f-collapse");
     this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = false);
-    this.imgScaleBar.style.display = "";
     this.callbackOnShow?.();
   }
 

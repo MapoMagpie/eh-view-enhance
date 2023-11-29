@@ -63,8 +63,11 @@ function modSelectConfigEvent(key: ConfigSelectType) {
     (conf[key] as any) = value;
     saveConf(conf);
   }
-  if (key === "readMode" && conf.readMode === "singlePage") {
-    BIFM.init(IFQ.currIndex);
+  if (key === "readMode") {
+    BIFM.resetScaleBigImages();
+    if (conf.readMode === "singlePage") {
+      BIFM.init(IFQ.currIndex);
+    }
   }
 }
 

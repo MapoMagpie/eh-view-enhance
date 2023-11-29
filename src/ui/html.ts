@@ -18,14 +18,6 @@ export function createHTML() {
  </div>
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
-        <div id="imgScaleBar" class="plane p-img-scale" style="display: none;">
-            <div><span>${i18n.imageScale.get()}:</span></div>
-            <div class="scale-status"><span id="imgScaleStatus">${conf.imgScale}%</span></div>
-            <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
-            <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
-            <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
-            <div id="imgScaleResetBTN" class="scale-btn" style="width: 55px;"><span>RESET</span></div>
-        </div>
          <div id="configPlane" class="plane p-config p-collapse">
              <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <label class="p-label">
@@ -148,6 +140,14 @@ export function createHTML() {
                   <a id="showGuideElement" class="clickable">HELP</a>
                   <a style="" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
              </div>
+             <div id="imgScaleBar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
+                 <div><span>${i18n.imageScale.get()}:</span></div>
+                 <div class="scale-status"><span id="imgScaleStatus">${conf.imgScale}%</span></div>
+                 <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
+                 <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
+                 <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
+                 <div id="imgScaleResetBTN" class="scale-btn" style="width: 55px;"><span>RESET</span></div>
+             </div>
          </div>
          <div id="downloaderPlane" class="plane p-downloader p-collapse">
              <div id="download-notice" class="download-notice"></div>
@@ -159,9 +159,8 @@ export function createHTML() {
          </div>
      </div>
      <div>
-         <span id="gate" style="font-weight: 800; font-size: large; text-align: center; white-space: nowrap;">&lessdot;📖</span>
+         <span id="gate">&lessdot;📖</span>
      </div>
-     <!-- <span>展开</span> -->
      <div id="b-main" class="b-main b-collapse">
          <div id="configPlaneBTN" class="clickable">${i18n.config.get()}</div>
          <div id="downloaderPlaneBTN" class="clickable">${i18n.download.get()}</div>
@@ -176,7 +175,7 @@ export function createHTML() {
          <div id="collapseBTN" class="clickable">${i18n.collapse.get()}</div>
      </div>
      <div>
-         <span style="font-weight: 800; font-size: large; text-align: center;">&gtdot;</span>
+         <span>&gtdot;</span>
      </div>
  </div>
 `;

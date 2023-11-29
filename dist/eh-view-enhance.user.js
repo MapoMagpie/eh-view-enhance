@@ -849,8 +849,11 @@
       conf[key] = value;
       saveConf(conf);
     }
-    if (key === "readMode" && conf.readMode === "singlePage") {
-      BIFM.init(IFQ.currIndex);
+    if (key === "readMode") {
+      BIFM.resetScaleBigImages();
+      if (conf.readMode === "singlePage") {
+        BIFM.init(IFQ.currIndex);
+      }
     }
   }
   function mouseleavePlaneEvent(target) {
@@ -1799,6 +1802,7 @@ text-align: left;
     }
   }
   function loadStyleSheel() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
     const style = document.createElement("style");
     const css = `
 .fullViewPlane {
@@ -1829,7 +1833,6 @@ text-align: left;
   top: unset !important;
 }
 .p-label {
-  // position: relative;
   cursor: pointer;
 }
 .fullViewPlane .img-node {
@@ -1861,7 +1864,7 @@ text-align: left;
 }
 .bigImageFrame > img {
   object-fit: contain;
-  // border-bottom: 1px solid #ffffff;
+  /* border-bottom: 1px solid #ffffff; */
   display: block;
   margin: 0 auto;
 }
@@ -1869,24 +1872,69 @@ text-align: left;
   position: fixed;
   display: flex !important;
   justify-content: space-between;
-  line-height: 25px;
-  top: ${conf.pageHelperAbTop};
-  left: ${conf.pageHelperAbLeft};
-  bottom: ${conf.pageHelperAbBottom};
-  right: ${conf.pageHelperAbRight};
   background-color: #4a4a4ae6;
   z-index: 2011 !important;
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  font-size: 11pt;
-  // cursor: pointer;
+  font-size: ${isMobile ? "40pt" : "11pt"};
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
+.pageHelper .plane {
+  z-index: 1010 !important;
+  background-color: rgba(38, 20, 25, 0.8);
+  box-sizing: border-box;
+  position: absolute;
+  bottom: 32px;
+  color: rgb(200, 222, 200);
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: width 0.4s ease 0s, height 0.4s ease 0s;
+  padding: 3px;
+}
 .pageHelper.pageHelperExtend {
-  min-width: 367px;
-  transition: min-width 0.4s ease;
+  font-size: ${isMobile ? "20pt" : "11pt"};
+}
+@media (width > ${isMobile ? "1440px" : "720px"}) {
+  .pageHelper.pageHelperExtend {
+    min-width: 367px;
+    transition: min-width 0.4s ease;
+  }
+  .pageHelper {
+    top: ${conf.pageHelperAbTop};
+    left: ${conf.pageHelperAbLeft};
+    bottom: ${conf.pageHelperAbBottom};
+    right: ${conf.pageHelperAbRight};
+    line-height: 26px;
+  }
+  .pageHelper .plane {
+    width: 367px;
+    height: 420px;
+  }
+}
+@media (width < ${isMobile ? "1440px" : "720px"}) {
+  .pageHelper.pageHelperExtend {
+    min-width: 100vw;
+    transition: min-width 0.4s ease;
+  }
+  .pageHelper {
+    bottom: 0px;
+    left: 0px;
+  }
+  .pageHelper .plane {
+    width: 100vw;
+    height: 60vh;
+  }
+}
+.p-minify:not(:hover) {
+  min-width: 0px !important;
+}
+.p-minify:not(:hover) .b-main {
+  width: auto;
+}
+.p-minify:not(:hover) .b-main > :not(.b-m-page) {
+  display: none;
 }
 .pageHelper:hover {
   background-color: #3a3a3ae6;
@@ -1907,20 +1955,7 @@ text-align: left;
 .clickable:hover {
   color: #90ea90 !important;
 }
-.pageHelper .plane {
-  z-index: 1010 !important;
-  background-color: rgba(38, 20, 25, 0.8);
-  box-sizing: border-box;
-  position: absolute;
-  bottom: 26px;
-  color: rgb(200, 222, 200);
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  width: 367px;
-  transition: width 0.4s ease 0s, height 0.4s ease 0s;
-}
 .pageHelper .p-img-scale {
-  // bottom: 30px;
   display: flex;
 }
 .p-img-scale .scale-btn {
@@ -1950,6 +1985,7 @@ text-align: left;
 .p-collapse {
   height: 0px !important;
   transition: height 0.4s;
+  padding: 0px !important;
 }
 .pageHelper .b-main {
   width: 0px;
@@ -1964,7 +2000,6 @@ text-align: left;
   transition: flex-grow 0.6s ease;
 }
 .pageHelper .p-config {
-  height: 387px;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
@@ -1979,10 +2014,9 @@ text-align: left;
   cursor: ns-resize;
 }
 .pageHelper .p-downloader {
-  height: 310px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
 }
 .p-downloader canvas {
@@ -2055,9 +2089,7 @@ text-align: left;
   position: absolute;
   bottom: 0;
 }
-
 .imgLandLeft, .imgLandRight {
-  width: 20%;
   height: 100%;
   position: fixed;
   z-index: 1004;
@@ -2075,7 +2107,6 @@ text-align: left;
 .imgLandTop, .imgLandBottom {
   left: 0px;
   width: 100%;
-  height: 20%;
   position: fixed;
   z-index: 1005;
 }
@@ -2089,12 +2120,18 @@ text-align: left;
   z-index: 1005;
   cursor: url("https://exhentai.org/img/b.png"), auto;
 }
+.imgLandTop, .imgLandBottom {
+  height: 30%;
+}
+.imgLandLeft, .imgLandRight {
+  width: 30%;
+}
 .p-tooltip {
   border-bottom: 1px dotted black;
 }
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
-  width: 367px;
+  width: 100%;
   top: 0px;
   right: 0px;
   background-color: black;
@@ -2109,23 +2146,6 @@ text-align: left;
 }
 .p-tooltip:hover .p-tooltiptext {
   visibility: visible;
-}
-.p-minify:not(:hover) {
-  min-width: 0px !important;
-}
-.p-minify:not(:hover) .b-m-page {
-  position: absolute;
-  ${conf.pageHelperAbRight === "unset" ? "left" : "right"}: 47px;
-  height: 27px;
-  background-color: rgba(74, 74, 74, 0.9);
-}
-.p-minify:not(:hover) .p-img-scale .scale-btn, .p-minify:not(:hover) .p-img-scale .scale-progress {
-  display: none;
-}
-.p-minify:not(:hover) .p-img-scale {
-  width: 90px;
-  ${conf.pageHelperAbRight === "unset" ? "" : "right: -48px;"}
-  transition: width 0.4s ease 0s;
 }
 `;
     style.textContent = css;
@@ -2151,14 +2171,6 @@ text-align: left;
  </div>
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
-        <div id="imgScaleBar" class="plane p-img-scale" style="display: none;">
-            <div><span>${i18n.imageScale.get()}:</span></div>
-            <div class="scale-status"><span id="imgScaleStatus">${conf.imgScale}%</span></div>
-            <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
-            <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
-            <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
-            <div id="imgScaleResetBTN" class="scale-btn" style="width: 55px;"><span>RESET</span></div>
-        </div>
          <div id="configPlane" class="plane p-config p-collapse">
              <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <label class="p-label">
@@ -2281,6 +2293,14 @@ text-align: left;
                   <a id="showGuideElement" class="clickable">HELP</a>
                   <a style="" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
              </div>
+             <div id="imgScaleBar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
+                 <div><span>${i18n.imageScale.get()}:</span></div>
+                 <div class="scale-status"><span id="imgScaleStatus">${conf.imgScale}%</span></div>
+                 <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
+                 <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
+                 <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
+                 <div id="imgScaleResetBTN" class="scale-btn" style="width: 55px;"><span>RESET</span></div>
+             </div>
          </div>
          <div id="downloaderPlane" class="plane p-downloader p-collapse">
              <div id="download-notice" class="download-notice"></div>
@@ -2292,9 +2312,8 @@ text-align: left;
          </div>
      </div>
      <div>
-         <span id="gate" style="font-weight: 800; font-size: large; text-align: center; white-space: nowrap;">&lessdot;📖</span>
+         <span id="gate">&lessdot;📖</span>
      </div>
-     <!-- <span>展开</span> -->
      <div id="b-main" class="b-main b-collapse">
          <div id="configPlaneBTN" class="clickable">${i18n.config.get()}</div>
          <div id="downloaderPlaneBTN" class="clickable">${i18n.download.get()}</div>
@@ -2309,7 +2328,7 @@ text-align: left;
          <div id="collapseBTN" class="clickable">${i18n.collapse.get()}</div>
      </div>
      <div>
-         <span style="font-weight: 800; font-size: large; text-align: center;">&gtdot;</span>
+         <span>&gtdot;</span>
      </div>
  </div>
 `;
@@ -2493,13 +2512,11 @@ text-align: left;
         this.frame.childNodes.forEach((child) => child.hidden = true);
         this.removeImgNodes();
       }, 700);
-      this.imgScaleBar.style.display = "none";
     }
     show() {
       var _a;
       this.frame.classList.remove("b-f-collapse");
       this.frame.childNodes.forEach((child) => child.hidden = false);
-      this.imgScaleBar.style.display = "";
       (_a = this.callbackOnShow) == null ? void 0 : _a.call(this);
     }
     getImgNodes() {

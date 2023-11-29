@@ -151,7 +151,7 @@ export function createHTML() {
          </div>
          <div id="downloaderPlane" class="plane p-downloader p-collapse">
              <div id="download-notice" class="download-notice"></div>
-             <canvas id="downloaderCanvas" width="337" height="250"></canvas>
+             <canvas id="downloaderCanvas" width="100" height="100"></canvas>
              <div class="download-btn-group">
                 <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
                 <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.startDownload.get()}</a>

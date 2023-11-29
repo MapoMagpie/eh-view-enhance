@@ -1685,6 +1685,17 @@ text-align: left;
       this.scrollTop = 0;
       this.scrollSize = 10;
       this.debouncer = new Debouncer();
+      const parent = this.canvas.parentElement;
+      if (parent) {
+        parent.addEventListener("transitionend", (ev) => {
+          const ele = ev.target;
+          if (ele.clientHeight > 0) {
+            this.canvas.width = Math.floor(ele.offsetWidth * 0.9);
+            this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
+            this.draw();
+          }
+        });
+      }
     }
     onwheel(deltaY) {
       const [_, h] = this.getWH();
@@ -2304,7 +2315,7 @@ text-align: left;
          </div>
          <div id="downloaderPlane" class="plane p-downloader p-collapse">
              <div id="download-notice" class="download-notice"></div>
-             <canvas id="downloaderCanvas" width="337" height="250"></canvas>
+             <canvas id="downloaderCanvas" width="100" height="100"></canvas>
              <div class="download-btn-group">
                 <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
                 <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.startDownload.get()}</a>

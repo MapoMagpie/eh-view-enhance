@@ -54,6 +54,20 @@ export class DownloaderCanvas {
     this.scrollTop = 0; // 滚动位置
     this.scrollSize = 10; // 每次滚动粒度
     this.debouncer = new Debouncer();
+
+    // register animation event to parent for size change
+    const parent = this.canvas.parentElement;
+    if (parent) {
+      parent.addEventListener("transitionend", (ev) => {
+        const ele = ev.target as HTMLElement;
+        if (ele.clientHeight > 0) {
+          this.canvas.width = Math.floor(ele.offsetWidth * 0.9);
+          this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
+          this.draw();
+        }
+      });
+
+    }
   }
 
   onwheel(deltaY: number) {

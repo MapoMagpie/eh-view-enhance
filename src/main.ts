@@ -52,14 +52,14 @@ export function main(collapse: boolean) {
 
 
 HTML.configPlaneBTN.addEventListener("click", () => events.togglePlaneEvent("config"));
-HTML.configPlane.addEventListener("mouseleave", (event) => {
-  events.mouseleavePlaneEvent(event.target as HTMLElement);
-});
+HTML.configPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
+HTML.configPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
 HTML.downloaderPlaneBTN.addEventListener("click", () => {
   DL.check();
   events.togglePlaneEvent("downloader");
 });
 HTML.downloaderPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
+HTML.downloaderPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
 
 // modify config event
 for (const key of ConfigNumberKeys) {

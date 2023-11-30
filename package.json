@@ -15,7 +15,9 @@
   },
   "dependencies": {
     "@types/file-saver": "^2.0.5",
+    "@types/hammerjs": "^2.0.45",
     "file-saver": "^2.0.5",
+    "hammerjs": "^2.0.8",
     "jszip": "^3.10.1"
   }
 }

@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.2
+// @version            4.1.3
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -17,6 +17,7 @@
 // @exclude            https://hitomi.la/reader/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
+// @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
 // @connect            exhentai.org
 // @connect            e-hentai.org
 // @connect            hath.network
@@ -28,7 +29,7 @@
 // @grant              GM_xmlhttpRequest
 // ==/UserScript==
 
-(function (JSZip, saveAs) {
+(function (Hammer, JSZip, saveAs) {
   'use strict';
 
   var __defProp = Object.defineProperty;
@@ -1673,7 +1674,7 @@ text-align: left;
         const index = (_b = (_a = this.computeDrawList()) == null ? void 0 : _a.find(
           (state) => state.selected
         )) == null ? void 0 : _b.index;
-        if (index) {
+        if (index !== void 0) {
           events.showBigImage(index);
         }
       });
@@ -1690,8 +1691,9 @@ text-align: left;
         parent.addEventListener("transitionend", (ev) => {
           const ele = ev.target;
           if (ele.clientHeight > 0) {
-            this.canvas.width = Math.floor(ele.offsetWidth * 0.9);
+            this.canvas.width = Math.floor(ele.offsetWidth - 20);
             this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
+            this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
             this.draw();
           }
         });
@@ -1717,7 +1719,7 @@ text-align: left;
       const list = [];
       const [_, h] = this.getWH();
       const startX = this.computeStartX();
-      const startY = -this.scrollTop;
+      const startY = -this.scrollTop + this.padding;
       for (let i = 0, row = -1; i < this.queue.length; i++) {
         const currCol = i % this.columns;
         if (currCol == 0) {
@@ -1779,7 +1781,7 @@ text-align: left;
     }
     computeStartX() {
       const [w, _] = this.getWH();
-      const drawW = this.rectSize * this.columns + this.rectGap * this.columns - 1;
+      const drawW = (this.rectSize + this.rectGap) * this.columns - this.rectGap;
       let startX = w - drawW >> 1;
       return startX;
     }
@@ -1828,12 +1830,13 @@ text-align: left;
   transition: height 0.4s ease 0s;
   display: grid;
   align-content: start;
-  grid-gap: 10px;
+  grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
 }
 .fullViewPlane input, .fullViewPlane select {
   color: #f1f1f1;
   background-color: #34353b !important;
+  color-scheme: dark;
   outline: none;
   border: 1px solid #000000;
   border-radius: 4px;
@@ -1842,6 +1845,7 @@ text-align: left;
   text-align: center;
   position: unset !important;
   top: unset !important;
+  vertical-align: middle;
 }
 .p-label {
   cursor: pointer;
@@ -1888,7 +1892,6 @@ text-align: left;
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  font-size: ${isMobile ? "40pt" : "11pt"};
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
@@ -1897,45 +1900,97 @@ text-align: left;
   background-color: rgba(38, 20, 25, 0.8);
   box-sizing: border-box;
   position: absolute;
-  bottom: 32px;
   color: rgb(200, 222, 200);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   overflow: hidden;
   transition: width 0.4s ease 0s, height 0.4s ease 0s;
   padding: 3px;
 }
-.pageHelper.pageHelperExtend {
-  font-size: ${isMobile ? "20pt" : "11pt"};
-}
 @media (width > ${isMobile ? "1440px" : "720px"}) {
   .pageHelper.pageHelperExtend {
-    min-width: 367px;
+    min-width: 24rem;
     transition: min-width 0.4s ease;
+    font-size: 1rem;
+    line-height: 1.2rem;
   }
   .pageHelper {
     top: ${conf.pageHelperAbTop};
     left: ${conf.pageHelperAbLeft};
     bottom: ${conf.pageHelperAbBottom};
     right: ${conf.pageHelperAbRight};
-    line-height: 26px;
+    font-size: 1rem;
+    line-height: 1.2rem;
   }
   .pageHelper .plane {
-    width: 367px;
-    height: 420px;
+    width: 24rem;
+    height: 25rem;
+    bottom: 1.3rem;
+  }
+  .pageHelper .p-btn {
+    height: 1.5rem;
+    width: 1.5rem;
+    border: 1px solid #000000;
+    border-radius: 4px;
+  }
+  .fullViewPlane input[type="checkbox"] {
+    width: 1rem;
+    height: unset !important;
+  }
+  .fullViewPlane select {
+    width: 7rem !important;
+  }
+  .fullViewPlane input, .fullViewPlane select {
+    width: 2rem;
+    height: 1.5rem;
+  }
+  .pageHelper .p-config {
+    line-height: 2rem;
+  }
+  #imgScaleResetBTN {
+    width: 4rem;
   }
 }
 @media (width < ${isMobile ? "1440px" : "720px"}) {
   .pageHelper.pageHelperExtend {
     min-width: 100vw;
     transition: min-width 0.4s ease;
+    font-size: 4.2cqw;
+    line-height: 5cqw;
   }
   .pageHelper {
     bottom: 0px;
     left: 0px;
+    font-size: 8cqw;
+    line-height: 8.1cqw;
   }
   .pageHelper .plane {
     width: 100vw;
     height: 60vh;
+    bottom: 5.7cqw;
+  }
+  .pageHelper .p-btn {
+    height: 6cqw;
+    width: 6cqw;
+    border: 0.4cqw solid #000000;
+    border-radius: 1cqw;
+  }
+  .fullViewPlane input[type="checkbox"] {
+    width: 4cqw;
+    height: unset !important;
+  }
+  .fullViewPlane select {
+    width: 25cqw !important;
+  }
+  .fullViewPlane input, .fullViewPlane select {
+    width: 9cqw;
+    height: 6cqw;
+    font-size: 3cqw;
+  }
+  .pageHelper .p-config {
+    line-height: 9cqw;
+  }
+  #imgScaleResetBTN {
+    width: 14cqw;
   }
 }
 .p-minify:not(:hover) {
@@ -1956,13 +2011,6 @@ text-align: left;
   user-select: none;
   text-align: center;
 }
-.b-main .main-btn {
-  height: 25px;
-  background-color: #a1a1a1aa;
-}
-.main-btn:hover {
-  background-color: #7e917eaa;
-}
 .clickable:hover {
   color: #90ea90 !important;
 }
@@ -1970,7 +2018,7 @@ text-align: left;
   display: flex;
 }
 .p-img-scale .scale-btn {
-  width: 30px;
+  width: 2rem;
   text-align: center;
   user-select: none;
 }
@@ -2014,7 +2062,6 @@ text-align: left;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
-  grid-gap: 10px 0px;
 }
 .pageHelper .p-config label {
   display: flex;
@@ -2046,12 +2093,9 @@ text-align: left;
 .pageHelper .p-btn {
   color: rgb(255, 255, 255);
   cursor: pointer;
-  border: 1px solid #000000;
-  border-radius: 4px;
-  height: 24px;
   font-weight: 900;
   background: rgb(81, 81, 81);
-  width: 24px;
+  vertical-align: middle;
 }
 .fetched {
   border: 2px solid #602a5c !important;
@@ -2095,7 +2139,7 @@ text-align: left;
 }
 .downloadBar {
   background-color: rgba(100, 100, 100, 0.8);
-  height: 10px;
+  height: 0.5rem;
   width: 100%;
   position: absolute;
   bottom: 0;
@@ -2188,7 +2232,7 @@ text-align: left;
                      <span>${i18n.columns.get()}:</span>
                      <span>
                          <button id="colCountMinusBTN" class="p-btn" type="button">-</button>
-                         <input id="colCountInput" value="${conf.colCount}" disabled type="text" style="width: 25px;" />
+                         <input id="colCountInput" value="${conf.colCount}" disabled type="text" />
                          <button id="colCountAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
@@ -2200,7 +2244,7 @@ text-align: left;
                      </span>
                      <span>
                          <button id="threadsMinusBTN" class="p-btn" type="button">-</button>
-                         <input id="threadsInput" value="${conf.threads}" disabled type="text" style="width: 25px;" />
+                         <input id="threadsInput" value="${conf.threads}" disabled type="text" />
                          <button id="threadsAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
@@ -2212,7 +2256,7 @@ text-align: left;
                      </span>
                      <span>
                          <button id="downloadThreadsMinusBTN" class="p-btn" type="button">-</button>
-                         <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" style="width: 25px;" />
+                         <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" />
                          <button id="downloadThreadsAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
@@ -2222,7 +2266,7 @@ text-align: left;
                      <span>${i18n.timeout.get()}:</span>
                      <span>
                          <button id="timeoutMinusBTN" class="p-btn" type="button">-</button>
-                         <input id="timeoutInput" value="${conf.timeout}" disabled type="text" style="width: 25px;" />
+                         <input id="timeoutInput" value="${conf.timeout}" disabled type="text" />
                          <button id="timeoutAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
@@ -2232,7 +2276,7 @@ text-align: left;
                      <span>${i18n.bestQuality.get()}
                         <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
                      </span>
-                     <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" style="width: 18px;" />
+                     <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
@@ -2240,7 +2284,7 @@ text-align: left;
                      <span>${i18n.autoLoad.get()}
                         <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
                      </span>
-                     <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" style="width: 18px;" />
+                     <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" />
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
@@ -2248,7 +2292,7 @@ text-align: left;
                      <span>${i18n.reversePages.get()}
                         <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
                      </span>
-                     <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" style="width: 18px;" />
+                     <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" />
                  </label>
              </div>
              <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
@@ -2256,7 +2300,7 @@ text-align: left;
                      <span>${i18n.autoPlay.get()}
                         <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
                      </span>
-                     <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" style="width: 18px;" />
+                     <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" />
                  </label>
              </div>
              <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
@@ -2264,7 +2308,7 @@ text-align: left;
                      <span>${i18n.readMode.get()}
                         <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
                      </span>
-                     <select id="readModeSelect" style="width: 130px; border-radius: 0px;">
+                     <select id="readModeSelect">
                         <option value="singlePage" ${conf.readMode == "singlePage" ? "selected" : ""}>Single Page</option>
                         <option value="consecutively" ${conf.readMode == "consecutively" ? "selected" : ""}>Consecutively</option>
                      </select>
@@ -2275,7 +2319,7 @@ text-align: left;
                      <span>${i18n.stickyMouse.get()}
                         <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
                      </span>
-                     <select id="stickyMouseSelect" style="width: 130px; border-radius: 0px;">
+                     <select id="stickyMouseSelect">
                         <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
                         <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
                         <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
@@ -2289,7 +2333,7 @@ text-align: left;
                      </span>
                      <span>
                          <button id="autoPageIntervalMinusBTN" class="p-btn" type="button">-</button>
-                         <input id="autoPageIntervalInput" value="${conf.autoPageInterval}" disabled type="text" style="width: 50px;" />
+                         <input id="autoPageIntervalInput" value="${conf.autoPageInterval}" disabled type="text" style="width: 4rem; line-height: 1rem;" />
                          <button id="autoPageIntervalAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
@@ -2310,7 +2354,7 @@ text-align: left;
                  <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
                  <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
                  <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
-                 <div id="imgScaleResetBTN" class="scale-btn" style="width: 55px;"><span>RESET</span></div>
+                 <div id="imgScaleResetBTN" class="scale-btn"><span>RESET</span></div>
              </div>
          </div>
          <div id="downloaderPlane" class="plane p-downloader p-collapse">
@@ -2332,9 +2376,9 @@ text-align: left;
              <span class="clickable" id="p-currPage"
                  style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
          </div>
-         <div id="autoPageBTN" class="clickable" style="width: 70px; position: relative; border: 1px solid #777;">
+         <div id="autoPageBTN" class="clickable" style="padding: 0rem 1rem; position: relative; border: 1px solid #777;">
             <span>${i18n.autoPagePlay.get()}</span>
-            <div id="autoPageProgress" style="z-index: -1; height: 25px; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
+            <div id="autoPageProgress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
          </div>
          <div id="collapseBTN" class="clickable">${i18n.collapse.get()}</div>
      </div>
@@ -2388,19 +2432,46 @@ text-align: left;
       __publicField(this, "reachBottom");
       // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
       __publicField(this, "imgScaleBar");
-      __publicField(this, "reduceDebouncer");
+      __publicField(this, "debouncer");
+      __publicField(this, "throttler");
       __publicField(this, "callbackOnWheel");
       __publicField(this, "callbackOnHidden");
       __publicField(this, "callbackOnShow");
+      __publicField(this, "hammer");
       this.frame = frame;
       this.queue = queue;
       this.imgScaleBar = imgScaleBar;
-      this.reduceDebouncer = new Debouncer();
+      this.debouncer = new Debouncer();
+      this.throttler = new Debouncer("throttle");
       this.lockInit = false;
       this.resetStickyMouse();
       this.initFrame();
       this.initImgScaleBar();
       this.initImgScaleStyle();
+      this.initHammer();
+    }
+    initHammer() {
+      this.hammer = new Hammer(this.frame, { recognizers: [[Hammer.Swipe, { direction: Hammer.DIRECTION_ALL }]] });
+      this.hammer.get("swipe").set({ enable: false });
+      this.hammer.on("swipe", (ev) => {
+        console.log("swipe, direction: ", ev.direction, ev);
+        if (conf.readMode === "singlePage") {
+          switch (ev.direction) {
+            case Hammer.DIRECTION_LEFT:
+              events.stepImageEvent(conf.reversePages ? "prev" : "next");
+              break;
+            case Hammer.DIRECTION_UP:
+              events.stepImageEvent("next");
+              break;
+            case Hammer.DIRECTION_RIGHT:
+              events.stepImageEvent(conf.reversePages ? "next" : "prev");
+              break;
+            case Hammer.DIRECTION_DOWN:
+              events.stepImageEvent("prev");
+              break;
+          }
+        }
+      });
     }
     resetStickyMouse() {
       this.reachBottom = false;
@@ -2420,12 +2491,16 @@ text-align: left;
       this.init(index);
     }
     init(start) {
+      var _a, _b;
       this.removeImgNodes();
       this.currImageNode = this.createImgElement();
       this.frame.appendChild(this.currImageNode);
       this.setImgNode(this.currImageNode, start);
       if (conf.readMode === "consecutively") {
+        (_a = this.hammer) == null ? void 0 : _a.get("swipe").set({ enable: false });
         this.tryExtend();
+      } else {
+        (_b = this.hammer) == null ? void 0 : _b.get("swipe").set({ enable: true });
       }
       this.restoreScrollTop(this.currImageNode, 0, 0);
     }
@@ -2433,7 +2508,12 @@ text-align: left;
       this.frame.addEventListener("wheel", (event) => {
         var _a;
         (_a = this.callbackOnWheel) == null ? void 0 : _a.call(this, event);
-        this.onwheel(event);
+        this.onWheel(event);
+      });
+      this.frame.addEventListener("scroll", () => {
+        if (conf.readMode === "consecutively") {
+          this.consecutive();
+        }
       });
       this.frame.addEventListener("click", events.hiddenBigImageEvent);
       this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
@@ -2519,59 +2599,67 @@ text-align: left;
       var _a;
       (_a = this.callbackOnHidden) == null ? void 0 : _a.call(this);
       this.frame.classList.add("b-f-collapse");
-      window.setTimeout(() => {
+      this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
         this.frame.childNodes.forEach((child) => child.hidden = true);
         this.removeImgNodes();
-      }, 700);
+      }, 600);
     }
     show() {
       var _a;
       this.frame.classList.remove("b-f-collapse");
-      this.frame.childNodes.forEach((child) => child.hidden = false);
+      this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
+        this.frame.childNodes.forEach((child) => {
+          if (conf.readMode === "consecutively") {
+            if (child.nodeName.toLowerCase() === "a") {
+              return;
+            }
+          }
+          child.hidden = false;
+        });
+      }, 600);
       (_a = this.callbackOnShow) == null ? void 0 : _a.call(this);
     }
     getImgNodes() {
       return Array.from(this.frame.querySelectorAll("img"));
     }
-    onwheel(event) {
+    onWheel(event) {
       if (event.buttons === 2) {
         event.preventDefault();
         this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
-      } else if (conf.readMode === "consecutively") {
-        this.consecutive(event);
-      } else {
+      } else if (conf.readMode === "singlePage") {
+        event.preventDefault();
         const oriented = event.deltaY > 0 ? "next" : "prev";
         if (oriented === "next" && this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight || oriented === "prev" && this.frame.scrollTop === 0) {
-          event.preventDefault();
           events.stepImageEvent(oriented);
         }
       }
     }
-    consecutive(event) {
-      this.reduceDebouncer.addEvent("REDUCE", () => {
-        let imgNodes2 = this.getImgNodes();
-        let index2 = this.findImgNodeIndexOnCenter(imgNodes2, 0);
-        const centerNode2 = imgNodes2[index2];
-        const distance2 = this.getRealOffsetTop(centerNode2) - this.frame.scrollTop;
-        if (this.tryReduce()) {
-          this.restoreScrollTop(centerNode2, distance2, 0);
+    consecutive() {
+      this.throttler.addEvent("SCROLL", () => {
+        this.debouncer.addEvent("REDUCE", () => {
+          let imgNodes2 = this.getImgNodes();
+          let index2 = this.findImgNodeIndexOnCenter(imgNodes2, 0);
+          const centerNode2 = imgNodes2[index2];
+          const distance2 = this.getRealOffsetTop(centerNode2) - this.frame.scrollTop;
+          if (this.tryReduce()) {
+            this.restoreScrollTop(centerNode2, distance2, 0);
+          }
+        }, 200);
+        let imgNodes = this.getImgNodes();
+        let index = this.findImgNodeIndexOnCenter(imgNodes, 0);
+        const centerNode = imgNodes[index];
+        this.currImageNode = centerNode;
+        const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
+        const indexOffset = this.tryExtend();
+        if (indexOffset !== 0) {
+          this.restoreScrollTop(centerNode, distance, 0);
         }
-      }, 200);
-      const oriented = event.deltaY > 0 ? "next" : "prev";
-      let imgNodes = this.getImgNodes();
-      let index = this.findImgNodeIndexOnCenter(imgNodes, event.deltaY);
-      const centerNode = imgNodes[index];
-      this.currImageNode = centerNode;
-      const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
-      const indexOffset = this.tryExtend();
-      if (indexOffset !== 0) {
-        this.restoreScrollTop(centerNode, distance, 0);
-      }
-      const indexOfQueue = parseInt(this.currImageNode.getAttribute("d-index"));
-      if (indexOfQueue != this.queue.currIndex) {
-        this.lockInit = true;
-        this.queue.do(indexOfQueue, oriented);
-      }
+        const indexOfQueue = parseInt(this.currImageNode.getAttribute("d-index"));
+        if (indexOfQueue != this.queue.currIndex) {
+          this.lockInit = true;
+          this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
+        }
+      }, 100);
     }
     restoreScrollTop(imgNode, distance, deltaY) {
       imgNode.scrollIntoView();
@@ -2741,7 +2829,8 @@ text-align: left;
             } else {
               cssRule.style.minHeight = "";
               cssRule.style.height = "";
-              cssRule.style.width = "80vw";
+              const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+              cssRule.style.width = isMobile ? "100vw" : "80vw";
             }
             break;
           }
@@ -2861,11 +2950,11 @@ text-align: left;
         }
         const deltaY = this.frameManager.frame.offsetHeight / 2;
         if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
-          this.frameManager.onwheel(new WheelEvent("wheel", { deltaY }));
+          this.frameManager.onWheel(new WheelEvent("wheel", { deltaY }));
         } else {
           b.scrollBy({ top: deltaY, behavior: "smooth" });
           if (conf.readMode === "consecutively") {
-            this.frameManager.onwheel(new WheelEvent("wheel", { deltaY }));
+            this.frameManager.onWheel(new WheelEvent("wheel", { deltaY }));
           }
         }
       }
@@ -2948,14 +3037,14 @@ text-align: left;
     }
   }
   HTML.configPlaneBTN.addEventListener("click", () => events.togglePlaneEvent("config"));
-  HTML.configPlane.addEventListener("mouseleave", (event) => {
-    events.mouseleavePlaneEvent(event.target);
-  });
+  HTML.configPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target));
+  HTML.configPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target));
   HTML.downloaderPlaneBTN.addEventListener("click", () => {
     DL.check();
     events.togglePlaneEvent("downloader");
   });
   HTML.downloaderPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target));
+  HTML.downloaderPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target));
   for (const key of ConfigNumberKeys) {
     HTML.fullViewPlane.querySelector(`#${key}MinusBTN`).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
     HTML.fullViewPlane.querySelector(`#${key}AddBTN`).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
@@ -3000,4 +3089,4 @@ text-align: left;
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
   dragElement(HTML.pageHelper, HTML.pageHelper.querySelector("#dragHub") ?? void 0, events.modPageHelperPostion);
 
-})(JSZip, saveAs);
+})(Hammer, JSZip, saveAs);

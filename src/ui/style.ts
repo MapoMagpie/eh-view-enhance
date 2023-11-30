@@ -16,12 +16,13 @@ export function loadStyleSheel() {
   transition: height 0.4s ease 0s;
   display: grid;
   align-content: start;
-  grid-gap: 10px;
+  grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
 }
 .fullViewPlane input, .fullViewPlane select {
   color: #f1f1f1;
   background-color: #34353b !important;
+  color-scheme: dark;
   outline: none;
   border: 1px solid #000000;
   border-radius: 4px;
@@ -30,6 +31,7 @@ export function loadStyleSheel() {
   text-align: center;
   position: unset !important;
   top: unset !important;
+  vertical-align: middle;
 }
 .p-label {
   cursor: pointer;
@@ -76,7 +78,6 @@ export function loadStyleSheel() {
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  font-size: ${isMobile ? "40pt" : "11pt"};
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
@@ -85,45 +86,97 @@ export function loadStyleSheel() {
   background-color: rgba(38, 20, 25, 0.8);
   box-sizing: border-box;
   position: absolute;
-  bottom: 32px;
   color: rgb(200, 222, 200);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   overflow: hidden;
   transition: width 0.4s ease 0s, height 0.4s ease 0s;
   padding: 3px;
 }
-.pageHelper.pageHelperExtend {
-  font-size: ${isMobile ? "20pt" : "11pt"};
-}
 @media (width > ${isMobile ? "1440px" : "720px"}) {
   .pageHelper.pageHelperExtend {
-    min-width: 367px;
+    min-width: 24rem;
     transition: min-width 0.4s ease;
+    font-size: 1rem;
+    line-height: 1.2rem;
   }
   .pageHelper {
     top: ${conf.pageHelperAbTop};
     left: ${conf.pageHelperAbLeft};
     bottom: ${conf.pageHelperAbBottom};
     right: ${conf.pageHelperAbRight};
-    line-height: 26px;
+    font-size: 1rem;
+    line-height: 1.2rem;
   }
   .pageHelper .plane {
-    width: 367px;
-    height: 420px;
+    width: 24rem;
+    height: 25rem;
+    bottom: 1.3rem;
+  }
+  .pageHelper .p-btn {
+    height: 1.5rem;
+    width: 1.5rem;
+    border: 1px solid #000000;
+    border-radius: 4px;
+  }
+  .fullViewPlane input[type="checkbox"] {
+    width: 1rem;
+    height: unset !important;
+  }
+  .fullViewPlane select {
+    width: 7rem !important;
+  }
+  .fullViewPlane input, .fullViewPlane select {
+    width: 2rem;
+    height: 1.5rem;
+  }
+  .pageHelper .p-config {
+    line-height: 2rem;
+  }
+  #imgScaleResetBTN {
+    width: 4rem;
   }
 }
 @media (width < ${isMobile ? "1440px" : "720px"}) {
   .pageHelper.pageHelperExtend {
     min-width: 100vw;
     transition: min-width 0.4s ease;
+    font-size: 4.2cqw;
+    line-height: 5cqw;
   }
   .pageHelper {
     bottom: 0px;
     left: 0px;
+    font-size: 8cqw;
+    line-height: 8.1cqw;
   }
   .pageHelper .plane {
     width: 100vw;
     height: 60vh;
+    bottom: 5.7cqw;
+  }
+  .pageHelper .p-btn {
+    height: 6cqw;
+    width: 6cqw;
+    border: 0.4cqw solid #000000;
+    border-radius: 1cqw;
+  }
+  .fullViewPlane input[type="checkbox"] {
+    width: 4cqw;
+    height: unset !important;
+  }
+  .fullViewPlane select {
+    width: 25cqw !important;
+  }
+  .fullViewPlane input, .fullViewPlane select {
+    width: 9cqw;
+    height: 6cqw;
+    font-size: 3cqw;
+  }
+  .pageHelper .p-config {
+    line-height: 9cqw;
+  }
+  #imgScaleResetBTN {
+    width: 14cqw;
   }
 }
 .p-minify:not(:hover) {
@@ -144,13 +197,6 @@ export function loadStyleSheel() {
   user-select: none;
   text-align: center;
 }
-.b-main .main-btn {
-  height: 25px;
-  background-color: #a1a1a1aa;
-}
-.main-btn:hover {
-  background-color: #7e917eaa;
-}
 .clickable:hover {
   color: #90ea90 !important;
 }
@@ -158,7 +204,7 @@ export function loadStyleSheel() {
   display: flex;
 }
 .p-img-scale .scale-btn {
-  width: 30px;
+  width: 2rem;
   text-align: center;
   user-select: none;
 }
@@ -202,7 +248,6 @@ export function loadStyleSheel() {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
-  grid-gap: 10px 0px;
 }
 .pageHelper .p-config label {
   display: flex;
@@ -234,12 +279,9 @@ export function loadStyleSheel() {
 .pageHelper .p-btn {
   color: rgb(255, 255, 255);
   cursor: pointer;
-  border: 1px solid #000000;
-  border-radius: 4px;
-  height: 24px;
   font-weight: 900;
   background: rgb(81, 81, 81);
-  width: 24px;
+  vertical-align: middle;
 }
 .fetched {
   border: 2px solid #602a5c !important;
@@ -283,7 +325,7 @@ export function loadStyleSheel() {
 }
 .downloadBar {
   background-color: rgba(100, 100, 100, 0.8);
-  height: 10px;
+  height: 0.5rem;
   width: 100%;
   position: absolute;
   bottom: 0;

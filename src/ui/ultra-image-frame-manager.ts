@@ -6,6 +6,7 @@ import { Debouncer } from "../utils/debouncer";
 import { i18n } from "../utils/i18n";
 import { sleep } from "../utils/sleep";
 import { events } from "./event";
+import Hammer from "hammerjs";
 
 export class BigImageFrameManager {
   frame: HTMLElement;
@@ -16,20 +17,48 @@ export class BigImageFrameManager {
   recordedDistance!: number;
   reachBottom!: boolean; // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
   imgScaleBar: HTMLElement;
-  reduceDebouncer: Debouncer;
+  debouncer: Debouncer;
+  throttler: Debouncer;
   callbackOnWheel?: (event: WheelEvent) => void;
   callbackOnHidden?: () => void;
   callbackOnShow?: () => void;
+  hammer?: HammerManager;
   constructor(frame: HTMLElement, queue: IMGFetcherQueue, imgScaleBar: HTMLElement) {
     this.frame = frame;
     this.queue = queue;
     this.imgScaleBar = imgScaleBar;
-    this.reduceDebouncer = new Debouncer();
+    this.debouncer = new Debouncer();
+    this.throttler = new Debouncer("throttle");
     this.lockInit = false;
     this.resetStickyMouse();
     this.initFrame();
     this.initImgScaleBar();
     this.initImgScaleStyle();
+    this.initHammer();
+  }
+
+  initHammer() {
+    this.hammer = new Hammer(this.frame, { recognizers: [[Hammer.Swipe, { direction: Hammer.DIRECTION_ALL }]] });
+    this.hammer.get("swipe").set({ enable: false });
+    this.hammer.on("swipe", (ev) => {
+      console.log("swipe, direction: ", ev.direction, ev)
+      if (conf.readMode === "singlePage") {
+        switch (ev.direction) {
+          case Hammer.DIRECTION_LEFT:
+            events.stepImageEvent(conf.reversePages ? "prev" : "next");
+            break;
+          case Hammer.DIRECTION_UP:
+            events.stepImageEvent("next");
+            break;
+          case Hammer.DIRECTION_RIGHT:
+            events.stepImageEvent(conf.reversePages ? "next" : "prev");
+            break;
+          case Hammer.DIRECTION_DOWN:
+            events.stepImageEvent("prev");
+            break;
+        }
+      }
+    });
   }
 
   resetStickyMouse() {
@@ -61,7 +90,10 @@ export class BigImageFrameManager {
     this.setImgNode(this.currImageNode, start);
 
     if (conf.readMode === "consecutively") {
+      this.hammer?.get("swipe").set({ enable: false });
       this.tryExtend();
+    } else {
+      this.hammer?.get("swipe").set({ enable: true });
     }
     this.restoreScrollTop(this.currImageNode, 0, 0);
   }
@@ -69,8 +101,13 @@ export class BigImageFrameManager {
   initFrame() {
     this.frame.addEventListener("wheel", event => {
       this.callbackOnWheel?.(event);
-      this.onwheel(event);
+      this.onWheel(event);
     });
+    this.frame.addEventListener("scroll", () => {
+      if (conf.readMode === "consecutively") {
+        this.consecutive();
+      }
+    })
     this.frame.addEventListener("click", events.hiddenBigImageEvent);
     this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
     const debouncer = new Debouncer("throttle");
@@ -155,15 +192,25 @@ export class BigImageFrameManager {
   hidden() {
     this.callbackOnHidden?.();
     this.frame.classList.add("b-f-collapse");
-    window.setTimeout(() => {
+    this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
       this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
       this.removeImgNodes();
-    }, 700);
+    }, 600);
   }
 
   show() {
     this.frame.classList.remove("b-f-collapse");
-    this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = false);
+    this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
+      this.frame.childNodes.forEach(child => {
+        // if consecutively mode keep img land hidden
+        if (conf.readMode === "consecutively") {
+          if (child.nodeName.toLowerCase() === "a") {
+            return;
+          }
+        }
+        (child as HTMLElement).hidden = false;
+      });
+    }, 600);
     this.callbackOnShow?.();
   }
 
@@ -171,58 +218,57 @@ export class BigImageFrameManager {
     return Array.from(this.frame.querySelectorAll("img"));
   }
 
-  onwheel(event: WheelEvent) {
+  onWheel(event: WheelEvent) {
     if (event.buttons === 2) {
       event.preventDefault();
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
-    } else if (conf.readMode === "consecutively") {
-      this.consecutive(event);
-    } else {
+    } else if (conf.readMode === "singlePage") {
+      event.preventDefault();
       const oriented = event.deltaY > 0 ? "next" : "prev"
       if (
         (oriented === "next" && this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight) ||
         (oriented === "prev" && this.frame.scrollTop === 0)
       ) {
-        event.preventDefault();
         events.stepImageEvent(oriented);
       }
     }
+    // consecutively mode will trigger consecutive
   }
 
-  consecutive(event: WheelEvent) {
-    this.reduceDebouncer.addEvent("REDUCE", () => {
+  consecutive() {
+    this.throttler.addEvent("SCROLL", () => {
+      // delay to reduce the image element in big image frame;
+      this.debouncer.addEvent("REDUCE", () => {
+        let imgNodes = this.getImgNodes();
+        let index = this.findImgNodeIndexOnCenter(imgNodes, 0);
+        const centerNode = imgNodes[index];
+        const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
+        if (this.tryReduce()) {
+          this.restoreScrollTop(centerNode, distance, 0);
+        }
+      }, 200);
+
       let imgNodes = this.getImgNodes();
       let index = this.findImgNodeIndexOnCenter(imgNodes, 0);
       const centerNode = imgNodes[index];
+      this.currImageNode = centerNode;
+
+      // record the distance of the centerNode from the top of the screen
       const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
-      if (this.tryReduce()) {
+
+      // try extend imgNodes, if success, index will be changed
+      const indexOffset = this.tryExtend();
+      if (indexOffset !== 0) {
         this.restoreScrollTop(centerNode, distance, 0);
       }
-    }, 200);
-
-    const oriented = event.deltaY > 0 ? "next" : "prev";
-    // find the center image node
-    let imgNodes = this.getImgNodes();
-    let index = this.findImgNodeIndexOnCenter(imgNodes, event.deltaY);
-    const centerNode = imgNodes[index];
-    this.currImageNode = centerNode;
-
-    // record the distance of the centerNode from the top of the screen
-    const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
-
-    // try extend imgNodes, if success, index will be changed
-    const indexOffset = this.tryExtend();
-    if (indexOffset !== 0) {
-      this.restoreScrollTop(centerNode, distance, 0);
-    }
-
-    const indexOfQueue = parseInt(this.currImageNode.getAttribute("d-index")!);
-    // queue.do() > imgFetcher.setNow() > this.setNow() > this.init(); 
-    // in here, this.init() will be called again, set this.lockInit to prevent it
-    if (indexOfQueue != this.queue.currIndex) {
-      this.lockInit = true;
-      this.queue.do(indexOfQueue, oriented);
-    }
+      const indexOfQueue = parseInt(this.currImageNode!.getAttribute("d-index")!);
+      // queue.do() > imgFetcher.setNow() > this.setNow() > this.init(); 
+      // in here, this.init() will be called again, set this.lockInit to prevent it
+      if (indexOfQueue != this.queue.currIndex) {
+        this.lockInit = true; // set true for prevent this.init()
+        this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
+      }
+    }, 100)
   }
 
   restoreScrollTop(imgNode: HTMLImageElement, distance: number, deltaY: number) {
@@ -398,7 +444,8 @@ export class BigImageFrameManager {
           } else {
             cssRule.style.minHeight = "";
             cssRule.style.height = "";
-            cssRule.style.width = "80vw";
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+            cssRule.style.width = isMobile ? "100vw" : "80vw";
           }
           break;
         }
@@ -526,11 +573,11 @@ export class AutoPage {
       }
       const deltaY = this.frameManager.frame.offsetHeight / 2;
       if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
-        this.frameManager.onwheel(new WheelEvent("wheel", { deltaY }));
+        this.frameManager.onWheel(new WheelEvent("wheel", { deltaY }));
       } else {
         b.scrollBy({ top: deltaY, behavior: "smooth" });
         if (conf.readMode === "consecutively") {
-          this.frameManager.onwheel(new WheelEvent("wheel", { deltaY }));
+          this.frameManager.onWheel(new WheelEvent("wheel", { deltaY }));
         }
       }
     }

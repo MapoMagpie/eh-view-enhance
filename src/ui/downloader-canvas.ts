@@ -42,14 +42,14 @@ export class DownloaderCanvas {
       const index = this.computeDrawList()?.find(
         (state) => state.selected
       )?.index;
-      if (index) {
+      if (index !== undefined) {
         events.showBigImage(index);
       }
     });
     this.ctx = this.canvas.getContext("2d")!;
     this.rectSize = 12; // 矩形大小(正方形)
     this.rectGap = 6; // 矩形之间间隔
-    this.columns = 15; // 每行矩形数量
+    this.columns = 15; // 每行矩形数量 will change with parent resize
     this.padding = 7; // 画布内边距
     this.scrollTop = 0; // 滚动位置
     this.scrollSize = 10; // 每次滚动粒度
@@ -61,8 +61,9 @@ export class DownloaderCanvas {
       parent.addEventListener("transitionend", (ev) => {
         const ele = ev.target as HTMLElement;
         if (ele.clientHeight > 0) {
-          this.canvas.width = Math.floor(ele.offsetWidth * 0.9);
+          this.canvas.width = Math.floor(ele.offsetWidth - 20);
           this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
+          this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
           this.draw();
         }
       });
@@ -91,7 +92,7 @@ export class DownloaderCanvas {
     const list: DrawNode[] = [];
     const [_, h] = this.getWH();
     const startX = this.computeStartX();
-    const startY = -this.scrollTop;
+    const startY = -this.scrollTop + this.padding;
     for (let i = 0, row = -1; i < this.queue.length; i++) {
       const currCol = i % this.columns;
       if (currCol == 0) {
@@ -170,8 +171,7 @@ export class DownloaderCanvas {
 
   computeStartX(): number {
     const [w, _] = this.getWH();
-    const drawW =
-      this.rectSize * this.columns + this.rectGap * this.columns - 1;
+    const drawW = (this.rectSize + this.rectGap) * this.columns - this.rectGap;
     let startX = (w - drawW) >> 1;
     return startX;
   }

@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.5
+// @version            4.1.5fix
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -2996,31 +2996,26 @@ text-align: left;
     }
   }
   function dragElement(element, dragHub, callback) {
-    let mouseX = 0, mouseY = 0;
     (dragHub ?? element).addEventListener("mousedown", (event) => {
       event.preventDefault();
-      mouseX = event.clientX;
-      mouseY = event.clientY;
       const wh = window.innerHeight;
       const ww = window.innerWidth;
       const mouseMove = (event2) => {
         event2.preventDefault();
-        const newTop = element.offsetTop - (mouseY - event2.clientY);
-        const newLeft = element.offsetLeft - (mouseX - event2.clientX);
-        mouseX = event2.clientX;
-        mouseY = event2.clientY;
-        if (newTop <= wh / 2) {
-          element.style.top = Math.max(newTop, 500) + "px";
+        const mouseX = event2.clientX;
+        const mouseY = event2.clientY;
+        if (mouseY <= wh / 2) {
+          element.style.top = Math.max(mouseY, 500) + "px";
           element.style.bottom = "unset";
         } else {
-          element.style.bottom = Math.max(wh - newTop - element.clientHeight, 5) + "px";
+          element.style.bottom = Math.max(wh - mouseY - element.clientHeight, 5) + "px";
           element.style.top = "unset";
         }
-        if (newLeft <= ww / 2) {
-          element.style.left = Math.max(newLeft, 5) + "px";
+        if (mouseX <= ww / 2) {
+          element.style.left = Math.max(mouseX, 5) + "px";
           element.style.right = "unset";
         } else {
-          element.style.right = Math.max(ww - newLeft - element.clientWidth, 5) + "px";
+          element.style.right = Math.max(ww - mouseX - element.clientWidth, 5) + "px";
           element.style.left = "unset";
         }
         console.log("drag element: offset top: ", element.style.top, "offset left: ", element.style.left, "offset bottom: ", element.style.bottom, "offset right: ", element.style.right);

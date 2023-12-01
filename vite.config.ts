@@ -21,7 +21,7 @@ export default defineConfig({
           'https://hitomi.la/*',
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.1.3',
+        version: '4.1.4',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {

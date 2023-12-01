@@ -38,10 +38,14 @@ export class BigImageFrameManager {
   }
 
   initHammer() {
-    this.hammer = new Hammer(this.frame, { recognizers: [[Hammer.Swipe, { direction: Hammer.DIRECTION_ALL }]] });
-    this.hammer.get("swipe").set({ enable: false });
+    this.hammer = new Hammer(this.frame, {
+      // touchAction: "auto",
+      recognizers: [
+        [Hammer.Swipe, { direction: Hammer.DIRECTION_ALL, enable: false }],
+      ]
+    });
     this.hammer.on("swipe", (ev) => {
-      console.log("swipe, direction: ", ev.direction, ev)
+      ev.preventDefault();
       if (conf.readMode === "singlePage") {
         switch (ev.direction) {
           case Hammer.DIRECTION_LEFT:

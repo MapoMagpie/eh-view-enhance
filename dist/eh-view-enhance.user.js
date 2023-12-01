@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.3
+// @version            4.1.4
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -2451,10 +2451,14 @@ text-align: left;
       this.initHammer();
     }
     initHammer() {
-      this.hammer = new Hammer(this.frame, { recognizers: [[Hammer.Swipe, { direction: Hammer.DIRECTION_ALL }]] });
-      this.hammer.get("swipe").set({ enable: false });
+      this.hammer = new Hammer(this.frame, {
+        // touchAction: "auto",
+        recognizers: [
+          [Hammer.Swipe, { direction: Hammer.DIRECTION_ALL, enable: false }]
+        ]
+      });
       this.hammer.on("swipe", (ev) => {
-        console.log("swipe, direction: ", ev.direction, ev);
+        ev.preventDefault();
         if (conf.readMode === "singlePage") {
           switch (ev.direction) {
             case Hammer.DIRECTION_LEFT:
@@ -2983,24 +2987,25 @@ text-align: left;
         mouseX = event2.clientX;
         mouseY = event2.clientY;
         if (newTop <= wh / 2) {
-          element.style.top = newTop + "px";
+          element.style.top = Math.max(newTop, 500) + "px";
           element.style.bottom = "unset";
         } else {
-          element.style.bottom = wh - newTop - element.clientHeight + "px";
+          element.style.bottom = Math.max(wh - newTop - element.clientHeight, 5) + "px";
           element.style.top = "unset";
         }
         if (newLeft <= ww / 2) {
-          element.style.left = newLeft + "px";
+          element.style.left = Math.max(newLeft, 5) + "px";
           element.style.right = "unset";
         } else {
-          element.style.right = ww - newLeft - element.clientWidth + "px";
+          element.style.right = Math.max(ww - newLeft - element.clientWidth, 5) + "px";
           element.style.left = "unset";
         }
+        console.log("drag element: offset top: ", element.style.top, "offset left: ", element.style.left, "offset bottom: ", element.style.bottom, "offset right: ", element.style.right);
       };
       document.addEventListener("mousemove", mouseMove);
       document.addEventListener("mouseup", () => {
         document.removeEventListener("mousemove", mouseMove);
-        callback && callback(element.offsetTop, element.offsetLeft);
+        callback == null ? void 0 : callback(element.offsetTop, element.offsetLeft);
       }, { once: true });
     });
   }

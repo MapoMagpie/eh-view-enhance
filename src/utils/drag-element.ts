@@ -13,24 +13,25 @@ export function dragElement(element: HTMLElement, dragHub?: HTMLElement, callbac
       mouseX = event.clientX;
       mouseY = event.clientY;
       if (newTop <= wh / 2) {
-        element.style.top = newTop + "px";
+        element.style.top = Math.max(newTop, 500) + "px";
         element.style.bottom = "unset";
       } else {
-        element.style.bottom = (wh - newTop - element.clientHeight) + "px";
+        element.style.bottom = Math.max(wh - newTop - element.clientHeight, 5) + "px";
         element.style.top = "unset";
       }
       if (newLeft <= ww / 2) {
-        element.style.left = newLeft + "px";
+        element.style.left = Math.max(newLeft, 5) + "px";
         element.style.right = "unset";
       } else {
-        element.style.right = (ww - newLeft - element.clientWidth) + "px";
+        element.style.right = Math.max(ww - newLeft - element.clientWidth, 5) + "px";
         element.style.left = "unset";
       }
+      console.log("drag element: offset top: ", element.style.top, "offset left: ", element.style.left, "offset bottom: ", element.style.bottom, "offset right: ", element.style.right);
     }
     document.addEventListener("mousemove", mouseMove);
     document.addEventListener("mouseup", () => {
       document.removeEventListener("mousemove", mouseMove);
-      callback && callback(element.offsetTop, element.offsetLeft);
+      callback?.(element.offsetTop, element.offsetLeft);
     }, { once: true });
   });
 

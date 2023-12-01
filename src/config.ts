@@ -80,12 +80,37 @@ function getConf(): Config {
   if (cfgStr) {
     let cfg: Config = JSON.parse(cfgStr);
     if (cfg.version === VERSION) {
-      return cfg;
+      return confHealthCheck(cfg);
     }
   }
   let cfg = defaultConf();
   saveConf(cfg);
   return cfg;
+}
+
+function confHealthCheck($conf: Config): Config {
+  let changed = false;
+  // check postions
+  if ($conf.pageHelperAbTop !== "unset") {
+    $conf.pageHelperAbTop = Math.max(parseInt($conf.pageHelperAbTop), 500) + "px";
+    changed = true;
+  }
+  if ($conf.pageHelperAbBottom !== "unset") {
+    $conf.pageHelperAbBottom = Math.max(parseInt($conf.pageHelperAbBottom), 5) + "px";
+    changed = true;
+  }
+  if ($conf.pageHelperAbLeft !== "unset") {
+    $conf.pageHelperAbLeft = Math.max(parseInt($conf.pageHelperAbLeft), 5) + "px";
+    changed = true;
+  }
+  if ($conf.pageHelperAbRight !== "unset") {
+    $conf.pageHelperAbRight = Math.max(parseInt($conf.pageHelperAbRight), 5) + "px";
+    changed = true;
+  }
+  if (changed) {
+    saveConf($conf);
+  }
+  return $conf;
 }
 
 export function saveConf(c: Config) {

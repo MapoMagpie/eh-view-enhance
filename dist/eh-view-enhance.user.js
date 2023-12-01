@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.4
+// @version            4.1.5
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -75,12 +75,35 @@
     if (cfgStr) {
       let cfg2 = JSON.parse(cfgStr);
       if (cfg2.version === VERSION) {
-        return cfg2;
+        return confHealthCheck(cfg2);
       }
     }
     let cfg = defaultConf();
     saveConf(cfg);
     return cfg;
+  }
+  function confHealthCheck($conf) {
+    let changed = false;
+    if ($conf.pageHelperAbTop !== "unset") {
+      $conf.pageHelperAbTop = Math.max(parseInt($conf.pageHelperAbTop), 500) + "px";
+      changed = true;
+    }
+    if ($conf.pageHelperAbBottom !== "unset") {
+      $conf.pageHelperAbBottom = Math.max(parseInt($conf.pageHelperAbBottom), 5) + "px";
+      changed = true;
+    }
+    if ($conf.pageHelperAbLeft !== "unset") {
+      $conf.pageHelperAbLeft = Math.max(parseInt($conf.pageHelperAbLeft), 5) + "px";
+      changed = true;
+    }
+    if ($conf.pageHelperAbRight !== "unset") {
+      $conf.pageHelperAbRight = Math.max(parseInt($conf.pageHelperAbRight), 5) + "px";
+      changed = true;
+    }
+    if (changed) {
+      saveConf($conf);
+    }
+    return $conf;
   }
   function saveConf(c) {
     _GM_setValue(CONFIG_KEY, JSON.stringify(c));

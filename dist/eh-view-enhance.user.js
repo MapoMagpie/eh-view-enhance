@@ -1967,6 +1967,9 @@ text-align: left;
     border: 1px solid #000000;
     border-radius: 4px;
   }
+  .pageHelperExtend .b-main {
+    max-width: 24rem !important;
+  }
   .fullViewPlane input[type="checkbox"] {
     width: 1rem;
     height: unset !important;
@@ -2008,6 +2011,9 @@ text-align: left;
     width: 6cqw;
     border: 0.4cqw solid #000000;
     border-radius: 1cqw;
+  }
+  .pageHelperExtend .b-main {
+    max-width: 100vw !important;
   }
   .fullViewPlane input[type="checkbox"] {
     width: 4cqw;
@@ -2082,16 +2088,16 @@ text-align: left;
   padding: 0px !important;
 }
 .pageHelper .b-main {
-  width: 0px;
+  max-width: 0px;
   overflow: hidden !important;
   display: flex;
   justify-content: space-between;
   white-space: nowrap !important;
-  transition: flex-grow 0.6s ease;
+  transition: flex-grow 0.6s ease, max-width 0.5s ease;
 }
 .pageHelperExtend .b-main {
   flex-grow: 1;
-  transition: flex-grow 0.6s ease;
+  transition: flex-grow 0.6s ease, max-width 0.5s ease;
 }
 .pageHelper .p-config {
   display: grid;

@@ -56,7 +56,9 @@ export class NHMatcher implements Matcher {
       throw new Error("warn: failed query image nodes!")
     }
 
+    let i = 0;
     for (const node of Array.from(nodes)) {
+      i++;
       const imgNode = node.querySelector("img");
       if (!imgNode) {
         throw new Error("Cannot find Image");
@@ -65,7 +67,7 @@ export class NHMatcher implements Matcher {
       const newImg = newImgNode.firstElementChild as HTMLImageElement;
       newImg.setAttribute("ahref", location.origin + node.getAttribute("href")!);
       newImg.setAttribute("asrc", imgNode.getAttribute("data-src")!);
-      newImg.setAttribute("title", imgNode.getAttribute("title") || "");
+      newImg.setAttribute("title", imgNode.getAttribute("title") || `${i}.jpg`);
       list.push(newImgNode);
     }
     return list;

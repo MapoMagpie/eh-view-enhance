@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.5fix
+// @version            4.1.7
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -203,7 +203,7 @@
       this.tryTimes = 0;
       this.lock = false;
       this.rendered = false;
-      this.title = this.imgElement.getAttribute("title") || void 0;
+      this.title = this.imgElement.getAttribute("title") || "untitle.jpg";
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
       this.onFinishedEventContext = /* @__PURE__ */ new Map();
       this.matcher = matcher2;
@@ -510,6 +510,7 @@
       this.tags = {};
     }
   }
+  const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
   class Downloader {
     constructor(queue, idleLoader, matcher2) {
       __publicField(this, "meta");
@@ -533,22 +534,29 @@
       (_b = this.downloadStartElement) == null ? void 0 : _b.addEventListener("click", () => this.start());
     }
     addToDownloadZip(imgFetcher) {
-      var _a, _b;
-      let title = imgFetcher.title;
-      if (title) {
-        title = title.replace(/Page\s\d+[:_]\s*/, "");
-      } else {
-        title = (_b = (_a = imgFetcher.root.firstElementChild) == null ? void 0 : _a.getAttribute("asrc")) == null ? void 0 : _b.split("/").pop();
-      }
-      if (!title) {
-        evLog("无法解析图片文件名，因此该图片无法下载");
-        return;
-      }
       if (!imgFetcher.blobData) {
         evLog("无法获取图片数据，因此该图片无法下载");
         return;
       }
-      this.zip.file(title, imgFetcher.blobData, { binary: true });
+      this.zip.file(this.checkTitle(imgFetcher.title), imgFetcher.blobData, { binary: true });
+    }
+    checkTitle(title1) {
+      var _a;
+      let newTitle = title1.replace(FILENAME_INVALIDCHAR, "_");
+      if (this.zip.files[newTitle]) {
+        let splits = newTitle.split(".");
+        const ext = splits.pop();
+        const prefix = splits.join(".");
+        const num = parseInt(((_a = prefix.match(/_(\d+)$/)) == null ? void 0 : _a[1]) || "");
+        if (isNaN(num)) {
+          newTitle = `${prefix}_1.${ext}`;
+        } else {
+          newTitle = `${prefix.replace(/\d+$/, (num + 1).toString())}.${ext}`;
+        }
+        return this.checkTitle(newTitle);
+      } else {
+        return newTitle;
+      }
     }
     // check > start > download
     check() {
@@ -1155,6 +1163,7 @@ text-align: left;
       imgNodeTemplate.classList.add("img-node");
       const imgTemplate = document.createElement("img");
       imgTemplate.setAttribute("decoding", "async");
+      imgTemplate.setAttribute("title", "untitle.jpg");
       imgTemplate.style.height = "auto";
       imgTemplate.setAttribute(
         "src",
@@ -1253,7 +1262,7 @@ text-align: left;
             if (ele.textContent)
               list.push(ele.textContent);
           });
-          tags[cat] = list;
+          tags[cat.replace(":", "")] = list;
         }
       });
       meta.tags = tags;
@@ -1263,6 +1272,7 @@ text-align: left;
       return await this.fetchImgURL(url, retry);
     }
     async parseImgNodes(page, template) {
+      var _a;
       const list = [];
       let doc = await (async () => {
         if (page.raw instanceof Document) {
@@ -1293,7 +1303,7 @@ text-align: left;
           i++;
           const newImgNode = template.cloneNode(true);
           const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("title", match[1]);
+          newImg.setAttribute("title", match[1].replace(/Page\s\d+[:_]\s*/, ""));
           newImg.setAttribute(
             "ahref",
             `${location.origin}/s/${match[2]}/${gid}-${i}`
@@ -1311,7 +1321,7 @@ text-align: left;
           const newImg = newImgNode.firstElementChild;
           newImg.setAttribute("ahref", node.getAttribute("href"));
           newImg.setAttribute("asrc", imgNode.src);
-          newImg.setAttribute("title", imgNode.getAttribute("title") || "");
+          newImg.setAttribute("title", ((_a = imgNode.getAttribute("title")) == null ? void 0 : _a.replace(/Page\s\d+[:_]\s*/, "")) || "untitle.jpg");
           list.push(newImgNode);
         }
       }
@@ -1546,7 +1556,9 @@ text-align: left;
       if (!nodes || nodes.length == 0) {
         throw new Error("warn: failed query image nodes!");
       }
+      let i = 0;
       for (const node of Array.from(nodes)) {
+        i++;
         const imgNode = node.querySelector("img");
         if (!imgNode) {
           throw new Error("Cannot find Image");
@@ -1555,7 +1567,7 @@ text-align: left;
         const newImg = newImgNode.firstElementChild;
         newImg.setAttribute("ahref", location.origin + node.getAttribute("href"));
         newImg.setAttribute("asrc", imgNode.getAttribute("data-src"));
-        newImg.setAttribute("title", imgNode.getAttribute("title") || "");
+        newImg.setAttribute("title", imgNode.getAttribute("title") || `${i}.jpg`);
         list.push(newImgNode);
       }
       return list;
@@ -2838,7 +2850,7 @@ text-align: left;
       } else {
         conf.imgScale = percent;
       }
-      window.localStorage.setItem("cfg_", JSON.stringify(conf));
+      saveConf(conf);
       this.flushImgScaleBar();
       return percent;
     }

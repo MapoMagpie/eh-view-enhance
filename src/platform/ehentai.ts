@@ -41,7 +41,7 @@ export class EHMatcher implements Matcher {
         tds[1].childNodes.forEach((ele) => {
           if (ele.textContent) list.push(ele.textContent);
         });
-        tags[cat] = list;
+        tags[cat.replace(":", "")] = list;
       }
     });
     meta.tags = tags;
@@ -86,7 +86,7 @@ export class EHMatcher implements Matcher {
         i++;
         const newImgNode = template.cloneNode(true) as HTMLDivElement;
         const newImg = newImgNode.firstElementChild as HTMLImageElement;
-        newImg.setAttribute("title", match[1]);
+        newImg.setAttribute("title", match[1].replace(/Page\s\d+[:_]\s*/, ""));
         newImg.setAttribute(
           "ahref",
           `${location.origin}/s/${match[2]}/${gid}-${i}`
@@ -104,7 +104,7 @@ export class EHMatcher implements Matcher {
         const newImg = newImgNode.firstElementChild as HTMLImageElement;
         newImg.setAttribute("ahref", node.getAttribute("href")!);
         newImg.setAttribute("asrc", imgNode.src);
-        newImg.setAttribute("title", imgNode.getAttribute("title") || "");
+        newImg.setAttribute("title", imgNode.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg");
         list.push(newImgNode);
       }
     }

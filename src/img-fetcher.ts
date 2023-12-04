@@ -36,7 +36,7 @@ export class IMGFetcher {
   rendered: boolean;
   blobData?: Blob;
   blobUrl?: string;
-  title?: string;
+  title: string;
   downloadState: DownloadState;
   onFinishedEventContext: Map<string, OnFinishedEvent>;
   // TODO: onFailedEventContext
@@ -53,7 +53,7 @@ export class IMGFetcher {
     this.lock = false;
     this.rendered = false;
     // this.blobData = undefined;
-    this.title = this.imgElement.getAttribute("title") || undefined;
+    this.title = this.imgElement.getAttribute("title") || "untitle.jpg";
     this.downloadState = { total: 100, loaded: 0, readyState: 0, };
     /**
      * 当获取完成时的回调函数，从其他地方进行事件注册

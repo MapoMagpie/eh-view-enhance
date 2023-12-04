@@ -19,7 +19,7 @@ export class GalleryMeta {
     this.tags = {};
   }
 }
-
+const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
 export class Downloader {
   meta: () => GalleryMeta;
   zip: JSZip;
@@ -43,23 +43,31 @@ export class Downloader {
   }
 
   addToDownloadZip(imgFetcher: IMGFetcher) {
-    let title = imgFetcher.title;
-    if (title) {
-      title = title.replace(/Page\s\d+[:_]\s*/, "");
-    } else {
-      title = imgFetcher.root.firstElementChild?.getAttribute("asrc")?.split("/").pop();
-    }
-    if (!title) {
-      evLog("无法解析图片文件名，因此该图片无法下载");
-      return;
-    }
     if (!imgFetcher.blobData) {
       evLog("无法获取图片数据，因此该图片无法下载");
       return;
     }
-    this.zip.file(title, imgFetcher.blobData, { binary: true });
+    this.zip.file(this.checkTitle(imgFetcher.title), imgFetcher.blobData, { binary: true });
   }
 
+  checkTitle(title1: string): string {
+    let newTitle = title1.replace(FILENAME_INVALIDCHAR, "_");
+    // check title is unique
+    if (this.zip.files[newTitle]) {
+      let splits = newTitle.split(".");
+      const ext = splits.pop();
+      const prefix = splits.join(".");
+      const num = parseInt(prefix.match(/_(\d+)$/)?.[1] || "");
+      if (isNaN(num)) {
+        newTitle = `${prefix}_1.${ext}`;
+      } else {
+        newTitle = `${prefix.replace(/\d+$/, (num + 1).toString())}.${ext}`;
+      }
+      return this.checkTitle(newTitle);
+    } else {
+      return newTitle;
+    }
+  }
   // check > start > download
   check() {
     if (conf.fetchOriginal) return;

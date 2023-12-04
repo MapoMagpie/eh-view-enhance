@@ -430,7 +430,7 @@ export class BigImageFrameManager {
     } else {
       conf.imgScale = percent;
     }
-    window.localStorage.setItem("cfg_", JSON.stringify(conf));
+    saveConf(conf);
     this.flushImgScaleBar();
     return percent;
   }

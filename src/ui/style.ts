@@ -92,7 +92,7 @@ export function loadStyleSheel() {
   transition: width 0.4s ease 0s, height 0.4s ease 0s;
   padding: 3px;
 }
-@media (width > ${isMobile ? "1440px" : "720px"}) {
+@media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .pageHelper.pageHelperExtend {
     min-width: 24rem;
     transition: min-width 0.4s ease;
@@ -139,7 +139,7 @@ export function loadStyleSheel() {
     width: 4rem;
   }
 }
-@media (width < ${isMobile ? "1440px" : "720px"}) {
+@media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .pageHelper.pageHelperExtend {
     min-width: 100vw;
     transition: min-width 0.4s ease;

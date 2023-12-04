@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.7
+// @version            4.1.8
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -1941,7 +1941,7 @@ text-align: left;
   transition: width 0.4s ease 0s, height 0.4s ease 0s;
   padding: 3px;
 }
-@media (width > ${isMobile ? "1440px" : "720px"}) {
+@media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .pageHelper.pageHelperExtend {
     min-width: 24rem;
     transition: min-width 0.4s ease;
@@ -1988,7 +1988,7 @@ text-align: left;
     width: 4rem;
   }
 }
-@media (width < ${isMobile ? "1440px" : "720px"}) {
+@media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .pageHelper.pageHelperExtend {
     min-width: 100vw;
     transition: min-width 0.4s ease;

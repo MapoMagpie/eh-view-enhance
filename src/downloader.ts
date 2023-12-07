@@ -52,7 +52,7 @@ export class Downloader {
 
   checkTitle(index: number, $title: string): string {
     let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");
-    newTitle = conf.filenameTemplate.replace("{index}", index.toString()).replace("{title}", newTitle);
+    newTitle = conf.filenameTemplate.replace("{number}", index.toString()).replace("{title}", newTitle);
     // check title is unique
     if (this.zip.files[newTitle]) {
       let splits = newTitle.split(".");

@@ -229,14 +229,21 @@ export class BigImageFrameManager {
     } else if (conf.readMode === "singlePage") {
       event.preventDefault();
       const oriented = event.deltaY > 0 ? "next" : "prev"
-      if (
-        (oriented === "next" && this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight) ||
-        (oriented === "prev" && this.frame.scrollTop === 0)
-      ) {
+      if (this.isReachBoundary(oriented)) {
         events.stepImageEvent(oriented);
       }
     }
     // consecutively mode will trigger consecutive
+  }
+
+  isReachBoundary(oriented: Oriented): boolean {
+    if (oriented === "next") {
+      return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight
+    }
+    if (oriented === "prev") {
+      return this.frame.scrollTop === 0
+    }
+    return false;
   }
 
   consecutive() {

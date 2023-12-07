@@ -132,6 +132,7 @@ function bigImageWheelEvent(event: WheelEvent) {
 
 //按键事件
 let numberRecord: number[] | null = null;
+let scrollLock = false;
 function keyboardEvent(event: KeyboardEvent) {
   if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) { // in big image mode
     const b = HTML.bigImageFrame;
@@ -149,40 +150,36 @@ function keyboardEvent(event: KeyboardEvent) {
         event.preventDefault();
         hiddenBigImageEvent();
         break;
+      case "Home":
+        IFQ.do(0, "next");
+        break;
+      case "End":
+        IFQ.do(IFQ.length - 1, "prev");
+        break;
       case " ":
       case "ArrowUp":
-      case "ArrowDown": {
+      case "ArrowDown":
+      case "PageUp":
+      case "PageDown":
         event.preventDefault();
+        let oriented: Oriented = "next";
+        if (event.key === "ArrowUp" || event.key === "PageUp") {
+          oriented = "prev"
+        } else if (event.key === "ArrowDown" || event.key === "PageDown" || event.key === " ") {
+          oriented = "next"
+        }
+        if (event.shiftKey) {
+          oriented = oriented === "next" ? "prev" : "next";
+        }
+        if (scrollLock && !BIFM.isReachBoundary(oriented)) return;
         let deltaY = HTML.fullViewPlane.clientHeight / (event.key === " " ? 1 : 2);
-        if (event.key === "ArrowUp" || event.shiftKey) {
-          deltaY = -deltaY;
-        }
-        const stepImage = () => {
-          if (conf.readMode !== "singlePage") {
-            return false;
-          }
-          if (event.key === "ArrowUp" || (event.key === " " && event.shiftKey)) {
-            if (b.scrollTop <= 0) {
-              return true;
-            }
-          }
-          if (event.key === "ArrowDown" || (event.key === " " && !event.shiftKey)) {
-            if (b.scrollTop >= b.scrollHeight - b.offsetHeight) {
-              return true;
-            }
-          }
-          return false;
-        }
-        if (stepImage()) {
-          b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
-        } else {
-          b.scrollBy({ top: deltaY, behavior: "smooth" });
-          if (conf.readMode === "consecutively") {
-            b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
-          }
-        }
+        deltaY = oriented === "prev" ? -deltaY : deltaY;
+
+        b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+        scrollLock = true;
+        b.addEventListener("scrollend", () => scrollLock = false, { once: true });
+        b.scrollBy({ top: deltaY, behavior: "smooth" });
         break;
-      }
       case "-":
         BIFM.scaleBigImages(-1, 5);
         break;

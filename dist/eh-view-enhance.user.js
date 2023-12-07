@@ -45,7 +45,7 @@
     const screenWidth = window.screen.width;
     const colCount = screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : 5;
     return {
-      backgroundImage: `data:image/png;base64,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`,
+      backgroundImage: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAfElEQVR42mP8z/CfCgIwDEgwAIAL0Fq3MDD5iQcn0/BgDpDAn0/AvywA4kUEZ7gUkXBoAM5gUQUaJ6eClOyBjALcAAAAASUVORK5CYII=`,
       colCount,
       readMode: "singlePage",
       autoLoad: true,
@@ -54,7 +54,7 @@
       threads: 3,
       downloadThreads: 3,
       timeout: 40,
-      version: "4.1.0",
+      version: "4.1.9",
       debug: true,
       first: true,
       reversePages: false,
@@ -65,10 +65,11 @@
       imgScale: 0,
       stickyMouse: "enable",
       autoPageInterval: 1e4,
-      autoPlay: false
+      autoPlay: false,
+      filenameTemplate: "{number}-{title}"
     };
   }
-  const VERSION = "4.1.0";
+  const VERSION = "4.1.9";
   const CONFIG_KEY = "ehvh_cfg_";
   function getConf() {
     let cfgStr = _GM_getValue(CONFIG_KEY);
@@ -533,16 +534,17 @@
       (_a = this.downloadForceElement) == null ? void 0 : _a.addEventListener("click", () => this.download());
       (_b = this.downloadStartElement) == null ? void 0 : _b.addEventListener("click", () => this.start());
     }
-    addToDownloadZip(imgFetcher) {
+    addToDownloadZip(index, imgFetcher) {
       if (!imgFetcher.blobData) {
         evLog("无法获取图片数据，因此该图片无法下载");
         return;
       }
-      this.zip.file(this.checkTitle(imgFetcher.title), imgFetcher.blobData, { binary: true });
+      this.zip.file(this.checkTitle(index, imgFetcher.title), imgFetcher.blobData, { binary: true });
     }
-    checkTitle(title1) {
+    checkTitle(index, $title) {
       var _a;
-      let newTitle = title1.replace(FILENAME_INVALIDCHAR, "_");
+      let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");
+      newTitle = conf.filenameTemplate.replace("{number}", index.toString()).replace("{title}", newTitle);
       if (this.zip.files[newTitle]) {
         let splits = newTitle.split(".");
         const ext = splits.pop();
@@ -553,7 +555,7 @@
         } else {
           newTitle = `${prefix.replace(/\d+$/, (num + 1).toString())}.${ext}`;
         }
-        return this.checkTitle(newTitle);
+        return this.checkTitle(index, newTitle);
       } else {
         return newTitle;
       }
@@ -674,7 +676,7 @@
         return;
       if (DL) {
         if (this.finishedIndex.indexOf(index) < 0) {
-          DL.addToDownloadZip(imgFetcher);
+          DL.addToDownloadZip(index, imgFetcher);
         }
       }
       this.pushFinishedIndex(index);
@@ -934,6 +936,7 @@
     stepImageEvent(event.deltaY > 0 ? "next" : "prev");
   }
   let numberRecord = null;
+  let scrollLock = false;
   function keyboardEvent(event) {
     if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) {
       const b = HTML.bigImageFrame;
@@ -951,40 +954,36 @@
           event.preventDefault();
           hiddenBigImageEvent();
           break;
+        case "Home":
+          IFQ.do(0, "next");
+          break;
+        case "End":
+          IFQ.do(IFQ.length - 1, "prev");
+          break;
         case " ":
         case "ArrowUp":
-        case "ArrowDown": {
+        case "ArrowDown":
+        case "PageUp":
+        case "PageDown":
           event.preventDefault();
+          let oriented = "next";
+          if (event.key === "ArrowUp" || event.key === "PageUp") {
+            oriented = "prev";
+          } else if (event.key === "ArrowDown" || event.key === "PageDown" || event.key === " ") {
+            oriented = "next";
+          }
+          if (event.shiftKey) {
+            oriented = oriented === "next" ? "prev" : "next";
+          }
+          if (scrollLock && !BIFM.isReachBoundary(oriented))
+            return;
           let deltaY = HTML.fullViewPlane.clientHeight / (event.key === " " ? 1 : 2);
-          if (event.key === "ArrowUp" || event.shiftKey) {
-            deltaY = -deltaY;
-          }
-          const stepImage = () => {
-            if (conf.readMode !== "singlePage") {
-              return false;
-            }
-            if (event.key === "ArrowUp" || event.key === " " && event.shiftKey) {
-              if (b.scrollTop <= 0) {
-                return true;
-              }
-            }
-            if (event.key === "ArrowDown" || event.key === " " && !event.shiftKey) {
-              if (b.scrollTop >= b.scrollHeight - b.offsetHeight) {
-                return true;
-              }
-            }
-            return false;
-          };
-          if (stepImage()) {
-            b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
-          } else {
-            b.scrollBy({ top: deltaY, behavior: "smooth" });
-            if (conf.readMode === "consecutively") {
-              b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
-            }
-          }
+          deltaY = oriented === "prev" ? -deltaY : deltaY;
+          b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
+          scrollLock = true;
+          b.addEventListener("scrollend", () => scrollLock = false, { once: true });
+          b.scrollBy({ top: deltaY, behavior: "smooth" });
           break;
-        }
         case "-":
           BIFM.scaleBigImages(-1, 5);
           break;
@@ -2674,10 +2673,19 @@ text-align: left;
       } else if (conf.readMode === "singlePage") {
         event.preventDefault();
         const oriented = event.deltaY > 0 ? "next" : "prev";
-        if (oriented === "next" && this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight || oriented === "prev" && this.frame.scrollTop === 0) {
+        if (this.isReachBoundary(oriented)) {
           events.stepImageEvent(oriented);
         }
       }
+    }
+    isReachBoundary(oriented) {
+      if (oriented === "next") {
+        return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight;
+      }
+      if (oriented === "prev") {
+        return this.frame.scrollTop === 0;
+      }
+      return false;
     }
     consecutive() {
       this.throttler.addEvent("SCROLL", () => {

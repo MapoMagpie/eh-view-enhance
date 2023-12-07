@@ -68,7 +68,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     if (imgFetcher.stage !== FetchState.DONE) return;
     if (DL) {
       if (this.finishedIndex.indexOf(index) < 0) {
-        DL.addToDownloadZip(imgFetcher);
+        DL.addToDownloadZip(index, imgFetcher);
       }
     }
     this.pushFinishedIndex(index);

@@ -42,16 +42,17 @@ export class Downloader {
     this.downloadStartElement?.addEventListener("click", () => this.start());
   }
 
-  addToDownloadZip(imgFetcher: IMGFetcher) {
+  addToDownloadZip(index: number, imgFetcher: IMGFetcher) {
     if (!imgFetcher.blobData) {
       evLog("无法获取图片数据，因此该图片无法下载");
       return;
     }
-    this.zip.file(this.checkTitle(imgFetcher.title), imgFetcher.blobData, { binary: true });
+    this.zip.file(this.checkTitle(index, imgFetcher.title), imgFetcher.blobData, { binary: true });
   }
 
-  checkTitle(title1: string): string {
-    let newTitle = title1.replace(FILENAME_INVALIDCHAR, "_");
+  checkTitle(index: number, $title: string): string {
+    let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");
+    newTitle = conf.filenameTemplate.replace("{index}", index.toString()).replace("{title}", newTitle);
     // check title is unique
     if (this.zip.files[newTitle]) {
       let splits = newTitle.split(".");
@@ -63,7 +64,7 @@ export class Downloader {
       } else {
         newTitle = `${prefix.replace(/\d+$/, (num + 1).toString())}.${ext}`;
       }
-      return this.checkTitle(newTitle);
+      return this.checkTitle(index, newTitle);
     } else {
       return newTitle;
     }

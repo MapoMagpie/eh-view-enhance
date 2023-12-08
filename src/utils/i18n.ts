@@ -16,6 +16,8 @@ export const i18n = {
   autoPagePause: new I18nValue("PAUSE", "暂停"),
   autoPlay: new I18nValue("Auto Page", "自动翻页"),
   autoPlayTooltip: new I18nValue("Auto Page when entering the big image readmode.", "当阅读大图时，开启自动播放模式。"),
+  preventScrollPageTime: new I18nValue("Flip Page Time", "滚动翻页时间"),
+  preventScrollPageTimeTooltip: new I18nValue("In Read Mode:Single Page, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "在单页阅读模式下，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
   collapse: new I18nValue("FOLD", "收起"),
   columns: new I18nValue("Columns", "每行数量"),
   readMode: new I18nValue("Read Mode", "阅读模式"),

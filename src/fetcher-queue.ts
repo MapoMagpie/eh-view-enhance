@@ -118,9 +118,9 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     return ((oriented === "next" && index < this.length) || (oriented === "prev" && index > -1)) && count < conf.threads;
   }
 
-  findImgIndex(imgElement: HTMLElement): number {
+  findImgIndex(ele: HTMLElement): number {
     for (let index = 0; index < this.length; index++) {
-      if (this[index] instanceof IMGFetcher && this[index].imgElement === imgElement) {
+      if (this[index] instanceof IMGFetcher && (this[index].imgElement === ele || this[index].root === ele)) {
         return index;
       }
     }

@@ -5,12 +5,13 @@ import { loadStyleSheel } from "./style";
 
 export function createHTML() {
   const fullViewPlane = document.createElement("div");
+  fullViewPlane.setAttribute("tabindex", "0");
   fullViewPlane.classList.add("fullViewPlane");
   fullViewPlane.classList.add("collapse_full_view");
   document.body.after(fullViewPlane);
 
   const HTML_STRINGS = `
- <div id="bigImageFrame" class="bigImageFrame b-f-collapse">
+ <div id="bigImageFrame" class="bigImageFrame b-f-collapse" tabindex="0">
     <a id="imgLandLeft" hidden="true" class="imgLandLeft"></a>
     <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
     <a id="imgLandTop" hidden="true" class="imgLandTop"></a>
@@ -127,6 +128,18 @@ export function createHTML() {
                          <button id="autoPageIntervalMinusBTN" class="p-btn" type="button">-</button>
                          <input id="autoPageIntervalInput" value="${conf.autoPageInterval}" disabled type="text" style="width: 4rem; line-height: 1rem;" />
                          <button id="autoPageIntervalAddBTN" class="p-btn" type="button">+</button>
+                     </span>
+                 </label>
+             </div>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
+                     <span>${i18n.preventScrollPageTime.get()}
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.preventScrollPageTimeTooltip.get()}</span></span>:
+                     </span>
+                     <span>
+                         <button id="preventScrollPageTimeMinusBTN" class="p-btn" type="button">-</button>
+                         <input id="preventScrollPageTimeInput" value="${conf.preventScrollPageTime}" disabled type="text" style="width: 4rem; line-height: 1rem;" />
+                         <button id="preventScrollPageTimeAddBTN" class="p-btn" type="button">+</button>
                      </span>
                  </label>
              </div>

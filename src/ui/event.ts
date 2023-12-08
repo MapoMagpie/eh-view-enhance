@@ -19,8 +19,10 @@ function modNumberConfigEvent(key: ConfigNumberType, data?: "add" | "minus") {
     downloadThreads: [1, 10],
     timeout: [8, 40],
     autoPageInterval: [500, 90000],
+    preventScrollPageTime: [0, 90000],
   };
   let mod = key === "autoPageInterval" ? 100 : 1;
+  mod = key === "preventScrollPageTime" ? 10 : mod;
   if (data === "add") {
     if (conf[key] < range[key][1]) {
       conf[key] += mod;
@@ -92,10 +94,12 @@ function togglePlaneEvent(id: string, collapse?: boolean) {
   }, 10);
 }
 
+let bodyOverflow = document.body.style.overflow;
 function showFullViewPlane() {
   HTML.fullViewPlane.scroll(0, 0); //否则加载会触发滚动事件
   HTML.fullViewPlane.classList.remove("collapse_full_view");
-  // document.body.style.display = "none";
+  HTML.fullViewPlane.focus();
+  document.body.style.overflow = "hidden";
 };
 
 function hiddenFullViewPlaneEvent(event: Event) {
@@ -107,7 +111,8 @@ function hiddenFullViewPlaneEvent(event: Event) {
 function hiddenFullViewPlane() {
   hiddenBigImageEvent();
   HTML.fullViewPlane.classList.add("collapse_full_view");
-  // document.body.style.display = "";
+  HTML.fullViewPlane.blur();
+  document.body.style.overflow = bodyOverflow;
 };
 
 //全屏阅览元素的滚动事件
@@ -132,7 +137,6 @@ function bigImageWheelEvent(event: WheelEvent) {
 
 //按键事件
 let numberRecord: number[] | null = null;
-let scrollLock = false;
 function keyboardEvent(event: KeyboardEvent) {
   if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) { // in big image mode
     const b = HTML.bigImageFrame;
@@ -151,9 +155,11 @@ function keyboardEvent(event: KeyboardEvent) {
         hiddenBigImageEvent();
         break;
       case "Home":
+        event.preventDefault();
         IFQ.do(0, "next");
         break;
       case "End":
+        event.preventDefault();
         IFQ.do(IFQ.length - 1, "prev");
         break;
       case " ":
@@ -161,7 +167,6 @@ function keyboardEvent(event: KeyboardEvent) {
       case "ArrowDown":
       case "PageUp":
       case "PageDown":
-        event.preventDefault();
         let oriented: Oriented = "next";
         if (event.key === "ArrowUp" || event.key === "PageUp") {
           oriented = "prev"
@@ -171,14 +176,15 @@ function keyboardEvent(event: KeyboardEvent) {
         if (event.shiftKey) {
           oriented = oriented === "next" ? "prev" : "next";
         }
-        if (scrollLock && !BIFM.isReachBoundary(oriented)) return;
-        let deltaY = HTML.fullViewPlane.clientHeight / (event.key === " " ? 1 : 2);
-        deltaY = oriented === "prev" ? -deltaY : deltaY;
-
-        b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
-        scrollLock = true;
-        b.addEventListener("scrollend", () => scrollLock = false, { once: true });
-        b.scrollBy({ top: deltaY, behavior: "smooth" });
+        BIFM.frame.addEventListener("scrollend", () => {
+          if (conf.readMode === "singlePage" && BIFM.isReachBoundary(oriented)) {
+            BIFM.tryPreventStep();
+          }
+        }, { once: true });
+        if (BIFM.isReachBoundary(oriented)) {
+          event.preventDefault();
+          b.dispatchEvent(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }));
+        }
         break;
       case "-":
         BIFM.scaleBigImages(-1, 5);
@@ -198,31 +204,12 @@ function keyboardEvent(event: KeyboardEvent) {
             break;
           }
         }
-        IFQ[start].imgElement.dispatchEvent(new MouseEvent("click"));
+        IFQ[start].root.dispatchEvent(new MouseEvent("click"));
         break;
       }
       case "Escape":
         hiddenFullViewPlane();
         break;
-      case "Space":
-      case " ": {
-        if (event.shiftKey) {
-          HTML.fullViewPlane.scrollBy({ top: -HTML.fullViewPlane.clientHeight, behavior: "smooth" });
-        } else {
-          HTML.fullViewPlane.scrollBy({ top: HTML.fullViewPlane.clientHeight, behavior: "smooth" });
-        }
-        break;
-      }
-      case "ArrowUp": {
-        const [top, _] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
-        top.scrollIntoView({ behavior: "smooth", block: "start" });
-        break;
-      }
-      case "ArrowDown": {
-        const [_, bot] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
-        bot.scrollIntoView({ behavior: "smooth", block: "end" });
-        break;
-      }
       default: {
         // if event.key is number, then record it
         if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {

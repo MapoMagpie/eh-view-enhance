@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.8
+// @version            4.1.9
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -54,7 +54,7 @@
       threads: 3,
       downloadThreads: 3,
       timeout: 40,
-      version: "4.1.9",
+      version: "4.1.10",
       debug: true,
       first: true,
       reversePages: false,
@@ -66,10 +66,11 @@
       stickyMouse: "enable",
       autoPageInterval: 1e4,
       autoPlay: false,
-      filenameTemplate: "{number}-{title}"
+      filenameTemplate: "{number}-{title}",
+      preventScrollPageTime: 200
     };
   }
-  const VERSION = "4.1.9";
+  const VERSION = "4.1.10";
   const CONFIG_KEY = "ehvh_cfg_";
   function getConf() {
     let cfgStr = _GM_getValue(CONFIG_KEY);
@@ -109,7 +110,7 @@
   function saveConf(c) {
     _GM_setValue(CONFIG_KEY, JSON.stringify(c));
   }
-  const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval"];
+  const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
   const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay"];
   const ConfigSelectKeys = ["readMode", "stickyMouse"];
   const conf = getConf();
@@ -409,6 +410,8 @@
     autoPagePause: new I18nValue("PAUSE", "暂停"),
     autoPlay: new I18nValue("Auto Page", "自动翻页"),
     autoPlayTooltip: new I18nValue("Auto Page when entering the big image readmode.", "当阅读大图时，开启自动播放模式。"),
+    preventScrollPageTime: new I18nValue("Flip Page Time", "滚动翻页时间"),
+    preventScrollPageTimeTooltip: new I18nValue("In Read Mode:Single Page, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "在单页阅读模式下，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
     collapse: new I18nValue("FOLD", "收起"),
     columns: new I18nValue("Columns", "每行数量"),
     readMode: new I18nValue("Read Mode", "阅读模式"),
@@ -722,9 +725,9 @@
     pushExecQueueSlave(index, oriented, count) {
       return (oriented === "next" && index < this.length || oriented === "prev" && index > -1) && count < conf.threads;
     }
-    findImgIndex(imgElement) {
+    findImgIndex(ele) {
       for (let index = 0; index < this.length; index++) {
-        if (this[index] instanceof IMGFetcher && this[index].imgElement === imgElement) {
+        if (this[index] instanceof IMGFetcher && (this[index].imgElement === ele || this[index].root === ele)) {
           return index;
         }
       }
@@ -842,9 +845,11 @@
       threads: [1, 10],
       downloadThreads: [1, 10],
       timeout: [8, 40],
-      autoPageInterval: [500, 9e4]
+      autoPageInterval: [500, 9e4],
+      preventScrollPageTime: [0, 9e4]
     };
     let mod = key === "autoPageInterval" ? 100 : 1;
+    mod = key === "preventScrollPageTime" ? 10 : mod;
     if (data === "add") {
       if (conf[key] < range[key][1]) {
         conf[key] += mod;
@@ -908,9 +913,12 @@
       }
     }, 10);
   }
+  let bodyOverflow = document.body.style.overflow;
   function showFullViewPlane() {
     HTML.fullViewPlane.scroll(0, 0);
     HTML.fullViewPlane.classList.remove("collapse_full_view");
+    HTML.fullViewPlane.focus();
+    document.body.style.overflow = "hidden";
   }
   function hiddenFullViewPlaneEvent(event) {
     if (event.target === HTML.fullViewPlane) {
@@ -920,6 +928,8 @@
   function hiddenFullViewPlane() {
     hiddenBigImageEvent();
     HTML.fullViewPlane.classList.add("collapse_full_view");
+    HTML.fullViewPlane.blur();
+    document.body.style.overflow = bodyOverflow;
   }
   function scrollEvent() {
     if (HTML.fullViewPlane.classList.contains("collapse_full_view"))
@@ -936,7 +946,6 @@
     stepImageEvent(event.deltaY > 0 ? "next" : "prev");
   }
   let numberRecord = null;
-  let scrollLock = false;
   function keyboardEvent(event) {
     if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) {
       const b = HTML.bigImageFrame;
@@ -955,9 +964,11 @@
           hiddenBigImageEvent();
           break;
         case "Home":
+          event.preventDefault();
           IFQ.do(0, "next");
           break;
         case "End":
+          event.preventDefault();
           IFQ.do(IFQ.length - 1, "prev");
           break;
         case " ":
@@ -965,7 +976,6 @@
         case "ArrowDown":
         case "PageUp":
         case "PageDown":
-          event.preventDefault();
           let oriented = "next";
           if (event.key === "ArrowUp" || event.key === "PageUp") {
             oriented = "prev";
@@ -975,14 +985,15 @@
           if (event.shiftKey) {
             oriented = oriented === "next" ? "prev" : "next";
           }
-          if (scrollLock && !BIFM.isReachBoundary(oriented))
-            return;
-          let deltaY = HTML.fullViewPlane.clientHeight / (event.key === " " ? 1 : 2);
-          deltaY = oriented === "prev" ? -deltaY : deltaY;
-          b.dispatchEvent(new WheelEvent("wheel", { deltaY }));
-          scrollLock = true;
-          b.addEventListener("scrollend", () => scrollLock = false, { once: true });
-          b.scrollBy({ top: deltaY, behavior: "smooth" });
+          BIFM.frame.addEventListener("scrollend", () => {
+            if (conf.readMode === "singlePage" && BIFM.isReachBoundary(oriented)) {
+              BIFM.tryPreventStep();
+            }
+          }, { once: true });
+          if (BIFM.isReachBoundary(oriented)) {
+            event.preventDefault();
+            b.dispatchEvent(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }));
+          }
           break;
         case "-":
           BIFM.scaleBigImages(-1, 5);
@@ -1002,31 +1013,12 @@
               break;
             }
           }
-          IFQ[start].imgElement.dispatchEvent(new MouseEvent("click"));
+          IFQ[start].root.dispatchEvent(new MouseEvent("click"));
           break;
         }
         case "Escape":
           hiddenFullViewPlane();
           break;
-        case "Space":
-        case " ": {
-          if (event.shiftKey) {
-            HTML.fullViewPlane.scrollBy({ top: -HTML.fullViewPlane.clientHeight, behavior: "smooth" });
-          } else {
-            HTML.fullViewPlane.scrollBy({ top: HTML.fullViewPlane.clientHeight, behavior: "smooth" });
-          }
-          break;
-        }
-        case "ArrowUp": {
-          const [top, _] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
-          top.scrollIntoView({ behavior: "smooth", block: "start" });
-          break;
-        }
-        case "ArrowDown": {
-          const [_, bot] = PF.findOutsideRoundViewNode(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
-          bot.scrollIntoView({ behavior: "smooth", block: "end" });
-          break;
-        }
         default: {
           if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
             numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
@@ -1905,7 +1897,8 @@ text-align: left;
   height: 100%;
   top: 0;
   right: 0;
-  overflow: hidden scroll;
+  /*overflow: hidden scroll;*/
+  overflow: auto;
   z-index: 1001;
   background-color: #000000d6;
   transition: width 0.4s;
@@ -2254,11 +2247,12 @@ text-align: left;
   }
   function createHTML() {
     const fullViewPlane = document.createElement("div");
+    fullViewPlane.setAttribute("tabindex", "0");
     fullViewPlane.classList.add("fullViewPlane");
     fullViewPlane.classList.add("collapse_full_view");
     document.body.after(fullViewPlane);
     const HTML_STRINGS = `
- <div id="bigImageFrame" class="bigImageFrame b-f-collapse">
+ <div id="bigImageFrame" class="bigImageFrame b-f-collapse" tabindex="0">
     <a id="imgLandLeft" hidden="true" class="imgLandLeft"></a>
     <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
     <a id="imgLandTop" hidden="true" class="imgLandTop"></a>
@@ -2378,6 +2372,18 @@ text-align: left;
                      </span>
                  </label>
              </div>
+             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                 <label class="p-label">
+                     <span>${i18n.preventScrollPageTime.get()}
+                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.preventScrollPageTimeTooltip.get()}</span></span>:
+                     </span>
+                     <span>
+                         <button id="preventScrollPageTimeMinusBTN" class="p-btn" type="button">-</button>
+                         <input id="preventScrollPageTimeInput" value="${conf.preventScrollPageTime}" disabled type="text" style="width: 4rem; line-height: 1rem;" />
+                         <button id="preventScrollPageTimeAddBTN" class="p-btn" type="button">+</button>
+                     </span>
+                 </label>
+             </div>
              <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
                  <label class="p-label">
                      <span>${i18n.dragToMove.get()}:</span>
@@ -2462,6 +2468,7 @@ text-align: left;
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
   class BigImageFrameManager {
+    /* prevent mouse wheel step next image */
     constructor(frame, queue, imgScaleBar) {
       __publicField(this, "frame");
       __publicField(this, "queue");
@@ -2478,6 +2485,8 @@ text-align: left;
       __publicField(this, "callbackOnHidden");
       __publicField(this, "callbackOnShow");
       __publicField(this, "hammer");
+      __publicField(this, "preventStepLock", true);
+      __publicField(this, "preventStepLockEle");
       this.frame = frame;
       this.queue = queue;
       this.imgScaleBar = imgScaleBar;
@@ -2528,6 +2537,7 @@ text-align: left;
     }
     setNow(index) {
       this.resetStickyMouse();
+      this.frame.focus();
       if (this.lockInit) {
         this.lockInit = false;
         return;
@@ -2554,11 +2564,7 @@ text-align: left;
         (_a = this.callbackOnWheel) == null ? void 0 : _a.call(this, event);
         this.onWheel(event);
       });
-      this.frame.addEventListener("scroll", () => {
-        if (conf.readMode === "consecutively") {
-          this.consecutive();
-        }
-      });
+      this.frame.addEventListener("scroll", (event) => this.onScroll(event));
       this.frame.addEventListener("click", events.hiddenBigImageEvent);
       this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
       const debouncer2 = new Debouncer("throttle");
@@ -2642,6 +2648,7 @@ text-align: left;
     hidden() {
       var _a;
       (_a = this.callbackOnHidden) == null ? void 0 : _a.call(this);
+      this.frame.blur();
       this.frame.classList.add("b-f-collapse");
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
         this.frame.childNodes.forEach((child) => child.hidden = true);
@@ -2652,6 +2659,7 @@ text-align: left;
       var _a;
       this.frame.classList.remove("b-f-collapse");
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
+        this.frame.focus();
         this.frame.childNodes.forEach((child) => {
           if (conf.readMode === "consecutively") {
             if (child.nodeName.toLowerCase() === "a") {
@@ -2671,19 +2679,54 @@ text-align: left;
         event.preventDefault();
         this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
       } else if (conf.readMode === "singlePage") {
-        event.preventDefault();
         const oriented = event.deltaY > 0 ? "next" : "prev";
         if (this.isReachBoundary(oriented)) {
-          events.stepImageEvent(oriented);
+          event.preventDefault();
+          if (!this.tryPreventStep()) {
+            events.stepImageEvent(oriented);
+          }
         }
       }
     }
+    onScroll(_) {
+      if (conf.readMode === "consecutively") {
+        this.consecutive();
+      }
+    }
+    tryPreventStep() {
+      if (!conf.imgScale || conf.imgScale === 0 || conf.preventScrollPageTime === 0) {
+        return false;
+      }
+      if (this.preventStepLock) {
+        if (!this.preventStepLockEle) {
+          const lockEle = document.createElement("div");
+          lockEle.style.width = "100vw";
+          lockEle.style.position = "fixed";
+          lockEle.style.display = "flex";
+          lockEle.style.justifyContent = "center";
+          lockEle.style.bottom = "0px";
+          lockEle.innerHTML = `<div style="width: 30vw;height: 0.5rem;background-color: #e7ff64d1;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray"><span style="position: absolute;bottom: -3px;">Lock</span></div>`;
+          this.frame.appendChild(lockEle);
+          this.preventStepLockEle = lockEle;
+          const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });
+          ani.onfinish = () => {
+            this.preventStepLockEle = void 0;
+            this.preventStepLock = false;
+            this.frame.removeChild(lockEle);
+          };
+        }
+        return true;
+      } else {
+        this.preventStepLock = true;
+        return false;
+      }
+    }
     isReachBoundary(oriented) {
+      if (oriented === "prev") {
+        return this.frame.scrollTop <= 0;
+      }
       if (oriented === "next") {
         return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight;
-      }
-      if (oriented === "prev") {
-        return this.frame.scrollTop === 0;
       }
       return false;
     }
@@ -3069,14 +3112,13 @@ text-align: left;
   }
   const signal = { first: true };
   function main(collapse) {
-    const pageHelperEle = document.querySelector("#pageHelper");
-    if (pageHelperEle) {
+    if (HTML.pageHelper) {
       if (collapse) {
-        pageHelperEle.classList.remove("pageHelperExtend");
+        HTML.pageHelper.classList.remove("pageHelperExtend");
         events.hiddenFullViewPlane();
         ["config", "downloader"].forEach((id) => events.togglePlaneEvent(id, true));
       } else {
-        pageHelperEle.classList.add("pageHelperExtend");
+        HTML.pageHelper.classList.add("pageHelperExtend");
         events.showFullViewPlane();
         if (signal.first) {
           signal.first = false;

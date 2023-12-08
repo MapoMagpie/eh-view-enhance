@@ -23,6 +23,9 @@ export class BigImageFrameManager {
   callbackOnHidden?: () => void;
   callbackOnShow?: () => void;
   hammer?: HammerManager;
+  preventStepLock: boolean = true;
+  preventStepLockEle?: HTMLElement;
+  /* prevent mouse wheel step next image */
   constructor(frame: HTMLElement, queue: IMGFetcherQueue, imgScaleBar: HTMLElement) {
     this.frame = frame;
     this.queue = queue;
@@ -78,6 +81,7 @@ export class BigImageFrameManager {
 
   setNow(index: number) {
     this.resetStickyMouse();
+    this.frame.focus();
     // every time call this.onWheel(), will set this.lockInit to true
     if (this.lockInit) {
       this.lockInit = false;
@@ -107,11 +111,7 @@ export class BigImageFrameManager {
       this.callbackOnWheel?.(event);
       this.onWheel(event);
     });
-    this.frame.addEventListener("scroll", () => {
-      if (conf.readMode === "consecutively") {
-        this.consecutive();
-      }
-    })
+    this.frame.addEventListener("scroll", (event) => this.onScroll(event));
     this.frame.addEventListener("click", events.hiddenBigImageEvent);
     this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
     const debouncer = new Debouncer("throttle");
@@ -195,6 +195,7 @@ export class BigImageFrameManager {
 
   hidden() {
     this.callbackOnHidden?.();
+    this.frame.blur();
     this.frame.classList.add("b-f-collapse");
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
       this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
@@ -205,6 +206,7 @@ export class BigImageFrameManager {
   show() {
     this.frame.classList.remove("b-f-collapse");
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
+      this.frame.focus();
       this.frame.childNodes.forEach(child => {
         // if consecutively mode keep img land hidden
         if (conf.readMode === "consecutively") {
@@ -227,21 +229,57 @@ export class BigImageFrameManager {
       event.preventDefault();
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
     } else if (conf.readMode === "singlePage") {
-      event.preventDefault();
-      const oriented = event.deltaY > 0 ? "next" : "prev"
+      const oriented: Oriented = event.deltaY > 0 ? "next" : "prev";
       if (this.isReachBoundary(oriented)) {
-        events.stepImageEvent(oriented);
+        event.preventDefault();
+        if (!this.tryPreventStep()) {
+          events.stepImageEvent(oriented);
+        }
       }
     }
-    // consecutively mode will trigger consecutive
+  }
+
+  onScroll(_: Event) {
+    if (conf.readMode === "consecutively") {
+      this.consecutive();
+    }
+  }
+
+  tryPreventStep(): boolean {
+    if (!conf.imgScale || conf.imgScale === 0 || conf.preventScrollPageTime === 0) {
+      return false;
+    }
+    if (this.preventStepLock) {
+      if (!this.preventStepLockEle) {
+        const lockEle = document.createElement("div");
+        lockEle.style.width = "100vw";
+        lockEle.style.position = "fixed";
+        lockEle.style.display = "flex";
+        lockEle.style.justifyContent = "center";
+        lockEle.style.bottom = "0px";
+        lockEle.innerHTML = `<div style="width: 30vw;height: 0.5rem;background-color: #e7ff64d1;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray"><span style="position: absolute;bottom: -3px;">Lock</span></div>`;
+        this.frame.appendChild(lockEle);
+        this.preventStepLockEle = lockEle;
+        const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });
+        ani.onfinish = () => {
+          this.preventStepLockEle = undefined;
+          this.preventStepLock = false;
+          this.frame.removeChild(lockEle);
+        }
+      }
+      return true;
+    } else {
+      this.preventStepLock = true;
+      return false;
+    }
   }
 
   isReachBoundary(oriented: Oriented): boolean {
+    if (oriented === "prev") {
+      return this.frame.scrollTop <= 0;
+    }
     if (oriented === "next") {
       return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight
-    }
-    if (oriented === "prev") {
-      return this.frame.scrollTop === 0
     }
     return false;
   }

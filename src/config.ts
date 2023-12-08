@@ -43,6 +43,8 @@ export type Config = {
   autoPlay: boolean
   /** 图片名模板 */
   filenameTemplate: string
+  /** 阻止滚动翻页时间 */
+  preventScrollPageTime: number
 };
 
 function defaultConf(): Config {
@@ -58,7 +60,7 @@ function defaultConf(): Config {
     threads: 3,
     downloadThreads: 3,
     timeout: 40,
-    version: "4.1.9",
+    version: "4.1.10",
     debug: true,
     first: true,
     reversePages: false,
@@ -71,10 +73,11 @@ function defaultConf(): Config {
     autoPageInterval: 10000,
     autoPlay: false,
     filenameTemplate: "{number}-{title}",
+    preventScrollPageTime: 200,
   };
 }
 
-export const VERSION = "4.1.9";
+export const VERSION = "4.1.10";
 export const signal = { first: true };
 
 const CONFIG_KEY = "ehvh_cfg_";
@@ -119,8 +122,8 @@ function confHealthCheck($conf: Config): Config {
 export function saveConf(c: Config) {
   GM_setValue(CONFIG_KEY, JSON.stringify(c));
 }
-export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval";
-export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval"];
+export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime";
+export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
 export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay";
 export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay"];
 export type ConfigSelectType = "readMode" | "stickyMouse";

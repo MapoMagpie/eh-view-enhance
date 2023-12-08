@@ -57,7 +57,8 @@ export function loadStyleSheel() {
   height: 100%;
   top: 0;
   right: 0;
-  overflow: hidden scroll;
+  /*overflow: hidden scroll;*/
+  overflow: auto;
   z-index: 1001;
   background-color: #000000d6;
   transition: width 0.4s;

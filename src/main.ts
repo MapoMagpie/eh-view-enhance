@@ -32,14 +32,13 @@ if (conf["first"]) {
 const signal = { first: true };
 // 入口
 export function main(collapse: boolean) {
-  const pageHelperEle = document.querySelector("#pageHelper");
-  if (pageHelperEle) {
+  if (HTML.pageHelper) {
     if (collapse) {
-      pageHelperEle.classList.remove("pageHelperExtend");
+      HTML.pageHelper.classList.remove("pageHelperExtend");
       events.hiddenFullViewPlane();
       ["config", "downloader"].forEach(id => events.togglePlaneEvent(id, true));
     } else {
-      pageHelperEle.classList.add("pageHelperExtend");
+      HTML.pageHelper.classList.add("pageHelperExtend");
       events.showFullViewPlane();
       if (signal.first) {
         signal.first = false;

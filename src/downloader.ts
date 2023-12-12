@@ -150,29 +150,6 @@ export class Downloader {
     // TODO: handle the throw error
   }
 
-  isTitleOrdered(): boolean {
-    let titles = this.queue.map((imf) => imf.title);
-    let lastNum = -1;
-    let lastPrefix: string | undefined;
-    for (const title of titles) {
-      const matches = title.match(/^([^\d]*)(\d+)/);
-      if (!matches) return false;
-      const prefix = matches[1];
-      if (prefix) {
-        if (!lastPrefix) {
-          lastPrefix = prefix;
-        } else {
-          if (prefix !== lastPrefix) return false;
-        }
-      }
-      const num = parseInt(matches[2]);
-      if (isNaN(num)) return false;
-      if (num <= lastNum) return false;
-      lastNum = num;
-    }
-    return true;
-  }
-
   download() {
     this.downloading = false;
     this.idleLoader.abort(this.queue.currIndex);

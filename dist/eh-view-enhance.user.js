@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.9
+// @version            4.1.10
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -525,6 +525,8 @@
       __publicField(this, "downloadNoticeElement");
       __publicField(this, "queue");
       __publicField(this, "idleLoader");
+      __publicField(this, "numberTitle");
+      __publicField(this, "delayedQueue", []);
       var _a, _b;
       this.queue = queue;
       this.idleLoader = idleLoader;
@@ -537,17 +539,50 @@
       (_a = this.downloadForceElement) == null ? void 0 : _a.addEventListener("click", () => this.download());
       (_b = this.downloadStartElement) == null ? void 0 : _b.addEventListener("click", () => this.start());
     }
+    needNumberTitle() {
+      if (this.numberTitle !== void 0) {
+        return this.numberTitle;
+      } else {
+        this.numberTitle = false;
+        let lastTitle = "";
+        for (const fetcher of this.queue) {
+          if (fetcher.title < lastTitle) {
+            this.numberTitle = true;
+            break;
+          }
+          lastTitle = fetcher.title;
+        }
+        return this.numberTitle;
+      }
+    }
+    addToDelayedQueue(index, imgFetcher) {
+      if (PF.done) {
+        if (this.delayedQueue.length > 0) {
+          for (const item of this.delayedQueue) {
+            this.addToDownloadZip(item.index, item.fetcher);
+          }
+          this.delayedQueue = [];
+        }
+        this.addToDownloadZip(index, imgFetcher);
+      } else {
+        this.delayedQueue.push({ index, fetcher: imgFetcher });
+      }
+    }
     addToDownloadZip(index, imgFetcher) {
       if (!imgFetcher.blobData) {
         evLog("无法获取图片数据，因此该图片无法下载");
         return;
       }
-      this.zip.file(this.checkTitle(index, imgFetcher.title), imgFetcher.blobData, { binary: true });
+      let title = imgFetcher.title;
+      if (this.needNumberTitle()) {
+        const digit = this.queue.length.toString().length;
+        title = conf.filenameTemplate.replace("{number}", (index + 1).toString().padStart(digit, "0")).replace("{title}", title);
+      }
+      this.zip.file(this.checkDuplicateTitle(index, title), imgFetcher.blobData, { binary: true });
     }
-    checkTitle(index, $title) {
+    checkDuplicateTitle(index, $title) {
       var _a;
       let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");
-      newTitle = conf.filenameTemplate.replace("{number}", index.toString()).replace("{title}", newTitle);
       if (this.zip.files[newTitle]) {
         let splits = newTitle.split(".");
         const ext = splits.pop();
@@ -558,7 +593,7 @@
         } else {
           newTitle = `${prefix.replace(/\d+$/, (num + 1).toString())}.${ext}`;
         }
-        return this.checkTitle(index, newTitle);
+        return this.checkDuplicateTitle(index, newTitle);
       } else {
         return newTitle;
       }
@@ -598,8 +633,41 @@
       this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
       this.idleLoader.start(this.idleLoader.lockVer);
     }
+    isTitleOrdered() {
+      let titles = this.queue.map((imf) => imf.title);
+      let lastNum = -1;
+      let lastPrefix;
+      for (const title of titles) {
+        const matches = title.match(/^([^\d]*)(\d+)/);
+        if (!matches)
+          return false;
+        const prefix = matches[1];
+        if (prefix) {
+          if (!lastPrefix) {
+            lastPrefix = prefix;
+          } else {
+            if (prefix !== lastPrefix)
+              return false;
+          }
+        }
+        const num = parseInt(matches[2]);
+        if (isNaN(num))
+          return false;
+        if (num <= lastNum)
+          return false;
+        lastNum = num;
+      }
+      return true;
+    }
     download() {
       this.downloading = false;
+      this.idleLoader.abort(this.queue.currIndex);
+      if (this.delayedQueue.length > 0) {
+        for (const item of this.delayedQueue) {
+          this.addToDownloadZip(item.index, item.fetcher);
+        }
+        this.delayedQueue = [];
+      }
       const meta = this.meta();
       this.zip.file("meta.json", JSON.stringify(meta));
       this.zip.generateAsync({ type: "blob" }, (_metadata) => {
@@ -608,7 +676,7 @@
         if (this.downloadNoticeElement)
           this.downloadNoticeElement.innerHTML = "";
         if (this.downloadStartElement)
-          this.downloadStartElement.textContent = i18n.download.get();
+          this.downloadStartElement.textContent = i18n.downloaded.get();
       });
     }
   }
@@ -677,10 +745,8 @@
       const imgFetcher = this[index];
       if (imgFetcher.stage !== FetchState.DONE)
         return;
-      if (DL) {
-        if (this.finishedIndex.indexOf(index) < 0) {
-          DL.addToDownloadZip(index, imgFetcher);
-        }
+      if (this.finishedIndex.indexOf(index) < 0) {
+        DL.addToDelayedQueue(index, imgFetcher);
       }
       this.pushFinishedIndex(index);
       if (DL && DL.downloading && this.isFinised()) {
@@ -1091,6 +1157,7 @@ text-align: left;
       __publicField(this, "fetched");
       __publicField(this, "imgAppends");
       __publicField(this, "matcher");
+      __publicField(this, "done", false);
       this.queue = queue;
       this.idleLoader = idleLoader;
       this.pageURLs = [];
@@ -1116,6 +1183,7 @@ text-align: left;
         await this.appendPageImg(page, "next");
         this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
       }
+      this.done = true;
     }
     async appendPageImg(page, oriented) {
       try {
@@ -2705,7 +2773,7 @@ text-align: left;
           lockEle.style.display = "flex";
           lockEle.style.justifyContent = "center";
           lockEle.style.bottom = "0px";
-          lockEle.innerHTML = `<div style="width: 30vw;height: 0.5rem;background-color: #e7ff64d1;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray"><span style="position: absolute;bottom: -3px;">Lock</span></div>`;
+          lockEle.innerHTML = `<div style="width: 30vw;height: 0.4rem;background-color: #ff8181d6;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray;border-radius: 7px;border: 1px solid #510000;"><span style="position: absolute;bottom: -3px;"></span></div>`;
           this.frame.appendChild(lockEle);
           this.preventStepLockEle = lockEle;
           const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });

@@ -257,7 +257,7 @@ export class BigImageFrameManager {
         lockEle.style.display = "flex";
         lockEle.style.justifyContent = "center";
         lockEle.style.bottom = "0px";
-        lockEle.innerHTML = `<div style="width: 30vw;height: 0.5rem;background-color: #e7ff64d1;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray"><span style="position: absolute;bottom: -3px;">Lock</span></div>`;
+        lockEle.innerHTML = `<div style="width: 30vw;height: 0.4rem;background-color: #ff8181d6;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray;border-radius: 7px;border: 1px solid #510000;"><span style="position: absolute;bottom: -3px;"></span></div>`;
         this.frame.appendChild(lockEle);
         this.preventStepLockEle = lockEle;
         const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });

@@ -18,6 +18,7 @@ export class PageFetcher {
   fetched: boolean;
   imgAppends: Record<"prev" | "next", AsyncAppendFunc[]>;
   matcher: Matcher;
+  done: boolean = false;
   constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher) {
     this.queue = queue;
     this.idleLoader = idleLoader;
@@ -52,6 +53,7 @@ export class PageFetcher {
       await this.appendPageImg(page, "next");
       this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
     }
+    this.done = true;
   }
 
   async appendPageImg(page: PagesSource, oriented: Oriented): Promise<boolean> {

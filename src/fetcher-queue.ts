@@ -66,10 +66,8 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   finishedReport(index: number) {
     const imgFetcher = this[index];
     if (imgFetcher.stage !== FetchState.DONE) return;
-    if (DL) {
-      if (this.finishedIndex.indexOf(index) < 0) {
-        DL.addToDownloadZip(index, imgFetcher);
-      }
+    if (this.finishedIndex.indexOf(index) < 0) {
+      DL.addToDelayedQueue(index, imgFetcher);
     }
     this.pushFinishedIndex(index);
     if (DL && DL.downloading && this.isFinised()) {

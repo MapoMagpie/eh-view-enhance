@@ -112,6 +112,7 @@ function hiddenFullViewPlane() {
   hiddenBigImageEvent();
   HTML.fullViewPlane.classList.add("collapse_full_view");
   HTML.fullViewPlane.blur();
+  document.querySelector("html")?.focus();
   document.body.style.overflow = bodyOverflow;
 };
 
@@ -128,6 +129,7 @@ function hiddenBigImageEvent(event?: MouseEvent) {
   if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
   BIFM.hidden();
   HTML.pageHelper.classList.remove("p-minify");
+  HTML.fullViewPlane.focus();
 };
 
 //大图框架元素的滚轮事件/按下鼠标右键滚动则是缩放/直接滚动则是切换到下一张或上一张
@@ -208,7 +210,7 @@ function keyboardEvent(event: KeyboardEvent) {
         break;
       }
       case "Escape":
-        hiddenFullViewPlane();
+        main(true);
         break;
       default: {
         // if event.key is number, then record it
@@ -216,6 +218,12 @@ function keyboardEvent(event: KeyboardEvent) {
           numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
         }
       }
+    }
+  } else {
+    switch (event.key) {
+      case "Enter":
+        main(false);
+        break;
     }
   }
 };

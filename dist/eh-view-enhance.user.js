@@ -633,32 +633,6 @@
       this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
       this.idleLoader.start(this.idleLoader.lockVer);
     }
-    isTitleOrdered() {
-      let titles = this.queue.map((imf) => imf.title);
-      let lastNum = -1;
-      let lastPrefix;
-      for (const title of titles) {
-        const matches = title.match(/^([^\d]*)(\d+)/);
-        if (!matches)
-          return false;
-        const prefix = matches[1];
-        if (prefix) {
-          if (!lastPrefix) {
-            lastPrefix = prefix;
-          } else {
-            if (prefix !== lastPrefix)
-              return false;
-          }
-        }
-        const num = parseInt(matches[2]);
-        if (isNaN(num))
-          return false;
-        if (num <= lastNum)
-          return false;
-        lastNum = num;
-      }
-      return true;
-    }
     download() {
       this.downloading = false;
       this.idleLoader.abort(this.queue.currIndex);
@@ -992,9 +966,11 @@
     }
   }
   function hiddenFullViewPlane() {
+    var _a;
     hiddenBigImageEvent();
     HTML.fullViewPlane.classList.add("collapse_full_view");
     HTML.fullViewPlane.blur();
+    (_a = document.querySelector("html")) == null ? void 0 : _a.focus();
     document.body.style.overflow = bodyOverflow;
   }
   function scrollEvent() {
@@ -1007,6 +983,7 @@
       return;
     BIFM.hidden();
     HTML.pageHelper.classList.remove("p-minify");
+    HTML.fullViewPlane.focus();
   }
   function bigImageWheelEvent(event) {
     stepImageEvent(event.deltaY > 0 ? "next" : "prev");
@@ -1083,13 +1060,19 @@
           break;
         }
         case "Escape":
-          hiddenFullViewPlane();
+          main(true);
           break;
         default: {
           if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
             numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
           }
         }
+      }
+    } else {
+      switch (event.key) {
+        case "Enter":
+          main(false);
+          break;
       }
     }
   }

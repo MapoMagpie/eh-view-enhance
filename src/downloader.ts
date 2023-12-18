@@ -32,6 +32,7 @@ export class Downloader {
   idleLoader: IdleLoader;
   numberTitle: boolean | undefined;
   delayedQueue: { index: number, fetcher: IMGFetcher }[] = [];
+  done: boolean = false;;
   constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher) {
     this.queue = queue;
     this.idleLoader = idleLoader;
@@ -182,6 +183,7 @@ export class Downloader {
     }).then(data => {
       saveAs(data, `${meta.originTitle || meta.title}.zip`);
       this.flushUI("downloaded");
+      this.done = true;
       HTML.downloaderPlaneBTN.textContent = i18n.download.get();
       HTML.downloaderPlaneBTN.style.color = "";
     });

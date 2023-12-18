@@ -73,9 +73,11 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     if (this.isFinised()) {
       if (DL.downloading) {
         DL.download();
-      } else {
+      } else if (!DL.done && HTML.downloaderPlaneBTN.style.color !== "lightgreen") {
         HTML.downloaderPlaneBTN.style.color = "lightgreen";
-        HTML.downloaderPlaneBTN.textContent += "✓";
+        if (!/✓/.test(HTML.downloaderPlaneBTN.textContent!)) {
+          HTML.downloaderPlaneBTN.textContent += "✓";
+        }
       }
     }
     updatePageHelper("updateFinished", this.finishedIndex.length.toString());

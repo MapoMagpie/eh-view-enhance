@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.11
+// @version            4.1.12
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -548,6 +548,7 @@
       __publicField(this, "idleLoader");
       __publicField(this, "numberTitle");
       __publicField(this, "delayedQueue", []);
+      __publicField(this, "done", false);
       var _a, _b;
       this.queue = queue;
       this.idleLoader = idleLoader;
@@ -681,6 +682,7 @@
       }).then((data) => {
         saveAs(data, `${meta.originTitle || meta.title}.zip`);
         this.flushUI("downloaded");
+        this.done = true;
         HTML.downloaderPlaneBTN.textContent = i18n.download.get();
         HTML.downloaderPlaneBTN.style.color = "";
       });
@@ -758,9 +760,11 @@
       if (this.isFinised()) {
         if (DL.downloading) {
           DL.download();
-        } else {
+        } else if (!DL.done && HTML.downloaderPlaneBTN.style.color !== "lightgreen") {
           HTML.downloaderPlaneBTN.style.color = "lightgreen";
-          HTML.downloaderPlaneBTN.textContent += "✓";
+          if (!/✓/.test(HTML.downloaderPlaneBTN.textContent)) {
+            HTML.downloaderPlaneBTN.textContent += "✓";
+          }
         }
       }
       updatePageHelper("updateFinished", this.finishedIndex.length.toString());

@@ -7,7 +7,7 @@ import { IdleLoader } from "./idle-loader";
 import JSZip from "jszip";
 import saveAs from "file-saver";
 import { Matcher } from "./platform/platform";
-import { PF } from "./main";
+import { HTML, PF } from "./main";
 
 export class GalleryMeta {
   url: string;
@@ -132,22 +132,37 @@ export class Downloader {
       this.download();
       return;
     }
-    if (this.downloadNoticeElement) {
-      this.downloadNoticeElement.innerHTML = `<span>${i18n.downloading.get()}</span>`;
-    }
-    if (this.downloadStartElement) {
-      this.downloadStartElement.textContent = i18n.downloading.get();
-    }
+    this.flushUI("downloading")
     this.downloading = true;
+    // Temporary enable "autoload", but it may result in persisting this to the config.
+    conf.autoLoad = true;
 
-    if (!conf.autoLoad) conf.autoLoad = true;
-    this.idleLoader.lockVer++;
+    // reset img fetcher stage to url, if it's failed
+    this.queue.forEach((imf) => {
+      if (imf.stage === FetchState.FAILED) {
+        imf.retry();
+      }
+    });
     // find all of unloading imgFetcher and splice frist few imgFetchers
     this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => (!imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1))
       .filter((index) => index >= 0)
       .splice(0, conf.downloadThreads);
-    this.idleLoader.start(this.idleLoader.lockVer);
-    // TODO: handle the throw error
+    this.idleLoader.onFailed(() => {
+      this.downloading = false;
+      this.flushUI("downloadFailed")
+    });
+    this.idleLoader.start(++this.idleLoader.lockVer);
+  }
+
+  flushUI(stage: "downloadFailed" | "downloaded" | "downloading" | "downloadStart") {
+    if (this.downloadNoticeElement) {
+      this.downloadNoticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
+    }
+    if (this.downloadStartElement) {
+      this.downloadStartElement.style.color = stage === "downloadFailed" ? "red" : "";
+      this.downloadStartElement.textContent = i18n[stage].get();
+    }
+    HTML.downloaderPlaneBTN.style.color = stage === "downloadFailed" ? "red" : "";
   }
 
   download() {
@@ -166,8 +181,9 @@ export class Downloader {
       // TODO: progress bar
     }).then(data => {
       saveAs(data, `${meta.originTitle || meta.title}.zip`);
-      if (this.downloadNoticeElement) this.downloadNoticeElement.innerHTML = "";
-      if (this.downloadStartElement) this.downloadStartElement.textContent = i18n.downloaded.get();
+      this.flushUI("downloaded");
+      HTML.downloaderPlaneBTN.textContent = i18n.download.get();
+      HTML.downloaderPlaneBTN.style.color = "";
     });
   };
 }

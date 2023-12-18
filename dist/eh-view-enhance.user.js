@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.10
+// @version            4.1.11
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -12,9 +12,8 @@
 // @match              https://e-hentai.org/g/*
 // @match              https://nhentai.net/g/*
 // @match              https://steamcommunity.com/id/*/screenshots*
-// @match              https://hitomi.la/*
+// @match              https://hitomi.la/*/*
 // @exclude            https://nhentai.net/g/*/*/
-// @exclude            https://hitomi.la/reader/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -174,6 +173,7 @@
     });
   }
   var FetchState = /* @__PURE__ */ ((FetchState2) => {
+    FetchState2[FetchState2["FAILED"] = 0] = "FAILED";
     FetchState2[FetchState2["URL"] = 1] = "URL";
     FetchState2[FetchState2["DATA"] = 2] = "DATA";
     FetchState2[FetchState2["DONE"] = 3] = "DONE";
@@ -194,6 +194,7 @@
       __publicField(this, "title");
       __publicField(this, "downloadState");
       __publicField(this, "onFinishedEventContext");
+      __publicField(this, "onFailedEventContext");
       // TODO: onFailedEventContext
       __publicField(this, "downloadBar");
       __publicField(this, "timeoutId");
@@ -208,6 +209,7 @@
       this.title = this.imgElement.getAttribute("title") || "untitle.jpg";
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
       this.onFinishedEventContext = /* @__PURE__ */ new Map();
+      this.onFailedEventContext = /* @__PURE__ */ new Map();
       this.matcher = matcher2;
     }
     // 刷新下载状态
@@ -256,6 +258,8 @@
           /* FAILED */
         );
         evLog(`IMG-FETCHER ERROR:`, error);
+        this.stage = 0;
+        this.onFailedEventContext.forEach((callback) => callback(index, this));
       } finally {
         this.lock = false;
       }
@@ -263,10 +267,23 @@
     onFinished(eventId, callback) {
       this.onFinishedEventContext.set(eventId, callback);
     }
+    onFailed(eventId, callback) {
+      this.onFailedEventContext.set(eventId, callback);
+    }
+    retry() {
+      if (this.stage !== 3) {
+        this.changeStyle(
+          1
+          /* REMOVE */
+        );
+        this.stage = 1;
+      }
+    }
     async fetchImage() {
       this.tryTimes = 0;
       while (this.tryTimes < 3) {
         switch (this.stage) {
+          case 0:
           case 1:
             let url = await this.fetchImageURL();
             if (url !== null) {
@@ -389,6 +406,9 @@
           this.imgElement.classList.add("fetch-failed");
           this.imgElement.classList.remove("fetched");
           break;
+        default:
+          this.imgElement.classList.remove("fetched");
+          this.imgElement.classList.remove("fetch-failed");
       }
     }
   }
@@ -428,8 +448,9 @@
     autoLoadTooltip: new I18nValue("", "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。"),
     bestQualityTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
     forceDownload: new I18nValue("Take Loaded", "强制下载已加载的"),
-    startDownload: new I18nValue("Start Download", "开始下载"),
+    downloadStart: new I18nValue("Start Download", "开始下载"),
     downloading: new I18nValue("Downloading...", "下载中..."),
+    downloadFailed: new I18nValue("Failed(Retry)", "下载失败(重试)"),
     downloaded: new I18nValue("Downloaded", "下载完成"),
     reversePages: new I18nValue("Reverse Pages", "反向翻页"),
     reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
@@ -620,18 +641,30 @@
         this.download();
         return;
       }
+      this.flushUI("downloading");
+      this.downloading = true;
+      conf.autoLoad = true;
+      this.queue.forEach((imf) => {
+        if (imf.stage === FetchState.FAILED) {
+          imf.retry();
+        }
+      });
+      this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
+      this.idleLoader.onFailed(() => {
+        this.downloading = false;
+        this.flushUI("downloadFailed");
+      });
+      this.idleLoader.start(++this.idleLoader.lockVer);
+    }
+    flushUI(stage) {
       if (this.downloadNoticeElement) {
-        this.downloadNoticeElement.innerHTML = `<span>${i18n.downloading.get()}</span>`;
+        this.downloadNoticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
       }
       if (this.downloadStartElement) {
-        this.downloadStartElement.textContent = i18n.downloading.get();
+        this.downloadStartElement.style.color = stage === "downloadFailed" ? "red" : "";
+        this.downloadStartElement.textContent = i18n[stage].get();
       }
-      this.downloading = true;
-      if (!conf.autoLoad)
-        conf.autoLoad = true;
-      this.idleLoader.lockVer++;
-      this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
-      this.idleLoader.start(this.idleLoader.lockVer);
+      HTML.downloaderPlaneBTN.style.color = stage === "downloadFailed" ? "red" : "";
     }
     download() {
       this.downloading = false;
@@ -647,10 +680,9 @@
       this.zip.generateAsync({ type: "blob" }, (_metadata) => {
       }).then((data) => {
         saveAs(data, `${meta.originTitle || meta.title}.zip`);
-        if (this.downloadNoticeElement)
-          this.downloadNoticeElement.innerHTML = "";
-        if (this.downloadStartElement)
-          this.downloadStartElement.textContent = i18n.downloaded.get();
+        this.flushUI("downloaded");
+        HTML.downloaderPlaneBTN.textContent = i18n.download.get();
+        HTML.downloaderPlaneBTN.style.color = "";
       });
     }
   }
@@ -723,8 +755,13 @@
         DL.addToDelayedQueue(index, imgFetcher);
       }
       this.pushFinishedIndex(index);
-      if (DL && DL.downloading && this.isFinised()) {
-        DL.download();
+      if (this.isFinised()) {
+        if (DL.downloading) {
+          DL.download();
+        } else {
+          HTML.downloaderPlaneBTN.style.color = "lightgreen";
+          HTML.downloaderPlaneBTN.textContent += "✓";
+        }
       }
       updatePageHelper("updateFinished", this.finishedIndex.length.toString());
       evLog(`第${index + 1}张完成，大图所在第${this.currIndex + 1}张`);
@@ -797,6 +834,7 @@
       __publicField(this, "restartId");
       __publicField(this, "maxWaitMS");
       __publicField(this, "minWaitMS");
+      __publicField(this, "onFailedCallback");
       this.queue = queue;
       this.processingIndexList = [0];
       this.lockVer = 0;
@@ -804,8 +842,10 @@
       this.maxWaitMS = 1e3;
       this.minWaitMS = 300;
     }
-    async start(lockVer) {
-      evLog("空闲自加载启动:" + this.processingIndexList.toString());
+    onFailed(cb) {
+      this.onFailedCallback = cb;
+    }
+    start(lockVer) {
       if (this.lockVer != lockVer || !conf.autoLoad)
         return;
       if (this.processingIndexList.length === 0) {
@@ -814,41 +854,57 @@
       if (this.queue.length === 0) {
         return;
       }
-      for (let i = 0; i < this.processingIndexList.length; i++) {
-        const processingIndex = this.processingIndexList[i];
+      evLog("空闲自加载启动:" + this.processingIndexList.toString());
+      for (const processingIndex of this.processingIndexList) {
         const imgFetcher = this.queue[processingIndex];
-        if (imgFetcher.lock || imgFetcher.stage === FetchState.DONE) {
-          continue;
-        }
         imgFetcher.onFinished("IDLE-REPORT", () => {
           this.wait().then(() => {
-            this.checkProcessingIndex(i);
+            this.checkProcessingIndex();
+            this.start(lockVer);
+          });
+        });
+        imgFetcher.onFailed("IDLE-REPORT", () => {
+          this.wait().then(() => {
+            this.checkProcessingIndex();
             this.start(lockVer);
           });
         });
         imgFetcher.start(processingIndex);
       }
     }
-    /**
-     * @param {当前处理列表中的位置} i
-     */
-    checkProcessingIndex(i) {
-      const processedIndex = this.processingIndexList[i];
-      let restart = false;
-      for (let j = processedIndex, max = this.queue.length - 1; j <= max; j++) {
-        const imgFetcher = this.queue[j];
-        if (imgFetcher.stage === FetchState.DONE || imgFetcher.lock) {
-          if (j === max && !restart) {
-            j = -1;
-            max = processedIndex - 1;
-            restart = true;
-          }
+    checkProcessingIndex() {
+      for (let i = 0; i < this.processingIndexList.length; i++) {
+        let processingIndex = this.processingIndexList[i];
+        const imf = this.queue[processingIndex];
+        if (imf.lock || imf.stage === FetchState.URL) {
           continue;
         }
-        this.processingIndexList[i] = j;
-        return;
+        let found = false;
+        let hasFailed = imf.stage === FetchState.FAILED;
+        for (let j = Math.min(processingIndex + 1, this.queue.length - 1), limit = this.queue.length; j < limit; j++) {
+          const imf2 = this.queue[j];
+          if (!imf2.lock && imf2.stage === FetchState.URL) {
+            this.processingIndexList[i] = j;
+            found = true;
+            break;
+          }
+          if (imf2.stage === FetchState.FAILED) {
+            hasFailed = true;
+          }
+          if (j >= this.queue.length - 1) {
+            limit = processingIndex;
+            j = 0;
+          }
+        }
+        if (!found) {
+          this.processingIndexList = [];
+          if (hasFailed && this.onFailedCallback) {
+            this.onFailedCallback();
+            this.onFailedCallback = void 0;
+          }
+          return;
+        }
       }
-      this.processingIndexList.splice(i, 1);
     }
     async wait() {
       const { maxWaitMS, minWaitMS } = this;
@@ -865,7 +921,7 @@
       window.clearTimeout(this.restartId);
       this.restartId = window.setTimeout(() => {
         this.processingIndexList = [newIndex];
-        this.checkProcessingIndex(0);
+        this.checkProcessingIndex();
         this.start(this.lockVer);
       }, conf.restartIdleLoader);
     }
@@ -1472,7 +1528,6 @@ text-align: left;
     }
     async matchImgURL(hash, _) {
       const url = this.gg.url(hash);
-      console.log("hitomi image url: " + url);
       return url;
     }
     async parseImgNodes(page, template) {
@@ -1863,15 +1918,22 @@ text-align: left;
       return startX;
     }
     drawSmallRect(x, y, imgFetcher, isCurr, isSelected) {
-      if (imgFetcher.stage == FetchState.DONE) {
-        this.ctx.fillStyle = "rgb(110, 200, 120)";
-      } else if (imgFetcher.stage === FetchState.DATA) {
-        const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
-        this.ctx.fillStyle = `rgba(110, ${Math.ceil(
-        percent * 200
-      )}, 120, ${Math.max(percent, 0.1)})`;
-      } else {
-        this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
+      switch (imgFetcher.stage) {
+        case FetchState.FAILED:
+          this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
+          break;
+        case FetchState.URL:
+          this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
+          break;
+        case FetchState.DATA:
+          const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
+          this.ctx.fillStyle = `rgba(110, ${Math.ceil(
+          percent * 200
+        )}, 120, ${Math.max(percent, 0.1)})`;
+          break;
+        case FetchState.DONE:
+          this.ctx.fillStyle = "rgb(110, 200, 120)";
+          break;
       }
       this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
       this.ctx.shadowColor = "#d53";
@@ -2459,7 +2521,7 @@ text-align: left;
              <canvas id="downloaderCanvas" width="100" height="100"></canvas>
              <div class="download-btn-group">
                 <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
-                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.startDownload.get()}</a>
+                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.downloadStart.get()}</a>
              </div>
          </div>
      </div>

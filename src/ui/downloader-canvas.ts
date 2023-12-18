@@ -183,16 +183,23 @@ export class DownloaderCanvas {
     isCurr: boolean,
     isSelected: boolean
   ) {
-    if (imgFetcher.stage == FetchState.DONE) {
-      this.ctx.fillStyle = "rgb(110, 200, 120)";
-    } else if (imgFetcher.stage === FetchState.DATA) {
-      const percent =
-        imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
-      this.ctx.fillStyle = `rgba(110, ${Math.ceil(
-        percent * 200
-      )}, 120, ${Math.max(percent, 0.1)})`;
-    } else {
-      this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
+    switch (imgFetcher.stage) {
+      case FetchState.FAILED:
+        this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
+        break;
+      case FetchState.URL:
+        this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
+        break;
+      case FetchState.DATA:
+        const percent =
+          imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
+        this.ctx.fillStyle = `rgba(110, ${Math.ceil(
+          percent * 200
+        )}, 120, ${Math.max(percent, 0.1)})`;
+        break;
+      case FetchState.DONE:
+        this.ctx.fillStyle = "rgb(110, 200, 120)";
+        break;
     }
     this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
     this.ctx.shadowColor = "#d53";

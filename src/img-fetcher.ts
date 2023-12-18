@@ -17,9 +17,10 @@ type DownloadState = {
   readyState: 0 | 1 | 2 | 3 | 4;
 }
 
-type OnFinishedEvent = (index: number, imgFetcher: IMGFetcher) => void;
+type ResultCallback = (index: number, imgFetcher: IMGFetcher) => void;
 
 export enum FetchState {
+  FAILED = 0,
   URL = 1,
   DATA = 2,
   DONE = 3,
@@ -38,7 +39,8 @@ export class IMGFetcher {
   blobUrl?: string;
   title: string;
   downloadState: DownloadState;
-  onFinishedEventContext: Map<string, OnFinishedEvent>;
+  onFinishedEventContext: Map<string, ResultCallback>;
+  onFailedEventContext: Map<string, ResultCallback>;
   // TODO: onFailedEventContext
   downloadBar?: HTMLElement;
   timeoutId?: number;
@@ -59,6 +61,7 @@ export class IMGFetcher {
      * 当获取完成时的回调函数，从其他地方进行事件注册
      */
     this.onFinishedEventContext = new Map();
+    this.onFailedEventContext = new Map();
     this.matcher = matcher;
   }
 
@@ -98,20 +101,34 @@ export class IMGFetcher {
     } catch (error) {
       this.changeStyle(ChangeStyleAction.REMOVE, FetchStatus.FAILED);
       evLog(`IMG-FETCHER ERROR:`, error);
+      this.stage = FetchState.FAILED;
+      this.onFailedEventContext.forEach((callback) => callback(index, this));
       // TODO: show error on image
     } finally {
       this.lock = false;
     }
   }
 
-  onFinished(eventId: string, callback: OnFinishedEvent) {
+  onFinished(eventId: string, callback: ResultCallback) {
     this.onFinishedEventContext.set(eventId, callback);
+  }
+
+  onFailed(eventId: string, callback: ResultCallback) {
+    this.onFailedEventContext.set(eventId, callback);
+  }
+
+  retry() {
+    if (this.stage !== FetchState.DONE) {
+      this.changeStyle(ChangeStyleAction.REMOVE);
+      this.stage = FetchState.URL;
+    }
   }
 
   async fetchImage(): Promise<void> {
     this.tryTimes = 0;
     while (this.tryTimes < 3) {
       switch (this.stage) {
+        case FetchState.FAILED:
         case FetchState.URL:
           let url = await this.fetchImageURL();
           if (url !== null) {
@@ -243,6 +260,9 @@ export class IMGFetcher {
         this.imgElement.classList.add("fetch-failed");
         this.imgElement.classList.remove("fetched");
         break;
+      default:
+        this.imgElement.classList.remove("fetched");
+        this.imgElement.classList.remove("fetch-failed");
     }
   }
 }

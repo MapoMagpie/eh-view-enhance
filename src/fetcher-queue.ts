@@ -70,8 +70,13 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
       DL.addToDelayedQueue(index, imgFetcher);
     }
     this.pushFinishedIndex(index);
-    if (DL && DL.downloading && this.isFinised()) {
-      DL.download();
+    if (this.isFinised()) {
+      if (DL.downloading) {
+        DL.download();
+      } else {
+        HTML.downloaderPlaneBTN.style.color = "lightgreen";
+        HTML.downloaderPlaneBTN.textContent += "✓";
+      }
     }
     updatePageHelper("updateFinished", this.finishedIndex.length.toString());
     evLog(`第${index + 1}张完成，大图所在第${this.currIndex + 1}张`);

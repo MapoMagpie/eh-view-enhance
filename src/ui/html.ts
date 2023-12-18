@@ -167,7 +167,7 @@ export function createHTML() {
              <canvas id="downloaderCanvas" width="100" height="100"></canvas>
              <div class="download-btn-group">
                 <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
-                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.startDownload.get()}</a>
+                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.downloadStart.get()}</a>
              </div>
          </div>
      </div>

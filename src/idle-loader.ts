@@ -10,6 +10,7 @@ export class IdleLoader {
   restartId?: number;
   maxWaitMS: number;
   minWaitMS: number;
+  onFailedCallback?: () => void;
   constructor(queue: IMGFetcherQueue) {
     //图片获取器队列
     this.queue = queue;
@@ -22,9 +23,12 @@ export class IdleLoader {
     this.minWaitMS = 300;
   }
 
-  async start(lockVer: number) {
-    evLog("空闲自加载启动:" + this.processingIndexList.toString());
-    //如果被中止了，则停止
+  onFailed(cb: () => void) {
+    this.onFailedCallback = cb;
+  }
+
+  start(lockVer: number) {
+    // 如果被中止了，则停止
     if (this.lockVer != lockVer || !conf.autoLoad) return;
     // 如果已经没有要处理的列表
     if (this.processingIndexList.length === 0) {
@@ -33,17 +37,18 @@ export class IdleLoader {
     if (this.queue.length === 0) {
       return;
     }
-    for (let i = 0; i < this.processingIndexList.length; i++) {
-      const processingIndex = this.processingIndexList[i];
-      // 获取索引所对应的图片获取器，并添加完成事件，当图片获取完成时，重新查找新的可获取的图片获取器，并递归
+    evLog("空闲自加载启动:" + this.processingIndexList.toString());
+    for (const processingIndex of this.processingIndexList) {
       const imgFetcher = this.queue[processingIndex];
-      // 当图片获取器还没有获取图片时，则启动图片获取器
-      if (imgFetcher.lock || imgFetcher.stage === FetchState.DONE) {
-        continue;
-      }
       imgFetcher.onFinished("IDLE-REPORT", () => {
         this.wait().then(() => {
-          this.checkProcessingIndex(i);
+          this.checkProcessingIndex();
+          this.start(lockVer);
+        });
+      });
+      imgFetcher.onFailed("IDLE-REPORT", () => {
+        this.wait().then(() => {
+          this.checkProcessingIndex();
           this.start(lockVer);
         });
       });
@@ -51,28 +56,47 @@ export class IdleLoader {
     }
   }
 
-  /**
-   * @param {当前处理列表中的位置} i
-   */
-  checkProcessingIndex(i: number) {
-    const processedIndex = this.processingIndexList[i];
-    let restart = false;
-    // 从图片获取器队列中获取一个还未获取图片的获取器所对应的索引，如果不存在则从处理列表中删除该索引，缩减处理列表
-    for (let j = processedIndex, max = this.queue.length - 1; j <= max; j++) {
-      const imgFetcher = this.queue[j];
-      // 如果图片获取器正在获取或者图片获取器已完成获取，
-      if (imgFetcher.stage === FetchState.DONE || imgFetcher.lock) {
-        if (j === max && !restart) {
-          j = -1;
-          max = processedIndex - 1;
-          restart = true;
-        }
+  checkProcessingIndex() {
+    for (let i = 0; i < this.processingIndexList.length; i++) {
+      let processingIndex = this.processingIndexList[i];
+      const imf = this.queue[processingIndex];
+      // img fetcher still fetching, or not yet fetching, continue.
+      if (imf.lock || imf.stage === FetchState.URL) {
         continue;
       }
-      this.processingIndexList[i] = j;
-      return;
+      // find unfinished imgFetcher
+      let found = false;
+      let hasFailed = imf.stage === FetchState.FAILED;
+      for (
+        let j = Math.min(processingIndex + 1, this.queue.length - 1), limit = this.queue.length;
+        (j < limit);
+        j++
+      ) {
+        const imf = this.queue[j];
+        // find img fetcher that hasn't been fetching
+        if (!imf.lock && imf.stage === FetchState.URL) {
+          this.processingIndexList[i] = j;
+          found = true;
+          break;
+        }
+        if (imf.stage === FetchState.FAILED) {
+          hasFailed = true;
+        }
+        // begin from the frist, stop at the processingIndex
+        if (j >= this.queue.length - 1) {
+          limit = processingIndex;
+          j = 0;
+        }
+      }
+      if (!found) {
+        this.processingIndexList = [];
+        if (hasFailed && this.onFailedCallback) {
+          this.onFailedCallback();
+          this.onFailedCallback = undefined;
+        }
+        return;
+      }
     }
-    this.processingIndexList.splice(i, 1);
   }
 
   async wait(): Promise<boolean> {
@@ -91,7 +115,7 @@ export class IdleLoader {
     window.clearTimeout(this.restartId);
     this.restartId = window.setTimeout(() => {
       this.processingIndexList = [newIndex];
-      this.checkProcessingIndex(0);
+      this.checkProcessingIndex();
       this.start(this.lockVer);
     }, conf.restartIdleLoader);
   }

@@ -63,7 +63,7 @@ export class HitomiMather implements Matcher {
 
   public async matchImgURL(hash: string, _: boolean): Promise<string> {
     const url = this.gg!.url(hash);
-    console.log("hitomi image url: " + url);
+    // console.log("hitomi image url: " + url);
     return url;
   }
 

@@ -11,17 +11,16 @@ export default defineConfig({
         namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
         exclude: [
           'https://nhentai.net/g/*/*/',
-          'https://hitomi.la/reader/*'
         ],
         match: [
           'https://exhentai.org/g/*',
           'https://e-hentai.org/g/*',
           'https://nhentai.net/g/*',
           'https://steamcommunity.com/id/*/screenshots*',
-          'https://hitomi.la/*',
+          'https://hitomi.la/*/*'
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.1.10',
+        version: '4.1.11',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {

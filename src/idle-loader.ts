@@ -57,6 +57,8 @@ export class IdleLoader {
   }
 
   checkProcessingIndex() {
+    // Skip found Fetcher
+    let foundFetcherIndex = new Set<Number>();
     for (let i = 0; i < this.processingIndexList.length; i++) {
       let processingIndex = this.processingIndexList[i];
       const imf = this.queue[processingIndex];
@@ -74,7 +76,8 @@ export class IdleLoader {
       ) {
         const imf = this.queue[j];
         // find img fetcher that hasn't been fetching
-        if (!imf.lock && imf.stage === FetchState.URL) {
+        if (!imf.lock && imf.stage === FetchState.URL && !foundFetcherIndex.has(j)) {
+          foundFetcherIndex.add(j);
           this.processingIndexList[i] = j;
           found = true;
           break;

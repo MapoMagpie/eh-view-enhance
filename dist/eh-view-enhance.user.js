@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.12
+// @version            4.1.13
 // @author             MapoMagpie
 // @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
 // @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
@@ -877,19 +877,22 @@
       }
     }
     checkProcessingIndex() {
+      let foundFetcherIndex = /* @__PURE__ */ new Set();
+      let hasFailed = false;
       for (let i = 0; i < this.processingIndexList.length; i++) {
         let processingIndex = this.processingIndexList[i];
         const imf = this.queue[processingIndex];
+        if (imf.stage === FetchState.FAILED) {
+          hasFailed = true;
+        }
         if (imf.lock || imf.stage === FetchState.URL) {
           continue;
         }
-        let found = false;
-        let hasFailed = imf.stage === FetchState.FAILED;
         for (let j = Math.min(processingIndex + 1, this.queue.length - 1), limit = this.queue.length; j < limit; j++) {
           const imf2 = this.queue[j];
-          if (!imf2.lock && imf2.stage === FetchState.URL) {
+          if (!imf2.lock && imf2.stage === FetchState.URL && !foundFetcherIndex.has(j)) {
+            foundFetcherIndex.add(j);
             this.processingIndexList[i] = j;
-            found = true;
             break;
           }
           if (imf2.stage === FetchState.FAILED) {
@@ -900,7 +903,7 @@
             j = 0;
           }
         }
-        if (!found) {
+        if (foundFetcherIndex.size === 0) {
           this.processingIndexList = [];
           if (hasFailed && this.onFailedCallback) {
             this.onFailedCallback();

@@ -56,19 +56,21 @@ export class IdleLoader {
     }
   }
 
-  checkProcessingIndex() {
+    checkProcessingIndex() {
     // Skip found Fetcher
     let foundFetcherIndex = new Set<Number>();
+    let hasFailed = false;
     for (let i = 0; i < this.processingIndexList.length; i++) {
       let processingIndex = this.processingIndexList[i];
       const imf = this.queue[processingIndex];
+      if (imf.stage === FetchState.FAILED) {
+        hasFailed = true;
+      }
       // img fetcher still fetching, or not yet fetching, continue.
       if (imf.lock || imf.stage === FetchState.URL) {
         continue;
       }
       // find unfinished imgFetcher
-      let found = false;
-      let hasFailed = imf.stage === FetchState.FAILED;
       for (
         let j = Math.min(processingIndex + 1, this.queue.length - 1), limit = this.queue.length;
         (j < limit);
@@ -79,7 +81,6 @@ export class IdleLoader {
         if (!imf.lock && imf.stage === FetchState.URL && !foundFetcherIndex.has(j)) {
           foundFetcherIndex.add(j);
           this.processingIndexList[i] = j;
-          found = true;
           break;
         }
         if (imf.stage === FetchState.FAILED) {
@@ -91,7 +92,8 @@ export class IdleLoader {
           j = 0;
         }
       }
-      if (!found) {
+      // can not find any img fetcher that hasn't been fetching
+      if (foundFetcherIndex.size === 0) {
         this.processingIndexList = [];
         if (hasFailed && this.onFailedCallback) {
           this.onFailedCallback();

@@ -1353,7 +1353,9 @@
       if (imgFetcher.stage !== FetchState.DONE)
         return;
       this.pushFinishedIndex(index);
-      this.scrollTo(index);
+      if (index === this.currIndex) {
+        this.scrollTo(index);
+      }
       let keys = Array.from(this.onFinishedReport.keys());
       keys.sort();
       for (const key of keys) {

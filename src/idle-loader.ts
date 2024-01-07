@@ -21,6 +21,10 @@ export class IdleLoader {
     this.restartId;
     this.maxWaitMS = 1000;
     this.minWaitMS = 300;
+    this.queue.subscribeOnDo(9, (index) => {
+      this.abort(index);
+      return false;
+    });
   }
 
   onFailed(cb: () => void) {
@@ -56,7 +60,7 @@ export class IdleLoader {
     }
   }
 
-    checkProcessingIndex() {
+  checkProcessingIndex() {
     // Skip found Fetcher
     let foundFetcherIndex = new Set<Number>();
     let hasFailed = false;
@@ -114,7 +118,7 @@ export class IdleLoader {
 
   abort(newIndex: number) {
     this.lockVer++;
-    evLog(`终止空闲自加载, 下次将从第${this.processingIndexList[0] + 1}张开始加载`);
+    evLog(`终止空闲自加载, 下次将从第${newIndex + 1}张开始加载`);
     if (!conf.autoLoad) return;
     // 中止空闲加载后，会在等待一段时间后再次重启空闲加载
     window.clearTimeout(this.restartId);

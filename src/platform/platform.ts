@@ -1,8 +1,4 @@
-import { GalleryMeta } from "../downloader";
-import { EHMatcher } from "./ehentai";
-import { HitomiMather } from "./hitomi";
-import { NHMatcher } from "./nhentai";
-import { SteamMatcher } from "./steam";
+import { GalleryMeta } from "../download/gallery-meta";
 
 export type PagesSource = {
   raw: string | Document
@@ -16,16 +12,3 @@ export interface Matcher {
   parseGalleryMeta(doc: Document): GalleryMeta;
 }
 
-export function adaptMatcher(): Matcher {
-  const host = window.location.host;
-  if (host === "nhentai.net") {
-    return new NHMatcher();
-  }
-  if (host === "steamcommunity.com") {
-    return new SteamMatcher();
-  }
-  if (host === "hitomi.la") {
-    return new HitomiMather();
-  }
-  return new EHMatcher();
-}

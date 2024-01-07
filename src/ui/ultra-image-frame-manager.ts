@@ -1,12 +1,11 @@
-import { conf, saveConf } from "../config";
+import { conf, saveConf, Oriented } from "../config";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { FetchState } from "../img-fetcher";
-import { HTML, Oriented } from "../main";
 import { Debouncer } from "../utils/debouncer";
 import { i18n } from "../utils/i18n";
 import { sleep } from "../utils/sleep";
-import { events } from "./event";
 import Hammer from "hammerjs";
+import { HTML } from "./html";
 
 export class BigImageFrameManager {
   frame: HTMLElement;
@@ -25,6 +24,7 @@ export class BigImageFrameManager {
   hammer?: HammerManager;
   preventStepLock: boolean = true;
   preventStepLockEle?: HTMLElement;
+  visible: boolean = false;
   /* prevent mouse wheel step next image */
   constructor(frame: HTMLElement, queue: IMGFetcherQueue, imgScaleBar: HTMLElement) {
     this.frame = frame;
@@ -38,6 +38,8 @@ export class BigImageFrameManager {
     this.initImgScaleBar();
     this.initImgScaleStyle();
     this.initHammer();
+    // enable auto page
+    new AutoPage(this, HTML.autoPageBTN);
   }
 
   initHammer() {
@@ -52,16 +54,16 @@ export class BigImageFrameManager {
       if (conf.readMode === "singlePage") {
         switch (ev.direction) {
           case Hammer.DIRECTION_LEFT:
-            events.stepImageEvent(conf.reversePages ? "prev" : "next");
+            this.queue.stepImageEvent(conf.reversePages ? "prev" : "next");
             break;
           case Hammer.DIRECTION_UP:
-            events.stepImageEvent("next");
+            this.queue.stepImageEvent("next");
             break;
           case Hammer.DIRECTION_RIGHT:
-            events.stepImageEvent(conf.reversePages ? "next" : "prev");
+            this.queue.stepImageEvent(conf.reversePages ? "next" : "prev");
             break;
           case Hammer.DIRECTION_DOWN:
-            events.stepImageEvent("prev");
+            this.queue.stepImageEvent("prev");
             break;
         }
       }
@@ -80,8 +82,8 @@ export class BigImageFrameManager {
   }
 
   setNow(index: number) {
+    if (!this.visible) return;
     this.resetStickyMouse();
-    this.frame.focus();
     // every time call this.onWheel(), will set this.lockInit to true
     if (this.lockInit) {
       this.lockInit = false;
@@ -112,7 +114,7 @@ export class BigImageFrameManager {
       this.onWheel(event);
     });
     this.frame.addEventListener("scroll", (event) => this.onScroll(event));
-    this.frame.addEventListener("click", events.hiddenBigImageEvent);
+    this.frame.addEventListener("click", (event) => this.hidden(event));
     this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
     const debouncer = new Debouncer("throttle");
     this.frame.addEventListener("mousemove", event => {
@@ -173,7 +175,7 @@ export class BigImageFrameManager {
     nextLand.innerHTML = svg_bg;
     nextLand.addEventListener("mouseover", () => {
       nextLand.remove();
-      events.stepImageEvent("next");
+      this.queue.stepImageEvent("next");
     });
     this.frame.appendChild(nextLand);
     window.setTimeout(() => nextLand.remove(), 1500)
@@ -181,7 +183,7 @@ export class BigImageFrameManager {
 
   createImgElement(): HTMLImageElement {
     const img = document.createElement("img");
-    img.addEventListener("click", events.hiddenBigImageEvent);
+    img.addEventListener("click", () => this.hidden());
     return img;
   }
 
@@ -193,7 +195,9 @@ export class BigImageFrameManager {
     }
   }
 
-  hidden() {
+  hidden(event?: MouseEvent) {
+    if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
+    this.visible = false;
     this.callbackOnHidden?.();
     this.frame.blur();
     this.frame.classList.add("b-f-collapse");
@@ -201,9 +205,12 @@ export class BigImageFrameManager {
       this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
       this.removeImgNodes();
     }, 600);
+    HTML.pageHelper.classList.remove("p-minify");
+    HTML.fullViewPlane.focus();
   }
 
-  show() {
+  show(event?: Event) {
+    this.visible = true;
     this.frame.classList.remove("b-f-collapse");
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
       this.frame.focus();
@@ -218,6 +225,14 @@ export class BigImageFrameManager {
       });
     }, 600);
     this.callbackOnShow?.();
+    HTML.pageHelper.classList.add("p-minify")
+
+    //获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
+    let start = this.queue.currIndex;
+    if (event && event.target) {
+      start = this.queue.findImgIndex(event.target as HTMLElement);
+    }
+    this.queue.do(start);
   }
 
   getImgNodes(): HTMLImageElement[] {
@@ -233,7 +248,7 @@ export class BigImageFrameManager {
       if (this.isReachBoundary(oriented)) {
         event.preventDefault();
         if (!this.tryPreventStep()) {
-          events.stepImageEvent(oriented);
+          this.queue.stepImageEvent(oriented);
         }
       }
     }
@@ -555,7 +570,7 @@ export class BigImageFrameManager {
 }
 
 // 自动翻页
-export class AutoPage {
+class AutoPage {
   frameManager: BigImageFrameManager;
   status: 'stop' | 'running';
   button: HTMLElement;
@@ -599,7 +614,7 @@ export class AutoPage {
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
     const b = this.frameManager.frame;
     if (this.frameManager.frame.classList.contains("b-f-collapse")) {
-      events.showBigImage(this.frameManager.queue.currIndex);
+      this.frameManager.show();
     }
     const progress = this.button.querySelector<HTMLDivElement>("#autoPageProgress")!;
     while (true) {

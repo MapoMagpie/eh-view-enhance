@@ -1,15 +1,18 @@
 import { Debouncer } from "./utils/debouncer";
 import { FetchState, IMGFetcher } from "./img-fetcher";
-import { HTML, DL, IL, Oriented } from "./main";
-import { evLog } from "./utils/ev-log";
-import { conf } from "./config";
-import { updatePageHelper } from "./ui/page-helper";
+import { Oriented, conf } from "./config";
+import { HTML } from "./ui/html";
+
+/// return boolean, true means stop, false means continue
+type Callback = (index: number, queue: IMGFetcherQueue) => boolean;
 
 export class IMGFetcherQueue extends Array<IMGFetcher> {
   executableQueue: number[];
   currIndex: number;
   finishedIndex: number[];
-  debouncer: Debouncer;
+  private debouncer: Debouncer;
+  private onDo: Map<number, Callback> = new Map();
+  private onFinishedReport: Map<number, Callback> = new Map();
   constructor() {
     super();
     //可执行队列
@@ -19,6 +22,14 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     //已经完成加载的
     this.finishedIndex = [];
     this.debouncer = new Debouncer();
+  }
+
+  subscribeOnDo(index: number, callback: Callback) {
+    this.onDo.set(index, callback);
+  }
+
+  subscribeOnFinishedReport(index: number, callback: Callback) {
+    this.onFinishedReport.set(index, callback);
   }
 
   isFinised() {
@@ -39,15 +50,15 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     oriented = oriented || "next";
     //边界约束
     this.currIndex = this.fixIndex(start);
-    if (DL.downloading) {
-      //立即加载和展示当前的元素
-      this[this.currIndex].setNow(this.currIndex);
-      return;
-    }
-    //立即中止空闲加载器
-    IL.abort(this.currIndex);
-    //立即加载和展示当前的元素
     this[this.currIndex].setNow(this.currIndex);
+
+    let keys = Array.from(this.onDo.keys());
+    keys.sort();
+    for (const key of keys) {
+      if (this.onDo.get(key)?.(this.currIndex, this)) {
+        return;
+      }
+    }
 
     //从当前索引开始往后,放入指定数量的图片获取器,如果该图片获取器已经获取完成则向后延伸.
     //如果最后放入的数量为0,说明已经没有可以继续执行的图片获取器,可能意味着后面所有的图片都已经加载完毕,也可能意味着中间出现了什么错误
@@ -66,25 +77,21 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   finishedReport(index: number) {
     const imgFetcher = this[index];
     if (imgFetcher.stage !== FetchState.DONE) return;
-    if (this.finishedIndex.indexOf(index) < 0) {
-      DL.addToDelayedQueue(index, imgFetcher);
-    }
     this.pushFinishedIndex(index);
-    if (this.isFinised()) {
-      if (DL.downloading) {
-        DL.download();
-      } else if (!DL.done && HTML.downloaderPlaneBTN.style.color !== "lightgreen") {
-        HTML.downloaderPlaneBTN.style.color = "lightgreen";
-        if (!/✓/.test(HTML.downloaderPlaneBTN.textContent!)) {
-          HTML.downloaderPlaneBTN.textContent += "✓";
-        }
+    this.scrollTo(index);
+
+    let keys = Array.from(this.onFinishedReport.keys());
+    keys.sort();
+    for (const key of keys) {
+      if (this.onFinishedReport.get(key)?.(index, this)) {
+        return;
       }
     }
-    updatePageHelper("updateFinished", this.finishedIndex.length.toString());
-    evLog(`第${index + 1}张完成，大图所在第${this.currIndex + 1}张`);
-    if (index !== this.currIndex) return;
-    updatePageHelper("fetched");
-    this.scrollTo(index);
+  }
+
+  stepImageEvent(oriented: Oriented) {
+    let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
+    this.do(start, oriented);
   }
 
   scrollTo(index: number) {

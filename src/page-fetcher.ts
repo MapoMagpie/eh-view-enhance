@@ -1,11 +1,8 @@
 import { conf } from "./config";
 import { IMGFetcherQueue } from "./fetcher-queue";
-import { IdleLoader } from "./idle-loader";
-import { IMGFetcher } from "./img-fetcher";
-import { HTML, Oriented } from "./main";
+import { IMGFetcher, IMGFetcherSettings } from "./img-fetcher";
 import { Matcher, PagesSource } from "./platform/platform";
-import { events } from "./ui/event";
-import { updatePageHelper } from "./ui/page-helper";
+import { HTML } from "./ui/html";
 import { evLog } from "./utils/ev-log";
 
 type AsyncAppendFunc = () => Promise<boolean>;
@@ -14,14 +11,16 @@ export class PageFetcher {
   queue: IMGFetcherQueue;
   pageURLs: string[];
   currPage: number;
-  idleLoader: IdleLoader;
   fetched: boolean;
   imgAppends: Record<"prev" | "next", AsyncAppendFunc[]>;
   matcher: Matcher;
   done: boolean = false;
-  constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher) {
+  onAppended?: (total: number) => void;
+  imgFetcherSettings: IMGFetcherSettings;
+  constructor(queue: IMGFetcherQueue, matcher: Matcher, imgFetcherSettings: IMGFetcherSettings) {
     this.queue = queue;
-    this.idleLoader = idleLoader;
+    this.matcher = matcher;
+    this.imgFetcherSettings = imgFetcherSettings;
     //所有页的地址
     this.pageURLs = [];
     //当前页所在的索引
@@ -30,7 +29,6 @@ export class PageFetcher {
     this.imgAppends = { prev: [], next: [] };
     //平均高度，用于渲染未加载的缩略图,单位px
     this.fetched = false;
-    this.matcher = matcher;
   }
 
   async init() {
@@ -41,7 +39,7 @@ export class PageFetcher {
     let fetchIter = this.matcher.fetchPagesSource();
     let first = await fetchIter.next();
     if (!first.done) {
-      await this.appendPageImg(first.value, "next");
+      await this.appendPageImg(first.value);
       setTimeout(() => this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight), 200)
     }
     this.loadAllPageImg(fetchIter);
@@ -50,40 +48,28 @@ export class PageFetcher {
   async loadAllPageImg(iter: AsyncGenerator<PagesSource>) {
     for await (const page of iter) {
       // console.log("page source: ", page)
-      await this.appendPageImg(page, "next");
+      await this.appendPageImg(page);
       this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
     }
     this.done = true;
   }
 
-  async appendPageImg(page: PagesSource, oriented: Oriented): Promise<boolean> {
+  setOnAppended(onAppended: (total: number) => void) {
+    this.onAppended = onAppended;
+  }
+
+  async appendPageImg(page: PagesSource): Promise<boolean> {
     try {
       const imgNodeList = await this.obtainImageNodeList(page);
       const IFs = imgNodeList.map(
-        (imgNode) => new IMGFetcher(imgNode as HTMLElement, this.matcher)
+        (imgNode) => new IMGFetcher(imgNode as HTMLElement, this.imgFetcherSettings)
       );
-      switch (oriented) {
-        case "prev":
-          HTML.fullViewPlane.firstElementChild!.nextElementSibling!.after(
-            ...imgNodeList
-          );
-          const len = this.queue.length;
-          this.queue.unshift(...IFs);
-          if (len > 0) {
-            this.idleLoader.processingIndexList[0] += IFs.length;
-            const { root } = this.queue[this.idleLoader.processingIndexList[0]];
-            HTML.fullViewPlane.scrollTo(0, root.offsetTop);
-          }
-          break;
-        case "next":
-          HTML.fullViewPlane.lastElementChild!.after(...imgNodeList);
-          this.queue.push(...IFs);
-          break;
-      }
-      updatePageHelper("updateTotal", this.queue.length.toString());
+      HTML.fullViewPlane.lastElementChild!.after(...imgNodeList);
+      this.queue.push(...IFs);
+      this.onAppended?.(this.queue.length);
       return true;
     } catch (error) {
-      evLog(`从下一页或上一页中提取图片元素时出现了错误！`, error);
+      evLog(`page fetcher append images error: `, error);
       return false;
     }
   }
@@ -106,11 +92,7 @@ export class PageFetcher {
     let tryTimes = 0;
     while (tryTimes < 3) {
       try {
-        const list = await this.matcher.parseImgNodes(page, imgNodeTemplate);
-        list.forEach((imgNode) => {
-          imgNode.addEventListener("click", events.showBigImageEvent);
-        })
-        return list;
+        return await this.matcher.parseImgNodes(page, imgNodeTemplate);
       } catch (error) {
         evLog("warn: parse image nodes failed, retrying: ", error)
         tryTimes++;

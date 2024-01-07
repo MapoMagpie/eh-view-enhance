@@ -3,7 +3,7 @@ import { i18n } from "../utils/i18n";
 import { loadStyleSheel } from "./style";
 
 
-export function createHTML() {
+function createHTML() {
   const fullViewPlane = document.createElement("div");
   fullViewPlane.setAttribute("tabindex", "0");
   fullViewPlane.classList.add("fullViewPlane");
@@ -223,3 +223,4 @@ export function createHTML() {
     styleSheel,
   };
 }
+export const HTML = createHTML();

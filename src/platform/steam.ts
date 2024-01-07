@@ -1,4 +1,4 @@
-import { GalleryMeta } from "../downloader";
+import { GalleryMeta } from "../download/gallery-meta";
 import { Matcher, PagesSource } from "./platform";
 
 const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;

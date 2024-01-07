@@ -1,7 +1,6 @@
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { FetchState, IMGFetcher } from "../img-fetcher";
 import { Debouncer } from "../utils/debouncer";
-import { events } from "./event";
 
 type DrawNode = {
   index: number;
@@ -22,7 +21,8 @@ export class DownloaderCanvas {
   scrollTop: number;
   scrollSize: number;
   debouncer: Debouncer;
-  constructor(id: string, queue: IMGFetcherQueue) {
+  onClick?: (index: number) => void;
+  constructor(id: string, queue: IMGFetcherQueue, onClick?: (index: number) => void) {
     this.queue = queue;
     const canvas = document.getElementById(id);
     if (!canvas) {
@@ -43,7 +43,7 @@ export class DownloaderCanvas {
         (state) => state.selected
       )?.index;
       if (index !== undefined) {
-        events.showBigImage(index);
+        onClick?.(index);
       }
     });
     this.ctx = this.canvas.getContext("2d")!;
@@ -117,7 +117,7 @@ export class DownloaderCanvas {
   }
 
   // this function should be called by drawDebouce
-  draw() {
+  private draw() {
     const [w, h] = this.getWH();
     this.ctx.clearRect(0, 0, w, h);
     const drawList = this.computeDrawList();

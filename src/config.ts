@@ -1,4 +1,7 @@
 import { GM_getValue, GM_setValue } from "$";
+
+export type Oriented = "prev" | "next";
+
 export type Config = {
   backgroundImage: string
   /** 每行显示的数量 */

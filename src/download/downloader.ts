@@ -1,25 +1,15 @@
-import { FetchState, IMGFetcher } from "./img-fetcher";
-import { conf } from "./config";
-import { evLog } from "./utils/ev-log";
-import { i18n } from "./utils/i18n";
-import { IMGFetcherQueue } from "./fetcher-queue";
-import { IdleLoader } from "./idle-loader";
+import { FetchState, IMGFetcher } from "../img-fetcher";
+import { conf } from "../config";
+import { evLog } from "../utils/ev-log";
+import { i18n } from "../utils/i18n";
+import { IMGFetcherQueue } from "../fetcher-queue";
+import { IdleLoader } from "../idle-loader";
 import JSZip from "jszip";
 import saveAs from "file-saver";
-import { Matcher } from "./platform/platform";
-import { HTML, PF } from "./main";
+import { Matcher } from "../platform/platform";
+import { HTML } from "../ui/html";
+import { GalleryMeta } from "./gallery-meta";
 
-export class GalleryMeta {
-  url: string;
-  title?: string;
-  originTitle?: string;
-  tags: Record<string, any[]>;
-  constructor(url: string, title: string) {
-    this.url = url;
-    this.title = title;
-    this.tags = {};
-  }
-}
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
 export class Downloader {
   meta: () => GalleryMeta;
@@ -29,13 +19,16 @@ export class Downloader {
   downloadStartElement?: HTMLAnchorElement;
   downloadNoticeElement?: HTMLElement;
   queue: IMGFetcherQueue;
+  added: Set<number> = new Set();
   idleLoader: IdleLoader;
   numberTitle: boolean | undefined;
   delayedQueue: { index: number, fetcher: IMGFetcher }[] = [];
-  done: boolean = false;;
-  constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher) {
+  done: boolean = false;
+  isReady: () => boolean;
+  constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher, allPagesReady: () => boolean) {
     this.queue = queue;
     this.idleLoader = idleLoader;
+    this.isReady = allPagesReady;
     this.meta = () => matcher.parseGalleryMeta(document);
     this.zip = new JSZip();
     this.downloading = false;
@@ -44,6 +37,25 @@ export class Downloader {
     this.downloadNoticeElement = document.querySelector("#download-notice") || undefined;
     this.downloadForceElement?.addEventListener("click", () => this.download());
     this.downloadStartElement?.addEventListener("click", () => this.start());
+    this.queue.subscribeOnDo(0, () => this.downloading);
+    this.queue.subscribeOnFinishedReport(0, (index, queue) => {
+      if (this.added.has(index)) {
+        return false;
+      }
+      this.added.add(index);
+      this.addToDelayedQueue(index, queue[index]);
+      if (queue.isFinised()) {
+        if (this.downloading) {
+          this.download();
+        } else if (!this.done && HTML.downloaderPlaneBTN.style.color !== "lightgreen") {
+          HTML.downloaderPlaneBTN.style.color = "lightgreen";
+          if (!/✓/.test(HTML.downloaderPlaneBTN.textContent!)) {
+            HTML.downloaderPlaneBTN.textContent += "✓";
+          }
+        }
+      }
+      return false;
+    });
   }
 
   needNumberTitle(): boolean {
@@ -64,7 +76,7 @@ export class Downloader {
   }
 
   addToDelayedQueue(index: number, imgFetcher: IMGFetcher) {
-    if (PF.done) {
+    if (this.isReady()) {
       if (this.delayedQueue.length > 0) {
         for (const item of this.delayedQueue) {
           this.addToDownloadZip(item.index, item.fetcher);

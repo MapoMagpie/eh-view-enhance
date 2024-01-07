@@ -28,18 +28,14 @@
 // @grant              GM_xmlhttpRequest
 // ==/UserScript==
 
-(function (Hammer, JSZip, saveAs) {
+(function (JSZip, saveAs, Hammer) {
   'use strict';
 
-  var __defProp = Object.defineProperty;
-  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-  var __publicField = (obj, key, value) => {
-    __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-    return value;
-  };
+  // src/native/alias.ts
   var _GM_getValue = /* @__PURE__ */ (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
   var _GM_setValue = /* @__PURE__ */ (() => typeof GM_setValue != "undefined" ? GM_setValue : void 0)();
   var _GM_xmlhttpRequest = /* @__PURE__ */ (() => typeof GM_xmlhttpRequest != "undefined" ? GM_xmlhttpRequest : void 0)();
+
   function defaultConf() {
     const screenWidth = window.screen.width;
     const colCount = screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : 5;
@@ -113,42 +109,13 @@
   const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay"];
   const ConfigSelectKeys = ["readMode", "stickyMouse"];
   const conf = getConf();
-  const updatePageHelper = function(state, data) {
-    switch (state) {
-      case "fetching":
-        HTML.pageHelper.classList.add("pageHelperFetching");
-        break;
-      case "fetched":
-        HTML.pageHelper.classList.remove("pageHelperFetching");
-        break;
-      case "updateTotal":
-        if (!data) {
-          throw new Error("updateTotal data is undefined");
-        }
-        HTML.totalPageElement.textContent = data;
-        DLC.drawDebouce();
-        break;
-      case "updateCurrPage":
-        if (!data) {
-          throw new Error("updateCurrPage data is undefined");
-        }
-        HTML.currPageElement.textContent = data;
-        DLC.drawDebouce();
-        break;
-      case "updateFinished":
-        if (!data) {
-          throw new Error("updateFinished data is undefined");
-        }
-        HTML.finishedElement.textContent = data;
-        DLC.drawDebouce();
-        break;
-    }
-  };
+
   function evLog(msg, ...info) {
     if (conf.debug) {
       console.log((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
     }
   }
+
   const HOST_REGEX = /\/\/([^\/]*)\//;
   function xhrWapper(url, respType, cb) {
     _GM_xmlhttpRequest({
@@ -172,6 +139,7 @@
       ...cb
     });
   }
+
   var FetchState = /* @__PURE__ */ ((FetchState2) => {
     FetchState2[FetchState2["FAILED"] = 0] = "FAILED";
     FetchState2[FetchState2["URL"] = 1] = "URL";
@@ -180,29 +148,28 @@
     return FetchState2;
   })(FetchState || {});
   class IMGFetcher {
-    constructor(node, matcher2) {
-      __publicField(this, "root");
-      __publicField(this, "imgElement");
-      __publicField(this, "pageUrl");
-      __publicField(this, "bigImageUrl");
-      __publicField(this, "stage");
-      __publicField(this, "tryTimes");
-      __publicField(this, "lock");
-      __publicField(this, "rendered");
-      __publicField(this, "blobData");
-      __publicField(this, "blobUrl");
-      __publicField(this, "title");
-      __publicField(this, "downloadState");
-      __publicField(this, "onFinishedEventContext");
-      __publicField(this, "onFailedEventContext");
-      // TODO: onFailedEventContext
-      __publicField(this, "downloadBar");
-      __publicField(this, "timeoutId");
-      __publicField(this, "matcher");
+    root;
+    imgElement;
+    pageUrl;
+    bigImageUrl;
+    stage;
+    tryTimes;
+    lock;
+    rendered;
+    blobData;
+    blobUrl;
+    title;
+    downloadState;
+    onFinishedEventContext;
+    onFailedEventContext;
+    downloadBar;
+    timeoutId;
+    settings;
+    constructor(node, settings) {
       this.root = node;
       this.imgElement = node.firstChild;
       this.pageUrl = this.imgElement.getAttribute("ahref");
-      this.stage = 1;
+      this.stage = 1 /* URL */;
       this.tryTimes = 0;
       this.lock = false;
       this.rendered = false;
@@ -210,7 +177,8 @@
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
       this.onFinishedEventContext = /* @__PURE__ */ new Map();
       this.onFailedEventContext = /* @__PURE__ */ new Map();
-      this.matcher = matcher2;
+      this.settings = settings;
+      this.root.addEventListener("click", (event) => settings.onClick?.(event));
     }
     // 刷新下载状态
     setDownloadState(newState) {
@@ -233,32 +201,21 @@
       if (this.downloadBar) {
         this.downloadBar.querySelector("progress").setAttribute("value", this.downloadState.loaded / this.downloadState.total * 100 + "");
       }
-      DLC.drawDebouce();
+      this.settings.downloadStateReporter?.(this.downloadState);
     }
     async start(index) {
       if (this.lock)
         return;
       this.lock = true;
       try {
-        this.changeStyle(
-          0
-          /* ADD */
-        );
+        this.changeStyle(0 /* ADD */);
         await this.fetchImage();
-        this.changeStyle(
-          1,
-          0
-          /* SUCCESS */
-        );
+        this.changeStyle(1 /* REMOVE */, 0 /* SUCCESS */);
         this.onFinishedEventContext.forEach((callback) => callback(index, this));
       } catch (error) {
-        this.changeStyle(
-          1,
-          1
-          /* FAILED */
-        );
+        this.changeStyle(1 /* REMOVE */, 1 /* FAILED */);
         evLog(`IMG-FETCHER ERROR:`, error);
-        this.stage = 0;
+        this.stage = 0 /* FAILED */;
         this.onFailedEventContext.forEach((callback) => callback(index, this));
       } finally {
         this.lock = false;
@@ -271,42 +228,39 @@
       this.onFailedEventContext.set(eventId, callback);
     }
     retry() {
-      if (this.stage !== 3) {
-        this.changeStyle(
-          1
-          /* REMOVE */
-        );
-        this.stage = 1;
+      if (this.stage !== 3 /* DONE */) {
+        this.changeStyle(1 /* REMOVE */);
+        this.stage = 1 /* URL */;
       }
     }
     async fetchImage() {
       this.tryTimes = 0;
       while (this.tryTimes < 3) {
         switch (this.stage) {
-          case 0:
-          case 1:
+          case 0 /* FAILED */:
+          case 1 /* URL */:
             let url = await this.fetchImageURL();
             if (url !== null) {
               this.bigImageUrl = url;
-              this.stage = 2;
+              this.stage = 2 /* DATA */;
             } else {
               this.tryTimes++;
             }
             break;
-          case 2:
+          case 2 /* DATA */:
             let data = await this.fetchImageData();
             if (data !== null) {
               this.blobData = data;
               this.blobUrl = URL.createObjectURL(data);
               this.imgElement.src = this.blobUrl;
               this.rendered = true;
-              this.stage = 3;
+              this.stage = 3 /* DONE */;
             } else {
-              this.stage = 1;
+              this.stage = 1 /* URL */;
               this.tryTimes++;
             }
             break;
-          case 3:
+          case 3 /* DONE */:
             return;
         }
       }
@@ -314,7 +268,7 @@
     }
     async fetchImageURL() {
       try {
-        const imageURL = await this.matcher.matchImgURL(this.pageUrl, this.tryTimes > 0);
+        const imageURL = await this.settings.matcher.matchImgURL(this.pageUrl, this.tryTimes > 0);
         if (!imageURL) {
           evLog("Fetch URL failed, the URL is empty");
           return null;
@@ -350,13 +304,10 @@
     }
     //立刻将当前元素的src赋值给大图元素
     setNow(index) {
-      BIFM.setNow(index);
-      if (this.stage === 3) {
+      this.settings.setNow?.(index);
+      if (this.stage === 3 /* DONE */) {
         this.onFinishedEventContext.forEach((callback) => callback(index, this));
-      } else {
-        updatePageHelper("fetching");
       }
-      updatePageHelper("updateCurrPage", (index + 1).toString());
     }
     async fetchBigImage() {
       const imgFetcher = this;
@@ -364,8 +315,7 @@
         xhrWapper(imgFetcher.bigImageUrl, "blob", {
           onload: function(response) {
             let data = response.response;
-            if (data.type === "text/html")
-              ;
+            if (data.type === "text/html") ;
             try {
               imgFetcher.setDownloadState({ readyState: response.readyState });
             } catch (error) {
@@ -390,19 +340,19 @@
     }
     changeStyle(action, fetchStatus) {
       switch (action) {
-        case 0:
+        case 0 /* ADD */:
           this.imgElement.classList.add("fetching");
           break;
-        case 1:
+        case 1 /* REMOVE */:
           this.imgElement.classList.remove("fetching");
           break;
       }
       switch (fetchStatus) {
-        case 0:
+        case 0 /* SUCCESS */:
           this.imgElement.classList.add("fetched");
           this.imgElement.classList.remove("fetch-failed");
           break;
-        case 1:
+        case 1 /* FAILED */:
           this.imgElement.classList.add("fetch-failed");
           this.imgElement.classList.remove("fetched");
           break;
@@ -412,6 +362,7 @@
       }
     }
   }
+
   const lang = navigator.language;
   const i18nIndex = lang === "zh-CN" ? 1 : 0;
   class I18nValue extends Array {
@@ -524,1442 +475,7 @@
     </ol>
   `)
   };
-  class GalleryMeta {
-    constructor(url, title) {
-      __publicField(this, "url");
-      __publicField(this, "title");
-      __publicField(this, "originTitle");
-      __publicField(this, "tags");
-      this.url = url;
-      this.title = title;
-      this.tags = {};
-    }
-  }
-  const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
-  class Downloader {
-    constructor(queue, idleLoader, matcher2) {
-      __publicField(this, "meta");
-      __publicField(this, "zip");
-      __publicField(this, "downloading");
-      __publicField(this, "downloadForceElement");
-      __publicField(this, "downloadStartElement");
-      __publicField(this, "downloadNoticeElement");
-      __publicField(this, "queue");
-      __publicField(this, "idleLoader");
-      __publicField(this, "numberTitle");
-      __publicField(this, "delayedQueue", []);
-      __publicField(this, "done", false);
-      var _a, _b;
-      this.queue = queue;
-      this.idleLoader = idleLoader;
-      this.meta = () => matcher2.parseGalleryMeta(document);
-      this.zip = new JSZip();
-      this.downloading = false;
-      this.downloadForceElement = document.querySelector("#download-force") || void 0;
-      this.downloadStartElement = document.querySelector("#download-start") || void 0;
-      this.downloadNoticeElement = document.querySelector("#download-notice") || void 0;
-      (_a = this.downloadForceElement) == null ? void 0 : _a.addEventListener("click", () => this.download());
-      (_b = this.downloadStartElement) == null ? void 0 : _b.addEventListener("click", () => this.start());
-    }
-    needNumberTitle() {
-      if (this.numberTitle !== void 0) {
-        return this.numberTitle;
-      } else {
-        this.numberTitle = false;
-        let lastTitle = "";
-        for (const fetcher of this.queue) {
-          if (fetcher.title < lastTitle) {
-            this.numberTitle = true;
-            break;
-          }
-          lastTitle = fetcher.title;
-        }
-        return this.numberTitle;
-      }
-    }
-    addToDelayedQueue(index, imgFetcher) {
-      if (PF.done) {
-        if (this.delayedQueue.length > 0) {
-          for (const item of this.delayedQueue) {
-            this.addToDownloadZip(item.index, item.fetcher);
-          }
-          this.delayedQueue = [];
-        }
-        this.addToDownloadZip(index, imgFetcher);
-      } else {
-        this.delayedQueue.push({ index, fetcher: imgFetcher });
-      }
-    }
-    addToDownloadZip(index, imgFetcher) {
-      if (!imgFetcher.blobData) {
-        evLog("无法获取图片数据，因此该图片无法下载");
-        return;
-      }
-      let title = imgFetcher.title;
-      if (this.needNumberTitle()) {
-        const digit = this.queue.length.toString().length;
-        title = conf.filenameTemplate.replace("{number}", (index + 1).toString().padStart(digit, "0")).replace("{title}", title);
-      }
-      this.zip.file(this.checkDuplicateTitle(index, title), imgFetcher.blobData, { binary: true });
-    }
-    checkDuplicateTitle(index, $title) {
-      var _a;
-      let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");
-      if (this.zip.files[newTitle]) {
-        let splits = newTitle.split(".");
-        const ext = splits.pop();
-        const prefix = splits.join(".");
-        const num = parseInt(((_a = prefix.match(/_(\d+)$/)) == null ? void 0 : _a[1]) || "");
-        if (isNaN(num)) {
-          newTitle = `${prefix}_1.${ext}`;
-        } else {
-          newTitle = `${prefix.replace(/\d+$/, (num + 1).toString())}.${ext}`;
-        }
-        return this.checkDuplicateTitle(index, newTitle);
-      } else {
-        return newTitle;
-      }
-    }
-    // check > start > download
-    check() {
-      var _a;
-      if (conf.fetchOriginal)
-        return;
-      if (this.downloadNoticeElement && !this.downloading) {
-        this.downloadNoticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-        (_a = this.downloadNoticeElement.querySelector("a")) == null ? void 0 : _a.addEventListener("click", () => this.fetchOriginalTemporarily());
-      }
-    }
-    fetchOriginalTemporarily() {
-      conf.fetchOriginal = true;
-      this.queue.forEach((imgFetcher) => {
-        imgFetcher.stage = FetchState.URL;
-      });
-      this.start();
-    }
-    start() {
-      if (this.queue.isFinised()) {
-        this.download();
-        return;
-      }
-      this.flushUI("downloading");
-      this.downloading = true;
-      conf.autoLoad = true;
-      this.queue.forEach((imf) => {
-        if (imf.stage === FetchState.FAILED) {
-          imf.retry();
-        }
-      });
-      this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
-      this.idleLoader.onFailed(() => {
-        this.downloading = false;
-        this.flushUI("downloadFailed");
-      });
-      this.idleLoader.start(++this.idleLoader.lockVer);
-    }
-    flushUI(stage) {
-      if (this.downloadNoticeElement) {
-        this.downloadNoticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
-      }
-      if (this.downloadStartElement) {
-        this.downloadStartElement.style.color = stage === "downloadFailed" ? "red" : "";
-        this.downloadStartElement.textContent = i18n[stage].get();
-      }
-      HTML.downloaderPlaneBTN.style.color = stage === "downloadFailed" ? "red" : "";
-    }
-    download() {
-      this.downloading = false;
-      this.idleLoader.abort(this.queue.currIndex);
-      if (this.delayedQueue.length > 0) {
-        for (const item of this.delayedQueue) {
-          this.addToDownloadZip(item.index, item.fetcher);
-        }
-        this.delayedQueue = [];
-      }
-      const meta = this.meta();
-      this.zip.file("meta.json", JSON.stringify(meta));
-      this.zip.generateAsync({ type: "blob" }, (_metadata) => {
-      }).then((data) => {
-        saveAs(data, `${meta.originTitle || meta.title}.zip`);
-        this.flushUI("downloaded");
-        this.done = true;
-        HTML.downloaderPlaneBTN.textContent = i18n.download.get();
-        HTML.downloaderPlaneBTN.style.color = "";
-      });
-    }
-  }
-  class Debouncer {
-    constructor(mode) {
-      __publicField(this, "tids");
-      __publicField(this, "mode");
-      __publicField(this, "lastExecTime");
-      this.tids = {};
-      this.lastExecTime = Date.now();
-      this.mode = mode || "debounce";
-    }
-    addEvent(id, event, timeout) {
-      if (this.mode === "throttle") {
-        const now = Date.now();
-        if (now - this.lastExecTime >= timeout) {
-          this.lastExecTime = now;
-          event();
-        }
-      } else if (this.mode === "debounce") {
-        window.clearTimeout(this.tids[id]);
-        this.tids[id] = window.setTimeout(event, timeout);
-      }
-    }
-  }
-  class IMGFetcherQueue extends Array {
-    constructor() {
-      super();
-      __publicField(this, "executableQueue");
-      __publicField(this, "currIndex");
-      __publicField(this, "finishedIndex");
-      __publicField(this, "debouncer");
-      this.executableQueue = [];
-      this.currIndex = 0;
-      this.finishedIndex = [];
-      this.debouncer = new Debouncer();
-    }
-    isFinised() {
-      return this.finishedIndex.length === this.length;
-    }
-    push(...items) {
-      items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
-      return super.push(...items);
-    }
-    unshift(...items) {
-      items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
-      return super.unshift(...items);
-    }
-    do(start, oriented) {
-      oriented = oriented || "next";
-      this.currIndex = this.fixIndex(start);
-      if (DL.downloading) {
-        this[this.currIndex].setNow(this.currIndex);
-        return;
-      }
-      IL.abort(this.currIndex);
-      this[this.currIndex].setNow(this.currIndex);
-      if (!this.pushInExecutableQueue(oriented))
-        return;
-      this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
-        this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(imgFetcherIndex));
-      }, 300);
-    }
-    //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
-    finishedReport(index) {
-      const imgFetcher = this[index];
-      if (imgFetcher.stage !== FetchState.DONE)
-        return;
-      if (this.finishedIndex.indexOf(index) < 0) {
-        DL.addToDelayedQueue(index, imgFetcher);
-      }
-      this.pushFinishedIndex(index);
-      if (this.isFinised()) {
-        if (DL.downloading) {
-          DL.download();
-        } else if (!DL.done && HTML.downloaderPlaneBTN.style.color !== "lightgreen") {
-          HTML.downloaderPlaneBTN.style.color = "lightgreen";
-          if (!/✓/.test(HTML.downloaderPlaneBTN.textContent)) {
-            HTML.downloaderPlaneBTN.textContent += "✓";
-          }
-        }
-      }
-      updatePageHelper("updateFinished", this.finishedIndex.length.toString());
-      evLog(`第${index + 1}张完成，大图所在第${this.currIndex + 1}张`);
-      if (index !== this.currIndex)
-        return;
-      updatePageHelper("fetched");
-      this.scrollTo(index);
-    }
-    scrollTo(index) {
-      const imgFetcher = this[index];
-      let scrollTo = imgFetcher.root.offsetTop - window.screen.availHeight / 3;
-      scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewPlane.scrollHeight ? HTML.fullViewPlane.scrollHeight : scrollTo;
-      HTML.fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
-    }
-    //如果开始的索引小于0,则修正索引为0,如果开始的索引超过队列的长度,则修正索引为队列的最后一位
-    fixIndex(start) {
-      return start < 0 ? 0 : start > this.length - 1 ? this.length - 1 : start;
-    }
-    /**
-     * 将方向前|后 的未加载大图数据的图片获取器放入待加载队列中
-     * 从当前索引开始，向后或向前进行遍历，
-     * 会跳过已经加载完毕的图片获取器，
-     * 会添加正在获取大图数据或未获取大图数据的图片获取器到待加载队列中
-     * @param oriented 方向 前后 
-     * @returns 是否添加成功
-     */
-    pushInExecutableQueue(oriented) {
-      this.executableQueue = [];
-      for (let count = 0, index = this.currIndex; this.pushExecQueueSlave(index, oriented, count); oriented === "next" ? ++index : --index) {
-        if (this[index].stage === FetchState.DONE)
-          continue;
-        this.executableQueue.push(index);
-        count++;
-      }
-      return this.executableQueue.length > 0;
-    }
-    // 如果索引已到达边界且添加数量在配置最大同时获取数量的范围内
-    pushExecQueueSlave(index, oriented, count) {
-      return (oriented === "next" && index < this.length || oriented === "prev" && index > -1) && count < conf.threads;
-    }
-    findImgIndex(ele) {
-      for (let index = 0; index < this.length; index++) {
-        if (this[index] instanceof IMGFetcher && (this[index].imgElement === ele || this[index].root === ele)) {
-          return index;
-        }
-      }
-      return 0;
-    }
-    pushFinishedIndex(index) {
-      if (this.finishedIndex.length === 0) {
-        this.finishedIndex.push(index);
-        return;
-      }
-      for (let i = 0; i < this.finishedIndex.length; i++) {
-        if (index === this.finishedIndex[i])
-          return;
-        if (index < this.finishedIndex[i]) {
-          this.finishedIndex.splice(i, 0, index);
-          return;
-        }
-      }
-      this.finishedIndex.push(index);
-    }
-  }
-  class IdleLoader {
-    constructor(queue) {
-      __publicField(this, "queue");
-      __publicField(this, "processingIndexList");
-      __publicField(this, "lockVer");
-      __publicField(this, "restartId");
-      __publicField(this, "maxWaitMS");
-      __publicField(this, "minWaitMS");
-      __publicField(this, "onFailedCallback");
-      this.queue = queue;
-      this.processingIndexList = [0];
-      this.lockVer = 0;
-      this.restartId;
-      this.maxWaitMS = 1e3;
-      this.minWaitMS = 300;
-    }
-    onFailed(cb) {
-      this.onFailedCallback = cb;
-    }
-    start(lockVer) {
-      if (this.lockVer != lockVer || !conf.autoLoad)
-        return;
-      if (this.processingIndexList.length === 0) {
-        return;
-      }
-      if (this.queue.length === 0) {
-        return;
-      }
-      evLog("空闲自加载启动:" + this.processingIndexList.toString());
-      for (const processingIndex of this.processingIndexList) {
-        const imgFetcher = this.queue[processingIndex];
-        imgFetcher.onFinished("IDLE-REPORT", () => {
-          this.wait().then(() => {
-            this.checkProcessingIndex();
-            this.start(lockVer);
-          });
-        });
-        imgFetcher.onFailed("IDLE-REPORT", () => {
-          this.wait().then(() => {
-            this.checkProcessingIndex();
-            this.start(lockVer);
-          });
-        });
-        imgFetcher.start(processingIndex);
-      }
-    }
-    checkProcessingIndex() {
-      let foundFetcherIndex = /* @__PURE__ */ new Set();
-      let hasFailed = false;
-      for (let i = 0; i < this.processingIndexList.length; i++) {
-        let processingIndex = this.processingIndexList[i];
-        const imf = this.queue[processingIndex];
-        if (imf.stage === FetchState.FAILED) {
-          hasFailed = true;
-        }
-        if (imf.lock || imf.stage === FetchState.URL) {
-          continue;
-        }
-        for (let j = Math.min(processingIndex + 1, this.queue.length - 1), limit = this.queue.length; j < limit; j++) {
-          const imf2 = this.queue[j];
-          if (!imf2.lock && imf2.stage === FetchState.URL && !foundFetcherIndex.has(j)) {
-            foundFetcherIndex.add(j);
-            this.processingIndexList[i] = j;
-            break;
-          }
-          if (imf2.stage === FetchState.FAILED) {
-            hasFailed = true;
-          }
-          if (j >= this.queue.length - 1) {
-            limit = processingIndex;
-            j = 0;
-          }
-        }
-        if (foundFetcherIndex.size === 0) {
-          this.processingIndexList = [];
-          if (hasFailed && this.onFailedCallback) {
-            this.onFailedCallback();
-            this.onFailedCallback = void 0;
-          }
-          return;
-        }
-      }
-    }
-    async wait() {
-      const { maxWaitMS, minWaitMS } = this;
-      return new Promise(function(resolve) {
-        const time = Math.floor(Math.random() * maxWaitMS + minWaitMS);
-        window.setTimeout(() => resolve(true), time);
-      });
-    }
-    abort(newIndex) {
-      this.lockVer++;
-      evLog(`终止空闲自加载, 下次将从第${this.processingIndexList[0] + 1}张开始加载`);
-      if (!conf.autoLoad)
-        return;
-      window.clearTimeout(this.restartId);
-      this.restartId = window.setTimeout(() => {
-        this.processingIndexList = [newIndex];
-        this.checkProcessingIndex();
-        this.start(this.lockVer);
-      }, conf.restartIdleLoader);
-    }
-  }
-  function modPageHelperPostion() {
-    const style = HTML.pageHelper.style;
-    conf.pageHelperAbTop = style.top;
-    conf.pageHelperAbLeft = style.left;
-    conf.pageHelperAbBottom = style.bottom;
-    conf.pageHelperAbRight = style.right;
-    saveConf(conf);
-  }
-  function modNumberConfigEvent(key, data) {
-    var _a;
-    const range = {
-      colCount: [1, 12],
-      threads: [1, 10],
-      downloadThreads: [1, 10],
-      timeout: [8, 40],
-      autoPageInterval: [500, 9e4],
-      preventScrollPageTime: [0, 9e4]
-    };
-    let mod = key === "autoPageInterval" ? 100 : 1;
-    mod = key === "preventScrollPageTime" ? 10 : mod;
-    if (data === "add") {
-      if (conf[key] < range[key][1]) {
-        conf[key] += mod;
-      }
-    } else if (data === "minus") {
-      if (conf[key] > range[key][0]) {
-        conf[key] -= mod;
-      }
-    }
-    const inputElement = document.querySelector(`#${key}Input`);
-    if (inputElement) {
-      inputElement.value = conf[key].toString();
-    }
-    if (key === "colCount") {
-      const cssRules = Array.from(((_a = HTML.styleSheel.sheet) == null ? void 0 : _a.cssRules) || []);
-      for (const cssRule of cssRules) {
-        if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".fullViewPlane") {
-            cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
-            break;
-          }
-        }
-      }
-    }
-    saveConf(conf);
-  }
-  function modBooleanConfigEvent(key) {
-    const inputElement = document.querySelector(`#${key}Checkbox`);
-    conf[key] = (inputElement == null ? void 0 : inputElement.checked) || false;
-    saveConf(conf);
-  }
-  function modSelectConfigEvent(key) {
-    const inputElement = document.querySelector(`#${key}Select`);
-    const value = inputElement == null ? void 0 : inputElement.value;
-    if (value) {
-      conf[key] = value;
-      saveConf(conf);
-    }
-    if (key === "readMode") {
-      BIFM.resetScaleBigImages();
-      if (conf.readMode === "singlePage") {
-        BIFM.init(IFQ.currIndex);
-      }
-    }
-  }
-  function mouseleavePlaneEvent(target) {
-    target.classList.add("p-collapse");
-  }
-  function togglePlaneEvent(id, collapse) {
-    setTimeout(() => {
-      let element = document.querySelector(`#${id}Plane`);
-      if (element) {
-        if (collapse === false) {
-          element.classList.remove("p-collapse");
-        } else if (collapse === true) {
-          mouseleavePlaneEvent(element);
-        } else {
-          element.classList.toggle("p-collapse");
-          ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePlaneEvent(k, true));
-        }
-      }
-    }, 10);
-  }
-  let bodyOverflow = document.body.style.overflow;
-  function showFullViewPlane() {
-    HTML.fullViewPlane.scroll(0, 0);
-    HTML.fullViewPlane.classList.remove("collapse_full_view");
-    HTML.fullViewPlane.focus();
-    document.body.style.overflow = "hidden";
-  }
-  function hiddenFullViewPlaneEvent(event) {
-    if (event.target === HTML.fullViewPlane) {
-      main(true);
-    }
-  }
-  function hiddenFullViewPlane() {
-    var _a;
-    hiddenBigImageEvent();
-    HTML.fullViewPlane.classList.add("collapse_full_view");
-    HTML.fullViewPlane.blur();
-    (_a = document.querySelector("html")) == null ? void 0 : _a.focus();
-    document.body.style.overflow = bodyOverflow;
-  }
-  function scrollEvent() {
-    if (HTML.fullViewPlane.classList.contains("collapse_full_view"))
-      return;
-    PF.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
-  }
-  function hiddenBigImageEvent(event) {
-    if (event && event.target && event.target.tagName === "SPAN")
-      return;
-    BIFM.hidden();
-    HTML.pageHelper.classList.remove("p-minify");
-    HTML.fullViewPlane.focus();
-  }
-  function bigImageWheelEvent(event) {
-    stepImageEvent(event.deltaY > 0 ? "next" : "prev");
-  }
-  let numberRecord = null;
-  function keyboardEvent(event) {
-    if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) {
-      const b = HTML.bigImageFrame;
-      switch (event.key) {
-        case "ArrowLeft":
-          event.preventDefault();
-          stepImageEvent(conf.reversePages ? "next" : "prev");
-          break;
-        case "ArrowRight":
-          event.preventDefault();
-          stepImageEvent(conf.reversePages ? "prev" : "next");
-          break;
-        case "Escape":
-        case "Enter":
-          event.preventDefault();
-          hiddenBigImageEvent();
-          break;
-        case "Home":
-          event.preventDefault();
-          IFQ.do(0, "next");
-          break;
-        case "End":
-          event.preventDefault();
-          IFQ.do(IFQ.length - 1, "prev");
-          break;
-        case " ":
-        case "ArrowUp":
-        case "ArrowDown":
-        case "PageUp":
-        case "PageDown":
-          let oriented = "next";
-          if (event.key === "ArrowUp" || event.key === "PageUp") {
-            oriented = "prev";
-          } else if (event.key === "ArrowDown" || event.key === "PageDown" || event.key === " ") {
-            oriented = "next";
-          }
-          if (event.shiftKey) {
-            oriented = oriented === "next" ? "prev" : "next";
-          }
-          BIFM.frame.addEventListener("scrollend", () => {
-            if (conf.readMode === "singlePage" && BIFM.isReachBoundary(oriented)) {
-              BIFM.tryPreventStep();
-            }
-          }, { once: true });
-          if (BIFM.isReachBoundary(oriented)) {
-            event.preventDefault();
-            b.dispatchEvent(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }));
-          }
-          break;
-        case "-":
-          BIFM.scaleBigImages(-1, 5);
-          break;
-        case "=":
-          BIFM.scaleBigImages(1, 5);
-          break;
-      }
-    } else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) {
-      switch (event.key) {
-        case "Enter": {
-          let start = IFQ.currIndex;
-          if (numberRecord && numberRecord.length > 0) {
-            start = Number(numberRecord.join("")) - 1;
-            numberRecord = null;
-            if (start < 0 || start >= IFQ.length) {
-              break;
-            }
-          }
-          IFQ[start].root.dispatchEvent(new MouseEvent("click"));
-          break;
-        }
-        case "Escape":
-          main(true);
-          break;
-        default: {
-          if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
-            numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
-          }
-        }
-      }
-    } else {
-      switch (event.key) {
-        case "Enter":
-          main(false);
-          break;
-      }
-    }
-  }
-  function showBigImageEvent(event) {
-    showBigImage(IFQ.findImgIndex(event.target));
-  }
-  function showBigImage(start) {
-    BIFM.show();
-    HTML.pageHelper.classList.add("p-minify");
-    IFQ.do(start);
-  }
-  function stepImageEvent(oriented) {
-    const start = oriented === "next" ? IFQ.currIndex + 1 : oriented === "prev" ? IFQ.currIndex - 1 : 0;
-    IFQ.do(start, oriented);
-  }
-  function showGuideEvent() {
-    const guideElement = document.createElement("div");
-    document.body.after(guideElement);
-    guideElement.innerHTML = `
-  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>
-  `;
-    guideElement.setAttribute(
-      "style",
-      `
-position: absolute;
-width: 100%;
-height: 100%;
-background-color: #363c3c78;
-z-index: 2004;
-top: 0;
-display: flex;
-justify-content: center;
-align-items: center;
-color: black;
-text-align: left;
-`
-    );
-    guideElement.addEventListener("click", () => guideElement.remove());
-  }
-  const events = {
-    modNumberConfigEvent,
-    modBooleanConfigEvent,
-    modSelectConfigEvent,
-    modPageHelperPostion,
-    togglePlaneEvent,
-    showFullViewPlane,
-    hiddenFullViewPlaneEvent,
-    hiddenFullViewPlane,
-    scrollEvent,
-    hiddenBigImageEvent,
-    bigImageWheelEvent,
-    keyboardEvent,
-    showBigImageEvent,
-    showBigImage,
-    stepImageEvent,
-    showGuideEvent,
-    mouseleavePlaneEvent
-  };
-  class PageFetcher {
-    constructor(queue, idleLoader, matcher2) {
-      __publicField(this, "queue");
-      __publicField(this, "pageURLs");
-      __publicField(this, "currPage");
-      __publicField(this, "idleLoader");
-      __publicField(this, "fetched");
-      __publicField(this, "imgAppends");
-      __publicField(this, "matcher");
-      __publicField(this, "done", false);
-      this.queue = queue;
-      this.idleLoader = idleLoader;
-      this.pageURLs = [];
-      this.currPage = 0;
-      this.imgAppends = { prev: [], next: [] };
-      this.fetched = false;
-      this.matcher = matcher2;
-    }
-    async init() {
-      await this.initPageAppend();
-    }
-    async initPageAppend() {
-      let fetchIter = this.matcher.fetchPagesSource();
-      let first = await fetchIter.next();
-      if (!first.done) {
-        await this.appendPageImg(first.value, "next");
-        setTimeout(() => this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight), 200);
-      }
-      this.loadAllPageImg(fetchIter);
-    }
-    async loadAllPageImg(iter) {
-      for await (const page of iter) {
-        await this.appendPageImg(page, "next");
-        this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
-      }
-      this.done = true;
-    }
-    async appendPageImg(page, oriented) {
-      try {
-        const imgNodeList = await this.obtainImageNodeList(page);
-        const IFs = imgNodeList.map(
-          (imgNode) => new IMGFetcher(imgNode, this.matcher)
-        );
-        switch (oriented) {
-          case "prev":
-            HTML.fullViewPlane.firstElementChild.nextElementSibling.after(
-              ...imgNodeList
-            );
-            const len = this.queue.length;
-            this.queue.unshift(...IFs);
-            if (len > 0) {
-              this.idleLoader.processingIndexList[0] += IFs.length;
-              const { root } = this.queue[this.idleLoader.processingIndexList[0]];
-              HTML.fullViewPlane.scrollTo(0, root.offsetTop);
-            }
-            break;
-          case "next":
-            HTML.fullViewPlane.lastElementChild.after(...imgNodeList);
-            this.queue.push(...IFs);
-            break;
-        }
-        updatePageHelper("updateTotal", this.queue.length.toString());
-        return true;
-      } catch (error) {
-        evLog(`从下一页或上一页中提取图片元素时出现了错误！`, error);
-        return false;
-      }
-    }
-    //从文档的字符串中创建缩略图元素列表
-    async obtainImageNodeList(page) {
-      const imgNodeTemplate = document.createElement("div");
-      imgNodeTemplate.classList.add("img-node");
-      const imgTemplate = document.createElement("img");
-      imgTemplate.setAttribute("decoding", "async");
-      imgTemplate.setAttribute("title", "untitle.jpg");
-      imgTemplate.style.height = "auto";
-      imgTemplate.setAttribute(
-        "src",
-        "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
-      );
-      imgNodeTemplate.appendChild(imgTemplate);
-      let tryTimes = 0;
-      while (tryTimes < 3) {
-        try {
-          const list = await this.matcher.parseImgNodes(page, imgNodeTemplate);
-          list.forEach((imgNode) => {
-            imgNode.addEventListener("click", events.showBigImageEvent);
-          });
-          return list;
-        } catch (error) {
-          evLog("warn: parse image nodes failed, retrying: ", error);
-          tryTimes++;
-        }
-      }
-      evLog("warn: parse image nodes failed: reached max try times!");
-      return [];
-    }
-    //通过地址请求该页的文档
-    async fetchDocument(pageURL) {
-      return await window.fetch(pageURL).then((response) => response.text());
-    }
-    /**
-     *当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
-     * @param {当前滚动位置} currTop
-     * @param {窗口高度} clientHeight
-     */
-    renderCurrView(currTop, clientHeight) {
-      const [startRander, endRander] = this.findOutsideRoundView(currTop, clientHeight);
-      evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}`);
-      this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
-    }
-    findOutsideRoundViewNode(currTop, clientHeight) {
-      const [outsideTop, outsideBottom] = this.findOutsideRoundView(currTop, clientHeight);
-      return [this.queue[outsideTop].root, this.queue[outsideBottom].root];
-    }
-    findOutsideRoundView(currTop, clientHeight) {
-      const viewButtom = currTop + clientHeight;
-      let outsideTop = 0;
-      let outsideBottom = 0;
-      for (let i = 0; i < this.queue.length; i += conf.colCount) {
-        const { root } = this.queue[i];
-        if (outsideBottom === 0) {
-          if (root.offsetTop + 2 >= currTop) {
-            outsideBottom = i + 1;
-          } else {
-            outsideTop = i;
-          }
-        } else {
-          outsideBottom = i;
-          if (root.offsetTop + root.offsetHeight > viewButtom) {
-            break;
-          }
-        }
-      }
-      return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
-    }
-  }
-  const regulars = {
-    /** 有压缩的大图地址 */
-    normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
-    /** 原图地址 */
-    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg?[^"\\]*)\"\>/,
-    /** 大图重载地址 */
-    nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
-    /** 是否开启自动多页查看器 */
-    isMPV: /https?:\/\/e[-x]hentai.org\/mpv\/\w+\/\w+\/#page\w/,
-    /** 多页查看器图片列表提取 */
-    mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g
-  };
-  class EHMatcher {
-    parseGalleryMeta(doc) {
-      const titleList = doc.querySelectorAll("#gd2 h1");
-      let title;
-      let originTitle;
-      if (titleList && titleList.length > 0) {
-        title = titleList[0].textContent || void 0;
-        if (titleList.length > 1) {
-          originTitle = titleList[1].textContent || void 0;
-        }
-      }
-      const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
-      meta.originTitle = originTitle;
-      const tagTrList = doc.querySelectorAll("#taglist tr");
-      const tags = {};
-      tagTrList.forEach((tr) => {
-        const tds = tr.childNodes;
-        const cat = tds[0].textContent;
-        if (cat) {
-          const list = [];
-          tds[1].childNodes.forEach((ele) => {
-            if (ele.textContent)
-              list.push(ele.textContent);
-          });
-          tags[cat.replace(":", "")] = list;
-        }
-      });
-      meta.tags = tags;
-      return meta;
-    }
-    async matchImgURL(url, retry) {
-      return await this.fetchImgURL(url, retry);
-    }
-    async parseImgNodes(page, template) {
-      var _a;
-      const list = [];
-      let doc = await (async () => {
-        if (page.raw instanceof Document) {
-          return page.raw;
-        } else {
-          const raw = await window.fetch(page.raw).then((response) => response.text());
-          if (!raw)
-            return null;
-          const domParser = new DOMParser();
-          return domParser.parseFromString(raw, "text/html");
-        }
-      })();
-      if (!doc) {
-        throw new Error("warn: eh matcher failed to get document from source page!");
-      }
-      const nodes = doc.querySelectorAll("#gdt a");
-      if (!nodes || nodes.length == 0) {
-        throw new Error("warn: failed query image nodes!");
-      }
-      const node0 = nodes[0];
-      const href = node0.getAttribute("href");
-      if (regulars.isMPV.test(href)) {
-        const mpvDoc = await window.fetch(href).then((response) => response.text());
-        const matchs = mpvDoc.matchAll(regulars.mpvImageList);
-        const gid = location.pathname.split("/")[2];
-        let i = 0;
-        for (const match of matchs) {
-          i++;
-          const newImgNode = template.cloneNode(true);
-          const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("title", match[1].replace(/Page\s\d+[:_]\s*/, ""));
-          newImg.setAttribute(
-            "ahref",
-            `${location.origin}/s/${match[2]}/${gid}-${i}`
-          );
-          newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
-          list.push(newImgNode);
-        }
-      } else {
-        for (const node of Array.from(nodes)) {
-          const imgNode = node.querySelector("img");
-          if (!imgNode) {
-            throw new Error("Cannot find Image");
-          }
-          const newImgNode = template.cloneNode(true);
-          const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("ahref", node.getAttribute("href"));
-          newImg.setAttribute("asrc", imgNode.src);
-          newImg.setAttribute("title", ((_a = imgNode.getAttribute("title")) == null ? void 0 : _a.replace(/Page\s\d+[:_]\s*/, "")) || "untitle.jpg");
-          list.push(newImgNode);
-        }
-      }
-      return list;
-    }
-    async *fetchPagesSource() {
-      var _a;
-      let fristHref = (_a = document.querySelector(".gdtl a")) == null ? void 0 : _a.getAttribute("href");
-      if (fristHref && regulars.isMPV.test(fristHref)) {
-        yield { raw: window.location.href, typ: "url" };
-        return;
-      }
-      const ps = Array.from(document.querySelectorAll(".gtb td a"));
-      if (ps.length === 0) {
-        throw new Error("未获取到分页元素！");
-      }
-      const lastP = ps[ps.length - 2];
-      if (!lastP) {
-        throw new Error("未获取到分页元素！x2");
-      }
-      const u = new URL(lastP.getAttribute("href"));
-      const total = Number(u.searchParams.get("p")) + 1;
-      u.searchParams.delete("p");
-      yield { raw: u.href, typ: "url" };
-      for (let p = 1; p < total; p++) {
-        u.searchParams.set("p", p.toString());
-        yield { raw: u.href, typ: "url" };
-      }
-    }
-    async fetchImgURL(url, originChanged) {
-      let text = "";
-      try {
-        text = await window.fetch(url).then((resp) => resp.text());
-        if (!text)
-          throw new Error("[text] is empty");
-      } catch (error) {
-        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
-      }
-      if (conf.fetchOriginal) {
-        const matchs = regulars.original.exec(text);
-        if (matchs && matchs.length > 0) {
-          return matchs[1].replace(/&amp;/g, "&");
-        } else {
-          const normalMatchs = regulars["normal"].exec(text);
-          if (normalMatchs == null || normalMatchs.length == 0) {
-            throw new Error(`Cannot matching the image url, content: ${text}`);
-          } else {
-            return normalMatchs[1];
-          }
-        }
-      }
-      if (originChanged) {
-        const nlValue = regulars.nlValue.exec(text)[1];
-        const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-        evLog(`IMG-FETCHER retry url:${newUrl}`);
-        return await this.fetchImgURL(url, false);
-      } else {
-        return regulars.normal.exec(text)[1];
-      }
-    }
-  }
-  class HitomiGG {
-    constructor(b, m) {
-      __publicField(this, "base", "a");
-      __publicField(this, "ext", "webp");
-      __publicField(this, "b");
-      __publicField(this, "m");
-      this.b = b;
-      this.m = new Function("g", m);
-    }
-    s(h) {
-      const m = /(..)(.)$/.exec(h);
-      return parseInt(m[2] + m[1], 16).toString(10);
-    }
-    subdomain_from_url(url, base) {
-      var retval = "b";
-      if (base) {
-        retval = base;
-      }
-      var b = 16;
-      var r = /\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])/;
-      var m = r.exec(url);
-      if (!m) {
-        return "a";
-      }
-      let g = parseInt(m[2] + m[1], b);
-      if (!isNaN(g)) {
-        retval = String.fromCharCode(97 + this.m(g)) + retval;
-      }
-      return retval;
-    }
-    url(hash) {
-      let url = "https://a.hitomi.la/" + this.ext + "/" + this.b + this.s(hash) + "/" + hash + "." + this.ext;
-      url = url.replace(/\/\/..?\.hitomi\.la\//, "//" + this.subdomain_from_url(url, this.base) + ".hitomi.la/");
-      return url;
-    }
-  }
-  const HASH_REGEX = /#(\d*)$/;
-  const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
-  const GG_B_REGEX = /b:\s'(\d*\/)'/;
-  class HitomiMather {
-    constructor() {
-      __publicField(this, "gg");
-      __publicField(this, "meta");
-      __publicField(this, "info");
-    }
-    async matchImgURL(hash, _) {
-      const url = this.gg.url(hash);
-      return url;
-    }
-    async parseImgNodes(page, template) {
-      if (!this.info) {
-        throw new Error("warn: hitomi gallery info is null!");
-      }
-      const list = [];
-      const doc = page.raw;
-      const nodes = doc.querySelectorAll(".simplePagerContainer .thumbnail-container a");
-      if (!nodes || nodes.length == 0) {
-        throw new Error("warn: failed query image nodes!");
-      }
-      for (const node of Array.from(nodes)) {
-        const sceneIndex = Number(HASH_REGEX.exec(node.href)[1]) - 1;
-        const img = node.querySelector("img");
-        if (!img) {
-          throw new Error("warn: failed query image node!");
-        }
-        const src = img.src;
-        if (!src) {
-          throw new Error(`warn: failed get Image Src`);
-        }
-        const badge = (() => {
-          const badge2 = node.querySelector(".badge");
-          return badge2 ? Number(badge2.textContent) : 1;
-        })();
-        for (let i = 0; i < badge; i++) {
-          const newImgNode = template.cloneNode(true);
-          const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("ahref", this.info.files[i + sceneIndex].hash);
-          newImg.setAttribute("asrc", src);
-          newImg.setAttribute("title", this.info.files[i + sceneIndex].name);
-          list.push(newImgNode);
-        }
-      }
-      return list;
-    }
-    async *fetchPagesSource() {
-      var _a, _b, _c;
-      const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then((resp) => resp.text());
-      this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)[1], GG_M_REGEX.exec(ggRaw)[1]);
-      const galleryID = (_c = (_b = (_a = document.querySelector("#gallery-brand a")) == null ? void 0 : _a.href) == null ? void 0 : _b.split("/").pop()) == null ? void 0 : _c.replace(".html", "");
-      if (!galleryID) {
-        throw new Error("cannot query hitomi gallery id");
-      }
-      const infoRaw = await window.fetch(`https://ltn.hitomi.la/galleries/${galleryID}.js`).then((resp) => resp.text()).then((text) => text.replace("var galleryinfo = ", ""));
-      if (!infoRaw) {
-        throw new Error("cannot query hitomi gallery info");
-      }
-      const info = JSON.parse(infoRaw);
-      this.setGalleryMeta(info, galleryID);
-      this.info = {
-        files: info.files,
-        scene_indexes: info.scene_indexes
-      };
-      yield { raw: document, typ: "doc" };
-    }
-    setGalleryMeta(info, galleryID) {
-      this.meta = new GalleryMeta(window.location.href, info["title"] || "hitomi-" + galleryID);
-      this.meta.originTitle = info["japanese_title"];
-      const excludes = ["scene_indexes", "files"];
-      for (const key in info) {
-        if (excludes.indexOf(key) > -1) {
-          continue;
-        }
-        this.meta.tags[key] = info[key];
-      }
-    }
-    parseGalleryMeta(_) {
-      return this.meta || new GalleryMeta(window.location.href, "hitomi");
-    }
-  }
-  const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
-  class NHMatcher {
-    parseGalleryMeta(doc) {
-      let title;
-      let originTitle;
-      doc.querySelectorAll("#info .title").forEach((ele) => {
-        if (!title) {
-          title = ele.textContent || void 0;
-        } else {
-          originTitle = ele.textContent || void 0;
-        }
-      });
-      const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
-      meta.originTitle = originTitle;
-      const tagTrList = doc.querySelectorAll(".tag-container");
-      const tags = {};
-      tagTrList.forEach((tr) => {
-        var _a, _b;
-        const cat = (_b = (_a = tr.firstChild) == null ? void 0 : _a.textContent) == null ? void 0 : _b.trim().replace(":", "");
-        if (cat) {
-          const list = [];
-          tr.querySelectorAll(".tag .name").forEach((tag) => {
-            var _a2;
-            const t = (_a2 = tag.textContent) == null ? void 0 : _a2.trim();
-            if (t) {
-              list.push(t);
-            }
-          });
-          if (list.length > 0) {
-            tags[cat] = list;
-          }
-        }
-      });
-      meta.tags = tags;
-      return meta;
-    }
-    async matchImgURL(url, _) {
-      let text = "";
-      try {
-        text = await window.fetch(url).then((resp) => resp.text());
-        if (!text)
-          throw new Error("[text] is empty");
-      } catch (error) {
-        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
-      }
-      return NH_IMG_URL_REGEX.exec(text)[1];
-    }
-    async parseImgNodes(page, template) {
-      const list = [];
-      const nodes = page.raw.querySelectorAll(".thumb-container > .gallerythumb");
-      if (!nodes || nodes.length == 0) {
-        throw new Error("warn: failed query image nodes!");
-      }
-      let i = 0;
-      for (const node of Array.from(nodes)) {
-        i++;
-        const imgNode = node.querySelector("img");
-        if (!imgNode) {
-          throw new Error("Cannot find Image");
-        }
-        const newImgNode = template.cloneNode(true);
-        const newImg = newImgNode.firstElementChild;
-        newImg.setAttribute("ahref", location.origin + node.getAttribute("href"));
-        newImg.setAttribute("asrc", imgNode.getAttribute("data-src"));
-        newImg.setAttribute("title", imgNode.getAttribute("title") || `${i}.jpg`);
-        list.push(newImgNode);
-      }
-      return list;
-    }
-    async *fetchPagesSource() {
-      yield { raw: document, typ: "doc" };
-    }
-  }
-  const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
-  class SteamMatcher {
-    async matchImgURL(url, _) {
-      var _a;
-      let raw = "";
-      try {
-        raw = await window.fetch(url).then((resp) => resp.text());
-        if (!raw)
-          throw new Error("[text] is empty");
-      } catch (error) {
-        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
-      }
-      const domParser = new DOMParser();
-      const doc = domParser.parseFromString(raw, "text/html");
-      let imgURL = (_a = doc.querySelector(".actualmediactn > a")) == null ? void 0 : _a.getAttribute("href");
-      if (!imgURL) {
-        throw new Error("Cannot Query Steam original Image URL");
-      }
-      return imgURL;
-    }
-    async parseImgNodes(page, template) {
-      var _a;
-      const list = [];
-      const doc = await (async () => {
-        if (page.raw instanceof Document) {
-          return page.raw;
-        } else {
-          const raw = await window.fetch(page.raw).then((response) => response.text());
-          if (!raw)
-            return null;
-          const domParser = new DOMParser();
-          return domParser.parseFromString(raw, "text/html");
-        }
-      })();
-      if (!doc) {
-        throw new Error("warn: steam matcher failed to get document from source page!");
-      }
-      const nodes = doc.querySelectorAll(".profile_media_item");
-      if (!nodes || nodes.length == 0) {
-        throw new Error("warn: failed query image nodes!");
-      }
-      for (const node of Array.from(nodes)) {
-        const src = (_a = STEAM_THUMB_IMG_URL_REGEX.exec(node.innerHTML)) == null ? void 0 : _a[1];
-        if (!src) {
-          throw new Error(`Cannot Match Steam Image URL, Content: ${node.innerHTML}`);
-        }
-        const newImgNode = template.cloneNode(true);
-        const newImg = newImgNode.firstElementChild;
-        newImg.setAttribute("ahref", node.getAttribute("href"));
-        newImg.setAttribute("asrc", src);
-        newImg.setAttribute("title", node.getAttribute("data-publishedfileid") + ".jpg");
-        list.push(newImgNode);
-      }
-      return list;
-    }
-    async *fetchPagesSource() {
-      let totalPages = -1;
-      document.querySelectorAll(".pagingPageLink").forEach((ele) => {
-        totalPages = Number(ele.textContent);
-      });
-      let url = new URL(window.location.href);
-      url.searchParams.set("view", "grid");
-      if (totalPages === -1) {
-        const doc = await window.fetch(url.href).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
-        if (!doc) {
-          throw new Error("warn: steam matcher failed to get document from source page!");
-        }
-        doc.querySelectorAll(".pagingPageLink").forEach((ele) => {
-          totalPages = Number(ele.textContent);
-        });
-      }
-      if (totalPages > 0) {
-        for (let p = 1; p <= totalPages; p++) {
-          url.searchParams.set("p", p.toString());
-          yield { raw: url.href, typ: "url" };
-        }
-      } else {
-        yield { raw: url.href, typ: "url" };
-      }
-    }
-    parseGalleryMeta(_) {
-      const url = new URL(window.location.href);
-      let appid = url.searchParams.get("appid");
-      return new GalleryMeta(window.location.href, "steam-" + appid || "all");
-    }
-  }
-  function adaptMatcher() {
-    const host = window.location.host;
-    if (host === "nhentai.net") {
-      return new NHMatcher();
-    }
-    if (host === "steamcommunity.com") {
-      return new SteamMatcher();
-    }
-    if (host === "hitomi.la") {
-      return new HitomiMather();
-    }
-    return new EHMatcher();
-  }
-  class DownloaderCanvas {
-    constructor(id, queue) {
-      __publicField(this, "canvas");
-      __publicField(this, "mousemoveState");
-      __publicField(this, "ctx");
-      __publicField(this, "queue");
-      __publicField(this, "rectSize");
-      __publicField(this, "rectGap");
-      __publicField(this, "columns");
-      __publicField(this, "padding");
-      __publicField(this, "scrollTop");
-      __publicField(this, "scrollSize");
-      __publicField(this, "debouncer");
-      this.queue = queue;
-      const canvas = document.getElementById(id);
-      if (!canvas) {
-        throw new Error("canvas not found");
-      }
-      this.canvas = canvas;
-      this.canvas.addEventListener(
-        "wheel",
-        (event) => this.onwheel(event.deltaY)
-      );
-      this.mousemoveState = { x: 0, y: 0 };
-      this.canvas.addEventListener("mousemove", (event) => {
-        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
-        this.drawDebouce();
-      });
-      this.canvas.addEventListener("click", (event) => {
-        var _a, _b;
-        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
-        const index = (_b = (_a = this.computeDrawList()) == null ? void 0 : _a.find(
-          (state) => state.selected
-        )) == null ? void 0 : _b.index;
-        if (index !== void 0) {
-          events.showBigImage(index);
-        }
-      });
-      this.ctx = this.canvas.getContext("2d");
-      this.rectSize = 12;
-      this.rectGap = 6;
-      this.columns = 15;
-      this.padding = 7;
-      this.scrollTop = 0;
-      this.scrollSize = 10;
-      this.debouncer = new Debouncer();
-      const parent = this.canvas.parentElement;
-      if (parent) {
-        parent.addEventListener("transitionend", (ev) => {
-          const ele = ev.target;
-          if (ele.clientHeight > 0) {
-            this.canvas.width = Math.floor(ele.offsetWidth - 20);
-            this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
-            this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
-            this.draw();
-          }
-        });
-      }
-    }
-    onwheel(deltaY) {
-      const [_, h] = this.getWH();
-      const clientHeight = this.computeClientHeight();
-      if (clientHeight > h) {
-        deltaY = deltaY >> 1;
-        this.scrollTop += deltaY;
-        if (this.scrollTop < 0)
-          this.scrollTop = 0;
-        if (this.scrollTop + h > clientHeight + 20)
-          this.scrollTop = clientHeight - h + 20;
-        this.draw();
-      }
-    }
-    drawDebouce() {
-      this.debouncer.addEvent("DOWNLOADER-DRAW", () => this.draw(), 20);
-    }
-    computeDrawList() {
-      const list = [];
-      const [_, h] = this.getWH();
-      const startX = this.computeStartX();
-      const startY = -this.scrollTop + this.padding;
-      for (let i = 0, row = -1; i < this.queue.length; i++) {
-        const currCol = i % this.columns;
-        if (currCol == 0) {
-          row++;
-        }
-        const atX = startX + (this.rectSize + this.rectGap) * currCol;
-        const atY = startY + (this.rectSize + this.rectGap) * row;
-        if (atY + this.rectSize < 0) {
-          continue;
-        }
-        if (atY > h) {
-          break;
-        }
-        list.push({
-          index: i,
-          x: atX,
-          y: atY,
-          selected: this.isSelected(atX, atY)
-        });
-      }
-      return list;
-    }
-    // this function should be called by drawDebouce
-    draw() {
-      const [w, h] = this.getWH();
-      this.ctx.clearRect(0, 0, w, h);
-      const drawList = this.computeDrawList();
-      for (const node of drawList) {
-        this.drawSmallRect(
-          node.x,
-          node.y,
-          this.queue[node.index],
-          node.index === this.queue.currIndex,
-          node.selected
-        );
-      }
-    }
-    computeClientHeight() {
-      return Math.ceil(this.queue.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
-    }
-    scrollTo(index) {
-      const clientHeight = this.computeClientHeight();
-      const [_, h] = this.getWH();
-      if (clientHeight <= h) {
-        return;
-      }
-      const rowNo = Math.ceil((index + 1) / this.columns);
-      const offsetY = (rowNo - 1) * (this.rectSize + this.rectGap);
-      if (offsetY > h) {
-        this.scrollTop = offsetY + this.rectSize - h;
-        const maxScrollTop = clientHeight - h + 20;
-        if (this.scrollTop + 20 <= maxScrollTop) {
-          this.scrollTop += 20;
-        }
-      }
-    }
-    isSelected(atX, atY) {
-      return this.mousemoveState.x - atX >= 0 && this.mousemoveState.x - atX <= this.rectSize && this.mousemoveState.y - atY >= 0 && this.mousemoveState.y - atY <= this.rectSize;
-    }
-    computeStartX() {
-      const [w, _] = this.getWH();
-      const drawW = (this.rectSize + this.rectGap) * this.columns - this.rectGap;
-      let startX = w - drawW >> 1;
-      return startX;
-    }
-    drawSmallRect(x, y, imgFetcher, isCurr, isSelected) {
-      switch (imgFetcher.stage) {
-        case FetchState.FAILED:
-          this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
-          break;
-        case FetchState.URL:
-          this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
-          break;
-        case FetchState.DATA:
-          const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
-          this.ctx.fillStyle = `rgba(110, ${Math.ceil(
-          percent * 200
-        )}, 120, ${Math.max(percent, 0.1)})`;
-          break;
-        case FetchState.DONE:
-          this.ctx.fillStyle = "rgb(110, 200, 120)";
-          break;
-      }
-      this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
-      this.ctx.shadowColor = "#d53";
-      if (isSelected) {
-        this.ctx.strokeStyle = "rgb(60, 20, 200)";
-        this.ctx.lineWidth = 2;
-      } else if (isCurr) {
-        this.ctx.strokeStyle = "rgb(255, 60, 20)";
-        this.ctx.lineWidth = 2;
-      } else {
-        this.ctx.strokeStyle = "rgb(90, 90, 90)";
-        this.ctx.lineWidth = 1;
-      }
-      this.ctx.strokeRect(x, y, this.rectSize, this.rectSize);
-    }
-    getWH() {
-      return [this.canvas.width, this.canvas.height];
-    }
-  }
+
   function loadStyleSheel() {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
     const style = document.createElement("style");
@@ -2365,6 +881,7 @@ text-align: left;
     document.head.appendChild(githubButtonScript);
     return style;
   }
+
   function createHTML() {
     const fullViewPlane = document.createElement("div");
     fullViewPlane.setAttribute("tabindex", "0");
@@ -2584,29 +1101,1501 @@ text-align: left;
       styleSheel
     };
   }
+  const HTML = createHTML();
+
+  const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
+  class Downloader {
+    meta;
+    zip;
+    downloading;
+    downloadForceElement;
+    downloadStartElement;
+    downloadNoticeElement;
+    queue;
+    added = /* @__PURE__ */ new Set();
+    idleLoader;
+    numberTitle;
+    delayedQueue = [];
+    done = false;
+    isReady;
+    constructor(queue, idleLoader, matcher, allPagesReady) {
+      this.queue = queue;
+      this.idleLoader = idleLoader;
+      this.isReady = allPagesReady;
+      this.meta = () => matcher.parseGalleryMeta(document);
+      this.zip = new JSZip();
+      this.downloading = false;
+      this.downloadForceElement = document.querySelector("#download-force") || void 0;
+      this.downloadStartElement = document.querySelector("#download-start") || void 0;
+      this.downloadNoticeElement = document.querySelector("#download-notice") || void 0;
+      this.downloadForceElement?.addEventListener("click", () => this.download());
+      this.downloadStartElement?.addEventListener("click", () => this.start());
+      this.queue.subscribeOnDo(0, () => this.downloading);
+      this.queue.subscribeOnFinishedReport(0, (index, queue2) => {
+        if (this.added.has(index)) {
+          return false;
+        }
+        this.added.add(index);
+        this.addToDelayedQueue(index, queue2[index]);
+        if (queue2.isFinised()) {
+          if (this.downloading) {
+            this.download();
+          } else if (!this.done && HTML.downloaderPlaneBTN.style.color !== "lightgreen") {
+            HTML.downloaderPlaneBTN.style.color = "lightgreen";
+            if (!/✓/.test(HTML.downloaderPlaneBTN.textContent)) {
+              HTML.downloaderPlaneBTN.textContent += "✓";
+            }
+          }
+        }
+        return false;
+      });
+    }
+    needNumberTitle() {
+      if (this.numberTitle !== void 0) {
+        return this.numberTitle;
+      } else {
+        this.numberTitle = false;
+        let lastTitle = "";
+        for (const fetcher of this.queue) {
+          if (fetcher.title < lastTitle) {
+            this.numberTitle = true;
+            break;
+          }
+          lastTitle = fetcher.title;
+        }
+        return this.numberTitle;
+      }
+    }
+    addToDelayedQueue(index, imgFetcher) {
+      if (this.isReady()) {
+        if (this.delayedQueue.length > 0) {
+          for (const item of this.delayedQueue) {
+            this.addToDownloadZip(item.index, item.fetcher);
+          }
+          this.delayedQueue = [];
+        }
+        this.addToDownloadZip(index, imgFetcher);
+      } else {
+        this.delayedQueue.push({ index, fetcher: imgFetcher });
+      }
+    }
+    addToDownloadZip(index, imgFetcher) {
+      if (!imgFetcher.blobData) {
+        evLog("无法获取图片数据，因此该图片无法下载");
+        return;
+      }
+      let title = imgFetcher.title;
+      if (this.needNumberTitle()) {
+        const digit = this.queue.length.toString().length;
+        title = conf.filenameTemplate.replace("{number}", (index + 1).toString().padStart(digit, "0")).replace("{title}", title);
+      }
+      this.zip.file(this.checkDuplicateTitle(index, title), imgFetcher.blobData, { binary: true });
+    }
+    checkDuplicateTitle(index, $title) {
+      let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");
+      if (this.zip.files[newTitle]) {
+        let splits = newTitle.split(".");
+        const ext = splits.pop();
+        const prefix = splits.join(".");
+        const num = parseInt(prefix.match(/_(\d+)$/)?.[1] || "");
+        if (isNaN(num)) {
+          newTitle = `${prefix}_1.${ext}`;
+        } else {
+          newTitle = `${prefix.replace(/\d+$/, (num + 1).toString())}.${ext}`;
+        }
+        return this.checkDuplicateTitle(index, newTitle);
+      } else {
+        return newTitle;
+      }
+    }
+    // check > start > download
+    check() {
+      if (conf.fetchOriginal)
+        return;
+      if (this.downloadNoticeElement && !this.downloading) {
+        this.downloadNoticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
+        this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+      }
+    }
+    fetchOriginalTemporarily() {
+      conf.fetchOriginal = true;
+      this.queue.forEach((imgFetcher) => {
+        imgFetcher.stage = FetchState.URL;
+      });
+      this.start();
+    }
+    start() {
+      if (this.queue.isFinised()) {
+        this.download();
+        return;
+      }
+      this.flushUI("downloading");
+      this.downloading = true;
+      conf.autoLoad = true;
+      this.queue.forEach((imf) => {
+        if (imf.stage === FetchState.FAILED) {
+          imf.retry();
+        }
+      });
+      this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
+      this.idleLoader.onFailed(() => {
+        this.downloading = false;
+        this.flushUI("downloadFailed");
+      });
+      this.idleLoader.start(++this.idleLoader.lockVer);
+    }
+    flushUI(stage) {
+      if (this.downloadNoticeElement) {
+        this.downloadNoticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
+      }
+      if (this.downloadStartElement) {
+        this.downloadStartElement.style.color = stage === "downloadFailed" ? "red" : "";
+        this.downloadStartElement.textContent = i18n[stage].get();
+      }
+      HTML.downloaderPlaneBTN.style.color = stage === "downloadFailed" ? "red" : "";
+    }
+    download() {
+      this.downloading = false;
+      this.idleLoader.abort(this.queue.currIndex);
+      if (this.delayedQueue.length > 0) {
+        for (const item of this.delayedQueue) {
+          this.addToDownloadZip(item.index, item.fetcher);
+        }
+        this.delayedQueue = [];
+      }
+      const meta = this.meta();
+      this.zip.file("meta.json", JSON.stringify(meta));
+      this.zip.generateAsync({ type: "blob" }, (_metadata) => {
+      }).then((data) => {
+        saveAs(data, `${meta.originTitle || meta.title}.zip`);
+        this.flushUI("downloaded");
+        this.done = true;
+        HTML.downloaderPlaneBTN.textContent = i18n.download.get();
+        HTML.downloaderPlaneBTN.style.color = "";
+      });
+    }
+  }
+
+  class Debouncer {
+    tids;
+    mode;
+    lastExecTime;
+    constructor(mode) {
+      this.tids = {};
+      this.lastExecTime = Date.now();
+      this.mode = mode || "debounce";
+    }
+    addEvent(id, event, timeout) {
+      if (this.mode === "throttle") {
+        const now = Date.now();
+        if (now - this.lastExecTime >= timeout) {
+          this.lastExecTime = now;
+          event();
+        }
+      } else if (this.mode === "debounce") {
+        window.clearTimeout(this.tids[id]);
+        this.tids[id] = window.setTimeout(event, timeout);
+      }
+    }
+  }
+
+  class IMGFetcherQueue extends Array {
+    executableQueue;
+    currIndex;
+    finishedIndex;
+    debouncer;
+    onDo = /* @__PURE__ */ new Map();
+    onFinishedReport = /* @__PURE__ */ new Map();
+    constructor() {
+      super();
+      this.executableQueue = [];
+      this.currIndex = 0;
+      this.finishedIndex = [];
+      this.debouncer = new Debouncer();
+    }
+    subscribeOnDo(index, callback) {
+      this.onDo.set(index, callback);
+    }
+    subscribeOnFinishedReport(index, callback) {
+      this.onFinishedReport.set(index, callback);
+    }
+    isFinised() {
+      return this.finishedIndex.length === this.length;
+    }
+    push(...items) {
+      items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
+      return super.push(...items);
+    }
+    unshift(...items) {
+      items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
+      return super.unshift(...items);
+    }
+    do(start, oriented) {
+      oriented = oriented || "next";
+      this.currIndex = this.fixIndex(start);
+      this[this.currIndex].setNow(this.currIndex);
+      let keys = Array.from(this.onDo.keys());
+      keys.sort();
+      for (const key of keys) {
+        if (this.onDo.get(key)?.(this.currIndex, this)) {
+          return;
+        }
+      }
+      if (!this.pushInExecutableQueue(oriented))
+        return;
+      this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
+        this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(imgFetcherIndex));
+      }, 300);
+    }
+    //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
+    finishedReport(index) {
+      const imgFetcher = this[index];
+      if (imgFetcher.stage !== FetchState.DONE)
+        return;
+      this.pushFinishedIndex(index);
+      this.scrollTo(index);
+      let keys = Array.from(this.onFinishedReport.keys());
+      keys.sort();
+      for (const key of keys) {
+        if (this.onFinishedReport.get(key)?.(index, this)) {
+          return;
+        }
+      }
+    }
+    stepImageEvent(oriented) {
+      let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
+      this.do(start, oriented);
+    }
+    scrollTo(index) {
+      const imgFetcher = this[index];
+      let scrollTo = imgFetcher.root.offsetTop - window.screen.availHeight / 3;
+      scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewPlane.scrollHeight ? HTML.fullViewPlane.scrollHeight : scrollTo;
+      HTML.fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
+    }
+    //如果开始的索引小于0,则修正索引为0,如果开始的索引超过队列的长度,则修正索引为队列的最后一位
+    fixIndex(start) {
+      return start < 0 ? 0 : start > this.length - 1 ? this.length - 1 : start;
+    }
+    /**
+     * 将方向前|后 的未加载大图数据的图片获取器放入待加载队列中
+     * 从当前索引开始，向后或向前进行遍历，
+     * 会跳过已经加载完毕的图片获取器，
+     * 会添加正在获取大图数据或未获取大图数据的图片获取器到待加载队列中
+     * @param oriented 方向 前后 
+     * @returns 是否添加成功
+     */
+    pushInExecutableQueue(oriented) {
+      this.executableQueue = [];
+      for (let count = 0, index = this.currIndex; this.pushExecQueueSlave(index, oriented, count); oriented === "next" ? ++index : --index) {
+        if (this[index].stage === FetchState.DONE)
+          continue;
+        this.executableQueue.push(index);
+        count++;
+      }
+      return this.executableQueue.length > 0;
+    }
+    // 如果索引已到达边界且添加数量在配置最大同时获取数量的范围内
+    pushExecQueueSlave(index, oriented, count) {
+      return (oriented === "next" && index < this.length || oriented === "prev" && index > -1) && count < conf.threads;
+    }
+    findImgIndex(ele) {
+      for (let index = 0; index < this.length; index++) {
+        if (this[index] instanceof IMGFetcher && (this[index].imgElement === ele || this[index].root === ele)) {
+          return index;
+        }
+      }
+      return 0;
+    }
+    pushFinishedIndex(index) {
+      if (this.finishedIndex.length === 0) {
+        this.finishedIndex.push(index);
+        return;
+      }
+      for (let i = 0; i < this.finishedIndex.length; i++) {
+        if (index === this.finishedIndex[i])
+          return;
+        if (index < this.finishedIndex[i]) {
+          this.finishedIndex.splice(i, 0, index);
+          return;
+        }
+      }
+      this.finishedIndex.push(index);
+    }
+  }
+
+  class IdleLoader {
+    queue;
+    processingIndexList;
+    lockVer;
+    restartId;
+    maxWaitMS;
+    minWaitMS;
+    onFailedCallback;
+    constructor(queue) {
+      this.queue = queue;
+      this.processingIndexList = [0];
+      this.lockVer = 0;
+      this.restartId;
+      this.maxWaitMS = 1e3;
+      this.minWaitMS = 300;
+      this.queue.subscribeOnDo(9, (index) => {
+        this.abort(index);
+        return false;
+      });
+    }
+    onFailed(cb) {
+      this.onFailedCallback = cb;
+    }
+    start(lockVer) {
+      if (this.lockVer != lockVer || !conf.autoLoad)
+        return;
+      if (this.processingIndexList.length === 0) {
+        return;
+      }
+      if (this.queue.length === 0) {
+        return;
+      }
+      evLog("空闲自加载启动:" + this.processingIndexList.toString());
+      for (const processingIndex of this.processingIndexList) {
+        const imgFetcher = this.queue[processingIndex];
+        imgFetcher.onFinished("IDLE-REPORT", () => {
+          this.wait().then(() => {
+            this.checkProcessingIndex();
+            this.start(lockVer);
+          });
+        });
+        imgFetcher.onFailed("IDLE-REPORT", () => {
+          this.wait().then(() => {
+            this.checkProcessingIndex();
+            this.start(lockVer);
+          });
+        });
+        imgFetcher.start(processingIndex);
+      }
+    }
+    checkProcessingIndex() {
+      let foundFetcherIndex = /* @__PURE__ */ new Set();
+      let hasFailed = false;
+      for (let i = 0; i < this.processingIndexList.length; i++) {
+        let processingIndex = this.processingIndexList[i];
+        const imf = this.queue[processingIndex];
+        if (imf.stage === FetchState.FAILED) {
+          hasFailed = true;
+        }
+        if (imf.lock || imf.stage === FetchState.URL) {
+          continue;
+        }
+        for (let j = Math.min(processingIndex + 1, this.queue.length - 1), limit = this.queue.length; j < limit; j++) {
+          const imf2 = this.queue[j];
+          if (!imf2.lock && imf2.stage === FetchState.URL && !foundFetcherIndex.has(j)) {
+            foundFetcherIndex.add(j);
+            this.processingIndexList[i] = j;
+            break;
+          }
+          if (imf2.stage === FetchState.FAILED) {
+            hasFailed = true;
+          }
+          if (j >= this.queue.length - 1) {
+            limit = processingIndex;
+            j = 0;
+          }
+        }
+        if (foundFetcherIndex.size === 0) {
+          this.processingIndexList = [];
+          if (hasFailed && this.onFailedCallback) {
+            this.onFailedCallback();
+            this.onFailedCallback = void 0;
+          }
+          return;
+        }
+      }
+    }
+    async wait() {
+      const { maxWaitMS, minWaitMS } = this;
+      return new Promise(function(resolve) {
+        const time = Math.floor(Math.random() * maxWaitMS + minWaitMS);
+        window.setTimeout(() => resolve(true), time);
+      });
+    }
+    abort(newIndex) {
+      this.lockVer++;
+      evLog(`终止空闲自加载, 下次将从第${newIndex + 1}张开始加载`);
+      if (!conf.autoLoad)
+        return;
+      window.clearTimeout(this.restartId);
+      this.restartId = window.setTimeout(() => {
+        this.processingIndexList = [newIndex];
+        this.checkProcessingIndex();
+        this.start(this.lockVer);
+      }, conf.restartIdleLoader);
+    }
+  }
+
+  class PageFetcher {
+    queue;
+    pageURLs;
+    currPage;
+    fetched;
+    imgAppends;
+    matcher;
+    done = false;
+    onAppended;
+    imgFetcherSettings;
+    constructor(queue, matcher, imgFetcherSettings) {
+      this.queue = queue;
+      this.matcher = matcher;
+      this.imgFetcherSettings = imgFetcherSettings;
+      this.pageURLs = [];
+      this.currPage = 0;
+      this.imgAppends = { prev: [], next: [] };
+      this.fetched = false;
+    }
+    async init() {
+      await this.initPageAppend();
+    }
+    async initPageAppend() {
+      let fetchIter = this.matcher.fetchPagesSource();
+      let first = await fetchIter.next();
+      if (!first.done) {
+        await this.appendPageImg(first.value);
+        setTimeout(() => this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight), 200);
+      }
+      this.loadAllPageImg(fetchIter);
+    }
+    async loadAllPageImg(iter) {
+      for await (const page of iter) {
+        await this.appendPageImg(page);
+        this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+      }
+      this.done = true;
+    }
+    setOnAppended(onAppended) {
+      this.onAppended = onAppended;
+    }
+    async appendPageImg(page) {
+      try {
+        const imgNodeList = await this.obtainImageNodeList(page);
+        const IFs = imgNodeList.map(
+          (imgNode) => new IMGFetcher(imgNode, this.imgFetcherSettings)
+        );
+        HTML.fullViewPlane.lastElementChild.after(...imgNodeList);
+        this.queue.push(...IFs);
+        this.onAppended?.(this.queue.length);
+        return true;
+      } catch (error) {
+        evLog(`page fetcher append images error: `, error);
+        return false;
+      }
+    }
+    //从文档的字符串中创建缩略图元素列表
+    async obtainImageNodeList(page) {
+      const imgNodeTemplate = document.createElement("div");
+      imgNodeTemplate.classList.add("img-node");
+      const imgTemplate = document.createElement("img");
+      imgTemplate.setAttribute("decoding", "async");
+      imgTemplate.setAttribute("title", "untitle.jpg");
+      imgTemplate.style.height = "auto";
+      imgTemplate.setAttribute(
+        "src",
+        "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
+      );
+      imgNodeTemplate.appendChild(imgTemplate);
+      let tryTimes = 0;
+      while (tryTimes < 3) {
+        try {
+          return await this.matcher.parseImgNodes(page, imgNodeTemplate);
+        } catch (error) {
+          evLog("warn: parse image nodes failed, retrying: ", error);
+          tryTimes++;
+        }
+      }
+      evLog("warn: parse image nodes failed: reached max try times!");
+      return [];
+    }
+    //通过地址请求该页的文档
+    async fetchDocument(pageURL) {
+      return await window.fetch(pageURL).then((response) => response.text());
+    }
+    /**
+     *当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
+     * @param {当前滚动位置} currTop
+     * @param {窗口高度} clientHeight
+     */
+    renderCurrView(currTop, clientHeight) {
+      const [startRander, endRander] = this.findOutsideRoundView(currTop, clientHeight);
+      evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}`);
+      this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
+    }
+    findOutsideRoundViewNode(currTop, clientHeight) {
+      const [outsideTop, outsideBottom] = this.findOutsideRoundView(currTop, clientHeight);
+      return [this.queue[outsideTop].root, this.queue[outsideBottom].root];
+    }
+    findOutsideRoundView(currTop, clientHeight) {
+      const viewButtom = currTop + clientHeight;
+      let outsideTop = 0;
+      let outsideBottom = 0;
+      for (let i = 0; i < this.queue.length; i += conf.colCount) {
+        const { root } = this.queue[i];
+        if (outsideBottom === 0) {
+          if (root.offsetTop + 2 >= currTop) {
+            outsideBottom = i + 1;
+          } else {
+            outsideTop = i;
+          }
+        } else {
+          outsideBottom = i;
+          if (root.offsetTop + root.offsetHeight > viewButtom) {
+            break;
+          }
+        }
+      }
+      return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
+    }
+  }
+
+  class GalleryMeta {
+    url;
+    title;
+    originTitle;
+    tags;
+    constructor(url, title) {
+      this.url = url;
+      this.title = title;
+      this.tags = {};
+    }
+  }
+
+  const regulars = {
+    /** 有压缩的大图地址 */
+    normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
+    /** 原图地址 */
+    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg?[^"\\]*)\"\>/,
+    /** 大图重载地址 */
+    nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
+    /** 是否开启自动多页查看器 */
+    isMPV: /https?:\/\/e[-x]hentai.org\/mpv\/\w+\/\w+\/#page\w/,
+    /** 多页查看器图片列表提取 */
+    mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g
+  };
+  class EHMatcher {
+    parseGalleryMeta(doc) {
+      const titleList = doc.querySelectorAll("#gd2 h1");
+      let title;
+      let originTitle;
+      if (titleList && titleList.length > 0) {
+        title = titleList[0].textContent || void 0;
+        if (titleList.length > 1) {
+          originTitle = titleList[1].textContent || void 0;
+        }
+      }
+      const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+      meta.originTitle = originTitle;
+      const tagTrList = doc.querySelectorAll("#taglist tr");
+      const tags = {};
+      tagTrList.forEach((tr) => {
+        const tds = tr.childNodes;
+        const cat = tds[0].textContent;
+        if (cat) {
+          const list = [];
+          tds[1].childNodes.forEach((ele) => {
+            if (ele.textContent)
+              list.push(ele.textContent);
+          });
+          tags[cat.replace(":", "")] = list;
+        }
+      });
+      meta.tags = tags;
+      return meta;
+    }
+    async matchImgURL(url, retry) {
+      return await this.fetchImgURL(url, retry);
+    }
+    async parseImgNodes(page, template) {
+      const list = [];
+      let doc = await (async () => {
+        if (page.raw instanceof Document) {
+          return page.raw;
+        } else {
+          const raw = await window.fetch(page.raw).then((response) => response.text());
+          if (!raw)
+            return null;
+          const domParser = new DOMParser();
+          return domParser.parseFromString(raw, "text/html");
+        }
+      })();
+      if (!doc) {
+        throw new Error("warn: eh matcher failed to get document from source page!");
+      }
+      const nodes = doc.querySelectorAll("#gdt a");
+      if (!nodes || nodes.length == 0) {
+        throw new Error("warn: failed query image nodes!");
+      }
+      const node0 = nodes[0];
+      const href = node0.getAttribute("href");
+      if (regulars.isMPV.test(href)) {
+        const mpvDoc = await window.fetch(href).then((response) => response.text());
+        const matchs = mpvDoc.matchAll(regulars.mpvImageList);
+        const gid = location.pathname.split("/")[2];
+        let i = 0;
+        for (const match of matchs) {
+          i++;
+          const newImgNode = template.cloneNode(true);
+          const newImg = newImgNode.firstElementChild;
+          newImg.setAttribute("title", match[1].replace(/Page\s\d+[:_]\s*/, ""));
+          newImg.setAttribute(
+            "ahref",
+            `${location.origin}/s/${match[2]}/${gid}-${i}`
+          );
+          newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
+          list.push(newImgNode);
+        }
+      } else {
+        for (const node of Array.from(nodes)) {
+          const imgNode = node.querySelector("img");
+          if (!imgNode) {
+            throw new Error("Cannot find Image");
+          }
+          const newImgNode = template.cloneNode(true);
+          const newImg = newImgNode.firstElementChild;
+          newImg.setAttribute("ahref", node.getAttribute("href"));
+          newImg.setAttribute("asrc", imgNode.src);
+          newImg.setAttribute("title", imgNode.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg");
+          list.push(newImgNode);
+        }
+      }
+      return list;
+    }
+    async *fetchPagesSource() {
+      let fristHref = document.querySelector(".gdtl a")?.getAttribute("href");
+      if (fristHref && regulars.isMPV.test(fristHref)) {
+        yield { raw: window.location.href, typ: "url" };
+        return;
+      }
+      const ps = Array.from(document.querySelectorAll(".gtb td a"));
+      if (ps.length === 0) {
+        throw new Error("未获取到分页元素！");
+      }
+      const lastP = ps[ps.length - 2];
+      if (!lastP) {
+        throw new Error("未获取到分页元素！x2");
+      }
+      const u = new URL(lastP.getAttribute("href"));
+      const total = Number(u.searchParams.get("p")) + 1;
+      u.searchParams.delete("p");
+      yield { raw: u.href, typ: "url" };
+      for (let p = 1; p < total; p++) {
+        u.searchParams.set("p", p.toString());
+        yield { raw: u.href, typ: "url" };
+      }
+    }
+    async fetchImgURL(url, originChanged) {
+      let text = "";
+      try {
+        text = await window.fetch(url).then((resp) => resp.text());
+        if (!text)
+          throw new Error("[text] is empty");
+      } catch (error) {
+        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
+      }
+      if (conf.fetchOriginal) {
+        const matchs = regulars.original.exec(text);
+        if (matchs && matchs.length > 0) {
+          return matchs[1].replace(/&amp;/g, "&");
+        } else {
+          const normalMatchs = regulars["normal"].exec(text);
+          if (normalMatchs == null || normalMatchs.length == 0) {
+            throw new Error(`Cannot matching the image url, content: ${text}`);
+          } else {
+            return normalMatchs[1];
+          }
+        }
+      }
+      if (originChanged) {
+        const nlValue = regulars.nlValue.exec(text)[1];
+        const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
+        evLog(`IMG-FETCHER retry url:${newUrl}`);
+        return await this.fetchImgURL(url, false);
+      } else {
+        return regulars.normal.exec(text)[1];
+      }
+    }
+  }
+
+  class HitomiGG {
+    base = "a";
+    ext = "webp";
+    b;
+    m;
+    constructor(b, m) {
+      this.b = b;
+      this.m = new Function("g", m);
+    }
+    s(h) {
+      const m = /(..)(.)$/.exec(h);
+      return parseInt(m[2] + m[1], 16).toString(10);
+    }
+    subdomain_from_url(url, base) {
+      var retval = "b";
+      if (base) {
+        retval = base;
+      }
+      var b = 16;
+      var r = /\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])/;
+      var m = r.exec(url);
+      if (!m) {
+        return "a";
+      }
+      let g = parseInt(m[2] + m[1], b);
+      if (!isNaN(g)) {
+        retval = String.fromCharCode(97 + this.m(g)) + retval;
+      }
+      return retval;
+    }
+    url(hash) {
+      let url = "https://a.hitomi.la/" + this.ext + "/" + this.b + this.s(hash) + "/" + hash + "." + this.ext;
+      url = url.replace(/\/\/..?\.hitomi\.la\//, "//" + this.subdomain_from_url(url, this.base) + ".hitomi.la/");
+      return url;
+    }
+  }
+  const HASH_REGEX = /#(\d*)$/;
+  const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
+  const GG_B_REGEX = /b:\s'(\d*\/)'/;
+  class HitomiMather {
+    gg;
+    meta;
+    info;
+    async matchImgURL(hash, _) {
+      const url = this.gg.url(hash);
+      return url;
+    }
+    async parseImgNodes(page, template) {
+      if (!this.info) {
+        throw new Error("warn: hitomi gallery info is null!");
+      }
+      const list = [];
+      const doc = page.raw;
+      const nodes = doc.querySelectorAll(".simplePagerContainer .thumbnail-container a");
+      if (!nodes || nodes.length == 0) {
+        throw new Error("warn: failed query image nodes!");
+      }
+      for (const node of Array.from(nodes)) {
+        const sceneIndex = Number(HASH_REGEX.exec(node.href)[1]) - 1;
+        const img = node.querySelector("img");
+        if (!img) {
+          throw new Error("warn: failed query image node!");
+        }
+        const src = img.src;
+        if (!src) {
+          throw new Error(`warn: failed get Image Src`);
+        }
+        const badge = (() => {
+          const badge2 = node.querySelector(".badge");
+          return badge2 ? Number(badge2.textContent) : 1;
+        })();
+        for (let i = 0; i < badge; i++) {
+          const newImgNode = template.cloneNode(true);
+          const newImg = newImgNode.firstElementChild;
+          newImg.setAttribute("ahref", this.info.files[i + sceneIndex].hash);
+          newImg.setAttribute("asrc", src);
+          newImg.setAttribute("title", this.info.files[i + sceneIndex].name);
+          list.push(newImgNode);
+        }
+      }
+      return list;
+    }
+    async *fetchPagesSource() {
+      const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then((resp) => resp.text());
+      this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)[1], GG_M_REGEX.exec(ggRaw)[1]);
+      const galleryID = document.querySelector("#gallery-brand a")?.href?.split("/").pop()?.replace(".html", "");
+      if (!galleryID) {
+        throw new Error("cannot query hitomi gallery id");
+      }
+      const infoRaw = await window.fetch(`https://ltn.hitomi.la/galleries/${galleryID}.js`).then((resp) => resp.text()).then((text) => text.replace("var galleryinfo = ", ""));
+      if (!infoRaw) {
+        throw new Error("cannot query hitomi gallery info");
+      }
+      const info = JSON.parse(infoRaw);
+      this.setGalleryMeta(info, galleryID);
+      this.info = {
+        files: info.files,
+        scene_indexes: info.scene_indexes
+      };
+      yield { raw: document, typ: "doc" };
+    }
+    setGalleryMeta(info, galleryID) {
+      this.meta = new GalleryMeta(window.location.href, info["title"] || "hitomi-" + galleryID);
+      this.meta.originTitle = info["japanese_title"];
+      const excludes = ["scene_indexes", "files"];
+      for (const key in info) {
+        if (excludes.indexOf(key) > -1) {
+          continue;
+        }
+        this.meta.tags[key] = info[key];
+      }
+    }
+    parseGalleryMeta(_) {
+      return this.meta || new GalleryMeta(window.location.href, "hitomi");
+    }
+  }
+
+  const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
+  class NHMatcher {
+    parseGalleryMeta(doc) {
+      let title;
+      let originTitle;
+      doc.querySelectorAll("#info .title").forEach((ele) => {
+        if (!title) {
+          title = ele.textContent || void 0;
+        } else {
+          originTitle = ele.textContent || void 0;
+        }
+      });
+      const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+      meta.originTitle = originTitle;
+      const tagTrList = doc.querySelectorAll(".tag-container");
+      const tags = {};
+      tagTrList.forEach((tr) => {
+        const cat = tr.firstChild?.textContent?.trim().replace(":", "");
+        if (cat) {
+          const list = [];
+          tr.querySelectorAll(".tag .name").forEach((tag) => {
+            const t = tag.textContent?.trim();
+            if (t) {
+              list.push(t);
+            }
+          });
+          if (list.length > 0) {
+            tags[cat] = list;
+          }
+        }
+      });
+      meta.tags = tags;
+      return meta;
+    }
+    async matchImgURL(url, _) {
+      let text = "";
+      try {
+        text = await window.fetch(url).then((resp) => resp.text());
+        if (!text)
+          throw new Error("[text] is empty");
+      } catch (error) {
+        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
+      }
+      return NH_IMG_URL_REGEX.exec(text)[1];
+    }
+    async parseImgNodes(page, template) {
+      const list = [];
+      const nodes = page.raw.querySelectorAll(".thumb-container > .gallerythumb");
+      if (!nodes || nodes.length == 0) {
+        throw new Error("warn: failed query image nodes!");
+      }
+      let i = 0;
+      for (const node of Array.from(nodes)) {
+        i++;
+        const imgNode = node.querySelector("img");
+        if (!imgNode) {
+          throw new Error("Cannot find Image");
+        }
+        const newImgNode = template.cloneNode(true);
+        const newImg = newImgNode.firstElementChild;
+        newImg.setAttribute("ahref", location.origin + node.getAttribute("href"));
+        newImg.setAttribute("asrc", imgNode.getAttribute("data-src"));
+        newImg.setAttribute("title", imgNode.getAttribute("title") || `${i}.jpg`);
+        list.push(newImgNode);
+      }
+      return list;
+    }
+    async *fetchPagesSource() {
+      yield { raw: document, typ: "doc" };
+    }
+  }
+
+  const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
+  class SteamMatcher {
+    async matchImgURL(url, _) {
+      let raw = "";
+      try {
+        raw = await window.fetch(url).then((resp) => resp.text());
+        if (!raw)
+          throw new Error("[text] is empty");
+      } catch (error) {
+        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
+      }
+      const domParser = new DOMParser();
+      const doc = domParser.parseFromString(raw, "text/html");
+      let imgURL = doc.querySelector(".actualmediactn > a")?.getAttribute("href");
+      if (!imgURL) {
+        throw new Error("Cannot Query Steam original Image URL");
+      }
+      return imgURL;
+    }
+    async parseImgNodes(page, template) {
+      const list = [];
+      const doc = await (async () => {
+        if (page.raw instanceof Document) {
+          return page.raw;
+        } else {
+          const raw = await window.fetch(page.raw).then((response) => response.text());
+          if (!raw)
+            return null;
+          const domParser = new DOMParser();
+          return domParser.parseFromString(raw, "text/html");
+        }
+      })();
+      if (!doc) {
+        throw new Error("warn: steam matcher failed to get document from source page!");
+      }
+      const nodes = doc.querySelectorAll(".profile_media_item");
+      if (!nodes || nodes.length == 0) {
+        throw new Error("warn: failed query image nodes!");
+      }
+      for (const node of Array.from(nodes)) {
+        const src = STEAM_THUMB_IMG_URL_REGEX.exec(node.innerHTML)?.[1];
+        if (!src) {
+          throw new Error(`Cannot Match Steam Image URL, Content: ${node.innerHTML}`);
+        }
+        const newImgNode = template.cloneNode(true);
+        const newImg = newImgNode.firstElementChild;
+        newImg.setAttribute("ahref", node.getAttribute("href"));
+        newImg.setAttribute("asrc", src);
+        newImg.setAttribute("title", node.getAttribute("data-publishedfileid") + ".jpg");
+        list.push(newImgNode);
+      }
+      return list;
+    }
+    async *fetchPagesSource() {
+      let totalPages = -1;
+      document.querySelectorAll(".pagingPageLink").forEach((ele) => {
+        totalPages = Number(ele.textContent);
+      });
+      let url = new URL(window.location.href);
+      url.searchParams.set("view", "grid");
+      if (totalPages === -1) {
+        const doc = await window.fetch(url.href).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
+        if (!doc) {
+          throw new Error("warn: steam matcher failed to get document from source page!");
+        }
+        doc.querySelectorAll(".pagingPageLink").forEach((ele) => {
+          totalPages = Number(ele.textContent);
+        });
+      }
+      if (totalPages > 0) {
+        for (let p = 1; p <= totalPages; p++) {
+          url.searchParams.set("p", p.toString());
+          yield { raw: url.href, typ: "url" };
+        }
+      } else {
+        yield { raw: url.href, typ: "url" };
+      }
+    }
+    parseGalleryMeta(_) {
+      const url = new URL(window.location.href);
+      let appid = url.searchParams.get("appid");
+      return new GalleryMeta(window.location.href, "steam-" + appid || "all");
+    }
+  }
+
+  function adaptMatcher() {
+    const host = window.location.host;
+    if (host === "nhentai.net") {
+      return new NHMatcher();
+    }
+    if (host === "steamcommunity.com") {
+      return new SteamMatcher();
+    }
+    if (host === "hitomi.la") {
+      return new HitomiMather();
+    }
+    return new EHMatcher();
+  }
+
+  class DownloaderCanvas {
+    canvas;
+    mousemoveState;
+    ctx;
+    queue;
+    rectSize;
+    rectGap;
+    columns;
+    padding;
+    scrollTop;
+    scrollSize;
+    debouncer;
+    onClick;
+    constructor(id, queue, onClick) {
+      this.queue = queue;
+      const canvas = document.getElementById(id);
+      if (!canvas) {
+        throw new Error("canvas not found");
+      }
+      this.canvas = canvas;
+      this.canvas.addEventListener(
+        "wheel",
+        (event) => this.onwheel(event.deltaY)
+      );
+      this.mousemoveState = { x: 0, y: 0 };
+      this.canvas.addEventListener("mousemove", (event) => {
+        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
+        this.drawDebouce();
+      });
+      this.canvas.addEventListener("click", (event) => {
+        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
+        const index = this.computeDrawList()?.find(
+          (state) => state.selected
+        )?.index;
+        if (index !== void 0) {
+          onClick?.(index);
+        }
+      });
+      this.ctx = this.canvas.getContext("2d");
+      this.rectSize = 12;
+      this.rectGap = 6;
+      this.columns = 15;
+      this.padding = 7;
+      this.scrollTop = 0;
+      this.scrollSize = 10;
+      this.debouncer = new Debouncer();
+      const parent = this.canvas.parentElement;
+      if (parent) {
+        parent.addEventListener("transitionend", (ev) => {
+          const ele = ev.target;
+          if (ele.clientHeight > 0) {
+            this.canvas.width = Math.floor(ele.offsetWidth - 20);
+            this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
+            this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
+            this.draw();
+          }
+        });
+      }
+    }
+    onwheel(deltaY) {
+      const [_, h] = this.getWH();
+      const clientHeight = this.computeClientHeight();
+      if (clientHeight > h) {
+        deltaY = deltaY >> 1;
+        this.scrollTop += deltaY;
+        if (this.scrollTop < 0)
+          this.scrollTop = 0;
+        if (this.scrollTop + h > clientHeight + 20)
+          this.scrollTop = clientHeight - h + 20;
+        this.draw();
+      }
+    }
+    drawDebouce() {
+      this.debouncer.addEvent("DOWNLOADER-DRAW", () => this.draw(), 20);
+    }
+    computeDrawList() {
+      const list = [];
+      const [_, h] = this.getWH();
+      const startX = this.computeStartX();
+      const startY = -this.scrollTop + this.padding;
+      for (let i = 0, row = -1; i < this.queue.length; i++) {
+        const currCol = i % this.columns;
+        if (currCol == 0) {
+          row++;
+        }
+        const atX = startX + (this.rectSize + this.rectGap) * currCol;
+        const atY = startY + (this.rectSize + this.rectGap) * row;
+        if (atY + this.rectSize < 0) {
+          continue;
+        }
+        if (atY > h) {
+          break;
+        }
+        list.push({
+          index: i,
+          x: atX,
+          y: atY,
+          selected: this.isSelected(atX, atY)
+        });
+      }
+      return list;
+    }
+    // this function should be called by drawDebouce
+    draw() {
+      const [w, h] = this.getWH();
+      this.ctx.clearRect(0, 0, w, h);
+      const drawList = this.computeDrawList();
+      for (const node of drawList) {
+        this.drawSmallRect(
+          node.x,
+          node.y,
+          this.queue[node.index],
+          node.index === this.queue.currIndex,
+          node.selected
+        );
+      }
+    }
+    computeClientHeight() {
+      return Math.ceil(this.queue.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
+    }
+    scrollTo(index) {
+      const clientHeight = this.computeClientHeight();
+      const [_, h] = this.getWH();
+      if (clientHeight <= h) {
+        return;
+      }
+      const rowNo = Math.ceil((index + 1) / this.columns);
+      const offsetY = (rowNo - 1) * (this.rectSize + this.rectGap);
+      if (offsetY > h) {
+        this.scrollTop = offsetY + this.rectSize - h;
+        const maxScrollTop = clientHeight - h + 20;
+        if (this.scrollTop + 20 <= maxScrollTop) {
+          this.scrollTop += 20;
+        }
+      }
+    }
+    isSelected(atX, atY) {
+      return this.mousemoveState.x - atX >= 0 && this.mousemoveState.x - atX <= this.rectSize && this.mousemoveState.y - atY >= 0 && this.mousemoveState.y - atY <= this.rectSize;
+    }
+    computeStartX() {
+      const [w, _] = this.getWH();
+      const drawW = (this.rectSize + this.rectGap) * this.columns - this.rectGap;
+      let startX = w - drawW >> 1;
+      return startX;
+    }
+    drawSmallRect(x, y, imgFetcher, isCurr, isSelected) {
+      switch (imgFetcher.stage) {
+        case FetchState.FAILED:
+          this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
+          break;
+        case FetchState.URL:
+          this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
+          break;
+        case FetchState.DATA:
+          const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
+          this.ctx.fillStyle = `rgba(110, ${Math.ceil(
+          percent * 200
+        )}, 120, ${Math.max(percent, 0.1)})`;
+          break;
+        case FetchState.DONE:
+          this.ctx.fillStyle = "rgb(110, 200, 120)";
+          break;
+      }
+      this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
+      this.ctx.shadowColor = "#d53";
+      if (isSelected) {
+        this.ctx.strokeStyle = "rgb(60, 20, 200)";
+        this.ctx.lineWidth = 2;
+      } else if (isCurr) {
+        this.ctx.strokeStyle = "rgb(255, 60, 20)";
+        this.ctx.lineWidth = 2;
+      } else {
+        this.ctx.strokeStyle = "rgb(90, 90, 90)";
+        this.ctx.lineWidth = 1;
+      }
+      this.ctx.strokeRect(x, y, this.rectSize, this.rectSize);
+    }
+    getWH() {
+      return [this.canvas.width, this.canvas.height];
+    }
+  }
+
+  function initEvents(BIFM, IFQ, PF, IL) {
+    function modPageHelperPostion() {
+      const style = HTML.pageHelper.style;
+      conf.pageHelperAbTop = style.top;
+      conf.pageHelperAbLeft = style.left;
+      conf.pageHelperAbBottom = style.bottom;
+      conf.pageHelperAbRight = style.right;
+      saveConf(conf);
+    }
+    function modNumberConfigEvent(key, data) {
+      const range = {
+        colCount: [1, 12],
+        threads: [1, 10],
+        downloadThreads: [1, 10],
+        timeout: [8, 40],
+        autoPageInterval: [500, 9e4],
+        preventScrollPageTime: [0, 9e4]
+      };
+      let mod = key === "autoPageInterval" ? 100 : 1;
+      mod = key === "preventScrollPageTime" ? 10 : mod;
+      if (data === "add") {
+        if (conf[key] < range[key][1]) {
+          conf[key] += mod;
+        }
+      } else if (data === "minus") {
+        if (conf[key] > range[key][0]) {
+          conf[key] -= mod;
+        }
+      }
+      const inputElement = document.querySelector(`#${key}Input`);
+      if (inputElement) {
+        inputElement.value = conf[key].toString();
+      }
+      if (key === "colCount") {
+        const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules || []);
+        for (const cssRule of cssRules) {
+          if (cssRule instanceof CSSStyleRule) {
+            if (cssRule.selectorText === ".fullViewPlane") {
+              cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
+              break;
+            }
+          }
+        }
+      }
+      saveConf(conf);
+    }
+    function modBooleanConfigEvent(key) {
+      const inputElement = document.querySelector(`#${key}Checkbox`);
+      conf[key] = inputElement?.checked || false;
+      saveConf(conf);
+    }
+    function modSelectConfigEvent(key) {
+      const inputElement = document.querySelector(`#${key}Select`);
+      const value = inputElement?.value;
+      if (value) {
+        conf[key] = value;
+        saveConf(conf);
+      }
+      if (key === "readMode") {
+        BIFM.resetScaleBigImages();
+        if (conf.readMode === "singlePage") {
+          BIFM.init(BIFM.queue.currIndex);
+        }
+      }
+    }
+    function mouseleavePlaneEvent(target) {
+      target.classList.add("p-collapse");
+    }
+    function togglePlaneEvent(id, collapse) {
+      setTimeout(() => {
+        let element = document.querySelector(`#${id}Plane`);
+        if (element) {
+          if (collapse === false) {
+            element.classList.remove("p-collapse");
+          } else if (collapse === true) {
+            mouseleavePlaneEvent(element);
+          } else {
+            element.classList.toggle("p-collapse");
+            ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePlaneEvent(k, true));
+          }
+        }
+      }, 10);
+    }
+    let bodyOverflow = document.body.style.overflow;
+    function showFullViewPlane() {
+      HTML.fullViewPlane.scroll(0, 0);
+      HTML.fullViewPlane.classList.remove("collapse_full_view");
+      HTML.fullViewPlane.focus();
+      document.body.style.overflow = "hidden";
+    }
+    function hiddenFullViewPlaneEvent(event) {
+      if (event.target === HTML.fullViewPlane) {
+        main(false);
+      }
+    }
+    function hiddenFullViewPlane() {
+      BIFM.hidden();
+      HTML.fullViewPlane.classList.add("collapse_full_view");
+      HTML.fullViewPlane.blur();
+      document.querySelector("html")?.focus();
+      document.body.style.overflow = bodyOverflow;
+    }
+    function scrollEvent() {
+      if (HTML.fullViewPlane.classList.contains("collapse_full_view"))
+        return;
+      PF.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+    }
+    function bigImageWheelEvent(event) {
+      IFQ.stepImageEvent(event.deltaY > 0 ? "next" : "prev");
+    }
+    let numberRecord = null;
+    function keyboardEvent(event) {
+      if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) {
+        const b = HTML.bigImageFrame;
+        switch (event.key) {
+          case "ArrowLeft":
+            event.preventDefault();
+            IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
+            break;
+          case "ArrowRight":
+            event.preventDefault();
+            IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
+            break;
+          case "Escape":
+          case "Enter":
+            event.preventDefault();
+            BIFM.hidden();
+            break;
+          case "Home":
+            event.preventDefault();
+            IFQ.do(0, "next");
+            break;
+          case "End":
+            event.preventDefault();
+            IFQ.do(IFQ.length - 1, "prev");
+            break;
+          case " ":
+          case "ArrowUp":
+          case "ArrowDown":
+          case "PageUp":
+          case "PageDown":
+            let oriented = "next";
+            if (event.key === "ArrowUp" || event.key === "PageUp") {
+              oriented = "prev";
+            } else if (event.key === "ArrowDown" || event.key === "PageDown" || event.key === " ") {
+              oriented = "next";
+            }
+            if (event.shiftKey) {
+              oriented = oriented === "next" ? "prev" : "next";
+            }
+            BIFM.frame.addEventListener("scrollend", () => {
+              if (conf.readMode === "singlePage" && BIFM.isReachBoundary(oriented)) {
+                BIFM.tryPreventStep();
+              }
+            }, { once: true });
+            if (BIFM.isReachBoundary(oriented)) {
+              event.preventDefault();
+              b.dispatchEvent(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }));
+            }
+            break;
+          case "-":
+            BIFM.scaleBigImages(-1, 5);
+            break;
+          case "=":
+            BIFM.scaleBigImages(1, 5);
+            break;
+        }
+      } else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) {
+        switch (event.key) {
+          case "Enter": {
+            let start = IFQ.currIndex;
+            if (numberRecord && numberRecord.length > 0) {
+              start = Number(numberRecord.join("")) - 1;
+              numberRecord = null;
+              if (start < 0 || start >= IFQ.length) {
+                break;
+              }
+            }
+            IFQ[start].root.dispatchEvent(new MouseEvent("click"));
+            break;
+          }
+          case "Escape":
+            main(false);
+            break;
+          default: {
+            if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+              numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
+            }
+          }
+        }
+      } else {
+        switch (event.key) {
+          case "Enter":
+            main(true);
+            break;
+        }
+      }
+    }
+    function showGuideEvent() {
+      const guideElement = document.createElement("div");
+      document.body.after(guideElement);
+      guideElement.innerHTML = `
+  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>
+  `;
+      guideElement.setAttribute(
+        "style",
+        `
+position: absolute;
+width: 100%;
+height: 100%;
+background-color: #363c3c78;
+z-index: 2004;
+top: 0;
+display: flex;
+justify-content: center;
+align-items: center;
+color: black;
+text-align: left;
+`
+      );
+      guideElement.addEventListener("click", () => guideElement.remove());
+    }
+    const signal = { first: true };
+    function main(extend) {
+      if (HTML.pageHelper) {
+        if (extend) {
+          HTML.pageHelper.classList.add("pageHelperExtend");
+          showFullViewPlane();
+          if (signal.first) {
+            signal.first = false;
+            PF.init().then(() => IL.start(IL.lockVer));
+          }
+        } else {
+          HTML.pageHelper.classList.remove("pageHelperExtend");
+          hiddenFullViewPlane();
+          ["config", "downloader"].forEach((id) => togglePlaneEvent(id, true));
+        }
+      }
+    }
+    return {
+      main,
+      modNumberConfigEvent,
+      modBooleanConfigEvent,
+      modSelectConfigEvent,
+      modPageHelperPostion,
+      togglePlaneEvent,
+      showFullViewPlane,
+      hiddenFullViewPlaneEvent,
+      hiddenFullViewPlane,
+      scrollEvent,
+      bigImageWheelEvent,
+      keyboardEvent,
+      showGuideEvent,
+      mouseleavePlaneEvent
+    };
+  }
+
+  function setFetchState(state) {
+    if (state === "fetching") {
+      HTML.pageHelper.classList.add("pageHelperFetching");
+    } else {
+      HTML.pageHelper.classList.remove("pageHelperFetching");
+    }
+  }
+  function setPageState({ total, current, finished }) {
+    if (total !== void 0) {
+      HTML.totalPageElement.textContent = total.toString();
+    }
+    if (current !== void 0) {
+      HTML.currPageElement.textContent = current.toString();
+    }
+    if (finished !== void 0) {
+      HTML.finishedElement.textContent = finished.toString();
+    }
+  }
+  const pageHelper = {
+    setFetchState,
+    setPageState
+  };
+
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
+
   class BigImageFrameManager {
+    frame;
+    queue;
+    lockInit;
+    currImageNode;
+    lastMouseY;
+    recordedDistance;
+    reachBottom;
+    // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
+    imgScaleBar;
+    debouncer;
+    throttler;
+    callbackOnWheel;
+    callbackOnHidden;
+    callbackOnShow;
+    hammer;
+    preventStepLock = true;
+    preventStepLockEle;
+    visible = false;
     /* prevent mouse wheel step next image */
     constructor(frame, queue, imgScaleBar) {
-      __publicField(this, "frame");
-      __publicField(this, "queue");
-      __publicField(this, "lockInit");
-      __publicField(this, "currImageNode");
-      __publicField(this, "lastMouseY");
-      __publicField(this, "recordedDistance");
-      __publicField(this, "reachBottom");
-      // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
-      __publicField(this, "imgScaleBar");
-      __publicField(this, "debouncer");
-      __publicField(this, "throttler");
-      __publicField(this, "callbackOnWheel");
-      __publicField(this, "callbackOnHidden");
-      __publicField(this, "callbackOnShow");
-      __publicField(this, "hammer");
-      __publicField(this, "preventStepLock", true);
-      __publicField(this, "preventStepLockEle");
       this.frame = frame;
       this.queue = queue;
       this.imgScaleBar = imgScaleBar;
@@ -2618,6 +2607,7 @@ text-align: left;
       this.initImgScaleBar();
       this.initImgScaleStyle();
       this.initHammer();
+      new AutoPage(this, HTML.autoPageBTN);
     }
     initHammer() {
       this.hammer = new Hammer(this.frame, {
@@ -2631,16 +2621,16 @@ text-align: left;
         if (conf.readMode === "singlePage") {
           switch (ev.direction) {
             case Hammer.DIRECTION_LEFT:
-              events.stepImageEvent(conf.reversePages ? "prev" : "next");
+              this.queue.stepImageEvent(conf.reversePages ? "prev" : "next");
               break;
             case Hammer.DIRECTION_UP:
-              events.stepImageEvent("next");
+              this.queue.stepImageEvent("next");
               break;
             case Hammer.DIRECTION_RIGHT:
-              events.stepImageEvent(conf.reversePages ? "next" : "prev");
+              this.queue.stepImageEvent(conf.reversePages ? "next" : "prev");
               break;
             case Hammer.DIRECTION_DOWN:
-              events.stepImageEvent("prev");
+              this.queue.stepImageEvent("prev");
               break;
           }
         }
@@ -2656,8 +2646,9 @@ text-align: left;
       this.imgScaleBar.querySelector("#imgScaleProgressInner").style.width = `${conf.imgScale}%`;
     }
     setNow(index) {
+      if (!this.visible)
+        return;
       this.resetStickyMouse();
-      this.frame.focus();
       if (this.lockInit) {
         this.lockInit = false;
         return;
@@ -2665,31 +2656,29 @@ text-align: left;
       this.init(index);
     }
     init(start) {
-      var _a, _b;
       this.removeImgNodes();
       this.currImageNode = this.createImgElement();
       this.frame.appendChild(this.currImageNode);
       this.setImgNode(this.currImageNode, start);
       if (conf.readMode === "consecutively") {
-        (_a = this.hammer) == null ? void 0 : _a.get("swipe").set({ enable: false });
+        this.hammer?.get("swipe").set({ enable: false });
         this.tryExtend();
       } else {
-        (_b = this.hammer) == null ? void 0 : _b.get("swipe").set({ enable: true });
+        this.hammer?.get("swipe").set({ enable: true });
       }
       this.restoreScrollTop(this.currImageNode, 0, 0);
     }
     initFrame() {
       this.frame.addEventListener("wheel", (event) => {
-        var _a;
-        (_a = this.callbackOnWheel) == null ? void 0 : _a.call(this, event);
+        this.callbackOnWheel?.(event);
         this.onWheel(event);
       });
       this.frame.addEventListener("scroll", (event) => this.onScroll(event));
-      this.frame.addEventListener("click", events.hiddenBigImageEvent);
+      this.frame.addEventListener("click", (event) => this.hidden(event));
       this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
-      const debouncer2 = new Debouncer("throttle");
+      const debouncer = new Debouncer("throttle");
       this.frame.addEventListener("mousemove", (event) => {
-        debouncer2.addEvent("BIG-IMG-MOUSE-MOVE", () => {
+        debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
           let stepImage = false;
           if (this.lastMouseY && conf.imgScale > 0) {
             [stepImage] = this.stickyMouse(event, this.lastMouseY);
@@ -2703,14 +2692,13 @@ text-align: left;
       });
     }
     initImgScaleBar() {
-      var _a, _b, _c;
-      (_a = this.imgScaleBar.querySelector("#imgIncreaseBTN")) == null ? void 0 : _a.addEventListener("click", () => {
+      this.imgScaleBar.querySelector("#imgIncreaseBTN")?.addEventListener("click", () => {
         this.scaleBigImages(1, 5);
       });
-      (_b = this.imgScaleBar.querySelector("#imgDecreaseBTN")) == null ? void 0 : _b.addEventListener("click", () => {
+      this.imgScaleBar.querySelector("#imgDecreaseBTN")?.addEventListener("click", () => {
         this.scaleBigImages(-1, 5);
       });
-      (_c = this.imgScaleBar.querySelector("#imgScaleResetBTN")) == null ? void 0 : _c.addEventListener("click", () => {
+      this.imgScaleBar.querySelector("#imgScaleResetBTN")?.addEventListener("click", () => {
         this.resetScaleBigImages();
       });
       const progress = this.imgScaleBar.querySelector("#imgScaleProgress");
@@ -2732,8 +2720,7 @@ text-align: left;
       });
     }
     createNextLand(x, y) {
-      var _a;
-      (_a = this.frame.querySelector("#nextLand")) == null ? void 0 : _a.remove();
+      this.frame.querySelector("#nextLand")?.remove();
       const nextLand = document.createElement("div");
       nextLand.setAttribute("id", "nextLand");
       const svg_bg = `<svg version="1.1" width="150" height="40" viewBox="0 0 256 256" xml:space="preserve" id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"><defs id="defs1" /><path style="color:#000000;display:inline;mix-blend-mode:normal;fill:#86e690;fill-opacity:0.942853;fill-rule:evenodd;stroke:#000000;stroke-width:2.56;stroke-linejoin:bevel;stroke-miterlimit:10;stroke-dasharray:61.44, 2.56;stroke-dashoffset:0.768;stroke-opacity:0.319655" d="M -0.07467348,3.2775653 -160.12951,3.3501385 127.96339,156.87088 415.93447,3.2743495 255.93798,3.2807133 128.00058,48.081351 Z" id="path15" /></svg>`;
@@ -2748,14 +2735,14 @@ text-align: left;
       nextLand.innerHTML = svg_bg;
       nextLand.addEventListener("mouseover", () => {
         nextLand.remove();
-        events.stepImageEvent("next");
+        this.queue.stepImageEvent("next");
       });
       this.frame.appendChild(nextLand);
       window.setTimeout(() => nextLand.remove(), 1500);
     }
     createImgElement() {
       const img = document.createElement("img");
-      img.addEventListener("click", events.hiddenBigImageEvent);
+      img.addEventListener("click", () => this.hidden());
       return img;
     }
     removeImgNodes() {
@@ -2765,18 +2752,22 @@ text-align: left;
         }
       }
     }
-    hidden() {
-      var _a;
-      (_a = this.callbackOnHidden) == null ? void 0 : _a.call(this);
+    hidden(event) {
+      if (event && event.target && event.target.tagName === "SPAN")
+        return;
+      this.visible = false;
+      this.callbackOnHidden?.();
       this.frame.blur();
       this.frame.classList.add("b-f-collapse");
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
         this.frame.childNodes.forEach((child) => child.hidden = true);
         this.removeImgNodes();
       }, 600);
+      HTML.pageHelper.classList.remove("p-minify");
+      HTML.fullViewPlane.focus();
     }
-    show() {
-      var _a;
+    show(event) {
+      this.visible = true;
       this.frame.classList.remove("b-f-collapse");
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
         this.frame.focus();
@@ -2789,7 +2780,13 @@ text-align: left;
           child.hidden = false;
         });
       }, 600);
-      (_a = this.callbackOnShow) == null ? void 0 : _a.call(this);
+      this.callbackOnShow?.();
+      HTML.pageHelper.classList.add("p-minify");
+      let start = this.queue.currIndex;
+      if (event && event.target) {
+        start = this.queue.findImgIndex(event.target);
+      }
+      this.queue.do(start);
     }
     getImgNodes() {
       return Array.from(this.frame.querySelectorAll("img"));
@@ -2803,7 +2800,7 @@ text-align: left;
         if (this.isReachBoundary(oriented)) {
           event.preventDefault();
           if (!this.tryPreventStep()) {
-            events.stepImageEvent(oriented);
+            this.queue.stepImageEvent(oriented);
           }
         }
       }
@@ -2995,9 +2992,8 @@ text-align: left;
      * @param _percent: directly set width percent
      */
     scaleBigImages(fix, rate, _percent) {
-      var _a;
       let percent = 0;
-      const cssRules = Array.from(((_a = HTML.styleSheel.sheet) == null ? void 0 : _a.cssRules) ?? []);
+      const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules ?? []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
           if (cssRule.selectorText === ".bigImageFrame > img") {
@@ -3032,8 +3028,7 @@ text-align: left;
       return percent;
     }
     resetScaleBigImages() {
-      var _a;
-      const cssRules = Array.from(((_a = HTML.styleSheel.sheet) == null ? void 0 : _a.cssRules) ?? []);
+      const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules ?? []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
           if (cssRule.selectorText === ".bigImageFrame > img") {
@@ -3102,12 +3097,12 @@ text-align: left;
     }
   }
   class AutoPage {
+    frameManager;
+    status;
+    button;
+    lockVer;
+    restart;
     constructor(frameManager, root) {
-      __publicField(this, "frameManager");
-      __publicField(this, "status");
-      __publicField(this, "button");
-      __publicField(this, "lockVer");
-      __publicField(this, "restart");
       this.frameManager = frameManager;
       this.status = "stop";
       this.button = root;
@@ -3143,7 +3138,7 @@ text-align: left;
       this.button.firstElementChild.innerText = i18n.autoPagePause.get();
       const b = this.frameManager.frame;
       if (this.frameManager.frame.classList.contains("b-f-collapse")) {
-        events.showBigImage(this.frameManager.queue.currIndex);
+        this.frameManager.show();
       }
       const progress = this.button.querySelector("#autoPageProgress");
       while (true) {
@@ -3184,6 +3179,7 @@ text-align: left;
       this.button.firstElementChild.innerText = i18n.autoPagePlay.get();
     }
   }
+
   function dragElement(element, dragHub, callback) {
     (dragHub ?? element).addEventListener("mousedown", (event) => {
       event.preventDefault();
@@ -3212,40 +3208,50 @@ text-align: left;
       document.addEventListener("mousemove", mouseMove);
       document.addEventListener("mouseup", () => {
         document.removeEventListener("mousemove", mouseMove);
-        callback == null ? void 0 : callback(element.offsetTop, element.offsetLeft);
+        callback?.(element.offsetTop, element.offsetLeft);
       }, { once: true });
     });
   }
-  const HTML = createHTML();
+
+  const MATCHER = adaptMatcher();
   const IFQ = new IMGFetcherQueue();
   const IL = new IdleLoader(IFQ);
   const BIFM = new BigImageFrameManager(HTML.bigImageFrame, IFQ, HTML.imgScaleBar);
-  const matcher = adaptMatcher();
-  const PF = new PageFetcher(IFQ, IL, matcher);
-  const DL = new Downloader(IFQ, IL, matcher);
-  const DLC = new DownloaderCanvas("downloaderCanvas", IFQ);
-  new AutoPage(BIFM, HTML.autoPageBTN);
+  const DLC = new DownloaderCanvas("downloaderCanvas", IFQ, (index) => {
+    IFQ.currIndex = index;
+    BIFM.show();
+  });
+  const PF = new PageFetcher(IFQ, MATCHER, {
+    matcher: MATCHER,
+    downloadStateReporter: () => DLC.drawDebouce(),
+    setNow: (index) => BIFM.setNow(index),
+    onClick: (event) => BIFM.show(event)
+  });
+  const DL = new Downloader(IFQ, IL, MATCHER, () => PF.done);
+  const events = initEvents(BIFM, IFQ, PF, IL);
+  IFQ.subscribeOnFinishedReport(1, (index, queue) => {
+    pageHelper.setPageState({ finished: queue.finishedIndex.length });
+    evLog(`第${index + 1}张完成，大图所在第${queue.currIndex + 1}张`);
+    if (queue[queue.currIndex].stage === FetchState.DONE) {
+      pageHelper.setFetchState("fetched");
+    }
+    return false;
+  });
+  IFQ.subscribeOnDo(1, (index, queue) => {
+    pageHelper.setPageState({ current: index + 1 });
+    const imf = queue[index];
+    if (imf.stage !== FetchState.DONE) {
+      pageHelper.setFetchState("fetching");
+    }
+    return false;
+  });
+  PF.setOnAppended((total) => {
+    pageHelper.setPageState({ total });
+  });
   if (conf["first"]) {
     events.showGuideEvent();
     conf["first"] = false;
     saveConf(conf);
-  }
-  const signal = { first: true };
-  function main(collapse) {
-    if (HTML.pageHelper) {
-      if (collapse) {
-        HTML.pageHelper.classList.remove("pageHelperExtend");
-        events.hiddenFullViewPlane();
-        ["config", "downloader"].forEach((id) => events.togglePlaneEvent(id, true));
-      } else {
-        HTML.pageHelper.classList.add("pageHelperExtend");
-        events.showFullViewPlane();
-        if (signal.first) {
-          signal.first = false;
-          PF.init().then(() => IL.start(IL.lockVer));
-        }
-      }
-    }
   }
   HTML.configPlaneBTN.addEventListener("click", () => events.togglePlaneEvent("config"));
   HTML.configPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target));
@@ -3273,31 +3279,31 @@ text-align: left;
   for (const key of ConfigSelectKeys) {
     HTML.fullViewPlane.querySelector(`#${key}Select`).addEventListener("change", () => events.modSelectConfigEvent(key));
   }
-  HTML.collapseBTN.addEventListener("click", () => main(true));
-  HTML.gate.addEventListener("click", () => main(false));
+  HTML.collapseBTN.addEventListener("click", () => events.main(false));
+  HTML.gate.addEventListener("click", () => events.main(true));
   const debouncer = new Debouncer();
   HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 500));
   HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
-  HTML.currPageElement.addEventListener("click", () => events.showBigImage(IFQ.currIndex));
+  HTML.currPageElement.addEventListener("click", () => BIFM.show());
   HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event));
   document.addEventListener("keydown", (event) => events.keyboardEvent(event));
   HTML.imgLandLeft.addEventListener("click", (event) => {
-    events.stepImageEvent(conf.reversePages ? "next" : "prev");
+    IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
     event.stopPropagation();
   });
   HTML.imgLandRight.addEventListener("click", (event) => {
-    events.stepImageEvent(conf.reversePages ? "prev" : "next");
+    IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
     event.stopPropagation();
   });
   HTML.imgLandTop.addEventListener("click", (event) => {
-    events.stepImageEvent("prev");
+    IFQ.stepImageEvent("prev");
     event.stopPropagation();
   });
   HTML.imgLandBottom.addEventListener("click", (event) => {
-    events.stepImageEvent("next");
+    IFQ.stepImageEvent("next");
     event.stopPropagation();
   });
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
   dragElement(HTML.pageHelper, HTML.pageHelper.querySelector("#dragHub") ?? void 0, events.modPageHelperPostion);
 
-})(Hammer, JSZip, saveAs);
+})(JSZip, saveAs, Hammer);

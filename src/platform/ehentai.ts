@@ -1,5 +1,5 @@
 import { conf } from "../config";
-import { GalleryMeta } from "../downloader";
+import { GalleryMeta } from "../download/gallery-meta";
 import { evLog } from "../utils/ev-log";
 import { Matcher, PagesSource } from "./platform";
 

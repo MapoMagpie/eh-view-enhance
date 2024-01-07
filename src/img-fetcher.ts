@@ -1,6 +1,4 @@
-import { BIFM, DLC } from "./main";
 import { Matcher } from "./platform/platform";
-import { updatePageHelper } from "./ui/page-helper";
 import { evLog } from "./utils/ev-log";
 import { xhrWapper } from "./utils/query";
 
@@ -26,6 +24,13 @@ export enum FetchState {
   DONE = 3,
 }
 
+export type IMGFetcherSettings = {
+  matcher: Matcher;
+  downloadStateReporter?: (state: DownloadState) => void;
+  setNow?: (index: number) => void;
+  onClick?: (event: MouseEvent) => void;
+}
+
 export class IMGFetcher {
   root: HTMLElement;
   imgElement: HTMLImageElement;
@@ -41,12 +46,11 @@ export class IMGFetcher {
   downloadState: DownloadState;
   onFinishedEventContext: Map<string, ResultCallback>;
   onFailedEventContext: Map<string, ResultCallback>;
-  // TODO: onFailedEventContext
   downloadBar?: HTMLElement;
   timeoutId?: number;
-  matcher: Matcher;
+  settings: IMGFetcherSettings;
 
-  constructor(node: HTMLElement, matcher: Matcher) {
+  constructor(node: HTMLElement, settings: IMGFetcherSettings) {
     this.root = node;
     this.imgElement = node.firstChild as HTMLImageElement;
     this.pageUrl = this.imgElement.getAttribute("ahref")!;
@@ -62,7 +66,8 @@ export class IMGFetcher {
      */
     this.onFinishedEventContext = new Map();
     this.onFailedEventContext = new Map();
-    this.matcher = matcher;
+    this.settings = settings;
+    this.root.addEventListener("click", (event) => settings.onClick?.(event));
   }
 
   // 刷新下载状态
@@ -87,7 +92,7 @@ export class IMGFetcher {
     if (this.downloadBar) {
       this.downloadBar.querySelector("progress")!.setAttribute("value", (this.downloadState.loaded / this.downloadState.total) * 100 + "");
     }
-    DLC.drawDebouce();
+    this.settings.downloadStateReporter?.(this.downloadState);
   }
 
   async start(index: number) {
@@ -160,7 +165,7 @@ export class IMGFetcher {
 
   async fetchImageURL(): Promise<string | null> {
     try {
-      const imageURL = await this.matcher.matchImgURL(this.pageUrl, this.tryTimes > 0);
+      const imageURL = await this.settings.matcher.matchImgURL(this.pageUrl, this.tryTimes > 0);
       if (!imageURL) {
         evLog("Fetch URL failed, the URL is empty");
         return null;
@@ -199,13 +204,10 @@ export class IMGFetcher {
 
   //立刻将当前元素的src赋值给大图元素
   setNow(index: number) {
-    BIFM.setNow(index);
+    this.settings.setNow?.(index);
     if (this.stage === FetchState.DONE) {
       this.onFinishedEventContext.forEach((callback) => callback(index, this));
-    } else {
-      updatePageHelper("fetching");
     }
-    updatePageHelper("updateCurrPage", (index + 1).toString());
   }
 
 

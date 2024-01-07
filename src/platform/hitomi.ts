@@ -1,4 +1,4 @@
-import { GalleryMeta } from "../downloader";
+import { GalleryMeta } from "../download/gallery-meta";
 import { Matcher, PagesSource } from "./platform";
 
 

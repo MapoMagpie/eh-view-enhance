@@ -1,4 +1,4 @@
-import { GalleryMeta } from "../downloader";
+import { GalleryMeta } from "../download/gallery-meta";
 import { Matcher, PagesSource } from "./platform";
 
 const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;

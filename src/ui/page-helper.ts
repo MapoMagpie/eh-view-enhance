@@ -1,36 +1,26 @@
-import { DLC, HTML } from "../main";
+import { HTML } from "./html";
 
-export type PageState = "fetching" | "fetched" | "updateTotal" | "updateCurrPage" | "updateFinished";
-//页码指示器通用修改事件
-export const updatePageHelper = function(state: PageState, data?: string) {
-  switch (state) {
-    case "fetching":
-      HTML.pageHelper.classList.add("pageHelperFetching");
-      break;
-    case "fetched":
-      HTML.pageHelper.classList.remove("pageHelperFetching");
-      break;
-    case "updateTotal":
-      if (!data) {
-        throw new Error("updateTotal data is undefined");
-      }
-      HTML.totalPageElement.textContent = data;
-      DLC.drawDebouce();
-      break;
-    case "updateCurrPage":
-      if (!data) {
-        throw new Error("updateCurrPage data is undefined");
-      }
-      HTML.currPageElement.textContent = data;
-      DLC.drawDebouce();
-      break;
-    case "updateFinished":
-      if (!data) {
-        throw new Error("updateFinished data is undefined");
-      }
-      HTML.finishedElement.textContent = data;
-      DLC.drawDebouce();
-      break;
+function setFetchState(state: "fetching" | "fetched") {
+  if (state === "fetching") {
+    HTML.pageHelper.classList.add("pageHelperFetching");
+  } else {
+    HTML.pageHelper.classList.remove("pageHelperFetching");
   }
-};
+}
 
+function setPageState({ total, current, finished }: { total?: number, current?: number, finished?: number }) {
+  if (total !== undefined) {
+    HTML.totalPageElement.textContent = total.toString();
+  }
+  if (current !== undefined) {
+    HTML.currPageElement.textContent = current.toString();
+  }
+  if (finished !== undefined) {
+    HTML.finishedElement.textContent = finished.toString();
+  }
+}
+const pageHelper = {
+  setFetchState,
+  setPageState,
+}
+export default pageHelper;

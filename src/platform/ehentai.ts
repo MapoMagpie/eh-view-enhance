@@ -58,7 +58,7 @@ export class EHMatcher implements Matcher {
       if (page.raw instanceof Document) {
         return page.raw;
       } else {
-        const raw = await window.fetch(page.raw).then((response) => response.text());
+        const raw = await window.fetch(page.raw as string).then((response) => response.text());
         if (!raw) return null;
         const domParser = new DOMParser();
         return domParser.parseFromString(raw, "text/html");

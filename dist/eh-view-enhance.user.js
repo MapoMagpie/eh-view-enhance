@@ -13,6 +13,8 @@
 // @match              https://nhentai.net/g/*
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*/*
+// @match              https://www.pixiv.net/*/users/*
+// @match              https://www.pixiv.net/*/artworks/*
 // @exclude            https://nhentai.net/g/*/*/
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
@@ -23,6 +25,7 @@
 // @connect            nhentai.net
 // @connect            hitomi.la
 // @connect            akamaihd.net
+// @connect            i.pximg.net
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -2012,6 +2015,73 @@
     }
   }
 
+  class Pixiv {
+    parseGalleryMeta(_) {
+      return new GalleryMeta(window.location.href, "UNTITLE");
+    }
+    // url: https://i.pximg.net/c/250x250_80_a2/img-master/img/2024/01/07/20/08/08/114970872_p0_square1200.jpg
+    // return: https://i.pximg.net/img-original/img/2024/01/07/20/08/08/114970872_p0.png
+    async matchImgURL(url, _) {
+      return url;
+    }
+    async parseImgNodes(raw, template) {
+      const list = [];
+      const pidList = JSON.parse(raw.raw);
+      const pageListData = await fetchUrls(pidList.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5);
+      for (let i = 0; i < pidList.length; i++) {
+        const pid = pidList[i];
+        const pages = JSON.parse(pageListData[i]).body;
+        let digits = pages.length.toString().length;
+        let j = -1;
+        for (const p of pages) {
+          j++;
+          const newImgNode = template.cloneNode(true);
+          const newImg = newImgNode.firstElementChild;
+          newImg.setAttribute("ahref", p.urls.original);
+          newImg.setAttribute("asrc", p.urls.small);
+          newImg.setAttribute("title", p.urls.original.split("/").pop() || `${pid}_p${j.toString().padStart(digits)}.jpg`);
+          list.push(newImgNode);
+        }
+      }
+      return list;
+    }
+    async *fetchPagesSource() {
+      let u = document.querySelector("a[data-gtm-value][href*='/users/']")?.href || window.location.href;
+      const author = /users\/(\d+)/.exec(u)?.[1];
+      if (!author) {
+        return;
+      }
+      const res = await window.fetch(`https://www.pixiv.net/ajax/user/${author}/profile/all`).then((resp) => resp.json());
+      if (res.error) {
+        return;
+      }
+      let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
+      pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+      while (pidList.length > 0) {
+        const pids = pidList.splice(0, 10);
+        yield { raw: JSON.stringify(pids), typ: "json" };
+      }
+    }
+  }
+  async function fetchUrls(urls, concurrency) {
+    const results = new Array(urls.length);
+    let i = 0;
+    while (i < urls.length) {
+      const batch = urls.slice(i, i + concurrency);
+      const batchPromises = batch.map(
+        (url, index) => window.fetch(url).then((resp) => {
+          if (resp.ok) {
+            return resp.text();
+          }
+          throw new Error(`Failed to fetch ${url}: ${resp.status} ${resp.statusText}`);
+        }).then((raw) => results[index + i] = raw)
+      );
+      await Promise.all(batchPromises);
+      i += concurrency;
+    }
+    return results;
+  }
+
   const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
   class SteamMatcher {
     async matchImgURL(url, _) {
@@ -2107,6 +2177,9 @@
     }
     if (host === "hitomi.la") {
       return new HitomiMather();
+    }
+    if (host.endsWith("pixiv.net")) {
+      return new Pixiv();
     }
     return new EHMatcher();
   }

@@ -1,6 +1,7 @@
 import { EHMatcher } from "./ehentai";
 import { HitomiMather } from "./hitomi";
 import { NHMatcher } from "./nhentai";
+import { Pixiv } from "./pixiv";
 import { Matcher } from "./platform";
 import { SteamMatcher } from "./steam";
 
@@ -14,6 +15,9 @@ export function adaptMatcher(): Matcher {
   }
   if (host === "hitomi.la") {
     return new HitomiMather();
+  }
+  if (host.endsWith("pixiv.net")) {
+    return new Pixiv();
   }
   return new EHMatcher();
 }

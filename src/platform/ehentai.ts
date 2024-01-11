@@ -162,7 +162,7 @@ export class EHMatcher implements Matcher {
       const nlValue = regulars.nlValue.exec(text)![1];
       const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
       evLog(`IMG-FETCHER retry url:${newUrl}`);
-      return await this.fetchImgURL(url, false);
+      return await this.fetchImgURL(newUrl, false);
     } else {
       return regulars.normal.exec(text)![1];
     }

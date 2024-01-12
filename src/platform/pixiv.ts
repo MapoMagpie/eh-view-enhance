@@ -15,13 +15,23 @@ type Page = {
 const HASH_REGEX = /pixiv\.net\/(\w*\/)?(artworks|users)\/.*/;
 export class Pixiv implements Matcher {
 
+  authorID: string | undefined;
+  meta: GalleryMeta;
+  pidList: string[] = [];
+  pageCount: number = 0;
+
+  constructor() {
+    this.meta = new GalleryMeta(window.location.href, "UNTITLE");
+  }
+
   work(url: string): boolean {
     return HASH_REGEX.test(url);
   }
 
   public parseGalleryMeta(_: Document): GalleryMeta {
-    // TODO: collect meta
-    return new GalleryMeta(window.location.href, "UNTITLE");
+    this.meta.title = `PIXIV_${this.authorID}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
+    this.meta.tags = { "author": [this.authorID || "UNTITLE"], "pids": this.pidList };
+    return this.meta;
   }
 
   public async matchImgURL(url: string, _: boolean): Promise<string> {
@@ -34,10 +44,14 @@ export class Pixiv implements Matcher {
     const pageListData = await fetchUrls(pidList.map(p => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5);
     for (let i = 0; i < pidList.length; i++) {
       const pid = pidList[i];
-      const pages = JSON.parse(pageListData[i]).body as Page[];
-      let digits = pages.length.toString().length;
+      const data = JSON.parse(pageListData[i]) as { error: boolean, message: string, body: Page[] };
+      if (data.error) {
+        throw new Error(`Fetch page list error: ${data.message}`);
+      }
+      this.pageCount += data.body.length;
+      let digits = data.body.length.toString().length;
       let j = -1;
-      for (const p of pages) {
+      for (const p of data.body) {
         j++;
         const newImgNode = template.cloneNode(true) as HTMLDivElement;
         const newImg = newImgNode.firstElementChild as HTMLImageElement;
@@ -55,20 +69,18 @@ export class Pixiv implements Matcher {
     let u = document.querySelector<HTMLAnchorElement>("a[data-gtm-value][href*='/users/']")?.href || window.location.href;
     const author = /users\/(\d+)/.exec(u)?.[1];
     if (!author) {
-      // throw new Error("Cannot find author id!");
-      // TODO: log this
-      return;
+      throw new Error("Cannot find author id!");
     }
+    this.authorID = author;
     // request all illusts from https://www.pixiv.net/ajax/user/{author}/profile/all
     const res = await window.fetch(`https://www.pixiv.net/ajax/user/${author}/profile/all`).then(resp => resp.json());
     if (res.error) {
-      // TODO: log this
-      return;
+      throw new Error(`Fetch illust list error: ${res.message}`);
     }
-    let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
-    pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
-    while (pidList.length > 0) {
-      const pids = pidList.splice(0, 10);
+    const pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
+    this.pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+    while (this.pidList.length > 0) {
+      const pids = this.pidList.splice(0, 10);
       yield { raw: JSON.stringify(pids), typ: "json" }
     }
 

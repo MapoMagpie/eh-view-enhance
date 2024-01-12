@@ -1,4 +1,5 @@
 import { GalleryMeta } from "../download/gallery-meta";
+import { evLog } from "../utils/ev-log";
 import { Matcher, PagesSource } from "./platform";
 
 type Page = {
@@ -12,6 +13,17 @@ type Page = {
   height: number
 }
 
+type Work = {
+  id: string,
+  title: string,
+  alt: string,
+  // 0: illustration, 1: manga, 2: ugoira
+  illustType: 0 | 1 | 2,
+  description: "",
+  tags: string[],
+  pageCount: number,
+}
+
 const HASH_REGEX = /pixiv\.net\/(\w*\/)?(artworks|users)\/.*/;
 export class Pixiv implements Matcher {
 
@@ -19,6 +31,7 @@ export class Pixiv implements Matcher {
   meta: GalleryMeta;
   pidList: string[] = [];
   pageCount: number = 0;
+  works: Record<string, Work> = {};
 
   constructor() {
     this.meta = new GalleryMeta(window.location.href, "UNTITLE");
@@ -30,7 +43,8 @@ export class Pixiv implements Matcher {
 
   public parseGalleryMeta(_: Document): GalleryMeta {
     this.meta.title = `PIXIV_${this.authorID}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
-    this.meta.tags = { "author": [this.authorID || "UNTITLE"], "pids": this.pidList };
+    let tags = Object.values(this.works).map(w => w.tags).flat();
+    this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
     return this.meta;
   }
 
@@ -38,9 +52,38 @@ export class Pixiv implements Matcher {
     return url
   }
 
+  async fetchTagsByPids(pids: string[]): Promise<void> {
+    try {
+      const raw = await window.fetch(`https://www.pixiv.net/ajax/user/${this.authorID}/profile/illusts?ids[]=${pids.join("&ids[]=")}&work_category=illustManga&is_first_page=0&lang=en`).then(resp => resp.json());
+      const data = raw as { error: boolean, message: string, body: { works: Record<string, Work> } }
+      if (!data.error) {
+        // just pick up the fields we need
+        const works: Record<string, Work> = {};
+        Object.entries(data.body.works).forEach(([k, w]) => {
+          works[k] = {
+            id: w.id,
+            title: w.title,
+            alt: w.alt,
+            illustType: w.illustType,
+            description: w.description,
+            tags: w.tags,
+            pageCount: w.pageCount
+          };
+        })
+        this.works = { ...this.works, ...works };
+      } else {
+        evLog("WARN: fetch tags by pids error: ", data.message);
+      }
+      // console.log("fetch tags by pids: ", data);
+    } catch (error) {
+      evLog("ERROR: fetch tags by pids error: ", error);
+    }
+  }
+
   public async parseImgNodes(raw: PagesSource, template: HTMLElement): Promise<HTMLElement[]> {
     const list: HTMLElement[] = [];
     const pidList = JSON.parse(raw.raw as string) as string[];
+    this.fetchTagsByPids(pidList); // async function but no await, it will fetch tags in background
     const pageListData = await fetchUrls(pidList.map(p => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5);
     for (let i = 0; i < pidList.length; i++) {
       const pid = pidList[i];
@@ -77,10 +120,11 @@ export class Pixiv implements Matcher {
     if (res.error) {
       throw new Error(`Fetch illust list error: ${res.message}`);
     }
-    const pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
-    this.pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
-    while (this.pidList.length > 0) {
-      const pids = this.pidList.splice(0, 10);
+    let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
+    this.pidList = [...pidList];
+    pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+    while (pidList.length > 0) {
+      const pids = pidList.splice(0, 20);
       yield { raw: JSON.stringify(pids), typ: "json" }
     }
 

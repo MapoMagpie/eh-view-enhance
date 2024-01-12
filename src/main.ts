@@ -106,8 +106,8 @@ function main(): DestoryFunc {
 })();
 
 let destoryFunc: () => void;
-window.addEventListener("locationchange", (event) => {
-  console.log("locationchange", event);
+window.addEventListener("locationchange", (_) => {
+  // console.log("locationchange", event);
   if (MATCHER.work(window.location.href)) {
     destoryFunc = main();
   } else {

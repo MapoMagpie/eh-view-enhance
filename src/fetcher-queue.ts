@@ -1,7 +1,6 @@
 import { Debouncer } from "./utils/debouncer";
 import { FetchState, IMGFetcher } from "./img-fetcher";
 import { Oriented, conf } from "./config";
-import { HTML } from "./ui/html";
 
 /// return boolean, true means stop, false means continue
 type Callback = (index: number, queue: IMGFetcherQueue) => boolean;
@@ -78,9 +77,6 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     const imgFetcher = this[index];
     if (imgFetcher.stage !== FetchState.DONE) return;
     this.pushFinishedIndex(index);
-    if (index === this.currIndex) {
-      this.scrollTo(index);
-    }
 
     let keys = Array.from(this.onFinishedReport.keys());
     keys.sort();
@@ -94,13 +90,6 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   stepImageEvent(oriented: Oriented) {
     let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
     this.do(start, oriented);
-  }
-
-  scrollTo(index: number) {
-    const imgFetcher = this[index];
-    let scrollTo = imgFetcher.root.offsetTop - window.screen.availHeight / 3;
-    scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewPlane.scrollHeight ? HTML.fullViewPlane.scrollHeight : scrollTo;
-    HTML.fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
   }
 
   //如果开始的索引小于0,则修正索引为0,如果开始的索引超过队列的长度,则修正索引为队列的最后一位

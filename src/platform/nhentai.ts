@@ -4,6 +4,10 @@ import { Matcher, PagesSource } from "./platform";
 const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
 export class NHMatcher implements Matcher {
 
+  work(_: string): boolean {
+    return true;
+  }
+
   public parseGalleryMeta(doc: Document): GalleryMeta {
     let title: string | undefined;
     let originTitle: string | undefined;

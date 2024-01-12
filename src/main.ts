@@ -1,4 +1,4 @@
-import { ConfigBooleanKeys, ConfigNumberKeys, ConfigSelectKeys, conf, saveConf, ConfigNumberType, ConfigBooleanType, ConfigSelectType } from "./config";
+import { conf, saveConf } from "./config";
 import { Downloader } from "./download/downloader";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
@@ -7,124 +7,114 @@ import { PageFetcher } from "./page-fetcher";
 import { adaptMatcher } from "./platform/adapt";
 import { DownloaderCanvas } from "./ui/downloader-canvas";
 import { initEvents } from "./ui/event";
-import { HTML } from "./ui/html";
-import pageHelper from "./ui/page-helper";
+import { createHTML, addEventListeners } from "./ui/html";
+import { PageHelper } from "./ui/page-helper";
 import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
-import { Debouncer } from "./utils/debouncer";
-import { dragElement } from "./utils/drag-element";
 import { evLog } from "./utils/ev-log";
 
 const MATCHER = adaptMatcher();
+type DestoryFunc = () => void;
 
-export const IFQ: IMGFetcherQueue = new IMGFetcherQueue();
-export const IL: IdleLoader = new IdleLoader(IFQ);
-export const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML.bigImageFrame, IFQ, HTML.imgScaleBar);
-export const DLC: DownloaderCanvas = new DownloaderCanvas("downloaderCanvas", IFQ, (index) => {
-  IFQ.currIndex = index;
-  BIFM.show();
-});
-
-export const PF: PageFetcher = new PageFetcher(IFQ, MATCHER, {
-  matcher: MATCHER,
-  downloadStateReporter: () => DLC.drawDebouce(),
-  setNow: (index) => BIFM.setNow(index),
-  onClick: (event) => BIFM.show(event),
-});
-
-const DL: Downloader = new Downloader(IFQ, IL, MATCHER, () => PF.done);
-
-const events = initEvents(BIFM, IFQ, PF, IL);
-
-IFQ.subscribeOnFinishedReport(1, (index, queue) => {
-  pageHelper.setPageState({ finished: queue.finishedIndex.length });
-  evLog(`第${index + 1}张完成，大图所在第${queue.currIndex + 1}张`);
-  if (queue[queue.currIndex].stage === FetchState.DONE) {
-    pageHelper.setFetchState("fetched");
-  }
-  return false;
-});
-
-IFQ.subscribeOnDo(1, (index, queue) => {
-  pageHelper.setPageState({ current: index + 1 });
-  const imf = queue[index];
-  if (imf.stage !== FetchState.DONE) {
-    pageHelper.setFetchState("fetching");
-  }
-  return false;
-});
-
-PF.setOnAppended((total) => {
-  pageHelper.setPageState({ total });
-});
-
-if (conf["first"]) {
-  events.showGuideEvent();
-  conf["first"] = false;
-  saveConf(conf);
-}
-
-HTML.configPlaneBTN.addEventListener("click", () => events.togglePlaneEvent("config"));
-HTML.configPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
-HTML.configPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
-HTML.downloaderPlaneBTN.addEventListener("click", () => {
-  DL.check();
-  events.togglePlaneEvent("downloader");
-});
-HTML.downloaderPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
-HTML.downloaderPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
-
-// modify config event
-for (const key of ConfigNumberKeys) {
-  HTML.fullViewPlane.querySelector<HTMLButtonElement>(`#${key}MinusBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
-  HTML.fullViewPlane.querySelector<HTMLButtonElement>(`#${key}AddBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
-  HTML.fullViewPlane.querySelector<HTMLInputElement>(`#${key}Input`)!.addEventListener("wheel", (event: WheelEvent) => {
-    if (event.deltaY < 0) {
-      events.modNumberConfigEvent(key as ConfigNumberType, 'add');
-    } else if (event.deltaY > 0) {
-      events.modNumberConfigEvent(key as ConfigNumberType, 'minus');
-    }
+function main(): DestoryFunc {
+  const HTML = createHTML();
+  const IFQ: IMGFetcherQueue = new IMGFetcherQueue();
+  const IL: IdleLoader = new IdleLoader(IFQ);
+  const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, IFQ);
+  const DLC: DownloaderCanvas = new DownloaderCanvas("downloaderCanvas", IFQ, (index) => {
+    IFQ.currIndex = index;
+    BIFM.show();
   });
+  const PF: PageFetcher = new PageFetcher(HTML.fullViewPlane, IFQ, MATCHER, {
+    matcher: MATCHER,
+    downloadStateReporter: () => DLC.drawDebouce(),
+    setNow: (index) => BIFM.setNow(index),
+    onClick: (event) => BIFM.show(event),
+  });
+  const DL: Downloader = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
+  const PH: PageHelper = new PageHelper(HTML);
+  IFQ.subscribeOnFinishedReport(1, (index, queue) => {
+    PH.setPageState({ finished: queue.finishedIndex.length });
+    evLog(`第${index + 1}张完成，大图所在第${queue.currIndex + 1}张`);
+    if (queue[queue.currIndex].stage === FetchState.DONE) {
+      PH.setFetchState("fetched");
+    }
+    return false;
+  });
+  // scroll to current image that is in view
+  IFQ.subscribeOnFinishedReport(2, (index, queue) => {
+    if (index !== queue.currIndex) {
+      return false;
+    }
+    const imgFetcher = queue[index];
+    let scrollTo = imgFetcher.root.offsetTop - window.screen.availHeight / 3;
+    scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewPlane.scrollHeight ? HTML.fullViewPlane.scrollHeight : scrollTo;
+    HTML.fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
+    return false;
+  });
+
+  IFQ.subscribeOnDo(1, (index, queue) => {
+    PH.setPageState({ current: index + 1 });
+    const imf = queue[index];
+    if (imf.stage !== FetchState.DONE) {
+      PH.setFetchState("fetching");
+    }
+    return false;
+  });
+  PF.setOnAppended((total) => {
+    PH.setPageState({ total });
+    setTimeout(() => PF.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight), 200);
+  });
+
+  const events = initEvents(HTML, BIFM, IFQ, PF, IL);
+  addEventListeners(events, HTML, BIFM, IFQ, DL);
+  if (conf["first"]) {
+    events.showGuideEvent();
+    conf["first"] = false;
+    saveConf(conf);
+  }
+  return () => {
+    console.log("destory eh-view-enhance");
+    HTML.fullViewPlane.remove();
+    PF.abort();
+    IL.abort(0);
+    IFQ.length = 0;
+  }
 }
-for (const key of ConfigBooleanKeys) {
-  HTML.fullViewPlane.querySelector(`#${key}Checkbox`)!.addEventListener("input", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
+
+// https://stackoverflow.com/questions/6390341/how-to-detect-if-url-has-changed-after-hash-in-javascript
+(() => {
+  let oldPushState = history.pushState;
+  history.pushState = function pushState(...args: any) {
+    let ret = oldPushState.apply(this, args);
+    window.dispatchEvent(new Event('pushstate'));
+    window.dispatchEvent(new Event('locationchange'));
+    return ret;
+  };
+
+  let oldReplaceState = history.replaceState;
+  history.replaceState = function replaceState(...args: any) {
+    let ret = oldReplaceState.apply(this, args);
+    window.dispatchEvent(new Event('replacestate'));
+    window.dispatchEvent(new Event('locationchange'));
+    return ret;
+  };
+
+  window.addEventListener('popstate', () => {
+    window.dispatchEvent(new Event('locationchange'));
+  });
+
+})();
+
+let destoryFunc: () => void;
+window.addEventListener("locationchange", (event) => {
+  console.log("locationchange", event);
+  if (MATCHER.work(window.location.href)) {
+    destoryFunc = main();
+  } else {
+    destoryFunc();
+  }
+});
+
+if (MATCHER.work(window.location.href)) {
+  destoryFunc = main();
 }
-for (const key of ConfigSelectKeys) {
-  HTML.fullViewPlane.querySelector(`#${key}Select`)!.addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
-}
-
-// entry 入口
-HTML.collapseBTN.addEventListener("click", () => events.main(false));
-HTML.gate.addEventListener("click", () => events.main(true));
-
-const debouncer = new Debouncer();
-
-//全屏阅读元素滚动事件
-HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 500));
-HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
-
-HTML.currPageElement.addEventListener("click", () => BIFM.show());
-HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event as WheelEvent));
-
-// Shortcut
-document.addEventListener("keydown", (event) => events.keyboardEvent(event));
-// 箭头导航
-HTML.imgLandLeft.addEventListener("click", (event) => {
-  IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
-  event.stopPropagation();
-});
-HTML.imgLandRight.addEventListener("click", (event) => {
-  IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
-  event.stopPropagation();
-});
-HTML.imgLandTop.addEventListener("click", (event) => {
-  IFQ.stepImageEvent("prev");
-  event.stopPropagation();
-});
-HTML.imgLandBottom.addEventListener("click", (event) => {
-  IFQ.stepImageEvent("next");
-  event.stopPropagation();
-});
-
-HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
-
-dragElement(HTML.pageHelper, HTML.pageHelper.querySelector<HTMLElement>("#dragHub") ?? undefined, events.modPageHelperPostion);

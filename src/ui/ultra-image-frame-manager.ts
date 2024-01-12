@@ -5,7 +5,7 @@ import { Debouncer } from "../utils/debouncer";
 import { i18n } from "../utils/i18n";
 import { sleep } from "../utils/sleep";
 import Hammer from "hammerjs";
-import { HTML } from "./html";
+import { Elements } from "./html";
 
 export class BigImageFrameManager {
   frame: HTMLElement;
@@ -25,11 +25,13 @@ export class BigImageFrameManager {
   preventStepLock: boolean = true;
   preventStepLockEle?: HTMLElement;
   visible: boolean = false;
+  html: Elements;
   /* prevent mouse wheel step next image */
-  constructor(frame: HTMLElement, queue: IMGFetcherQueue, imgScaleBar: HTMLElement) {
-    this.frame = frame;
+  constructor(HTML: Elements, queue: IMGFetcherQueue) {
+    this.html = HTML;
+    this.frame = HTML.bigImageFrame;
     this.queue = queue;
-    this.imgScaleBar = imgScaleBar;
+    this.imgScaleBar = HTML.imgScaleBar;
     this.debouncer = new Debouncer();
     this.throttler = new Debouncer("throttle");
     this.lockInit = false;
@@ -205,8 +207,8 @@ export class BigImageFrameManager {
       this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
       this.removeImgNodes();
     }, 600);
-    HTML.pageHelper.classList.remove("p-minify");
-    HTML.fullViewPlane.focus();
+    this.html.pageHelper.classList.remove("p-minify");
+    this.html.fullViewPlane.focus();
   }
 
   show(event?: Event) {
@@ -225,7 +227,7 @@ export class BigImageFrameManager {
       });
     }, 600);
     this.callbackOnShow?.();
-    HTML.pageHelper.classList.add("p-minify")
+    this.html.pageHelper.classList.add("p-minify")
 
     //获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
     let start = this.queue.currIndex;
@@ -459,7 +461,7 @@ export class BigImageFrameManager {
    */
   scaleBigImages(fix: number, rate: number, _percent?: number): number {
     let percent = 0;
-    const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules ?? []);
+    const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
     for (const cssRule of cssRules) {
       if (cssRule instanceof CSSStyleRule) {
         if (cssRule.selectorText === ".bigImageFrame > img") {
@@ -496,7 +498,7 @@ export class BigImageFrameManager {
   }
 
   resetScaleBigImages() {
-    const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules ?? []);
+    const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
     for (const cssRule of cssRules) {
       if (cssRule instanceof CSSStyleRule) {
         if (cssRule.selectorText === ".bigImageFrame > img") {

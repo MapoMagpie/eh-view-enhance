@@ -7,8 +7,8 @@ import { IdleLoader } from "../idle-loader";
 import JSZip from "jszip";
 import saveAs from "file-saver";
 import { Matcher } from "../platform/platform";
-import { HTML } from "../ui/html";
 import { GalleryMeta } from "./gallery-meta";
+import { Elements } from "../ui/html";
 
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
 export class Downloader {
@@ -18,6 +18,7 @@ export class Downloader {
   downloadForceElement?: HTMLElement;
   downloadStartElement?: HTMLAnchorElement;
   downloadNoticeElement?: HTMLElement;
+  downloaderPlaneBTN: HTMLElement;
   queue: IMGFetcherQueue;
   added: Set<number> = new Set();
   idleLoader: IdleLoader;
@@ -25,7 +26,8 @@ export class Downloader {
   delayedQueue: { index: number, fetcher: IMGFetcher }[] = [];
   done: boolean = false;
   isReady: () => boolean;
-  constructor(queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher, allPagesReady: () => boolean) {
+
+  constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher, allPagesReady: () => boolean) {
     this.queue = queue;
     this.idleLoader = idleLoader;
     this.isReady = allPagesReady;
@@ -35,6 +37,7 @@ export class Downloader {
     this.downloadForceElement = document.querySelector("#download-force") || undefined;
     this.downloadStartElement = document.querySelector("#download-start") || undefined;
     this.downloadNoticeElement = document.querySelector("#download-notice") || undefined;
+    this.downloaderPlaneBTN = HTML.downloaderPlaneBTN;
     this.downloadForceElement?.addEventListener("click", () => this.download());
     this.downloadStartElement?.addEventListener("click", () => this.start());
     this.queue.subscribeOnDo(0, () => this.downloading);
@@ -47,10 +50,10 @@ export class Downloader {
       if (queue.isFinised()) {
         if (this.downloading) {
           this.download();
-        } else if (!this.done && HTML.downloaderPlaneBTN.style.color !== "lightgreen") {
-          HTML.downloaderPlaneBTN.style.color = "lightgreen";
-          if (!/✓/.test(HTML.downloaderPlaneBTN.textContent!)) {
-            HTML.downloaderPlaneBTN.textContent += "✓";
+        } else if (!this.done && this.downloaderPlaneBTN.style.color !== "lightgreen") {
+          this.downloaderPlaneBTN.style.color = "lightgreen";
+          if (!/✓/.test(this.downloaderPlaneBTN.textContent!)) {
+            this.downloaderPlaneBTN.textContent += "✓";
           }
         }
       }
@@ -175,7 +178,7 @@ export class Downloader {
       this.downloadStartElement.style.color = stage === "downloadFailed" ? "red" : "";
       this.downloadStartElement.textContent = i18n[stage].get();
     }
-    HTML.downloaderPlaneBTN.style.color = stage === "downloadFailed" ? "red" : "";
+    this.downloaderPlaneBTN.style.color = stage === "downloadFailed" ? "red" : "";
   }
 
   download() {
@@ -196,8 +199,8 @@ export class Downloader {
       saveAs(data, `${meta.originTitle || meta.title}.zip`);
       this.flushUI("downloaded");
       this.done = true;
-      HTML.downloaderPlaneBTN.textContent = i18n.download.get();
-      HTML.downloaderPlaneBTN.style.color = "";
+      this.downloaderPlaneBTN.textContent = i18n.download.get();
+      this.downloaderPlaneBTN.style.color = "";
     });
   };
 }

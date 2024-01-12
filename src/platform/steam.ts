@@ -4,6 +4,10 @@ import { Matcher, PagesSource } from "./platform";
 const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
 export class SteamMatcher implements Matcher {
 
+  work(_: string): boolean {
+    return true;
+  }
+
   public async matchImgURL(url: string, _: boolean): Promise<string> {
     let raw = "";
     try {

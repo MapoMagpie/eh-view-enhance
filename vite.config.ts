@@ -21,9 +21,7 @@ export default defineConfig({
           'https://nhentai.net/g/*',
           'https://steamcommunity.com/id/*/screenshots*',
           'https://hitomi.la/*/*',
-          'https://www.pixiv.net/*/users/*',
-          'https://www.pixiv.net/*/artworks/*',
-          // 'https://www.pixiv.net/*', pjax bad bad
+          'https://www.pixiv.net/*',
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
         version: '4.1.13',

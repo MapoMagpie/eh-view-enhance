@@ -1,9 +1,17 @@
-import { conf } from "../config";
+import { ConfigBooleanKeys, ConfigBooleanType, ConfigNumberKeys, ConfigNumberType, ConfigSelectKeys, ConfigSelectType, conf } from "../config";
+import { Downloader } from "../download/downloader";
+import { IMGFetcherQueue } from "../fetcher-queue";
+import { Debouncer } from "../utils/debouncer";
+import { dragElement } from "../utils/drag-element";
 import { i18n } from "../utils/i18n";
+import { Events } from "./event";
 import { loadStyleSheel } from "./style";
+import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
 
-function createHTML() {
+export type Elements = ReturnType<typeof createHTML>;
+
+export function createHTML() {
   const fullViewPlane = document.createElement("div");
   fullViewPlane.setAttribute("tabindex", "0");
   fullViewPlane.classList.add("fullViewPlane");
@@ -223,4 +231,71 @@ function createHTML() {
     styleSheel,
   };
 }
-export const HTML = createHTML();
+
+export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, DL: Downloader) {
+  HTML.configPlaneBTN.addEventListener("click", () => events.togglePlaneEvent("config"));
+  HTML.configPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
+  HTML.configPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
+  HTML.downloaderPlaneBTN.addEventListener("click", () => {
+    DL.check();
+    events.togglePlaneEvent("downloader");
+  });
+  HTML.downloaderPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
+  HTML.downloaderPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
+
+  // modify config event
+  for (const key of ConfigNumberKeys) {
+    HTML.fullViewPlane.querySelector<HTMLButtonElement>(`#${key}MinusBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
+    HTML.fullViewPlane.querySelector<HTMLButtonElement>(`#${key}AddBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
+    HTML.fullViewPlane.querySelector<HTMLInputElement>(`#${key}Input`)!.addEventListener("wheel", (event: WheelEvent) => {
+      if (event.deltaY < 0) {
+        events.modNumberConfigEvent(key as ConfigNumberType, 'add');
+      } else if (event.deltaY > 0) {
+        events.modNumberConfigEvent(key as ConfigNumberType, 'minus');
+      }
+    });
+  }
+  for (const key of ConfigBooleanKeys) {
+    HTML.fullViewPlane.querySelector(`#${key}Checkbox`)!.addEventListener("input", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
+  }
+  for (const key of ConfigSelectKeys) {
+    HTML.fullViewPlane.querySelector(`#${key}Select`)!.addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
+  }
+
+  // entry 入口
+  HTML.collapseBTN.addEventListener("click", () => events.main(false));
+  HTML.gate.addEventListener("click", () => events.main(true));
+
+  const debouncer = new Debouncer();
+
+  //全屏阅读元素滚动事件
+  HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 500));
+  HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
+
+  HTML.currPageElement.addEventListener("click", () => BIFM.show());
+  HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event as WheelEvent));
+
+  // Shortcut
+  document.addEventListener("keydown", (event) => events.keyboardEvent(event));
+  // 箭头导航
+  HTML.imgLandLeft.addEventListener("click", (event) => {
+    IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
+    event.stopPropagation();
+  });
+  HTML.imgLandRight.addEventListener("click", (event) => {
+    IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
+    event.stopPropagation();
+  });
+  HTML.imgLandTop.addEventListener("click", (event) => {
+    IFQ.stepImageEvent("prev");
+    event.stopPropagation();
+  });
+  HTML.imgLandBottom.addEventListener("click", (event) => {
+    IFQ.stepImageEvent("next");
+    event.stopPropagation();
+  });
+
+  HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
+
+  dragElement(HTML.pageHelper, HTML.pageHelper.querySelector<HTMLElement>("#dragHub") ?? undefined, events.modPageHelperPostion);
+}

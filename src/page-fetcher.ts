@@ -2,13 +2,13 @@ import { conf } from "./config";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher, IMGFetcherSettings } from "./img-fetcher";
 import { Matcher, PagesSource } from "./platform/platform";
-import { HTML } from "./ui/html";
 import { evLog } from "./utils/ev-log";
 
 type AsyncAppendFunc = () => Promise<boolean>;
 
 export class PageFetcher {
   queue: IMGFetcherQueue;
+  fullViewPlane: HTMLElement;
   pageURLs: string[];
   currPage: number;
   fetched: boolean;
@@ -17,7 +17,9 @@ export class PageFetcher {
   done: boolean = false;
   onAppended?: (total: number) => void;
   imgFetcherSettings: IMGFetcherSettings;
-  constructor(queue: IMGFetcherQueue, matcher: Matcher, imgFetcherSettings: IMGFetcherSettings) {
+  private abortb: boolean = false;
+  constructor(fullViewPlane: HTMLElement, queue: IMGFetcherQueue, matcher: Matcher, imgFetcherSettings: IMGFetcherSettings) {
+    this.fullViewPlane = fullViewPlane;
     this.queue = queue;
     this.matcher = matcher;
     this.imgFetcherSettings = imgFetcherSettings;
@@ -31,6 +33,10 @@ export class PageFetcher {
     this.fetched = false;
   }
 
+  abort() {
+    this.abortb = true;
+  }
+
   async init() {
     await this.initPageAppend();
   }
@@ -40,16 +46,15 @@ export class PageFetcher {
     let first = await fetchIter.next();
     if (!first.done) {
       await this.appendPageImg(first.value);
-      setTimeout(() => this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight), 200)
     }
     this.loadAllPageImg(fetchIter);
   }
 
   async loadAllPageImg(iter: AsyncGenerator<PagesSource>) {
     for await (const page of iter) {
+      if (this.abortb) return;
       // console.log("page source: ", page)
       await this.appendPageImg(page);
-      this.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
     }
     this.done = true;
   }
@@ -61,10 +66,11 @@ export class PageFetcher {
   async appendPageImg(page: PagesSource): Promise<boolean> {
     try {
       const imgNodeList = await this.obtainImageNodeList(page);
+      if (this.abortb) return false;
       const IFs = imgNodeList.map(
         (imgNode) => new IMGFetcher(imgNode as HTMLElement, this.imgFetcherSettings)
       );
-      HTML.fullViewPlane.lastElementChild!.after(...imgNodeList);
+      this.fullViewPlane.lastElementChild!.after(...imgNodeList);
       this.queue.push(...IFs);
       this.onAppended?.(this.queue.length);
       return true;

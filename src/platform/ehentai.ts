@@ -19,6 +19,10 @@ const regulars = {
 
 export class EHMatcher implements Matcher {
 
+  work(_: string): boolean {
+    return true;
+  }
+
   public parseGalleryMeta(doc: Document): GalleryMeta {
     const titleList = doc.querySelectorAll<HTMLElement>("#gd2 h1");
     let title: string | undefined;

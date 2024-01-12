@@ -3,10 +3,12 @@ import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
 import { PageFetcher } from "../page-fetcher";
 import { i18n } from "../utils/i18n";
-import { HTML } from "./html";
+import { Elements } from "./html";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
-export function initEvents(BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader) {
+export type Events = ReturnType<typeof initEvents>;
+
+export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader) {
   function modPageHelperPostion() {
     const style = HTML.pageHelper.style;
     conf.pageHelperAbTop = style.top;
@@ -270,6 +272,7 @@ text-align: left;
 
   return {
     main,
+
     modNumberConfigEvent,
     modBooleanConfigEvent,
     modSelectConfigEvent,

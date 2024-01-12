@@ -61,6 +61,9 @@ export class IdleLoader {
   }
 
   checkProcessingIndex() {
+    if (this.queue.length === 0) {
+      return;
+    }
     // Skip found Fetcher
     let foundFetcherIndex = new Set<Number>();
     let hasFailed = false;
@@ -98,7 +101,7 @@ export class IdleLoader {
       }
       // can not find any img fetcher that hasn't been fetching
       if (foundFetcherIndex.size === 0) {
-        this.processingIndexList = [];
+        this.processingIndexList.length = 0;
         if (hasFailed && this.onFailedCallback) {
           this.onFailedCallback();
           this.onFailedCallback = undefined;

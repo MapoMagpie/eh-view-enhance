@@ -255,6 +255,9 @@
             if (data !== null) {
               this.blobData = data;
               this.blobUrl = URL.createObjectURL(data);
+              this.imgElement.onload = () => {
+                this.blobUrl && URL.revokeObjectURL(this.blobUrl);
+              };
               this.imgElement.src = this.blobUrl;
               this.rendered = true;
               this.stage = 3 /* DONE */;
@@ -571,6 +574,7 @@
         title = conf.filenameTemplate.replace("{number}", (index + 1).toString().padStart(digit, "0")).replace("{title}", title);
       }
       this.zip.file(this.checkDuplicateTitle(index, title), imgFetcher.blobData, { binary: true });
+      imgFetcher.blobData = void 0;
     }
     checkDuplicateTitle(index, $title) {
       let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");

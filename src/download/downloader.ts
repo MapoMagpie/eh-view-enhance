@@ -105,6 +105,7 @@ export class Downloader {
         .replace("{title}", title);
     }
     this.zip.file(this.checkDuplicateTitle(index, title), imgFetcher.blobData, { binary: true });
+    imgFetcher.blobData = undefined;
   }
 
   checkDuplicateTitle(index: number, $title: string): string {

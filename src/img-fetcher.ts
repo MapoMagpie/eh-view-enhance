@@ -148,10 +148,7 @@ export class IMGFetcher {
           if (data !== null) {
             this.blobData = data;
             this.blobUrl = URL.createObjectURL(data);
-            // this.imgElement.onload = () => {
-            //   // console.log("onload and revoke");
-            //   URL.revokeObjectURL(this.blobUrl!);
-            // }
+            this.imgElement.onload = () => this.blobUrl && URL.revokeObjectURL(this.blobUrl)
             this.imgElement.src = this.blobUrl;
             this.rendered = true;
             this.stage = FetchState.DONE;

@@ -148,6 +148,10 @@ export class IMGFetcher {
           if (data !== null) {
             this.blobData = data;
             this.blobUrl = URL.createObjectURL(data);
+            // this.imgElement.onload = () => {
+            //   // console.log("onload and revoke");
+            //   URL.revokeObjectURL(this.blobUrl!);
+            // }
             this.imgElement.src = this.blobUrl;
             this.rendered = true;
             this.stage = FetchState.DONE;
@@ -212,6 +216,9 @@ export class IMGFetcher {
 
 
   async fetchBigImage(): Promise<Blob | null> {
+    if (this.bigImageUrl?.startsWith("blob:")) {
+      return await fetch(this.bigImageUrl).then(resp => resp.blob());
+    }
     const imgFetcher = this;
     return new Promise(async (resolve, reject) => {
       xhrWapper<"blob">(imgFetcher.bigImageUrl!, "blob", {

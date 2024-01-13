@@ -193,6 +193,7 @@ export class Downloader {
     const meta = this.meta();
     this.zip.file("meta.json", JSON.stringify(meta));
     // TODO: find a way to unlimited the size of zip file
+    // https://developer.mozilla.org/en-US/docs/Web/API/FileSystemFileHandle
     this.zip.generateAsync({ type: "blob" }, (_metadata) => {
       // console.log(metadata);
       // TODO: progress bar

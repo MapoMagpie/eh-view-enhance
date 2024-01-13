@@ -24,7 +24,7 @@ export default defineConfig({
           'https://www.pixiv.net/*',
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.1.14',
+        version: '4.1.15',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {
@@ -45,8 +45,8 @@ export default defineConfig({
           'https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js',
           'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js',
           'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js',
+          // 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/+esm',
         ],
-        // 'description:zh-CN': 'e-hentai.org 更好的浏览器，所有的缩略图都会被展示在网格中，并且显示最高质量的图片。',
       },
       build: {
         fileName: 'eh-view-enhance.user.js',
@@ -54,6 +54,7 @@ export default defineConfig({
           "jszip": "JSZip",
           "file-saver": "saveAs",
           "hammerjs": "Hammer",
+          // "@ffmpeg/ffmpeg": "ff",
         }
       },
       server: { mountGmApi: false },

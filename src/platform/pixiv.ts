@@ -1,6 +1,8 @@
+import JSZip from "jszip";
 import { GalleryMeta } from "../download/gallery-meta";
 import { evLog } from "../utils/ev-log";
 import { Matcher, PagesSource } from "./platform";
+import { FFmpegConvertor } from "../utils/ffmpeg";
 
 type Page = {
   urls: {
@@ -24,7 +26,22 @@ type Work = {
   pageCount: number,
 }
 
-const HASH_REGEX = /pixiv\.net\/(\w*\/)?(artworks|users)\/.*/;
+type UgoiraMeat = {
+  error: boolean,
+  message: string,
+  body: {
+    // src: "https:\/\/i.pximg.net\/img-zip-ugoira\/img\/2023\/12\/31\/21\/30\/57\/114738625_ugoira600x600.zip",
+    // originalSrc: "https:\/\/i.pximg.net\/img-zip-ugoira\/img\/2023\/12\/31\/21\/30\/57\/114738625_ugoira1920x1080.zip",
+    // mime_type: "image\/jpeg",
+    src: string,
+    originalSrc: string,
+    mime_type: string,
+    frames: { file: string, delay: number }[]
+  }
+}
+
+const PATH_REGEX = /pixiv\.net\/(\w*\/)?(artworks|users)\/.*/;
+const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
 export class Pixiv implements Matcher {
 
   authorID: string | undefined;
@@ -32,13 +49,15 @@ export class Pixiv implements Matcher {
   pidList: string[] = [];
   pageCount: number = 0;
   works: Record<string, Work> = {};
+  pageSize: Record<string, [number, number]> = {};
+  convertor?: FFmpegConvertor;
 
   constructor() {
     this.meta = new GalleryMeta(window.location.href, "UNTITLE");
   }
 
   work(url: string): boolean {
-    return HASH_REGEX.test(url);
+    return PATH_REGEX.test(url);
   }
 
   public parseGalleryMeta(_: Document): GalleryMeta {
@@ -48,8 +67,33 @@ export class Pixiv implements Matcher {
     return this.meta;
   }
 
+  // https://www.pixiv.net/ajax/illust/44298524/ugoira_meta?lang=en
+  // TODO: ugoira to modern webm
   public async matchImgURL(url: string, _: boolean): Promise<string> {
-    return url
+    const matches = url.match(PID_EXTRACT);
+    if (!matches || matches.length < 2) {
+      return url;
+    }
+    const pid = matches[1];
+    const p = matches[2];
+    if (this.works[pid]?.illustType !== 2 || p !== "ugoira") {
+      return url;
+    }
+    const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then(resp => resp.json()) as UgoiraMeat;
+    const data = await window.fetch(meta.body.originalSrc).then(resp => resp.blob());
+    const zip = await new JSZip().loadAsync(data);
+    if (!this.convertor) {
+      this.convertor = await new FFmpegConvertor().init();
+    }
+    const files = await Promise.all(
+      meta.body.frames.map(async (f) => {
+        const img = await zip.file(f.file)!.async("uint8array");
+        return { name: f.file, data: img };
+      })
+    );
+    const blob = await this.convertor.convertToGif(files, meta.body.frames);
+    return URL.createObjectURL(blob);
+
   }
 
   async fetchTagsByPids(pids: string[]): Promise<void> {
@@ -83,7 +127,9 @@ export class Pixiv implements Matcher {
   public async parseImgNodes(raw: PagesSource, template: HTMLElement): Promise<HTMLElement[]> {
     const list: HTMLElement[] = [];
     const pidList = JSON.parse(raw.raw as string) as string[];
-    this.fetchTagsByPids(pidList); // async function but no await, it will fetch tags in background
+    // async function but no await, it will fetch tags in background
+    this.fetchTagsByPids(pidList);
+
     const pageListData = await fetchUrls(pidList.map(p => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5);
     for (let i = 0; i < pidList.length; i++) {
       const pid = pidList[i];
@@ -95,15 +141,22 @@ export class Pixiv implements Matcher {
       let digits = data.body.length.toString().length;
       let j = -1;
       for (const p of data.body) {
+        this.pageSize[p.urls.original] = [p.width, p.height];
+        let title = p.urls.original.split("/").pop() || `${pid}_p${j.toString().padStart(digits)}.jpg`
+        const matches = p.urls.original.match(PID_EXTRACT);
+        if (matches && matches.length > 2 && matches[2] && matches[2] === "ugoira") {
+          title = title.replace(/\.\w+$/, ".gif");
+        }
         j++;
         const newImgNode = template.cloneNode(true) as HTMLDivElement;
         const newImg = newImgNode.firstElementChild as HTMLImageElement;
         newImg.setAttribute("ahref", p.urls.original);
         newImg.setAttribute("asrc", p.urls.small);
-        newImg.setAttribute("title", p.urls.original.split("/").pop() || `${pid}_p${j.toString().padStart(digits)}.jpg`);
+        newImg.setAttribute("title", title);
         list.push(newImgNode);
       }
     }
+
     return list;
   }
 
@@ -152,3 +205,4 @@ async function fetchUrls(urls: string[], concurrency: number): Promise<string[]>
   }
   return results;
 }
+

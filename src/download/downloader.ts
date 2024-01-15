@@ -1,19 +1,17 @@
-import { FetchState, IMGFetcher } from "../img-fetcher";
+import { FetchState } from "../img-fetcher";
 import { conf } from "../config";
-import { evLog } from "../utils/ev-log";
 import { i18n } from "../utils/i18n";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
-import JSZip from "jszip";
-import saveAs from "file-saver";
 import { Matcher } from "../platform/platform";
 import { GalleryMeta } from "./gallery-meta";
 import { Elements } from "../ui/html";
+import { createReadableStream } from "../utils/zip-stream";
+import { saveAs } from "file-saver";
 
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
 export class Downloader {
   meta: () => GalleryMeta;
-  zip: JSZip;
   downloading: boolean;
   downloadForceElement?: HTMLElement;
   downloadStartElement?: HTMLAnchorElement;
@@ -22,17 +20,15 @@ export class Downloader {
   queue: IMGFetcherQueue;
   added: Set<number> = new Set();
   idleLoader: IdleLoader;
-  numberTitle: boolean | undefined;
-  delayedQueue: { index: number, fetcher: IMGFetcher }[] = [];
   done: boolean = false;
   isReady: () => boolean;
+  filenames: Set<string> = new Set();
 
   constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher, allPagesReady: () => boolean) {
     this.queue = queue;
     this.idleLoader = idleLoader;
     this.isReady = allPagesReady;
     this.meta = () => matcher.parseGalleryMeta(document);
-    this.zip = new JSZip();
     this.downloading = false;
     this.downloadForceElement = document.querySelector("#download-force") || undefined;
     this.downloadStartElement = document.querySelector("#download-start") || undefined;
@@ -46,7 +42,7 @@ export class Downloader {
         return false;
       }
       this.added.add(index);
-      this.addToDelayedQueue(index, queue[index]);
+      // this.addToDelayedQueue(index, queue[index]);
       if (queue.isFinised()) {
         if (this.downloading) {
           this.download();
@@ -62,55 +58,19 @@ export class Downloader {
   }
 
   needNumberTitle(): boolean {
-    if (this.numberTitle !== undefined) {
-      return this.numberTitle;
-    } else {
-      this.numberTitle = false;
-      let lastTitle = "";
-      for (const fetcher of this.queue) {
-        if (fetcher.title < lastTitle) {
-          this.numberTitle = true;
-          break;
-        }
-        lastTitle = fetcher.title;
+    let lastTitle = "";
+    for (const fetcher of this.queue) {
+      if (fetcher.title < lastTitle) {
+        return true
       }
-      return this.numberTitle!;
+      lastTitle = fetcher.title;
     }
-  }
-
-  addToDelayedQueue(index: number, imgFetcher: IMGFetcher) {
-    if (this.isReady()) {
-      if (this.delayedQueue.length > 0) {
-        for (const item of this.delayedQueue) {
-          this.addToDownloadZip(item.index, item.fetcher);
-        }
-        this.delayedQueue = [];
-      }
-      this.addToDownloadZip(index, imgFetcher);
-    } else {
-      this.delayedQueue.push({ index, fetcher: imgFetcher });
-    }
-  }
-
-  addToDownloadZip(index: number, imgFetcher: IMGFetcher) {
-    if (!imgFetcher.blobData) {
-      evLog("无法获取图片数据，因此该图片无法下载");
-      return;
-    }
-    let title = imgFetcher.title;
-    if (this.needNumberTitle()) {
-      const digit = this.queue.length.toString().length;
-      title = conf.filenameTemplate
-        .replace("{number}", (index + 1).toString().padStart(digit, "0"))
-        .replace("{title}", title);
-    }
-    this.zip.file(this.checkDuplicateTitle(index, title), imgFetcher.blobData, { binary: true });
-    imgFetcher.blobData = undefined;
+    return false;
   }
 
   checkDuplicateTitle(index: number, $title: string): string {
     let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");
-    if (this.zip.files[newTitle]) {
+    if (this.filenames.has(newTitle)) {
       let splits = newTitle.split(".");
       const ext = splits.pop();
       const prefix = splits.join(".");
@@ -171,7 +131,7 @@ export class Downloader {
     this.idleLoader.start(++this.idleLoader.lockVer);
   }
 
-  flushUI(stage: "downloadFailed" | "downloaded" | "downloading" | "downloadStart") {
+  flushUI(stage: "downloadFailed" | "downloaded" | "downloading" | "downloadStart" | "packaging") {
     if (this.downloadNoticeElement) {
       this.downloadNoticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
     }
@@ -185,26 +145,43 @@ export class Downloader {
   download() {
     this.downloading = false;
     this.idleLoader.abort(this.queue.currIndex);
-    if (this.delayedQueue.length > 0) {
-      for (const item of this.delayedQueue) {
-        this.addToDownloadZip(item.index, item.fetcher);
-      }
-      this.delayedQueue = [];
+
+    this.flushUI("packaging");
+
+    let checkTitle: (title: string, index: number) => string;
+    const needNumberTitle = this.needNumberTitle();
+    if (needNumberTitle) {
+      const digits = this.queue.length.toString().length;
+      checkTitle = (title: string, index: number) => `${index + 1}`.padStart(digits, "0") + "_" + title;
+    } else {
+      checkTitle = (title: string, index: number) => this.checkDuplicateTitle(index, title);
     }
-    const meta = this.meta();
-    this.zip.file("meta.json", JSON.stringify(meta));
-    // TODO: find a way to unlimited the size of zip file
-    // https://developer.mozilla.org/en-US/docs/Web/API/FileSystemFileHandle
-    this.zip.generateAsync({ type: "blob" }, (_metadata) => {
-      // console.log(metadata);
-      // TODO: progress bar
-    }).then(data => {
-      saveAs(data, `${meta.originTitle || meta.title}.zip`);
+
+    let metaFile = new File([JSON.stringify(this.meta(), null, 2)], "meta.json");
+
+    let files = this.queue
+      .filter((imf) => imf.stage === FetchState.DONE && imf.blobData)
+      .map((imf, index) => {
+        return new File([imf.blobData!], checkTitle(imf.title.replaceAll(FILENAME_INVALIDCHAR, "_"), index))
+      });
+
+    let readable = createReadableStream({
+      start: (controller) => {
+        files.forEach((file) => {
+          controller.enqueue(file as any);
+        });
+        controller.enqueue(metaFile as any);
+      }
+    });
+
+    new Response(readable).blob().then((blob) => {
+      saveAs(blob, `${this.meta().originTitle || this.meta().title}.zip`);
       this.flushUI("downloaded");
       this.done = true;
       this.downloaderPlaneBTN.textContent = i18n.download.get();
       this.downloaderPlaneBTN.style.color = "";
     });
+
   };
 }
 

@@ -216,14 +216,18 @@ export class IMGFetcher {
     if (this.bigImageUrl?.startsWith("blob:")) {
       return await fetch(this.bigImageUrl).then(resp => resp.blob());
     }
+    // // make fake large image blob
+    // if (true) {
+    //   return new Blob([new ArrayBuffer(1024 * 1024 * 10)], { type: "image/jpeg" });
+    // }
     const imgFetcher = this;
     return new Promise(async (resolve, reject) => {
-      xhrWapper<"blob">(imgFetcher.bigImageUrl!, "blob", {
+      xhrWapper(imgFetcher.bigImageUrl!, "blob", {
         onload: function(response) {
           let data = response.response;
           if (data.type === "text/html") {
             // TODO: check response type, e.g. status code
-            // console.error("warn: fetch big image data type is not blob: ", data);
+            console.error("warn: fetch big image data type is not blob: ", data);
           }
           try {
             imgFetcher.setDownloadState({ readyState: response.readyState });

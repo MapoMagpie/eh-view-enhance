@@ -38,6 +38,7 @@ export const i18n = {
   downloading: new I18nValue("Downloading...", "下载中..."),
   downloadFailed: new I18nValue("Failed(Retry)", "下载失败(重试)"),
   downloaded: new I18nValue("Downloaded", "下载完成"),
+  packaging: new I18nValue("Packaging...", "打包中..."),
   reversePages: new I18nValue("Reverse Pages", "反向翻页"),
   reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
   stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),

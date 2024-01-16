@@ -146,10 +146,9 @@ export class IMGFetcher {
         case FetchState.DATA:
           let data = await this.fetchImageData();
           if (data !== null) {
-            this.blobData = data;
+            this.blobData = data; // blob data must be keeped
             this.blobUrl = URL.createObjectURL(data);
-            this.imgElement.onload = () => this.blobUrl && URL.revokeObjectURL(this.blobUrl)
-            this.imgElement.src = this.blobUrl;
+            this.imgElement.src = this.blobUrl; // TODO: this will duble the memory usage
             this.rendered = true;
             this.stage = FetchState.DONE;
           } else {
@@ -218,7 +217,7 @@ export class IMGFetcher {
     }
     // // make fake large image blob
     // if (true) {
-    //   return new Blob([new ArrayBuffer(1024 * 1024 * 10)], { type: "image/jpeg" });
+    //   return new Blob([new ArrayBuffer(1024 * 1024 * 100)], { type: "image/jpeg" });
     // }
     const imgFetcher = this;
     return new Promise(async (resolve, reject) => {

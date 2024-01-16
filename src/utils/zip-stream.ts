@@ -30,6 +30,12 @@ class Crc32 {
   }
 }
 
+export interface FileLike {
+  size(): number;
+  stream(): Promise<ReadableStream<Uint8Array>>;
+  name: string;
+}
+
 class ZipObject {
   level: number;
   nameBuf: Uint8Array;
@@ -37,13 +43,13 @@ class ZipObject {
   header: DataHelper;
   offset: number;
   directory: boolean;
-  file: File
+  file: FileLike
   crc: Crc32;
   compressedLength: number;
   uncompressedLength: number;
   volumeNo: number;
 
-  constructor(file: File, volumeNo: number) {
+  constructor(file: FileLike, volumeNo: number) {
     this.level = 0;
     const encoder = new TextEncoder();
     this.nameBuf = encoder.encode(file.name.trim());
@@ -70,7 +76,6 @@ class DataHelper {
 }
 
 export class Zip {
-
   // default 1.5GB
   private volumeSize: number = 0x60000000;
   private accumulatedSize: number = 0;
@@ -97,8 +102,8 @@ export class Zip {
     this.writer = writer;
   }
 
-  add(file: File) {
-    const fileSize = file.size;
+  add(file: FileLike) {
+    const fileSize = file.size();
     this.accumulatedSize += fileSize;
     if (this.accumulatedSize > this.volumeSize) {
       this.volumes++;
@@ -151,7 +156,7 @@ export class Zip {
 
   private async writeContent() {
     const curr = this.curr!;
-    const reader = curr.file.stream().getReader();
+    const reader = (await curr.file.stream()).getReader();
     const writer = this.writer;
 
     async function pump() {

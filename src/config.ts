@@ -48,6 +48,8 @@ export type Config = {
   filenameTemplate: string
   /** 阻止滚动翻页时间 */
   preventScrollPageTime: number
+  /** 下载文件分卷大小，单位Mib */
+  archiveVolumeSize: number
 };
 
 function defaultConf(): Config {
@@ -77,6 +79,7 @@ function defaultConf(): Config {
     autoPlay: false,
     filenameTemplate: "{number}-{title}",
     preventScrollPageTime: 200,
+    archiveVolumeSize: 1500,
   };
 }
 
@@ -114,6 +117,10 @@ function confHealthCheck($conf: Config): Config {
   }
   if ($conf.pageHelperAbRight !== "unset") {
     $conf.pageHelperAbRight = Math.max(parseInt($conf.pageHelperAbRight), 5) + "px";
+    changed = true;
+  }
+  if (!$conf.archiveVolumeSize) {
+    $conf.archiveVolumeSize = 1500;
     changed = true;
   }
   if (changed) {

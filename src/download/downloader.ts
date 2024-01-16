@@ -158,14 +158,27 @@ export class Downloader {
     }
 
     let files = this.queue
-      .filter((imf) => imf.stage === FetchState.DONE && imf.blobData)
+      .filter((imf) => imf.stage === FetchState.DONE && imf.blobUrl)
       .map((imf, index) => {
-        return new File([imf.blobData!], checkTitle(imf.title.replaceAll(FILENAME_INVALIDCHAR, "_"), index))
+        return {
+          stream: () => Promise.resolve(imf.blobData!.stream()),
+          size: () => imf.blobData!.size,
+          name: checkTitle(imf.title, index)
+        }
       });
-    const zip = new Zip({ volumeSize: 1024 * 1024 * 1024 });
+    const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
     files.forEach((file) => zip.add(file));
-    let metaFile = new File([JSON.stringify(this.meta(), null, 2)], "meta.json");
-    zip.add(metaFile);
+    let meta = new TextEncoder().encode(JSON.stringify(this.meta(), null, 2));
+    zip.add({
+      stream: () => Promise.resolve(new ReadableStream({
+        start(c) {
+          c.enqueue(meta);
+          c.close();
+        }
+      })),
+      size: () => meta.byteLength,
+      name: "meta.json"
+    });
 
     let save = async () => {
       let readable;

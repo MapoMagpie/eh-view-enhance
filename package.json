@@ -20,7 +20,6 @@
     "@ffmpeg/util": "^0.12.1",
     "file-saver": "^2.0.5",
     "hammerjs": "^2.0.8",
-    "jszip": "^3.10.1",
-    "zip-stream": "^5.0.1"
+    "jszip": "^3.10.1"
   }
 }

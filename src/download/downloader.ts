@@ -6,7 +6,7 @@ import { IdleLoader } from "../idle-loader";
 import { Matcher } from "../platform/platform";
 import { GalleryMeta } from "./gallery-meta";
 import { Elements } from "../ui/html";
-import { createReadableStream } from "../utils/zip-stream";
+import { Zip } from "../utils/zip-stream";
 import { saveAs } from "file-saver";
 
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
@@ -157,31 +157,31 @@ export class Downloader {
       checkTitle = (title: string, index: number) => this.checkDuplicateTitle(index, title);
     }
 
-    let metaFile = new File([JSON.stringify(this.meta(), null, 2)], "meta.json");
-
     let files = this.queue
       .filter((imf) => imf.stage === FetchState.DONE && imf.blobData)
       .map((imf, index) => {
         return new File([imf.blobData!], checkTitle(imf.title.replaceAll(FILENAME_INVALIDCHAR, "_"), index))
       });
+    const zip = new Zip({ volumeSize: 1024 * 1024 * 1024 });
+    files.forEach((file) => zip.add(file));
+    let metaFile = new File([JSON.stringify(this.meta(), null, 2)], "meta.json");
+    zip.add(metaFile);
 
-    let readable = createReadableStream({
-      start: (controller) => {
-        files.forEach((file) => {
-          controller.enqueue(file as any);
-        });
-        controller.enqueue(metaFile as any);
+    let save = async () => {
+      let readable;
+      while (readable = zip.nextReadableStream()) {
+        const blob = await new Response(readable).blob();
+        let ext = zip.currVolumeNo === zip.volumes - 1 ?
+          ".zip" :
+          ".z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
+        saveAs(blob, `${this.meta().originTitle || this.meta().title}.${ext}`);
       }
-    });
-
-    new Response(readable).blob().then((blob) => {
-      saveAs(blob, `${this.meta().originTitle || this.meta().title}.zip`);
       this.flushUI("downloaded");
       this.done = true;
       this.downloaderPlaneBTN.textContent = i18n.download.get();
       this.downloaderPlaneBTN.style.color = "";
-    });
-
+    }
+    save();
   };
 }
 

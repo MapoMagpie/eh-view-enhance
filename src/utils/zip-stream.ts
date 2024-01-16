@@ -41,8 +41,9 @@ class ZipObject {
   crc: Crc32;
   compressedLength: number;
   uncompressedLength: number;
+  volumeNo: number;
 
-  constructor(file: File) {
+  constructor(file: File, volumeNo: number) {
     this.level = 0;
     const encoder = new TextEncoder();
     this.nameBuf = encoder.encode(file.name.trim());
@@ -54,6 +55,7 @@ class ZipObject {
     this.crc = new Crc32();
     this.compressedLength = 0;
     this.uncompressedLength = 0;
+    this.volumeNo = volumeNo;
   }
 }
 
@@ -69,15 +71,24 @@ class DataHelper {
 
 export class Zip {
 
+  // default 1.5GB
+  private volumeSize: number = 0x60000000;
+  private accumulatedSize: number = 0;
+  volumes: number = 1;
+  currVolumeNo: number = -1;
   private files: ZipObject[] = [];
   private currIndex: number = -1;
   private offset: number = 0;
+  private offsetInVolume: number = 0;
   private curr?: ZipObject;
   private date: Date;
   private writer: (chunk?: Uint8Array) => Promise<void>;
   close: boolean = false;
 
-  constructor() {
+  constructor(settings?: { volumeSize?: number }) {
+    if (settings?.volumeSize) {
+      this.volumeSize = settings.volumeSize;
+    }
     this.date = new Date(Date.now());
     this.writer = async () => { };
   }
@@ -86,18 +97,30 @@ export class Zip {
     this.writer = writer;
   }
 
-  append(file: File) {
-    this.files.push(new ZipObject(file));
+  add(file: File) {
+    const fileSize = file.size;
+    this.accumulatedSize += fileSize;
+    if (this.accumulatedSize > this.volumeSize) {
+      this.volumes++;
+      this.accumulatedSize = fileSize;
+    }
+    this.files.push(new ZipObject(file, this.volumes - 1));
   }
 
   public async next(): Promise<boolean> {
     this.currIndex++;
     this.curr = this.files[this.currIndex];
     if (this.curr) {
-      this.curr.offset = this.offset;
+      if (this.curr.volumeNo > this.currVolumeNo) {
+        this.currIndex--;
+        this.offsetInVolume = 0;
+        return true;
+      }
+      this.curr.offset = this.offsetInVolume;
       await this.writeHeader();
       await this.writeContent();
       await this.writeFooter();
+      this.offset += this.offsetInVolume - this.curr.offset;
     } else if (!this.close) {
       this.close = true;
       await this.closeZip();
@@ -122,7 +145,7 @@ export class Zip {
     data.view.setUint32(0, 0x504b0304);
     data.array.set(header.array, 4);
     data.array.set(curr.nameBuf, 30);
-    this.offset += data.array.length;
+    this.offsetInVolume += data.array.length;
     await this.writer(data.array);
   }
 
@@ -165,21 +188,22 @@ export class Zip {
     }
 
     await this.writer(footer.array);
-    this.offset += curr.compressedLength + 16;
+    this.offsetInVolume += curr.compressedLength + 16;
 
   }
 
   private async closeZip() {
     const fileCount = this.files.length;;
-    let length = 0;
+    // Central directory size 
+    let centralDirLength = 0;
     let idx = 0;
 
     for (idx = 0; idx < fileCount; idx++) {
       const file = this.files[idx];
-      length += 46 + file.nameBuf.length + file.comment.length;
+      centralDirLength += 46 + file.nameBuf.length + file.comment.length;
     }
 
-    const data = new DataHelper(length + 22);
+    const data = new DataHelper(centralDirLength + 22);
     let dataOffset = 0;
     for (idx = 0; idx < fileCount; idx++) {
       const file = this.files[idx];
@@ -187,41 +211,36 @@ export class Zip {
       data.view.setUint16(dataOffset + 4, 0x1400);
       data.array.set(file.header.array, dataOffset + 6);
       data.view.setUint16(dataOffset + 32, file.comment.length, true);
+      data.view.setUint16(dataOffset + 34, file.volumeNo, true); // disk number start
       data.view.setUint32(dataOffset + 42, file.offset, true);
       data.array.set(file.nameBuf, dataOffset + 46);
       data.array.set(file.comment, dataOffset + 46 + file.nameBuf.length);
       dataOffset += 46 + file.nameBuf.length + file.comment.length;
     }
     data.view.setUint32(dataOffset, 0x504b0506);
+    data.view.setUint16(dataOffset + 4, this.currVolumeNo, true); // disk number
+    data.view.setUint16(dataOffset + 6, this.currVolumeNo, true); // disk # of central dir
     data.view.setUint16(dataOffset + 8, fileCount, true);
     data.view.setUint16(dataOffset + 10, fileCount, true);
-    data.view.setUint32(dataOffset + 12, length, true);
-    data.view.setUint32(dataOffset + 16, this.offset, true);
+    data.view.setUint32(dataOffset + 12, centralDirLength, true);
+    data.view.setUint32(dataOffset + 16, this.offsetInVolume, true);
     await this.writer(data.array);
   }
 
-}
+  nextReadableStream(): ReadableStream<Uint8Array> | undefined {
+    this.currVolumeNo++;
+    if (this.currVolumeNo >= this.volumes) {
+      return;
+    }
+    const zip = this;
+    return new ReadableStream<Uint8Array>({
+      start(controller) {
+        zip.setWriter(async (chunk) => controller.enqueue(chunk));
+      },
+      async pull(controller) {
+        await zip.next().then(done => done && controller.close());
+      },
+    });
+  }
 
-export function createReadableStream(underlyingSource: UnderlyingSource<File>) {
-  const zip = new Zip();
-  return new ReadableStream<Uint8Array>({
-    start(controller) {
-      zip.setWriter(async (chunk) => controller.enqueue(chunk));
-      underlyingSource.start?.({
-        desiredSize: null,
-        close: function(): void {
-          console.log("underlyingSource close");
-        },
-        enqueue: function(file: File): void {
-          zip.append(file);
-        },
-        error: function(e?: Error): void {
-          console.error("underlyingSource error", e);
-        }
-      });
-    },
-    async pull(controller) {
-      await zip.next().then(done => done && controller.close());
-    },
-  });
 }

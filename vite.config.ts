@@ -45,7 +45,6 @@ export default defineConfig({
           'https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js',
           'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js',
           'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js',
-          // 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/+esm',
         ],
       },
       build: {
@@ -54,7 +53,6 @@ export default defineConfig({
           "jszip": "JSZip",
           "file-saver": "saveAs",
           "hammerjs": "Hammer",
-          // "@ffmpeg/ffmpeg": "ff",
         }
       },
       server: { mountGmApi: false },

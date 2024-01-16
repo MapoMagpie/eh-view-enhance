@@ -36,10 +36,11 @@ export class IMGFetcher {
   imgElement: HTMLImageElement;
   pageUrl: string;
   bigImageUrl?: string;
-  stage: FetchState;
-  tryTimes: number;
-  lock: boolean;
-  rendered: boolean;
+  stage: FetchState = FetchState.URL;
+  tryTimes: number = 0;
+  lock: boolean = false;
+  /// 0: not rendered, 1: rendered tumbinal, 2: rendered big image
+  rendered: 0 | 1 | 2 = 0;
   blobData?: Blob;
   blobUrl?: string;
   title: string;
@@ -54,10 +55,6 @@ export class IMGFetcher {
     this.root = node;
     this.imgElement = node.firstChild as HTMLImageElement;
     this.pageUrl = this.imgElement.getAttribute("ahref")!;
-    this.stage = FetchState.URL;
-    this.tryTimes = 0;
-    this.lock = false;
-    this.rendered = false;
     // this.blobData = undefined;
     this.title = this.imgElement.getAttribute("title") || "untitle.jpg";
     this.downloadState = { total: 100, loaded: 0, readyState: 0, };
@@ -148,8 +145,9 @@ export class IMGFetcher {
           if (data !== null) {
             this.blobData = data; // blob data must be keeped
             this.blobUrl = URL.createObjectURL(data);
-            this.imgElement.src = this.blobUrl; // TODO: this will duble the memory usage
-            this.rendered = true;
+            if (this.rendered === 2) {
+              this.imgElement.src = this.blobUrl; // TODO: this will duble the memory usage
+            }
             this.stage = FetchState.DONE;
           } else {
             this.stage = FetchState.URL;
@@ -191,15 +189,25 @@ export class IMGFetcher {
   }
 
   render() {
-    if (this.rendered) return;
-    // this.imgElement.style.height = "auto";
-    const src = this.imgElement.getAttribute("asrc");
-    if (src) {
-      this.imgElement.src = src;
-      this.rendered = true;
-    } else {
-      evLog("渲染缩略图失败，未获取到asrc属性");
+    switch (this.rendered) {
+      case 0:
+      case 1:
+        if (this.blobUrl) {
+          this.imgElement.src = this.blobUrl;
+        } else {
+          this.imgElement.src = this.imgElement.getAttribute("asrc")!;
+        }
+        this.rendered = 2;
+        break;
+      case 2:
+        break;
     }
+  }
+
+  unrender() {
+    if (this.rendered === 1 || this.rendered === 0) return;
+    this.rendered = 1;
+    this.imgElement.src = this.imgElement.getAttribute("asrc")!;
   }
 
   //立刻将当前元素的src赋值给大图元素
@@ -215,9 +223,9 @@ export class IMGFetcher {
     if (this.bigImageUrl?.startsWith("blob:")) {
       return await fetch(this.bigImageUrl).then(resp => resp.blob());
     }
-    // // make fake large image blob
+    // make fake large image blob
     // if (true) {
-    //   return new Blob([new ArrayBuffer(1024 * 1024 * 100)], { type: "image/jpeg" });
+    //   return new Blob([new ArrayBuffer(1024 * 1024 * 30)], { type: "image/jpeg" });
     // }
     const imgFetcher = this;
     return new Promise(async (resolve, reject) => {

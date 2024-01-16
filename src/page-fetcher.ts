@@ -17,6 +17,7 @@ export class PageFetcher {
   done: boolean = false;
   onAppended?: (total: number) => void;
   imgFetcherSettings: IMGFetcherSettings;
+  renderRangeRecord: [number, number] = [0, 0];
   private abortb: boolean = false;
   constructor(fullViewPlane: HTMLElement, queue: IMGFetcherQueue, matcher: Matcher, imgFetcherSettings: IMGFetcherSettings) {
     this.fullViewPlane = fullViewPlane;
@@ -120,8 +121,13 @@ export class PageFetcher {
    */
   renderCurrView(currTop: number, clientHeight: number) {
     const [startRander, endRander] = this.findOutsideRoundView(currTop, clientHeight);
-    evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}`);
     this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
+    const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
+    unrenders.forEach(([start, end]) => {
+      this.queue.slice(start, end + 1).forEach((imgFetcher) => imgFetcher.unrender());
+    });
+    evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}, 旧范围是:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, 取消渲染范围是:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
+    this.renderRangeRecord = [startRander, endRander];
   }
 
   findOutsideRoundViewNode(currTop: number, clientHeight: number): [HTMLElement, HTMLElement] {
@@ -152,4 +158,27 @@ export class PageFetcher {
     }
     return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
   }
+}
+
+function findNotInNewRange(old: number[], neo: number[]): number[][] {
+  const ret: number[][] = [];
+  if (neo[0] > old[0]) {
+    ret.push([old[0], neo[0] - 1]);
+  }
+
+  if (neo[1] < old[1]) {
+    ret.push([neo[1] + 1, old[1]]);
+  }
+
+  if (ret.length === 2) {
+    if (ret[1][0] < ret[0][1]) {
+      ret[1][0] = ret[0][1];
+      ret.shift();
+    }
+    if (ret[0][1] > ret[1][0]) {
+      ret[0][1] = ret[1][0];
+      ret.pop();
+    }
+  }
+  return ret;
 }

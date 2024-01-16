@@ -269,7 +269,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   const debouncer = new Debouncer();
 
   //全屏阅读元素滚动事件
-  HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 500));
+  HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 200));
   HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
 
   HTML.currPageElement.addEventListener("click", () => BIFM.show());

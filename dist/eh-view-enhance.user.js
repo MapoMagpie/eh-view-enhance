@@ -30,7 +30,7 @@
 // @grant              GM_xmlhttpRequest
 // ==/UserScript==
 
-(function (JSZip, saveAs, Hammer) {
+(function (fileSaver, JSZip, Hammer) {
   'use strict';
 
   var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
@@ -65,7 +65,8 @@
       autoPageInterval: 1e4,
       autoPlay: false,
       filenameTemplate: "{number}-{title}",
-      preventScrollPageTime: 200
+      preventScrollPageTime: 200,
+      archiveVolumeSize: 1500
     };
   }
   const VERSION = "4.1.10";
@@ -98,6 +99,10 @@
     }
     if ($conf.pageHelperAbRight !== "unset") {
       $conf.pageHelperAbRight = Math.max(parseInt($conf.pageHelperAbRight), 5) + "px";
+      changed = true;
+    }
+    if (!$conf.archiveVolumeSize) {
+      $conf.archiveVolumeSize = 1500;
       changed = true;
     }
     if (changed) {
@@ -155,10 +160,11 @@
     imgElement;
     pageUrl;
     bigImageUrl;
-    stage;
-    tryTimes;
-    lock;
-    rendered;
+    stage = 1 /* URL */;
+    tryTimes = 0;
+    lock = false;
+    /// 0: not rendered, 1: rendered tumbinal, 2: rendered big image
+    rendered = 0;
     blobData;
     blobUrl;
     title;
@@ -172,10 +178,6 @@
       this.root = node;
       this.imgElement = node.firstChild;
       this.pageUrl = this.imgElement.getAttribute("ahref");
-      this.stage = 1 /* URL */;
-      this.tryTimes = 0;
-      this.lock = false;
-      this.rendered = false;
       this.title = this.imgElement.getAttribute("title") || "untitle.jpg";
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
       this.onFinishedEventContext = /* @__PURE__ */ new Map();
@@ -255,11 +257,9 @@
             if (data !== null) {
               this.blobData = data;
               this.blobUrl = URL.createObjectURL(data);
-              this.imgElement.onload = () => {
-                this.blobUrl && URL.revokeObjectURL(this.blobUrl);
-              };
-              this.imgElement.src = this.blobUrl;
-              this.rendered = true;
+              if (this.rendered === 2) {
+                this.imgElement.src = this.blobUrl;
+              }
               this.stage = 3 /* DONE */;
             } else {
               this.stage = 1 /* URL */;
@@ -298,15 +298,23 @@
       }
     }
     render() {
-      if (this.rendered)
-        return;
-      const src = this.imgElement.getAttribute("asrc");
-      if (src) {
-        this.imgElement.src = src;
-        this.rendered = true;
-      } else {
-        evLog("渲染缩略图失败，未获取到asrc属性");
+      switch (this.rendered) {
+        case 0:
+        case 1:
+          if (this.blobUrl) {
+            this.imgElement.src = this.blobUrl;
+          } else {
+            this.imgElement.src = this.imgElement.getAttribute("asrc");
+          }
+          this.rendered = 2;
+          break;
       }
+    }
+    unrender() {
+      if (this.rendered === 1 || this.rendered === 0)
+        return;
+      this.rendered = 1;
+      this.imgElement.src = this.imgElement.getAttribute("asrc");
     }
     //立刻将当前元素的src赋值给大图元素
     setNow(index) {
@@ -324,7 +332,9 @@
         xhrWapper(imgFetcher.bigImageUrl, "blob", {
           onload: function(response) {
             let data = response.response;
-            if (data.type === "text/html") ;
+            if (data.type === "text/html") {
+              console.error("warn: fetch big image data type is not blob: ", data);
+            }
             try {
               imgFetcher.setDownloadState({ readyState: response.readyState });
             } catch (error) {
@@ -412,6 +422,7 @@
     downloading: new I18nValue("Downloading...", "下载中..."),
     downloadFailed: new I18nValue("Failed(Retry)", "下载失败(重试)"),
     downloaded: new I18nValue("Downloaded", "下载完成"),
+    packaging: new I18nValue("Packaging...", "打包中..."),
     reversePages: new I18nValue("Reverse Pages", "反向翻页"),
     reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
     stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
@@ -485,10 +496,232 @@
   `)
   };
 
+  class Crc32 {
+    crc = -1;
+    table = this.makeTable();
+    makeTable() {
+      let i;
+      let j;
+      let t;
+      let table = [];
+      for (i = 0; i < 256; i++) {
+        t = i;
+        for (j = 0; j < 8; j++) {
+          t = t & 1 ? t >>> 1 ^ 3988292384 : t >>> 1;
+        }
+        table[i] = t;
+      }
+      return table;
+    }
+    append(data) {
+      let crc = this.crc | 0;
+      let table = this.table;
+      for (let offset = 0, len = data.length | 0; offset < len; offset++) {
+        crc = crc >>> 8 ^ table[(crc ^ data[offset]) & 255];
+      }
+      this.crc = crc;
+    }
+    get() {
+      return ~this.crc;
+    }
+  }
+  class ZipObject {
+    level;
+    nameBuf;
+    comment;
+    header;
+    offset;
+    directory;
+    file;
+    crc;
+    compressedLength;
+    uncompressedLength;
+    volumeNo;
+    constructor(file, volumeNo) {
+      this.level = 0;
+      const encoder = new TextEncoder();
+      this.nameBuf = encoder.encode(file.name.trim());
+      this.comment = encoder.encode("");
+      this.header = new DataHelper(26);
+      this.offset = 0;
+      this.directory = false;
+      this.file = file;
+      this.crc = new Crc32();
+      this.compressedLength = 0;
+      this.uncompressedLength = 0;
+      this.volumeNo = volumeNo;
+    }
+  }
+  class DataHelper {
+    array;
+    view;
+    constructor(byteLength) {
+      let uint8 = new Uint8Array(byteLength);
+      this.array = uint8;
+      this.view = new DataView(uint8.buffer);
+    }
+  }
+  class Zip {
+    // default 1.5GB
+    volumeSize = 1610612736;
+    accumulatedSize = 0;
+    volumes = 1;
+    currVolumeNo = -1;
+    files = [];
+    currIndex = -1;
+    offset = 0;
+    offsetInVolume = 0;
+    curr;
+    date;
+    writer;
+    close = false;
+    constructor(settings) {
+      if (settings?.volumeSize) {
+        this.volumeSize = settings.volumeSize;
+      }
+      this.date = new Date(Date.now());
+      this.writer = async () => {
+      };
+    }
+    setWriter(writer) {
+      this.writer = writer;
+    }
+    add(file) {
+      const fileSize = file.size();
+      this.accumulatedSize += fileSize;
+      if (this.accumulatedSize > this.volumeSize) {
+        this.volumes++;
+        this.accumulatedSize = fileSize;
+      }
+      this.files.push(new ZipObject(file, this.volumes - 1));
+    }
+    async next() {
+      this.currIndex++;
+      this.curr = this.files[this.currIndex];
+      if (this.curr) {
+        if (this.curr.volumeNo > this.currVolumeNo) {
+          this.currIndex--;
+          this.offsetInVolume = 0;
+          return true;
+        }
+        this.curr.offset = this.offsetInVolume;
+        await this.writeHeader();
+        await this.writeContent();
+        await this.writeFooter();
+        this.offset += this.offsetInVolume - this.curr.offset;
+      } else if (!this.close) {
+        this.close = true;
+        await this.closeZip();
+      } else {
+        return true;
+      }
+      return false;
+    }
+    async writeHeader() {
+      if (!this.curr)
+        return;
+      const curr = this.curr;
+      let data = new DataHelper(30 + curr.nameBuf.length);
+      let header = curr.header;
+      if (curr.level !== 0 && !curr.directory) {
+        header.view.setUint16(4, 2048);
+      }
+      header.view.setUint32(0, 335546376);
+      header.view.setUint16(6, (this.date.getHours() << 6 | this.date.getMinutes()) << 5 | this.date.getSeconds() / 2, true);
+      header.view.setUint16(8, (this.date.getFullYear() - 1980 << 4 | this.date.getMonth() + 1) << 5 | this.date.getDate(), true);
+      header.view.setUint16(22, curr.nameBuf.length, true);
+      data.view.setUint32(0, 1347093252);
+      data.array.set(header.array, 4);
+      data.array.set(curr.nameBuf, 30);
+      this.offsetInVolume += data.array.length;
+      await this.writer(data.array);
+    }
+    async writeContent() {
+      const curr = this.curr;
+      const reader = (await curr.file.stream()).getReader();
+      const writer = this.writer;
+      async function pump() {
+        const chunk = await reader.read();
+        if (chunk.done) {
+          return;
+        }
+        const data = chunk.value;
+        curr.crc.append(data);
+        curr.uncompressedLength += data.length;
+        curr.compressedLength += data.length;
+        writer(data);
+        return await pump();
+      }
+      await pump();
+    }
+    async writeFooter() {
+      if (!this.curr)
+        return;
+      const curr = this.curr;
+      var footer = new DataHelper(16);
+      footer.view.setUint32(0, 1347094280);
+      if (curr.crc) {
+        curr.header.view.setUint32(10, curr.crc.get(), true);
+        curr.header.view.setUint32(14, curr.compressedLength, true);
+        curr.header.view.setUint32(18, curr.uncompressedLength, true);
+        footer.view.setUint32(4, curr.crc.get(), true);
+        footer.view.setUint32(8, curr.compressedLength, true);
+        footer.view.setUint32(12, curr.uncompressedLength, true);
+      }
+      await this.writer(footer.array);
+      this.offsetInVolume += curr.compressedLength + 16;
+    }
+    async closeZip() {
+      const fileCount = this.files.length;
+      let centralDirLength = 0;
+      let idx = 0;
+      for (idx = 0; idx < fileCount; idx++) {
+        const file = this.files[idx];
+        centralDirLength += 46 + file.nameBuf.length + file.comment.length;
+      }
+      const data = new DataHelper(centralDirLength + 22);
+      let dataOffset = 0;
+      for (idx = 0; idx < fileCount; idx++) {
+        const file = this.files[idx];
+        data.view.setUint32(dataOffset, 1347092738);
+        data.view.setUint16(dataOffset + 4, 5120);
+        data.array.set(file.header.array, dataOffset + 6);
+        data.view.setUint16(dataOffset + 32, file.comment.length, true);
+        data.view.setUint16(dataOffset + 34, file.volumeNo, true);
+        data.view.setUint32(dataOffset + 42, file.offset, true);
+        data.array.set(file.nameBuf, dataOffset + 46);
+        data.array.set(file.comment, dataOffset + 46 + file.nameBuf.length);
+        dataOffset += 46 + file.nameBuf.length + file.comment.length;
+      }
+      data.view.setUint32(dataOffset, 1347093766);
+      data.view.setUint16(dataOffset + 4, this.currVolumeNo, true);
+      data.view.setUint16(dataOffset + 6, this.currVolumeNo, true);
+      data.view.setUint16(dataOffset + 8, fileCount, true);
+      data.view.setUint16(dataOffset + 10, fileCount, true);
+      data.view.setUint32(dataOffset + 12, centralDirLength, true);
+      data.view.setUint32(dataOffset + 16, this.offsetInVolume, true);
+      await this.writer(data.array);
+    }
+    nextReadableStream() {
+      this.currVolumeNo++;
+      if (this.currVolumeNo >= this.volumes) {
+        return;
+      }
+      const zip = this;
+      return new ReadableStream({
+        start(controller) {
+          zip.setWriter(async (chunk) => controller.enqueue(chunk));
+        },
+        async pull(controller) {
+          await zip.next().then((done) => done && controller.close());
+        }
+      });
+    }
+  }
+
   const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
   class Downloader {
     meta;
-    zip;
     downloading;
     downloadForceElement;
     downloadStartElement;
@@ -497,16 +730,14 @@
     queue;
     added = /* @__PURE__ */ new Set();
     idleLoader;
-    numberTitle;
-    delayedQueue = [];
     done = false;
     isReady;
+    filenames = /* @__PURE__ */ new Set();
     constructor(HTML, queue, idleLoader, matcher, allPagesReady) {
       this.queue = queue;
       this.idleLoader = idleLoader;
       this.isReady = allPagesReady;
       this.meta = () => matcher.parseGalleryMeta(document);
-      this.zip = new JSZip();
       this.downloading = false;
       this.downloadForceElement = document.querySelector("#download-force") || void 0;
       this.downloadStartElement = document.querySelector("#download-start") || void 0;
@@ -520,7 +751,6 @@
           return false;
         }
         this.added.add(index);
-        this.addToDelayedQueue(index, queue2[index]);
         if (queue2.isFinised()) {
           if (this.downloading) {
             this.download();
@@ -535,50 +765,18 @@
       });
     }
     needNumberTitle() {
-      if (this.numberTitle !== void 0) {
-        return this.numberTitle;
-      } else {
-        this.numberTitle = false;
-        let lastTitle = "";
-        for (const fetcher of this.queue) {
-          if (fetcher.title < lastTitle) {
-            this.numberTitle = true;
-            break;
-          }
-          lastTitle = fetcher.title;
+      let lastTitle = "";
+      for (const fetcher of this.queue) {
+        if (fetcher.title < lastTitle) {
+          return true;
         }
-        return this.numberTitle;
+        lastTitle = fetcher.title;
       }
-    }
-    addToDelayedQueue(index, imgFetcher) {
-      if (this.isReady()) {
-        if (this.delayedQueue.length > 0) {
-          for (const item of this.delayedQueue) {
-            this.addToDownloadZip(item.index, item.fetcher);
-          }
-          this.delayedQueue = [];
-        }
-        this.addToDownloadZip(index, imgFetcher);
-      } else {
-        this.delayedQueue.push({ index, fetcher: imgFetcher });
-      }
-    }
-    addToDownloadZip(index, imgFetcher) {
-      if (!imgFetcher.blobData) {
-        evLog("无法获取图片数据，因此该图片无法下载");
-        return;
-      }
-      let title = imgFetcher.title;
-      if (this.needNumberTitle()) {
-        const digit = this.queue.length.toString().length;
-        title = conf.filenameTemplate.replace("{number}", (index + 1).toString().padStart(digit, "0")).replace("{title}", title);
-      }
-      this.zip.file(this.checkDuplicateTitle(index, title), imgFetcher.blobData, { binary: true });
-      imgFetcher.blobData = void 0;
+      return false;
     }
     checkDuplicateTitle(index, $title) {
       let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");
-      if (this.zip.files[newTitle]) {
+      if (this.filenames.has(newTitle)) {
         let splits = newTitle.split(".");
         const ext = splits.pop();
         const prefix = splits.join(".");
@@ -642,22 +840,48 @@
     download() {
       this.downloading = false;
       this.idleLoader.abort(this.queue.currIndex);
-      if (this.delayedQueue.length > 0) {
-        for (const item of this.delayedQueue) {
-          this.addToDownloadZip(item.index, item.fetcher);
-        }
-        this.delayedQueue = [];
+      this.flushUI("packaging");
+      let checkTitle;
+      const needNumberTitle = this.needNumberTitle();
+      if (needNumberTitle) {
+        const digits = this.queue.length.toString().length;
+        checkTitle = (title, index) => `${index + 1}`.padStart(digits, "0") + "_" + title;
+      } else {
+        checkTitle = (title, index) => this.checkDuplicateTitle(index, title);
       }
-      const meta = this.meta();
-      this.zip.file("meta.json", JSON.stringify(meta));
-      this.zip.generateAsync({ type: "blob" }, (_metadata) => {
-      }).then((data) => {
-        saveAs(data, `${meta.originTitle || meta.title}.zip`);
+      let files = this.queue.filter((imf) => imf.stage === FetchState.DONE && imf.blobUrl).map((imf, index) => {
+        return {
+          stream: () => Promise.resolve(imf.blobData.stream()),
+          size: () => imf.blobData.size,
+          name: checkTitle(imf.title, index)
+        };
+      });
+      const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
+      files.forEach((file) => zip.add(file));
+      let meta = new TextEncoder().encode(JSON.stringify(this.meta(), null, 2));
+      zip.add({
+        stream: () => Promise.resolve(new ReadableStream({
+          start(c) {
+            c.enqueue(meta);
+            c.close();
+          }
+        })),
+        size: () => meta.byteLength,
+        name: "meta.json"
+      });
+      let save = async () => {
+        let readable;
+        while (readable = zip.nextReadableStream()) {
+          const blob = await new Response(readable).blob();
+          let ext = zip.currVolumeNo === zip.volumes - 1 ? ".zip" : ".z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
+          fileSaver.saveAs(blob, `${this.meta().originTitle || this.meta().title}.${ext}`);
+        }
         this.flushUI("downloaded");
         this.done = true;
         this.downloaderPlaneBTN.textContent = i18n.download.get();
         this.downloaderPlaneBTN.style.color = "";
-      });
+      };
+      save();
     }
   }
 
@@ -923,6 +1147,7 @@
     done = false;
     onAppended;
     imgFetcherSettings;
+    renderRangeRecord = [0, 0];
     abortb = false;
     constructor(fullViewPlane, queue, matcher, imgFetcherSettings) {
       this.fullViewPlane = fullViewPlane;
@@ -1012,8 +1237,13 @@
      */
     renderCurrView(currTop, clientHeight) {
       const [startRander, endRander] = this.findOutsideRoundView(currTop, clientHeight);
-      evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}`);
       this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
+      const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
+      unrenders.forEach(([start, end]) => {
+        this.queue.slice(start, end + 1).forEach((imgFetcher) => imgFetcher.unrender());
+      });
+      evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}, 旧范围是:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, 取消渲染范围是:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
+      this.renderRangeRecord = [startRander, endRander];
     }
     findOutsideRoundViewNode(currTop, clientHeight) {
       const [outsideTop, outsideBottom] = this.findOutsideRoundView(currTop, clientHeight);
@@ -1040,6 +1270,26 @@
       }
       return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
     }
+  }
+  function findNotInNewRange(old, neo) {
+    const ret = [];
+    if (neo[0] > old[0]) {
+      ret.push([old[0], neo[0] - 1]);
+    }
+    if (neo[1] < old[1]) {
+      ret.push([neo[1] + 1, old[1]]);
+    }
+    if (ret.length === 2) {
+      if (ret[1][0] < ret[0][1]) {
+        ret[1][0] = ret[0][1];
+        ret.shift();
+      }
+      if (ret[0][1] > ret[1][0]) {
+        ret[0][1] = ret[1][0];
+        ret.pop();
+      }
+    }
+    return ret;
   }
 
   class GalleryMeta {
@@ -3214,7 +3464,7 @@ text-align: left;
     HTML.collapseBTN.addEventListener("click", () => events.main(false));
     HTML.gate.addEventListener("click", () => events.main(true));
     const debouncer = new Debouncer();
-    HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 500));
+    HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 200));
     HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
     HTML.currPageElement.addEventListener("click", () => BIFM.show());
     HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event));
@@ -3969,4 +4219,4 @@ text-align: left;
     destoryFunc = main();
   }
 
-})(JSZip, saveAs, Hammer);
+})(saveAs, JSZip, Hammer);

@@ -87,10 +87,18 @@ export class Pixiv implements Matcher {
     }
     const files = await Promise.all(
       meta.body.frames.map(async (f) => {
-        const img = await zip.file(f.file)!.async("uint8array");
-        return { name: f.file, data: img };
+        try {
+          const img = await zip.file(f.file)!.async("uint8array");
+          return { name: f.file, data: img };
+        } catch (error) {
+          evLog("unpack ugoira file error: ", error);
+          throw error;
+        }
       })
     );
+    if (files.length !== meta.body.frames.length) {
+      throw new Error("unpack ugoira file error: file count not equal to meta");
+    }
     const blob = await this.convertor.convertToGif(files, meta.body.frames);
     return URL.createObjectURL(blob);
 

@@ -1,3 +1,5 @@
+import { evLog } from "./ev-log";
+
 class Crc32 {
   crc: number = -1;
   table: number[] = this.makeTable();
@@ -194,7 +196,9 @@ export class Zip {
 
     await this.writer(footer.array);
     this.offsetInVolume += curr.compressedLength + 16;
-
+    if (curr.compressedLength !== curr.file.size()) {
+      evLog("WRAN: read length:", curr.compressedLength, " origin size:", curr.file.size(), ", title: ", curr.file.name);
+    }
   }
 
   private async closeZip() {

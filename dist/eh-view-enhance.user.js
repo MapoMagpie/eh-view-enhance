@@ -165,7 +165,8 @@
     lock = false;
     /// 0: not rendered, 1: rendered tumbinal, 2: rendered big image
     rendered = 0;
-    blobData;
+    data;
+    contentType;
     blobUrl;
     title;
     downloadState;
@@ -253,10 +254,10 @@
             }
             break;
           case 2 /* DATA */:
-            let data = await this.fetchImageData();
-            if (data !== null) {
-              this.blobData = data;
-              this.blobUrl = URL.createObjectURL(data);
+            const ret = await this.fetchImageData();
+            if (ret !== null) {
+              [this.data, this.contentType] = ret;
+              this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               if (this.rendered === 2) {
                 this.imgElement.src = this.blobUrl;
               }
@@ -291,7 +292,8 @@
         if (data == null) {
           throw new Error(`Data is null, image url:${this.bigImageUrl}`);
         }
-        return data;
+        const type = data.type;
+        return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), type]);
       } catch (error) {
         evLog(`Fetch image data error:`, error);
         return null;
@@ -670,6 +672,9 @@
       }
       await this.writer(footer.array);
       this.offsetInVolume += curr.compressedLength + 16;
+      if (curr.compressedLength !== curr.file.size()) {
+        evLog("WRAN: read length:", curr.compressedLength, " origin size:", curr.file.size(), ", title: ", curr.file.name);
+      }
     }
     async closeZip() {
       const fileCount = this.files.length;
@@ -728,7 +733,6 @@
     downloadNoticeElement;
     downloaderPlaneBTN;
     queue;
-    added = /* @__PURE__ */ new Set();
     idleLoader;
     done = false;
     isReady;
@@ -746,11 +750,7 @@
       this.downloadForceElement?.addEventListener("click", () => this.download());
       this.downloadStartElement?.addEventListener("click", () => this.start());
       this.queue.subscribeOnDo(0, () => this.downloading);
-      this.queue.subscribeOnFinishedReport(0, (index, queue2) => {
-        if (this.added.has(index)) {
-          return false;
-        }
-        this.added.add(index);
+      this.queue.subscribeOnFinishedReport(0, (_, queue2) => {
         if (queue2.isFinised()) {
           if (this.downloading) {
             this.download();
@@ -849,10 +849,11 @@
       } else {
         checkTitle = (title, index) => this.checkDuplicateTitle(index, title);
       }
-      let files = this.queue.filter((imf) => imf.stage === FetchState.DONE && imf.blobUrl).map((imf, index) => {
+      let files = this.queue.filter((imf) => imf.stage === FetchState.DONE && imf.data).map((imf, index) => {
+        console.log("img fetcher :", imf.data?.length, ", title: ", checkTitle(imf.title, index));
         return {
-          stream: () => Promise.resolve(imf.blobData.stream()),
-          size: () => imf.blobData.size,
+          stream: () => Promise.resolve(uint8ArrayToReadableStream(imf.data)),
+          size: () => imf.data.byteLength,
           name: checkTitle(imf.title, index)
         };
       });
@@ -873,7 +874,7 @@
         let readable;
         while (readable = zip.nextReadableStream()) {
           const blob = await new Response(readable).blob();
-          let ext = zip.currVolumeNo === zip.volumes - 1 ? ".zip" : ".z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
+          let ext = zip.currVolumeNo === zip.volumes - 1 ? "zip" : "z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
           fileSaver.saveAs(blob, `${this.meta().originTitle || this.meta().title}.${ext}`);
         }
         this.flushUI("downloaded");
@@ -883,6 +884,14 @@
       };
       save();
     }
+  }
+  function uint8ArrayToReadableStream(arr) {
+    return new ReadableStream({
+      pull(controller) {
+        controller.enqueue(arr);
+        controller.close();
+      }
+    });
   }
 
   class Debouncer {
@@ -2046,20 +2055,12 @@
     coreURL;
     wasmURL;
     classWorkerURL;
+    ffmpeg;
     async init() {
       const en = new TextEncoder();
       this.coreURL = URL.createObjectURL(new Blob([en.encode(core_raw)], { type: "text/javascript" }));
       this.classWorkerURL = URL.createObjectURL(new Blob([en.encode(class_worker_raw)], { type: "text/javascript" }));
       this.wasmURL = await toBlobURL(`https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm`, "application/wasm");
-      return this;
-    }
-    check() {
-      if (!this.coreURL || !this.wasmURL || !this.classWorkerURL) {
-        throw new Error("FFmpegConvertor not init");
-      }
-    }
-    async convertToGif(files, meta) {
-      this.check();
       const ffmpeg = new FFmpeg();
       await ffmpeg.load(
         {
@@ -2068,21 +2069,39 @@
           classWorkerURL: this.classWorkerURL
         }
       );
+      this.ffmpeg = ffmpeg;
+      return this;
+    }
+    check() {
+      if (!this.coreURL || !this.wasmURL || !this.classWorkerURL || !this.ffmpeg) {
+        throw new Error("FFmpegConvertor not init");
+      }
+    }
+    async convertToGif(files, meta) {
+      this.check();
+      const ffmpeg = this.ffmpeg;
+      const randomPrefix = Math.random().toString(36).substring(7);
+      const resultFile = randomPrefix + "output.gif";
       await Promise.all(
         files.map(async (f) => {
-          await ffmpeg.writeFile(f.name, f.data);
+          await ffmpeg.writeFile(randomPrefix + f.name, f.data);
         })
       );
       if (meta) {
-        const metaStr = meta.map((m) => `file '${m.file}'
+        const metaStr = meta.map((m) => `file '${randomPrefix}${m.file}'
 duration ${m.delay / 1e3}`).join("\n");
         await ffmpeg.writeFile("meta.txt", metaStr);
-        await ffmpeg.exec(["-f", "concat", "-safe", "0", "-i", "meta.txt", "output.gif"]);
+        await ffmpeg.exec(["-f", "concat", "-safe", "0", "-i", "meta.txt", resultFile]);
       } else {
         const inputPattern = `%0${files[0].name.length}d.${files[0].name.split(".").pop()}`;
-        await ffmpeg.exec(["-f", "image2", "-framerate", "5", "-i", inputPattern, "output.gif"]);
+        await ffmpeg.exec(["-f", "image2", "-framerate", "5", "-i", inputPattern, resultFile]);
       }
-      const result = await ffmpeg.readFile("output.gif");
+      const result = await ffmpeg.readFile(resultFile);
+      await Promise.all(
+        files.map(async (f) => {
+          await ffmpeg.deleteFile(randomPrefix + f.name);
+        })
+      );
       return new Blob([result], { type: "image/gif" });
     }
   }

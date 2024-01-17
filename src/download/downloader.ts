@@ -18,7 +18,6 @@ export class Downloader {
   downloadNoticeElement?: HTMLElement;
   downloaderPlaneBTN: HTMLElement;
   queue: IMGFetcherQueue;
-  added: Set<number> = new Set();
   idleLoader: IdleLoader;
   done: boolean = false;
   isReady: () => boolean;
@@ -37,12 +36,7 @@ export class Downloader {
     this.downloadForceElement?.addEventListener("click", () => this.download());
     this.downloadStartElement?.addEventListener("click", () => this.start());
     this.queue.subscribeOnDo(0, () => this.downloading);
-    this.queue.subscribeOnFinishedReport(0, (index, queue) => {
-      if (this.added.has(index)) {
-        return false;
-      }
-      this.added.add(index);
-      // this.addToDelayedQueue(index, queue[index]);
+    this.queue.subscribeOnFinishedReport(0, (_, queue) => {
       if (queue.isFinised()) {
         if (this.downloading) {
           this.download();
@@ -158,11 +152,12 @@ export class Downloader {
     }
 
     let files = this.queue
-      .filter((imf) => imf.stage === FetchState.DONE && imf.blobUrl)
+      .filter((imf) => imf.stage === FetchState.DONE && imf.data)
       .map((imf, index) => {
+        console.log("img fetcher :", imf.data?.length, ", title: ", checkTitle(imf.title, index));
         return {
-          stream: () => Promise.resolve(imf.blobData!.stream()),
-          size: () => imf.blobData!.size,
+          stream: () => Promise.resolve(uint8ArrayToReadableStream(imf.data!)),
+          size: () => imf.data!.byteLength,
           name: checkTitle(imf.title, index)
         }
       });
@@ -185,8 +180,8 @@ export class Downloader {
       while (readable = zip.nextReadableStream()) {
         const blob = await new Response(readable).blob();
         let ext = zip.currVolumeNo === zip.volumes - 1 ?
-          ".zip" :
-          ".z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
+          "zip" :
+          "z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
         saveAs(blob, `${this.meta().originTitle || this.meta().title}.${ext}`);
       }
       this.flushUI("downloaded");
@@ -198,3 +193,11 @@ export class Downloader {
   };
 }
 
+function uint8ArrayToReadableStream(arr: Uint8Array): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    pull(controller) {
+      controller.enqueue(arr);
+      controller.close();
+    }
+  });
+}

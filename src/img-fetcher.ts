@@ -41,7 +41,8 @@ export class IMGFetcher {
   lock: boolean = false;
   /// 0: not rendered, 1: rendered tumbinal, 2: rendered big image
   rendered: 0 | 1 | 2 = 0;
-  blobData?: Blob;
+  data?: Uint8Array;
+  contentType?: string;
   blobUrl?: string;
   title: string;
   downloadState: DownloadState;
@@ -55,7 +56,6 @@ export class IMGFetcher {
     this.root = node;
     this.imgElement = node.firstChild as HTMLImageElement;
     this.pageUrl = this.imgElement.getAttribute("ahref")!;
-    // this.blobData = undefined;
     this.title = this.imgElement.getAttribute("title") || "untitle.jpg";
     this.downloadState = { total: 100, loaded: 0, readyState: 0, };
     /**
@@ -141,12 +141,13 @@ export class IMGFetcher {
           }
           break;
         case FetchState.DATA:
-          let data = await this.fetchImageData();
-          if (data !== null) {
-            this.blobData = data; // blob data must be keeped
-            this.blobUrl = URL.createObjectURL(data);
+          const ret = await this.fetchImageData();
+          if (ret !== null) {
+            [this.data, this.contentType] = ret;
+            this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
             if (this.rendered === 2) {
-              this.imgElement.src = this.blobUrl; // TODO: this will duble the memory usage
+              // this.imgElement.onload = () => this.blobUrl && URL.revokeObjectURL(this.blobUrl);
+              this.imgElement.src = this.blobUrl;
             }
             this.stage = FetchState.DONE;
           } else {
@@ -175,13 +176,14 @@ export class IMGFetcher {
     }
   }
 
-  async fetchImageData(): Promise<Blob | null> {
+  async fetchImageData(): Promise<[Uint8Array, string] | null> {
     try {
       const data = await this.fetchBigImage();
       if (data == null) {
         throw new Error(`Data is null, image url:${this.bigImageUrl}`);
       }
-      return data;
+      const type = data.type;
+      return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), type]);
     } catch (error) {
       evLog(`Fetch image data error:`, error);
       return null;
@@ -193,6 +195,8 @@ export class IMGFetcher {
       case 0:
       case 1:
         if (this.blobUrl) {
+          // this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
+          // this.imgElement.onload = () => this.blobUrl && URL.revokeObjectURL(this.blobUrl);
           this.imgElement.src = this.blobUrl;
         } else {
           this.imgElement.src = this.imgElement.getAttribute("asrc")!;

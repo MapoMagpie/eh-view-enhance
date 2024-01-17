@@ -82,8 +82,8 @@ export function loadStyleSheel() {
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
-.pageHelper .plane {
-  z-index: 1010 !important;
+.pageHelper .p-plane {
+  z-index: 2012 !important;
   background-color: rgba(38, 20, 25, 0.8);
   box-sizing: border-box;
   position: absolute;
@@ -108,7 +108,7 @@ export function loadStyleSheel() {
     font-size: 1rem;
     line-height: 1.2rem;
   }
-  .pageHelper .plane {
+  .pageHelper .p-plane {
     width: 24rem;
     height: 25rem;
     bottom: 1.3rem;
@@ -153,7 +153,7 @@ export function loadStyleSheel() {
     font-size: 8cqw;
     line-height: 8.1cqw;
   }
-  .pageHelper .plane {
+  .pageHelper .p-plane {
     width: 100vw;
     height: 60vh;
     bottom: 5.7cqw;

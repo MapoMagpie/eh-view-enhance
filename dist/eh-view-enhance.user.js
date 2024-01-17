@@ -1215,7 +1215,8 @@
       const imgNodeTemplate = document.createElement("div");
       imgNodeTemplate.classList.add("img-node");
       const imgTemplate = document.createElement("img");
-      imgTemplate.setAttribute("decoding", "async");
+      imgTemplate.setAttribute("decoding", "sync");
+      imgTemplate.setAttribute("loading", "lazy");
       imgTemplate.setAttribute("title", "untitle.jpg");
       imgTemplate.style.height = "auto";
       imgTemplate.setAttribute(
@@ -2910,8 +2911,8 @@ text-align: left;
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
-.pageHelper .plane {
-  z-index: 1010 !important;
+.pageHelper .p-plane {
+  z-index: 2012 !important;
   background-color: rgba(38, 20, 25, 0.8);
   box-sizing: border-box;
   position: absolute;
@@ -2936,7 +2937,7 @@ text-align: left;
     font-size: 1rem;
     line-height: 1.2rem;
   }
-  .pageHelper .plane {
+  .pageHelper .p-plane {
     width: 24rem;
     height: 25rem;
     bottom: 1.3rem;
@@ -2981,7 +2982,7 @@ text-align: left;
     font-size: 8cqw;
     line-height: 8.1cqw;
   }
-  .pageHelper .plane {
+  .pageHelper .p-plane {
     width: 100vw;
     height: 60vh;
     bottom: 5.7cqw;
@@ -3249,7 +3250,7 @@ text-align: left;
  </div>
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
-         <div id="configPlane" class="plane p-config p-collapse">
+         <div id="configPlane" class="p-plane p-config p-collapse">
              <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <label class="p-label">
                      <span>${i18n.columns.get()}:</span>
@@ -3392,7 +3393,7 @@ text-align: left;
                  <div id="imgScaleResetBTN" class="scale-btn"><span>RESET</span></div>
              </div>
          </div>
-         <div id="downloaderPlane" class="plane p-downloader p-collapse">
+         <div id="downloaderPlane" class="p-plane p-downloader p-collapse">
              <div id="download-notice" class="download-notice"></div>
              <canvas id="downloaderCanvas" width="100" height="100"></canvas>
              <div class="download-btn-group">

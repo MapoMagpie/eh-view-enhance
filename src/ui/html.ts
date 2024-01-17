@@ -27,7 +27,7 @@ export function createHTML() {
  </div>
  <div id="pageHelper" class="pageHelper">
      <div style="position: relative">
-         <div id="configPlane" class="plane p-config p-collapse">
+         <div id="configPlane" class="p-plane p-config p-collapse">
              <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <label class="p-label">
                      <span>${i18n.columns.get()}:</span>
@@ -170,7 +170,7 @@ export function createHTML() {
                  <div id="imgScaleResetBTN" class="scale-btn"><span>RESET</span></div>
              </div>
          </div>
-         <div id="downloaderPlane" class="plane p-downloader p-collapse">
+         <div id="downloaderPlane" class="p-plane p-downloader p-collapse">
              <div id="download-notice" class="download-notice"></div>
              <canvas id="downloaderCanvas" width="100" height="100"></canvas>
              <div class="download-btn-group">

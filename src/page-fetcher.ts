@@ -87,7 +87,8 @@ export class PageFetcher {
     const imgNodeTemplate = document.createElement("div");
     imgNodeTemplate.classList.add("img-node");
     const imgTemplate = document.createElement("img");
-    imgTemplate.setAttribute("decoding", "async");
+    imgTemplate.setAttribute("decoding", "sync");
+    imgTemplate.setAttribute("loading", "lazy");
     imgTemplate.setAttribute("title", "untitle.jpg");
     imgTemplate.style.height = "auto";
     imgTemplate.setAttribute(

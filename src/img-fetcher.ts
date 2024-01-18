@@ -195,8 +195,6 @@ export class IMGFetcher {
       case 0:
       case 1:
         if (this.blobUrl) {
-          // this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
-          // this.imgElement.onload = () => this.blobUrl && URL.revokeObjectURL(this.blobUrl);
           this.imgElement.src = this.blobUrl;
         } else {
           this.imgElement.src = this.imgElement.getAttribute("asrc")!;

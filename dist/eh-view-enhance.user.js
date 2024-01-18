@@ -924,6 +924,7 @@
     debouncer;
     onDo = /* @__PURE__ */ new Map();
     onFinishedReport = /* @__PURE__ */ new Map();
+    dataSize = 0;
     constructor() {
       super();
       this.executableQueue = [];
@@ -971,6 +972,9 @@
       if (imgFetcher.stage !== FetchState.DONE)
         return;
       this.pushFinishedIndex(index);
+      if (this.dataSize < 1e9) {
+        this.dataSize += imgFetcher.data?.byteLength || 0;
+      }
       let keys = Array.from(this.onFinishedReport.keys());
       keys.sort();
       for (const key of keys) {
@@ -1248,11 +1252,11 @@
     renderCurrView(currTop, clientHeight) {
       const [startRander, endRander] = this.findOutsideRoundView(currTop, clientHeight);
       this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
-      const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
-      unrenders.forEach(([start, end]) => {
-        this.queue.slice(start, end + 1).forEach((imgFetcher) => imgFetcher.unrender());
-      });
-      evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}, 旧范围是:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, 取消渲染范围是:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
+      if (this.queue.dataSize >= 1e9) {
+        const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
+        unrenders.forEach(([start, end]) => this.queue.slice(start, end + 1).forEach((imgFetcher) => imgFetcher.unrender()));
+        evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}, 旧范围是:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, 取消渲染范围是:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
+      }
       this.renderRangeRecord = [startRander, endRander];
     }
     findOutsideRoundViewNode(currTop, clientHeight) {

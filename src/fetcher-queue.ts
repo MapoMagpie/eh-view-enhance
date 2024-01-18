@@ -12,6 +12,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   private debouncer: Debouncer;
   private onDo: Map<number, Callback> = new Map();
   private onFinishedReport: Map<number, Callback> = new Map();
+  dataSize: number = 0;
   constructor() {
     super();
     //可执行队列
@@ -77,6 +78,9 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     const imgFetcher = this[index];
     if (imgFetcher.stage !== FetchState.DONE) return;
     this.pushFinishedIndex(index);
+    if (this.dataSize < 1000000000) { // 1GB
+      this.dataSize += imgFetcher.data?.byteLength || 0;
+    }
 
     let keys = Array.from(this.onFinishedReport.keys());
     keys.sort();

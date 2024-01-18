@@ -26,6 +26,7 @@ export class BigImageFrameManager {
   preventStepLockEle?: HTMLElement;
   visible: boolean = false;
   html: Elements;
+  frameScrollAbort?: AbortController;
   /* prevent mouse wheel step next image */
   constructor(HTML: Elements, queue: IMGFetcherQueue) {
     this.html = HTML;
@@ -115,7 +116,7 @@ export class BigImageFrameManager {
       this.callbackOnWheel?.(event);
       this.onWheel(event);
     });
-    this.frame.addEventListener("scroll", (event) => this.onScroll(event));
+    // this.frame.addEventListener("scroll", (event) => this.onScroll(event)); // move to show()
     this.frame.addEventListener("click", (event) => this.hidden(event));
     this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
     const debouncer = new Debouncer("throttle");
@@ -203,10 +204,11 @@ export class BigImageFrameManager {
     this.callbackOnHidden?.();
     this.frame.blur();
     this.frame.classList.add("b-f-collapse");
+    this.frameScrollAbort?.abort();
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
-      this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
       this.removeImgNodes();
-    }, 600);
+      this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
+    }, 700);
     this.html.pageHelper.classList.remove("p-minify");
     this.html.fullViewPlane.focus();
   }
@@ -214,6 +216,8 @@ export class BigImageFrameManager {
   show(event?: Event) {
     this.visible = true;
     this.frame.classList.remove("b-f-collapse");
+    this.frameScrollAbort = new AbortController();
+    this.frame.addEventListener("scroll", (event) => this.onScroll(event), { signal: this.frameScrollAbort.signal });
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
       this.frame.focus();
       this.frame.childNodes.forEach(child => {
@@ -225,16 +229,18 @@ export class BigImageFrameManager {
         }
         (child as HTMLElement).hidden = false;
       });
-    }, 600);
-    this.callbackOnShow?.();
-    this.html.pageHelper.classList.add("p-minify")
+    }, 700);
 
-    //获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
-    let start = this.queue.currIndex;
-    if (event && event.target) {
-      start = this.queue.findImgIndex(event.target as HTMLElement);
-    }
-    this.queue.do(start);
+    this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
+      this.callbackOnShow?.();
+      this.html.pageHelper.classList.add("p-minify")
+      //获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
+      let start = this.queue.currIndex;
+      if (event && event.target) {
+        start = this.queue.findImgIndex(event.target as HTMLElement);
+      }
+      this.queue.do(start);
+    }, 200);
   }
 
   getImgNodes(): HTMLImageElement[] {

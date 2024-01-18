@@ -3619,6 +3619,7 @@ text-align: left;
     preventStepLockEle;
     visible = false;
     html;
+    frameScrollAbort;
     /* prevent mouse wheel step next image */
     constructor(HTML, queue) {
       this.html = HTML;
@@ -3699,7 +3700,6 @@ text-align: left;
         this.callbackOnWheel?.(event);
         this.onWheel(event);
       });
-      this.frame.addEventListener("scroll", (event) => this.onScroll(event));
       this.frame.addEventListener("click", (event) => this.hidden(event));
       this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
       const debouncer = new Debouncer("throttle");
@@ -3785,16 +3785,19 @@ text-align: left;
       this.callbackOnHidden?.();
       this.frame.blur();
       this.frame.classList.add("b-f-collapse");
+      this.frameScrollAbort?.abort();
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
-        this.frame.childNodes.forEach((child) => child.hidden = true);
         this.removeImgNodes();
-      }, 600);
+        this.frame.childNodes.forEach((child) => child.hidden = true);
+      }, 700);
       this.html.pageHelper.classList.remove("p-minify");
       this.html.fullViewPlane.focus();
     }
     show(event) {
       this.visible = true;
       this.frame.classList.remove("b-f-collapse");
+      this.frameScrollAbort = new AbortController();
+      this.frame.addEventListener("scroll", (event2) => this.onScroll(event2), { signal: this.frameScrollAbort.signal });
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
         this.frame.focus();
         this.frame.childNodes.forEach((child) => {
@@ -3805,14 +3808,16 @@ text-align: left;
           }
           child.hidden = false;
         });
-      }, 600);
-      this.callbackOnShow?.();
-      this.html.pageHelper.classList.add("p-minify");
-      let start = this.queue.currIndex;
-      if (event && event.target) {
-        start = this.queue.findImgIndex(event.target);
-      }
-      this.queue.do(start);
+      }, 700);
+      this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
+        this.callbackOnShow?.();
+        this.html.pageHelper.classList.add("p-minify");
+        let start = this.queue.currIndex;
+        if (event && event.target) {
+          start = this.queue.findImgIndex(event.target);
+        }
+        this.queue.do(start);
+      }, 200);
     }
     getImgNodes() {
       return Array.from(this.frame.querySelectorAll("img"));

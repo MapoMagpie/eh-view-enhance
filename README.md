@@ -1,37 +1,38 @@
-# EH-VIEW-ENHANCE
+# Cosmos Manga View
+> This is a script can reading manga, download gallery. Has a good thumbnail view for quick browsing of the whole gallery.
 
-[中文](https://github.com/MapoMagpie/eh-view-enhance/blob/master/README_CN.md)
-
-> e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
-
-![预览](.assets/Preview_c.jpg "预览")
-![大图](.assets/BigScreen_c.jpg "大图")
+![preview](.assets/preview.jpg "预览")
+![reading](.assets/big-image-reading.jpg "大图")
 
 ## Features
 
-- show all thumbnail image in grid
-- auto load high quality image
-- download gallery
+- Display all the thumbnails in the grid, quick browsing them.
+- `Download`，Save all origin images and gallery detail to local.
+- `Reading`，Here is two way 'single' and 'Consecutively' for Reading the origin image.
+- `Multi-site Support`，Now supported: e-hentai、pixiv、steam screenshots、hitomi、nhentai.
+- `Download by volume`，To bypass the object size limit of the browser.
+- `Pixiv ugoria convert to GIF`.
+- `Mobile page adaptation`，（Android browser that needs to support browser extensions，e.g:Firefox Nightly、Kiwi Browser).
 
-## Insatllation
+## Installation
 
-- before installation: Modern Browser(Firefox\Chrome\Edge...)
-- before installation: [`TamperMonkey`](https://www.tampermonkey.net/)
-- install 1: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)
-- install 1: [Sleazyfork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)
-- insatll 2: TamperMonkey > Utilities > Import From URL type in [https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
-](https://github.com/MapoMagpie/eh-view-enhance/raw/master/dist/eh-view-enhance.user.js)
+- `Before`: Modern Browser(Firefox\Chrome\Edge...)
+- `Before`: [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
+- `Install from here` 1: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)，(need login)
+- `Install from here` 2: [Sleazyfork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)，(do not need login)
+- `Install from here` 2: direct [`https://raw.githubusercontent.com/MapoMagpie/eh-view-enhance/master/dist/eh-view-enhance.user.js`](https://raw.githubusercontent.com/MapoMagpie/eh-view-enhance/master/dist/eh-view-enhance.user.js)
+
 ## Operates
 
-1. Before use this script，make sure gallery switch to `Large` mode
-2. Click bottom right corner ⋖📖⋗，enter into viewer mode
-3. Just a moment，All of thumbnail images exhibited in grid，click one of thumbnail images, into big image mode
-4. Image quality: level 1、thumbnail； level 2、compressed image； level 3、original image；<br>
-   In default config，auto load compressed image，with low traffic consumption with good clarity。also you can enable best quality in config plane, This increases the consumption of traffic and browsing quotas。
-5. Big image: click thumbnail image, into big image mode, use mouse wheel switch to next or prev
-6. Image zoom: right mouse button + mouse wheel
-7. Download: click download button，popup download plane，the loading status of all images is indicated by small squares.
+1. If you are browsing E-Hentai, please click here to switch to Lager thumbnail mode for clearer thumbnails. (need login e-hentai)
+2. Click ⋖📖⋗ from left-bottom corner, entry reading.
+3. Just a monment, all thumbnail will exhibited in grid, click one of thumbnails into big image mode.
+4. Image Quality: For e-hentai，you can enable control-bar > CONF > Image Raw, which will directly download the uploaded original uncompressed images, but it will consume more quotas. Generally, the compressed files provided by E-Hentai are already clear enough.
+5. Keyboard: You can navigate entirely from the keyboard. For details, please refer to the Help in the configuration panel
+6. Download: You can click on the download button in the download panel to quickly load all the images. You can still continue browsing the images. Downloading and viewing large images are integrated, and you can click on Download Loaded in the download panel to save the images at any time.
 
-## issues
+## Issues
 
 > https://github.com/MapoMagpie/eh-view-enhance/issues
+
+If you like my script, please give me a `star`/

@@ -30,6 +30,12 @@ function main(): DestoryFunc {
     setNow: (index) => BIFM.setNow(index),
     onClick: (event) => BIFM.show(event),
   });
+  PF.beforeInit = () => {
+    HTML.pageLoading.style.display = "flex";
+  };
+  PF.afterInit = () => {
+    HTML.pageLoading.style.display = "none";
+  };
   const DL: Downloader = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
   const PH: PageHelper = new PageHelper(HTML);
   IFQ.subscribeOnFinishedReport(1, (index, queue) => {

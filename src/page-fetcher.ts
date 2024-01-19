@@ -18,6 +18,8 @@ export class PageFetcher {
   onAppended?: (total: number) => void;
   imgFetcherSettings: IMGFetcherSettings;
   renderRangeRecord: [number, number] = [0, 0];
+  beforeInit?: () => void;
+  afterInit?: () => void;
   private abortb: boolean = false;
   constructor(fullViewPlane: HTMLElement, queue: IMGFetcherQueue, matcher: Matcher, imgFetcherSettings: IMGFetcherSettings) {
     this.fullViewPlane = fullViewPlane;
@@ -39,7 +41,9 @@ export class PageFetcher {
   }
 
   async init() {
+    this.beforeInit?.();
     await this.initPageAppend();
+    this.afterInit?.();
   }
 
   async initPageAppend() {

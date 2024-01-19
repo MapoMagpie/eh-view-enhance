@@ -24,7 +24,7 @@ export default defineConfig({
           'https://www.pixiv.net/*',
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.1.17',
+        version: '4.1.18',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {

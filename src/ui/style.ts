@@ -395,6 +395,49 @@ export function loadStyleSheel() {
 .p-tooltip:hover .p-tooltiptext {
   visibility: visible;
 }
+.page-loading {
+  width: 100vw;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  background-color: #333333a6;
+}
+.page-loading-text {
+  color: #ffffff;
+  font-size: 6rem;
+}
+@keyframes rotate {
+	100% {
+		transform: rotate(1turn);
+	}
+}
+.border-ani {
+	position: relative;
+	z-index: 0;
+	overflow: hidden;
+	padding: 2rem;
+}
+.border-ani::before {
+	content: '';
+	position: absolute;
+	z-index: -2;
+	left: -50%;
+	top: -50%;
+	width: 200%;
+	height: 200%;
+	background-color: #fff;
+	animation: rotate 4s linear infinite;
+}
+.border-ani::after {
+	content: '';
+	position: absolute;
+	z-index: -1;
+	left: 6px;
+	top: 6px;
+	width: calc(100% - 16px);
+	height: calc(100% - 16px);
+	background: #333;
+}
 `
   style.textContent = css;
   document.head.appendChild(style);

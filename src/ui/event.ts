@@ -255,7 +255,7 @@ text-align: left;
   // 入口
   function main(extend: boolean) {
     if (HTML.pageHelper) {
-      if (extend) {
+      if (extend && !HTML.pageHelper.classList.contains("pageHelperExtend")) {
         HTML.pageHelper.classList.add("pageHelperExtend");
         showFullViewPlane();
         if (signal.first) {

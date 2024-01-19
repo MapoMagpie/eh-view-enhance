@@ -316,7 +316,7 @@ export class BigImageFrameManager {
         const centerNode = imgNodes[index];
         const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
         if (this.tryReduce()) {
-          this.restoreScrollTop(centerNode, distance, 0);
+          // this.restoreScrollTop(centerNode, distance, 0);
         }
       }, 200);
 

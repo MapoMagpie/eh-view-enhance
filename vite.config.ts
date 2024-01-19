@@ -14,6 +14,7 @@ export default defineConfig({
         namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
         exclude: [
           'https://nhentai.net/g/*/*/',
+          'https://yande.re/post/show/*'
         ],
         match: [
           'https://exhentai.org/g/*',
@@ -22,6 +23,7 @@ export default defineConfig({
           'https://steamcommunity.com/id/*/screenshots*',
           'https://hitomi.la/*/*',
           'https://www.pixiv.net/*',
+          'https://yande.re/post*'
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
         version: '4.1.18',
@@ -40,6 +42,7 @@ export default defineConfig({
           'akamaihd.net',
           'i.pximg.net',
           'ehgt.org',
+          'files.yande.re'
         ],
         grant: ['GM_xmlhttpRequest', 'GM_setValue', 'GM_getValue'],
         require: [

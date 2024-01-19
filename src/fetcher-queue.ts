@@ -51,7 +51,8 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     this.currIndex = this.fixIndex(start);
     this[this.currIndex].setNow(this.currIndex);
 
-    let keys = Array.from(this.onDo.keys());
+    // keys will be empty in yande site
+    let keys = [ ...this.onDo.keys()];
     keys.sort();
     for (const key of keys) {
       if (this.onDo.get(key)?.(this.currIndex, this)) {

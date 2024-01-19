@@ -8,7 +8,7 @@ type Callback = (index: number, queue: IMGFetcherQueue) => boolean;
 export class IMGFetcherQueue extends Array<IMGFetcher> {
   executableQueue: number[];
   currIndex: number;
-  finishedIndex: number[];
+  finishedIndex: Set<number> = new Set();
   private debouncer: Debouncer;
   private onDo: Map<number, Callback> = new Map();
   private onFinishedReport: Map<number, Callback> = new Map();
@@ -20,7 +20,6 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     //当前的显示的大图的图片请求器所在的索引
     this.currIndex = 0;
     //已经完成加载的
-    this.finishedIndex = [];
     this.debouncer = new Debouncer();
   }
 
@@ -33,7 +32,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   }
 
   isFinised() {
-    return this.finishedIndex.length === this.length;
+    return this.finishedIndex.size === this.length;
   }
 
   push(...items: IMGFetcher[]): number {
@@ -77,7 +76,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   finishedReport(index: number) {
     const imgFetcher = this[index];
     if (imgFetcher.stage !== FetchState.DONE) return;
-    this.pushFinishedIndex(index);
+    this.finishedIndex.add(index);
     if (this.dataSize < 1000000000) { // 1GB
       this.dataSize += imgFetcher.data?.byteLength || 0;
     }
@@ -134,19 +133,4 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     return 0;
   }
 
-  pushFinishedIndex(index: number) {
-    // const fd = this.finishedIndex;
-    if (this.finishedIndex.length === 0) {
-      this.finishedIndex.push(index);
-      return;
-    }
-    for (let i = 0; i < this.finishedIndex.length; i++) {
-      if (index === this.finishedIndex[i]) return;
-      if (index < this.finishedIndex[i]) {
-        this.finishedIndex.splice(i, 0, index);
-        return;
-      }
-    }
-    this.finishedIndex.push(index);
-  }
 }

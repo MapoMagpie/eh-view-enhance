@@ -929,7 +929,7 @@
   class IMGFetcherQueue extends Array {
     executableQueue;
     currIndex;
-    finishedIndex;
+    finishedIndex = /* @__PURE__ */ new Set();
     debouncer;
     onDo = /* @__PURE__ */ new Map();
     onFinishedReport = /* @__PURE__ */ new Map();
@@ -938,7 +938,6 @@
       super();
       this.executableQueue = [];
       this.currIndex = 0;
-      this.finishedIndex = [];
       this.debouncer = new Debouncer();
     }
     subscribeOnDo(index, callback) {
@@ -948,7 +947,7 @@
       this.onFinishedReport.set(index, callback);
     }
     isFinised() {
-      return this.finishedIndex.length === this.length;
+      return this.finishedIndex.size === this.length;
     }
     push(...items) {
       items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
@@ -980,7 +979,7 @@
       const imgFetcher = this[index];
       if (imgFetcher.stage !== FetchState.DONE)
         return;
-      this.pushFinishedIndex(index);
+      this.finishedIndex.add(index);
       if (this.dataSize < 1e9) {
         this.dataSize += imgFetcher.data?.byteLength || 0;
       }
@@ -1029,21 +1028,6 @@
         }
       }
       return 0;
-    }
-    pushFinishedIndex(index) {
-      if (this.finishedIndex.length === 0) {
-        this.finishedIndex.push(index);
-        return;
-      }
-      for (let i = 0; i < this.finishedIndex.length; i++) {
-        if (index === this.finishedIndex[i])
-          return;
-        if (index < this.finishedIndex[i]) {
-          this.finishedIndex.splice(i, 0, index);
-          return;
-        }
-      }
-      this.finishedIndex.push(index);
     }
   }
 
@@ -4294,7 +4278,7 @@ text-align: left;
     const DL = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
     const PH = new PageHelper(HTML);
     IFQ.subscribeOnFinishedReport(1, (index, queue) => {
-      PH.setPageState({ finished: queue.finishedIndex.length });
+      PH.setPageState({ finished: queue.finishedIndex.size });
       evLog(`第${index + 1}张完成，大图所在第${queue.currIndex + 1}张`);
       if (queue[queue.currIndex].stage === FetchState.DONE) {
         PH.setFetchState("fetched");
@@ -4302,7 +4286,7 @@ text-align: left;
       return false;
     });
     IFQ.subscribeOnFinishedReport(2, (index, queue) => {
-      if (index !== queue.currIndex) {
+      if (index !== queue.currIndex || !BIFM.visible) {
         return false;
       }
       const imgFetcher = queue[index];

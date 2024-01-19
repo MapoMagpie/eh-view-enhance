@@ -33,7 +33,7 @@ function main(): DestoryFunc {
   const DL: Downloader = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
   const PH: PageHelper = new PageHelper(HTML);
   IFQ.subscribeOnFinishedReport(1, (index, queue) => {
-    PH.setPageState({ finished: queue.finishedIndex.length });
+    PH.setPageState({ finished: queue.finishedIndex.size });
     evLog(`第${index + 1}张完成，大图所在第${queue.currIndex + 1}张`);
     if (queue[queue.currIndex].stage === FetchState.DONE) {
       PH.setFetchState("fetched");
@@ -42,7 +42,7 @@ function main(): DestoryFunc {
   });
   // scroll to current image that is in view
   IFQ.subscribeOnFinishedReport(2, (index, queue) => {
-    if (index !== queue.currIndex) {
+    if (index !== queue.currIndex || !BIFM.visible) {
       return false;
     }
     const imgFetcher = queue[index];

@@ -2,7 +2,7 @@
 > 这是一个阅读漫画的脚本，包含下载功能。具有良好的缩略图视图以便快速浏览整个画廊情况。
 
 ![预览](.assets/preview.jpg "预览")
-![大图](.assets/big-image-reading.jpg "大图")
+![大图](.assets/big_image_reading.jpg "大图")
 
 ## 特性
 

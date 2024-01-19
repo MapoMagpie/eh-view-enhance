@@ -1,6 +1,8 @@
 # Cosmos Manga View
 > This is a script can reading manga, download gallery. Has a good thumbnail view for quick browsing of the whole gallery.
 
+[中文](https://github.com/MapoMagpie/eh-view-enhance/blob/master/README_CN.md)
+
 ![preview](.assets/preview.jpg "预览")
 ![reading](.assets/big_image_reading.jpg "大图")
 

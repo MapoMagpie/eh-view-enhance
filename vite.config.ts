@@ -39,6 +39,7 @@ export default defineConfig({
           'hitomi.la',
           'akamaihd.net',
           'i.pximg.net',
+          'ehgt.org',
         ],
         grant: ['GM_xmlhttpRequest', 'GM_setValue', 'GM_getValue'],
         require: [

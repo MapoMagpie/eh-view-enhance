@@ -234,7 +234,7 @@ export class BigImageFrameManager {
     this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
       this.callbackOnShow?.();
       this.html.pageHelper.classList.add("p-minify")
-      //获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
+      // 获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
       let start = this.queue.currIndex;
       if (event && event.target) {
         start = this.queue.findImgIndex(event.target as HTMLElement);

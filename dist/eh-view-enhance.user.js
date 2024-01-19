@@ -25,6 +25,7 @@
 // @connect            hitomi.la
 // @connect            akamaihd.net
 // @connect            i.pximg.net
+// @connect            ehgt.org
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -145,6 +146,14 @@
         "Cache-Control": "public,max-age=3600,immutable"
       },
       ...cb
+    });
+  }
+  function fetchImage(url) {
+    return new Promise((resolve, reject) => {
+      xhrWapper(url, "blob", {
+        onload: (response) => resolve(response.response),
+        onerror: (error) => reject(error)
+      });
     });
   }
 
@@ -1318,6 +1327,37 @@
     }
   }
 
+  function parseImagePositions(styles) {
+    return styles.map((st) => {
+      const [x, y] = st.backgroundPosition.split(" ").map((v) => Math.abs(parseInt(v)));
+      return { x, y, width: parseInt(st.width), height: parseInt(st.height) };
+    });
+  }
+  function splitSpriteImage(image, positions) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const result = [];
+    for (const pos of positions) {
+      canvas.width = pos.width;
+      canvas.height = pos.height;
+      ctx.drawImage(image, pos.x, pos.y, pos.width, pos.height, 0, 0, pos.width, pos.height);
+      result.push(canvas.toDataURL());
+    }
+    canvas.remove();
+    return result;
+  }
+  async function splitImagesFromUrl(url, nodes) {
+    url = URL.createObjectURL(await fetchImage(url));
+    const img = await new Promise((resolve, reject) => {
+      let img2 = new Image();
+      img2.onload = () => resolve(img2);
+      img2.onerror = () => reject(new Error("load sprite image error"));
+      img2.src = url;
+    });
+    URL.revokeObjectURL(url);
+    return splitSpriteImage(img, parseImagePositions(nodes.map((n) => n.style)));
+  }
+
   const regulars = {
     /** 有压缩的大图地址 */
     normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
@@ -1328,7 +1368,9 @@
     /** 是否开启自动多页查看器 */
     isMPV: /https?:\/\/e[-x]hentai.org\/mpv\/\w+\/\w+\/#page\w/,
     /** 多页查看器图片列表提取 */
-    mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g
+    mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g,
+    /** 精灵图地址提取 */
+    sprite: /url\((.*?)\)/
   };
   class EHMatcher {
     work(_) {
@@ -1382,14 +1424,19 @@
       if (!doc) {
         throw new Error("warn: eh matcher failed to get document from source page!");
       }
-      const nodes = doc.querySelectorAll("#gdt a");
-      if (!nodes || nodes.length == 0) {
+      let isSprite = true;
+      let query = doc.querySelectorAll("#gdt .gdtm > div");
+      if (!query || query.length == 0) {
+        isSprite = false;
+        query = doc.querySelectorAll("#gdt .gdtl");
+      }
+      if (!query || query.length == 0) {
         throw new Error("warn: failed query image nodes!");
       }
-      const node0 = nodes[0];
-      const href = node0.getAttribute("href");
-      if (regulars.isMPV.test(href)) {
-        const mpvDoc = await window.fetch(href).then((response) => response.text());
+      const nodes = Array.from(query);
+      const n0 = nodes[0].firstElementChild;
+      if (regulars.isMPV.test(n0.href)) {
+        const mpvDoc = await window.fetch(n0.href).then((response) => response.text());
         const matchs = mpvDoc.matchAll(regulars.mpvImageList);
         const gid = location.pathname.split("/")[2];
         let i = 0;
@@ -1405,24 +1452,37 @@
           newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
           list.push(newImgNode);
         }
-      } else {
-        for (const node of Array.from(nodes)) {
-          const imgNode = node.querySelector("img");
-          if (!imgNode) {
-            throw new Error("Cannot find Image");
+        return list;
+      }
+      let urls = [];
+      if (isSprite) {
+        for (let i = 0; i < nodes.length; i += 20) {
+          const niStyles = nodes[i].style;
+          const url = niStyles.background.match(regulars.sprite)?.[1]?.replaceAll('"', "");
+          if (url) {
+            const splits = await splitImagesFromUrl(url, nodes.slice(i, i + 20));
+            urls.push(...splits);
+          } else {
+            break;
           }
-          const newImgNode = template.cloneNode(true);
-          const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("ahref", node.getAttribute("href"));
-          newImg.setAttribute("asrc", imgNode.src);
-          newImg.setAttribute("title", imgNode.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg");
-          list.push(newImgNode);
         }
+      } else {
+        if (urls.length == 0) {
+          urls = nodes.map((n) => n.firstElementChild.firstElementChild.src);
+        }
+      }
+      for (let i = 0; i < nodes.length; i++) {
+        const newImgNode = template.cloneNode(true);
+        const newImg = newImgNode.firstElementChild;
+        newImg.setAttribute("ahref", nodes[i].querySelector("a").href);
+        newImg.setAttribute("asrc", urls[i]);
+        newImg.setAttribute("title", nodes[i].querySelector("img").getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg");
+        list.push(newImgNode);
       }
       return list;
     }
     async *fetchPagesSource() {
-      let fristHref = document.querySelector(".gdtl a")?.getAttribute("href");
+      let fristHref = document.querySelector("#gdt a")?.getAttribute("href");
       if (fristHref && regulars.isMPV.test(fristHref)) {
         yield { raw: window.location.href, typ: "url" };
         return;

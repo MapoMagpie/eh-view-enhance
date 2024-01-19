@@ -1,6 +1,7 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import { evLog } from "../utils/ev-log";
+import { splitImagesFromUrl } from "../utils/sprite-split";
 import { Matcher, PagesSource } from "./platform";
 
 // EHMatcher
@@ -15,6 +16,8 @@ const regulars = {
   isMPV: /https?:\/\/e[-x]hentai.org\/mpv\/\w+\/\w+\/#page\w/,
   /** 多页查看器图片列表提取 */
   mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g,
+  /** 精灵图地址提取 */
+  sprite: /url\((.*?)\)/,
 }
 
 export class EHMatcher implements Matcher {
@@ -73,16 +76,21 @@ export class EHMatcher implements Matcher {
       throw new Error("warn: eh matcher failed to get document from source page!")
     }
 
-    const nodes = doc.querySelectorAll("#gdt a");
-    if (!nodes || nodes.length == 0) {
+    let isSprite = true;
+    let query = doc.querySelectorAll<HTMLDivElement>("#gdt .gdtm > div");
+    if (!query || query.length == 0) {
+      isSprite = false;
+      query = doc.querySelectorAll<HTMLDivElement>("#gdt .gdtl");
+    }
+    if (!query || query.length == 0) {
       throw new Error("warn: failed query image nodes!")
     }
+    const nodes = Array.from(query);
 
-    const node0 = nodes[0];
-    // MPV
-    const href = node0.getAttribute("href")!;
-    if (regulars.isMPV.test(href)) {
-      const mpvDoc = await window.fetch(href).then((response) => response.text());
+    // Multi-page viewer
+    const n0 = nodes[0].firstElementChild as HTMLAnchorElement;
+    if (regulars.isMPV.test(n0.href)) {
+      const mpvDoc = await window.fetch(n0.href).then((response) => response.text());
       const matchs = mpvDoc.matchAll(regulars.mpvImageList);
       const gid = location.pathname.split("/")[2];
       let i = 0;
@@ -98,25 +106,44 @@ export class EHMatcher implements Matcher {
         newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
         list.push(newImgNode);
       }
-    } else { // normal
-      for (const node of Array.from(nodes)) {
-        const imgNode = node.querySelector("img");
-        if (!imgNode) {
-          throw new Error("Cannot find Image");
+      return list;
+    }
+
+    let urls: string[] = [];
+
+    // sprite thumbnails
+    if (isSprite) {
+      for (let i = 0; i < nodes.length; i += 20) {
+        const niStyles = nodes[i].style;
+        const url = niStyles.background.match(regulars.sprite)?.[1]?.replaceAll("\"", "");
+        if (url) {
+          const splits = await splitImagesFromUrl(url, nodes.slice(i, i + 20));
+          urls.push(...splits);
+        } else {
+          break;
         }
-        const newImgNode = template.cloneNode(true) as HTMLDivElement;
-        const newImg = newImgNode.firstElementChild as HTMLImageElement;
-        newImg.setAttribute("ahref", node.getAttribute("href")!);
-        newImg.setAttribute("asrc", imgNode.src);
-        newImg.setAttribute("title", imgNode.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg");
-        list.push(newImgNode);
       }
+    }
+    // large thumbnails
+    else {
+      if (urls.length == 0) {
+        urls = nodes.map(n => (n.firstElementChild!.firstElementChild as HTMLImageElement).src);
+      }
+    }
+
+    for (let i = 0; i < nodes.length; i++) {
+      const newImgNode = template.cloneNode(true) as HTMLDivElement;
+      const newImg = newImgNode.firstElementChild as HTMLImageElement;
+      newImg.setAttribute("ahref", nodes[i].querySelector("a")!.href);
+      newImg.setAttribute("asrc", urls[i]);
+      newImg.setAttribute("title", nodes[i].querySelector("img")!.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg");
+      list.push(newImgNode);
     }
     return list;
   }
 
   public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    let fristHref = document.querySelector(".gdtl a")?.getAttribute("href");
+    let fristHref = document.querySelector("#gdt a")?.getAttribute("href");
     if (fristHref && regulars.isMPV.test(fristHref)) {
       yield { raw: window.location.href, typ: "url" };
       return;
@@ -172,3 +199,4 @@ export class EHMatcher implements Matcher {
     }
   }
 }
+

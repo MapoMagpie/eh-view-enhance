@@ -35,3 +35,12 @@ export function xhrWapper<T extends RespType>(url: string, respType: T, cb: Even
     ...cb
   });
 }
+
+export function fetchImage(url: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    xhrWapper(url, "blob", {
+      onload: (response) => resolve(response.response),
+      onerror: (error) => reject(error)
+    });
+  });
+}

@@ -225,10 +225,6 @@ export class IMGFetcher {
     if (this.bigImageUrl?.startsWith("blob:")) {
       return await fetch(this.bigImageUrl).then(resp => resp.blob());
     }
-    // make fake large image blob
-    // if (true) {
-    //   return new Blob([new ArrayBuffer(1024 * 1024 * 30)], { type: "image/jpeg" });
-    // }
     const imgFetcher = this;
     return new Promise(async (resolve, reject) => {
       xhrWapper(imgFetcher.bigImageUrl!, "blob", {

@@ -108,7 +108,7 @@ export class BigImageFrameManager {
     } else {
       this.hammer?.get("swipe").set({ enable: true });
     }
-    this.restoreScrollTop(this.currImageNode, 0, 0);
+    this.currImageNode.scrollIntoView();
   }
 
   initFrame() {
@@ -311,27 +311,19 @@ export class BigImageFrameManager {
     this.throttler.addEvent("SCROLL", () => {
       // delay to reduce the image element in big image frame;
       this.debouncer.addEvent("REDUCE", () => {
-        let imgNodes = this.getImgNodes();
-        let index = this.findImgNodeIndexOnCenter(imgNodes, 0);
-        const centerNode = imgNodes[index];
-        const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
+        const distance = this.getRealOffsetTop(this.currImageNode!) - this.frame.scrollTop;
         if (this.tryReduce()) {
-          this.restoreScrollTop(centerNode, distance, 0);
+          this.restoreScrollTop(this.currImageNode!, distance);
         }
-      }, 200);
-
+      }, 500);
       let imgNodes = this.getImgNodes();
-      let index = this.findImgNodeIndexOnCenter(imgNodes, 0);
+      let index = this.findImgNodeIndexOnCenter(imgNodes);
       const centerNode = imgNodes[index];
       this.currImageNode = centerNode;
-
-      // record the distance of the centerNode from the top of the screen
-      const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
-
-      // try extend imgNodes, if success, index will be changed
-      const indexOffset = this.tryExtend();
-      if (indexOffset !== 0) {
-        this.restoreScrollTop(centerNode, distance, 0);
+      const distance = this.getRealOffsetTop(this.currImageNode) - this.frame.scrollTop;
+      // try extend imgNodes
+      if (this.tryExtend() > 0) {
+        this.restoreScrollTop(this.currImageNode, distance);
       }
       const indexOfQueue = parseInt(this.currImageNode!.getAttribute("d-index")!);
       // queue.do() > imgFetcher.setNow() > this.setNow() > this.init(); 
@@ -340,15 +332,12 @@ export class BigImageFrameManager {
         this.lockInit = true; // set true for prevent this.init()
         this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
       }
-    }, 100)
+    }, 60)
   }
 
-  restoreScrollTop(imgNode: HTMLImageElement, distance: number, deltaY: number) {
-    imgNode.scrollIntoView();
-    if (distance !== 0 || deltaY !== 0) {
-      imgNode.scrollIntoView({});
-      this.frame.scrollTo({ top: imgNode.offsetTop - distance + deltaY, behavior: "instant" });
-    }
+  restoreScrollTop(imgNode: HTMLImageElement, distance: number) {
+    imgNode.scrollIntoView({});
+    this.frame.scrollTo({ top: imgNode.offsetTop - distance, behavior: "instant" });
   }
 
   /**
@@ -564,11 +553,11 @@ export class BigImageFrameManager {
     return [stepImage, distance];
   }
 
-  findImgNodeIndexOnCenter(imgNodes: HTMLImageElement[], fixOffset: number): number {
+  findImgNodeIndexOnCenter(imgNodes: HTMLImageElement[]): number {
     const centerLine = this.frame.offsetHeight / 2;
     for (let i = 0; i < imgNodes.length; i++) {
       const imgNode = imgNodes[i];
-      const realOffsetTop = imgNode.offsetTop + fixOffset - this.frame.scrollTop;
+      const realOffsetTop = imgNode.offsetTop - this.frame.scrollTop;
       if (realOffsetTop < centerLine && realOffsetTop + imgNode.offsetHeight >= centerLine) {
         return i;
       }

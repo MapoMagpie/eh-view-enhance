@@ -11,12 +11,14 @@ import { createHTML, addEventListeners } from "./ui/html";
 import { PageHelper } from "./ui/page-helper";
 import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
 import { evLog } from "./utils/ev-log";
+import revertMonkeyPatch from "./utils/revert-monkey-patch";
 
-const MATCHER = adaptMatcher();
 type DestoryFunc = () => void;
+const MATCHER = adaptMatcher();
 
 function main(): DestoryFunc {
   const HTML = createHTML();
+  [HTML.fullViewPlane, HTML.bigImageFrame].forEach(e => revertMonkeyPatch(e));
   const IFQ: IMGFetcherQueue = new IMGFetcherQueue();
   const IL: IdleLoader = new IdleLoader(IFQ);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, IFQ);
@@ -108,7 +110,6 @@ function main(): DestoryFunc {
   window.addEventListener('popstate', () => {
     window.dispatchEvent(new Event('locationchange'));
   });
-
 })();
 
 let destoryFunc: () => void;

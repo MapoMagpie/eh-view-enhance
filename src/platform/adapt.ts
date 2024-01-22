@@ -4,6 +4,7 @@ import { NHMatcher } from "./nhentai";
 import { Pixiv } from "./pixiv";
 import { Matcher } from "./platform";
 import { SteamMatcher } from "./steam";
+import { YandeMatcher } from "./yande";
 
 export function adaptMatcher(): Matcher {
   const host = window.location.host;
@@ -18,6 +19,9 @@ export function adaptMatcher(): Matcher {
   }
   if (host.endsWith("pixiv.net")) {
     return new Pixiv();
+  }
+  if (host === "yande.re") {
+    return new YandeMatcher();
   }
   return new EHMatcher();
 }

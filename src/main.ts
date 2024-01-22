@@ -10,6 +10,7 @@ import { initEvents } from "./ui/event";
 import { createHTML, addEventListeners } from "./ui/html";
 import { PageHelper } from "./ui/page-helper";
 import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
+import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
 import revertMonkeyPatch from "./utils/revert-monkey-patch";
 
@@ -41,7 +42,7 @@ function main(): DestoryFunc {
   const DL: Downloader = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
   const PH: PageHelper = new PageHelper(HTML);
   IFQ.subscribeOnFinishedReport(1, (index, queue) => {
-    PH.setPageState({ finished: queue.finishedIndex.size });
+    PH.setPageState({ finished: queue.finishedIndex.size.toString() });
     evLog(`第${index + 1}张完成，大图所在第${queue.currIndex + 1}张`);
     if (queue[queue.currIndex].stage === FetchState.DONE) {
       PH.setFetchState("fetched");
@@ -60,17 +61,23 @@ function main(): DestoryFunc {
     return false;
   });
 
+  // one image finished, call PageFetcher.appendNextPages try to append next page
+  const debouncer = new Debouncer();
+  IFQ.subscribeOnFinishedReport(2, (index) => {
+    debouncer.addEvent("APPEND-NEXT-PAGES", () => PF.appendNextPages(index), 5);
+    return false;
+  });
   IFQ.subscribeOnDo(1, (index, queue) => {
-    PH.setPageState({ current: index + 1 });
+    PH.setPageState({ current: (index + 1).toString() });
     const imf = queue[index];
     if (imf.stage !== FetchState.DONE) {
       PH.setFetchState("fetching");
     }
     return false;
   });
-  PF.setOnAppended((total) => {
-    PH.setPageState({ total });
-    setTimeout(() => PF.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight), 200);
+  PF.setOnAppended((total, done) => {
+    PH.setPageState({ total: `${total}${done ? "" : "..."}` });
+    setTimeout(() => PF.renderCurrView(), 200);
   });
 
   const events = initEvents(HTML, BIFM, IFQ, PF, IL);

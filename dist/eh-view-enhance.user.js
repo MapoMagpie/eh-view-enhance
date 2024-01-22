@@ -14,7 +14,9 @@
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*/*
 // @match              https://www.pixiv.net/*
+// @match              https://yande.re/post*
 // @exclude            https://nhentai.net/g/*/*/
+// @exclude            https://yande.re/post/show/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -26,6 +28,7 @@
 // @connect            akamaihd.net
 // @connect            i.pximg.net
 // @connect            ehgt.org
+// @connect            files.yande.re
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -957,8 +960,7 @@
       oriented = oriented || "next";
       this.currIndex = this.fixIndex(start);
       this[this.currIndex].setNow(this.currIndex);
-      let keys = Array.from(this.onDo.keys());
-      keys.sort();
+      let keys = [...this.onDo.keys()].sort();
       for (const key of keys) {
         if (this.onDo.get(key)?.(this.currIndex, this)) {
           return;
@@ -979,8 +981,7 @@
       if (this.dataSize < 1e9) {
         this.dataSize += imgFetcher.data?.byteLength || 0;
       }
-      let keys = Array.from(this.onFinishedReport.keys());
-      keys.sort();
+      let keys = [...this.onFinishedReport.keys()].sort();
       for (const key of keys) {
         if (this.onFinishedReport.get(key)?.(index, this)) {
           return;
@@ -1152,6 +1153,8 @@
     renderRangeRecord = [0, 0];
     beforeInit;
     afterInit;
+    pageSourceIter;
+    appendPageLock = false;
     abortb = false;
     constructor(fullViewPlane, queue, matcher, imgFetcherSettings) {
       this.fullViewPlane = fullViewPlane;
@@ -1172,20 +1175,44 @@
       this.afterInit?.();
     }
     async initPageAppend() {
-      let fetchIter = this.matcher.fetchPagesSource();
-      let first = await fetchIter.next();
+      this.pageSourceIter = this.matcher.fetchPagesSource();
+      let first = await this.pageSourceIter.next();
       if (!first.done) {
         await this.appendPageImg(first.value);
       }
-      this.loadAllPageImg(fetchIter);
+      this.appendNextPages(this.queue.length - 1);
     }
-    async loadAllPageImg(iter) {
-      for await (const page of iter) {
-        if (this.abortb)
+    async appendNextPages(finished) {
+      if (this.appendPageLock)
+        return;
+      try {
+        this.appendPageLock = true;
+        if (this.done || this.abortb)
           return;
-        await this.appendPageImg(page);
+        while (true) {
+          const viewButtom = this.fullViewPlane.scrollTop + this.fullViewPlane.clientHeight;
+          if (finished !== void 0) {
+            if (finished + 40 < this.queue.length) {
+              break;
+            }
+          } else {
+            const lastImgNode = this.queue[this.queue.length - 1].root;
+            if (viewButtom + this.fullViewPlane.clientHeight * 1.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
+              break;
+            }
+          }
+          const next = await this.pageSourceIter.next();
+          if (next.done) {
+            this.done = true;
+            this.onAppended?.(this.queue.length, true);
+            break;
+          } else {
+            await this.appendPageImg(next.value);
+          }
+        }
+      } finally {
+        this.appendPageLock = false;
       }
-      this.done = true;
     }
     setOnAppended(onAppended) {
       this.onAppended = onAppended;
@@ -1238,12 +1265,11 @@
       return await window.fetch(pageURL).then((response) => response.text());
     }
     /**
-     *当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
-     * @param {当前滚动位置} currTop
-     * @param {窗口高度} clientHeight
+     *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
      */
-    renderCurrView(currTop, clientHeight) {
-      const [startRander, endRander] = this.findOutsideRoundView(currTop, clientHeight);
+    renderCurrView() {
+      const [scrollTop, clientHeight] = [this.fullViewPlane.scrollTop, this.fullViewPlane.clientHeight];
+      const [startRander, endRander] = this.findOutsideRoundView(scrollTop, clientHeight);
       this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
       if (this.queue.dataSize >= 1e9) {
         const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
@@ -1251,10 +1277,6 @@
         evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}, 旧范围是:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, 取消渲染范围是:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
       }
       this.renderRangeRecord = [startRander, endRander];
-    }
-    findOutsideRoundViewNode(currTop, clientHeight) {
-      const [outsideTop, outsideBottom] = this.findOutsideRoundView(currTop, clientHeight);
-      return [this.queue[outsideTop].root, this.queue[outsideBottom].root];
     }
     findOutsideRoundView(currTop, clientHeight) {
       const viewButtom = currTop + clientHeight;
@@ -2449,6 +2471,92 @@ duration ${m.delay / 1e3}`).join("\n");
     }
   }
 
+  class YandeMatcher {
+    work(_) {
+      return true;
+    }
+    async *fetchPagesSource() {
+      let currentE = document.querySelector("em.current")?.textContent || 1;
+      let allA = document.querySelectorAll("div.pagination a");
+      let latestE = allA.length > 0 ? allA[allA.length - 2].textContent || 1 : 1;
+      let curPageNumber = Number(currentE);
+      let latestPageNumber = Number(latestE);
+      const u = new URL(location.href);
+      for (let p = curPageNumber; p <= latestPageNumber; p++) {
+        u.searchParams.set("page", p.toString());
+        yield { raw: u.href, typ: "url" };
+      }
+    }
+    transformBigImageToSample(url) {
+      url = url.replace("image", "sample");
+      url = url.replace(/(yande.re%20\d+)/, "$1%20sample");
+      url = url.replace(".png", ".jpg");
+      return url;
+    }
+    async matchImgURL(url, _) {
+      if (conf.fetchOriginal) {
+        return url;
+      }
+      return this.transformBigImageToSample(url);
+    }
+    async parseImgNodes(page, template) {
+      const list = [];
+      let doc = await (async () => {
+        if (page.raw instanceof Document) {
+          return page.raw;
+        } else {
+          const raw = await window.fetch(page.raw).then((response) => response.text());
+          if (!raw)
+            return null;
+          const domParser = new DOMParser();
+          return domParser.parseFromString(raw, "text/html");
+        }
+      })();
+      if (!doc) {
+        throw new Error("warn: yande matcher failed to get document from source page!");
+      }
+      let url = new URL(page.raw);
+      let titlePrefix = ("page" + url.searchParams.get("page") || "nopage") + " ";
+      let query = doc.querySelectorAll("ul#post-list-posts li");
+      query.forEach((liNode, key) => {
+        let largeImgNode = liNode.querySelector("a.directlink");
+        let previewNode = liNode.querySelector("img.preview");
+        const newImgNode = template.cloneNode(true);
+        const newImg = newImgNode.firstElementChild;
+        newImg.setAttribute("ahref", largeImgNode.href);
+        newImg.setAttribute("asrc", previewNode.src);
+        newImg.setAttribute("title", titlePrefix + ("000" + (key + 1)).slice(-4) + ".jpg" || "untitle.jpg");
+        list.push(newImgNode);
+      });
+      return list;
+    }
+    parseGalleryMeta(doc) {
+      const meta = new GalleryMeta(window.location.href, "yande");
+      let ul = doc.querySelector("ul#tag-sidebar");
+      let tagLabels = [
+        { className: "circle", tagName: "artist" },
+        { className: "artist", tagName: "artist" },
+        { className: "copyright", tagName: "copyright" },
+        { className: "character", tagName: "character" },
+        { className: "general", tagName: "general" }
+        //xp
+      ];
+      tagLabels.forEach((label) => {
+        let elements = ul?.querySelectorAll("li.tag-type-" + label.className);
+        if (!meta.tags[label.tagName])
+          meta.tags[label.tagName] = [];
+        elements?.forEach((e) => {
+          let tag = e?.querySelectorAll("a")[3]?.textContent;
+          if (!!tag)
+            meta.tags[label.tagName].push(tag);
+        });
+        if (meta.tags[label.tagName].length == 0)
+          delete meta.tags[label.tagName];
+      });
+      return meta;
+    }
+  }
+
   function adaptMatcher() {
     const host = window.location.host;
     if (host === "nhentai.net") {
@@ -2462,6 +2570,9 @@ duration ${m.delay / 1e3}`).join("\n");
     }
     if (host.endsWith("pixiv.net")) {
       return new Pixiv();
+    }
+    if (host === "yande.re") {
+      return new YandeMatcher();
     }
     return new EHMatcher();
   }
@@ -2753,7 +2864,8 @@ duration ${m.delay / 1e3}`).join("\n");
     function scrollEvent() {
       if (HTML.fullViewPlane.classList.contains("collapse_full_view"))
         return;
-      PF.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+      PF.renderCurrView();
+      PF.appendNextPages();
     }
     function bigImageWheelEvent(event) {
       IFQ.stepImageEvent(event.deltaY > 0 ? "next" : "prev");
@@ -3679,13 +3791,13 @@ text-align: left;
     }
     setPageState({ total, current, finished }) {
       if (total !== void 0) {
-        this.html.totalPageElement.textContent = total.toString();
+        this.html.totalPageElement.textContent = total;
       }
       if (current !== void 0) {
-        this.html.currPageElement.textContent = current.toString();
+        this.html.currPageElement.textContent = current;
       }
       if (finished !== void 0) {
-        this.html.finishedElement.textContent = finished.toString();
+        this.html.finishedElement.textContent = finished;
       }
     }
   }
@@ -3788,7 +3900,7 @@ text-align: left;
       } else {
         this.hammer?.get("swipe").set({ enable: true });
       }
-      this.restoreScrollTop(this.currImageNode, 0, 0);
+      this.currImageNode.scrollIntoView();
     }
     initFrame() {
       this.frame.addEventListener("wheel", (event) => {
@@ -3976,36 +4088,29 @@ text-align: left;
     consecutive() {
       this.throttler.addEvent("SCROLL", () => {
         this.debouncer.addEvent("REDUCE", () => {
-          let imgNodes2 = this.getImgNodes();
-          let index2 = this.findImgNodeIndexOnCenter(imgNodes2, 0);
-          const centerNode2 = imgNodes2[index2];
-          const distance2 = this.getRealOffsetTop(centerNode2) - this.frame.scrollTop;
+          const distance2 = this.getRealOffsetTop(this.currImageNode) - this.frame.scrollTop;
           if (this.tryReduce()) {
-            this.restoreScrollTop(centerNode2, distance2, 0);
+            this.restoreScrollTop(this.currImageNode, distance2);
           }
-        }, 200);
+        }, 500);
         let imgNodes = this.getImgNodes();
-        let index = this.findImgNodeIndexOnCenter(imgNodes, 0);
+        let index = this.findImgNodeIndexOnCenter(imgNodes);
         const centerNode = imgNodes[index];
         this.currImageNode = centerNode;
-        const distance = this.getRealOffsetTop(centerNode) - this.frame.scrollTop;
-        const indexOffset = this.tryExtend();
-        if (indexOffset !== 0) {
-          this.restoreScrollTop(centerNode, distance, 0);
+        const distance = this.getRealOffsetTop(this.currImageNode) - this.frame.scrollTop;
+        if (this.tryExtend() > 0) {
+          this.restoreScrollTop(this.currImageNode, distance);
         }
         const indexOfQueue = parseInt(this.currImageNode.getAttribute("d-index"));
         if (indexOfQueue != this.queue.currIndex) {
           this.lockInit = true;
           this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
         }
-      }, 100);
+      }, 60);
     }
-    restoreScrollTop(imgNode, distance, deltaY) {
-      imgNode.scrollIntoView();
-      if (distance !== 0 || deltaY !== 0) {
-        imgNode.scrollIntoView({});
-        this.frame.scrollTo({ top: imgNode.offsetTop - distance + deltaY, behavior: "instant" });
-      }
+    restoreScrollTop(imgNode, distance) {
+      imgNode.scrollIntoView({});
+      this.frame.scrollTo({ top: imgNode.offsetTop - distance, behavior: "instant" });
     }
     /**
      * Usually, when the central image occupies the full height of the screen, 
@@ -4210,11 +4315,11 @@ text-align: left;
       }
       return [stepImage, distance];
     }
-    findImgNodeIndexOnCenter(imgNodes, fixOffset) {
+    findImgNodeIndexOnCenter(imgNodes) {
       const centerLine = this.frame.offsetHeight / 2;
       for (let i = 0; i < imgNodes.length; i++) {
         const imgNode = imgNodes[i];
-        const realOffsetTop = imgNode.offsetTop + fixOffset - this.frame.scrollTop;
+        const realOffsetTop = imgNode.offsetTop - this.frame.scrollTop;
         if (realOffsetTop < centerLine && realOffsetTop + imgNode.offsetHeight >= centerLine) {
           return i;
         }
@@ -4306,9 +4411,19 @@ text-align: left;
     }
   }
 
+  function revertMonkeyPatch(element) {
+    const originalScrollTo = Element.prototype.scrollTo;
+    Object.defineProperty(element, "scrollTo", {
+      value: originalScrollTo,
+      writable: true,
+      configurable: true
+    });
+  }
+
   const MATCHER = adaptMatcher();
   function main() {
     const HTML = createHTML();
+    [HTML.fullViewPlane, HTML.bigImageFrame].forEach((e) => revertMonkeyPatch(e));
     const IFQ = new IMGFetcherQueue();
     const IL = new IdleLoader(IFQ);
     const BIFM = new BigImageFrameManager(HTML, IFQ);
@@ -4331,7 +4446,7 @@ text-align: left;
     const DL = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
     const PH = new PageHelper(HTML);
     IFQ.subscribeOnFinishedReport(1, (index, queue) => {
-      PH.setPageState({ finished: queue.finishedIndex.size });
+      PH.setPageState({ finished: queue.finishedIndex.size.toString() });
       evLog(`第${index + 1}张完成，大图所在第${queue.currIndex + 1}张`);
       if (queue[queue.currIndex].stage === FetchState.DONE) {
         PH.setFetchState("fetched");
@@ -4348,17 +4463,22 @@ text-align: left;
       HTML.fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
       return false;
     });
+    const debouncer = new Debouncer();
+    IFQ.subscribeOnFinishedReport(2, (index) => {
+      debouncer.addEvent("APPEND-NEXT-PAGES", () => PF.appendNextPages(index), 5);
+      return false;
+    });
     IFQ.subscribeOnDo(1, (index, queue) => {
-      PH.setPageState({ current: index + 1 });
+      PH.setPageState({ current: (index + 1).toString() });
       const imf = queue[index];
       if (imf.stage !== FetchState.DONE) {
         PH.setFetchState("fetching");
       }
       return false;
     });
-    PF.setOnAppended((total) => {
-      PH.setPageState({ total });
-      setTimeout(() => PF.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight), 200);
+    PF.setOnAppended((total, done) => {
+      PH.setPageState({ total: `${total}${done ? "" : "..."}` });
+      setTimeout(() => PF.renderCurrView(), 200);
     });
     const events = initEvents(HTML, BIFM, IFQ, PF, IL);
     addEventListeners(events, HTML, BIFM, IFQ, DL);

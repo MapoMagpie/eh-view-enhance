@@ -1,10 +1,7 @@
-
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import { Matcher, PagesSource } from "./platform";
 
-// Echo page have 40 images, 25 * 40 = 1000
-const DefaultFetchPageNumber = 25;
 export class YandeMatcher implements Matcher {
   work(_: string): boolean {
     return true;
@@ -18,16 +15,16 @@ export class YandeMatcher implements Matcher {
     let curPageNumber = Number(currentE); // 20 +25
     let latestPageNumber = Number(latestE);
 
-    let maxPageNumber = curPageNumber + DefaultFetchPageNumber;
-    if (latestPageNumber < DefaultFetchPageNumber) {
-      maxPageNumber = latestPageNumber
-    }
-    console.log(curPageNumber, maxPageNumber, latestPageNumber)
+    // let maxPageNumber = curPageNumber + DefaultFetchPageNumber;
+    // if (latestPageNumber < DefaultFetchPageNumber) {
+    //   maxPageNumber = latestPageNumber
+    // }
+    // console.log(curPageNumber, maxPageNumber, latestPageNumber)
 
     const u = new URL(location.href);
-    for (let p = curPageNumber; p <= maxPageNumber; p++) {
+    for (let p = curPageNumber; p <= latestPageNumber; p++) {
       u.searchParams.set("page", p.toString());
-      console.log(u.href);
+      // console.log(u.href);
       yield { raw: u.href, typ: "url" };
     }
   }

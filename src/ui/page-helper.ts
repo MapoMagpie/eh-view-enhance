@@ -13,15 +13,15 @@ export class PageHelper {
     }
   }
 
-  setPageState({ total, current, finished }: { total?: number, current?: number, finished?: number }) {
+  setPageState({ total, current, finished }: { total?: string, current?: string, finished?: string }) {
     if (total !== undefined) {
-      this.html.totalPageElement.textContent = total.toString();
+      this.html.totalPageElement.textContent = total;
     }
     if (current !== undefined) {
-      this.html.currPageElement.textContent = current.toString();
+      this.html.currPageElement.textContent = current;
     }
     if (finished !== undefined) {
-      this.html.finishedElement.textContent = finished.toString();
+      this.html.finishedElement.textContent = finished;
     }
   }
 }

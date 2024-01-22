@@ -15,11 +15,13 @@ export class PageFetcher {
   imgAppends: Record<"prev" | "next", AsyncAppendFunc[]>;
   matcher: Matcher;
   done: boolean = false;
-  onAppended?: (total: number) => void;
+  onAppended?: (total: number, done?: boolean) => void;
   imgFetcherSettings: IMGFetcherSettings;
   renderRangeRecord: [number, number] = [0, 0];
   beforeInit?: () => void;
   afterInit?: () => void;
+  private pageSourceIter?: AsyncGenerator<PagesSource>;
+  private appendPageLock: boolean = false;
   private abortb: boolean = false;
   constructor(fullViewPlane: HTMLElement, queue: IMGFetcherQueue, matcher: Matcher, imgFetcherSettings: IMGFetcherSettings) {
     this.fullViewPlane = fullViewPlane;
@@ -47,24 +49,51 @@ export class PageFetcher {
   }
 
   async initPageAppend() {
-    let fetchIter = this.matcher.fetchPagesSource();
-    let first = await fetchIter.next();
+    this.pageSourceIter = this.matcher.fetchPagesSource();
+    let first = await this.pageSourceIter.next();
     if (!first.done) {
       await this.appendPageImg(first.value);
     }
-    this.loadAllPageImg(fetchIter);
+    // check iterator is done
+    this.appendNextPages(this.queue.length - 1);
   }
 
-  async loadAllPageImg(iter: AsyncGenerator<PagesSource>) {
-    for await (const page of iter) {
-      if (this.abortb) return;
-      // console.log("page source: ", page)
-      await this.appendPageImg(page);
+  async appendNextPages(finished?: number) {
+    if (this.appendPageLock) return;
+    try {
+      this.appendPageLock = true;
+      if (this.done || this.abortb) return;
+      while (true) {
+        const viewButtom = this.fullViewPlane.scrollTop + this.fullViewPlane.clientHeight;
+        // if finished is not undefined, then append next page until the queue length is 40 more than finished
+        if (finished !== undefined) {
+          if (finished + 40 < this.queue.length) {
+            break;
+          }
+        }
+        // here is triggered by fullViewPlane onscroll
+        else {
+          // find the last image node if overflow (screen height * 2.5), then append next page
+          const lastImgNode = this.queue[this.queue.length - 1].root;
+          if (viewButtom + (this.fullViewPlane.clientHeight * 1.5) < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
+            break;
+          }
+        }
+        const next = await this.pageSourceIter!.next();
+        if (next.done) {
+          this.done = true;
+          this.onAppended?.(this.queue.length, true);
+          break;
+        } else {
+          await this.appendPageImg(next.value);
+        }
+      }
+    } finally {
+      this.appendPageLock = false;
     }
-    this.done = true;
   }
 
-  setOnAppended(onAppended: (total: number) => void) {
+  setOnAppended(onAppended: (total: number, done?: boolean) => void) {
     this.onAppended = onAppended;
   }
 
@@ -120,12 +149,11 @@ export class PageFetcher {
   }
 
   /**
-   *当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
-   * @param {当前滚动位置} currTop
-   * @param {窗口高度} clientHeight
+   *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
    */
-  renderCurrView(currTop: number, clientHeight: number) {
-    const [startRander, endRander] = this.findOutsideRoundView(currTop, clientHeight);
+  renderCurrView() {
+    const [scrollTop, clientHeight] = [this.fullViewPlane.scrollTop, this.fullViewPlane.clientHeight];
+    const [startRander, endRander] = this.findOutsideRoundView(scrollTop, clientHeight);
     this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
     if (this.queue.dataSize >= 1000000000) {
       const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
@@ -133,11 +161,6 @@ export class PageFetcher {
       evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}, 旧范围是:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, 取消渲染范围是:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
     }
     this.renderRangeRecord = [startRander, endRander];
-  }
-
-  findOutsideRoundViewNode(currTop: number, clientHeight: number): [HTMLElement, HTMLElement] {
-    const [outsideTop, outsideBottom] = this.findOutsideRoundView(currTop, clientHeight);
-    return [this.queue[outsideTop].root, this.queue[outsideBottom].root];
   }
 
   findOutsideRoundView(currTop: number, clientHeight: number): [number, number] {

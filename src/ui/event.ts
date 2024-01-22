@@ -128,7 +128,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     //对冒泡的处理
     if (HTML.fullViewPlane.classList.contains("collapse_full_view")) return;
     //根据currTop获取当前滚动高度对应的未渲染缩略图的图片元素
-    PF.renderCurrView(HTML.fullViewPlane.scrollTop, HTML.fullViewPlane.clientHeight);
+    PF.renderCurrView();
+    PF.appendNextPages();
   };
 
   //大图框架元素的滚轮事件/按下鼠标右键滚动则是缩放/直接滚动则是切换到下一张或上一张

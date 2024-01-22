@@ -7,7 +7,7 @@ import { Matcher, PagesSource } from "./platform";
 const DefaultFetchPageNumber = 25;
 export class YandeMatcher implements Matcher {
   work(_: string): boolean {
-      return true;
+    return true;
   }
 
   public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
@@ -17,7 +17,7 @@ export class YandeMatcher implements Matcher {
 
     let curPageNumber = Number(currentE); // 20 +25
     let latestPageNumber = Number(latestE);
-    
+
     let maxPageNumber = curPageNumber + DefaultFetchPageNumber;
     if (latestPageNumber < DefaultFetchPageNumber) {
       maxPageNumber = latestPageNumber
@@ -28,7 +28,7 @@ export class YandeMatcher implements Matcher {
     for (let p = curPageNumber; p <= maxPageNumber; p++) {
       u.searchParams.set("page", p.toString());
       console.log(u.href);
-      yield { raw: u.href, typ: "url"};
+      yield { raw: u.href, typ: "url" };
     }
   }
 
@@ -37,7 +37,7 @@ export class YandeMatcher implements Matcher {
     // yande.re%201145494%20sample
     // let raw = url;
     url = url.replace("image", "sample");
-    url = url.replace(/(yande.re%20\d+)/,  "$1%20sample");
+    url = url.replace(/(yande.re%20\d+)/, "$1%20sample");
     url = url.replace(".png", ".jpg"); // in case if big image is png format
     // console.log(raw + "\n"+url);
     return url;
@@ -78,8 +78,8 @@ export class YandeMatcher implements Matcher {
       const newImgNode = template.cloneNode(true) as HTMLDivElement;
       const newImg = newImgNode.firstElementChild as HTMLImageElement;
       newImg.setAttribute("ahref", largeImgNode!.href);
-      newImg.setAttribute("asrc", previewNode!.src );
-      newImg.setAttribute("title", titlePrefix + ("000"+(key+1)).slice(-4) + ".jpg" || "untitle.jpg");
+      newImg.setAttribute("asrc", previewNode!.src);
+      newImg.setAttribute("title", titlePrefix + ("000" + (key + 1)).slice(-4) + ".jpg" || "untitle.jpg");
       list.push(newImgNode);
     });
 
@@ -91,21 +91,21 @@ export class YandeMatcher implements Matcher {
     let ul = doc.querySelector("ul#tag-sidebar");
 
     let tagLabels = [
-      {className: "circle", tagName: "artist"},
-      {className: "artist", tagName: "artist"},
-      {className: "copyright", tagName: "copyright"},
-      {className: "character", tagName: "character"},
-      {className: "general", tagName: "general"} //xp
+      { className: "circle", tagName: "artist" },
+      { className: "artist", tagName: "artist" },
+      { className: "copyright", tagName: "copyright" },
+      { className: "character", tagName: "character" },
+      { className: "general", tagName: "general" } //xp
     ];
     tagLabels.forEach((label) => {
       let elements = ul?.querySelectorAll<HTMLLIElement>("li.tag-type-" + label.className);
       if (!meta.tags[label.tagName]) meta.tags[label.tagName] = [];
-      elements?.forEach((e)=>{
+      elements?.forEach((e) => {
         let tag = e?.querySelectorAll("a")[3]?.textContent;
         if (!!tag) meta.tags[label.tagName].push(tag);
         // console.log(work, elements, tag);
       });
-      if (meta.tags[label.tagName].length == 0) delete(meta.tags[label.tagName]);
+      if (meta.tags[label.tagName].length == 0) delete (meta.tags[label.tagName]);
     });
     return meta
   }

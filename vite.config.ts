@@ -26,12 +26,12 @@ export default defineConfig({
           'https://yande.re/post*'
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.1.18',
+        version: '4.1.19',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {
-          "": "e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.",
-          "zh-CN": "E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。"
+          "": "Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.",
+          "zh-CN": "提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。"
         },
         connect: [
           'exhentai.org',

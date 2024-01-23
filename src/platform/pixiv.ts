@@ -30,8 +30,6 @@ type UgoiraMeat = {
   error: boolean,
   message: string,
   body: {
-    // src: "https:\/\/i.pximg.net\/img-zip-ugoira\/img\/2023\/12\/31\/21\/30\/57\/114738625_ugoira600x600.zip",
-    // originalSrc: "https:\/\/i.pximg.net\/img-zip-ugoira\/img\/2023\/12\/31\/21\/30\/57\/114738625_ugoira1920x1080.zip",
     // mime_type: "image\/jpeg",
     src: string,
     originalSrc: string,
@@ -67,8 +65,6 @@ export class Pixiv implements Matcher {
     return this.meta;
   }
 
-  // https://www.pixiv.net/ajax/illust/44298524/ugoira_meta?lang=en
-  // TODO: ugoira to modern webm
   public async matchImgURL(url: string, _: boolean): Promise<string> {
     const matches = url.match(PID_EXTRACT);
     if (!matches || matches.length < 2) {
@@ -169,7 +165,7 @@ export class Pixiv implements Matcher {
   }
 
   public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    // find author eg. https://www.pixiv.net/en/users/7210261
+    // find author eg. https://www.pixiv.net/en/users/xxx
     let u = document.querySelector<HTMLAnchorElement>("a[data-gtm-value][href*='/users/']")?.href || window.location.href;
     const author = /users\/(\d+)/.exec(u)?.[1];
     if (!author) {

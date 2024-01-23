@@ -2,10 +2,10 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.18
+// @version            4.1.19
 // @author             MapoMagpie
-// @description        e-hentai.org better viewer, All of thumbnail images exhibited in grid, and show the best quality image.
-// @description:zh-CN  E绅士阅读强化，一目了然的缩略图网格陈列，漫画形式的大图阅读。
+// @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
+// @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
 // @license            MIT
 // @icon               https://exhentai.org/favicon.ico
 // @match              https://exhentai.org/g/*
@@ -2252,8 +2252,6 @@ duration ${m.delay / 1e3}`).join("\n");
       this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
       return this.meta;
     }
-    // https://www.pixiv.net/ajax/illust/44298524/ugoira_meta?lang=en
-    // TODO: ugoira to modern webm
     async matchImgURL(url, _) {
       const matches = url.match(PID_EXTRACT);
       if (!matches || matches.length < 2) {
@@ -4477,7 +4475,7 @@ text-align: left;
       return false;
     });
     PF.setOnAppended((total, done) => {
-      PH.setPageState({ total: `${total}${done ? "" : "..."}` });
+      PH.setPageState({ total: `${total}${done ? "" : ".."}` });
       setTimeout(() => PF.renderCurrView(), 200);
     });
     const events = initEvents(HTML, BIFM, IFQ, PF, IL);

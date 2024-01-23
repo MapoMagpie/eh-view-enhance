@@ -76,7 +76,7 @@ function main(): DestoryFunc {
     return false;
   });
   PF.setOnAppended((total, done) => {
-    PH.setPageState({ total: `${total}${done ? "" : "..."}` });
+    PH.setPageState({ total: `${total}${done ? "" : ".."}` });
     setTimeout(() => PF.renderCurrView(), 200);
   });
 

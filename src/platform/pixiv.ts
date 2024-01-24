@@ -166,7 +166,7 @@ export class Pixiv implements Matcher {
 
   public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     // find author eg. https://www.pixiv.net/en/users/xxx
-    let u = document.querySelector<HTMLAnchorElement>("a[data-gtm-value][href*='/users/']")?.href || window.location.href;
+    let u = document.querySelector<HTMLAnchorElement>("a[data-gtm-value][href*='/users/']")?.href || document.querySelector<HTMLAnchorElement>("a.user-details-icon[href*='/users/']")?.href || window.location.href;
     const author = /users\/(\d+)/.exec(u)?.[1];
     if (!author) {
       throw new Error("Cannot find author id!");

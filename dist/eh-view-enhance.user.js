@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.19
+// @version            4.1.20
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -2343,7 +2343,7 @@ duration ${m.delay / 1e3}`).join("\n");
       return list;
     }
     async *fetchPagesSource() {
-      let u = document.querySelector("a[data-gtm-value][href*='/users/']")?.href || window.location.href;
+      let u = document.querySelector("a[data-gtm-value][href*='/users/']")?.href || document.querySelector("a.user-details-icon[href*='/users/']")?.href || window.location.href;
       const author = /users\/(\d+)/.exec(u)?.[1];
       if (!author) {
         throw new Error("Cannot find author id!");

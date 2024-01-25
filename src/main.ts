@@ -60,10 +60,9 @@ function main(): DestoryFunc {
     HTML.fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
     return false;
   });
-
   // one image finished, call PageFetcher.appendNextPages try to append next page
   const debouncer = new Debouncer();
-  IFQ.subscribeOnFinishedReport(2, (index) => {
+  IFQ.subscribeOnFinishedReport(3, (index) => {
     debouncer.addEvent("APPEND-NEXT-PAGES", () => PF.appendNextPages(index), 5);
     return false;
   });

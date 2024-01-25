@@ -82,22 +82,36 @@ export class FFmpegConvertor {
     return result;
   }
 
-  async convertToGif(files: FileData[], meta?: FrameMeta): Promise<Blob> {
+  async convertTo(files: FileData[], format: "GIF" | "MP4", meta?: FrameMeta): Promise<Blob> {
     await this.check();
     this.taskCount++;
     try {
       const ffmpeg = this.ffmpeg!;
       const randomPrefix = Math.random().toString(36).substring(7);
-      const resultFile = randomPrefix + 'output.gif';
       await this.writeFiles(files, randomPrefix);
 
+      let metaStr: string;
       if (meta) {
-        const metaStr = meta.map(m => `file '${randomPrefix}${m.file}'\nduration ${m.delay / 1000}`).join('\n');
-        await ffmpeg.writeFile(randomPrefix + 'meta.txt', metaStr);
-        await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', randomPrefix + 'meta.txt', resultFile]);
+        metaStr = meta.map(m => `file '${randomPrefix}${m.file}'\nduration ${m.delay / 1000}`).join('\n');
       } else {
-        const inputPattern = randomPrefix + `%0${files[0].name.length}d.${files[0].name.split('.').pop()}`;
-        await ffmpeg.exec(['-f', 'image2', '-framerate', '5', '-i', inputPattern, resultFile]);
+        metaStr = files.map(f => `file '${randomPrefix}${f.name}'\nduration 0.04`).join('\n');
+      }
+      await ffmpeg.writeFile(randomPrefix + 'meta.txt', metaStr);
+
+      let resultFile: string;
+      let mimeType: string;
+      switch (format) {
+        case "GIF":
+          resultFile = randomPrefix + 'output.gif';
+          mimeType = 'image/gif';
+          // ffmpeg -f concat -i test.txt -vf "split [a][b];[a] palettegen=stats_mode=diff [p];[b][p] paletteuse=dither=bayer:bayer_scale=2" output_3.gif
+          await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', randomPrefix + 'meta.txt', '-vf', 'split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=2', resultFile]);
+          break
+        case "MP4":
+          resultFile = randomPrefix + 'output.mp4';
+          mimeType = 'video/mp4';
+          await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', randomPrefix + 'meta.txt', '-c:v', 'h264', '-pix_fmt', 'yuv420p', resultFile]);
+          break
       }
 
       const result = await this.readOutputFile(resultFile);
@@ -110,7 +124,7 @@ export class FFmpegConvertor {
       // delete temp files
       await Promise.all(deletePromise);
 
-      return new Blob([result], { type: 'image/gif' });
+      return new Blob([result], { type: mimeType });
     } finally {
       this.taskCount--;
     }

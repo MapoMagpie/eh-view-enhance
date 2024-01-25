@@ -95,7 +95,7 @@ export class Pixiv implements Matcher {
     if (files.length !== meta.body.frames.length) {
       throw new Error("unpack ugoira file error: file count not equal to meta");
     }
-    const blob = await this.convertor.convertToGif(files, meta.body.frames);
+    const blob = await this.convertor.convertTo(files, "GIF", meta.body.frames);
     return URL.createObjectURL(blob);
 
   }

@@ -1,4 +1,5 @@
 import { GalleryMeta } from "../download/gallery-meta";
+import ImageNode from "../img-node";
 import { Matcher, PagesSource } from "./platform";
 
 
@@ -72,11 +73,11 @@ export class HitomiMather implements Matcher {
     return url;
   }
 
-  public async parseImgNodes(page: PagesSource, template: HTMLElement): Promise<HTMLElement[]> {
+  public async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
     if (!this.info) {
       throw new Error("warn: hitomi gallery info is null!")
     }
-    const list: HTMLElement[] = [];
+    const list: ImageNode[] = [];
     const doc = page.raw as Document;
     const nodes = doc.querySelectorAll<HTMLAnchorElement>(".simplePagerContainer .thumbnail-container a");
     if (!nodes || nodes.length == 0) {
@@ -98,12 +99,12 @@ export class HitomiMather implements Matcher {
       })();
 
       for (let i = 0; i < badge; i++) {
-        const newImgNode = template.cloneNode(true) as HTMLDivElement;
-        const newImg = newImgNode.firstElementChild as HTMLImageElement;
-        newImg.setAttribute("ahref", this.info.files[i + sceneIndex].hash);
-        newImg.setAttribute("asrc", src);
-        newImg.setAttribute("title", this.info.files[i + sceneIndex].name);
-        list.push(newImgNode);
+        const node = new ImageNode(
+          src,
+          this.info.files[i + sceneIndex].hash,
+          this.info.files[i + sceneIndex].name,
+        );
+        list.push(node);
       }
     }
     return list;

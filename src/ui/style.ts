@@ -40,9 +40,51 @@ export function loadStyleSheel() {
   position: relative;
 }
 .fullViewPlane .img-node img {
+  position: relative;
   width: 100%;
-  border: 2px solid white;
+  height: auto;
+  border: 3px solid #fff;
   box-sizing: border-box;
+}
+.img-fetched img {
+  border: 3px solid #602a5c !important;
+}
+.img-fetch-failed img {
+  border: 3px solid red !important;
+}
+.img-fetching img {
+  border: 3px solid #00000000 !important;
+}
+.img-fetching div {
+  position: relative;
+}
+.img-fetching div::after {
+	content: '';
+	position: absolute;
+	z-index: -1;
+  top: 0%;
+  left: 0%;
+	width: 30%;
+	height: 30%;
+	background-color: #ff0000;
+	animation: img-loading 1s linear infinite;
+}
+@keyframes img-loading {
+	25% {
+    background-color: #ff00ff;
+    top: 0%;
+    left: 70%;
+	}
+	50% {
+    background-color: #00ffff;
+    top: 70%;
+    left: 70%;
+	}
+	75% {
+    background-color: #ffff00;
+    top: 70%;
+    left: 0%;
+	}
 }
 .collapse_full_view {
   height: 0;
@@ -289,18 +331,6 @@ export function loadStyleSheel() {
   font-weight: 900;
   background: rgb(81, 81, 81);
   vertical-align: middle;
-}
-.fetched {
-  border: 2px solid #602a5c !important;
-}
-.fetch-failed {
-  border: 2px solid red !important;
-}
-.fetching {
-  padding: 2px;
-  border: none !important;
-  animation: 1s linear infinite cco;
-  -webkit-animation: 1s linear infinite cco;
 }
 .pageHelperFetching {
   border: none !important;

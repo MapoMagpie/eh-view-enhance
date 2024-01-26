@@ -1,4 +1,5 @@
 import { GalleryMeta } from "../download/gallery-meta";
+import ImageNode from "../img-node";
 import { Matcher, PagesSource } from "./platform";
 
 const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
@@ -52,8 +53,8 @@ export class NHMatcher implements Matcher {
     return NH_IMG_URL_REGEX.exec(text)![1];
   }
 
-  public async parseImgNodes(page: PagesSource, template: HTMLElement): Promise<HTMLElement[]> {
-    const list: HTMLElement[] = [];
+  public async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
+    const list: ImageNode[] = [];
 
     const nodes = (page.raw as Document).querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb");
     if (!nodes || nodes.length == 0) {
@@ -67,12 +68,12 @@ export class NHMatcher implements Matcher {
       if (!imgNode) {
         throw new Error("Cannot find Image");
       }
-      const newImgNode = template.cloneNode(true) as HTMLDivElement;
-      const newImg = newImgNode.firstElementChild as HTMLImageElement;
-      newImg.setAttribute("ahref", location.origin + node.getAttribute("href")!);
-      newImg.setAttribute("asrc", imgNode.getAttribute("data-src")!);
-      newImg.setAttribute("title", imgNode.getAttribute("title") || `${i}.jpg`);
-      list.push(newImgNode);
+      const newNode = new ImageNode(
+        imgNode.getAttribute("data-src")!,
+        location.origin + node.getAttribute("href")!,
+        imgNode.getAttribute("title") || `${i}.jpg`,
+      );
+      list.push(newNode);
     }
     return list;
   }

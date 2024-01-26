@@ -1,8 +1,9 @@
+import ImageNode from "./img-node";
 import { Matcher } from "./platform/platform";
 import { evLog } from "./utils/ev-log";
 import { xhrWapper } from "./utils/query";
 
-type DownloadState = {
+export type DownloadState = {
   total: number;
   loaded: number;
   /**
@@ -32,10 +33,8 @@ export type IMGFetcherSettings = {
 }
 
 export class IMGFetcher {
-  root: HTMLElement;
-  imgElement: HTMLImageElement;
-  pageUrl: string;
-  bigImageUrl?: string;
+  node: ImageNode;
+  originURL?: string;
   stage: FetchState = FetchState.URL;
   tryTimes: number = 0;
   lock: boolean = false;
@@ -44,7 +43,6 @@ export class IMGFetcher {
   data?: Uint8Array;
   contentType?: string;
   blobUrl?: string;
-  title: string;
   downloadState: DownloadState;
   onFinishedEventContext: Map<string, ResultCallback>;
   onFailedEventContext: Map<string, ResultCallback>;
@@ -52,11 +50,9 @@ export class IMGFetcher {
   timeoutId?: number;
   settings: IMGFetcherSettings;
 
-  constructor(node: HTMLElement, settings: IMGFetcherSettings) {
-    this.root = node;
-    this.imgElement = node.firstChild as HTMLImageElement;
-    this.pageUrl = this.imgElement.getAttribute("ahref")!;
-    this.title = this.imgElement.getAttribute("title") || "untitle.jpg";
+  constructor(root: ImageNode, settings: IMGFetcherSettings) {
+    this.node = root;
+    this.node.onclick = (event) => settings.onClick?.(event);
     this.downloadState = { total: 100, loaded: 0, readyState: 0, };
     /**
      * 当获取完成时的回调函数，从其他地方进行事件注册
@@ -64,31 +60,12 @@ export class IMGFetcher {
     this.onFinishedEventContext = new Map();
     this.onFailedEventContext = new Map();
     this.settings = settings;
-    this.root.addEventListener("click", (event) => settings.onClick?.(event));
   }
 
   // 刷新下载状态
   setDownloadState(newState: Partial<DownloadState>) {
     this.downloadState = { ...this.downloadState, ...newState };
-    if (this.downloadState.readyState === 4) {
-      if (this.downloadBar && this.downloadBar.parentNode) {
-        // this.downloadBar.remove(); // in steam, it randomly throw parentNode is null
-        this.downloadBar.parentNode.removeChild(this.downloadBar);
-      }
-      return;
-    }
-    if (!this.downloadBar) {
-      const downloadBar = document.createElement("div");
-      downloadBar.classList.add("downloadBar");
-      downloadBar.innerHTML = `
-      <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
-      `;
-      this.downloadBar = downloadBar;
-      this.root.appendChild(this.downloadBar);
-    }
-    if (this.downloadBar) {
-      this.downloadBar.querySelector("progress")!.setAttribute("value", (this.downloadState.loaded / this.downloadState.total) * 100 + "");
-    }
+    this.node.progress(this.downloadState);
     this.settings.downloadStateReporter?.(this.downloadState);
   }
 
@@ -96,12 +73,12 @@ export class IMGFetcher {
     if (this.lock) return;
     this.lock = true;
     try {
-      this.changeStyle(ChangeStyleAction.ADD);
+      this.node.changeStyle("fetching");
       await this.fetchImage();
-      this.changeStyle(ChangeStyleAction.REMOVE, FetchStatus.SUCCESS);
+      this.node.changeStyle("fetched");
       this.onFinishedEventContext.forEach((callback) => callback(index, this));
     } catch (error) {
-      this.changeStyle(ChangeStyleAction.REMOVE, FetchStatus.FAILED);
+      this.node.changeStyle("failed");
       evLog(`IMG-FETCHER ERROR:`, error);
       this.stage = FetchState.FAILED;
       this.onFailedEventContext.forEach((callback) => callback(index, this));
@@ -121,7 +98,7 @@ export class IMGFetcher {
 
   retry() {
     if (this.stage !== FetchState.DONE) {
-      this.changeStyle(ChangeStyleAction.REMOVE);
+      this.node.changeStyle();
       this.stage = FetchState.URL;
     }
   }
@@ -134,7 +111,7 @@ export class IMGFetcher {
         case FetchState.URL:
           let url = await this.fetchImageURL();
           if (url !== null) {
-            this.bigImageUrl = url;
+            this.originURL = url;
             this.stage = FetchState.DATA;
           } else {
             this.tryTimes++;
@@ -145,9 +122,9 @@ export class IMGFetcher {
           if (ret !== null) {
             [this.data, this.contentType] = ret;
             this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
+            this.node.onloaded(this.blobUrl, this.contentType);
             if (this.rendered === 2) {
-              // this.imgElement.onload = () => this.blobUrl && URL.revokeObjectURL(this.blobUrl);
-              this.imgElement.src = this.blobUrl;
+              this.node.render();
             }
             this.stage = FetchState.DONE;
           } else {
@@ -164,7 +141,7 @@ export class IMGFetcher {
 
   async fetchImageURL(): Promise<string | null> {
     try {
-      const imageURL = await this.settings.matcher.matchImgURL(this.pageUrl, this.tryTimes > 0);
+      const imageURL = await this.settings.matcher.matchImgURL(this.node.href, this.tryTimes > 0);
       if (!imageURL) {
         evLog("Fetch URL failed, the URL is empty");
         return null;
@@ -180,10 +157,9 @@ export class IMGFetcher {
     try {
       const data = await this.fetchBigImage();
       if (data == null) {
-        throw new Error(`Data is null, image url:${this.bigImageUrl}`);
+        throw new Error(`Data is null, image url:${this.originURL}`);
       }
-      const type = data.type;
-      return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), type]);
+      return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
     } catch (error) {
       evLog(`Fetch image data error:`, error);
       return null;
@@ -194,11 +170,7 @@ export class IMGFetcher {
     switch (this.rendered) {
       case 0:
       case 1:
-        if (this.blobUrl) {
-          this.imgElement.src = this.blobUrl;
-        } else {
-          this.imgElement.src = this.imgElement.getAttribute("asrc")!;
-        }
+        this.node.render();
         this.rendered = 2;
         break;
       case 2:
@@ -209,7 +181,7 @@ export class IMGFetcher {
   unrender() {
     if (this.rendered === 1 || this.rendered === 0) return;
     this.rendered = 1;
-    this.imgElement.src = this.imgElement.getAttribute("asrc")!;
+    this.node.unrender();
   }
 
   //立刻将当前元素的src赋值给大图元素
@@ -222,12 +194,12 @@ export class IMGFetcher {
 
 
   async fetchBigImage(): Promise<Blob | null> {
-    if (this.bigImageUrl?.startsWith("blob:")) {
-      return await fetch(this.bigImageUrl).then(resp => resp.blob());
+    if (this.originURL?.startsWith("blob:")) {
+      return await fetch(this.originURL).then(resp => resp.blob());
     }
     const imgFetcher = this;
     return new Promise(async (resolve, reject) => {
-      xhrWapper(imgFetcher.bigImageUrl!, "blob", {
+      xhrWapper(imgFetcher.originURL!, "blob", {
         onload: function(response) {
           let data = response.response;
           if (data.type === "text/html") {
@@ -257,36 +229,5 @@ export class IMGFetcher {
     });
   }
 
-  changeStyle(action: ChangeStyleAction, fetchStatus?: FetchStatus) {
-    switch (action) {
-      case ChangeStyleAction.ADD:
-        this.imgElement.classList.add("fetching");
-        break;
-      case ChangeStyleAction.REMOVE:
-        this.imgElement.classList.remove("fetching");
-        break;
-    }
-    switch (fetchStatus) {
-      case FetchStatus.SUCCESS:
-        this.imgElement.classList.add("fetched");
-        this.imgElement.classList.remove("fetch-failed");
-        break;
-      case FetchStatus.FAILED:
-        this.imgElement.classList.add("fetch-failed");
-        this.imgElement.classList.remove("fetched");
-        break;
-      default:
-        this.imgElement.classList.remove("fetched");
-        this.imgElement.classList.remove("fetch-failed");
-    }
-  }
 }
 
-enum ChangeStyleAction {
-  ADD,
-  REMOVE,
-}
-enum FetchStatus {
-  SUCCESS,
-  FAILED,
-}

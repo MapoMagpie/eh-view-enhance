@@ -1,5 +1,6 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
+import ImageNode from "../img-node";
 import { Matcher, PagesSource } from "./platform";
 
 export class YandeMatcher implements Matcher {
@@ -47,8 +48,8 @@ export class YandeMatcher implements Matcher {
     return this.transformBigImageToSample(url);
   }
 
-  public async parseImgNodes(page: PagesSource, template: HTMLElement): Promise<HTMLElement[] | never> {
-    const list: HTMLElement[] = [];
+  public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
+    const list: ImageNode[] = [];
     let doc = await (async (): Promise<Document | null> => {
       if (page.raw instanceof Document) {
         return page.raw;
@@ -72,12 +73,12 @@ export class YandeMatcher implements Matcher {
     query.forEach((liNode, key) => {
       let largeImgNode = liNode.querySelector<HTMLAnchorElement>("a.directlink")
       let previewNode = liNode.querySelector<HTMLImageElement>("img.preview")
-      const newImgNode = template.cloneNode(true) as HTMLDivElement;
-      const newImg = newImgNode.firstElementChild as HTMLImageElement;
-      newImg.setAttribute("ahref", largeImgNode!.href);
-      newImg.setAttribute("asrc", previewNode!.src);
-      newImg.setAttribute("title", titlePrefix + ("000" + (key + 1)).slice(-4) + ".jpg" || "untitle.jpg");
-      list.push(newImgNode);
+      const newNode = new ImageNode(
+        previewNode!.src,
+        largeImgNode!.href,
+        titlePrefix + ("000" + (key + 1)).slice(-4) + ".jpg" || "untitle.jpg",
+      );
+      list.push(newNode);
     });
 
     return list;

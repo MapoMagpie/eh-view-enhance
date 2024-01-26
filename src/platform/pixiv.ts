@@ -3,6 +3,7 @@ import { GalleryMeta } from "../download/gallery-meta";
 import { evLog } from "../utils/ev-log";
 import { Matcher, PagesSource } from "./platform";
 import { FFmpegConvertor } from "../utils/ffmpeg";
+import ImageNode from "../img-node";
 
 type Page = {
   urls: {
@@ -128,8 +129,8 @@ export class Pixiv implements Matcher {
     }
   }
 
-  public async parseImgNodes(raw: PagesSource, template: HTMLElement): Promise<HTMLElement[]> {
-    const list: HTMLElement[] = [];
+  public async parseImgNodes(raw: PagesSource): Promise<ImageNode[]> {
+    const list: ImageNode[] = [];
     const pidList = JSON.parse(raw.raw as string) as string[];
     // async function but no await, it will fetch tags in background
     this.fetchTagsByPids(pidList);
@@ -152,12 +153,12 @@ export class Pixiv implements Matcher {
           title = title.replace(/\.\w+$/, ".gif");
         }
         j++;
-        const newImgNode = template.cloneNode(true) as HTMLDivElement;
-        const newImg = newImgNode.firstElementChild as HTMLImageElement;
-        newImg.setAttribute("ahref", p.urls.original);
-        newImg.setAttribute("asrc", p.urls.small);
-        newImg.setAttribute("title", title);
-        list.push(newImgNode);
+        const node = new ImageNode(
+          p.urls.small,
+          p.urls.original,
+          title,
+        );
+        list.push(node);
       }
     }
 

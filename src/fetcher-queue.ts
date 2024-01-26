@@ -125,7 +125,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
 
   findImgIndex(ele: HTMLElement): number {
     for (let index = 0; index < this.length; index++) {
-      if (this[index] instanceof IMGFetcher && (this[index].imgElement === ele || this[index].root === ele)) {
+      if (this[index].node.equal(ele)) {
         return index;
       }
     }

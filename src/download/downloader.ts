@@ -54,10 +54,10 @@ export class Downloader {
   needNumberTitle(): boolean {
     let lastTitle = "";
     for (const fetcher of this.queue) {
-      if (fetcher.title < lastTitle) {
+      if (fetcher.node.title < lastTitle) {
         return true
       }
-      lastTitle = fetcher.title;
+      lastTitle = fetcher.node.title;
     }
     return false;
   }
@@ -154,11 +154,11 @@ export class Downloader {
     let files = this.queue
       .filter((imf) => imf.stage === FetchState.DONE && imf.data)
       .map((imf, index) => {
-        console.log("img fetcher :", imf.data?.length, ", title: ", checkTitle(imf.title, index));
+        // console.log("img fetcher :", imf.data?.length, ", title: ", checkTitle(imf.node.title, index));
         return {
           stream: () => Promise.resolve(uint8ArrayToReadableStream(imf.data!)),
           size: () => imf.data!.byteLength,
-          name: checkTitle(imf.title, index)
+          name: checkTitle(imf.node.title, index)
         }
       });
     const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });

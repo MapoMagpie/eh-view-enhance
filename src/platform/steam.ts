@@ -1,4 +1,5 @@
 import { GalleryMeta } from "../download/gallery-meta";
+import ImageNode from "../img-node";
 import { Matcher, PagesSource } from "./platform";
 
 const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
@@ -25,8 +26,8 @@ export class SteamMatcher implements Matcher {
     return imgURL;
   }
 
-  public async parseImgNodes(page: PagesSource, template: HTMLElement): Promise<HTMLElement[] | never> {
-    const list: HTMLElement[] = [];
+  public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
+    const list: ImageNode[] = [];
     const doc = await (async () => {
       if (page.raw instanceof Document) {
         return page.raw
@@ -51,12 +52,12 @@ export class SteamMatcher implements Matcher {
       if (!src) {
         throw new Error(`Cannot Match Steam Image URL, Content: ${node.innerHTML}`);
       }
-      const newImgNode = template.cloneNode(true) as HTMLDivElement;
-      const newImg = newImgNode.firstElementChild as HTMLImageElement;
-      newImg.setAttribute("ahref", node.getAttribute("href")!);
-      newImg.setAttribute("asrc", src);
-      newImg.setAttribute("title", node.getAttribute("data-publishedfileid")! + ".jpg");
-      list.push(newImgNode);
+      const newNode = new ImageNode(
+        src,
+        node.getAttribute("href")!,
+        node.getAttribute("data-publishedfileid")! + ".jpg",
+      );
+      list.push(newNode);
     }
     return list;
   }

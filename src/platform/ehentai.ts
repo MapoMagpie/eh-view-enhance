@@ -1,5 +1,6 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
+import ImageNode from "../img-node";
 import { evLog } from "../utils/ev-log";
 import { splitImagesFromUrl } from "../utils/sprite-split";
 import { Matcher, PagesSource } from "./platform";
@@ -59,8 +60,8 @@ export class EHMatcher implements Matcher {
     return await this.fetchImgURL(url, retry);
   }
 
-  public async parseImgNodes(page: PagesSource, template: HTMLElement): Promise<HTMLElement[] | never> {
-    const list: HTMLElement[] = [];
+  public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
+    const list: ImageNode[] = [];
     let doc = await (async (): Promise<Document | null> => {
       if (page.raw instanceof Document) {
         return page.raw;
@@ -96,15 +97,12 @@ export class EHMatcher implements Matcher {
       let i = 0;
       for (const match of matchs) {
         i++;
-        const newImgNode = template.cloneNode(true) as HTMLDivElement;
-        const newImg = newImgNode.firstElementChild as HTMLImageElement;
-        newImg.setAttribute("title", match[1].replace(/Page\s\d+[:_]\s*/, ""));
-        newImg.setAttribute(
-          "ahref",
-          `${location.origin}/s/${match[2]}/${gid}-${i}`
+        const node = new ImageNode(
+          match[3].replaceAll("\\", ""),
+          `${location.origin}/s/${match[2]}/${gid}-${i}`,
+          match[1].replace(/Page\s\d+[:_]\s*/, "")
         );
-        newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
-        list.push(newImgNode);
+        list.push(node);
       }
       return list;
     }
@@ -132,12 +130,12 @@ export class EHMatcher implements Matcher {
     }
 
     for (let i = 0; i < nodes.length; i++) {
-      const newImgNode = template.cloneNode(true) as HTMLDivElement;
-      const newImg = newImgNode.firstElementChild as HTMLImageElement;
-      newImg.setAttribute("ahref", nodes[i].querySelector("a")!.href);
-      newImg.setAttribute("asrc", urls[i]);
-      newImg.setAttribute("title", nodes[i].querySelector("img")!.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg");
-      list.push(newImgNode);
+      const node = new ImageNode(
+        urls[i],
+        nodes[i].querySelector("a")!.href,
+        nodes[i].querySelector("img")!.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg"
+      );
+      list.push(node);
     }
     return list;
   }

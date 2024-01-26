@@ -440,7 +440,7 @@ export class BigImageFrameManager {
     if (imgFetcher.stage === FetchState.DONE) {
       imgNode.src = imgFetcher.blobUrl!;
     } else {
-      imgNode.src = imgFetcher.imgElement.getAttribute("asrc")!;
+      imgNode.src = imgFetcher.node.src;
       imgFetcher.onFinished("BIG-IMG-SRC-UPDATE", ($index, $imgFetcher) => {
         if ($index === parseInt(imgNode.getAttribute("d-index")!)) {
           imgNode.src = $imgFetcher.blobUrl!;

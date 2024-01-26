@@ -206,7 +206,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
               break;
             }
           }
-          IFQ[start].root.dispatchEvent(new MouseEvent("click"));
+          IFQ[start].node.root?.dispatchEvent(new MouseEvent("click"));
           break;
         }
         case "Escape":

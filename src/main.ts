@@ -55,7 +55,7 @@ function main(): DestoryFunc {
       return false;
     }
     const imgFetcher = queue[index];
-    let scrollTo = imgFetcher.root.offsetTop - window.screen.availHeight / 3;
+    let scrollTo = imgFetcher.node.root!.offsetTop - window.screen.availHeight / 3;
     scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewPlane.scrollHeight ? HTML.fullViewPlane.scrollHeight : scrollTo;
     HTML.fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
     return false;

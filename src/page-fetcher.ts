@@ -1,6 +1,7 @@
 import { conf } from "./config";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher, IMGFetcherSettings } from "./img-fetcher";
+import ImageNode from "./img-node";
 import { Matcher, PagesSource } from "./platform/platform";
 import { evLog } from "./utils/ev-log";
 
@@ -74,7 +75,7 @@ export class PageFetcher {
         // here is triggered by fullViewPlane onscroll
         else {
           // find the last image node if overflow (screen height * 2.5), then append next page
-          const lastImgNode = this.queue[this.queue.length - 1].root;
+          const lastImgNode = this.queue[this.queue.length - 1].node.root!;
           if (viewButtom + (this.fullViewPlane.clientHeight * 1.5) < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
             break;
           }
@@ -99,12 +100,12 @@ export class PageFetcher {
 
   async appendPageImg(page: PagesSource): Promise<boolean> {
     try {
-      const imgNodeList = await this.obtainImageNodeList(page);
+      const nodes = await this.obtainImageNodeList(page);
       if (this.abortb) return false;
-      const IFs = imgNodeList.map(
-        (imgNode) => new IMGFetcher(imgNode as HTMLElement, this.imgFetcherSettings)
+      const IFs = nodes.map(
+        (imgNode) => new IMGFetcher(imgNode, this.imgFetcherSettings)
       );
-      this.fullViewPlane.lastElementChild!.after(...imgNodeList);
+      this.fullViewPlane.lastElementChild!.after(...nodes.map(node => node.create()));
       this.queue.push(...IFs);
       this.onAppended?.(this.queue.length);
       return true;
@@ -115,25 +116,11 @@ export class PageFetcher {
   }
 
   //从文档的字符串中创建缩略图元素列表
-  async obtainImageNodeList(page: PagesSource): Promise<Element[]> {
-    // make node template
-    const imgNodeTemplate = document.createElement("div");
-    imgNodeTemplate.classList.add("img-node");
-    const imgTemplate = document.createElement("img");
-    imgTemplate.setAttribute("decoding", "sync");
-    imgTemplate.setAttribute("loading", "lazy");
-    imgTemplate.setAttribute("title", "untitle.jpg");
-    imgTemplate.style.height = "auto";
-    imgTemplate.setAttribute(
-      "src",
-      "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
-    );
-    imgNodeTemplate.appendChild(imgTemplate);
-
+  async obtainImageNodeList(page: PagesSource): Promise<ImageNode[]> {
     let tryTimes = 0;
     while (tryTimes < 3) {
       try {
-        return await this.matcher.parseImgNodes(page, imgNodeTemplate);
+        return await this.matcher.parseImgNodes(page);
       } catch (error) {
         evLog("warn: parse image nodes failed, retrying: ", error)
         tryTimes++;
@@ -168,7 +155,8 @@ export class PageFetcher {
     let outsideTop: number = 0;
     let outsideBottom: number = 0;
     for (let i = 0; i < this.queue.length; i += conf.colCount) {
-      const { root } = this.queue[i];
+      const { root } = this.queue[i].node;
+      if (!root) continue;
       // 查询最靠近当前视图上边的缩略图索引
       // 缩略图在父元素的位置 - 当前视图上边位置 = 缩略图与当前视图上边的距离，如果距离 >= 0，说明缩略图在当前视图内
       if (outsideBottom === 0) {

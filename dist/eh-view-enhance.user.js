@@ -1562,13 +1562,22 @@
       if (pages.length === 0) {
         throw new Error("未获取到分页元素！");
       }
-      pages = pages.sort((a, b) => a > b ? -1 : 1);
-      const lastPage = pages[0];
-      const url = new URL(lastPage);
-      const total = Number(url.searchParams.get("p")) + 1;
+      let lastPage = 0;
+      let url;
+      for (const page of pages) {
+        const u = new URL(page);
+        const num = parseInt(u.searchParams.get("p") || "0");
+        if (num >= lastPage) {
+          lastPage = num;
+          url = u;
+        }
+      }
+      if (!url) {
+        throw new Error("未获取到分页元素！x2");
+      }
       url.searchParams.delete("p");
       yield { raw: url.href, typ: "url" };
-      for (let p = 1; p < total; p++) {
+      for (let p = 1; p < lastPage + 1; p++) {
         url.searchParams.set("p", p.toString());
         yield { raw: url.href, typ: "url" };
       }
@@ -3906,7 +3915,7 @@ text-align: left;
     HTML.collapseBTN.addEventListener("click", () => events.main(false));
     HTML.gate.addEventListener("click", () => events.main(true));
     const debouncer = new Debouncer();
-    HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 200));
+    HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
     HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
     HTML.currPageElement.addEventListener("click", () => BIFM.show());
     HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event));

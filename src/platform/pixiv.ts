@@ -4,6 +4,7 @@ import { evLog } from "../utils/ev-log";
 import { Matcher, PagesSource } from "./platform";
 import { FFmpegConvertor } from "../utils/ffmpeg";
 import ImageNode from "../img-node";
+import { conf } from "../config";
 
 type Page = {
   urls: {
@@ -96,7 +97,11 @@ export class Pixiv implements Matcher {
     if (files.length !== meta.body.frames.length) {
       throw new Error("unpack ugoira file error: file count not equal to meta");
     }
-    const blob = await this.convertor.convertTo(files, "GIF", meta.body.frames);
+    // record cost time
+    const start = performance.now();
+    const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
+    const end = performance.now();
+    evLog(`convert ugoira to ${conf.convertTo} cost ${(end - start) / 1000} s, size: ${blob.size / 1000} KB, original size: ${data.size / 1000} KB`);
     return URL.createObjectURL(blob);
 
   }

@@ -82,6 +82,7 @@ export class FFmpegConvertor {
     return result;
   }
 
+  // TODO: find a way to reduce time cost; to mp4 30MB takes 50s; to gif 30MB takes 26s
   async convertTo(files: FileData[], format: "GIF" | "MP4", meta?: FrameMeta): Promise<Blob> {
     await this.check();
     this.taskCount++;

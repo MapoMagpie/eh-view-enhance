@@ -110,7 +110,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   };
 
   function hiddenFullViewPlaneEvent(event: Event) {
-    if (event.target === HTML.fullViewPlane) {
+    if (event.target === HTML.fullViewPlane || (event.target as HTMLElement).classList.contains("img-node")) {
       main(false);
     }
   };

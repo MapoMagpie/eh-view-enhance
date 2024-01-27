@@ -122,7 +122,7 @@ export class IMGFetcher {
           if (ret !== null) {
             [this.data, this.contentType] = ret;
             this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
-            this.node.onloaded(this.blobUrl, this.contentType);
+            this.node.onloaded(this.blobUrl, this.contentType, this.data.byteLength);
             if (this.rendered === 2) {
               this.node.render();
             }

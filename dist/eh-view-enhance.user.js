@@ -70,7 +70,8 @@
       autoPlay: false,
       filenameTemplate: "{number}-{title}",
       preventScrollPageTime: 200,
-      archiveVolumeSize: 1500
+      archiveVolumeSize: 1500,
+      convertTo: "GIF"
     };
   }
   const VERSION = "4.1.10";
@@ -107,6 +108,10 @@
     }
     if (!$conf.archiveVolumeSize) {
       $conf.archiveVolumeSize = 1500;
+      changed = true;
+    }
+    if (!$conf.convertTo) {
+      $conf.convertTo = "GIF";
       changed = true;
     }
     if (changed) {
@@ -168,10 +173,8 @@
     return FetchState2;
   })(FetchState || {});
   class IMGFetcher {
-    root;
-    imgElement;
-    pageUrl;
-    bigImageUrl;
+    node;
+    originURL;
     stage = 1 /* URL */;
     tryTimes = 0;
     lock = false;
@@ -180,45 +183,24 @@
     data;
     contentType;
     blobUrl;
-    title;
     downloadState;
     onFinishedEventContext;
     onFailedEventContext;
     downloadBar;
     timeoutId;
     settings;
-    constructor(node, settings) {
-      this.root = node;
-      this.imgElement = node.firstChild;
-      this.pageUrl = this.imgElement.getAttribute("ahref");
-      this.title = this.imgElement.getAttribute("title") || "untitle.jpg";
+    constructor(root, settings) {
+      this.node = root;
+      this.node.onclick = (event) => settings.onClick?.(event);
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
       this.onFinishedEventContext = /* @__PURE__ */ new Map();
       this.onFailedEventContext = /* @__PURE__ */ new Map();
       this.settings = settings;
-      this.root.addEventListener("click", (event) => settings.onClick?.(event));
     }
     // 刷新下载状态
     setDownloadState(newState) {
       this.downloadState = { ...this.downloadState, ...newState };
-      if (this.downloadState.readyState === 4) {
-        if (this.downloadBar && this.downloadBar.parentNode) {
-          this.downloadBar.parentNode.removeChild(this.downloadBar);
-        }
-        return;
-      }
-      if (!this.downloadBar) {
-        const downloadBar = document.createElement("div");
-        downloadBar.classList.add("downloadBar");
-        downloadBar.innerHTML = `
-      <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
-      `;
-        this.downloadBar = downloadBar;
-        this.root.appendChild(this.downloadBar);
-      }
-      if (this.downloadBar) {
-        this.downloadBar.querySelector("progress").setAttribute("value", this.downloadState.loaded / this.downloadState.total * 100 + "");
-      }
+      this.node.progress(this.downloadState);
       this.settings.downloadStateReporter?.(this.downloadState);
     }
     async start(index) {
@@ -226,12 +208,12 @@
         return;
       this.lock = true;
       try {
-        this.changeStyle(0 /* ADD */);
+        this.node.changeStyle("fetching");
         await this.fetchImage();
-        this.changeStyle(1 /* REMOVE */, 0 /* SUCCESS */);
+        this.node.changeStyle("fetched");
         this.onFinishedEventContext.forEach((callback) => callback(index, this));
       } catch (error) {
-        this.changeStyle(1 /* REMOVE */, 1 /* FAILED */);
+        this.node.changeStyle("failed");
         evLog(`IMG-FETCHER ERROR:`, error);
         this.stage = 0 /* FAILED */;
         this.onFailedEventContext.forEach((callback) => callback(index, this));
@@ -247,7 +229,7 @@
     }
     retry() {
       if (this.stage !== 3 /* DONE */) {
-        this.changeStyle(1 /* REMOVE */);
+        this.node.changeStyle();
         this.stage = 1 /* URL */;
       }
     }
@@ -259,7 +241,7 @@
           case 1 /* URL */:
             let url = await this.fetchImageURL();
             if (url !== null) {
-              this.bigImageUrl = url;
+              this.originURL = url;
               this.stage = 2 /* DATA */;
             } else {
               this.tryTimes++;
@@ -270,8 +252,9 @@
             if (ret !== null) {
               [this.data, this.contentType] = ret;
               this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
+              this.node.onloaded(this.blobUrl, this.contentType, this.data.byteLength);
               if (this.rendered === 2) {
-                this.imgElement.src = this.blobUrl;
+                this.node.render();
               }
               this.stage = 3 /* DONE */;
             } else {
@@ -287,7 +270,7 @@
     }
     async fetchImageURL() {
       try {
-        const imageURL = await this.settings.matcher.matchImgURL(this.pageUrl, this.tryTimes > 0);
+        const imageURL = await this.settings.matcher.matchImgURL(this.node.href, this.tryTimes > 0);
         if (!imageURL) {
           evLog("Fetch URL failed, the URL is empty");
           return null;
@@ -302,10 +285,9 @@
       try {
         const data = await this.fetchBigImage();
         if (data == null) {
-          throw new Error(`Data is null, image url:${this.bigImageUrl}`);
+          throw new Error(`Data is null, image url:${this.originURL}`);
         }
-        const type = data.type;
-        return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), type]);
+        return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
       } catch (error) {
         evLog(`Fetch image data error:`, error);
         return null;
@@ -315,11 +297,7 @@
       switch (this.rendered) {
         case 0:
         case 1:
-          if (this.blobUrl) {
-            this.imgElement.src = this.blobUrl;
-          } else {
-            this.imgElement.src = this.imgElement.getAttribute("asrc");
-          }
+          this.node.render();
           this.rendered = 2;
           break;
       }
@@ -328,7 +306,7 @@
       if (this.rendered === 1 || this.rendered === 0)
         return;
       this.rendered = 1;
-      this.imgElement.src = this.imgElement.getAttribute("asrc");
+      this.node.unrender();
     }
     //立刻将当前元素的src赋值给大图元素
     setNow(index) {
@@ -338,12 +316,12 @@
       }
     }
     async fetchBigImage() {
-      if (this.bigImageUrl?.startsWith("blob:")) {
-        return await fetch(this.bigImageUrl).then((resp) => resp.blob());
+      if (this.originURL?.startsWith("blob:")) {
+        return await fetch(this.originURL).then((resp) => resp.blob());
       }
       const imgFetcher = this;
       return new Promise(async (resolve, reject) => {
-        xhrWapper(imgFetcher.bigImageUrl, "blob", {
+        xhrWapper(imgFetcher.originURL, "blob", {
           onload: function(response) {
             let data = response.response;
             if (data.type === "text/html") {
@@ -370,29 +348,6 @@
           }
         });
       });
-    }
-    changeStyle(action, fetchStatus) {
-      switch (action) {
-        case 0 /* ADD */:
-          this.imgElement.classList.add("fetching");
-          break;
-        case 1 /* REMOVE */:
-          this.imgElement.classList.remove("fetching");
-          break;
-      }
-      switch (fetchStatus) {
-        case 0 /* SUCCESS */:
-          this.imgElement.classList.add("fetched");
-          this.imgElement.classList.remove("fetch-failed");
-          break;
-        case 1 /* FAILED */:
-          this.imgElement.classList.add("fetch-failed");
-          this.imgElement.classList.remove("fetched");
-          break;
-        default:
-          this.imgElement.classList.remove("fetched");
-          this.imgElement.classList.remove("fetch-failed");
-      }
     }
   }
 
@@ -775,10 +730,10 @@
     needNumberTitle() {
       let lastTitle = "";
       for (const fetcher of this.queue) {
-        if (fetcher.title < lastTitle) {
+        if (fetcher.node.title < lastTitle) {
           return true;
         }
-        lastTitle = fetcher.title;
+        lastTitle = fetcher.node.title;
       }
       return false;
     }
@@ -858,11 +813,10 @@
         checkTitle = (title, index) => this.checkDuplicateTitle(index, title);
       }
       let files = this.queue.filter((imf) => imf.stage === FetchState.DONE && imf.data).map((imf, index) => {
-        console.log("img fetcher :", imf.data?.length, ", title: ", checkTitle(imf.title, index));
         return {
           stream: () => Promise.resolve(uint8ArrayToReadableStream(imf.data)),
           size: () => imf.data.byteLength,
-          name: checkTitle(imf.title, index)
+          name: checkTitle(imf.node.title, index)
         };
       });
       const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
@@ -1020,7 +974,7 @@
     }
     findImgIndex(ele) {
       for (let index = 0; index < this.length; index++) {
-        if (this[index] instanceof IMGFetcher && (this[index].imgElement === ele || this[index].root === ele)) {
+        if (this[index].node.equal(ele)) {
           return index;
         }
       }
@@ -1196,7 +1150,7 @@
               break;
             }
           } else {
-            const lastImgNode = this.queue[this.queue.length - 1].root;
+            const lastImgNode = this.queue[this.queue.length - 1].node.root;
             if (viewButtom + this.fullViewPlane.clientHeight * 1.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
               break;
             }
@@ -1219,13 +1173,13 @@
     }
     async appendPageImg(page) {
       try {
-        const imgNodeList = await this.obtainImageNodeList(page);
+        const nodes = await this.obtainImageNodeList(page);
         if (this.abortb)
           return false;
-        const IFs = imgNodeList.map(
+        const IFs = nodes.map(
           (imgNode) => new IMGFetcher(imgNode, this.imgFetcherSettings)
         );
-        this.fullViewPlane.lastElementChild.after(...imgNodeList);
+        this.fullViewPlane.lastElementChild.after(...nodes.map((node) => node.create()));
         this.queue.push(...IFs);
         this.onAppended?.(this.queue.length);
         return true;
@@ -1236,22 +1190,10 @@
     }
     //从文档的字符串中创建缩略图元素列表
     async obtainImageNodeList(page) {
-      const imgNodeTemplate = document.createElement("div");
-      imgNodeTemplate.classList.add("img-node");
-      const imgTemplate = document.createElement("img");
-      imgTemplate.setAttribute("decoding", "sync");
-      imgTemplate.setAttribute("loading", "lazy");
-      imgTemplate.setAttribute("title", "untitle.jpg");
-      imgTemplate.style.height = "auto";
-      imgTemplate.setAttribute(
-        "src",
-        "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
-      );
-      imgNodeTemplate.appendChild(imgTemplate);
       let tryTimes = 0;
       while (tryTimes < 3) {
         try {
-          return await this.matcher.parseImgNodes(page, imgNodeTemplate);
+          return await this.matcher.parseImgNodes(page);
         } catch (error) {
           evLog("warn: parse image nodes failed, retrying: ", error);
           tryTimes++;
@@ -1283,7 +1225,9 @@
       let outsideTop = 0;
       let outsideBottom = 0;
       for (let i = 0; i < this.queue.length; i += conf.colCount) {
-        const { root } = this.queue[i];
+        const { root } = this.queue[i].node;
+        if (!root)
+          continue;
         if (outsideBottom === 0) {
           if (root.offsetTop + 2 >= currTop) {
             outsideBottom = i + 1;
@@ -1330,6 +1274,130 @@
       this.url = url;
       this.title = title;
       this.tags = {};
+    }
+  }
+
+  const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
+  const DEFAULT_NODE_TEMPLATE = document.createElement("div");
+  DEFAULT_NODE_TEMPLATE.classList.add("img-node");
+  DEFAULT_NODE_TEMPLATE.innerHTML = `<div><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></div>`;
+  const OVERLAY_TIP = document.createElement("div");
+  OVERLAY_TIP.classList.add("overlay-tip");
+  OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
+  class ImageNode {
+    root;
+    src;
+    href;
+    title;
+    onclick;
+    imgElement;
+    blobUrl;
+    mimeType;
+    size;
+    downloadBar;
+    rendered = false;
+    constructor(src, href, title) {
+      this.src = src;
+      this.href = href;
+      this.title = title;
+    }
+    create() {
+      this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
+      this.imgElement = this.root.firstElementChild.firstElementChild;
+      this.imgElement.setAttribute("title", this.title);
+      if (this.onclick) {
+        this.imgElement.addEventListener("click", this.onclick);
+      }
+      return this.root;
+    }
+    render() {
+      if (this.imgElement) {
+        this.rendered = true;
+        if (this.mimeType === "image/gif") {
+          const tip = OVERLAY_TIP.cloneNode(true);
+          tip.firstChild.textContent = "GIF";
+          this.root?.appendChild(tip);
+          if (this.size && this.size > 20 * 1024 * 1024) {
+            return;
+          }
+        }
+        if (this.mimeType === "video/mp4") {
+          const tip = OVERLAY_TIP.cloneNode(true);
+          tip.firstChild.textContent = "MP4";
+          this.root?.appendChild(tip);
+          return;
+        }
+        if (this.blobUrl) {
+          this.imgElement.src = this.blobUrl;
+        } else {
+          this.imgElement.src = this.src;
+        }
+      }
+    }
+    unrender() {
+      if (!this.rendered)
+        return;
+      if (this.imgElement) {
+        this.imgElement.src = this.src;
+      }
+    }
+    onloaded(blobUrl, mimeType, size) {
+      this.blobUrl = blobUrl;
+      this.mimeType = mimeType;
+      this.size = size;
+    }
+    progress(state) {
+      if (state.readyState === 4) {
+        if (this.downloadBar && this.downloadBar.parentNode) {
+          this.downloadBar.parentNode.removeChild(this.downloadBar);
+        }
+        return;
+      }
+      if (!this.downloadBar) {
+        const downloadBar = document.createElement("div");
+        downloadBar.classList.add("downloadBar");
+        downloadBar.innerHTML = `
+      <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
+      `;
+        this.downloadBar = downloadBar;
+        this.root.firstElementChild.appendChild(this.downloadBar);
+      }
+      if (this.downloadBar) {
+        this.downloadBar.querySelector("progress").setAttribute("value", state.loaded / state.total * 100 + "");
+      }
+    }
+    changeStyle(fetchStatus) {
+      if (!this.root)
+        return;
+      switch (fetchStatus) {
+        case "fetching":
+          this.root.classList.add("img-fetching");
+          break;
+        case "fetched":
+          this.root.classList.add("img-fetched");
+          this.root.classList.remove("img-fetching");
+          break;
+        case "failed":
+          this.root.classList.add("img-fetch-failed");
+          this.root.classList.remove("img-fetching");
+          break;
+        default:
+          this.root.classList.remove("img-fetched");
+          this.root.classList.remove("img-fetch-failed");
+          this.root.classList.remove("img-fetching");
+      }
+    }
+    equal(ele) {
+      if (ele === this.root) {
+        return true;
+      }
+      if (ele === this.root?.firstElementChild) {
+        return true;
+      }
+      if (ele === this.imgElement) {
+        return true;
+      }
+      return false;
     }
   }
 
@@ -1414,7 +1482,7 @@
     async matchImgURL(url, retry) {
       return await this.fetchImgURL(url, retry);
     }
-    async parseImgNodes(page, template) {
+    async parseImgNodes(page) {
       const list = [];
       let doc = await (async () => {
         if (page.raw instanceof Document) {
@@ -1448,15 +1516,12 @@
         let i = 0;
         for (const match of matchs) {
           i++;
-          const newImgNode = template.cloneNode(true);
-          const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("title", match[1].replace(/Page\s\d+[:_]\s*/, ""));
-          newImg.setAttribute(
-            "ahref",
-            `${location.origin}/s/${match[2]}/${gid}-${i}`
+          const node = new ImageNode(
+            match[3].replaceAll("\\", ""),
+            `${location.origin}/s/${match[2]}/${gid}-${i}`,
+            match[1].replace(/Page\s\d+[:_]\s*/, "")
           );
-          newImg.setAttribute("asrc", match[3].replaceAll("\\", ""));
-          list.push(newImgNode);
+          list.push(node);
         }
         return list;
       }
@@ -1478,12 +1543,12 @@
         }
       }
       for (let i = 0; i < nodes.length; i++) {
-        const newImgNode = template.cloneNode(true);
-        const newImg = newImgNode.firstElementChild;
-        newImg.setAttribute("ahref", nodes[i].querySelector("a").href);
-        newImg.setAttribute("asrc", urls[i]);
-        newImg.setAttribute("title", nodes[i].querySelector("img").getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg");
-        list.push(newImgNode);
+        const node = new ImageNode(
+          urls[i],
+          nodes[i].querySelector("a").href,
+          nodes[i].querySelector("img").getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg"
+        );
+        list.push(node);
       }
       return list;
     }
@@ -1593,7 +1658,7 @@
       const url = this.gg.url(hash);
       return url;
     }
-    async parseImgNodes(page, template) {
+    async parseImgNodes(page) {
       if (!this.info) {
         throw new Error("warn: hitomi gallery info is null!");
       }
@@ -1618,12 +1683,12 @@
           return badge2 ? Number(badge2.textContent) : 1;
         })();
         for (let i = 0; i < badge; i++) {
-          const newImgNode = template.cloneNode(true);
-          const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("ahref", this.info.files[i + sceneIndex].hash);
-          newImg.setAttribute("asrc", src);
-          newImg.setAttribute("title", this.info.files[i + sceneIndex].name);
-          list.push(newImgNode);
+          const node2 = new ImageNode(
+            src,
+            this.info.files[i + sceneIndex].hash,
+            this.info.files[i + sceneIndex].name
+          );
+          list.push(node2);
         }
       }
       return list;
@@ -1711,7 +1776,7 @@
       }
       return NH_IMG_URL_REGEX.exec(text)[1];
     }
-    async parseImgNodes(page, template) {
+    async parseImgNodes(page) {
       const list = [];
       const nodes = page.raw.querySelectorAll(".thumb-container > .gallerythumb");
       if (!nodes || nodes.length == 0) {
@@ -1724,12 +1789,12 @@
         if (!imgNode) {
           throw new Error("Cannot find Image");
         }
-        const newImgNode = template.cloneNode(true);
-        const newImg = newImgNode.firstElementChild;
-        newImg.setAttribute("ahref", location.origin + node.getAttribute("href"));
-        newImg.setAttribute("asrc", imgNode.getAttribute("data-src"));
-        newImg.setAttribute("title", imgNode.getAttribute("title") || `${i}.jpg`);
-        list.push(newImgNode);
+        const newNode = new ImageNode(
+          imgNode.getAttribute("data-src"),
+          location.origin + node.getAttribute("href"),
+          imgNode.getAttribute("title") || `${i}.jpg`
+        );
+        list.push(newNode);
       }
       return list;
     }
@@ -2187,22 +2252,36 @@
       this.size += result.length;
       return result;
     }
-    async convertToGif(files, meta) {
+    // TODO: find a way to reduce time cost; to mp4 30MB takes 50s; to gif 30MB takes 26s
+    async convertTo(files, format, meta) {
       await this.check();
       this.taskCount++;
       try {
         const ffmpeg = this.ffmpeg;
         const randomPrefix = Math.random().toString(36).substring(7);
-        const resultFile = randomPrefix + "output.gif";
         await this.writeFiles(files, randomPrefix);
+        let metaStr;
         if (meta) {
-          const metaStr = meta.map((m) => `file '${randomPrefix}${m.file}'
+          metaStr = meta.map((m) => `file '${randomPrefix}${m.file}'
 duration ${m.delay / 1e3}`).join("\n");
-          await ffmpeg.writeFile(randomPrefix + "meta.txt", metaStr);
-          await ffmpeg.exec(["-f", "concat", "-safe", "0", "-i", randomPrefix + "meta.txt", resultFile]);
         } else {
-          const inputPattern = randomPrefix + `%0${files[0].name.length}d.${files[0].name.split(".").pop()}`;
-          await ffmpeg.exec(["-f", "image2", "-framerate", "5", "-i", inputPattern, resultFile]);
+          metaStr = files.map((f) => `file '${randomPrefix}${f.name}'
+duration 0.04`).join("\n");
+        }
+        await ffmpeg.writeFile(randomPrefix + "meta.txt", metaStr);
+        let resultFile;
+        let mimeType;
+        switch (format) {
+          case "GIF":
+            resultFile = randomPrefix + "output.gif";
+            mimeType = "image/gif";
+            await ffmpeg.exec(["-f", "concat", "-safe", "0", "-i", randomPrefix + "meta.txt", "-vf", "split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=2", resultFile]);
+            break;
+          case "MP4":
+            resultFile = randomPrefix + "output.mp4";
+            mimeType = "video/mp4";
+            await ffmpeg.exec(["-f", "concat", "-safe", "0", "-i", randomPrefix + "meta.txt", "-c:v", "h264", "-pix_fmt", "yuv420p", resultFile]);
+            break;
         }
         const result = await this.readOutputFile(resultFile);
         const deletePromise = files.map((f) => ffmpeg.deleteFile(randomPrefix + f.name));
@@ -2211,7 +2290,7 @@ duration ${m.delay / 1e3}`).join("\n");
         }
         deletePromise.push(ffmpeg.deleteFile(resultFile));
         await Promise.all(deletePromise);
-        return new Blob([result], { type: "image/gif" });
+        return new Blob([result], { type: mimeType });
       } finally {
         this.taskCount--;
       }
@@ -2282,7 +2361,10 @@ duration ${m.delay / 1e3}`).join("\n");
       if (files.length !== meta.body.frames.length) {
         throw new Error("unpack ugoira file error: file count not equal to meta");
       }
-      const blob = await this.convertor.convertToGif(files, meta.body.frames);
+      const start = performance.now();
+      const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
+      const end = performance.now();
+      evLog(`convert ugoira to ${conf.convertTo} cost ${(end - start) / 1e3} s, size: ${blob.size / 1e3} KB, original size: ${data.size / 1e3} KB`);
       return URL.createObjectURL(blob);
     }
     async fetchTagsByPids(pids) {
@@ -2310,7 +2392,7 @@ duration ${m.delay / 1e3}`).join("\n");
         evLog("ERROR: fetch tags by pids error: ", error);
       }
     }
-    async parseImgNodes(raw, template) {
+    async parseImgNodes(raw) {
       const list = [];
       const pidList = JSON.parse(raw.raw);
       this.fetchTagsByPids(pidList);
@@ -2332,12 +2414,12 @@ duration ${m.delay / 1e3}`).join("\n");
             title = title.replace(/\.\w+$/, ".gif");
           }
           j++;
-          const newImgNode = template.cloneNode(true);
-          const newImg = newImgNode.firstElementChild;
-          newImg.setAttribute("ahref", p.urls.original);
-          newImg.setAttribute("asrc", p.urls.small);
-          newImg.setAttribute("title", title);
-          list.push(newImgNode);
+          const node = new ImageNode(
+            p.urls.small,
+            p.urls.original,
+            title
+          );
+          list.push(node);
         }
       }
       return list;
@@ -2403,7 +2485,7 @@ duration ${m.delay / 1e3}`).join("\n");
       }
       return imgURL;
     }
-    async parseImgNodes(page, template) {
+    async parseImgNodes(page) {
       const list = [];
       const doc = await (async () => {
         if (page.raw instanceof Document) {
@@ -2428,12 +2510,12 @@ duration ${m.delay / 1e3}`).join("\n");
         if (!src) {
           throw new Error(`Cannot Match Steam Image URL, Content: ${node.innerHTML}`);
         }
-        const newImgNode = template.cloneNode(true);
-        const newImg = newImgNode.firstElementChild;
-        newImg.setAttribute("ahref", node.getAttribute("href"));
-        newImg.setAttribute("asrc", src);
-        newImg.setAttribute("title", node.getAttribute("data-publishedfileid") + ".jpg");
-        list.push(newImgNode);
+        const newNode = new ImageNode(
+          src,
+          node.getAttribute("href"),
+          node.getAttribute("data-publishedfileid") + ".jpg"
+        );
+        list.push(newNode);
       }
       return list;
     }
@@ -2497,7 +2579,7 @@ duration ${m.delay / 1e3}`).join("\n");
       }
       return this.transformBigImageToSample(url);
     }
-    async parseImgNodes(page, template) {
+    async parseImgNodes(page) {
       const list = [];
       let doc = await (async () => {
         if (page.raw instanceof Document) {
@@ -2519,12 +2601,12 @@ duration ${m.delay / 1e3}`).join("\n");
       query.forEach((liNode, key) => {
         let largeImgNode = liNode.querySelector("a.directlink");
         let previewNode = liNode.querySelector("img.preview");
-        const newImgNode = template.cloneNode(true);
-        const newImg = newImgNode.firstElementChild;
-        newImg.setAttribute("ahref", largeImgNode.href);
-        newImg.setAttribute("asrc", previewNode.src);
-        newImg.setAttribute("title", titlePrefix + ("000" + (key + 1)).slice(-4) + ".jpg" || "untitle.jpg");
-        list.push(newImgNode);
+        const newNode = new ImageNode(
+          previewNode.src,
+          largeImgNode.href,
+          titlePrefix + ("000" + (key + 1)).slice(-4) + ".jpg" || "untitle.jpg"
+        );
+        list.push(newNode);
       });
       return list;
     }
@@ -2848,7 +2930,7 @@ duration ${m.delay / 1e3}`).join("\n");
       document.body.style.overflow = "hidden";
     }
     function hiddenFullViewPlaneEvent(event) {
-      if (event.target === HTML.fullViewPlane) {
+      if (event.target === HTML.fullViewPlane || event.target.classList.contains("img-node")) {
         main(false);
       }
     }
@@ -2936,7 +3018,7 @@ duration ${m.delay / 1e3}`).join("\n");
                 break;
               }
             }
-            IFQ[start].root.dispatchEvent(new MouseEvent("click"));
+            IFQ[start].node.root?.dispatchEvent(new MouseEvent("click"));
             break;
           }
           case "Escape":
@@ -3088,9 +3170,51 @@ text-align: left;
   position: relative;
 }
 .fullViewPlane .img-node img {
+  position: relative;
   width: 100%;
-  border: 2px solid white;
+  height: auto;
+  border: 3px solid #fff;
   box-sizing: border-box;
+}
+.img-fetched img {
+  border: 3px solid #602a5c !important;
+}
+.img-fetch-failed img {
+  border: 3px solid red !important;
+}
+.img-fetching img {
+  border: 3px solid #00000000 !important;
+}
+.img-fetching div {
+  position: relative;
+}
+.img-fetching div::after {
+	content: '';
+	position: absolute;
+	z-index: -1;
+  top: 0%;
+  left: 0%;
+	width: 30%;
+	height: 30%;
+	background-color: #ff0000;
+	animation: img-loading 1s linear infinite;
+}
+@keyframes img-loading {
+	25% {
+    background-color: #ff00ff;
+    top: 0%;
+    left: 70%;
+	}
+	50% {
+    background-color: #00ffff;
+    top: 70%;
+    left: 70%;
+	}
+	75% {
+    background-color: #ffff00;
+    top: 70%;
+    left: 0%;
+	}
 }
 .collapse_full_view {
   height: 0;
@@ -3112,7 +3236,7 @@ text-align: left;
   transition: width 0.4s;
   scrollbar-width: none;
 }
-.bigImageFrame > img {
+.bigImageFrame > img, .bigImageFrame > video {
   object-fit: contain;
   /* border-bottom: 1px solid #ffffff; */
   display: block;
@@ -3338,18 +3462,6 @@ text-align: left;
   background: rgb(81, 81, 81);
   vertical-align: middle;
 }
-.fetched {
-  border: 2px solid #602a5c !important;
-}
-.fetch-failed {
-  border: 2px solid red !important;
-}
-.fetching {
-  padding: 2px;
-  border: none !important;
-  animation: 1s linear infinite cco;
-  -webkit-animation: 1s linear infinite cco;
-}
 .pageHelperFetching {
   border: none !important;
   animation: 1s linear infinite cco;
@@ -3377,6 +3489,12 @@ text-align: left;
 .b-f-collapse {
   width: 0px !important;
   transition: width 0.4s;
+}
+.b-f-collapse .imgLandLeft,
+.b-f-collapse .imgLandRight,
+.b-f-collapse .imgLandTop,
+.b-f-collapse .imgLandBottom {
+  display: none !important;
 }
 .downloadBar {
   background-color: rgba(100, 100, 100, 0.8);
@@ -3486,6 +3604,22 @@ text-align: left;
 	height: calc(100% - 16px);
 	background: #333;
 }
+.overlay-tip {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 10;
+  width: 2rem;
+  height: 1rem;
+  border-radius: 10%;
+  border: 1px solid #333;
+  color: white;
+  background-color: #959595d1;
+  line-height: 1rem;
+  font-size: 1rem;
+  text-align: center;
+  font-weight: bold;
+}
 `;
     style.textContent = css;
     document.head.appendChild(style);
@@ -3508,10 +3642,10 @@ text-align: left;
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
 <div id="bigImageFrame" class="bigImageFrame b-f-collapse" tabindex="0">
-   <a id="imgLandLeft" hidden="true" class="imgLandLeft"></a>
-   <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
-   <a id="imgLandTop" hidden="true" class="imgLandTop"></a>
-   <a id="imgLandBottom" hidden="true" class="imgLandBottom"></a>
+   <a id="imgLandLeft" class="imgLandLeft"></a>
+   <a id="imgLandRight" class="imgLandRight"></a>
+   <a id="imgLandTop" class="imgLandTop"></a>
+   <a id="imgLandBottom" class="imgLandBottom"></a>
 </div>
 <div id="pageHelper" class="pageHelper">
     <div style="position: relative">
@@ -3808,7 +3942,7 @@ text-align: left;
     frame;
     queue;
     lockInit;
-    currImageNode;
+    currMediaNode;
     lastMouseY;
     recordedDistance;
     reachBottom;
@@ -3888,17 +4022,19 @@ text-align: left;
       this.init(index);
     }
     init(start) {
-      this.removeImgNodes();
-      this.currImageNode = this.createImgElement();
-      this.frame.appendChild(this.currImageNode);
-      this.setImgNode(this.currImageNode, start);
+      this.removeMediaNode();
+      this.currMediaNode = this.newMediaNode(start, this.queue[start]);
+      this.frame.appendChild(this.currMediaNode);
       if (conf.readMode === "consecutively") {
         this.hammer?.get("swipe").set({ enable: false });
         this.tryExtend();
       } else {
         this.hammer?.get("swipe").set({ enable: true });
       }
-      this.currImageNode.scrollIntoView();
+      this.currMediaNode.scrollIntoView();
+      if (this.currMediaNode instanceof HTMLVideoElement) {
+        this.tryPlayVideo(this.currMediaNode);
+      }
     }
     initFrame() {
       this.frame.addEventListener("wheel", (event) => {
@@ -3976,9 +4112,9 @@ text-align: left;
       img.addEventListener("click", () => this.hidden());
       return img;
     }
-    removeImgNodes() {
+    removeMediaNode() {
       for (const child of Array.from(this.frame.children)) {
-        if (child.nodeName.toLowerCase() === "img") {
+        if (child.nodeName.toLowerCase() === "img" || child.nodeName.toLowerCase() === "video") {
           child.remove();
         }
       }
@@ -3992,7 +4128,7 @@ text-align: left;
       this.frame.classList.add("b-f-collapse");
       this.frameScrollAbort?.abort();
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
-        this.removeImgNodes();
+        this.removeMediaNode();
         this.frame.childNodes.forEach((child) => child.hidden = true);
       }, 700);
       this.html.pageHelper.classList.remove("p-minify");
@@ -4024,8 +4160,17 @@ text-align: left;
         this.queue.do(start);
       }, 200);
     }
-    getImgNodes() {
-      return Array.from(this.frame.querySelectorAll("img"));
+    getMediaNodes() {
+      const list = Array.from(this.frame.querySelectorAll("img, video"));
+      let last = 0;
+      for (const ele of list) {
+        const index = parseInt(ele.getAttribute("d-index"));
+        if (index < last) {
+          throw new Error("BIFM: getMediaNodes: list is not ordered by d-index");
+        }
+        last = index;
+      }
+      return list;
     }
     onWheel(event) {
       if (event.buttons === 2) {
@@ -4039,7 +4184,7 @@ text-align: left;
             this.queue.stepImageEvent(oriented);
           }
         }
-      }
+      } else ;
     }
     onScroll(_) {
       if (conf.readMode === "consecutively") {
@@ -4086,20 +4231,22 @@ text-align: left;
     consecutive() {
       this.throttler.addEvent("SCROLL", () => {
         this.debouncer.addEvent("REDUCE", () => {
-          const distance2 = this.getRealOffsetTop(this.currImageNode) - this.frame.scrollTop;
+          const distance2 = this.getRealOffsetTop(this.currMediaNode) - this.frame.scrollTop;
           if (this.tryReduce()) {
-            this.restoreScrollTop(this.currImageNode, distance2);
+            this.restoreScrollTop(this.currMediaNode, distance2);
           }
         }, 500);
-        let imgNodes = this.getImgNodes();
-        let index = this.findImgNodeIndexOnCenter(imgNodes);
-        const centerNode = imgNodes[index];
-        this.currImageNode = centerNode;
-        const distance = this.getRealOffsetTop(this.currImageNode) - this.frame.scrollTop;
+        let mediaNodes = this.getMediaNodes();
+        let index = this.findMediaNodeIndexOnCenter(mediaNodes);
+        const centerNode = mediaNodes[index];
+        this.currMediaNode && this.tryPauseVideo(this.currMediaNode);
+        this.currMediaNode = centerNode;
+        this.tryPlayVideo(this.currMediaNode);
+        const distance = this.getRealOffsetTop(this.currMediaNode) - this.frame.scrollTop;
         if (this.tryExtend() > 0) {
-          this.restoreScrollTop(this.currImageNode, distance);
+          this.restoreScrollTop(this.currMediaNode, distance);
         }
-        const indexOfQueue = parseInt(this.currImageNode.getAttribute("d-index"));
+        const indexOfQueue = parseInt(this.currMediaNode.getAttribute("d-index"));
         if (indexOfQueue != this.queue.currIndex) {
           this.lockInit = true;
           this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
@@ -4117,21 +4264,15 @@ text-align: left;
      * it is necessary to rely on natureWidth and natureHeight to obtain the actual offsetTop.
      */
     getRealOffsetTop(imgNode) {
-      const naturalRatio = imgNode.naturalWidth / imgNode.naturalHeight;
-      const clientRatio = imgNode.clientWidth / imgNode.clientHeight;
-      if (naturalRatio > clientRatio) {
-        const clientHeight = Math.round(imgNode.naturalHeight * (imgNode.clientWidth / imgNode.naturalWidth));
-        return (imgNode.clientHeight - clientHeight) / 2 + imgNode.offsetTop;
-      }
       return imgNode.offsetTop;
     }
     tryExtend() {
       let indexOffset = 0;
-      let imgNodes = [];
+      let mediaNodes = [];
       let scrollTopFix = 0;
       while (true) {
-        imgNodes = this.getImgNodes();
-        const frist = imgNodes[0];
+        mediaNodes = this.getMediaNodes();
+        const frist = mediaNodes[0];
         if (frist.offsetTop + frist.offsetHeight > this.frame.scrollTop + scrollTopFix) {
           const extended = this.extendImgNode(frist, "prev");
           if (extended === null) {
@@ -4145,8 +4286,8 @@ text-align: left;
         }
       }
       while (true) {
-        imgNodes = this.getImgNodes();
-        const last = imgNodes[imgNodes.length - 1];
+        mediaNodes = this.getMediaNodes();
+        const last = mediaNodes[mediaNodes.length - 1];
         if (last.offsetTop < this.frame.scrollTop + this.frame.offsetHeight) {
           if (this.extendImgNode(last, "next") === null)
             break;
@@ -4157,7 +4298,7 @@ text-align: left;
       return indexOffset;
     }
     tryReduce() {
-      const imgNodes = this.getImgNodes();
+      const imgNodes = this.getMediaNodes();
       const shouldRemoveNodes = [];
       let oriented = "prev";
       for (const imgNode of imgNodes) {
@@ -4183,36 +4324,75 @@ text-align: left;
       }
       return true;
     }
-    extendImgNode(imgNode, oriented) {
-      let extendedImgNode;
-      const index = parseInt(imgNode.getAttribute("d-index"));
+    extendImgNode(mediaNode, oriented) {
+      let extendedNode;
+      const index = parseInt(mediaNode.getAttribute("d-index"));
+      if (isNaN(index)) {
+        throw new Error("BIFM: extendImgNode: media node index is NaN");
+      }
       if (oriented === "prev") {
         if (index === 0)
           return null;
-        extendedImgNode = this.createImgElement();
-        imgNode.before(extendedImgNode);
-        this.setImgNode(extendedImgNode, index - 1);
+        extendedNode = this.newMediaNode(index - 1, this.queue[index - 1]);
+        mediaNode.before(extendedNode);
       } else {
         if (index === this.queue.length - 1)
           return null;
-        extendedImgNode = this.createImgElement();
-        imgNode.after(extendedImgNode);
-        this.setImgNode(extendedImgNode, index + 1);
+        extendedNode = this.newMediaNode(index + 1, this.queue[index + 1]);
+        mediaNode.after(extendedNode);
       }
-      return extendedImgNode;
+      return extendedNode;
     }
-    setImgNode(imgNode, index) {
-      imgNode.setAttribute("d-index", index.toString());
-      const imgFetcher = this.queue[index];
-      if (imgFetcher.stage === FetchState.DONE) {
-        imgNode.src = imgFetcher.blobUrl;
+    newMediaNode(index, imf) {
+      if (!imf)
+        throw new Error("BIFM: newMediaNode: img fetcher is null");
+      if (imf.contentType === "video/mp4") {
+        const vid = document.createElement("video");
+        vid.setAttribute("d-index", index.toString());
+        vid.loop = true;
+        vid.muted = true;
+        vid.src = imf.blobUrl;
+        vid.addEventListener("click", () => this.hidden());
+        return vid;
       } else {
-        imgNode.src = imgFetcher.imgElement.getAttribute("asrc");
-        imgFetcher.onFinished("BIG-IMG-SRC-UPDATE", ($index, $imgFetcher) => {
-          if ($index === parseInt(imgNode.getAttribute("d-index"))) {
-            imgNode.src = $imgFetcher.blobUrl;
-          }
-        });
+        const img = document.createElement("img");
+        img.addEventListener("click", () => this.hidden());
+        img.setAttribute("d-index", index.toString());
+        if (imf.stage === FetchState.DONE) {
+          img.src = imf.blobUrl;
+        } else {
+          img.src = imf.node.src;
+          imf.onFinished("BIG-IMG-SRC-UPDATE", ($index, $imf) => {
+            if ($index === parseInt(img.getAttribute("d-index"))) {
+              if ($imf.contentType !== "video/mp4") {
+                img.src = $imf.blobUrl;
+                return;
+              }
+              const vid = this.newMediaNode(index, $imf);
+              img.replaceWith(vid);
+              if (img === this.currMediaNode) {
+                this.currMediaNode = vid;
+              }
+              this.tryPlayVideo(vid);
+              return;
+            }
+          });
+        }
+        return img;
+      }
+    }
+    tryPlayVideo(vid) {
+      if (vid instanceof HTMLVideoElement && vid === this.currMediaNode) {
+        if (vid.paused) {
+          vid.play();
+        }
+      }
+    }
+    tryPauseVideo(vid) {
+      if (vid instanceof HTMLVideoElement) {
+        if (!vid.paused) {
+          vid.pause();
+        }
       }
     }
     /**
@@ -4225,11 +4405,11 @@ text-align: left;
       const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".bigImageFrame > img") {
+          if (cssRule.selectorText === ".bigImageFrame > img, .bigImageFrame > video") {
             if (!conf.imgScale)
               conf.imgScale = 0;
-            if (conf.imgScale == 0 && (_percent || this.currImageNode)) {
-              percent = _percent ?? Math.round(this.currImageNode.offsetWidth / this.frame.offsetWidth * 100);
+            if (conf.imgScale == 0 && (_percent || this.currMediaNode)) {
+              percent = _percent ?? Math.round(this.currMediaNode.offsetWidth / this.frame.offsetWidth * 100);
               if (conf.readMode === "consecutively") {
                 cssRule.style.minHeight = "";
               } else {
@@ -4247,7 +4427,7 @@ text-align: left;
           }
         }
       }
-      if (conf.readMode === "singlePage" && this.currImageNode && this.currImageNode.offsetHeight <= this.frame.offsetHeight) {
+      if (conf.readMode === "singlePage" && this.currMediaNode && this.currMediaNode.offsetHeight <= this.frame.offsetHeight) {
         this.resetScaleBigImages();
       } else {
         conf.imgScale = percent;
@@ -4260,7 +4440,7 @@ text-align: left;
       const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".bigImageFrame > img") {
+          if (cssRule.selectorText === ".bigImageFrame > img, .bigImageFrame > video") {
             cssRule.style.maxWidth = "100vw";
             if (conf.readMode === "singlePage") {
               cssRule.style.minHeight = "100vh";
@@ -4313,7 +4493,7 @@ text-align: left;
       }
       return [stepImage, distance];
     }
-    findImgNodeIndexOnCenter(imgNodes) {
+    findMediaNodeIndexOnCenter(imgNodes) {
       const centerLine = this.frame.offsetHeight / 2;
       for (let i = 0; i < imgNodes.length; i++) {
         const imgNode = imgNodes[i];
@@ -4456,13 +4636,13 @@ text-align: left;
         return false;
       }
       const imgFetcher = queue[index];
-      let scrollTo = imgFetcher.root.offsetTop - window.screen.availHeight / 3;
+      let scrollTo = imgFetcher.node.root.offsetTop - window.screen.availHeight / 3;
       scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewPlane.scrollHeight ? HTML.fullViewPlane.scrollHeight : scrollTo;
       HTML.fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
       return false;
     });
     const debouncer = new Debouncer();
-    IFQ.subscribeOnFinishedReport(2, (index) => {
+    IFQ.subscribeOnFinishedReport(3, (index) => {
       debouncer.addEvent("APPEND-NEXT-PAGES", () => PF.appendNextPages(index), 5);
       return false;
     });

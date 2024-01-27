@@ -4,11 +4,11 @@ const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAA
 
 const DEFAULT_NODE_TEMPLATE = document.createElement("div");
 DEFAULT_NODE_TEMPLATE.classList.add("img-node");
-DEFAULT_NODE_TEMPLATE.innerHTML = `
-<div>
-  <img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" />
-</div>
-`;
+DEFAULT_NODE_TEMPLATE.innerHTML = `<div><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></div>`;
+
+const OVERLAY_TIP = document.createElement("div");
+OVERLAY_TIP.classList.add("overlay-tip");
+OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
 
 export default class ImageNode {
   root?: HTMLElement;
@@ -19,6 +19,7 @@ export default class ImageNode {
   private imgElement?: HTMLImageElement;
   private blobUrl?: string;
   private mimeType?: string;
+  private size?: number;
   private downloadBar?: HTMLElement;
   private rendered: boolean = false;
   constructor(src: string, href: string, title: string) {
@@ -32,19 +33,34 @@ export default class ImageNode {
     this.imgElement = this.root.firstElementChild!.firstElementChild! as HTMLImageElement;
     this.imgElement.setAttribute("title", this.title);
     if (this.onclick) {
-      this.root.addEventListener("click", this.onclick);
+      this.imgElement!.addEventListener("click", this.onclick);
     }
     return this.root;
   }
 
   render() {
     if (this.imgElement) {
+      this.rendered = true;
+      if (this.mimeType === "image/gif") {
+        const tip = OVERLAY_TIP.cloneNode(true);
+        tip.firstChild!.textContent = "GIF";
+        this.root?.appendChild(tip);
+        // if gif size over 20MB, then don't render it
+        if (this.size && this.size > 20 * 1024 * 1024) {
+          return;
+        }
+      }
+      if (this.mimeType === "video/mp4") {
+        const tip = OVERLAY_TIP.cloneNode(true);
+        tip.firstChild!.textContent = "MP4";
+        this.root?.appendChild(tip);
+        return;
+      }
       if (this.blobUrl) {
         this.imgElement.src = this.blobUrl;
       } else {
         this.imgElement.src = this.src;
       }
-      this.rendered = true;
     }
   }
 
@@ -55,10 +71,10 @@ export default class ImageNode {
     }
   }
 
-  onloaded(blobUrl: string, mimeType: string) {
+  onloaded(blobUrl: string, mimeType: string, size: number) {
     this.blobUrl = blobUrl;
     this.mimeType = mimeType;
-    console.log("onloaded: ", this.blobUrl, this.mimeType);
+    this.size = size;
   }
 
   progress(state: DownloadState) {
@@ -76,7 +92,7 @@ export default class ImageNode {
       <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
       `;
       this.downloadBar = downloadBar;
-      this.root!.appendChild(this.downloadBar);
+      this.root!.firstElementChild!.appendChild(this.downloadBar);
     }
     if (this.downloadBar) {
       this.downloadBar.querySelector("progress")!.setAttribute("value", (state.loaded / state.total) * 100 + "");

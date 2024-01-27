@@ -106,7 +106,7 @@ export function loadStyleSheel() {
   transition: width 0.4s;
   scrollbar-width: none;
 }
-.bigImageFrame > img {
+.bigImageFrame > img, .bigImageFrame > video {
   object-fit: contain;
   /* border-bottom: 1px solid #ffffff; */
   display: block;
@@ -360,6 +360,12 @@ export function loadStyleSheel() {
   width: 0px !important;
   transition: width 0.4s;
 }
+.b-f-collapse .imgLandLeft,
+.b-f-collapse .imgLandRight,
+.b-f-collapse .imgLandTop,
+.b-f-collapse .imgLandBottom {
+  display: none !important;
+}
 .downloadBar {
   background-color: rgba(100, 100, 100, 0.8);
   height: 0.5rem;
@@ -467,6 +473,22 @@ export function loadStyleSheel() {
 	width: calc(100% - 16px);
 	height: calc(100% - 16px);
 	background: #333;
+}
+.overlay-tip {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 10;
+  width: 2rem;
+  height: 1rem;
+  border-radius: 10%;
+  border: 1px solid #333;
+  color: white;
+  background-color: #959595d1;
+  line-height: 1rem;
+  font-size: 1rem;
+  text-align: center;
+  font-weight: bold;
 }
 `
   style.textContent = css;

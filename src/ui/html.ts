@@ -23,10 +23,10 @@ export function createHTML() {
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
 <div id="bigImageFrame" class="bigImageFrame b-f-collapse" tabindex="0">
-   <a id="imgLandLeft" hidden="true" class="imgLandLeft"></a>
-   <a id="imgLandRight" hidden="true" class="imgLandRight"></a>
-   <a id="imgLandTop" hidden="true" class="imgLandTop"></a>
-   <a id="imgLandBottom" hidden="true" class="imgLandBottom"></a>
+   <a id="imgLandLeft" class="imgLandLeft"></a>
+   <a id="imgLandRight" class="imgLandRight"></a>
+   <a id="imgLandTop" class="imgLandTop"></a>
+   <a id="imgLandBottom" class="imgLandBottom"></a>
 </div>
 <div id="pageHelper" class="pageHelper">
     <div style="position: relative">

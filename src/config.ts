@@ -50,6 +50,8 @@ export type Config = {
   preventScrollPageTime: number
   /** 下载文件分卷大小，单位Mib */
   archiveVolumeSize: number
+  /** 动图转换为 */
+  convertTo: "GIF" | "MP4"
 };
 
 function defaultConf(): Config {
@@ -80,6 +82,7 @@ function defaultConf(): Config {
     filenameTemplate: "{number}-{title}",
     preventScrollPageTime: 200,
     archiveVolumeSize: 1500,
+    convertTo: "GIF",
   };
 }
 
@@ -121,6 +124,10 @@ function confHealthCheck($conf: Config): Config {
   }
   if (!$conf.archiveVolumeSize) {
     $conf.archiveVolumeSize = 1500;
+    changed = true;
+  }
+  if (!$conf.convertTo) {
+    $conf.convertTo = "GIF";
     changed = true;
   }
   if (changed) {

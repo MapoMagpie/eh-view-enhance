@@ -2931,7 +2931,6 @@ duration 0.04`).join("\n");
     }
     let bodyOverflow = document.body.style.overflow;
     function showFullViewPlane() {
-      HTML.fullViewPlane.scroll(0, 0);
       HTML.fullViewPlane.classList.remove("collapse_full_view");
       HTML.fullViewPlane.focus();
       document.body.style.overflow = "hidden";

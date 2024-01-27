@@ -35,7 +35,7 @@ export class Downloader {
     this.downloaderPlaneBTN = HTML.downloaderPlaneBTN;
     this.downloadForceElement?.addEventListener("click", () => this.download());
     this.downloadStartElement?.addEventListener("click", () => this.start());
-    this.queue.subscribeOnDo(0, () => this.downloading);
+    this.queue.subscribeOnDo(1, () => this.downloading);
     this.queue.subscribeOnFinishedReport(0, (_, queue) => {
       if (queue.isFinised()) {
         if (this.downloading) {

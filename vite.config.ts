@@ -26,7 +26,7 @@ export default defineConfig({
           'https://yande.re/post*'
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.1.20',
+        version: '4.1.21',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {
@@ -44,7 +44,15 @@ export default defineConfig({
           'ehgt.org',
           'files.yande.re'
         ],
-        grant: ['GM_xmlhttpRequest', 'GM_setValue', 'GM_getValue'],
+        // resource: {
+        //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"
+        // },
+        grant: [
+          'GM_xmlhttpRequest',
+          'GM_setValue',
+          'GM_getValue',
+          // 'GM_getResourceURL'
+        ],
         require: [
           'https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js',
           'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js',
@@ -57,7 +65,10 @@ export default defineConfig({
           "jszip": "JSZip",
           "file-saver": "saveAs",
           "hammerjs": "Hammer",
-        }
+        },
+        // externalResource: {
+        //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"
+        // }
       },
       server: { mountGmApi: false },
     }),

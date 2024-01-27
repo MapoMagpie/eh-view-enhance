@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.20
+// @version            4.1.21
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -712,7 +712,7 @@
       this.downloaderPlaneBTN = HTML.downloaderPlaneBTN;
       this.downloadForceElement?.addEventListener("click", () => this.download());
       this.downloadStartElement?.addEventListener("click", () => this.start());
-      this.queue.subscribeOnDo(0, () => this.downloading);
+      this.queue.subscribeOnDo(1, () => this.downloading);
       this.queue.subscribeOnFinishedReport(0, (_, queue2) => {
         if (queue2.isFinised()) {
           if (this.downloading) {
@@ -2208,7 +2208,7 @@
       const en = new TextEncoder();
       this.coreURL = URL.createObjectURL(new Blob([en.encode(core_raw)], { type: "text/javascript" }));
       this.classWorkerURL = URL.createObjectURL(new Blob([en.encode(class_worker_raw)], { type: "text/javascript" }));
-      this.wasmURL = await toBlobURL(`https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm`, "application/wasm");
+      this.wasmURL = await toBlobURL("https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm", "application/wasm");
       this.ffmpeg = new FFmpeg();
       await this.load();
       return this;
@@ -4679,7 +4679,7 @@ text-align: left;
       debouncer.addEvent("APPEND-NEXT-PAGES", () => PF.appendNextPages(index), 5);
       return false;
     });
-    IFQ.subscribeOnDo(1, (index, queue) => {
+    IFQ.subscribeOnDo(0, (index, queue) => {
       PH.setPageState({ current: (index + 1).toString() });
       const imf = queue[index];
       if (imf.stage !== FetchState.DONE) {

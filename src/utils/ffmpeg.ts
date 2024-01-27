@@ -26,7 +26,7 @@ export class FFmpegConvertor {
     const en = new TextEncoder();
     this.coreURL = URL.createObjectURL(new Blob([en.encode(core_raw)], { type: 'text/javascript' }));
     this.classWorkerURL = URL.createObjectURL(new Blob([en.encode(class_worker_raw)], { type: 'text/javascript' }));
-    this.wasmURL = await toBlobURL(`https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm`, 'application/wasm');
+    this.wasmURL = await toBlobURL("https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm", "application/wasm");
     this.ffmpeg = new FFmpeg();
     await this.load();
     return this;

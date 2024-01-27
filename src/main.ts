@@ -66,7 +66,7 @@ function main(): DestoryFunc {
     debouncer.addEvent("APPEND-NEXT-PAGES", () => PF.appendNextPages(index), 5);
     return false;
   });
-  IFQ.subscribeOnDo(1, (index, queue) => {
+  IFQ.subscribeOnDo(0, (index, queue) => {
     PH.setPageState({ current: (index + 1).toString() });
     const imf = queue[index];
     if (imf.stage !== FetchState.DONE) {

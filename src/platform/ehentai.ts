@@ -141,26 +141,26 @@ export class EHMatcher implements Matcher {
   }
 
   public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    let fristHref = document.querySelector("#gdt a")?.getAttribute("href");
-    if (fristHref && regulars.isMPV.test(fristHref)) {
+    let fristImageHref = document.querySelector("#gdt a")?.getAttribute("href");
+    // MPV
+    if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
       yield { raw: window.location.href, typ: "url" };
       return;
     }
-    const ps = Array.from(document.querySelectorAll(".gtb td a"));
-    if (ps.length === 0) {
+    // Normal
+    let pages = Array.from(document.querySelectorAll(".gtb td a")).filter(a => a.getAttribute("href")).map(a => a.getAttribute("href")!);
+    if (pages.length === 0) {
       throw new Error("未获取到分页元素！");
     }
-    const lastP = ps[ps.length - 2];
-    if (!lastP) {
-      throw new Error("未获取到分页元素！x2");
-    }
-    const u = new URL(lastP.getAttribute("href")!);
-    const total = Number(u.searchParams.get("p")) + 1;
-    u.searchParams.delete("p");
-    yield { raw: u.href, typ: "url" };
+    pages = pages.sort((a, b) => ((a > b) ? -1 : 1))
+    const lastPage = pages[0];
+    const url = new URL(lastPage);
+    const total = Number(url.searchParams.get("p")) + 1;
+    url.searchParams.delete("p");
+    yield { raw: url.href, typ: "url" };
     for (let p = 1; p < total; p++) {
-      u.searchParams.set("p", p.toString());
-      yield { raw: u.href, typ: "url" };
+      url.searchParams.set("p", p.toString());
+      yield { raw: url.href, typ: "url" };
     }
   }
 

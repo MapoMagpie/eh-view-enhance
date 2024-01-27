@@ -16,7 +16,7 @@ export default class ImageNode {
   href: string;
   title: string;
   onclick?: (event: MouseEvent) => void;
-  private imgElement?: HTMLImageElement;
+  imgElement?: HTMLImageElement;
   private blobUrl?: string;
   private mimeType?: string;
   private size?: number;

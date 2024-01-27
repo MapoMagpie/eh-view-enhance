@@ -281,6 +281,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
 
   // Shortcut
   document.addEventListener("keydown", (event) => events.keyboardEvent(event));
+  HTML.fullViewPlane.addEventListener("keydown", (event) => events.fullViewPlaneKeyBoardEvent(event));
   // 箭头导航
   HTML.imgLandLeft.addEventListener("click", (event) => {
     IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");

@@ -137,76 +137,81 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     IFQ.stepImageEvent(event.deltaY > 0 ? "next" : "prev");
   };
 
-  //按键事件
+  function bigImageFrameKeyBoardEvent(event: KeyboardEvent) {
+    let triggered = true;
+    switch (event.key) {
+      case "ArrowLeft":
+        IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
+        break;
+      case "ArrowRight":
+        IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
+        break;
+      case "Escape":
+      case "Enter":
+        BIFM.hidden();
+        break;
+      case "Home":
+        IFQ.do(0, "next");
+        break;
+      case "End":
+        IFQ.do(IFQ.length - 1, "prev");
+        break;
+      case " ":
+      case "ArrowUp":
+      case "ArrowDown":
+      case "PageUp":
+      case "PageDown":
+        triggered = false; // keep default behavior
+        let oriented: Oriented = "next";
+        if (event.key === "ArrowUp" || event.key === "PageUp") {
+          oriented = "prev"
+        } else if (event.key === "ArrowDown" || event.key === "PageDown" || event.key === " ") {
+          oriented = "next"
+        }
+        if (event.shiftKey) {
+          oriented = oriented === "next" ? "prev" : "next";
+        }
+        BIFM.frame.addEventListener("scrollend", () => {
+          if (conf.readMode === "singlePage" && BIFM.isReachBoundary(oriented)) {
+            BIFM.tryPreventStep();
+          }
+        }, { once: true });
+        if (BIFM.isReachBoundary(oriented)) {
+          event.preventDefault();
+          HTML.bigImageFrame.dispatchEvent(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }));
+        }
+        break;
+      case "-":
+        BIFM.scaleBigImages(-1, 5);
+        break;
+      case "=":
+        BIFM.scaleBigImages(1, 5);
+        break;
+      default:
+        triggered = false;
+    }
+    if (triggered) {
+      event.preventDefault();
+    }
+  }
+
   let numberRecord: number[] | null = null;
-  function keyboardEvent(event: KeyboardEvent) {
-    if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) { // in big image mode
-      const b = HTML.bigImageFrame;
-      switch (event.key) {
-        case "ArrowLeft":
-          event.preventDefault();
-          IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
-          break;
-        case "ArrowRight":
-          event.preventDefault();
-          IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
-          break;
-        case "Escape":
-        case "Enter":
-          event.preventDefault();
-          BIFM.hidden();
-          break;
-        case "Home":
-          event.preventDefault();
-          IFQ.do(0, "next");
-          break;
-        case "End":
-          event.preventDefault();
-          IFQ.do(IFQ.length - 1, "prev");
-          break;
-        case " ":
-        case "ArrowUp":
-        case "ArrowDown":
-        case "PageUp":
-        case "PageDown":
-          let oriented: Oriented = "next";
-          if (event.key === "ArrowUp" || event.key === "PageUp") {
-            oriented = "prev"
-          } else if (event.key === "ArrowDown" || event.key === "PageDown" || event.key === " ") {
-            oriented = "next"
-          }
-          if (event.shiftKey) {
-            oriented = oriented === "next" ? "prev" : "next";
-          }
-          BIFM.frame.addEventListener("scrollend", () => {
-            if (conf.readMode === "singlePage" && BIFM.isReachBoundary(oriented)) {
-              BIFM.tryPreventStep();
-            }
-          }, { once: true });
-          if (BIFM.isReachBoundary(oriented)) {
-            event.preventDefault();
-            b.dispatchEvent(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }));
-          }
-          break;
-        case "-":
-          BIFM.scaleBigImages(-1, 5);
-          break;
-        case "=":
-          BIFM.scaleBigImages(1, 5);
-          break;
-      }
-    } else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) { // in thumbnails mode
+  function fullViewPlaneKeyBoardEvent(event: KeyboardEvent) {
+    if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) {
+      bigImageFrameKeyBoardEvent(event)
+    }
+    else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) {
+      let triggered = true;
       switch (event.key) {
         case "Enter": {
           let start = IFQ.currIndex;
           if (numberRecord && numberRecord.length > 0) {
             start = Number(numberRecord.join("")) - 1;
             numberRecord = null;
-            if (start < 0 || start >= IFQ.length) {
-              break;
-            }
+            if (isNaN(start)) break;
+            start = Math.max(0, Math.min(start, IFQ.length - 1));
           }
-          IFQ[start].node.root?.dispatchEvent(new MouseEvent("click"));
+          IFQ[start].node.imgElement?.dispatchEvent(new MouseEvent("click"));
           break;
         }
         case "Escape":
@@ -216,15 +221,24 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
           // if event.key is number, then record it
           if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
             numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
+          } else {
+            triggered = false;
           }
         }
       }
-    } else {
-      switch (event.key) {
-        case "Enter":
-          main(true);
-          break;
+      if (triggered) {
+        event.preventDefault();
       }
+    }
+  }
+
+  function keyboardEvent(event: KeyboardEvent) {
+    if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) return;
+    if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) return;
+    switch (event.key) {
+      case "Enter":
+        main(true);
+        break;
     }
   };
 
@@ -286,6 +300,7 @@ text-align: left;
 
     scrollEvent,
     bigImageWheelEvent,
+    fullViewPlaneKeyBoardEvent,
     keyboardEvent,
     showGuideEvent,
     mouseleavePlaneEvent,

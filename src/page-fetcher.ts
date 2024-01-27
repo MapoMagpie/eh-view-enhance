@@ -68,15 +68,15 @@ export class PageFetcher {
         const viewButtom = this.fullViewPlane.scrollTop + this.fullViewPlane.clientHeight;
         // if finished is not undefined, then append next page until the queue length is 40 more than finished
         if (finished !== undefined) {
-          if (finished + 40 < this.queue.length) {
+          if (finished + 60 < this.queue.length) {
             break;
           }
         }
         // here is triggered by fullViewPlane onscroll
         else {
-          // find the last image node if overflow (screen height * 2.5), then append next page
+          // find the last image node if overflow (screen height * 3.5), then append next page
           const lastImgNode = this.queue[this.queue.length - 1].node.root!;
-          if (viewButtom + (this.fullViewPlane.clientHeight * 1.5) < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
+          if (viewButtom + (this.fullViewPlane.clientHeight * 2.5) < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
             break;
           }
         }

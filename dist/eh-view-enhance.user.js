@@ -382,7 +382,7 @@
     maxDownloadThreads: new I18nValue("DonloadThreads", "最大同时下载"),
     maxDownloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
     timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
-    bestQuality: new I18nValue("RawImage", "最佳质量"),
+    bestQuality: new I18nValue("Raw Image", "最佳质量"),
     autoLoad: new I18nValue("Auto Load", "自动加载"),
     autoLoadTooltip: new I18nValue("", "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。"),
     bestQualityTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
@@ -1146,12 +1146,12 @@
         while (true) {
           const viewButtom = this.fullViewPlane.scrollTop + this.fullViewPlane.clientHeight;
           if (finished !== void 0) {
-            if (finished + 40 < this.queue.length) {
+            if (finished + 60 < this.queue.length) {
               break;
             }
           } else {
             const lastImgNode = this.queue[this.queue.length - 1].node.root;
-            if (viewButtom + this.fullViewPlane.clientHeight * 1.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
+            if (viewButtom + this.fullViewPlane.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
               break;
             }
           }

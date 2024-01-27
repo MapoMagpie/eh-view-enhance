@@ -383,7 +383,7 @@
     maxDownloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
     timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
     bestQuality: new I18nValue("RawImage", "最佳质量"),
-    autoLoad: new I18nValue("AutoLoad", "自动加载"),
+    autoLoad: new I18nValue("Auto Load", "自动加载"),
     autoLoadTooltip: new I18nValue("", "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。"),
     bestQualityTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
     forceDownload: new I18nValue("Take Loaded", "强制下载已加载的"),
@@ -1280,7 +1280,7 @@
   const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
   const DEFAULT_NODE_TEMPLATE = document.createElement("div");
   DEFAULT_NODE_TEMPLATE.classList.add("img-node");
-  DEFAULT_NODE_TEMPLATE.innerHTML = `<div><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></div>`;
+  DEFAULT_NODE_TEMPLATE.innerHTML = `<div style="position: relative;"><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></div>`;
   const OVERLAY_TIP = document.createElement("div");
   OVERLAY_TIP.classList.add("overlay-tip");
   OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
@@ -3199,9 +3199,6 @@ text-align: left;
 .img-fetching img {
   border: 3px solid #00000000 !important;
 }
-.img-fetching div {
-  position: relative;
-}
 .img-fetching div::after {
 	content: '';
 	position: absolute;
@@ -3478,19 +3475,30 @@ text-align: left;
 }
 .pageHelperFetching {
   border: none !important;
-  animation: 1s linear infinite cco;
-  -webkit-animation: 1s linear infinite cco;
+  box-sizing: border-box;
 }
-@keyframes cco {
-  0% {
-    background-color: #f00;
-  }
-  50% {
-    background-color: #48ff00;
-  }
-  100% {
-    background-color: #ae00ff;
-  }
+.pageHelperFetching::after {
+	content: '';
+	position: absolute;
+	z-index: -1;
+  top: 0%;
+  left: 0%;
+	width: 2%;
+	height: 100%;
+	background-color: #ff0000;
+	animation: img-loading-page 1s linear infinite;
+}
+@keyframes img-loading-page {
+	15% {
+    background-color: #fff303;
+	}
+	50% {
+    background-color: #ff0000;
+    left: 98%;
+	}
+	85% {
+    background-color: #fff303;
+	}
 }
 @keyframes main-progress {
   from {

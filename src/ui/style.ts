@@ -55,9 +55,6 @@ export function loadStyleSheel() {
 .img-fetching img {
   border: 3px solid #00000000 !important;
 }
-.img-fetching div {
-  position: relative;
-}
 .img-fetching div::after {
 	content: '';
 	position: absolute;
@@ -334,19 +331,30 @@ export function loadStyleSheel() {
 }
 .pageHelperFetching {
   border: none !important;
-  animation: 1s linear infinite cco;
-  -webkit-animation: 1s linear infinite cco;
+  box-sizing: border-box;
 }
-@keyframes cco {
-  0% {
-    background-color: #f00;
-  }
-  50% {
-    background-color: #48ff00;
-  }
-  100% {
-    background-color: #ae00ff;
-  }
+.pageHelperFetching::after {
+	content: '';
+	position: absolute;
+	z-index: -1;
+  top: 0%;
+  left: 0%;
+	width: 2%;
+	height: 100%;
+	background-color: #ff0000;
+	animation: img-loading-page 1s linear infinite;
+}
+@keyframes img-loading-page {
+	15% {
+    background-color: #fff303;
+	}
+	50% {
+    background-color: #ff0000;
+    left: 98%;
+	}
+	85% {
+    background-color: #fff303;
+	}
 }
 @keyframes main-progress {
   from {

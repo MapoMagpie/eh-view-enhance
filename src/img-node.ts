@@ -4,7 +4,7 @@ const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAA
 
 const DEFAULT_NODE_TEMPLATE = document.createElement("div");
 DEFAULT_NODE_TEMPLATE.classList.add("img-node");
-DEFAULT_NODE_TEMPLATE.innerHTML = `<div><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></div>`;
+DEFAULT_NODE_TEMPLATE.innerHTML = `<div style="position: relative;"><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></div>`;
 
 const OVERLAY_TIP = document.createElement("div");
 OVERLAY_TIP.classList.add("overlay-tip");

@@ -63,7 +63,7 @@ function defaultConf(): Config {
     readMode: "singlePage",
     autoLoad: true,
     fetchOriginal: false,
-    restartIdleLoader: 8000,
+    restartIdleLoader: 5000,
     threads: 3,
     downloadThreads: 3,
     timeout: 40,

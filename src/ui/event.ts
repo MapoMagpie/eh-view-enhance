@@ -62,6 +62,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     const inputElement = document.querySelector<HTMLInputElement>(`#${key}Checkbox`);
     conf[key] = inputElement?.checked || false;
     saveConf(conf);
+    if (key === "autoLoad") {
+      IL.autoLoad = conf.autoLoad;
+      if (IL.autoLoad) {
+        IL.abort(IFQ.currIndex);
+      }
+    }
   }
 
   // modify config
@@ -216,6 +222,19 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         }
         case "Escape":
           main(false);
+          break;
+        case "p": {
+          IL.autoLoad = !IL.autoLoad;
+          if (IL.autoLoad) {
+            IL.abort(IFQ.currIndex);
+          }
+          break;
+        }
+        case "-":
+          modNumberConfigEvent("colCount", "minus");
+          break;
+        case "=":
+          modNumberConfigEvent("colCount", "add");
           break;
         default: {
           // if event.key is number, then record it

@@ -106,7 +106,7 @@ export class Downloader {
     this.flushUI("downloading")
     this.downloading = true;
     // Temporary enable "autoload", but it may result in persisting this to the config.
-    conf.autoLoad = true;
+    this.idleLoader.autoLoad = true;
 
     // reset img fetcher stage to url, if it's failed
     this.queue.forEach((imf) => {

@@ -11,6 +11,7 @@ export class IdleLoader {
   maxWaitMS: number;
   minWaitMS: number;
   onFailedCallback?: () => void;
+  autoLoad: boolean = false;
   constructor(queue: IMGFetcherQueue) {
     //图片获取器队列
     this.queue = queue;
@@ -21,6 +22,7 @@ export class IdleLoader {
     this.restartId;
     this.maxWaitMS = 1000;
     this.minWaitMS = 300;
+    this.autoLoad = conf.autoLoad;
     this.queue.subscribeOnDo(9, (index) => {
       this.abort(index);
       return false;
@@ -33,7 +35,7 @@ export class IdleLoader {
 
   start(lockVer: number) {
     // 如果被中止了，则停止
-    if (this.lockVer != lockVer || !conf.autoLoad) return;
+    if (this.lockVer != lockVer || !this.autoLoad) return;
     // 如果已经没有要处理的列表
     if (this.processingIndexList.length === 0) {
       return;
@@ -121,8 +123,8 @@ export class IdleLoader {
 
   abort(newIndex: number) {
     this.lockVer++;
-    evLog(`终止空闲自加载, 下次将从第${newIndex + 1}张开始加载`);
-    if (!conf.autoLoad) return;
+    if (!this.autoLoad) return;
+    // evLog(`终止空闲自加载, 下次将从第${newIndex + 1}张开始加载`);
     // 中止空闲加载后，会在等待一段时间后再次重启空闲加载
     window.clearTimeout(this.restartId);
     this.restartId = window.setTimeout(() => {

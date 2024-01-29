@@ -55,12 +55,13 @@ export const i18n = {
       <li><strong style="color: orange">Big image:</strong>click thumbnail image, into big image mode, use mouse wheel switch to next or prev</li>
       <li><strong style="color: orange">Keyboard:</strong>
         <table>
-        <tr><td>Scale Image</td><td>mouse right + wheel or -/=</td></tr>
-        <tr><td>Open  Image(In thumbnails)</td><td>Enter</td></tr>
-        <tr><td>Exit  Image(In big mode)</td><td>Enter/Esc</td></tr>
-        <tr><td>Open Specific Page(In thumbnails)</td><td>Input number(no echo) + Enter</td></tr>
-        <tr><td>Switch Page</td><td>→/←</td></tr>
-        <tr><td>Scroll Image</td><td>↑/↓/Space</td></tr>
+          <tr><td>Scale Image</td><td>mouse right + wheel or -/=</td></tr>
+          <tr><td>Open  Image(In thumbnails)</td><td>Enter</td></tr>
+          <tr><td>Exit  Image(In big mode)</td><td>Enter/Esc</td></tr>
+          <tr><td>Open Specific Page(In thumbnails)</td><td>Input number(no echo) + Enter</td></tr>
+          <tr><td>Switch Page</td><td>→/←</td></tr>
+          <tr><td>Scroll Image</td><td>↑/↓/Space</td></tr>
+          <tr><td>Toggle Auto Load</td><td>p</td></tr>
         </table>
       </li>
       <li><strong style="color: orange">Download:</strong>You can click on the download button in the download panel to quickly load all the images. You can still continue browsing the images. Downloading and viewing large images are integrated, and you can click on Download Loaded in the download panel to save the images at any time.</li>
@@ -84,14 +85,15 @@ export const i18n = {
       <li><strong style="color: orange">图片质量:</strong>图片质量: 对于E绅士，你可以在控制栏>配置，启用原图模式，这将直接下载上传原档未压缩的图片，但会消耗更多的配额。一般来说E绅士默认提供的压缩档已经足够清晰。</li>
       <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
       <li><strong style="color: orange">键盘操作:</strong>
-      <table>
-      <tr><td>图片缩放</td><td>鼠标右键+滚轮 或 -/=</td></tr>
-      <tr><td>打开大图(缩略图模式下)</td><td>回车</td></tr>
-      <tr><td>退出大图(大图模式下)</td><td>回车/Esc</td></tr>
-      <tr><td>打开指定图片(缩略图模式下)</td><td>直接输入数字(不回显) + 回车</td></tr>
-      <tr><td>切换图片</td><td>→/←</td></tr>
-      <tr><td>滚动图片</td><td>↑/↓</td></tr>
-      </table>
+        <table>
+          <tr><td>图片缩放</td><td>鼠标右键+滚轮 或 -/=</td></tr>
+          <tr><td>打开大图(缩略图模式下)</td><td>回车</td></tr>
+          <tr><td>退出大图(大图模式下)</td><td>回车/Esc</td></tr>
+          <tr><td>打开指定图片(缩略图模式下)</td><td>直接输入数字(不回显) + 回车</td></tr>
+          <tr><td>切换图片</td><td>→/←</td></tr>
+          <tr><td>滚动图片</td><td>↑/↓</td></tr>
+          <tr><td>开关自动加载</td><td>p</td></tr>
+        </table>
       </li>
       <li><strong style="color: orange">下载功能:</strong>你可以在下载面板中点击下载，这将快速加载所有的图片，你依旧可以继续浏览图片。下载与大图浏览是一体的，你随时可以在下载面板点击<strong style="color: orange">下载已加载的</strong>保存图片。</li>
       <li><strong style="color: orange">问题反馈:</strong>

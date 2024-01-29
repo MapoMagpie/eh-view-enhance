@@ -4,11 +4,12 @@ import { IdleLoader } from "../idle-loader";
 import { PageFetcher } from "../page-fetcher";
 import { i18n } from "../utils/i18n";
 import { Elements } from "./html";
+import { PageHelper } from "./page-helper";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
 export type Events = ReturnType<typeof initEvents>;
 
-export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader) {
+export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader, PH: PageHelper) {
   function modPageHelperPostion() {
     const style = HTML.pageHelper.style;
     conf.pageHelperAbTop = style.top;
@@ -47,7 +48,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules || []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".fullViewGrid") {
+          if (cssRule.selectorText === ".full-view-grid") {
             cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
             break;
           }
@@ -124,7 +125,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   let bodyOverflow = document.body.style.overflow;
   function showFullViewGrid() {
     // HTML.fullViewGrid.scroll(0, 0); //否则加载会触发滚动事件
-    HTML.fullViewGrid.classList.remove("collapse_full_view");
+    PH.minify(true, "fullViewGrid");
+    HTML.fullViewGrid.classList.remove("full-view-grid-collapse");
     HTML.fullViewGrid.focus();
     document.body.style.overflow = "hidden";
   };
@@ -137,7 +139,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
 
   function hiddenFullViewGrid() {
     BIFM.hidden();
-    HTML.fullViewGrid.classList.add("collapse_full_view");
+    PH.minify(false, "fullViewGrid");
+    HTML.fullViewGrid.classList.add("full-view-grid-collapse");
     HTML.fullViewGrid.blur();
     document.querySelector("html")?.focus();
     document.body.style.overflow = bodyOverflow;
@@ -146,7 +149,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   //全屏阅览元素的滚动事件
   function scrollEvent() {
     //对冒泡的处理
-    if (HTML.fullViewGrid.classList.contains("collapse_full_view")) return;
+    if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) return;
     //根据currTop获取当前滚动高度对应的未渲染缩略图的图片元素
     PF.renderCurrView();
     PF.appendNextPages();
@@ -217,10 +220,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
 
   let numberRecord: number[] | null = null;
   function fullViewGridKeyBoardEvent(event: KeyboardEvent) {
-    if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) {
+    if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
       bigImageFrameKeyBoardEvent(event)
     }
-    else if (!HTML.fullViewGrid.classList.contains("collapse_full_view")) {
+    else if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
       let triggered = true;
       switch (event.key) {
         case "Enter": {
@@ -266,8 +269,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   }
 
   function keyboardEvent(event: KeyboardEvent) {
-    if (!HTML.fullViewGrid.classList.contains("collapse_full_view")) return;
-    if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) return;
+    if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) return;
+    if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
     switch (event.key) {
       case "Enter":
         main(true);
@@ -303,15 +306,15 @@ text-align: left;
   // 入口
   function main(extend: boolean) {
     if (HTML.pageHelper) {
-      if (extend && !HTML.pageHelper.classList.contains("pageHelperExtend")) {
-        HTML.pageHelper.classList.add("pageHelperExtend");
+      if (extend && !HTML.pageHelper.classList.contains("p-helper-extend")) {
+        HTML.pageHelper.classList.add("p-helper-extend");
         showFullViewGrid();
         if (signal.first) {
           signal.first = false;
           PF.init().then(() => IL.start(IL.lockVer));
         }
       } else {
-        HTML.pageHelper.classList.remove("pageHelperExtend");
+        HTML.pageHelper.classList.remove("p-helper-extend");
         hiddenFullViewGrid();
         ["config", "downloader"].forEach(id => togglePanelEvent(id, true));
       }
@@ -326,17 +329,17 @@ text-align: left;
     modSelectConfigEvent,
     modPageHelperPostion,
 
-    togglePanelEvent: togglePanelEvent,
-    showFullViewGrid: showFullViewGrid,
-    hiddenFullViewGridEvent: hiddenFullViewGridEvent,
-    hiddenFullViewGrid: hiddenFullViewGrid,
+    togglePanelEvent,
+    showFullViewGrid,
+    hiddenFullViewGridEvent,
+    hiddenFullViewGrid,
 
     scrollEvent,
     bigImageWheelEvent,
-    fullViewGridKeyBoardEvent: fullViewGridKeyBoardEvent,
+    fullViewGridKeyBoardEvent,
     keyboardEvent,
     showGuideEvent,
-    collapsePanelEvent: collapsePanelEvent,
-    abortMouseleavePanelEvent: abortMouseleavePanelEvent,
+    collapsePanelEvent,
+    abortMouseleavePanelEvent,
   }
 }

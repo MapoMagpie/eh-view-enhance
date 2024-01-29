@@ -14,21 +14,21 @@ export type Elements = ReturnType<typeof createHTML>;
 export function createHTML() {
   const fullViewGrid = document.createElement("div");
   fullViewGrid.setAttribute("tabindex", "0");
-  fullViewGrid.classList.add("fullViewGrid");
-  fullViewGrid.classList.add("collapse_full_view");
+  fullViewGrid.classList.add("full-view-grid");
+  fullViewGrid.classList.add("full-view-grid-collapse");
   document.body.after(fullViewGrid);
 
   const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
-<div id="bigImageFrame" class="bigImageFrame b-f-collapse" tabindex="0">
-   <a id="imgLandLeft" class="imgLandLeft"></a>
-   <a id="imgLandRight" class="imgLandRight"></a>
-   <a id="imgLandTop" class="imgLandTop"></a>
-   <a id="imgLandBottom" class="imgLandBottom"></a>
+<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="0">
+   <a id="img-land-left" class="img-land-left"></a>
+   <a id="img-land-right" class="img-land-right"></a>
+   <a id="img-land-top" class="img-land-top"></a>
+   <a id="img-land-bottom" class="img-land-bottom"></a>
 </div>
-<div id="pageHelper" class="pageHelper">
+<div id="p-helper" class="p-helper">
     <div style="position: relative">
         <div id="configPanel" class="p-panel p-config p-collapse">
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
@@ -198,15 +198,14 @@ export function createHTML() {
             </div>
         </div>
     </div>
-    <div>
+    <div id="ehvp-gate-icon">
         <span id="gate">&lessdot;📖</span>
     </div>
     <div id="b-main" class="b-main b-collapse">
         <div id="configPanelBTN" class="clickable">${i18n.config.get()}</div>
         <div id="downloaderPanelBTN" class="clickable">${i18n.download.get()}</div>
         <div class="b-m-page">
-            <span class="clickable" id="p-currPage"
-                style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
+            <span class="clickable" id="p-curr-page" style="color:orange;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span><span id="p-slash-2">/</span><span>FIN:</span><span id="p-finished">0</span>
         </div>
         <div id="autoPageBTN" class="clickable" style="padding: 0rem 1rem; position: relative; border: 1px solid #777;">
            <span>${i18n.autoPagePlay.get()}</span>
@@ -214,7 +213,7 @@ export function createHTML() {
         </div>
         <div id="collapseBTN" class="clickable">${i18n.collapse.get()}</div>
     </div>
-    <div>
+    <div id="ehvp-bar-gtdot">
         <span>&gtdot;</span>
     </div>
 </div>
@@ -224,9 +223,9 @@ export function createHTML() {
   return {
     fullViewGrid: fullViewGrid,
     // root element
-    bigImageFrame: fullViewGrid.querySelector<HTMLElement>("#bigImageFrame")!,
+    bigImageFrame: fullViewGrid.querySelector<HTMLElement>("#big-img-frame")!,
     // page helper
-    pageHelper: fullViewGrid.querySelector<HTMLElement>("#pageHelper")!,
+    pageHelper: fullViewGrid.querySelector<HTMLElement>("#p-helper")!,
     // config button in pageHelper
     configPanelBTN: fullViewGrid.querySelector<HTMLElement>("#configPanelBTN")!,
     // config panel mouse leave event
@@ -237,14 +236,14 @@ export function createHTML() {
     downloaderPanel: fullViewGrid.querySelector<HTMLElement>("#downloaderPanel")!,
     collapseBTN: fullViewGrid.querySelector<HTMLElement>("#collapseBTN")!,
     gate: fullViewGrid.querySelector<HTMLElement>("#gate")!,
-    currPageElement: fullViewGrid.querySelector<HTMLElement>("#p-currPage")!,
+    currPageElement: fullViewGrid.querySelector<HTMLElement>("#p-curr-page")!,
     totalPageElement: fullViewGrid.querySelector<HTMLElement>("#p-total")!,
     finishedElement: fullViewGrid.querySelector<HTMLElement>("#p-finished")!,
     showGuideElement: fullViewGrid.querySelector<HTMLElement>("#showGuideElement")!,
-    imgLandLeft: fullViewGrid.querySelector<HTMLElement>("#imgLandLeft")!,
-    imgLandRight: fullViewGrid.querySelector<HTMLElement>("#imgLandRight")!,
-    imgLandTop: fullViewGrid.querySelector<HTMLElement>("#imgLandTop")!,
-    imgLandBottom: fullViewGrid.querySelector<HTMLElement>("#imgLandBottom")!,
+    imgLandLeft: fullViewGrid.querySelector<HTMLElement>("#img-land-left")!,
+    imgLandRight: fullViewGrid.querySelector<HTMLElement>("#img-land-light")!,
+    imgLandTop: fullViewGrid.querySelector<HTMLElement>("#img-land-top")!,
+    imgLandBottom: fullViewGrid.querySelector<HTMLElement>("#img-land-bottom")!,
     imgScaleBar: fullViewGrid.querySelector<HTMLElement>("#imgScaleBar")!,
     autoPageBTN: fullViewGrid.querySelector<HTMLElement>("#autoPageBTN")!,
     pageLoading: fullViewGrid.querySelector<HTMLElement>("#page-loading")!,

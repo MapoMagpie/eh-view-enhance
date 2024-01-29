@@ -60,6 +60,8 @@ function main(): DestoryFunc {
     HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
     return false;
   });
+  BIFM.onShow(1, () => PH.minify(true, "bigImageFrame"));
+  BIFM.onHidden(1, () => PH.minify(false, "bigImageFrame"));
   // one image finished, call PageFetcher.appendNextPages try to append next page
   const debouncer = new Debouncer();
   IFQ.subscribeOnFinishedReport(3, (index) => {
@@ -79,7 +81,7 @@ function main(): DestoryFunc {
     setTimeout(() => PF.renderCurrView(), 200);
   });
 
-  const events = initEvents(HTML, BIFM, IFQ, PF, IL);
+  const events = initEvents(HTML, BIFM, IFQ, PF, IL, PH);
   addEventListeners(events, HTML, BIFM, IFQ, DL);
   if (conf["first"]) {
     events.showGuideEvent();

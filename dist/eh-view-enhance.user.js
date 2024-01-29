@@ -1376,7 +1376,7 @@
       }
       if (!this.downloadBar) {
         const downloadBar = document.createElement("div");
-        downloadBar.classList.add("downloadBar");
+        downloadBar.classList.add("download-bar");
         downloadBar.innerHTML = `
       <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
       `;
@@ -2867,7 +2867,7 @@ duration 0.04`).join("\n");
     }
   }
 
-  function initEvents(HTML, BIFM, IFQ, PF, IL) {
+  function initEvents(HTML, BIFM, IFQ, PF, IL, PH) {
     function modPageHelperPostion() {
       const style = HTML.pageHelper.style;
       conf.pageHelperAbTop = style.top;
@@ -2904,7 +2904,7 @@ duration 0.04`).join("\n");
         const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules || []);
         for (const cssRule of cssRules) {
           if (cssRule instanceof CSSStyleRule) {
-            if (cssRule.selectorText === ".fullViewGrid") {
+            if (cssRule.selectorText === ".full-view-grid") {
               cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
               break;
             }
@@ -2971,7 +2971,8 @@ duration 0.04`).join("\n");
     }
     let bodyOverflow = document.body.style.overflow;
     function showFullViewGrid() {
-      HTML.fullViewGrid.classList.remove("collapse_full_view");
+      PH.minify(true, "fullViewGrid");
+      HTML.fullViewGrid.classList.remove("full-view-grid-collapse");
       HTML.fullViewGrid.focus();
       document.body.style.overflow = "hidden";
     }
@@ -2982,13 +2983,14 @@ duration 0.04`).join("\n");
     }
     function hiddenFullViewGrid() {
       BIFM.hidden();
-      HTML.fullViewGrid.classList.add("collapse_full_view");
+      PH.minify(false, "fullViewGrid");
+      HTML.fullViewGrid.classList.add("full-view-grid-collapse");
       HTML.fullViewGrid.blur();
       document.querySelector("html")?.focus();
       document.body.style.overflow = bodyOverflow;
     }
     function scrollEvent() {
-      if (HTML.fullViewGrid.classList.contains("collapse_full_view"))
+      if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse"))
         return;
       PF.renderCurrView();
       PF.appendNextPages();
@@ -3055,9 +3057,9 @@ duration 0.04`).join("\n");
     }
     let numberRecord = null;
     function fullViewGridKeyBoardEvent(event) {
-      if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) {
+      if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
         bigImageFrameKeyBoardEvent(event);
-      } else if (!HTML.fullViewGrid.classList.contains("collapse_full_view")) {
+      } else if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
         let triggered = true;
         switch (event.key) {
           case "Enter": {
@@ -3102,9 +3104,9 @@ duration 0.04`).join("\n");
       }
     }
     function keyboardEvent(event) {
-      if (!HTML.fullViewGrid.classList.contains("collapse_full_view"))
+      if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse"))
         return;
-      if (!HTML.bigImageFrame.classList.contains("b-f-collapse"))
+      if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
         return;
       switch (event.key) {
         case "Enter":
@@ -3139,15 +3141,15 @@ text-align: left;
     const signal = { first: true };
     function main(extend) {
       if (HTML.pageHelper) {
-        if (extend && !HTML.pageHelper.classList.contains("pageHelperExtend")) {
-          HTML.pageHelper.classList.add("pageHelperExtend");
+        if (extend && !HTML.pageHelper.classList.contains("p-helper-extend")) {
+          HTML.pageHelper.classList.add("p-helper-extend");
           showFullViewGrid();
           if (signal.first) {
             signal.first = false;
             PF.init().then(() => IL.start(IL.lockVer));
           }
         } else {
-          HTML.pageHelper.classList.remove("pageHelperExtend");
+          HTML.pageHelper.classList.remove("p-helper-extend");
           hiddenFullViewGrid();
           ["config", "downloader"].forEach((id) => togglePanelEvent(id, true));
         }
@@ -3210,7 +3212,7 @@ text-align: left;
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
     const style = document.createElement("style");
     const css = `
-.fullViewGrid {
+.full-view-grid {
   width: 100vw;
   height: 100vh;
   background-color: rgb(0, 0, 0);
@@ -3225,7 +3227,7 @@ text-align: left;
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
 }
-.fullViewGrid input, .fullViewGrid select {
+.full-view-grid input, .full-view-grid select {
   color: #f1f1f1;
   background-color: #34353b !important;
   color-scheme: dark;
@@ -3242,10 +3244,10 @@ text-align: left;
 .p-label {
   cursor: pointer;
 }
-.fullViewGrid .img-node {
+.full-view-grid .img-node {
   position: relative;
 }
-.fullViewGrid .img-node img {
+.full-view-grid .img-node img {
   position: relative;
   width: 100%;
   height: auto;
@@ -3289,14 +3291,14 @@ text-align: left;
     left: 0%;
 	}
 }
-.collapse_full_view {
+.full-view-grid-collapse {
   height: 0;
   transition: height 0.4s;
 }
-.bigImageFrame::-webkit-scrollbar {
+.big-img-frame::-webkit-scrollbar {
   display: none;
 }
-.bigImageFrame {
+.big-img-frame {
   position: fixed;
   width: 100%;
   height: 100%;
@@ -3309,13 +3311,13 @@ text-align: left;
   transition: width 0.4s;
   scrollbar-width: none;
 }
-.bigImageFrame > img, .bigImageFrame > video {
+.big-img-frame > img, .big-img-frame > video {
   object-fit: contain;
   /* border-bottom: 1px solid #ffffff; */
   display: block;
   margin: 0 auto;
 }
-.pageHelper {
+.p-helper {
   position: fixed;
   display: flex !important;
   justify-content: space-between;
@@ -3327,7 +3329,7 @@ text-align: left;
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
-.pageHelper .p-panel {
+.p-helper .p-panel {
   z-index: 2012 !important;
   background-color: rgba(38, 20, 25, 0.8);
   box-sizing: border-box;
@@ -3339,13 +3341,13 @@ text-align: left;
   padding: 3px;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
-  .pageHelper.pageHelperExtend {
+  .p-helper.p-helper-extend {
     min-width: 24rem;
     transition: min-width 0.4s ease;
     font-size: 1rem;
     line-height: 1.2rem;
   }
-  .pageHelper {
+  .p-helper {
     top: ${conf.pageHelperAbTop};
     left: ${conf.pageHelperAbLeft};
     bottom: ${conf.pageHelperAbBottom};
@@ -3353,32 +3355,32 @@ text-align: left;
     font-size: 1rem;
     line-height: 1.2rem;
   }
-  .pageHelper .p-panel {
+  .p-helper .p-panel {
     width: 24rem;
     height: 30rem;
     bottom: 1.3rem;
   }
-  .pageHelper .p-btn {
+  .p-helper .p-btn {
     height: 1.5rem;
     width: 1.5rem;
     border: 1px solid #000000;
     border-radius: 4px;
   }
-  .pageHelperExtend .b-main {
+  .p-helper-extend .b-main {
     max-width: 24rem !important;
   }
-  .fullViewGrid input[type="checkbox"] {
+  .full-view-grid input[type="checkbox"] {
     width: 1rem;
     height: unset !important;
   }
-  .fullViewGrid select {
+  .full-view-grid select {
     width: 7rem !important;
   }
-  .fullViewGrid input, .fullViewGrid select {
+  .full-view-grid input, .full-view-grid select {
     width: 2rem;
     height: 1.5rem;
   }
-  .pageHelper .p-config {
+  .p-helper .p-config {
     line-height: 2rem;
   }
   #imgScaleResetBTN {
@@ -3386,64 +3388,66 @@ text-align: left;
   }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
-  .pageHelper.pageHelperExtend {
+  .p-helper.p-helper-extend {
     min-width: 100vw;
     transition: min-width 0.4s ease;
     font-size: 4.2cqw;
     line-height: 5cqw;
   }
-  .pageHelper {
+  .p-helper {
     bottom: 0px;
     left: 0px;
     font-size: 8cqw;
     line-height: 8.1cqw;
   }
-  .pageHelper .p-panel {
+  .p-helper .p-panel {
     width: 100vw;
     height: 60vh;
     bottom: 5.7cqw;
   }
-  .pageHelper .p-btn {
+  .p-helper .p-btn {
     height: 6cqw;
     width: 6cqw;
     border: 0.4cqw solid #000000;
     border-radius: 1cqw;
   }
-  .pageHelperExtend .b-main {
+  .p-helper-extend .b-main {
     max-width: 100vw !important;
   }
-  .fullViewGrid input[type="checkbox"] {
+  .full-view-grid input[type="checkbox"] {
     width: 4cqw;
     height: unset !important;
   }
-  .fullViewGrid select {
+  .full-view-grid select {
     width: 25cqw !important;
   }
-  .fullViewGrid input, .fullViewGrid select {
+  .full-view-grid input, .full-view-grid select {
     width: 9cqw;
     height: 6cqw;
     font-size: 3cqw;
   }
-  .pageHelper .p-config {
+  .p-helper .p-config {
     line-height: 9cqw;
   }
   #imgScaleResetBTN {
     width: 14cqw;
   }
 }
+.p-minify:not(:hover) > :not(.b-main),
+.p-minify:not(:hover) > .b-main > :not(.b-m-page),
+.p-minify:not(:hover) .b-m-page > :not(#p-curr-page):not(#p-total):not(#p-slash-1) {
+  display: none !important;
+}
+.p-minify.p-helper, .p-minify.p-helper-extend {
+  transition: unset;
+}
 .p-minify:not(:hover) {
   min-width: 0px !important;
 }
-.p-minify:not(:hover) .b-main {
-  width: auto;
-}
-.p-minify:not(:hover) .b-main > :not(.b-m-page) {
-  display: none;
-}
-.pageHelper:hover {
+.p-helper:hover {
   background-color: #3a3a3ae6;
 }
-.pageHelper .clickable {
+.p-helper .clickable {
   text-decoration-line: underline;
   z-index: 1111;
   user-select: none;
@@ -3452,7 +3456,7 @@ text-align: left;
 .clickable:hover {
   color: #90ea90 !important;
 }
-.pageHelper .p-img-scale {
+.p-helper .p-img-scale {
   display: flex;
 }
 .p-img-scale .scale-btn {
@@ -3484,7 +3488,7 @@ text-align: left;
   transition: height 0.4s;
   padding: 0px !important;
 }
-.pageHelper .b-main {
+.p-helper .b-main {
   max-width: 0px;
   overflow: hidden !important;
   display: flex;
@@ -3492,24 +3496,24 @@ text-align: left;
   white-space: nowrap !important;
   transition: flex-grow 0.6s ease, max-width 0.5s ease;
 }
-.pageHelperExtend .b-main {
+.p-helper-extend .b-main {
   flex-grow: 1;
   transition: flex-grow 0.6s ease, max-width 0.5s ease;
 }
-.pageHelper .p-config {
+.p-helper .p-config {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
 }
-.pageHelper .p-config label {
+.p-helper .p-config label {
   display: flex;
   justify-content: space-between;
   padding-right: 10px;
 }
-.pageHelper .p-config input {
+.p-helper .p-config input {
   cursor: ns-resize;
 }
-.pageHelper .p-downloader {
+.p-helper .p-downloader {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -3528,18 +3532,18 @@ text-align: left;
   text-align: right;
   width: 100%;
 }
-.pageHelper .p-btn {
+.p-helper .p-btn {
   color: rgb(255, 255, 255);
   cursor: pointer;
   font-weight: 900;
   background: rgb(81, 81, 81);
   vertical-align: middle;
 }
-.pageHelperFetching {
+.p-helper-fetching {
   border: none !important;
   box-sizing: border-box;
 }
-.pageHelperFetching::after {
+.p-helper-fetching::after {
 	content: '';
 	position: absolute;
 	z-index: -1;
@@ -3570,59 +3574,52 @@ text-align: left;
     width: 100%;
   }
 }
-.b-f-collapse {
+.big-img-frame-collapse {
   width: 0px !important;
   transition: width 0.4s;
 }
-.b-f-collapse .imgLandLeft,
-.b-f-collapse .imgLandRight,
-.b-f-collapse .imgLandTop,
-.b-f-collapse .imgLandBottom {
+.big-img-frame-collapse .img-land-left,
+.big-img-frame-collapse .img-land-right,
+.big-img-frame-collapse .img-land-top,
+.big-img-frame-collapse .img-land-bottom {
   display: none !important;
 }
-.downloadBar {
+.download-bar {
   background-color: rgba(100, 100, 100, 0.8);
   height: 0.5rem;
   width: 100%;
   position: absolute;
   bottom: 0;
 }
-.imgLandLeft, .imgLandRight {
-  height: 100%;
+.img-land-left, .img-land-right {
+  width: 20%;
+  height: 50%;
   position: fixed;
   z-index: 1004;
+  top: 25%;
 }
-.imgLandLeft {
-  left: 0;
-  top: 0;
-  cursor: url("https://exhentai.org/img/p.png"), auto;
-}
-.imgLandRight {
-  right: 0;
-  top: 0;
-  cursor: url("https://exhentai.org/img/n.png"), auto;
-}
-.imgLandTop, .imgLandBottom {
-  left: 0px;
-  width: 100%;
+.img-land-top, .img-land-bottom {
+  width: 50%;
+  height: 10%;
+  left: 25%;
   position: fixed;
   z-index: 1005;
 }
-.imgLandTop {
-  top: 0;
-  z-index: 1005;
+.img-land-left {
+  left: 0;
   cursor: url("https://exhentai.org/img/p.png"), auto;
 }
-.imgLandBottom {
+.img-land-right {
+  right: 0;
+  cursor: url("https://exhentai.org/img/n.png"), auto;
+}
+.img-land-top {
+  top: 0;
+  cursor: url("https://exhentai.org/img/p.png"), auto;
+}
+.img-land-bottom {
   bottom: 0;
-  z-index: 1005;
   cursor: url("https://exhentai.org/img/b.png"), auto;
-}
-.imgLandTop, .imgLandBottom {
-  height: 30%;
-}
-.imgLandLeft, .imgLandRight {
-  width: 30%;
 }
 .p-tooltip {
   border-bottom: 1px dotted black;
@@ -3718,20 +3715,20 @@ text-align: left;
   function createHTML() {
     const fullViewGrid = document.createElement("div");
     fullViewGrid.setAttribute("tabindex", "0");
-    fullViewGrid.classList.add("fullViewGrid");
-    fullViewGrid.classList.add("collapse_full_view");
+    fullViewGrid.classList.add("full-view-grid");
+    fullViewGrid.classList.add("full-view-grid-collapse");
     document.body.after(fullViewGrid);
     const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
-<div id="bigImageFrame" class="bigImageFrame b-f-collapse" tabindex="0">
-   <a id="imgLandLeft" class="imgLandLeft"></a>
-   <a id="imgLandRight" class="imgLandRight"></a>
-   <a id="imgLandTop" class="imgLandTop"></a>
-   <a id="imgLandBottom" class="imgLandBottom"></a>
+<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="0">
+   <a id="img-land-left" class="img-land-left"></a>
+   <a id="img-land-right" class="img-land-right"></a>
+   <a id="img-land-top" class="img-land-top"></a>
+   <a id="img-land-bottom" class="img-land-bottom"></a>
 </div>
-<div id="pageHelper" class="pageHelper">
+<div id="p-helper" class="p-helper">
     <div style="position: relative">
         <div id="configPanel" class="p-panel p-config p-collapse">
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
@@ -3788,7 +3785,7 @@ text-align: left;
             </div>
             <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
-                    <span>${i18n.autoLoad.get()}</span>
+                    <span>${i18n.autoLoad.get()} :</span>
                     <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
@@ -3841,7 +3838,7 @@ text-align: left;
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
-                    <span>${i18n.minifyPageHelper.get()}</span>
+                    <span>${i18n.minifyPageHelper.get()} :</span>
                     <select id="minifyPageHelperSelect">
                        <option value="always" ${conf.minifyPageHelper == "always" ? "selected" : ""}>Always</option>
                        <option value="inBigMode" ${conf.minifyPageHelper == "inBigMode" ? "selected" : ""}>Big Mode</option>
@@ -3901,15 +3898,14 @@ text-align: left;
             </div>
         </div>
     </div>
-    <div>
+    <div id="ehvp-gate-icon">
         <span id="gate">&lessdot;📖</span>
     </div>
     <div id="b-main" class="b-main b-collapse">
         <div id="configPanelBTN" class="clickable">${i18n.config.get()}</div>
         <div id="downloaderPanelBTN" class="clickable">${i18n.download.get()}</div>
         <div class="b-m-page">
-            <span class="clickable" id="p-currPage"
-                style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
+            <span class="clickable" id="p-curr-page" style="color:orange;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span><span id="p-slash-2">/</span><span>FIN:</span><span id="p-finished">0</span>
         </div>
         <div id="autoPageBTN" class="clickable" style="padding: 0rem 1rem; position: relative; border: 1px solid #777;">
            <span>${i18n.autoPagePlay.get()}</span>
@@ -3917,7 +3913,7 @@ text-align: left;
         </div>
         <div id="collapseBTN" class="clickable">${i18n.collapse.get()}</div>
     </div>
-    <div>
+    <div id="ehvp-bar-gtdot">
         <span>&gtdot;</span>
     </div>
 </div>
@@ -3927,9 +3923,9 @@ text-align: left;
     return {
       fullViewGrid,
       // root element
-      bigImageFrame: fullViewGrid.querySelector("#bigImageFrame"),
+      bigImageFrame: fullViewGrid.querySelector("#big-img-frame"),
       // page helper
-      pageHelper: fullViewGrid.querySelector("#pageHelper"),
+      pageHelper: fullViewGrid.querySelector("#p-helper"),
       // config button in pageHelper
       configPanelBTN: fullViewGrid.querySelector("#configPanelBTN"),
       // config panel mouse leave event
@@ -3940,14 +3936,14 @@ text-align: left;
       downloaderPanel: fullViewGrid.querySelector("#downloaderPanel"),
       collapseBTN: fullViewGrid.querySelector("#collapseBTN"),
       gate: fullViewGrid.querySelector("#gate"),
-      currPageElement: fullViewGrid.querySelector("#p-currPage"),
+      currPageElement: fullViewGrid.querySelector("#p-curr-page"),
       totalPageElement: fullViewGrid.querySelector("#p-total"),
       finishedElement: fullViewGrid.querySelector("#p-finished"),
       showGuideElement: fullViewGrid.querySelector("#showGuideElement"),
-      imgLandLeft: fullViewGrid.querySelector("#imgLandLeft"),
-      imgLandRight: fullViewGrid.querySelector("#imgLandRight"),
-      imgLandTop: fullViewGrid.querySelector("#imgLandTop"),
-      imgLandBottom: fullViewGrid.querySelector("#imgLandBottom"),
+      imgLandLeft: fullViewGrid.querySelector("#img-land-left"),
+      imgLandRight: fullViewGrid.querySelector("#img-land-light"),
+      imgLandTop: fullViewGrid.querySelector("#img-land-top"),
+      imgLandBottom: fullViewGrid.querySelector("#img-land-bottom"),
       imgScaleBar: fullViewGrid.querySelector("#imgScaleBar"),
       autoPageBTN: fullViewGrid.querySelector("#autoPageBTN"),
       pageLoading: fullViewGrid.querySelector("#page-loading"),
@@ -4019,9 +4015,9 @@ text-align: left;
     }
     setFetchState(state) {
       if (state === "fetching") {
-        this.html.pageHelper.classList.add("pageHelperFetching");
+        this.html.pageHelper.classList.add("p-helper-fetching");
       } else {
-        this.html.pageHelper.classList.remove("pageHelperFetching");
+        this.html.pageHelper.classList.remove("p-helper-fetching");
       }
     }
     setPageState({ total, current, finished }) {
@@ -4033,6 +4029,27 @@ text-align: left;
       }
       if (finished !== void 0) {
         this.html.finishedElement.textContent = finished;
+      }
+    }
+    minify(ok, level) {
+      switch (conf.minifyPageHelper) {
+        case "inBigMode":
+          if (level === "fullViewGrid") {
+            return;
+          }
+          break;
+        case "always":
+          if (level === "bigImageFrame") {
+            return;
+          }
+          break;
+        case "never":
+          return;
+      }
+      if (ok) {
+        this.html.pageHelper.classList.add("p-minify");
+      } else {
+        this.html.pageHelper.classList.remove("p-minify");
       }
     }
   }
@@ -4054,8 +4071,8 @@ text-align: left;
     debouncer;
     throttler;
     callbackOnWheel;
-    callbackOnHidden;
-    callbackOnShow;
+    onShowEventContext = /* @__PURE__ */ new Map();
+    onHiddenEventContext = /* @__PURE__ */ new Map();
     hammer;
     preventStepLock = true;
     preventStepLockEle;
@@ -4226,20 +4243,19 @@ text-align: left;
       if (event && event.target && event.target.tagName === "SPAN")
         return;
       this.visible = false;
-      this.callbackOnHidden?.();
+      this.onHiddenEventContext.forEach((cb) => cb());
       this.frame.blur();
       this.html.fullViewGrid.focus();
-      this.frame.classList.add("b-f-collapse");
+      this.frame.classList.add("big-img-frame-collapse");
       this.frameScrollAbort?.abort();
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
         this.removeMediaNode();
         this.frame.childNodes.forEach((child) => child.hidden = true);
       }, 700);
-      this.html.pageHelper.classList.remove("p-minify");
     }
     show(event) {
       this.visible = true;
-      this.frame.classList.remove("b-f-collapse");
+      this.frame.classList.remove("big-img-frame-collapse");
       this.frameScrollAbort = new AbortController();
       this.frame.addEventListener("scroll", (event2) => this.onScroll(event2), { signal: this.frameScrollAbort.signal });
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
@@ -4255,8 +4271,7 @@ text-align: left;
         });
       }, 700);
       this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
-        this.callbackOnShow?.();
-        this.html.pageHelper.classList.add("p-minify");
+        this.onShowEventContext.forEach((cb) => cb());
         let start = this.queue.currIndex;
         if (event && event.target) {
           start = this.queue.findImgIndex(event.target);
@@ -4509,7 +4524,7 @@ text-align: left;
       const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".bigImageFrame > img, .bigImageFrame > video") {
+          if (cssRule.selectorText === ".big-img-frame > img, .big-img-frame > video") {
             if (!conf.imgScale)
               conf.imgScale = 0;
             if (conf.imgScale == 0 && (_percent || this.currMediaNode)) {
@@ -4544,7 +4559,7 @@ text-align: left;
       const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".bigImageFrame > img, .bigImageFrame > video") {
+          if (cssRule.selectorText === ".big-img-frame > img, .big-img-frame > video") {
             cssRule.style.maxWidth = "100vw";
             if (conf.readMode === "singlePage") {
               cssRule.style.minHeight = "100vh";
@@ -4608,6 +4623,12 @@ text-align: left;
       }
       return 0;
     }
+    onShow(id, callback) {
+      this.onShowEventContext.set(id, callback);
+    }
+    onHidden(id, callback) {
+      this.onHiddenEventContext.set(id, callback);
+    }
   }
   class AutoPage {
     frameManager;
@@ -4627,14 +4648,8 @@ text-align: left;
           this.start(this.lockVer);
         }
       };
-      this.frameManager.callbackOnHidden = () => {
-        this.stop();
-      };
-      this.frameManager.callbackOnShow = () => {
-        if (conf.autoPlay) {
-          this.start(this.lockVer);
-        }
-      };
+      this.frameManager.onHidden(0, () => this.stop());
+      this.frameManager.onShow(0, () => conf.autoPlay && this.start(this.lockVer));
       this.initPlayButton();
     }
     initPlayButton() {
@@ -4650,7 +4665,7 @@ text-align: left;
       this.status = "running";
       this.button.firstElementChild.innerText = i18n.autoPagePause.get();
       const b = this.frameManager.frame;
-      if (this.frameManager.frame.classList.contains("b-f-collapse")) {
+      if (this.frameManager.frame.classList.contains("big-img-frame-collapse")) {
         this.frameManager.show();
       }
       const progress = this.button.querySelector("#autoPageProgress");
@@ -4745,6 +4760,8 @@ text-align: left;
       HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
       return false;
     });
+    BIFM.onShow(1, () => PH.minify(true, "bigImageFrame"));
+    BIFM.onHidden(1, () => PH.minify(false, "bigImageFrame"));
     const debouncer = new Debouncer();
     IFQ.subscribeOnFinishedReport(3, (index) => {
       debouncer.addEvent("APPEND-NEXT-PAGES", () => PF.appendNextPages(index), 5);
@@ -4762,7 +4779,7 @@ text-align: left;
       PH.setPageState({ total: `${total}${done ? "" : ".."}` });
       setTimeout(() => PF.renderCurrView(), 200);
     });
-    const events = initEvents(HTML, BIFM, IFQ, PF, IL);
+    const events = initEvents(HTML, BIFM, IFQ, PF, IL, PH);
     addEventListeners(events, HTML, BIFM, IFQ, DL);
     if (conf["first"]) {
       events.showGuideEvent();

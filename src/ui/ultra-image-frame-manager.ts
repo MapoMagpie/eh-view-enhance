@@ -19,8 +19,8 @@ export class BigImageFrameManager {
   debouncer: Debouncer;
   throttler: Debouncer;
   callbackOnWheel?: (event: WheelEvent) => void;
-  callbackOnHidden?: () => void;
-  callbackOnShow?: () => void;
+  private onShowEventContext: Map<number, () => void> = new Map();
+  private onHiddenEventContext: Map<number, () => void> = new Map();
   hammer?: HammerManager;
   preventStepLock: boolean = true;
   preventStepLockEle?: HTMLElement;
@@ -203,21 +203,20 @@ export class BigImageFrameManager {
   hidden(event?: MouseEvent) {
     if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
     this.visible = false;
-    this.callbackOnHidden?.();
+    this.onHiddenEventContext.forEach(cb => cb());
     this.frame.blur();
     this.html.fullViewGrid.focus();
-    this.frame.classList.add("b-f-collapse");
+    this.frame.classList.add("big-img-frame-collapse");
     this.frameScrollAbort?.abort();
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
       this.removeMediaNode();
       this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
     }, 700);
-    this.html.pageHelper.classList.remove("p-minify");
   }
 
   show(event?: Event) {
     this.visible = true;
-    this.frame.classList.remove("b-f-collapse");
+    this.frame.classList.remove("big-img-frame-collapse");
     this.frameScrollAbort = new AbortController();
     this.frame.addEventListener("scroll", (event) => this.onScroll(event), { signal: this.frameScrollAbort.signal });
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
@@ -235,8 +234,7 @@ export class BigImageFrameManager {
     }, 700);
 
     this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
-      this.callbackOnShow?.();
-      this.html.pageHelper.classList.add("p-minify")
+      this.onShowEventContext.forEach(cb => cb());
       // 获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
       let start = this.queue.currIndex;
       if (event && event.target) {
@@ -520,7 +518,7 @@ export class BigImageFrameManager {
     const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
     for (const cssRule of cssRules) {
       if (cssRule instanceof CSSStyleRule) {
-        if (cssRule.selectorText === ".bigImageFrame > img, .bigImageFrame > video") {
+        if (cssRule.selectorText === ".big-img-frame > img, .big-img-frame > video") {
           // if is default scale, then set height to unset, and compute current width percent
           if (!conf.imgScale) conf.imgScale = 0; // fix imgScale if it is null
           if (conf.imgScale == 0 && (_percent || this.currMediaNode)) {
@@ -557,7 +555,7 @@ export class BigImageFrameManager {
     const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
     for (const cssRule of cssRules) {
       if (cssRule instanceof CSSStyleRule) {
-        if (cssRule.selectorText === ".bigImageFrame > img, .bigImageFrame > video") {
+        if (cssRule.selectorText === ".big-img-frame > img, .big-img-frame > video") {
           cssRule.style.maxWidth = "100vw";
           if (conf.readMode === "singlePage") {
             cssRule.style.minHeight = "100vh";
@@ -625,6 +623,13 @@ export class BigImageFrameManager {
     }
     return 0;
   }
+
+  onShow(id: number, callback: () => void) {
+    this.onShowEventContext.set(id, callback);
+  }
+  onHidden(id: number, callback: () => void) {
+    this.onHiddenEventContext.set(id, callback);
+  }
 }
 
 // 自动翻页
@@ -646,14 +651,8 @@ class AutoPage {
         this.start(this.lockVer);
       }
     };
-    this.frameManager.callbackOnHidden = () => {
-      this.stop();
-    }
-    this.frameManager.callbackOnShow = () => {
-      if (conf.autoPlay) {
-        this.start(this.lockVer);
-      }
-    }
+    this.frameManager.onHidden(0, () => this.stop());
+    this.frameManager.onShow(0, () => conf.autoPlay && this.start(this.lockVer));
     this.initPlayButton();
   }
 
@@ -671,7 +670,7 @@ class AutoPage {
     this.status = "running";
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
     const b = this.frameManager.frame;
-    if (this.frameManager.frame.classList.contains("b-f-collapse")) {
+    if (this.frameManager.frame.classList.contains("big-img-frame-collapse")) {
       this.frameManager.show();
     }
     const progress = this.button.querySelector<HTMLDivElement>("#autoPageProgress")!;

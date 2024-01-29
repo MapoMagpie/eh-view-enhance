@@ -87,7 +87,7 @@ export default class ImageNode {
     }
     if (!this.downloadBar) {
       const downloadBar = document.createElement("div");
-      downloadBar.classList.add("downloadBar");
+      downloadBar.classList.add("download-bar");
       downloadBar.innerHTML = `
       <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
       `;

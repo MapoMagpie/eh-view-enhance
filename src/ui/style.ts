@@ -4,7 +4,7 @@ export function loadStyleSheel() {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
   const style = document.createElement('style');
   const css = `
-.fullViewGrid {
+.full-view-grid {
   width: 100vw;
   height: 100vh;
   background-color: rgb(0, 0, 0);
@@ -19,7 +19,7 @@ export function loadStyleSheel() {
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
 }
-.fullViewGrid input, .fullViewGrid select {
+.full-view-grid input, .full-view-grid select {
   color: #f1f1f1;
   background-color: #34353b !important;
   color-scheme: dark;
@@ -36,10 +36,10 @@ export function loadStyleSheel() {
 .p-label {
   cursor: pointer;
 }
-.fullViewGrid .img-node {
+.full-view-grid .img-node {
   position: relative;
 }
-.fullViewGrid .img-node img {
+.full-view-grid .img-node img {
   position: relative;
   width: 100%;
   height: auto;
@@ -83,14 +83,14 @@ export function loadStyleSheel() {
     left: 0%;
 	}
 }
-.collapse_full_view {
+.full-view-grid-collapse {
   height: 0;
   transition: height 0.4s;
 }
-.bigImageFrame::-webkit-scrollbar {
+.big-img-frame::-webkit-scrollbar {
   display: none;
 }
-.bigImageFrame {
+.big-img-frame {
   position: fixed;
   width: 100%;
   height: 100%;
@@ -103,13 +103,13 @@ export function loadStyleSheel() {
   transition: width 0.4s;
   scrollbar-width: none;
 }
-.bigImageFrame > img, .bigImageFrame > video {
+.big-img-frame > img, .big-img-frame > video {
   object-fit: contain;
   /* border-bottom: 1px solid #ffffff; */
   display: block;
   margin: 0 auto;
 }
-.pageHelper {
+.p-helper {
   position: fixed;
   display: flex !important;
   justify-content: space-between;
@@ -121,7 +121,7 @@ export function loadStyleSheel() {
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
-.pageHelper .p-panel {
+.p-helper .p-panel {
   z-index: 2012 !important;
   background-color: rgba(38, 20, 25, 0.8);
   box-sizing: border-box;
@@ -133,13 +133,13 @@ export function loadStyleSheel() {
   padding: 3px;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
-  .pageHelper.pageHelperExtend {
+  .p-helper.p-helper-extend {
     min-width: 24rem;
     transition: min-width 0.4s ease;
     font-size: 1rem;
     line-height: 1.2rem;
   }
-  .pageHelper {
+  .p-helper {
     top: ${conf.pageHelperAbTop};
     left: ${conf.pageHelperAbLeft};
     bottom: ${conf.pageHelperAbBottom};
@@ -147,32 +147,32 @@ export function loadStyleSheel() {
     font-size: 1rem;
     line-height: 1.2rem;
   }
-  .pageHelper .p-panel {
+  .p-helper .p-panel {
     width: 24rem;
     height: 30rem;
     bottom: 1.3rem;
   }
-  .pageHelper .p-btn {
+  .p-helper .p-btn {
     height: 1.5rem;
     width: 1.5rem;
     border: 1px solid #000000;
     border-radius: 4px;
   }
-  .pageHelperExtend .b-main {
+  .p-helper-extend .b-main {
     max-width: 24rem !important;
   }
-  .fullViewGrid input[type="checkbox"] {
+  .full-view-grid input[type="checkbox"] {
     width: 1rem;
     height: unset !important;
   }
-  .fullViewGrid select {
+  .full-view-grid select {
     width: 7rem !important;
   }
-  .fullViewGrid input, .fullViewGrid select {
+  .full-view-grid input, .full-view-grid select {
     width: 2rem;
     height: 1.5rem;
   }
-  .pageHelper .p-config {
+  .p-helper .p-config {
     line-height: 2rem;
   }
   #imgScaleResetBTN {
@@ -180,64 +180,66 @@ export function loadStyleSheel() {
   }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
-  .pageHelper.pageHelperExtend {
+  .p-helper.p-helper-extend {
     min-width: 100vw;
     transition: min-width 0.4s ease;
     font-size: 4.2cqw;
     line-height: 5cqw;
   }
-  .pageHelper {
+  .p-helper {
     bottom: 0px;
     left: 0px;
     font-size: 8cqw;
     line-height: 8.1cqw;
   }
-  .pageHelper .p-panel {
+  .p-helper .p-panel {
     width: 100vw;
     height: 60vh;
     bottom: 5.7cqw;
   }
-  .pageHelper .p-btn {
+  .p-helper .p-btn {
     height: 6cqw;
     width: 6cqw;
     border: 0.4cqw solid #000000;
     border-radius: 1cqw;
   }
-  .pageHelperExtend .b-main {
+  .p-helper-extend .b-main {
     max-width: 100vw !important;
   }
-  .fullViewGrid input[type="checkbox"] {
+  .full-view-grid input[type="checkbox"] {
     width: 4cqw;
     height: unset !important;
   }
-  .fullViewGrid select {
+  .full-view-grid select {
     width: 25cqw !important;
   }
-  .fullViewGrid input, .fullViewGrid select {
+  .full-view-grid input, .full-view-grid select {
     width: 9cqw;
     height: 6cqw;
     font-size: 3cqw;
   }
-  .pageHelper .p-config {
+  .p-helper .p-config {
     line-height: 9cqw;
   }
   #imgScaleResetBTN {
     width: 14cqw;
   }
 }
+.p-minify:not(:hover) > :not(.b-main),
+.p-minify:not(:hover) > .b-main > :not(.b-m-page),
+.p-minify:not(:hover) .b-m-page > :not(#p-curr-page):not(#p-total):not(#p-slash-1) {
+  display: none !important;
+}
+.p-minify.p-helper, .p-minify.p-helper-extend {
+  transition: unset;
+}
 .p-minify:not(:hover) {
   min-width: 0px !important;
 }
-.p-minify:not(:hover) .b-main {
-  width: auto;
-}
-.p-minify:not(:hover) .b-main > :not(.b-m-page) {
-  display: none;
-}
-.pageHelper:hover {
+.p-helper:hover {
   background-color: #3a3a3ae6;
 }
-.pageHelper .clickable {
+.p-helper .clickable {
   text-decoration-line: underline;
   z-index: 1111;
   user-select: none;
@@ -246,7 +248,7 @@ export function loadStyleSheel() {
 .clickable:hover {
   color: #90ea90 !important;
 }
-.pageHelper .p-img-scale {
+.p-helper .p-img-scale {
   display: flex;
 }
 .p-img-scale .scale-btn {
@@ -278,7 +280,7 @@ export function loadStyleSheel() {
   transition: height 0.4s;
   padding: 0px !important;
 }
-.pageHelper .b-main {
+.p-helper .b-main {
   max-width: 0px;
   overflow: hidden !important;
   display: flex;
@@ -286,24 +288,24 @@ export function loadStyleSheel() {
   white-space: nowrap !important;
   transition: flex-grow 0.6s ease, max-width 0.5s ease;
 }
-.pageHelperExtend .b-main {
+.p-helper-extend .b-main {
   flex-grow: 1;
   transition: flex-grow 0.6s ease, max-width 0.5s ease;
 }
-.pageHelper .p-config {
+.p-helper .p-config {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   align-content: start;
 }
-.pageHelper .p-config label {
+.p-helper .p-config label {
   display: flex;
   justify-content: space-between;
   padding-right: 10px;
 }
-.pageHelper .p-config input {
+.p-helper .p-config input {
   cursor: ns-resize;
 }
-.pageHelper .p-downloader {
+.p-helper .p-downloader {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -322,18 +324,18 @@ export function loadStyleSheel() {
   text-align: right;
   width: 100%;
 }
-.pageHelper .p-btn {
+.p-helper .p-btn {
   color: rgb(255, 255, 255);
   cursor: pointer;
   font-weight: 900;
   background: rgb(81, 81, 81);
   vertical-align: middle;
 }
-.pageHelperFetching {
+.p-helper-fetching {
   border: none !important;
   box-sizing: border-box;
 }
-.pageHelperFetching::after {
+.p-helper-fetching::after {
 	content: '';
 	position: absolute;
 	z-index: -1;
@@ -364,59 +366,52 @@ export function loadStyleSheel() {
     width: 100%;
   }
 }
-.b-f-collapse {
+.big-img-frame-collapse {
   width: 0px !important;
   transition: width 0.4s;
 }
-.b-f-collapse .imgLandLeft,
-.b-f-collapse .imgLandRight,
-.b-f-collapse .imgLandTop,
-.b-f-collapse .imgLandBottom {
+.big-img-frame-collapse .img-land-left,
+.big-img-frame-collapse .img-land-right,
+.big-img-frame-collapse .img-land-top,
+.big-img-frame-collapse .img-land-bottom {
   display: none !important;
 }
-.downloadBar {
+.download-bar {
   background-color: rgba(100, 100, 100, 0.8);
   height: 0.5rem;
   width: 100%;
   position: absolute;
   bottom: 0;
 }
-.imgLandLeft, .imgLandRight {
-  height: 100%;
+.img-land-left, .img-land-right {
+  width: 20%;
+  height: 50%;
   position: fixed;
   z-index: 1004;
+  top: 25%;
 }
-.imgLandLeft {
-  left: 0;
-  top: 0;
-  cursor: url("https://exhentai.org/img/p.png"), auto;
-}
-.imgLandRight {
-  right: 0;
-  top: 0;
-  cursor: url("https://exhentai.org/img/n.png"), auto;
-}
-.imgLandTop, .imgLandBottom {
-  left: 0px;
-  width: 100%;
+.img-land-top, .img-land-bottom {
+  width: 50%;
+  height: 10%;
+  left: 25%;
   position: fixed;
   z-index: 1005;
 }
-.imgLandTop {
-  top: 0;
-  z-index: 1005;
+.img-land-left {
+  left: 0;
   cursor: url("https://exhentai.org/img/p.png"), auto;
 }
-.imgLandBottom {
+.img-land-right {
+  right: 0;
+  cursor: url("https://exhentai.org/img/n.png"), auto;
+}
+.img-land-top {
+  top: 0;
+  cursor: url("https://exhentai.org/img/p.png"), auto;
+}
+.img-land-bottom {
   bottom: 0;
-  z-index: 1005;
   cursor: url("https://exhentai.org/img/b.png"), auto;
-}
-.imgLandTop, .imgLandBottom {
-  height: 30%;
-}
-.imgLandLeft, .imgLandRight {
-  width: 30%;
 }
 .p-tooltip {
   border-bottom: 1px dotted black;

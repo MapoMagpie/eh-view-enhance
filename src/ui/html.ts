@@ -12,11 +12,11 @@ import { BigImageFrameManager } from "./ultra-image-frame-manager";
 export type Elements = ReturnType<typeof createHTML>;
 
 export function createHTML() {
-  const fullViewPlane = document.createElement("div");
-  fullViewPlane.setAttribute("tabindex", "0");
-  fullViewPlane.classList.add("fullViewPlane");
-  fullViewPlane.classList.add("collapse_full_view");
-  document.body.after(fullViewPlane);
+  const fullViewGrid = document.createElement("div");
+  fullViewGrid.setAttribute("tabindex", "0");
+  fullViewGrid.classList.add("fullViewGrid");
+  fullViewGrid.classList.add("collapse_full_view");
+  document.body.after(fullViewGrid);
 
   const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
@@ -30,7 +30,7 @@ export function createHTML() {
 </div>
 <div id="pageHelper" class="pageHelper">
     <div style="position: relative">
-        <div id="configPlane" class="p-plane p-config p-collapse">
+        <div id="configPanel" class="p-panel p-config p-collapse">
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.columns.get()}:</span>
@@ -85,9 +85,7 @@ export function createHTML() {
             </div>
             <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
-                    <span>${i18n.autoLoad.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
-                    </span>
+                    <span>${i18n.autoLoad.get()} :</span>
                     <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
@@ -105,6 +103,14 @@ export function createHTML() {
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
                     </span>
                     <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" />
+                </label>
+            </div>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                <label class="p-label">
+                    <span>${i18n.autoCollapsePanels.get()}
+                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelsTooltip.get()}</span></span>:
+                    </span>
+                    <input id="autoCollapsePanelsCheckbox" ${conf.autoCollapsePanels ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
@@ -127,6 +133,16 @@ export function createHTML() {
                        <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
                        <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
                        <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
+                    </select>
+                </label>
+            </div>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                <label class="p-label">
+                    <span>${i18n.minifyPageHelper.get()} :</span>
+                    <select id="minifyPageHelperSelect">
+                       <option value="always" ${conf.minifyPageHelper == "always" ? "selected" : ""}>Always</option>
+                       <option value="inBigMode" ${conf.minifyPageHelper == "inBigMode" ? "selected" : ""}>Big Mode</option>
+                       <option value="never" ${conf.minifyPageHelper == "never" ? "selected" : ""}>Never</option>
                     </select>
                 </label>
             </div>
@@ -173,7 +189,7 @@ export function createHTML() {
                 <div id="imgScaleResetBTN" class="scale-btn"><span>RESET</span></div>
             </div>
         </div>
-        <div id="downloaderPlane" class="p-plane p-downloader p-collapse">
+        <div id="downloaderPanel" class="p-panel p-downloader p-collapse">
             <div id="download-notice" class="download-notice"></div>
             <canvas id="downloaderCanvas" width="100" height="100"></canvas>
             <div class="download-btn-group">
@@ -186,8 +202,8 @@ export function createHTML() {
         <span id="gate">&lessdot;📖</span>
     </div>
     <div id="b-main" class="b-main b-collapse">
-        <div id="configPlaneBTN" class="clickable">${i18n.config.get()}</div>
-        <div id="downloaderPlaneBTN" class="clickable">${i18n.download.get()}</div>
+        <div id="configPanelBTN" class="clickable">${i18n.config.get()}</div>
+        <div id="downloaderPanelBTN" class="clickable">${i18n.download.get()}</div>
         <div class="b-m-page">
             <span class="clickable" id="p-currPage"
                 style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
@@ -203,55 +219,58 @@ export function createHTML() {
     </div>
 </div>
 `;
-  fullViewPlane.innerHTML = HTML_STRINGS;
+  fullViewGrid.innerHTML = HTML_STRINGS;
   const styleSheel = loadStyleSheel();
   return {
-    fullViewPlane,
+    fullViewGrid: fullViewGrid,
     // root element
-    bigImageFrame: fullViewPlane.querySelector<HTMLElement>("#bigImageFrame")!,
+    bigImageFrame: fullViewGrid.querySelector<HTMLElement>("#bigImageFrame")!,
     // page helper
-    pageHelper: fullViewPlane.querySelector<HTMLElement>("#pageHelper")!,
+    pageHelper: fullViewGrid.querySelector<HTMLElement>("#pageHelper")!,
     // config button in pageHelper
-    configPlaneBTN: fullViewPlane.querySelector<HTMLElement>("#configPlaneBTN")!,
-    // config plane mouse leave event
-    configPlane: fullViewPlane.querySelector<HTMLElement>("#configPlane")!,
+    configPanelBTN: fullViewGrid.querySelector<HTMLElement>("#configPanelBTN")!,
+    // config panel mouse leave event
+    configPanel: fullViewGrid.querySelector<HTMLElement>("#configPanel")!,
     // download button in pageHelper
-    downloaderPlaneBTN: fullViewPlane.querySelector<HTMLElement>("#downloaderPlaneBTN")!,
-    // download plane mouse leave event
-    downloaderPlane: fullViewPlane.querySelector<HTMLElement>("#downloaderPlane")!,
-    collapseBTN: fullViewPlane.querySelector<HTMLElement>("#collapseBTN")!,
-    gate: fullViewPlane.querySelector<HTMLElement>("#gate")!,
-    currPageElement: fullViewPlane.querySelector<HTMLElement>("#p-currPage")!,
-    totalPageElement: fullViewPlane.querySelector<HTMLElement>("#p-total")!,
-    finishedElement: fullViewPlane.querySelector<HTMLElement>("#p-finished")!,
-    showGuideElement: fullViewPlane.querySelector<HTMLElement>("#showGuideElement")!,
-    imgLandLeft: fullViewPlane.querySelector<HTMLElement>("#imgLandLeft")!,
-    imgLandRight: fullViewPlane.querySelector<HTMLElement>("#imgLandRight")!,
-    imgLandTop: fullViewPlane.querySelector<HTMLElement>("#imgLandTop")!,
-    imgLandBottom: fullViewPlane.querySelector<HTMLElement>("#imgLandBottom")!,
-    imgScaleBar: fullViewPlane.querySelector<HTMLElement>("#imgScaleBar")!,
-    autoPageBTN: fullViewPlane.querySelector<HTMLElement>("#autoPageBTN")!,
-    pageLoading: fullViewPlane.querySelector<HTMLElement>("#page-loading")!,
+    downloaderPanelBTN: fullViewGrid.querySelector<HTMLElement>("#downloaderPanelBTN")!,
+    // download panel mouse leave event
+    downloaderPanel: fullViewGrid.querySelector<HTMLElement>("#downloaderPanel")!,
+    collapseBTN: fullViewGrid.querySelector<HTMLElement>("#collapseBTN")!,
+    gate: fullViewGrid.querySelector<HTMLElement>("#gate")!,
+    currPageElement: fullViewGrid.querySelector<HTMLElement>("#p-currPage")!,
+    totalPageElement: fullViewGrid.querySelector<HTMLElement>("#p-total")!,
+    finishedElement: fullViewGrid.querySelector<HTMLElement>("#p-finished")!,
+    showGuideElement: fullViewGrid.querySelector<HTMLElement>("#showGuideElement")!,
+    imgLandLeft: fullViewGrid.querySelector<HTMLElement>("#imgLandLeft")!,
+    imgLandRight: fullViewGrid.querySelector<HTMLElement>("#imgLandRight")!,
+    imgLandTop: fullViewGrid.querySelector<HTMLElement>("#imgLandTop")!,
+    imgLandBottom: fullViewGrid.querySelector<HTMLElement>("#imgLandBottom")!,
+    imgScaleBar: fullViewGrid.querySelector<HTMLElement>("#imgScaleBar")!,
+    autoPageBTN: fullViewGrid.querySelector<HTMLElement>("#autoPageBTN")!,
+    pageLoading: fullViewGrid.querySelector<HTMLElement>("#page-loading")!,
     styleSheel,
   };
 }
 
 export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, DL: Downloader) {
-  HTML.configPlaneBTN.addEventListener("click", () => events.togglePlaneEvent("config"));
-  HTML.configPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
-  HTML.configPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
-  HTML.downloaderPlaneBTN.addEventListener("click", () => {
+  HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
+  HTML.downloaderPanelBTN.addEventListener("click", () => {
     DL.check();
-    events.togglePlaneEvent("downloader");
+    events.togglePanelEvent("downloader");
   });
-  HTML.downloaderPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
-  HTML.downloaderPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target as HTMLElement));
+
+  HTML.configPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target as HTMLElement, "config"));
+  HTML.configPanel.addEventListener("blur", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target as HTMLElement, "config"));
+  HTML.downloaderPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target as HTMLElement, "downloader"));
+  HTML.downloaderPanel.addEventListener("blur", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target as HTMLElement, "downloader"));
+  HTML.pageHelper.addEventListener("mouseover", () => conf.autoCollapsePanels && events.abortMouseleavePanelEvent(""));
+  HTML.pageHelper.addEventListener("mouseleave", () => conf.autoCollapsePanels && ["config", "downloader"].forEach(k => events.togglePanelEvent(k, true)));
 
   // modify config event
   for (const key of ConfigNumberKeys) {
-    HTML.fullViewPlane.querySelector<HTMLButtonElement>(`#${key}MinusBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
-    HTML.fullViewPlane.querySelector<HTMLButtonElement>(`#${key}AddBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
-    HTML.fullViewPlane.querySelector<HTMLInputElement>(`#${key}Input`)!.addEventListener("wheel", (event: WheelEvent) => {
+    HTML.fullViewGrid.querySelector<HTMLButtonElement>(`#${key}MinusBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
+    HTML.fullViewGrid.querySelector<HTMLButtonElement>(`#${key}AddBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
+    HTML.fullViewGrid.querySelector<HTMLInputElement>(`#${key}Input`)!.addEventListener("wheel", (event: WheelEvent) => {
       if (event.deltaY < 0) {
         events.modNumberConfigEvent(key as ConfigNumberType, 'add');
       } else if (event.deltaY > 0) {
@@ -260,10 +279,10 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     });
   }
   for (const key of ConfigBooleanKeys) {
-    HTML.fullViewPlane.querySelector(`#${key}Checkbox`)!.addEventListener("input", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
+    HTML.fullViewGrid.querySelector(`#${key}Checkbox`)!.addEventListener("input", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
   }
   for (const key of ConfigSelectKeys) {
-    HTML.fullViewPlane.querySelector(`#${key}Select`)!.addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
+    HTML.fullViewGrid.querySelector(`#${key}Select`)!.addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
   }
 
   // entry 入口
@@ -273,15 +292,15 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   const debouncer = new Debouncer();
 
   //全屏阅读元素滚动事件
-  HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
-  HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
+  HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
+  HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
 
   HTML.currPageElement.addEventListener("click", () => BIFM.show());
   HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event as WheelEvent));
 
   // Shortcut
   document.addEventListener("keydown", (event) => events.keyboardEvent(event));
-  HTML.fullViewPlane.addEventListener("keydown", (event) => events.fullViewPlaneKeyBoardEvent(event));
+  HTML.fullViewGrid.addEventListener("keydown", (event) => events.fullViewGridKeyBoardEvent(event));
   // 箭头导航
   HTML.imgLandLeft.addEventListener("click", (event) => {
     IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");

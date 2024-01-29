@@ -71,7 +71,9 @@
       filenameTemplate: "{number}-{title}",
       preventScrollPageTime: 200,
       archiveVolumeSize: 1500,
-      convertTo: "GIF"
+      convertTo: "GIF",
+      autoCollapsePanels: true,
+      minifyPageHelper: "inBigMode"
     };
   }
   const VERSION = "4.1.10";
@@ -106,12 +108,24 @@
       $conf.pageHelperAbRight = Math.max(parseInt($conf.pageHelperAbRight), 5) + "px";
       changed = true;
     }
-    if (!$conf.archiveVolumeSize) {
+    if ($conf.archiveVolumeSize === void 0) {
       $conf.archiveVolumeSize = 1500;
       changed = true;
     }
-    if (!$conf.convertTo) {
+    if ($conf.convertTo === void 0) {
       $conf.convertTo = "GIF";
+      changed = true;
+    }
+    if ($conf.autoCollapsePanels === void 0) {
+      $conf.autoCollapsePanels = true;
+      changed = true;
+    }
+    if ($conf.minifyPageHelper === void 0) {
+      $conf.minifyPageHelper = "inBigMode";
+      changed = true;
+    }
+    if ($conf.restartIdleLoader === 8e3) {
+      $conf.restartIdleLoader = 5e3;
       changed = true;
     }
     if (changed) {
@@ -123,8 +137,8 @@
     _GM_setValue(CONFIG_KEY, JSON.stringify(c));
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay"];
-  const ConfigSelectKeys = ["readMode", "stickyMouse"];
+  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanels"];
+  const ConfigSelectKeys = ["readMode", "stickyMouse", "minifyPageHelper"];
   const conf = getConf();
 
   function evLog(msg, ...info) {
@@ -394,8 +408,12 @@
     packaging: new I18nValue("Packaging...", "打包中..."),
     reversePages: new I18nValue("Reverse Pages", "反向翻页"),
     reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
+    autoCollapsePanels: new I18nValue("Auto Flod Control Panels", "自动收起控制面板"),
+    autoCollapsePanelsTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
     stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
     stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
+    minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
+    minifyPageHelperTooltip: new I18nValue("Minify Control Bar", "最小化控制栏"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
     help: new I18nValue(`
@@ -696,7 +714,7 @@
     downloadForceElement;
     downloadStartElement;
     downloadNoticeElement;
-    downloaderPlaneBTN;
+    downloaderPanelBTN;
     queue;
     idleLoader;
     done = false;
@@ -711,7 +729,7 @@
       this.downloadForceElement = document.querySelector("#download-force") || void 0;
       this.downloadStartElement = document.querySelector("#download-start") || void 0;
       this.downloadNoticeElement = document.querySelector("#download-notice") || void 0;
-      this.downloaderPlaneBTN = HTML.downloaderPlaneBTN;
+      this.downloaderPanelBTN = HTML.downloaderPanelBTN;
       this.downloadForceElement?.addEventListener("click", () => this.download());
       this.downloadStartElement?.addEventListener("click", () => this.start());
       this.queue.subscribeOnDo(1, () => this.downloading);
@@ -719,10 +737,10 @@
         if (queue2.isFinised()) {
           if (this.downloading) {
             this.download();
-          } else if (!this.done && this.downloaderPlaneBTN.style.color !== "lightgreen") {
-            this.downloaderPlaneBTN.style.color = "lightgreen";
-            if (!/✓/.test(this.downloaderPlaneBTN.textContent)) {
-              this.downloaderPlaneBTN.textContent += "✓";
+          } else if (!this.done && this.downloaderPanelBTN.style.color !== "lightgreen") {
+            this.downloaderPanelBTN.style.color = "lightgreen";
+            if (!/✓/.test(this.downloaderPanelBTN.textContent)) {
+              this.downloaderPanelBTN.textContent += "✓";
             }
           }
         }
@@ -800,7 +818,7 @@
         this.downloadStartElement.style.color = stage === "downloadFailed" ? "red" : "";
         this.downloadStartElement.textContent = i18n[stage].get();
       }
-      this.downloaderPlaneBTN.style.color = stage === "downloadFailed" ? "red" : "";
+      this.downloaderPanelBTN.style.color = stage === "downloadFailed" ? "red" : "";
     }
     download() {
       this.downloading = false;
@@ -843,8 +861,8 @@
         }
         this.flushUI("downloaded");
         this.done = true;
-        this.downloaderPlaneBTN.textContent = i18n.download.get();
-        this.downloaderPlaneBTN.style.color = "";
+        this.downloaderPanelBTN.textContent = i18n.download.get();
+        this.downloaderPanelBTN.style.color = "";
       };
       save();
     }
@@ -1098,7 +1116,7 @@
 
   class PageFetcher {
     queue;
-    fullViewPlane;
+    fullViewGrid;
     pageURLs;
     currPage;
     fetched;
@@ -1113,8 +1131,8 @@
     pageSourceIter;
     appendPageLock = false;
     abortb = false;
-    constructor(fullViewPlane, queue, matcher, imgFetcherSettings) {
-      this.fullViewPlane = fullViewPlane;
+    constructor(fullViewGrid, queue, matcher, imgFetcherSettings) {
+      this.fullViewGrid = fullViewGrid;
       this.queue = queue;
       this.matcher = matcher;
       this.imgFetcherSettings = imgFetcherSettings;
@@ -1147,14 +1165,14 @@
         if (this.done || this.abortb)
           return;
         while (true) {
-          const viewButtom = this.fullViewPlane.scrollTop + this.fullViewPlane.clientHeight;
+          const viewButtom = this.fullViewGrid.scrollTop + this.fullViewGrid.clientHeight;
           if (finished !== void 0) {
             if (finished + 60 < this.queue.length) {
               break;
             }
           } else {
             const lastImgNode = this.queue[this.queue.length - 1].node.root;
-            if (viewButtom + this.fullViewPlane.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
+            if (viewButtom + this.fullViewGrid.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
               break;
             }
           }
@@ -1182,7 +1200,7 @@
         const IFs = nodes.map(
           (imgNode) => new IMGFetcher(imgNode, this.imgFetcherSettings)
         );
-        this.fullViewPlane.lastElementChild.after(...nodes.map((node) => node.create()));
+        this.fullViewGrid.lastElementChild.after(...nodes.map((node) => node.create()));
         this.queue.push(...IFs);
         this.onAppended?.(this.queue.length);
         return true;
@@ -1213,7 +1231,7 @@
      *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
      */
     renderCurrView() {
-      const [scrollTop, clientHeight] = [this.fullViewPlane.scrollTop, this.fullViewPlane.clientHeight];
+      const [scrollTop, clientHeight] = [this.fullViewGrid.scrollTop, this.fullViewGrid.clientHeight];
       const [startRander, endRander] = this.findOutsideRoundView(scrollTop, clientHeight);
       this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
       if (this.queue.dataSize >= 1e9) {
@@ -2886,7 +2904,7 @@ duration 0.04`).join("\n");
         const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules || []);
         for (const cssRule of cssRules) {
           if (cssRule instanceof CSSStyleRule) {
-            if (cssRule.selectorText === ".fullViewPlane") {
+            if (cssRule.selectorText === ".fullViewGrid") {
               cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
               break;
             }
@@ -2920,44 +2938,57 @@ duration 0.04`).join("\n");
         }
       }
     }
-    function mouseleavePlaneEvent(target) {
-      target.classList.add("p-collapse");
+    const cancelIDContext = {};
+    function collapsePanelEvent(target, id) {
+      if (id) {
+        abortMouseleavePanelEvent(id);
+      }
+      const timeoutId = window.setTimeout(() => target.classList.add("p-collapse"), 100);
+      if (id) {
+        cancelIDContext[id] = timeoutId;
+      }
     }
-    function togglePlaneEvent(id, collapse) {
+    function abortMouseleavePanelEvent(id) {
+      (id ? [id] : [...Object.keys(cancelIDContext)]).forEach((k) => {
+        window.clearTimeout(cancelIDContext[k]);
+        delete cancelIDContext[k];
+      });
+    }
+    function togglePanelEvent(id, collapse) {
       setTimeout(() => {
-        let element = document.querySelector(`#${id}Plane`);
+        let element = document.querySelector(`#${id}Panel`);
         if (element) {
           if (collapse === false) {
             element.classList.remove("p-collapse");
           } else if (collapse === true) {
-            mouseleavePlaneEvent(element);
+            collapsePanelEvent(element, id);
           } else {
             element.classList.toggle("p-collapse");
-            ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePlaneEvent(k, true));
+            ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
           }
         }
       }, 10);
     }
     let bodyOverflow = document.body.style.overflow;
-    function showFullViewPlane() {
-      HTML.fullViewPlane.classList.remove("collapse_full_view");
-      HTML.fullViewPlane.focus();
+    function showFullViewGrid() {
+      HTML.fullViewGrid.classList.remove("collapse_full_view");
+      HTML.fullViewGrid.focus();
       document.body.style.overflow = "hidden";
     }
-    function hiddenFullViewPlaneEvent(event) {
-      if (event.target === HTML.fullViewPlane || event.target.classList.contains("img-node")) {
+    function hiddenFullViewGridEvent(event) {
+      if (event.target === HTML.fullViewGrid || event.target.classList.contains("img-node")) {
         main(false);
       }
     }
-    function hiddenFullViewPlane() {
+    function hiddenFullViewGrid() {
       BIFM.hidden();
-      HTML.fullViewPlane.classList.add("collapse_full_view");
-      HTML.fullViewPlane.blur();
+      HTML.fullViewGrid.classList.add("collapse_full_view");
+      HTML.fullViewGrid.blur();
       document.querySelector("html")?.focus();
       document.body.style.overflow = bodyOverflow;
     }
     function scrollEvent() {
-      if (HTML.fullViewPlane.classList.contains("collapse_full_view"))
+      if (HTML.fullViewGrid.classList.contains("collapse_full_view"))
         return;
       PF.renderCurrView();
       PF.appendNextPages();
@@ -3023,10 +3054,10 @@ duration 0.04`).join("\n");
       }
     }
     let numberRecord = null;
-    function fullViewPlaneKeyBoardEvent(event) {
+    function fullViewGridKeyBoardEvent(event) {
       if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) {
         bigImageFrameKeyBoardEvent(event);
-      } else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) {
+      } else if (!HTML.fullViewGrid.classList.contains("collapse_full_view")) {
         let triggered = true;
         switch (event.key) {
           case "Enter": {
@@ -3071,7 +3102,7 @@ duration 0.04`).join("\n");
       }
     }
     function keyboardEvent(event) {
-      if (!HTML.fullViewPlane.classList.contains("collapse_full_view"))
+      if (!HTML.fullViewGrid.classList.contains("collapse_full_view"))
         return;
       if (!HTML.bigImageFrame.classList.contains("b-f-collapse"))
         return;
@@ -3110,15 +3141,15 @@ text-align: left;
       if (HTML.pageHelper) {
         if (extend && !HTML.pageHelper.classList.contains("pageHelperExtend")) {
           HTML.pageHelper.classList.add("pageHelperExtend");
-          showFullViewPlane();
+          showFullViewGrid();
           if (signal.first) {
             signal.first = false;
             PF.init().then(() => IL.start(IL.lockVer));
           }
         } else {
           HTML.pageHelper.classList.remove("pageHelperExtend");
-          hiddenFullViewPlane();
-          ["config", "downloader"].forEach((id) => togglePlaneEvent(id, true));
+          hiddenFullViewGrid();
+          ["config", "downloader"].forEach((id) => togglePanelEvent(id, true));
         }
       }
     }
@@ -3128,16 +3159,17 @@ text-align: left;
       modBooleanConfigEvent,
       modSelectConfigEvent,
       modPageHelperPostion,
-      togglePlaneEvent,
-      showFullViewPlane,
-      hiddenFullViewPlaneEvent,
-      hiddenFullViewPlane,
+      togglePanelEvent,
+      showFullViewGrid,
+      hiddenFullViewGridEvent,
+      hiddenFullViewGrid,
       scrollEvent,
       bigImageWheelEvent,
-      fullViewPlaneKeyBoardEvent,
+      fullViewGridKeyBoardEvent,
       keyboardEvent,
       showGuideEvent,
-      mouseleavePlaneEvent
+      collapsePanelEvent,
+      abortMouseleavePanelEvent
     };
   }
 
@@ -3178,7 +3210,7 @@ text-align: left;
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
     const style = document.createElement("style");
     const css = `
-.fullViewPlane {
+.fullViewGrid {
   width: 100vw;
   height: 100vh;
   background-color: rgb(0, 0, 0);
@@ -3193,7 +3225,7 @@ text-align: left;
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
 }
-.fullViewPlane input, .fullViewPlane select {
+.fullViewGrid input, .fullViewGrid select {
   color: #f1f1f1;
   background-color: #34353b !important;
   color-scheme: dark;
@@ -3210,10 +3242,10 @@ text-align: left;
 .p-label {
   cursor: pointer;
 }
-.fullViewPlane .img-node {
+.fullViewGrid .img-node {
   position: relative;
 }
-.fullViewPlane .img-node img {
+.fullViewGrid .img-node img {
   position: relative;
   width: 100%;
   height: auto;
@@ -3295,7 +3327,7 @@ text-align: left;
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
-.pageHelper .p-plane {
+.pageHelper .p-panel {
   z-index: 2012 !important;
   background-color: rgba(38, 20, 25, 0.8);
   box-sizing: border-box;
@@ -3321,9 +3353,9 @@ text-align: left;
     font-size: 1rem;
     line-height: 1.2rem;
   }
-  .pageHelper .p-plane {
+  .pageHelper .p-panel {
     width: 24rem;
-    height: 25rem;
+    height: 30rem;
     bottom: 1.3rem;
   }
   .pageHelper .p-btn {
@@ -3335,14 +3367,14 @@ text-align: left;
   .pageHelperExtend .b-main {
     max-width: 24rem !important;
   }
-  .fullViewPlane input[type="checkbox"] {
+  .fullViewGrid input[type="checkbox"] {
     width: 1rem;
     height: unset !important;
   }
-  .fullViewPlane select {
+  .fullViewGrid select {
     width: 7rem !important;
   }
-  .fullViewPlane input, .fullViewPlane select {
+  .fullViewGrid input, .fullViewGrid select {
     width: 2rem;
     height: 1.5rem;
   }
@@ -3366,7 +3398,7 @@ text-align: left;
     font-size: 8cqw;
     line-height: 8.1cqw;
   }
-  .pageHelper .p-plane {
+  .pageHelper .p-panel {
     width: 100vw;
     height: 60vh;
     bottom: 5.7cqw;
@@ -3380,14 +3412,14 @@ text-align: left;
   .pageHelperExtend .b-main {
     max-width: 100vw !important;
   }
-  .fullViewPlane input[type="checkbox"] {
+  .fullViewGrid input[type="checkbox"] {
     width: 4cqw;
     height: unset !important;
   }
-  .fullViewPlane select {
+  .fullViewGrid select {
     width: 25cqw !important;
   }
-  .fullViewPlane input, .fullViewPlane select {
+  .fullViewGrid input, .fullViewGrid select {
     width: 9cqw;
     height: 6cqw;
     font-size: 3cqw;
@@ -3684,11 +3716,11 @@ text-align: left;
   }
 
   function createHTML() {
-    const fullViewPlane = document.createElement("div");
-    fullViewPlane.setAttribute("tabindex", "0");
-    fullViewPlane.classList.add("fullViewPlane");
-    fullViewPlane.classList.add("collapse_full_view");
-    document.body.after(fullViewPlane);
+    const fullViewGrid = document.createElement("div");
+    fullViewGrid.setAttribute("tabindex", "0");
+    fullViewGrid.classList.add("fullViewGrid");
+    fullViewGrid.classList.add("collapse_full_view");
+    document.body.after(fullViewGrid);
     const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
@@ -3701,7 +3733,7 @@ text-align: left;
 </div>
 <div id="pageHelper" class="pageHelper">
     <div style="position: relative">
-        <div id="configPlane" class="p-plane p-config p-collapse">
+        <div id="configPanel" class="p-panel p-config p-collapse">
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.columns.get()}:</span>
@@ -3756,9 +3788,7 @@ text-align: left;
             </div>
             <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
-                    <span>${i18n.autoLoad.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoLoadTooltip.get()}</span></span>:
-                    </span>
+                    <span>${i18n.autoLoad.get()}</span>
                     <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
@@ -3776,6 +3806,14 @@ text-align: left;
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
                     </span>
                     <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" />
+                </label>
+            </div>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                <label class="p-label">
+                    <span>${i18n.autoCollapsePanels.get()}
+                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelsTooltip.get()}</span></span>:
+                    </span>
+                    <input id="autoCollapsePanelsCheckbox" ${conf.autoCollapsePanels ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
@@ -3798,6 +3836,16 @@ text-align: left;
                        <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
                        <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
                        <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
+                    </select>
+                </label>
+            </div>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                <label class="p-label">
+                    <span>${i18n.minifyPageHelper.get()}</span>
+                    <select id="minifyPageHelperSelect">
+                       <option value="always" ${conf.minifyPageHelper == "always" ? "selected" : ""}>Always</option>
+                       <option value="inBigMode" ${conf.minifyPageHelper == "inBigMode" ? "selected" : ""}>Big Mode</option>
+                       <option value="never" ${conf.minifyPageHelper == "never" ? "selected" : ""}>Never</option>
                     </select>
                 </label>
             </div>
@@ -3844,7 +3892,7 @@ text-align: left;
                 <div id="imgScaleResetBTN" class="scale-btn"><span>RESET</span></div>
             </div>
         </div>
-        <div id="downloaderPlane" class="p-plane p-downloader p-collapse">
+        <div id="downloaderPanel" class="p-panel p-downloader p-collapse">
             <div id="download-notice" class="download-notice"></div>
             <canvas id="downloaderCanvas" width="100" height="100"></canvas>
             <div class="download-btn-group">
@@ -3857,8 +3905,8 @@ text-align: left;
         <span id="gate">&lessdot;📖</span>
     </div>
     <div id="b-main" class="b-main b-collapse">
-        <div id="configPlaneBTN" class="clickable">${i18n.config.get()}</div>
-        <div id="downloaderPlaneBTN" class="clickable">${i18n.download.get()}</div>
+        <div id="configPanelBTN" class="clickable">${i18n.config.get()}</div>
+        <div id="downloaderPanelBTN" class="clickable">${i18n.download.get()}</div>
         <div class="b-m-page">
             <span class="clickable" id="p-currPage"
                 style="color:orange;">1</span>/<span id="p-total">0</span>/<span>FIN:</span><span id="p-finished">0</span>
@@ -3874,52 +3922,54 @@ text-align: left;
     </div>
 </div>
 `;
-    fullViewPlane.innerHTML = HTML_STRINGS;
+    fullViewGrid.innerHTML = HTML_STRINGS;
     const styleSheel = loadStyleSheel();
     return {
-      fullViewPlane,
+      fullViewGrid,
       // root element
-      bigImageFrame: fullViewPlane.querySelector("#bigImageFrame"),
+      bigImageFrame: fullViewGrid.querySelector("#bigImageFrame"),
       // page helper
-      pageHelper: fullViewPlane.querySelector("#pageHelper"),
+      pageHelper: fullViewGrid.querySelector("#pageHelper"),
       // config button in pageHelper
-      configPlaneBTN: fullViewPlane.querySelector("#configPlaneBTN"),
-      // config plane mouse leave event
-      configPlane: fullViewPlane.querySelector("#configPlane"),
+      configPanelBTN: fullViewGrid.querySelector("#configPanelBTN"),
+      // config panel mouse leave event
+      configPanel: fullViewGrid.querySelector("#configPanel"),
       // download button in pageHelper
-      downloaderPlaneBTN: fullViewPlane.querySelector("#downloaderPlaneBTN"),
-      // download plane mouse leave event
-      downloaderPlane: fullViewPlane.querySelector("#downloaderPlane"),
-      collapseBTN: fullViewPlane.querySelector("#collapseBTN"),
-      gate: fullViewPlane.querySelector("#gate"),
-      currPageElement: fullViewPlane.querySelector("#p-currPage"),
-      totalPageElement: fullViewPlane.querySelector("#p-total"),
-      finishedElement: fullViewPlane.querySelector("#p-finished"),
-      showGuideElement: fullViewPlane.querySelector("#showGuideElement"),
-      imgLandLeft: fullViewPlane.querySelector("#imgLandLeft"),
-      imgLandRight: fullViewPlane.querySelector("#imgLandRight"),
-      imgLandTop: fullViewPlane.querySelector("#imgLandTop"),
-      imgLandBottom: fullViewPlane.querySelector("#imgLandBottom"),
-      imgScaleBar: fullViewPlane.querySelector("#imgScaleBar"),
-      autoPageBTN: fullViewPlane.querySelector("#autoPageBTN"),
-      pageLoading: fullViewPlane.querySelector("#page-loading"),
+      downloaderPanelBTN: fullViewGrid.querySelector("#downloaderPanelBTN"),
+      // download panel mouse leave event
+      downloaderPanel: fullViewGrid.querySelector("#downloaderPanel"),
+      collapseBTN: fullViewGrid.querySelector("#collapseBTN"),
+      gate: fullViewGrid.querySelector("#gate"),
+      currPageElement: fullViewGrid.querySelector("#p-currPage"),
+      totalPageElement: fullViewGrid.querySelector("#p-total"),
+      finishedElement: fullViewGrid.querySelector("#p-finished"),
+      showGuideElement: fullViewGrid.querySelector("#showGuideElement"),
+      imgLandLeft: fullViewGrid.querySelector("#imgLandLeft"),
+      imgLandRight: fullViewGrid.querySelector("#imgLandRight"),
+      imgLandTop: fullViewGrid.querySelector("#imgLandTop"),
+      imgLandBottom: fullViewGrid.querySelector("#imgLandBottom"),
+      imgScaleBar: fullViewGrid.querySelector("#imgScaleBar"),
+      autoPageBTN: fullViewGrid.querySelector("#autoPageBTN"),
+      pageLoading: fullViewGrid.querySelector("#page-loading"),
       styleSheel
     };
   }
   function addEventListeners(events, HTML, BIFM, IFQ, DL) {
-    HTML.configPlaneBTN.addEventListener("click", () => events.togglePlaneEvent("config"));
-    HTML.configPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target));
-    HTML.configPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target));
-    HTML.downloaderPlaneBTN.addEventListener("click", () => {
+    HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
+    HTML.downloaderPanelBTN.addEventListener("click", () => {
       DL.check();
-      events.togglePlaneEvent("downloader");
+      events.togglePanelEvent("downloader");
     });
-    HTML.downloaderPlane.addEventListener("mouseleave", (event) => events.mouseleavePlaneEvent(event.target));
-    HTML.downloaderPlane.addEventListener("blur", (event) => events.mouseleavePlaneEvent(event.target));
+    HTML.configPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target, "config"));
+    HTML.configPanel.addEventListener("blur", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target, "config"));
+    HTML.downloaderPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target, "downloader"));
+    HTML.downloaderPanel.addEventListener("blur", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target, "downloader"));
+    HTML.pageHelper.addEventListener("mouseover", () => conf.autoCollapsePanels && events.abortMouseleavePanelEvent(""));
+    HTML.pageHelper.addEventListener("mouseleave", () => conf.autoCollapsePanels && ["config", "downloader"].forEach((k) => events.togglePanelEvent(k, true)));
     for (const key of ConfigNumberKeys) {
-      HTML.fullViewPlane.querySelector(`#${key}MinusBTN`).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
-      HTML.fullViewPlane.querySelector(`#${key}AddBTN`).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
-      HTML.fullViewPlane.querySelector(`#${key}Input`).addEventListener("wheel", (event) => {
+      HTML.fullViewGrid.querySelector(`#${key}MinusBTN`).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
+      HTML.fullViewGrid.querySelector(`#${key}AddBTN`).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
+      HTML.fullViewGrid.querySelector(`#${key}Input`).addEventListener("wheel", (event) => {
         if (event.deltaY < 0) {
           events.modNumberConfigEvent(key, "add");
         } else if (event.deltaY > 0) {
@@ -3928,20 +3978,20 @@ text-align: left;
       });
     }
     for (const key of ConfigBooleanKeys) {
-      HTML.fullViewPlane.querySelector(`#${key}Checkbox`).addEventListener("input", () => events.modBooleanConfigEvent(key));
+      HTML.fullViewGrid.querySelector(`#${key}Checkbox`).addEventListener("input", () => events.modBooleanConfigEvent(key));
     }
     for (const key of ConfigSelectKeys) {
-      HTML.fullViewPlane.querySelector(`#${key}Select`).addEventListener("change", () => events.modSelectConfigEvent(key));
+      HTML.fullViewGrid.querySelector(`#${key}Select`).addEventListener("change", () => events.modSelectConfigEvent(key));
     }
     HTML.collapseBTN.addEventListener("click", () => events.main(false));
     HTML.gate.addEventListener("click", () => events.main(true));
     const debouncer = new Debouncer();
-    HTML.fullViewPlane.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
-    HTML.fullViewPlane.addEventListener("click", events.hiddenFullViewPlaneEvent);
+    HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
+    HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
     HTML.currPageElement.addEventListener("click", () => BIFM.show());
     HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event));
     document.addEventListener("keydown", (event) => events.keyboardEvent(event));
-    HTML.fullViewPlane.addEventListener("keydown", (event) => events.fullViewPlaneKeyBoardEvent(event));
+    HTML.fullViewGrid.addEventListener("keydown", (event) => events.fullViewGridKeyBoardEvent(event));
     HTML.imgLandLeft.addEventListener("click", (event) => {
       IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
       event.stopPropagation();
@@ -4178,7 +4228,7 @@ text-align: left;
       this.visible = false;
       this.callbackOnHidden?.();
       this.frame.blur();
-      this.html.fullViewPlane.focus();
+      this.html.fullViewGrid.focus();
       this.frame.classList.add("b-f-collapse");
       this.frameScrollAbort?.abort();
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
@@ -4193,7 +4243,7 @@ text-align: left;
       this.frameScrollAbort = new AbortController();
       this.frame.addEventListener("scroll", (event2) => this.onScroll(event2), { signal: this.frameScrollAbort.signal });
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
-        this.html.fullViewPlane.blur();
+        this.html.fullViewGrid.blur();
         this.frame.focus();
         this.frame.childNodes.forEach((child) => {
           if (conf.readMode === "consecutively") {
@@ -4655,7 +4705,7 @@ text-align: left;
   const MATCHER = adaptMatcher();
   function main() {
     const HTML = createHTML();
-    [HTML.fullViewPlane, HTML.bigImageFrame].forEach((e) => revertMonkeyPatch(e));
+    [HTML.fullViewGrid, HTML.bigImageFrame].forEach((e) => revertMonkeyPatch(e));
     const IFQ = new IMGFetcherQueue();
     const IL = new IdleLoader(IFQ);
     const BIFM = new BigImageFrameManager(HTML, IFQ);
@@ -4663,7 +4713,7 @@ text-align: left;
       IFQ.currIndex = index;
       BIFM.show();
     });
-    const PF = new PageFetcher(HTML.fullViewPlane, IFQ, MATCHER, {
+    const PF = new PageFetcher(HTML.fullViewGrid, IFQ, MATCHER, {
       matcher: MATCHER,
       downloadStateReporter: () => DLC.drawDebouce(),
       setNow: (index) => BIFM.setNow(index),
@@ -4691,8 +4741,8 @@ text-align: left;
       }
       const imgFetcher = queue[index];
       let scrollTo = imgFetcher.node.root.offsetTop - window.screen.availHeight / 3;
-      scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewPlane.scrollHeight ? HTML.fullViewPlane.scrollHeight : scrollTo;
-      HTML.fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
+      scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
+      HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
       return false;
     });
     const debouncer = new Debouncer();
@@ -4721,7 +4771,7 @@ text-align: left;
     }
     return () => {
       console.log("destory eh-view-enhance");
-      HTML.fullViewPlane.remove();
+      HTML.fullViewGrid.remove();
       PF.abort();
       IL.abort(0);
       IFQ.length = 0;

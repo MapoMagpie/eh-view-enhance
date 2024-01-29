@@ -19,7 +19,7 @@ const MATCHER = adaptMatcher();
 
 function main(): DestoryFunc {
   const HTML = createHTML();
-  [HTML.fullViewPlane, HTML.bigImageFrame].forEach(e => revertMonkeyPatch(e));
+  [HTML.fullViewGrid, HTML.bigImageFrame].forEach(e => revertMonkeyPatch(e));
   const IFQ: IMGFetcherQueue = new IMGFetcherQueue();
   const IL: IdleLoader = new IdleLoader(IFQ);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, IFQ);
@@ -27,7 +27,7 @@ function main(): DestoryFunc {
     IFQ.currIndex = index;
     BIFM.show();
   });
-  const PF: PageFetcher = new PageFetcher(HTML.fullViewPlane, IFQ, MATCHER, {
+  const PF: PageFetcher = new PageFetcher(HTML.fullViewGrid, IFQ, MATCHER, {
     matcher: MATCHER,
     downloadStateReporter: () => DLC.drawDebouce(),
     setNow: (index) => BIFM.setNow(index),
@@ -56,8 +56,8 @@ function main(): DestoryFunc {
     }
     const imgFetcher = queue[index];
     let scrollTo = imgFetcher.node.root!.offsetTop - window.screen.availHeight / 3;
-    scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewPlane.scrollHeight ? HTML.fullViewPlane.scrollHeight : scrollTo;
-    HTML.fullViewPlane.scrollTo({ top: scrollTo, behavior: "smooth" });
+    scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
+    HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
     return false;
   });
   // one image finished, call PageFetcher.appendNextPages try to append next page
@@ -88,7 +88,7 @@ function main(): DestoryFunc {
   }
   return () => {
     console.log("destory eh-view-enhance");
-    HTML.fullViewPlane.remove();
+    HTML.fullViewGrid.remove();
     PF.abort();
     IL.abort(0);
     IFQ.length = 0;

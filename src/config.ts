@@ -52,6 +52,10 @@ export type Config = {
   archiveVolumeSize: number
   /** 动图转换为 */
   convertTo: "GIF" | "MP4"
+  /** 自动收起控制面板 */
+  autoCollapsePanels: boolean,
+  /** 最小化控制栏 */
+  minifyPageHelper: "always" | "inBigMode" | "never",
 };
 
 function defaultConf(): Config {
@@ -83,6 +87,8 @@ function defaultConf(): Config {
     preventScrollPageTime: 200,
     archiveVolumeSize: 1500,
     convertTo: "GIF",
+    autoCollapsePanels: true,
+    minifyPageHelper: "inBigMode",
   };
 }
 
@@ -122,12 +128,24 @@ function confHealthCheck($conf: Config): Config {
     $conf.pageHelperAbRight = Math.max(parseInt($conf.pageHelperAbRight), 5) + "px";
     changed = true;
   }
-  if (!$conf.archiveVolumeSize) {
+  if ($conf.archiveVolumeSize === undefined) {
     $conf.archiveVolumeSize = 1500;
     changed = true;
   }
-  if (!$conf.convertTo) {
+  if ($conf.convertTo === undefined) {
     $conf.convertTo = "GIF";
+    changed = true;
+  }
+  if ($conf.autoCollapsePanels === undefined) {
+    $conf.autoCollapsePanels = true;
+    changed = true;
+  }
+  if ($conf.minifyPageHelper === undefined) {
+    $conf.minifyPageHelper = "inBigMode";
+    changed = true;
+  }
+  if ($conf.restartIdleLoader === 8000) {
+    $conf.restartIdleLoader = 5000;
     changed = true;
   }
   if (changed) {
@@ -141,8 +159,8 @@ export function saveConf(c: Config) {
 }
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime";
 export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay";
-export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay"];
-export type ConfigSelectType = "readMode" | "stickyMouse";
-export const ConfigSelectKeys: (keyof Config)[] = ["readMode", "stickyMouse"];
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanels";
+export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanels"];
+export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper";
+export const ConfigSelectKeys: (keyof Config)[] = ["readMode", "stickyMouse", "minifyPageHelper"];
 export const conf = getConf();

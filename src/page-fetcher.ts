@@ -9,7 +9,7 @@ type AsyncAppendFunc = () => Promise<boolean>;
 
 export class PageFetcher {
   queue: IMGFetcherQueue;
-  fullViewPlane: HTMLElement;
+  fullViewGrid: HTMLElement;
   pageURLs: string[];
   currPage: number;
   fetched: boolean;
@@ -24,8 +24,8 @@ export class PageFetcher {
   private pageSourceIter?: AsyncGenerator<PagesSource>;
   private appendPageLock: boolean = false;
   private abortb: boolean = false;
-  constructor(fullViewPlane: HTMLElement, queue: IMGFetcherQueue, matcher: Matcher, imgFetcherSettings: IMGFetcherSettings) {
-    this.fullViewPlane = fullViewPlane;
+  constructor(fullViewGrid: HTMLElement, queue: IMGFetcherQueue, matcher: Matcher, imgFetcherSettings: IMGFetcherSettings) {
+    this.fullViewGrid = fullViewGrid;
     this.queue = queue;
     this.matcher = matcher;
     this.imgFetcherSettings = imgFetcherSettings;
@@ -65,18 +65,18 @@ export class PageFetcher {
       this.appendPageLock = true;
       if (this.done || this.abortb) return;
       while (true) {
-        const viewButtom = this.fullViewPlane.scrollTop + this.fullViewPlane.clientHeight;
+        const viewButtom = this.fullViewGrid.scrollTop + this.fullViewGrid.clientHeight;
         // if finished is not undefined, then append next page until the queue length is 40 more than finished
         if (finished !== undefined) {
           if (finished + 60 < this.queue.length) {
             break;
           }
         }
-        // here is triggered by fullViewPlane onscroll
+        // here is triggered by fullViewGrid onscroll
         else {
           // find the last image node if overflow (screen height * 3.5), then append next page
           const lastImgNode = this.queue[this.queue.length - 1].node.root!;
-          if (viewButtom + (this.fullViewPlane.clientHeight * 2.5) < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
+          if (viewButtom + (this.fullViewGrid.clientHeight * 2.5) < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
             break;
           }
         }
@@ -105,7 +105,7 @@ export class PageFetcher {
       const IFs = nodes.map(
         (imgNode) => new IMGFetcher(imgNode, this.imgFetcherSettings)
       );
-      this.fullViewPlane.lastElementChild!.after(...nodes.map(node => node.create()));
+      this.fullViewGrid.lastElementChild!.after(...nodes.map(node => node.create()));
       this.queue.push(...IFs);
       this.onAppended?.(this.queue.length);
       return true;
@@ -139,7 +139,7 @@ export class PageFetcher {
    *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
    */
   renderCurrView() {
-    const [scrollTop, clientHeight] = [this.fullViewPlane.scrollTop, this.fullViewPlane.clientHeight];
+    const [scrollTop, clientHeight] = [this.fullViewGrid.scrollTop, this.fullViewGrid.clientHeight];
     const [startRander, endRander] = this.findOutsideRoundView(scrollTop, clientHeight);
     this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
     if (this.queue.dataSize >= 1000000000) {

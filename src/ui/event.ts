@@ -47,7 +47,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules || []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".fullViewPlane") {
+          if (cssRule.selectorText === ".fullViewGrid") {
             cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
             break;
           }
@@ -86,45 +86,59 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     }
   }
 
-  function mouseleavePlaneEvent(target: HTMLElement) {
-    // fixme; in firefox, mouseleave event will be triggered when mouse move to child element, like <option>
-    target.classList.add("p-collapse");
+  const cancelIDContext: Record<string, number> = {};
+  function collapsePanelEvent(target: HTMLElement, id: string) {
+    // FIXME: in firefox, mouseleave event will be triggered when mouse move to child element, like <option>
+    if (id) {
+      abortMouseleavePanelEvent(id);
+    }
+    const timeoutId = window.setTimeout(() => target.classList.add("p-collapse"), 100);
+    if (id) {
+      cancelIDContext[id] = timeoutId;
+    }
   }
 
-  function togglePlaneEvent(id: string, collapse?: boolean) {
+  function abortMouseleavePanelEvent(id?: string) {
+    (id ? [id] : [...Object.keys(cancelIDContext)]).forEach(k => {
+      window.clearTimeout(cancelIDContext[k]);
+      delete cancelIDContext[k];
+    });
+  }
+
+  function togglePanelEvent(id: string, collapse?: boolean) {
     setTimeout(() => {
-      let element = document.querySelector<HTMLElement>(`#${id}Plane`);
+      let element = document.querySelector<HTMLElement>(`#${id}Panel`);
       if (element) {
         if (collapse === false) {
           element.classList.remove("p-collapse");
         } else if (collapse === true) {
-          mouseleavePlaneEvent(element);
+          collapsePanelEvent(element, id);
         } else {
           element.classList.toggle("p-collapse");
-          ["config", "downloader"].filter(k => k !== id).forEach(k => togglePlaneEvent(k, true));
+          ["config", "downloader"].filter(k => k !== id).forEach(k => togglePanelEvent(k, true));
         }
       }
     }, 10);
   }
 
   let bodyOverflow = document.body.style.overflow;
-  function showFullViewPlane() {
-    // HTML.fullViewPlane.scroll(0, 0); //否则加载会触发滚动事件
-    HTML.fullViewPlane.classList.remove("collapse_full_view");
-    HTML.fullViewPlane.focus();
+  function showFullViewGrid() {
+    // HTML.fullViewGrid.scroll(0, 0); //否则加载会触发滚动事件
+    HTML.fullViewGrid.classList.remove("collapse_full_view");
+    HTML.fullViewGrid.focus();
     document.body.style.overflow = "hidden";
   };
 
-  function hiddenFullViewPlaneEvent(event: Event) {
-    if (event.target === HTML.fullViewPlane || (event.target as HTMLElement).classList.contains("img-node")) {
+  function hiddenFullViewGridEvent(event: Event) {
+    if (event.target === HTML.fullViewGrid || (event.target as HTMLElement).classList.contains("img-node")) {
       main(false);
     }
   };
 
-  function hiddenFullViewPlane() {
+  function hiddenFullViewGrid() {
     BIFM.hidden();
-    HTML.fullViewPlane.classList.add("collapse_full_view");
-    HTML.fullViewPlane.blur();
+    HTML.fullViewGrid.classList.add("collapse_full_view");
+    HTML.fullViewGrid.blur();
     document.querySelector("html")?.focus();
     document.body.style.overflow = bodyOverflow;
   };
@@ -132,7 +146,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   //全屏阅览元素的滚动事件
   function scrollEvent() {
     //对冒泡的处理
-    if (HTML.fullViewPlane.classList.contains("collapse_full_view")) return;
+    if (HTML.fullViewGrid.classList.contains("collapse_full_view")) return;
     //根据currTop获取当前滚动高度对应的未渲染缩略图的图片元素
     PF.renderCurrView();
     PF.appendNextPages();
@@ -202,11 +216,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   }
 
   let numberRecord: number[] | null = null;
-  function fullViewPlaneKeyBoardEvent(event: KeyboardEvent) {
+  function fullViewGridKeyBoardEvent(event: KeyboardEvent) {
     if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) {
       bigImageFrameKeyBoardEvent(event)
     }
-    else if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) {
+    else if (!HTML.fullViewGrid.classList.contains("collapse_full_view")) {
       let triggered = true;
       switch (event.key) {
         case "Enter": {
@@ -252,7 +266,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   }
 
   function keyboardEvent(event: KeyboardEvent) {
-    if (!HTML.fullViewPlane.classList.contains("collapse_full_view")) return;
+    if (!HTML.fullViewGrid.classList.contains("collapse_full_view")) return;
     if (!HTML.bigImageFrame.classList.contains("b-f-collapse")) return;
     switch (event.key) {
       case "Enter":
@@ -291,15 +305,15 @@ text-align: left;
     if (HTML.pageHelper) {
       if (extend && !HTML.pageHelper.classList.contains("pageHelperExtend")) {
         HTML.pageHelper.classList.add("pageHelperExtend");
-        showFullViewPlane();
+        showFullViewGrid();
         if (signal.first) {
           signal.first = false;
           PF.init().then(() => IL.start(IL.lockVer));
         }
       } else {
         HTML.pageHelper.classList.remove("pageHelperExtend");
-        hiddenFullViewPlane();
-        ["config", "downloader"].forEach(id => togglePlaneEvent(id, true));
+        hiddenFullViewGrid();
+        ["config", "downloader"].forEach(id => togglePanelEvent(id, true));
       }
     }
   }
@@ -312,16 +326,17 @@ text-align: left;
     modSelectConfigEvent,
     modPageHelperPostion,
 
-    togglePlaneEvent,
-    showFullViewPlane,
-    hiddenFullViewPlaneEvent,
-    hiddenFullViewPlane,
+    togglePanelEvent: togglePanelEvent,
+    showFullViewGrid: showFullViewGrid,
+    hiddenFullViewGridEvent: hiddenFullViewGridEvent,
+    hiddenFullViewGrid: hiddenFullViewGrid,
 
     scrollEvent,
     bigImageWheelEvent,
-    fullViewPlaneKeyBoardEvent,
+    fullViewGridKeyBoardEvent: fullViewGridKeyBoardEvent,
     keyboardEvent,
     showGuideEvent,
-    mouseleavePlaneEvent,
+    collapsePanelEvent: collapsePanelEvent,
+    abortMouseleavePanelEvent: abortMouseleavePanelEvent,
   }
 }

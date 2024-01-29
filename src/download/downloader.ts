@@ -16,7 +16,7 @@ export class Downloader {
   downloadForceElement?: HTMLElement;
   downloadStartElement?: HTMLAnchorElement;
   downloadNoticeElement?: HTMLElement;
-  downloaderPlaneBTN: HTMLElement;
+  downloaderPanelBTN: HTMLElement;
   queue: IMGFetcherQueue;
   idleLoader: IdleLoader;
   done: boolean = false;
@@ -32,7 +32,7 @@ export class Downloader {
     this.downloadForceElement = document.querySelector("#download-force") || undefined;
     this.downloadStartElement = document.querySelector("#download-start") || undefined;
     this.downloadNoticeElement = document.querySelector("#download-notice") || undefined;
-    this.downloaderPlaneBTN = HTML.downloaderPlaneBTN;
+    this.downloaderPanelBTN = HTML.downloaderPanelBTN;
     this.downloadForceElement?.addEventListener("click", () => this.download());
     this.downloadStartElement?.addEventListener("click", () => this.start());
     this.queue.subscribeOnDo(1, () => this.downloading);
@@ -40,10 +40,10 @@ export class Downloader {
       if (queue.isFinised()) {
         if (this.downloading) {
           this.download();
-        } else if (!this.done && this.downloaderPlaneBTN.style.color !== "lightgreen") {
-          this.downloaderPlaneBTN.style.color = "lightgreen";
-          if (!/✓/.test(this.downloaderPlaneBTN.textContent!)) {
-            this.downloaderPlaneBTN.textContent += "✓";
+        } else if (!this.done && this.downloaderPanelBTN.style.color !== "lightgreen") {
+          this.downloaderPanelBTN.style.color = "lightgreen";
+          if (!/✓/.test(this.downloaderPanelBTN.textContent!)) {
+            this.downloaderPanelBTN.textContent += "✓";
           }
         }
       }
@@ -133,7 +133,7 @@ export class Downloader {
       this.downloadStartElement.style.color = stage === "downloadFailed" ? "red" : "";
       this.downloadStartElement.textContent = i18n[stage].get();
     }
-    this.downloaderPlaneBTN.style.color = stage === "downloadFailed" ? "red" : "";
+    this.downloaderPanelBTN.style.color = stage === "downloadFailed" ? "red" : "";
   }
 
   download() {
@@ -186,8 +186,8 @@ export class Downloader {
       }
       this.flushUI("downloaded");
       this.done = true;
-      this.downloaderPlaneBTN.textContent = i18n.download.get();
-      this.downloaderPlaneBTN.style.color = "";
+      this.downloaderPanelBTN.textContent = i18n.download.get();
+      this.downloaderPanelBTN.style.color = "";
     }
     save();
   };

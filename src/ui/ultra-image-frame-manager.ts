@@ -205,7 +205,7 @@ export class BigImageFrameManager {
     this.visible = false;
     this.callbackOnHidden?.();
     this.frame.blur();
-    this.html.fullViewPlane.focus();
+    this.html.fullViewGrid.focus();
     this.frame.classList.add("b-f-collapse");
     this.frameScrollAbort?.abort();
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
@@ -221,7 +221,7 @@ export class BigImageFrameManager {
     this.frameScrollAbort = new AbortController();
     this.frame.addEventListener("scroll", (event) => this.onScroll(event), { signal: this.frameScrollAbort.signal });
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
-      this.html.fullViewPlane.blur();
+      this.html.fullViewGrid.blur();
       this.frame.focus();
       this.frame.childNodes.forEach(child => {
         // if consecutively mode keep img land hidden

@@ -41,8 +41,12 @@ export const i18n = {
   packaging: new I18nValue("Packaging...", "打包中..."),
   reversePages: new I18nValue("Reverse Pages", "反向翻页"),
   reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
+  autoCollapsePanels: new I18nValue("Auto Flod Control Panels", "自动收起控制面板"),
+  autoCollapsePanelsTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
   stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
   stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
+  minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
+  minifyPageHelperTooltip: new I18nValue("Minify Control Bar", "最小化控制栏"),
   dragToMove: new I18nValue("Drag to Move", "拖动移动"),
   originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
   help: new I18nValue(`

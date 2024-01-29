@@ -4,7 +4,7 @@ export function loadStyleSheel() {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
   const style = document.createElement('style');
   const css = `
-.fullViewPlane {
+.fullViewGrid {
   width: 100vw;
   height: 100vh;
   background-color: rgb(0, 0, 0);
@@ -19,7 +19,7 @@ export function loadStyleSheel() {
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
 }
-.fullViewPlane input, .fullViewPlane select {
+.fullViewGrid input, .fullViewGrid select {
   color: #f1f1f1;
   background-color: #34353b !important;
   color-scheme: dark;
@@ -36,10 +36,10 @@ export function loadStyleSheel() {
 .p-label {
   cursor: pointer;
 }
-.fullViewPlane .img-node {
+.fullViewGrid .img-node {
   position: relative;
 }
-.fullViewPlane .img-node img {
+.fullViewGrid .img-node img {
   position: relative;
   width: 100%;
   height: auto;
@@ -121,7 +121,7 @@ export function loadStyleSheel() {
   transition: min-width 0.4s ease;
   min-width: 0px;
 }
-.pageHelper .p-plane {
+.pageHelper .p-panel {
   z-index: 2012 !important;
   background-color: rgba(38, 20, 25, 0.8);
   box-sizing: border-box;
@@ -147,9 +147,9 @@ export function loadStyleSheel() {
     font-size: 1rem;
     line-height: 1.2rem;
   }
-  .pageHelper .p-plane {
+  .pageHelper .p-panel {
     width: 24rem;
-    height: 25rem;
+    height: 30rem;
     bottom: 1.3rem;
   }
   .pageHelper .p-btn {
@@ -161,14 +161,14 @@ export function loadStyleSheel() {
   .pageHelperExtend .b-main {
     max-width: 24rem !important;
   }
-  .fullViewPlane input[type="checkbox"] {
+  .fullViewGrid input[type="checkbox"] {
     width: 1rem;
     height: unset !important;
   }
-  .fullViewPlane select {
+  .fullViewGrid select {
     width: 7rem !important;
   }
-  .fullViewPlane input, .fullViewPlane select {
+  .fullViewGrid input, .fullViewGrid select {
     width: 2rem;
     height: 1.5rem;
   }
@@ -192,7 +192,7 @@ export function loadStyleSheel() {
     font-size: 8cqw;
     line-height: 8.1cqw;
   }
-  .pageHelper .p-plane {
+  .pageHelper .p-panel {
     width: 100vw;
     height: 60vh;
     bottom: 5.7cqw;
@@ -206,14 +206,14 @@ export function loadStyleSheel() {
   .pageHelperExtend .b-main {
     max-width: 100vw !important;
   }
-  .fullViewPlane input[type="checkbox"] {
+  .fullViewGrid input[type="checkbox"] {
     width: 4cqw;
     height: unset !important;
   }
-  .fullViewPlane select {
+  .fullViewGrid select {
     width: 25cqw !important;
   }
-  .fullViewPlane input, .fullViewPlane select {
+  .fullViewGrid input, .fullViewGrid select {
     width: 9cqw;
     height: 6cqw;
     font-size: 3cqw;

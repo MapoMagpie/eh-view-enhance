@@ -1,13 +1,14 @@
 // ==UserScript==
-// @name               E HENTAI VIEW ENHANCE
-// @name:zh-CN         E绅士阅读强化
+// @name               Cosmos Manga View
+// @name:zh-CN         宇宙漫画视图
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.1.21
+// @version            4.2.1
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
 // @license            MIT
 // @icon               https://exhentai.org/favicon.ico
+// @updateURL          https://raw.githubusercontent.com/MapoMagpie/eh-view-enhance/master/dist/eh-view-enhance.user.js
 // @match              https://exhentai.org/g/*
 // @match              https://e-hentai.org/g/*
 // @match              https://nhentai.net/g/*

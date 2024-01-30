@@ -12,6 +12,7 @@ export default defineConfig({
       userscript: {
         icon: 'https://exhentai.org/favicon.ico',
         namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
+        updateURL: 'https://raw.githubusercontent.com/MapoMagpie/eh-view-enhance/master/dist/eh-view-enhance.user.js',
         exclude: [
           'https://nhentai.net/g/*/*/',
           'https://yande.re/post/show/*'
@@ -25,8 +26,8 @@ export default defineConfig({
           'https://www.pixiv.net/*',
           'https://yande.re/post*'
         ],
-        name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.1.21',
+        name: { "": "Cosmos Manga View", "zh-CN": "宇宙漫画视图" },
+        version: '4.2.1',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {

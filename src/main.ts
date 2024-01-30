@@ -23,7 +23,7 @@ function main(): DestoryFunc {
   const IFQ: IMGFetcherQueue = new IMGFetcherQueue();
   const IL: IdleLoader = new IdleLoader(IFQ);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, IFQ);
-  const DLC: DownloaderCanvas = new DownloaderCanvas("downloaderCanvas", IFQ, (index) => {
+  const DLC: DownloaderCanvas = new DownloaderCanvas("downloader-canvas", IFQ, (index) => {
     IFQ.currIndex = index;
     BIFM.show();
   });

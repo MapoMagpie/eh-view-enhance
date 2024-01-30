@@ -8,14 +8,15 @@ import { GalleryMeta } from "./gallery-meta";
 import { Elements } from "../ui/html";
 import { Zip } from "../utils/zip-stream";
 import { saveAs } from "file-saver";
+import q from "../utils/query-element";
 
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
 export class Downloader {
   meta: () => GalleryMeta;
   downloading: boolean;
-  downloadForceElement?: HTMLElement;
-  downloadStartElement?: HTMLAnchorElement;
-  downloadNoticeElement?: HTMLElement;
+  downloadForceElement: HTMLElement;
+  downloadStartElement: HTMLAnchorElement;
+  downloadNoticeElement: HTMLElement;
   downloaderPanelBTN: HTMLElement;
   queue: IMGFetcherQueue;
   idleLoader: IdleLoader;
@@ -29,19 +30,19 @@ export class Downloader {
     this.isReady = allPagesReady;
     this.meta = () => matcher.parseGalleryMeta(document);
     this.downloading = false;
-    this.downloadForceElement = document.querySelector("#download-force") || undefined;
-    this.downloadStartElement = document.querySelector("#download-start") || undefined;
-    this.downloadNoticeElement = document.querySelector("#download-notice") || undefined;
+    this.downloadForceElement = q("#download-force");
+    this.downloadStartElement = q("#download-start");
+    this.downloadNoticeElement = q("#download-notice");
     this.downloaderPanelBTN = HTML.downloaderPanelBTN;
-    this.downloadForceElement?.addEventListener("click", () => this.download());
-    this.downloadStartElement?.addEventListener("click", () => this.start());
+    this.downloadForceElement.addEventListener("click", () => this.download());
+    this.downloadStartElement.addEventListener("click", () => this.start());
     this.queue.subscribeOnDo(1, () => this.downloading);
     this.queue.subscribeOnFinishedReport(0, (_, queue) => {
       if (queue.isFinised()) {
         if (this.downloading) {
           this.download();
-        } else if (!this.done && this.downloaderPanelBTN.style.color !== "lightgreen") {
-          this.downloaderPanelBTN.style.color = "lightgreen";
+        } else if (!this.done && !this.downloaderPanelBTN.classList.contains("lightgreen")) {
+          this.downloaderPanelBTN.classList.add("lightgreen");
           if (!/✓/.test(this.downloaderPanelBTN.textContent!)) {
             this.downloaderPanelBTN.textContent += "✓";
           }
@@ -187,7 +188,7 @@ export class Downloader {
       this.flushUI("downloaded");
       this.done = true;
       this.downloaderPanelBTN.textContent = i18n.download.get();
-      this.downloaderPanelBTN.style.color = "";
+      this.downloaderPanelBTN.classList.remove("lightgreen");
     }
     save();
   };

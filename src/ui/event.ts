@@ -3,6 +3,7 @@ import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
 import { PageFetcher } from "../page-fetcher";
 import { i18n } from "../utils/i18n";
+import q from "../utils/query-element";
 import { Elements } from "./html";
 import { PageHelper } from "./page-helper";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
@@ -40,7 +41,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         conf[key] -= mod;
       }
     }
-    const inputElement = document.querySelector<HTMLInputElement>(`#${key}Input`);
+    const inputElement = q<HTMLInputElement>(`#${key}Input`);
     if (inputElement) {
       inputElement.value = conf[key].toString();
     }
@@ -60,7 +61,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
 
   // modify config
   function modBooleanConfigEvent(key: ConfigBooleanType) {
-    const inputElement = document.querySelector<HTMLInputElement>(`#${key}Checkbox`);
+    const inputElement = q<HTMLInputElement>(`#${key}Checkbox`);
     conf[key] = inputElement?.checked || false;
     saveConf(conf);
     if (key === "autoLoad") {
@@ -73,7 +74,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
 
   // modify config
   function modSelectConfigEvent(key: ConfigSelectType) {
-    const inputElement = document.querySelector<HTMLSelectElement>(`#${key}Select`);
+    const inputElement = q<HTMLSelectElement>(`#${key}Select`);
     const value = inputElement?.value;
     if (value) {
       (conf[key] as any) = value;
@@ -85,11 +86,24 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         BIFM.init(BIFM.queue.currIndex);
       }
     }
+    if (key === "minifyPageHelper") {
+      switch (conf.minifyPageHelper) {
+        case "inBigMode":
+          PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+          break;
+        case "always":
+          PH.minify(true, "fullViewGrid");
+          break;
+        case "never":
+          PH.minify(false, "fullViewGrid");
+          break;
+      }
+    }
   }
 
   const cancelIDContext: Record<string, number> = {};
   function collapsePanelEvent(target: HTMLElement, id: string) {
-    // FIXME: in firefox, mouseleave event will be triggered when mouse move to child element, like <option>
+    // FIX: in firefox, mouseleave event will be triggered when mouse move to child element, like <option>
     if (id) {
       abortMouseleavePanelEvent(id);
     }
@@ -106,17 +120,30 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     });
   }
 
+  let restoreMinify = false;
   function togglePanelEvent(id: string, collapse?: boolean) {
     setTimeout(() => {
-      let element = document.querySelector<HTMLElement>(`#${id}Panel`);
-      if (element) {
-        if (collapse === false) {
-          element.classList.remove("p-collapse");
-        } else if (collapse === true) {
-          collapsePanelEvent(element, id);
-        } else {
-          element.classList.toggle("p-collapse");
-          ["config", "downloader"].filter(k => k !== id).forEach(k => togglePanelEvent(k, true));
+      let element = q(`#${id}-panel`);
+      if (!element) return;
+      if (collapse === false) {
+        element.classList.remove("p-collapse");
+        return;
+      }
+      if (collapse === true) {
+        collapsePanelEvent(element, id);
+        return;
+      }
+
+      if (!element.classList.toggle("p-collapse")) { // not collapsed
+        ["config", "downloader"].filter(k => k !== id).forEach(k => togglePanelEvent(k, true));
+        if (!conf.autoCollapsePanels) {
+          PH.minify(false, "fullViewGrid");
+          restoreMinify = true;
+        }
+      } else { // collapsed
+        if (restoreMinify) {
+          PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+          restoreMinify = false;
         }
       }
     }, 10);
@@ -142,7 +169,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     PH.minify(false, "fullViewGrid");
     HTML.fullViewGrid.classList.add("full-view-grid-collapse");
     HTML.fullViewGrid.blur();
-    document.querySelector("html")?.focus();
+    q("html").focus();
     document.body.style.overflow = bodyOverflow;
   };
 
@@ -285,13 +312,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     guideElement.innerHTML = `
   <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>
   `;
-    guideElement.setAttribute("style",
-      `
+    guideElement.setAttribute("style", `
 position: absolute;
 width: 100%;
 height: 100%;
 background-color: #363c3c78;
-z-index: 2004;
+z-index: 2014;
 top: 0;
 display: flex;
 justify-content: center;

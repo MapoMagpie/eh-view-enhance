@@ -4,6 +4,7 @@ import { IMGFetcherQueue } from "../fetcher-queue";
 import { Debouncer } from "../utils/debouncer";
 import { dragElement } from "../utils/drag-element";
 import { i18n } from "../utils/i18n";
+import q from "../utils/query-element";
 import { Events } from "./event";
 import { loadStyleSheel } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
@@ -30,7 +31,7 @@ export function createHTML() {
 </div>
 <div id="p-helper" class="p-helper">
     <div style="position: relative">
-        <div id="configPanel" class="p-panel p-config p-collapse">
+        <div id="config-panel" class="p-panel p-config p-collapse">
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.columns.get()}:</span>
@@ -177,21 +178,21 @@ export function createHTML() {
                 </label>
             </div>
             <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
-                 <a id="showGuideElement" class="clickable">HELP</a>
-                 <a style="" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
+                 <a id="show-guide-element" class="clickable" style="color: #fff">HELP</a>
+                 <a class="clickable" style="color: #fff" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">Let's Star</a>
             </div>
-            <div id="imgScaleBar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
+            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>
-                <div class="scale-status"><span id="imgScaleStatus">${conf.imgScale}%</span></div>
-                <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
-                <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
-                <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
-                <div id="imgScaleResetBTN" class="scale-btn"><span>RESET</span></div>
+                <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
+                <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
+                <div id="img-scale-progress" class="scale-progress"><div id="img-scale-progress-inner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
+                <div id="img-increase-btn" class="scale-btn"><span>+</span></div>
+                <div id="img-scale-reset-btn" class="scale-btn"><span>RESET</span></div>
             </div>
         </div>
-        <div id="downloaderPanel" class="p-panel p-downloader p-collapse">
+        <div id="downloader-panel" class="p-panel p-downloader p-collapse">
             <div id="download-notice" class="download-notice"></div>
-            <canvas id="downloaderCanvas" width="100" height="100"></canvas>
+            <canvas id="downloader-canvas" width="100" height="100"></canvas>
             <div class="download-btn-group">
                <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.downloadStart.get()}</a>
@@ -202,51 +203,52 @@ export function createHTML() {
         <span id="gate">&lessdot;📖</span>
     </div>
     <div id="b-main" class="b-main b-collapse">
-        <div id="configPanelBTN" class="clickable">${i18n.config.get()}</div>
-        <div id="downloaderPanelBTN" class="clickable">${i18n.download.get()}</div>
+        <div id="config-panel-btn" class="clickable">${i18n.config.get()}</div>
+        <div id="downloader-panel-btn" class="clickable">${i18n.download.get()}</div>
         <div class="b-m-page">
-            <span class="clickable" id="p-curr-page" style="color:orange;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span><span id="p-slash-2">/</span><span>FIN:</span><span id="p-finished">0</span>
+            <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span><span id="p-slash-2">/</span><span>FIN:</span><span id="p-finished">0</span>
         </div>
-        <div id="autoPageBTN" class="clickable" style="padding: 0rem 1rem; position: relative; border: 1px solid #777;">
+        <div id="auto-page-btn" class="clickable" style="padding: 0rem 1rem; position: relative; border: 1px solid #777;">
            <span>${i18n.autoPagePlay.get()}</span>
-           <div id="autoPageProgress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
+           <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
         </div>
-        <div id="collapseBTN" class="clickable">${i18n.collapse.get()}</div>
+        <div id="collapse-btn" class="clickable">${i18n.collapse.get()}</div>
     </div>
     <div id="ehvp-bar-gtdot">
         <span>&gtdot;</span>
     </div>
 </div>
 `;
+
   fullViewGrid.innerHTML = HTML_STRINGS;
   const styleSheel = loadStyleSheel();
   return {
     fullViewGrid: fullViewGrid,
     // root element
-    bigImageFrame: fullViewGrid.querySelector<HTMLElement>("#big-img-frame")!,
+    bigImageFrame: q("#big-img-frame", fullViewGrid),
     // page helper
-    pageHelper: fullViewGrid.querySelector<HTMLElement>("#p-helper")!,
+    pageHelper: q("#p-helper", fullViewGrid),
     // config button in pageHelper
-    configPanelBTN: fullViewGrid.querySelector<HTMLElement>("#configPanelBTN")!,
+    configPanelBTN: q("#config-panel-btn", fullViewGrid),
     // config panel mouse leave event
-    configPanel: fullViewGrid.querySelector<HTMLElement>("#configPanel")!,
+    configPanel: q("#config-panel", fullViewGrid),
     // download button in pageHelper
-    downloaderPanelBTN: fullViewGrid.querySelector<HTMLElement>("#downloaderPanelBTN")!,
+    downloaderPanelBTN: q("#downloader-panel-btn", fullViewGrid),
     // download panel mouse leave event
-    downloaderPanel: fullViewGrid.querySelector<HTMLElement>("#downloaderPanel")!,
-    collapseBTN: fullViewGrid.querySelector<HTMLElement>("#collapseBTN")!,
-    gate: fullViewGrid.querySelector<HTMLElement>("#gate")!,
-    currPageElement: fullViewGrid.querySelector<HTMLElement>("#p-curr-page")!,
-    totalPageElement: fullViewGrid.querySelector<HTMLElement>("#p-total")!,
-    finishedElement: fullViewGrid.querySelector<HTMLElement>("#p-finished")!,
-    showGuideElement: fullViewGrid.querySelector<HTMLElement>("#showGuideElement")!,
-    imgLandLeft: fullViewGrid.querySelector<HTMLElement>("#img-land-left")!,
-    imgLandRight: fullViewGrid.querySelector<HTMLElement>("#img-land-light")!,
-    imgLandTop: fullViewGrid.querySelector<HTMLElement>("#img-land-top")!,
-    imgLandBottom: fullViewGrid.querySelector<HTMLElement>("#img-land-bottom")!,
-    imgScaleBar: fullViewGrid.querySelector<HTMLElement>("#imgScaleBar")!,
-    autoPageBTN: fullViewGrid.querySelector<HTMLElement>("#autoPageBTN")!,
-    pageLoading: fullViewGrid.querySelector<HTMLElement>("#page-loading")!,
+    downloaderPanel: q("#downloader-panel", fullViewGrid),
+    collapseBTN: q("#collapse-btn", fullViewGrid),
+    gate: q("#gate", fullViewGrid),
+    currPageElement: q("#p-curr-page", fullViewGrid),
+    totalPageElement: q("#p-total", fullViewGrid),
+    finishedElement: q("#p-finished", fullViewGrid),
+    showGuideElement: q("#show-guide-element", fullViewGrid),
+    imgLandLeft: q("#img-land-left", fullViewGrid),
+    imgLandRight: q("#img-land-right", fullViewGrid),
+    imgLandTop: q("#img-land-top", fullViewGrid),
+    imgLandBottom: q("#img-land-bottom", fullViewGrid),
+    imgScaleBar: q("#img-scale-bar", fullViewGrid),
+    autoPageBTN: q("#auto-page-btn", fullViewGrid),
+    pageLoading: q("#page-loading", fullViewGrid),
     styleSheel,
   };
 }
@@ -267,9 +269,9 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
 
   // modify config event
   for (const key of ConfigNumberKeys) {
-    HTML.fullViewGrid.querySelector<HTMLButtonElement>(`#${key}MinusBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
-    HTML.fullViewGrid.querySelector<HTMLButtonElement>(`#${key}AddBTN`)!.addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
-    HTML.fullViewGrid.querySelector<HTMLInputElement>(`#${key}Input`)!.addEventListener("wheel", (event: WheelEvent) => {
+    q(`#${key}MinusBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
+    q(`#${key}AddBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
+    q(`#${key}Input`, HTML.fullViewGrid).addEventListener("wheel", (event: WheelEvent) => {
       if (event.deltaY < 0) {
         events.modNumberConfigEvent(key as ConfigNumberType, 'add');
       } else if (event.deltaY > 0) {
@@ -278,10 +280,10 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     });
   }
   for (const key of ConfigBooleanKeys) {
-    HTML.fullViewGrid.querySelector(`#${key}Checkbox`)!.addEventListener("input", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
+    q(`#${key}Checkbox`, HTML.fullViewGrid).addEventListener("click", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
   }
   for (const key of ConfigSelectKeys) {
-    HTML.fullViewGrid.querySelector(`#${key}Select`)!.addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
+    q(`#${key}Select`, HTML.fullViewGrid).addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
   }
 
   // entry 入口
@@ -320,5 +322,5 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
 
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
 
-  dragElement(HTML.pageHelper, HTML.pageHelper.querySelector<HTMLElement>("#dragHub") ?? undefined, events.modPageHelperPostion);
+  dragElement(HTML.pageHelper, q("#dragHub", HTML.pageHelper), events.modPageHelperPostion);
 }

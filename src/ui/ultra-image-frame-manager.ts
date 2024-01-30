@@ -6,6 +6,7 @@ import { i18n } from "../utils/i18n";
 import { sleep } from "../utils/sleep";
 import Hammer from "hammerjs";
 import { Elements } from "./html";
+import q from "../utils/query-element";
 
 export class BigImageFrameManager {
   frame: HTMLElement;
@@ -80,8 +81,8 @@ export class BigImageFrameManager {
   }
 
   flushImgScaleBar() {
-    this.imgScaleBar.querySelector<HTMLElement>("#imgScaleStatus")!.innerHTML = `${conf.imgScale}%`;
-    this.imgScaleBar.querySelector<HTMLElement>("#imgScaleProgressInner")!.style.width = `${conf.imgScale}%`;
+    q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
+    q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
   }
 
   setNow(index: number) {
@@ -138,16 +139,10 @@ export class BigImageFrameManager {
   }
 
   initImgScaleBar() {
-    this.imgScaleBar.querySelector("#imgIncreaseBTN")?.addEventListener("click", () => {
-      this.scaleBigImages(1, 5);
-    });
-    this.imgScaleBar.querySelector("#imgDecreaseBTN")?.addEventListener("click", () => {
-      this.scaleBigImages(-1, 5);
-    });
-    this.imgScaleBar.querySelector("#imgScaleResetBTN")?.addEventListener("click", () => {
-      this.resetScaleBigImages();
-    });
-    const progress = this.imgScaleBar.querySelector<HTMLElement>("#imgScaleProgress")!;
+    q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
+    q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
+    q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages());
+    const progress = q("#img-scale-progress", this.imgScaleBar);
     progress.addEventListener("mousedown", (event) => {
       const { left } = progress.getBoundingClientRect();
       const mouseMove = (event: MouseEvent) => {
@@ -673,7 +668,7 @@ class AutoPage {
     if (this.frameManager.frame.classList.contains("big-img-frame-collapse")) {
       this.frameManager.show();
     }
-    const progress = this.button.querySelector<HTMLDivElement>("#autoPageProgress")!;
+    const progress = q("#auto-page-progress", this.button);
     while (true) {
       await sleep(10);
       progress.style.animation = `${conf.autoPageInterval ?? 10000}ms linear main-progress`;
@@ -707,7 +702,7 @@ class AutoPage {
 
   stop() {
     this.status = "stop";
-    const progress = this.button.querySelector<HTMLDivElement>("#autoPageProgress")!;
+    const progress = q("#auto-page-progress", this.button);
     progress.style.animation = ``;
     this.lockVer += 1;
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePlay.get();

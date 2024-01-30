@@ -72,11 +72,11 @@ export const i18n = {
       <li><strong style="color: orange">Feedback:</strong>
         Click 
         <span>
-        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance/issues" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-issue-opened" aria-label="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance/issues" target="_blank" alt="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
         </span>
         to provide feedback on issues, Give me a star if you like this script.
         <span>
-        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank" alt="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
         </span>
       </li>
     </ol>
@@ -103,11 +103,11 @@ export const i18n = {
       <li><strong style="color: orange">问题反馈:</strong>
         点击 
         <span>
-        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance/issues" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-issue-opened" aria-label="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance/issues" target="_blank" alt="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
         </span>
         反馈你的问题或建议，如果你喜欢这个脚本，给我一个star吧。 
         <span>
-        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank" alt="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
         </span>
       </li>
     </ol>

@@ -439,11 +439,11 @@
       <li><strong style="color: orange">Feedback:</strong>
         Click 
         <span>
-        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance/issues" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-issue-opened" aria-label="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance/issues" target="_blank" alt="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
         </span>
         to provide feedback on issues, Give me a star if you like this script.
         <span>
-        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank" alt="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
         </span>
       </li>
     </ol>
@@ -470,11 +470,11 @@
       <li><strong style="color: orange">问题反馈:</strong>
         点击 
         <span>
-        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance/issues" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-issue-opened" aria-label="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance/issues" target="_blank" alt="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
         </span>
         反馈你的问题或建议，如果你喜欢这个脚本，给我一个star吧。 
         <span>
-        <a style="color: black;" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank" alt="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
         </span>
       </li>
     </ol>
@@ -707,6 +707,14 @@
     }
   }
 
+  function q(selector, parent) {
+    const element = (parent || document).querySelector(selector);
+    if (!element) {
+      throw new Error(`Can't find element: ${selector}`);
+    }
+    return element;
+  }
+
   const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
   class Downloader {
     meta;
@@ -726,19 +734,19 @@
       this.isReady = allPagesReady;
       this.meta = () => matcher.parseGalleryMeta(document);
       this.downloading = false;
-      this.downloadForceElement = document.querySelector("#download-force") || void 0;
-      this.downloadStartElement = document.querySelector("#download-start") || void 0;
-      this.downloadNoticeElement = document.querySelector("#download-notice") || void 0;
+      this.downloadForceElement = q("#download-force");
+      this.downloadStartElement = q("#download-start");
+      this.downloadNoticeElement = q("#download-notice");
       this.downloaderPanelBTN = HTML.downloaderPanelBTN;
-      this.downloadForceElement?.addEventListener("click", () => this.download());
-      this.downloadStartElement?.addEventListener("click", () => this.start());
+      this.downloadForceElement.addEventListener("click", () => this.download());
+      this.downloadStartElement.addEventListener("click", () => this.start());
       this.queue.subscribeOnDo(1, () => this.downloading);
       this.queue.subscribeOnFinishedReport(0, (_, queue2) => {
         if (queue2.isFinised()) {
           if (this.downloading) {
             this.download();
-          } else if (!this.done && this.downloaderPanelBTN.style.color !== "lightgreen") {
-            this.downloaderPanelBTN.style.color = "lightgreen";
+          } else if (!this.done && !this.downloaderPanelBTN.classList.contains("lightgreen")) {
+            this.downloaderPanelBTN.classList.add("lightgreen");
             if (!/✓/.test(this.downloaderPanelBTN.textContent)) {
               this.downloaderPanelBTN.textContent += "✓";
             }
@@ -862,7 +870,7 @@
         this.flushUI("downloaded");
         this.done = true;
         this.downloaderPanelBTN.textContent = i18n.download.get();
-        this.downloaderPanelBTN.style.color = "";
+        this.downloaderPanelBTN.classList.remove("lightgreen");
       };
       save();
     }
@@ -2896,7 +2904,7 @@ duration 0.04`).join("\n");
           conf[key] -= mod;
         }
       }
-      const inputElement = document.querySelector(`#${key}Input`);
+      const inputElement = q(`#${key}Input`);
       if (inputElement) {
         inputElement.value = conf[key].toString();
       }
@@ -2914,7 +2922,7 @@ duration 0.04`).join("\n");
       saveConf(conf);
     }
     function modBooleanConfigEvent(key) {
-      const inputElement = document.querySelector(`#${key}Checkbox`);
+      const inputElement = q(`#${key}Checkbox`);
       conf[key] = inputElement?.checked || false;
       saveConf(conf);
       if (key === "autoLoad") {
@@ -2925,7 +2933,7 @@ duration 0.04`).join("\n");
       }
     }
     function modSelectConfigEvent(key) {
-      const inputElement = document.querySelector(`#${key}Select`);
+      const inputElement = q(`#${key}Select`);
       const value = inputElement?.value;
       if (value) {
         conf[key] = value;
@@ -2935,6 +2943,19 @@ duration 0.04`).join("\n");
         BIFM.resetScaleBigImages();
         if (conf.readMode === "singlePage") {
           BIFM.init(BIFM.queue.currIndex);
+        }
+      }
+      if (key === "minifyPageHelper") {
+        switch (conf.minifyPageHelper) {
+          case "inBigMode":
+            PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+            break;
+          case "always":
+            PH.minify(true, "fullViewGrid");
+            break;
+          case "never":
+            PH.minify(false, "fullViewGrid");
+            break;
         }
       }
     }
@@ -2954,17 +2975,30 @@ duration 0.04`).join("\n");
         delete cancelIDContext[k];
       });
     }
+    let restoreMinify = false;
     function togglePanelEvent(id, collapse) {
       setTimeout(() => {
-        let element = document.querySelector(`#${id}Panel`);
-        if (element) {
-          if (collapse === false) {
-            element.classList.remove("p-collapse");
-          } else if (collapse === true) {
-            collapsePanelEvent(element, id);
-          } else {
-            element.classList.toggle("p-collapse");
-            ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
+        let element = q(`#${id}-panel`);
+        if (!element)
+          return;
+        if (collapse === false) {
+          element.classList.remove("p-collapse");
+          return;
+        }
+        if (collapse === true) {
+          collapsePanelEvent(element, id);
+          return;
+        }
+        if (!element.classList.toggle("p-collapse")) {
+          ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
+          if (!conf.autoCollapsePanels) {
+            PH.minify(false, "fullViewGrid");
+            restoreMinify = true;
+          }
+        } else {
+          if (restoreMinify) {
+            PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+            restoreMinify = false;
           }
         }
       }, 10);
@@ -2986,7 +3020,7 @@ duration 0.04`).join("\n");
       PH.minify(false, "fullViewGrid");
       HTML.fullViewGrid.classList.add("full-view-grid-collapse");
       HTML.fullViewGrid.blur();
-      document.querySelector("html")?.focus();
+      q("html").focus();
       document.body.style.overflow = bodyOverflow;
     }
     function scrollEvent() {
@@ -3120,22 +3154,19 @@ duration 0.04`).join("\n");
       guideElement.innerHTML = `
   <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>
   `;
-      guideElement.setAttribute(
-        "style",
-        `
+      guideElement.setAttribute("style", `
 position: absolute;
 width: 100%;
 height: 100%;
 background-color: #363c3c78;
-z-index: 2004;
+z-index: 2014;
 top: 0;
 display: flex;
 justify-content: center;
 align-items: center;
 color: black;
 text-align: left;
-`
-      );
+`);
       guideElement.addEventListener("click", () => guideElement.remove());
     }
     const signal = { first: true };
@@ -3343,7 +3374,7 @@ text-align: left;
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
     min-width: 24rem;
-    transition: min-width 0.4s ease;
+    transition: min-width 0.4s ease, color 0.5s ease-in-out, background-color 0.3s ease-in-out;
     font-size: 1rem;
     line-height: 1.2rem;
   }
@@ -3432,17 +3463,6 @@ text-align: left;
   #imgScaleResetBTN {
     width: 14cqw;
   }
-}
-.p-minify:not(:hover) > :not(.b-main),
-.p-minify:not(:hover) > .b-main > :not(.b-m-page),
-.p-minify:not(:hover) .b-m-page > :not(#p-curr-page):not(#p-total):not(#p-slash-1) {
-  display: none !important;
-}
-.p-minify.p-helper, .p-minify.p-helper-extend {
-  transition: unset;
-}
-.p-minify:not(:hover) {
-  min-width: 0px !important;
 }
 .p-helper:hover {
   background-color: #3a3a3ae6;
@@ -3701,14 +3721,31 @@ text-align: left;
   text-align: center;
   font-weight: bold;
 }
+.lightgreen { color: #90ea90; }
+.p-minify:not(:hover),
+.p-minify:not(:hover) .lightgreen {
+  color: #00000000 !important;
+  background-color: #00000000 !important;
+  transition: color 0.5s ease-in-out, background-color 0.3s ease-in-out;
+}
+.p-minify:not(:hover) .b-main .b-m-page {
+  order: ${conf.pageHelperAbLeft !== "unset" ? -2 : 1};
+}
+.p-minify:not(:hover) #p-curr-page,
+.p-minify:not(:hover) #p-total,
+.p-minify:not(:hover) #p-slash-1 {
+  color: #fff !important;
+  background-color: #333333aa !important;
+}
+.p-minify:not(:hover) #p-curr-page {
+  color: #ffc005 !important;
+}
+.p-minify:not(:hover) #auto-page-btn {
+  border: 1px solid #00000000 !important;
+}
 `;
     style.textContent = css;
     document.head.appendChild(style);
-    const githubButtonScript = document.createElement("script");
-    githubButtonScript.src = "https://buttons.github.io/buttons.js";
-    githubButtonScript.async = true;
-    githubButtonScript.defer = true;
-    document.head.appendChild(githubButtonScript);
     return style;
   }
 
@@ -3730,7 +3767,7 @@ text-align: left;
 </div>
 <div id="p-helper" class="p-helper">
     <div style="position: relative">
-        <div id="configPanel" class="p-panel p-config p-collapse">
+        <div id="config-panel" class="p-panel p-config p-collapse">
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.columns.get()}:</span>
@@ -3877,21 +3914,21 @@ text-align: left;
                 </label>
             </div>
             <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
-                 <a id="showGuideElement" class="clickable">HELP</a>
-                 <a style="" class="github-button" href="https://github.com/MapoMagpie/eh-view-enhance" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-star" aria-label="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
+                 <a id="show-guide-element" class="clickable" style="color: #fff">HELP</a>
+                 <a class="clickable" style="color: #fff" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">Let's Star</a>
             </div>
-            <div id="imgScaleBar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
+            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>
-                <div class="scale-status"><span id="imgScaleStatus">${conf.imgScale}%</span></div>
-                <div id="imgDecreaseBTN" class="scale-btn"><span>-</span></div>
-                <div id="imgScaleProgress" class="scale-progress"><div id="imgScaleProgressInner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
-                <div id="imgIncreaseBTN" class="scale-btn"><span>+</span></div>
-                <div id="imgScaleResetBTN" class="scale-btn"><span>RESET</span></div>
+                <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
+                <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
+                <div id="img-scale-progress" class="scale-progress"><div id="img-scale-progress-inner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
+                <div id="img-increase-btn" class="scale-btn"><span>+</span></div>
+                <div id="img-scale-reset-btn" class="scale-btn"><span>RESET</span></div>
             </div>
         </div>
-        <div id="downloaderPanel" class="p-panel p-downloader p-collapse">
+        <div id="downloader-panel" class="p-panel p-downloader p-collapse">
             <div id="download-notice" class="download-notice"></div>
-            <canvas id="downloaderCanvas" width="100" height="100"></canvas>
+            <canvas id="downloader-canvas" width="100" height="100"></canvas>
             <div class="download-btn-group">
                <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.downloadStart.get()}</a>
@@ -3902,16 +3939,16 @@ text-align: left;
         <span id="gate">&lessdot;📖</span>
     </div>
     <div id="b-main" class="b-main b-collapse">
-        <div id="configPanelBTN" class="clickable">${i18n.config.get()}</div>
-        <div id="downloaderPanelBTN" class="clickable">${i18n.download.get()}</div>
+        <div id="config-panel-btn" class="clickable">${i18n.config.get()}</div>
+        <div id="downloader-panel-btn" class="clickable">${i18n.download.get()}</div>
         <div class="b-m-page">
-            <span class="clickable" id="p-curr-page" style="color:orange;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span><span id="p-slash-2">/</span><span>FIN:</span><span id="p-finished">0</span>
+            <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span><span id="p-slash-2">/</span><span>FIN:</span><span id="p-finished">0</span>
         </div>
-        <div id="autoPageBTN" class="clickable" style="padding: 0rem 1rem; position: relative; border: 1px solid #777;">
+        <div id="auto-page-btn" class="clickable" style="padding: 0rem 1rem; position: relative; border: 1px solid #777;">
            <span>${i18n.autoPagePlay.get()}</span>
-           <div id="autoPageProgress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
+           <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
         </div>
-        <div id="collapseBTN" class="clickable">${i18n.collapse.get()}</div>
+        <div id="collapse-btn" class="clickable">${i18n.collapse.get()}</div>
     </div>
     <div id="ehvp-bar-gtdot">
         <span>&gtdot;</span>
@@ -3923,30 +3960,30 @@ text-align: left;
     return {
       fullViewGrid,
       // root element
-      bigImageFrame: fullViewGrid.querySelector("#big-img-frame"),
+      bigImageFrame: q("#big-img-frame", fullViewGrid),
       // page helper
-      pageHelper: fullViewGrid.querySelector("#p-helper"),
+      pageHelper: q("#p-helper", fullViewGrid),
       // config button in pageHelper
-      configPanelBTN: fullViewGrid.querySelector("#configPanelBTN"),
+      configPanelBTN: q("#config-panel-btn", fullViewGrid),
       // config panel mouse leave event
-      configPanel: fullViewGrid.querySelector("#configPanel"),
+      configPanel: q("#config-panel", fullViewGrid),
       // download button in pageHelper
-      downloaderPanelBTN: fullViewGrid.querySelector("#downloaderPanelBTN"),
+      downloaderPanelBTN: q("#downloader-panel-btn", fullViewGrid),
       // download panel mouse leave event
-      downloaderPanel: fullViewGrid.querySelector("#downloaderPanel"),
-      collapseBTN: fullViewGrid.querySelector("#collapseBTN"),
-      gate: fullViewGrid.querySelector("#gate"),
-      currPageElement: fullViewGrid.querySelector("#p-curr-page"),
-      totalPageElement: fullViewGrid.querySelector("#p-total"),
-      finishedElement: fullViewGrid.querySelector("#p-finished"),
-      showGuideElement: fullViewGrid.querySelector("#showGuideElement"),
-      imgLandLeft: fullViewGrid.querySelector("#img-land-left"),
-      imgLandRight: fullViewGrid.querySelector("#img-land-light"),
-      imgLandTop: fullViewGrid.querySelector("#img-land-top"),
-      imgLandBottom: fullViewGrid.querySelector("#img-land-bottom"),
-      imgScaleBar: fullViewGrid.querySelector("#imgScaleBar"),
-      autoPageBTN: fullViewGrid.querySelector("#autoPageBTN"),
-      pageLoading: fullViewGrid.querySelector("#page-loading"),
+      downloaderPanel: q("#downloader-panel", fullViewGrid),
+      collapseBTN: q("#collapse-btn", fullViewGrid),
+      gate: q("#gate", fullViewGrid),
+      currPageElement: q("#p-curr-page", fullViewGrid),
+      totalPageElement: q("#p-total", fullViewGrid),
+      finishedElement: q("#p-finished", fullViewGrid),
+      showGuideElement: q("#show-guide-element", fullViewGrid),
+      imgLandLeft: q("#img-land-left", fullViewGrid),
+      imgLandRight: q("#img-land-right", fullViewGrid),
+      imgLandTop: q("#img-land-top", fullViewGrid),
+      imgLandBottom: q("#img-land-bottom", fullViewGrid),
+      imgScaleBar: q("#img-scale-bar", fullViewGrid),
+      autoPageBTN: q("#auto-page-btn", fullViewGrid),
+      pageLoading: q("#page-loading", fullViewGrid),
       styleSheel
     };
   }
@@ -3963,9 +4000,9 @@ text-align: left;
     HTML.pageHelper.addEventListener("mouseover", () => conf.autoCollapsePanels && events.abortMouseleavePanelEvent(""));
     HTML.pageHelper.addEventListener("mouseleave", () => conf.autoCollapsePanels && ["config", "downloader"].forEach((k) => events.togglePanelEvent(k, true)));
     for (const key of ConfigNumberKeys) {
-      HTML.fullViewGrid.querySelector(`#${key}MinusBTN`).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
-      HTML.fullViewGrid.querySelector(`#${key}AddBTN`).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
-      HTML.fullViewGrid.querySelector(`#${key}Input`).addEventListener("wheel", (event) => {
+      q(`#${key}MinusBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
+      q(`#${key}AddBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
+      q(`#${key}Input`, HTML.fullViewGrid).addEventListener("wheel", (event) => {
         if (event.deltaY < 0) {
           events.modNumberConfigEvent(key, "add");
         } else if (event.deltaY > 0) {
@@ -3974,10 +4011,10 @@ text-align: left;
       });
     }
     for (const key of ConfigBooleanKeys) {
-      HTML.fullViewGrid.querySelector(`#${key}Checkbox`).addEventListener("input", () => events.modBooleanConfigEvent(key));
+      q(`#${key}Checkbox`, HTML.fullViewGrid).addEventListener("click", () => events.modBooleanConfigEvent(key));
     }
     for (const key of ConfigSelectKeys) {
-      HTML.fullViewGrid.querySelector(`#${key}Select`).addEventListener("change", () => events.modSelectConfigEvent(key));
+      q(`#${key}Select`, HTML.fullViewGrid).addEventListener("change", () => events.modSelectConfigEvent(key));
     }
     HTML.collapseBTN.addEventListener("click", () => events.main(false));
     HTML.gate.addEventListener("click", () => events.main(true));
@@ -4005,7 +4042,7 @@ text-align: left;
       event.stopPropagation();
     });
     HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
-    dragElement(HTML.pageHelper, HTML.pageHelper.querySelector("#dragHub") ?? void 0, events.modPageHelperPostion);
+    dragElement(HTML.pageHelper, q("#dragHub", HTML.pageHelper), events.modPageHelperPostion);
   }
 
   class PageHelper {
@@ -4044,6 +4081,7 @@ text-align: left;
           }
           break;
         case "never":
+          this.html.pageHelper.classList.remove("p-minify");
           return;
       }
       if (ok) {
@@ -4128,8 +4166,8 @@ text-align: left;
       this.lastMouseY = void 0;
     }
     flushImgScaleBar() {
-      this.imgScaleBar.querySelector("#imgScaleStatus").innerHTML = `${conf.imgScale}%`;
-      this.imgScaleBar.querySelector("#imgScaleProgressInner").style.width = `${conf.imgScale}%`;
+      q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
+      q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
     }
     setNow(index) {
       if (!this.visible)
@@ -4179,16 +4217,10 @@ text-align: left;
       });
     }
     initImgScaleBar() {
-      this.imgScaleBar.querySelector("#imgIncreaseBTN")?.addEventListener("click", () => {
-        this.scaleBigImages(1, 5);
-      });
-      this.imgScaleBar.querySelector("#imgDecreaseBTN")?.addEventListener("click", () => {
-        this.scaleBigImages(-1, 5);
-      });
-      this.imgScaleBar.querySelector("#imgScaleResetBTN")?.addEventListener("click", () => {
-        this.resetScaleBigImages();
-      });
-      const progress = this.imgScaleBar.querySelector("#imgScaleProgress");
+      q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
+      q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
+      q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages());
+      const progress = q("#img-scale-progress", this.imgScaleBar);
       progress.addEventListener("mousedown", (event) => {
         const { left } = progress.getBoundingClientRect();
         const mouseMove = (event2) => {
@@ -4668,7 +4700,7 @@ text-align: left;
       if (this.frameManager.frame.classList.contains("big-img-frame-collapse")) {
         this.frameManager.show();
       }
-      const progress = this.button.querySelector("#autoPageProgress");
+      const progress = q("#auto-page-progress", this.button);
       while (true) {
         await sleep(10);
         progress.style.animation = `${conf.autoPageInterval ?? 1e4}ms linear main-progress`;
@@ -4701,7 +4733,7 @@ text-align: left;
     }
     stop() {
       this.status = "stop";
-      const progress = this.button.querySelector("#autoPageProgress");
+      const progress = q("#auto-page-progress", this.button);
       progress.style.animation = ``;
       this.lockVer += 1;
       this.button.firstElementChild.innerText = i18n.autoPagePlay.get();
@@ -4724,7 +4756,7 @@ text-align: left;
     const IFQ = new IMGFetcherQueue();
     const IL = new IdleLoader(IFQ);
     const BIFM = new BigImageFrameManager(HTML, IFQ);
-    const DLC = new DownloaderCanvas("downloaderCanvas", IFQ, (index) => {
+    const DLC = new DownloaderCanvas("downloader-canvas", IFQ, (index) => {
       IFQ.currIndex = index;
       BIFM.show();
     });

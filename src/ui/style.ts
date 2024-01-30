@@ -135,7 +135,7 @@ export function loadStyleSheel() {
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
     min-width: 24rem;
-    transition: min-width 0.4s ease;
+    transition: min-width 0.4s ease, color 0.5s ease-in-out, background-color 0.3s ease-in-out;
     font-size: 1rem;
     line-height: 1.2rem;
   }
@@ -224,17 +224,6 @@ export function loadStyleSheel() {
   #imgScaleResetBTN {
     width: 14cqw;
   }
-}
-.p-minify:not(:hover) > :not(.b-main),
-.p-minify:not(:hover) > .b-main > :not(.b-m-page),
-.p-minify:not(:hover) .b-m-page > :not(#p-curr-page):not(#p-total):not(#p-slash-1) {
-  display: none !important;
-}
-.p-minify.p-helper, .p-minify.p-helper-extend {
-  transition: unset;
-}
-.p-minify:not(:hover) {
-  min-width: 0px !important;
 }
 .p-helper:hover {
   background-color: #3a3a3ae6;
@@ -493,15 +482,30 @@ export function loadStyleSheel() {
   text-align: center;
   font-weight: bold;
 }
+.lightgreen { color: #90ea90; }
+.p-minify:not(:hover),
+.p-minify:not(:hover) .lightgreen {
+  color: #00000000 !important;
+  background-color: #00000000 !important;
+  transition: color 0.5s ease-in-out, background-color 0.3s ease-in-out;
+}
+.p-minify:not(:hover) .b-main .b-m-page {
+  order: ${conf.pageHelperAbLeft !== "unset" ? -2 : 1};
+}
+.p-minify:not(:hover) #p-curr-page,
+.p-minify:not(:hover) #p-total,
+.p-minify:not(:hover) #p-slash-1 {
+  color: #fff !important;
+  background-color: #333333aa !important;
+}
+.p-minify:not(:hover) #p-curr-page {
+  color: #ffc005 !important;
+}
+.p-minify:not(:hover) #auto-page-btn {
+  border: 1px solid #00000000 !important;
+}
 `
   style.textContent = css;
   document.head.appendChild(style);
-  /*`<!-- Place this tag in your head or just before your close body tag. -->
-<script async defer src="https://buttons.github.io/buttons.js"></script>` */
-  const githubButtonScript = document.createElement('script');
-  githubButtonScript.src = 'https://buttons.github.io/buttons.js';
-  githubButtonScript.async = true;
-  githubButtonScript.defer = true;
-  document.head.appendChild(githubButtonScript);
   return style;
 }

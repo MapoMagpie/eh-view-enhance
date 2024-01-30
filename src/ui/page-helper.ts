@@ -39,6 +39,7 @@ export class PageHelper {
         }
         break;
       case "never":
+        this.html.pageHelper.classList.remove("p-minify");
         return;
     }
     if (ok) {

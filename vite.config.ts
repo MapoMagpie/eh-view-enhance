@@ -26,8 +26,8 @@ export default defineConfig({
           'https://www.pixiv.net/*',
           'https://yande.re/post*'
         ],
-        name: { "": "Cosmos Manga View", "zh-CN": "宇宙漫画视图" },
-        version: '4.2.1',
+        name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
+        version: '4.2.2',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {

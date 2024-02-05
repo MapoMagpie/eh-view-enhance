@@ -3161,7 +3161,14 @@ duration 0.04`).join("\n");
         )
       };
       const onMain = {
-        "open-full-view-grid": new KeyboardDesc(["Enter"], () => main(true), true)
+        "open-full-view-grid": new KeyboardDesc(["Enter"], (event) => {
+          if (event.key === "Enter") {
+            const activeElement = document.activeElement;
+            if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement)
+              return;
+          }
+          main(true);
+        }, true)
       };
       return { inbigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: onMain };
     }

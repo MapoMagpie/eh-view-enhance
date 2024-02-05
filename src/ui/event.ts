@@ -308,7 +308,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       ),
     };
     const onMain: Record<KeyboardInMainId, KeyboardDesc> = {
-      "open-full-view-grid": new KeyboardDesc(["Enter"], () => main(true), true),
+      "open-full-view-grid": new KeyboardDesc(["Enter"], (event) => {
+        // check focus element is not input Elements
+        if (event.key === "Enter") {
+          const activeElement = document.activeElement;
+          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
+        }
+        main(true);
+      }, true),
     };
     return { inbigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: onMain }
   }

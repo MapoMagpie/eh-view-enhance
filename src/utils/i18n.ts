@@ -1,3 +1,5 @@
+import { KeyboardInBigImageModeId, KeyboardInFullViewGridId, KeyboardInMainId } from "../ui/event";
+
 const lang = navigator.language;
 const i18nIndex = lang === "zh-CN" ? 1 : 0;
 class I18nValue extends Array<string> {
@@ -7,6 +9,34 @@ class I18nValue extends Array<string> {
   get() {
     return this[i18nIndex];
   }
+}
+type KeyboardCustom = {
+  inMain: Record<KeyboardInMainId, I18nValue>;
+  inFullViewGrid: Record<KeyboardInFullViewGridId, I18nValue>;
+  inBigImageMode: Record<KeyboardInBigImageModeId, I18nValue>;
+}
+const keyboardCustom: KeyboardCustom = {
+  inMain: {
+    "open-full-view-grid": new I18nValue("Enter Read Mode", "进入阅读模式"),
+  },
+  inBigImageMode: {
+    "step-image-prev": new I18nValue("Go Prev Image", "切换到上一张图片"),
+    "step-image-next": new I18nValue("Go Next Image", "切换到下一张图片"),
+    "exit-big-image-mode": new I18nValue("Exit Big Image Mode", "退出大图模式"),
+    "step-to-first-image": new I18nValue("Go First Image", "跳转到第一张图片"),
+    "step-to-last-image": new I18nValue("Go Last Image", "跳转到最后一张图片"),
+    "scale-image-increase": new I18nValue("Increase Image Scale", "放大图片"),
+    "scale-image-decrease": new I18nValue("Decrease Image Scale", "缩小图片"),
+    "scroll-image-up": new I18nValue("Scroll Image Up", "向上滚动图片"),
+    "scroll-image-down": new I18nValue("Scroll Image Down", "向下滚动图片"),
+  },
+  inFullViewGrid: {
+    "open-big-image-mode": new I18nValue("Enter Big Image Mode", "进入大图阅读模式"),
+    "pause-auto-load-temporarily": new I18nValue("Pause Auto Load Temporarily", "临时停止自动加载"),
+    "exit-full-view-grid": new I18nValue("Exit Read Mode", "退出阅读模式"),
+    "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
+    "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量")
+  },
 }
 export const i18n = {
   imageScale: new I18nValue("SCALE", "缩放"),
@@ -111,5 +141,6 @@ export const i18n = {
         </span>
       </li>
     </ol>
-  `)
+  `),
+  keyboardCustom: keyboardCustom,
 };

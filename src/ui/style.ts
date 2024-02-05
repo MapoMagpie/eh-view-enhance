@@ -504,6 +504,85 @@ export function loadStyleSheel() {
 .p-minify:not(:hover) #auto-page-btn {
   border: 1px solid #00000000 !important;
 }
+.ehvp-full-panel {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000e8;
+  z-index: 3000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  top: 0;
+}
+.ehvp-custom-panel {
+  min-width: 30vw;
+  min-height: 50vh;
+  background-color: rgba(38, 20, 25, 0.8);
+  border: 1px solid #000000;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  text-align: start;
+  color: rgb(200, 222, 200);
+}
+.ehvp-custom-panel-title {
+  font-size: 2.1rem;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+}
+.ehvp-custom-panel-content {
+  border: 1px solid #000000;
+  border-radius: 4px;
+  margin: 0.5rem;
+  padding: 0.5rem;
+}
+.ehvp-custom-panel-item {
+  margin: 0.2rem 0rem;
+}
+.ehvp-custom-panel-item-title {
+  font-size: 1.4rem;
+}
+.ehvp-custom-panel-item-values {
+  margin-top: 0.3rem;
+  text-align: end;
+}
+.ehvp-custom-panel-item-value {
+  font-size: 1.1rem;
+  line-height: 1.2rem;
+  font-weight: bold;
+  color: black;
+  background-color: #c5c5c5;
+  border: 1px solid #000000;
+  box-sizing: border-box;
+  margin-left: 0.3rem;
+}
+.ehvp-custom-panel-item-value span {
+  padding: 0rem 0.5rem;
+}
+.ehvp-custom-panel-item-value button {
+  background-color: #fff;
+  color: black;
+  border: none;
+}
+.ehvp-custom-panel-item-value button:hover {
+  background-color: #ffff00;
+}
+.ehvp-custom-panel-item-add-btn {
+  font-size: 1.1rem;
+  line-height: 1.2rem;
+  font-weight: bold;
+  background-color: #7fef7b;
+  color: black;
+  margin-left: 0.3rem;
+  border: none;
+}
+.ehvp-custom-panel-item-add-btn:hover {
+  background-color: #ffff00;
+}
 `
   style.textContent = css;
   document.head.appendChild(style);

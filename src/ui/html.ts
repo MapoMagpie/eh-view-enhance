@@ -171,17 +171,18 @@ export function createHTML() {
                     </span>
                 </label>
             </div>
-            <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.dragToMove.get()}:</span>
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                 </label>
             </div>
-            <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <a id="show-guide-element" class="clickable" style="color: #fff">HELP</a>
+                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff">Keyboard</a>
                  <a class="clickable" style="color: #fff" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">Let's Star</a>
             </div>
-            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
+            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>
                 <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
                 <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
@@ -242,6 +243,7 @@ export function createHTML() {
     totalPageElement: q("#p-total", fullViewGrid),
     finishedElement: q("#p-finished", fullViewGrid),
     showGuideElement: q("#show-guide-element", fullViewGrid),
+    showKeyboardCustomElement: q("#show-keyboard-custom-element", fullViewGrid),
     imgLandLeft: q("#img-land-left", fullViewGrid),
     imgLandRight: q("#img-land-right", fullViewGrid),
     imgLandTop: q("#img-land-top", fullViewGrid),
@@ -321,6 +323,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   });
 
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
+  HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
 
   dragElement(HTML.pageHelper, q("#dragHub", HTML.pageHelper), events.modPageHelperPostion);
 }

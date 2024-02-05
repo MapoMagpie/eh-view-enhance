@@ -5,6 +5,7 @@ import { PageFetcher } from "../page-fetcher";
 import { i18n } from "../utils/i18n";
 import q from "../utils/query-element";
 import { Elements } from "./html";
+import createKeyboardCustomPanel from "./keyboard-custom";
 import { PageHelper } from "./page-helper";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
@@ -13,6 +14,11 @@ export type Events = ReturnType<typeof initEvents>;
 export type KeyboardInBigImageModeId = "step-image-prev" | "step-image-next" | "exit-big-image-mode" | "step-to-first-image" | "step-to-last-image" | "scale-image-increase" | "scale-image-decrease" | "scroll-image-up" | "scroll-image-down";
 export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease";
 export type KeyboardInMainId = "open-full-view-grid";
+export type KeyboardEvents = {
+  inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
+  inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc>,
+  inMain: Record<KeyboardInMainId, KeyboardDesc>,
+}
 class KeyboardDesc {
   defaultKeys: string[];
   cb: (event: KeyboardEvent) => void;
@@ -233,7 +239,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     return false;
   }
 
-  function initKeyboardEvent() {
+  function initKeyboardEvent(): KeyboardEvents {
     const onbigImageFrame: Record<KeyboardInBigImageModeId, KeyboardDesc> = {
       "step-image-prev": new KeyboardDesc(
         ["ArrowLeft"],
@@ -317,7 +323,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         main(true);
       }, true),
     };
-    return { inbigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: onMain }
+    return { inBigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: onMain }
   }
   const keyboardEvents = initKeyboardEvent();
 
@@ -326,7 +332,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   function fullViewGridKeyBoardEvent(event: KeyboardEvent) {
     const key = parseKey(event);
     if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
-      const triggered = Object.entries(keyboardEvents.inbigImageMode).some(([id, desc]) => {
+      const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
         const override = conf.keyboards.inBigImageMode[id as KeyboardInBigImageModeId];
         // override !== undefined never check defaultKeys
         if (override !== undefined ? override.includes(key) : desc.defaultKeys.includes(key)) {
@@ -374,28 +380,28 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     }
   };
 
-  //显示简易指南事件
+  // 显示简易指南事件
   function showGuideEvent() {
+    const oldGuide = document.getElementById("ehvp-guide");
+    if (oldGuide) {
+      oldGuide.remove();
+    }
     const guideElement = document.createElement("div");
-    document.body.after(guideElement);
-    guideElement.innerHTML = `
-  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>
-  `;
-    guideElement.setAttribute("style", `
-position: absolute;
-width: 100%;
-height: 100%;
-background-color: #363c3c78;
-z-index: 2014;
-top: 0;
-display: flex;
-justify-content: center;
-align-items: center;
-color: black;
-text-align: left;
-`);
+    guideElement.setAttribute("id", "ehvp-guide")
+    guideElement.innerHTML = `<div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>`;
+    guideElement.classList.add("ehvp-full-panel");
+    guideElement.setAttribute("style", `align-items: center; color: black; text-align: left;`);
     guideElement.addEventListener("click", () => guideElement.remove());
+    if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
+      document.body.after(guideElement);
+    } else {
+      HTML.fullViewGrid.appendChild(guideElement);
+    }
   };
+
+  function showKeyboardCustomEvent() {
+    createKeyboardCustomPanel(keyboardEvents, HTML.fullViewGrid);
+  }
 
   const signal = { first: true };
   // 入口
@@ -435,6 +441,6 @@ text-align: left;
     showGuideEvent,
     collapsePanelEvent,
     abortMouseleavePanelEvent,
-    keyboardEvents,
+    showKeyboardCustomEvent,
   }
 }

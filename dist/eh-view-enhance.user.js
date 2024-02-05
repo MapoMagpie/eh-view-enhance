@@ -384,6 +384,29 @@
       return this[i18nIndex];
     }
   }
+  const keyboardCustom = {
+    inMain: {
+      "open-full-view-grid": new I18nValue("Enter Read Mode", "进入阅读模式")
+    },
+    inBigImageMode: {
+      "step-image-prev": new I18nValue("Go Prev Image", "切换到上一张图片"),
+      "step-image-next": new I18nValue("Go Next Image", "切换到下一张图片"),
+      "exit-big-image-mode": new I18nValue("Exit Big Image Mode", "退出大图模式"),
+      "step-to-first-image": new I18nValue("Go First Image", "跳转到第一张图片"),
+      "step-to-last-image": new I18nValue("Go Last Image", "跳转到最后一张图片"),
+      "scale-image-increase": new I18nValue("Increase Image Scale", "放大图片"),
+      "scale-image-decrease": new I18nValue("Decrease Image Scale", "缩小图片"),
+      "scroll-image-up": new I18nValue("Scroll Image Up", "向上滚动图片"),
+      "scroll-image-down": new I18nValue("Scroll Image Down", "向下滚动图片")
+    },
+    inFullViewGrid: {
+      "open-big-image-mode": new I18nValue("Enter Big Image Mode", "进入大图阅读模式"),
+      "pause-auto-load-temporarily": new I18nValue("Pause Auto Load Temporarily", "临时停止自动加载"),
+      "exit-full-view-grid": new I18nValue("Exit Read Mode", "退出阅读模式"),
+      "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
+      "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量")
+    }
+  };
   const i18n = {
     imageScale: new I18nValue("SCALE", "缩放"),
     download: new I18nValue("DL", "下载"),
@@ -487,7 +510,8 @@
         </span>
       </li>
     </ol>
-  `)
+  `),
+    keyboardCustom
   };
 
   class Crc32 {
@@ -2884,6 +2908,65 @@ duration 0.04`).join("\n");
     }
   }
 
+  function createKeyboardCustomPanel(keyboardEvents, root) {
+    const HTML_STR = `
+<div class="ehvp-custom-panel">
+  <div class="ehvp-custom-panel-title">
+    <span>Custom Keyboard</span>
+    <span class="ehvp-custom-panel-close">✖</span>
+  </div>
+    <div class="ehvp-custom-panel-content">
+  ${Object.entries(keyboardEvents.inMain).map(([id, desc]) => `
+     <div class="ehvp-custom-panel-item">
+      <div class="ehvp-custom-panel-item-title">
+        <span>${i18n.keyboardCustom.inMain[id].get()}</span>
+      </div>
+      <div class="ehvp-custom-panel-item-values">
+        ${desc.defaultKeys.map((key) => `<span id="${id}-span-item" class="ehvp-custom-panel-item-value"><span>${key}</span><button>x</button></span>`).join("")}
+        <button class="ehvp-custom-panel-item-add-btn">+</button>
+      </div>
+     </div>
+  `).join("")}
+    </div>
+    <div class="ehvp-custom-panel-content">
+  ${Object.entries(keyboardEvents.inFullViewGrid).map(([id, desc]) => `
+     <div class="ehvp-custom-panel-item">
+      <div class="ehvp-custom-panel-item-title">
+        <span>${i18n.keyboardCustom.inFullViewGrid[id].get()}</span>
+      </div>
+      <div class="ehvp-custom-panel-item-values">
+        ${desc.defaultKeys.map((key) => `<span id="${id}-span-item" class="ehvp-custom-panel-item-value"><span>${key}</span><button>x</button></span>`).join("")}
+        <button class="ehvp-custom-panel-item-add-btn">+</button>
+      </div>
+     </div>
+  `).join("")}
+    </div>
+    <div class="ehvp-custom-panel-content">
+  ${Object.entries(keyboardEvents.inBigImageMode).map(([id, desc]) => `
+     <div class="ehvp-custom-panel-item">
+      <div class="ehvp-custom-panel-item-title">
+        <span>${i18n.keyboardCustom.inBigImageMode[id].get()}</span>
+      </div>
+      <div class="ehvp-custom-panel-item-values">
+        ${desc.defaultKeys.map((key) => `<span id="${id}-span-item" class="ehvp-custom-panel-item-value"><span>${key}</span><button>x</button></span>`).join("")}
+        <button class="ehvp-custom-panel-item-add-btn">+</button>
+      </div>
+     </div>
+  `).join("")}
+    </div>
+</div>
+`;
+    const fullPanel = document.createElement("div");
+    fullPanel.classList.add("ehvp-full-panel");
+    fullPanel.innerHTML = HTML_STR;
+    fullPanel.addEventListener("click", (event) => {
+      if (event.target.classList.contains("ehvp-full-panel")) {
+        fullPanel.remove();
+      }
+    });
+    root.appendChild(fullPanel);
+  }
+
   class KeyboardDesc {
     defaultKeys;
     cb;
@@ -3170,14 +3253,14 @@ duration 0.04`).join("\n");
           main(true);
         }, true)
       };
-      return { inbigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: onMain };
+      return { inBigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: onMain };
     }
     const keyboardEvents = initKeyboardEvent();
     let numberRecord = null;
     function fullViewGridKeyBoardEvent(event) {
       const key = parseKey(event);
       if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
-        const triggered = Object.entries(keyboardEvents.inbigImageMode).some(([id, desc]) => {
+        const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
           const override = conf.keyboards.inBigImageMode[id];
           if (override !== void 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
             desc.cb(event);
@@ -3224,25 +3307,24 @@ duration 0.04`).join("\n");
       }
     }
     function showGuideEvent() {
+      const oldGuide = document.getElementById("ehvp-guide");
+      if (oldGuide) {
+        oldGuide.remove();
+      }
       const guideElement = document.createElement("div");
-      document.body.after(guideElement);
-      guideElement.innerHTML = `
-  <div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>
-  `;
-      guideElement.setAttribute("style", `
-position: absolute;
-width: 100%;
-height: 100%;
-background-color: #363c3c78;
-z-index: 2014;
-top: 0;
-display: flex;
-justify-content: center;
-align-items: center;
-color: black;
-text-align: left;
-`);
+      guideElement.setAttribute("id", "ehvp-guide");
+      guideElement.innerHTML = `<div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>`;
+      guideElement.classList.add("ehvp-full-panel");
+      guideElement.setAttribute("style", `align-items: center; color: black; text-align: left;`);
       guideElement.addEventListener("click", () => guideElement.remove());
+      if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
+        document.body.after(guideElement);
+      } else {
+        HTML.fullViewGrid.appendChild(guideElement);
+      }
+    }
+    function showKeyboardCustomEvent() {
+      createKeyboardCustomPanel(keyboardEvents, HTML.fullViewGrid);
     }
     const signal = { first: true };
     function main(extend) {
@@ -3278,7 +3360,7 @@ text-align: left;
       showGuideEvent,
       collapsePanelEvent,
       abortMouseleavePanelEvent,
-      keyboardEvents
+      showKeyboardCustomEvent
     };
   }
 
@@ -3819,6 +3901,85 @@ text-align: left;
 .p-minify:not(:hover) #auto-page-btn {
   border: 1px solid #00000000 !important;
 }
+.ehvp-full-panel {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000e8;
+  z-index: 3000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  top: 0;
+}
+.ehvp-custom-panel {
+  min-width: 30vw;
+  min-height: 50vh;
+  background-color: rgba(38, 20, 25, 0.8);
+  border: 1px solid #000000;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  text-align: start;
+  color: rgb(200, 222, 200);
+}
+.ehvp-custom-panel-title {
+  font-size: 2.1rem;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+}
+.ehvp-custom-panel-content {
+  border: 1px solid #000000;
+  border-radius: 4px;
+  margin: 0.5rem;
+  padding: 0.5rem;
+}
+.ehvp-custom-panel-item {
+  margin: 0.2rem 0rem;
+}
+.ehvp-custom-panel-item-title {
+  font-size: 1.4rem;
+}
+.ehvp-custom-panel-item-values {
+  margin-top: 0.3rem;
+  text-align: end;
+}
+.ehvp-custom-panel-item-value {
+  font-size: 1.1rem;
+  line-height: 1.2rem;
+  font-weight: bold;
+  color: black;
+  background-color: #c5c5c5;
+  border: 1px solid #000000;
+  box-sizing: border-box;
+  margin-left: 0.3rem;
+}
+.ehvp-custom-panel-item-value span {
+  padding: 0rem 0.5rem;
+}
+.ehvp-custom-panel-item-value button {
+  background-color: #fff;
+  color: black;
+  border: none;
+}
+.ehvp-custom-panel-item-value button:hover {
+  background-color: #ffff00;
+}
+.ehvp-custom-panel-item-add-btn {
+  font-size: 1.1rem;
+  line-height: 1.2rem;
+  font-weight: bold;
+  background-color: #7fef7b;
+  color: black;
+  margin-left: 0.3rem;
+  border: none;
+}
+.ehvp-custom-panel-item-add-btn:hover {
+  background-color: #ffff00;
+}
 `;
     style.textContent = css;
     document.head.appendChild(style);
@@ -3983,17 +4144,18 @@ text-align: left;
                     </span>
                 </label>
             </div>
-            <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.dragToMove.get()}:</span>
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                 </label>
             </div>
-            <div style="grid-column-start: 4; grid-column-end: 8; padding-left: 5px;">
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <a id="show-guide-element" class="clickable" style="color: #fff">HELP</a>
+                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff">Keyboard</a>
                  <a class="clickable" style="color: #fff" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">Let's Star</a>
             </div>
-            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 8; padding-left: 5px;">
+            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>
                 <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
                 <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
@@ -4053,6 +4215,7 @@ text-align: left;
       totalPageElement: q("#p-total", fullViewGrid),
       finishedElement: q("#p-finished", fullViewGrid),
       showGuideElement: q("#show-guide-element", fullViewGrid),
+      showKeyboardCustomElement: q("#show-keyboard-custom-element", fullViewGrid),
       imgLandLeft: q("#img-land-left", fullViewGrid),
       imgLandRight: q("#img-land-right", fullViewGrid),
       imgLandTop: q("#img-land-top", fullViewGrid),
@@ -4118,6 +4281,7 @@ text-align: left;
       event.stopPropagation();
     });
     HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
+    HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
     dragElement(HTML.pageHelper, q("#dragHub", HTML.pageHelper), events.modPageHelperPostion);
   }
 

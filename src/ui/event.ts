@@ -131,6 +131,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       }
       if (collapse === true) {
         collapsePanelEvent(element, id);
+        if (BIFM.visible) {
+          BIFM.frame.focus();
+        } else {
+          HTML.fullViewGrid.focus();
+        }
         return;
       }
 

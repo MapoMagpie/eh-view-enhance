@@ -74,7 +74,8 @@
       archiveVolumeSize: 1500,
       convertTo: "GIF",
       autoCollapsePanels: true,
-      minifyPageHelper: "inBigMode"
+      minifyPageHelper: "inBigMode",
+      keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} }
     };
   }
   const VERSION = "4.1.10";
@@ -129,6 +130,10 @@
       $conf.restartIdleLoader = 5e3;
       changed = true;
     }
+    if ($conf.keyboards === void 0) {
+      $conf.keyboards = { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} };
+      changed = true;
+    }
     if (changed) {
       saveConf($conf);
     }
@@ -157,7 +162,7 @@
       responseType: respType,
       nocache: false,
       revalidate: false,
-      fetch: false,
+      // fetch: false,
       headers: {
         "Host": HOST_REGEX.exec(url)[1],
         // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0",
@@ -2879,6 +2884,30 @@ duration 0.04`).join("\n");
     }
   }
 
+  class KeyboardDesc {
+    defaultKeys;
+    cb;
+    noPreventDefault = false;
+    constructor(defaultKeys, cb, noPreventDefault) {
+      this.defaultKeys = defaultKeys;
+      this.cb = cb;
+      this.noPreventDefault = noPreventDefault || false;
+    }
+  }
+  function parseKey(event) {
+    const keys = [];
+    if (event.ctrlKey)
+      keys.push("Ctrl");
+    if (event.shiftKey)
+      keys.push("Shift");
+    if (event.altKey)
+      keys.push("Alt");
+    let key = event.key;
+    if (key === " ")
+      key = "Space";
+    keys.push(key);
+    return keys.join("+");
+  }
   function initEvents(HTML, BIFM, IFQ, PF, IL, PH) {
     function modPageHelperPostion() {
       const style = HTML.pageHelper.style;
@@ -2991,6 +3020,11 @@ duration 0.04`).join("\n");
         }
         if (collapse === true) {
           collapsePanelEvent(element, id);
+          if (BIFM.visible) {
+            BIFM.frame.focus();
+          } else {
+            HTML.fullViewGrid.focus();
+          }
           return;
         }
         if (!element.classList.toggle("p-collapse")) {
@@ -3036,107 +3070,130 @@ duration 0.04`).join("\n");
     function bigImageWheelEvent(event) {
       IFQ.stepImageEvent(event.deltaY > 0 ? "next" : "prev");
     }
-    function bigImageFrameKeyBoardEvent(event) {
-      let triggered = true;
-      switch (event.key) {
-        case "ArrowLeft":
-          IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
-          break;
-        case "ArrowRight":
-          IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
-          break;
-        case "Escape":
-        case "Enter":
-          BIFM.hidden();
-          break;
-        case "Home":
-          IFQ.do(0, "next");
-          break;
-        case "End":
-          IFQ.do(IFQ.length - 1, "prev");
-          break;
-        case " ":
-        case "ArrowUp":
-        case "ArrowDown":
-        case "PageUp":
-        case "PageDown":
-          triggered = false;
-          let oriented = "next";
-          if (event.key === "ArrowUp" || event.key === "PageUp") {
-            oriented = "prev";
-          } else if (event.key === "ArrowDown" || event.key === "PageDown" || event.key === " ") {
-            oriented = "next";
-          }
-          if (event.shiftKey) {
-            oriented = oriented === "next" ? "prev" : "next";
-          }
-          BIFM.frame.addEventListener("scrollend", () => {
-            if (conf.readMode === "singlePage" && BIFM.isReachBoundary(oriented)) {
-              BIFM.tryPreventStep();
-            }
-          }, { once: true });
-          if (BIFM.isReachBoundary(oriented)) {
-            event.preventDefault();
-            HTML.bigImageFrame.dispatchEvent(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }));
-          }
-          break;
-        case "-":
-          BIFM.scaleBigImages(-1, 5);
-          break;
-        case "=":
-          BIFM.scaleBigImages(1, 5);
-          break;
-        default:
-          triggered = false;
+    function scrollImage(oriented) {
+      BIFM.frame.addEventListener("scrollend", () => {
+        if (conf.readMode === "singlePage" && BIFM.isReachBoundary(oriented)) {
+          BIFM.tryPreventStep();
+        }
+      }, { once: true });
+      if (BIFM.isReachBoundary(oriented)) {
+        HTML.bigImageFrame.dispatchEvent(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }));
+        return true;
       }
-      if (triggered) {
-        event.preventDefault();
-      }
+      return false;
     }
-    let numberRecord = null;
-    function fullViewGridKeyBoardEvent(event) {
-      if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
-        bigImageFrameKeyBoardEvent(event);
-      } else if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
-        let triggered = true;
-        switch (event.key) {
-          case "Enter": {
+    function initKeyboardEvent() {
+      const onbigImageFrame = {
+        "step-image-prev": new KeyboardDesc(
+          ["ArrowLeft"],
+          () => IFQ.stepImageEvent(conf.reversePages ? "next" : "prev")
+        ),
+        "step-image-next": new KeyboardDesc(
+          ["ArrowRight"],
+          () => IFQ.stepImageEvent(conf.reversePages ? "prev" : "next")
+        ),
+        "exit-big-image-mode": new KeyboardDesc(
+          ["Escape", "Enter"],
+          () => BIFM.hidden()
+        ),
+        "step-to-first-image": new KeyboardDesc(
+          ["Home"],
+          () => IFQ.do(0, "next")
+        ),
+        "step-to-last-image": new KeyboardDesc(
+          ["End"],
+          () => IFQ.do(IFQ.length - 1, "prev")
+        ),
+        "scale-image-increase": new KeyboardDesc(
+          ["="],
+          () => BIFM.scaleBigImages(1, 5)
+        ),
+        "scale-image-decrease": new KeyboardDesc(
+          ["-"],
+          () => BIFM.scaleBigImages(-1, 5)
+        ),
+        "scroll-image-up": new KeyboardDesc(
+          ["PageUp", "ArrowUp", "Shift+Space"],
+          (event) => scrollImage("prev") && event.preventDefault(),
+          true
+        ),
+        "scroll-image-down": new KeyboardDesc(
+          ["PageDown", "ArrowDown", "Space"],
+          (event) => scrollImage("next") && event.preventDefault(),
+          true
+        )
+      };
+      const onFullViewGrid = {
+        "open-big-image-mode": new KeyboardDesc(
+          ["Enter"],
+          () => {
             let start = IFQ.currIndex;
             if (numberRecord && numberRecord.length > 0) {
               start = Number(numberRecord.join("")) - 1;
               numberRecord = null;
               if (isNaN(start))
-                break;
+                return;
               start = Math.max(0, Math.min(start, IFQ.length - 1));
             }
             IFQ[start].node.imgElement?.dispatchEvent(new MouseEvent("click"));
-            break;
           }
-          case "Escape":
-            main(false);
-            break;
-          case "p": {
+        ),
+        "pause-auto-load-temporarily": new KeyboardDesc(
+          ["p"],
+          () => {
             IL.autoLoad = !IL.autoLoad;
             if (IL.autoLoad) {
               IL.abort(IFQ.currIndex);
             }
-            break;
           }
-          case "-":
-            modNumberConfigEvent("colCount", "minus");
-            break;
-          case "=":
-            modNumberConfigEvent("colCount", "add");
-            break;
-          default: {
-            if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
-              numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
-            } else {
-              triggered = false;
-            }
+        ),
+        "exit-full-view-grid": new KeyboardDesc(
+          ["Escape"],
+          () => main(false)
+        ),
+        "columns-increase": new KeyboardDesc(
+          ["="],
+          () => modNumberConfigEvent("colCount", "add")
+        ),
+        "columns-decrease": new KeyboardDesc(
+          ["-"],
+          () => modNumberConfigEvent("colCount", "minus")
+        )
+      };
+      const onMain = {
+        "open-full-view-grid": new KeyboardDesc(["Enter"], () => main(true), true)
+      };
+      return { inbigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: onMain };
+    }
+    const keyboardEvents = initKeyboardEvent();
+    let numberRecord = null;
+    function fullViewGridKeyBoardEvent(event) {
+      const key = parseKey(event);
+      if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
+        const triggered = Object.entries(keyboardEvents.inbigImageMode).some(([id, desc]) => {
+          const override = conf.keyboards.inBigImageMode[id];
+          if (override !== void 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+            desc.cb(event);
+            return !desc.noPreventDefault;
           }
-        }
+          return false;
+        });
         if (triggered) {
+          event.preventDefault();
+        }
+      } else if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
+        const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
+          const override = conf.keyboards.inFullViewGrid[id];
+          if (override !== void 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+            desc.cb(event);
+            return !desc.noPreventDefault;
+          }
+          return false;
+        });
+        if (triggered) {
+          event.preventDefault();
+        } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+          numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
           event.preventDefault();
         }
       }
@@ -3146,10 +3203,17 @@ duration 0.04`).join("\n");
         return;
       if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
         return;
-      switch (event.key) {
-        case "Enter":
-          main(true);
-          break;
+      const key = parseKey(event);
+      const triggered = Object.entries(keyboardEvents.inMain).some(([id, desc]) => {
+        const override = conf.keyboards.inMain[id];
+        if (override !== void 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+          desc.cb(event);
+          return !desc.noPreventDefault;
+        }
+        return false;
+      });
+      if (triggered) {
+        event.preventDefault();
       }
     }
     function showGuideEvent() {
@@ -3206,7 +3270,8 @@ text-align: left;
       keyboardEvent,
       showGuideEvent,
       collapsePanelEvent,
-      abortMouseleavePanelEvent
+      abortMouseleavePanelEvent,
+      keyboardEvents
     };
   }
 

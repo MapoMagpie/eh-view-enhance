@@ -1,4 +1,5 @@
 import { GM_getValue, GM_setValue } from "$";
+import { KeyboardInBigImageModeId, KeyboardInFullViewGridId, KeyboardInMainId } from "./ui/event";
 
 export type Oriented = "prev" | "next";
 
@@ -56,6 +57,12 @@ export type Config = {
   autoCollapsePanels: boolean,
   /** 最小化控制栏 */
   minifyPageHelper: "always" | "inBigMode" | "never",
+  /** 键盘自定义 */
+  keyboards: {
+    inBigImageMode: { [key in KeyboardInBigImageModeId]?: string[] },
+    inFullViewGrid: { [key in KeyboardInFullViewGridId]?: string[] },
+    inMain: { [key in KeyboardInMainId]?: string[] }
+  }
 };
 
 function defaultConf(): Config {
@@ -89,6 +96,7 @@ function defaultConf(): Config {
     convertTo: "GIF",
     autoCollapsePanels: true,
     minifyPageHelper: "inBigMode",
+    keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} }
   };
 }
 
@@ -146,6 +154,10 @@ function confHealthCheck($conf: Config): Config {
   }
   if ($conf.restartIdleLoader === 8000) {
     $conf.restartIdleLoader = 5000;
+    changed = true;
+  }
+  if ($conf.keyboards === undefined) {
+    $conf.keyboards = { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} };
     changed = true;
   }
   if (changed) {

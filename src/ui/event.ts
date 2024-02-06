@@ -3,6 +3,7 @@ import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
 import { PageFetcher } from "../page-fetcher";
 import { i18n } from "../utils/i18n";
+import parseKey from "../utils/keyboard";
 import q from "../utils/query-element";
 import { Elements } from "./html";
 import createKeyboardCustomPanel from "./keyboard-custom";
@@ -19,7 +20,7 @@ export type KeyboardEvents = {
   inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc>,
   inMain: Record<KeyboardInMainId, KeyboardDesc>,
 }
-class KeyboardDesc {
+export class KeyboardDesc {
   defaultKeys: string[];
   cb: (event: KeyboardEvent) => void;
   noPreventDefault?: boolean = false;
@@ -28,17 +29,6 @@ class KeyboardDesc {
     this.cb = cb;
     this.noPreventDefault = noPreventDefault || false;
   }
-}
-
-function parseKey(event: KeyboardEvent) {
-  const keys = [];
-  if (event.ctrlKey) keys.push("Ctrl");
-  if (event.shiftKey) keys.push("Shift");
-  if (event.altKey) keys.push("Alt");
-  let key = event.key;
-  if (key === " ") key = "Space";
-  keys.push(key);
-  return keys.join("+");
 }
 
 export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader, PH: PageHelper) {

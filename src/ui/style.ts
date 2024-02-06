@@ -533,6 +533,10 @@ export function loadStyleSheel() {
   font-weight: bold;
   display: flex;
   justify-content: space-between;
+  padding-left: 1rem;
+}
+.ehvp-custom-panel-close:hover {
+  background-color: #c30090;
 }
 .ehvp-custom-panel-content {
   border: 1px solid #000000;
@@ -559,6 +563,7 @@ export function loadStyleSheel() {
   border: 1px solid #000000;
   box-sizing: border-box;
   margin-left: 0.3rem;
+  display: inline-flex;
 }
 .ehvp-custom-panel-item-value span {
   padding: 0rem 0.5rem;
@@ -567,6 +572,7 @@ export function loadStyleSheel() {
   background-color: #fff;
   color: black;
   border: none;
+  height: 1.2rem;
 }
 .ehvp-custom-panel-item-value button:hover {
   background-color: #ffff00;

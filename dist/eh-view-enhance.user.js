@@ -2908,75 +2908,6 @@ duration 0.04`).join("\n");
     }
   }
 
-  function createKeyboardCustomPanel(keyboardEvents, root) {
-    const HTML_STR = `
-<div class="ehvp-custom-panel">
-  <div class="ehvp-custom-panel-title">
-    <span>Custom Keyboard</span>
-    <span class="ehvp-custom-panel-close">✖</span>
-  </div>
-    <div class="ehvp-custom-panel-content">
-  ${Object.entries(keyboardEvents.inMain).map(([id, desc]) => `
-     <div class="ehvp-custom-panel-item">
-      <div class="ehvp-custom-panel-item-title">
-        <span>${i18n.keyboardCustom.inMain[id].get()}</span>
-      </div>
-      <div class="ehvp-custom-panel-item-values">
-        ${desc.defaultKeys.map((key) => `<span id="${id}-span-item" class="ehvp-custom-panel-item-value"><span>${key}</span><button>x</button></span>`).join("")}
-        <button class="ehvp-custom-panel-item-add-btn">+</button>
-      </div>
-     </div>
-  `).join("")}
-    </div>
-    <div class="ehvp-custom-panel-content">
-  ${Object.entries(keyboardEvents.inFullViewGrid).map(([id, desc]) => `
-     <div class="ehvp-custom-panel-item">
-      <div class="ehvp-custom-panel-item-title">
-        <span>${i18n.keyboardCustom.inFullViewGrid[id].get()}</span>
-      </div>
-      <div class="ehvp-custom-panel-item-values">
-        ${desc.defaultKeys.map((key) => `<span id="${id}-span-item" class="ehvp-custom-panel-item-value"><span>${key}</span><button>x</button></span>`).join("")}
-        <button class="ehvp-custom-panel-item-add-btn">+</button>
-      </div>
-     </div>
-  `).join("")}
-    </div>
-    <div class="ehvp-custom-panel-content">
-  ${Object.entries(keyboardEvents.inBigImageMode).map(([id, desc]) => `
-     <div class="ehvp-custom-panel-item">
-      <div class="ehvp-custom-panel-item-title">
-        <span>${i18n.keyboardCustom.inBigImageMode[id].get()}</span>
-      </div>
-      <div class="ehvp-custom-panel-item-values">
-        ${desc.defaultKeys.map((key) => `<span id="${id}-span-item" class="ehvp-custom-panel-item-value"><span>${key}</span><button>x</button></span>`).join("")}
-        <button class="ehvp-custom-panel-item-add-btn">+</button>
-      </div>
-     </div>
-  `).join("")}
-    </div>
-</div>
-`;
-    const fullPanel = document.createElement("div");
-    fullPanel.classList.add("ehvp-full-panel");
-    fullPanel.innerHTML = HTML_STR;
-    fullPanel.addEventListener("click", (event) => {
-      if (event.target.classList.contains("ehvp-full-panel")) {
-        fullPanel.remove();
-      }
-    });
-    root.appendChild(fullPanel);
-  }
-
-  class KeyboardDesc {
-    defaultKeys;
-    cb;
-    noPreventDefault = false;
-    constructor(defaultKeys, cb, noPreventDefault) {
-      this.defaultKeys = defaultKeys;
-      this.cb = cb;
-      this.noPreventDefault = noPreventDefault || false;
-    }
-  }
   function parseKey(event) {
     const keys = [];
     if (event.ctrlKey)
@@ -2990,6 +2921,135 @@ duration 0.04`).join("\n");
       key = "Space";
     keys.push(key);
     return keys.join("+");
+  }
+
+  function createKeyboardCustomPanel(keyboardEvents, root) {
+    function addKeyboardDescElement(btn, category, id, key) {
+      const str = `<span data-id="${id}" data-key="${key}" class="ehvp-custom-panel-item-value"><span >${key}</span><button>x</button></span>`;
+      const tamplate = document.createElement("div");
+      tamplate.innerHTML = str;
+      const element = tamplate.firstElementChild;
+      btn.before(element);
+      element.querySelector("button").addEventListener("click", (event) => {
+        const keys = conf.keyboards[category][id];
+        if (keys && keys.length > 0) {
+          const index = keys.indexOf(key);
+          if (index !== -1)
+            keys.splice(index, 1);
+          if (keys.length === 0) {
+            delete conf.keyboards[category][id];
+          }
+          saveConf(conf);
+        }
+        event.target.parentElement.remove();
+        const values = Array.from(btn.parentElement.querySelectorAll(".ehvp-custom-panel-item-value"));
+        if (values.length === 0) {
+          const desc = keyboardEvents[category][id];
+          desc.defaultKeys.forEach((key2) => addKeyboardDescElement(btn, category, id, key2));
+        }
+      });
+      tamplate.remove();
+    }
+    const HTML_STR = `
+<div class="ehvp-custom-panel">
+  <div class="ehvp-custom-panel-title">
+    <span>Custom Keyboard</span>
+    <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
+  </div>
+    <div class="ehvp-custom-panel-content">
+      ${Object.entries(keyboardEvents.inMain).map(([id]) => `
+        <div class="ehvp-custom-panel-item">
+         <div class="ehvp-custom-panel-item-title">
+           <span>${i18n.keyboardCustom.inMain[id].get()}</span>
+         </div>
+         <div class="ehvp-custom-panel-item-values">
+           <!-- wait element created from button event -->
+           <button class="ehvp-custom-panel-item-add-btn" data-cate="inMain" data-id="${id}">+</button>
+         </div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="ehvp-custom-panel-content">
+      ${Object.entries(keyboardEvents.inFullViewGrid).map(([id]) => `
+        <div class="ehvp-custom-panel-item">
+         <div class="ehvp-custom-panel-item-title">
+           <span>${i18n.keyboardCustom.inFullViewGrid[id].get()}</span>
+         </div>
+         <div class="ehvp-custom-panel-item-values">
+           <!-- wait element created from button event -->
+           <button class="ehvp-custom-panel-item-add-btn" data-cate="inFullViewGrid" data-id="${id}">+</button>
+         </div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="ehvp-custom-panel-content">
+      ${Object.entries(keyboardEvents.inBigImageMode).map(([id]) => `
+        <div class="ehvp-custom-panel-item">
+         <div class="ehvp-custom-panel-item-title">
+           <span>${i18n.keyboardCustom.inBigImageMode[id].get()}</span>
+         </div>
+         <div class="ehvp-custom-panel-item-values">
+           <!-- wait element created from button event -->
+           <button class="ehvp-custom-panel-item-add-btn" data-cate="inBigImageMode" data-id="${id}">+</button>
+         </div>
+        </div>
+      `).join("")}
+    </div>
+</div>
+`;
+    const fullPanel = document.createElement("div");
+    fullPanel.classList.add("ehvp-full-panel");
+    fullPanel.innerHTML = HTML_STR;
+    fullPanel.addEventListener("click", (event) => {
+      if (event.target.classList.contains("ehvp-full-panel")) {
+        fullPanel.remove();
+      }
+    });
+    root.appendChild(fullPanel);
+    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", () => fullPanel.remove());
+    const buttons = Array.from(fullPanel.querySelectorAll(".ehvp-custom-panel-item-add-btn"));
+    buttons.forEach((btn) => {
+      const category = btn.getAttribute("data-cate");
+      const id = btn.getAttribute("data-id");
+      let keys = conf.keyboards[category][id];
+      if (keys === void 0 || keys.length === 0) {
+        keys = keyboardEvents[category][id].defaultKeys;
+      }
+      keys.forEach((key) => addKeyboardDescElement(btn, category, id, key));
+      const addKeyBoardDesc = (event) => {
+        event.preventDefault();
+        if (event.key === "Alt" || event.key === "Shift" || event.key === "Control")
+          return;
+        const key = parseKey(event);
+        if (conf.keyboards[category][id] !== void 0) {
+          conf.keyboards[category][id].push(key);
+        } else {
+          conf.keyboards[category][id] = keys.concat(key);
+        }
+        saveConf(conf);
+        addKeyboardDescElement(btn, category, id, key);
+        btn.textContent = "+";
+      };
+      btn.addEventListener("click", () => {
+        btn.textContent = "Press Key";
+        btn.addEventListener("keydown", addKeyBoardDesc);
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.textContent = "+";
+        btn.removeEventListener("keydown", addKeyBoardDesc);
+      });
+    });
+  }
+
+  class KeyboardDesc {
+    defaultKeys;
+    cb;
+    noPreventDefault = false;
+    constructor(defaultKeys, cb, noPreventDefault) {
+      this.defaultKeys = defaultKeys;
+      this.cb = cb;
+      this.noPreventDefault = noPreventDefault || false;
+    }
   }
   function initEvents(HTML, BIFM, IFQ, PF, IL, PH) {
     function modPageHelperPostion() {
@@ -3930,6 +3990,10 @@ duration 0.04`).join("\n");
   font-weight: bold;
   display: flex;
   justify-content: space-between;
+  padding-left: 1rem;
+}
+.ehvp-custom-panel-close:hover {
+  background-color: #c30090;
 }
 .ehvp-custom-panel-content {
   border: 1px solid #000000;
@@ -3956,6 +4020,7 @@ duration 0.04`).join("\n");
   border: 1px solid #000000;
   box-sizing: border-box;
   margin-left: 0.3rem;
+  display: inline-flex;
 }
 .ehvp-custom-panel-item-value span {
   padding: 0rem 0.5rem;
@@ -3964,6 +4029,7 @@ duration 0.04`).join("\n");
   background-color: #fff;
   color: black;
   border: none;
+  height: 1.2rem;
 }
 .ehvp-custom-panel-item-value button:hover {
   background-color: #ffff00;

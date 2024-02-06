@@ -61,7 +61,7 @@ export type Config = {
   keyboards: {
     inBigImageMode: { [key in KeyboardInBigImageModeId]?: string[] },
     inFullViewGrid: { [key in KeyboardInFullViewGridId]?: string[] },
-    inMain: { [key in KeyboardInMainId]?: string[] }
+    inMain: { [key in KeyboardInMainId]?: string[] },
   }
 };
 

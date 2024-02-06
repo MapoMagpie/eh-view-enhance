@@ -188,7 +188,7 @@ export function createHTML() {
                 <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
                 <div id="img-scale-progress" class="scale-progress"><div id="img-scale-progress-inner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
                 <div id="img-increase-btn" class="scale-btn"><span>+</span></div>
-                <div id="img-scale-reset-btn" class="scale-btn"><span>RESET</span></div>
+                <div id="img-scale-reset-btn" class="scale-btn" style="width: auto;"><span>RESET</span></div>
             </div>
         </div>
         <div id="downloader-panel" class="p-panel p-downloader p-collapse">

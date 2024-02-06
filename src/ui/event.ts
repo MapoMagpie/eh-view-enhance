@@ -259,6 +259,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         ["-"],
         () => BIFM.scaleBigImages(-1, 5)
       ),
+      // TODO: handle custom key scroll; now it's controlled by browser
       "scroll-image-up": new KeyboardDesc(
         ["PageUp", "ArrowUp", "Shift+Space"],
         (event) => scrollImage("prev") && event.preventDefault(), true

@@ -3255,6 +3255,7 @@ duration 0.04`).join("\n");
           ["-"],
           () => BIFM.scaleBigImages(-1, 5)
         ),
+        // TODO: handle custom key scroll; now it's controlled by browser
         "scroll-image-up": new KeyboardDesc(
           ["PageUp", "ArrowUp", "Shift+Space"],
           (event) => scrollImage("prev") && event.preventDefault(),
@@ -3651,7 +3652,7 @@ duration 0.04`).join("\n");
   }
   .p-helper .p-panel {
     width: 100vw;
-    height: 60vh;
+    height: 70vh;
     bottom: 5.7cqw;
   }
   .p-helper .p-btn {
@@ -3974,12 +3975,11 @@ duration 0.04`).join("\n");
   top: 0;
 }
 .ehvp-custom-panel {
-  min-width: 30vw;
+  min-width: 50rem;
   min-height: 50vh;
   background-color: rgba(38, 20, 25, 0.8);
   border: 1px solid #000000;
-  border-radius: 4px;
-  overflow: hidden;
+  overflow: auto;
   display: flex;
   flex-direction: column;
   text-align: start;
@@ -4227,7 +4227,7 @@ duration 0.04`).join("\n");
                 <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
                 <div id="img-scale-progress" class="scale-progress"><div id="img-scale-progress-inner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
                 <div id="img-increase-btn" class="scale-btn"><span>+</span></div>
-                <div id="img-scale-reset-btn" class="scale-btn"><span>RESET</span></div>
+                <div id="img-scale-reset-btn" class="scale-btn" style="width: auto;"><span>RESET</span></div>
             </div>
         </div>
         <div id="downloader-panel" class="p-panel p-downloader p-collapse">

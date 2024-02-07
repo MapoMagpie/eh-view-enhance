@@ -396,8 +396,8 @@
       "step-to-last-image": new I18nValue("Go Last Image", "跳转到最后一张图片"),
       "scale-image-increase": new I18nValue("Increase Image Scale", "放大图片"),
       "scale-image-decrease": new I18nValue("Decrease Image Scale", "缩小图片"),
-      "scroll-image-up": new I18nValue("Scroll Image Up", "向上滚动图片"),
-      "scroll-image-down": new I18nValue("Scroll Image Down", "向下滚动图片")
+      "scroll-image-up": new I18nValue("Scroll Image Up (Please Keep Default Keys)", "向上滚动图片 (请保留默认按键)"),
+      "scroll-image-down": new I18nValue("Scroll Image Down (Please Keep Default Keys)", "向下滚动图片 (请保留默认按键)")
     },
     inFullViewGrid: {
       "open-big-image-mode": new I18nValue("Enter Big Image Mode", "进入大图阅读模式"),
@@ -3227,6 +3227,10 @@ duration 0.04`).join("\n");
     }
     function initKeyboardEvent() {
       const onbigImageFrame = {
+        "exit-big-image-mode": new KeyboardDesc(
+          ["Escape", "Enter"],
+          () => BIFM.hidden()
+        ),
         "step-image-prev": new KeyboardDesc(
           ["ArrowLeft"],
           () => IFQ.stepImageEvent(conf.reversePages ? "next" : "prev")
@@ -3234,10 +3238,6 @@ duration 0.04`).join("\n");
         "step-image-next": new KeyboardDesc(
           ["ArrowRight"],
           () => IFQ.stepImageEvent(conf.reversePages ? "prev" : "next")
-        ),
-        "exit-big-image-mode": new KeyboardDesc(
-          ["Escape", "Enter"],
-          () => BIFM.hidden()
         ),
         "step-to-first-image": new KeyboardDesc(
           ["Home"],
@@ -3255,15 +3255,26 @@ duration 0.04`).join("\n");
           ["-"],
           () => BIFM.scaleBigImages(-1, 5)
         ),
-        // TODO: handle custom key scroll; now it's controlled by browser
         "scroll-image-up": new KeyboardDesc(
           ["PageUp", "ArrowUp", "Shift+Space"],
-          (event) => scrollImage("prev") && event.preventDefault(),
+          (event) => {
+            const key = parseKey(event);
+            if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
+              BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 3), behavior: "smooth" });
+            }
+            scrollImage("prev") && event.preventDefault();
+          },
           true
         ),
         "scroll-image-down": new KeyboardDesc(
           ["PageDown", "ArrowDown", "Space"],
-          (event) => scrollImage("next") && event.preventDefault(),
+          (event) => {
+            const key = parseKey(event);
+            if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
+              BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 3, behavior: "smooth" });
+            }
+            scrollImage("next") && event.preventDefault();
+          },
           true
         )
       };
@@ -3304,7 +3315,7 @@ duration 0.04`).join("\n");
           () => modNumberConfigEvent("colCount", "minus")
         )
       };
-      const onMain = {
+      const inMain = {
         "open-full-view-grid": new KeyboardDesc(["Enter"], (event) => {
           if (event.key === "Enter") {
             const activeElement = document.activeElement;
@@ -3314,7 +3325,7 @@ duration 0.04`).join("\n");
           main(true);
         }, true)
       };
-      return { inBigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: onMain };
+      return { inBigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain };
     }
     const keyboardEvents = initKeyboardEvent();
     let numberRecord = null;

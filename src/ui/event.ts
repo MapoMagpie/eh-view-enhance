@@ -231,6 +231,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
 
   function initKeyboardEvent(): KeyboardEvents {
     const onbigImageFrame: Record<KeyboardInBigImageModeId, KeyboardDesc> = {
+      "exit-big-image-mode": new KeyboardDesc(
+        ["Escape", "Enter"],
+        () => BIFM.hidden()
+      ),
       "step-image-prev": new KeyboardDesc(
         ["ArrowLeft"],
         () => IFQ.stepImageEvent(conf.reversePages ? "next" : "prev")
@@ -238,10 +242,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       "step-image-next": new KeyboardDesc(
         ["ArrowRight"],
         () => IFQ.stepImageEvent(conf.reversePages ? "prev" : "next")
-      ),
-      "exit-big-image-mode": new KeyboardDesc(
-        ["Escape", "Enter"],
-        () => BIFM.hidden()
       ),
       "step-to-first-image": new KeyboardDesc(
         ["Home"],
@@ -259,14 +259,25 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         ["-"],
         () => BIFM.scaleBigImages(-1, 5)
       ),
-      // TODO: handle custom key scroll; now it's controlled by browser
       "scroll-image-up": new KeyboardDesc(
         ["PageUp", "ArrowUp", "Shift+Space"],
-        (event) => scrollImage("prev") && event.preventDefault(), true
+        (event) => {
+          const key = parseKey(event);
+          if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
+            BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 3), behavior: "smooth" })
+          }
+          scrollImage("prev") && event.preventDefault();
+        }, true
       ),
       "scroll-image-down": new KeyboardDesc(
         ["PageDown", "ArrowDown", "Space"],
-        (event) => scrollImage("next") && event.preventDefault(), true
+        (event) => {
+          const key = parseKey(event);
+          if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
+            BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 3, behavior: "smooth" })
+          }
+          scrollImage("next") && event.preventDefault();
+        }, true
       ),
     };
     const onFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc> = {
@@ -304,7 +315,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         () => modNumberConfigEvent("colCount", "minus")
       ),
     };
-    const onMain: Record<KeyboardInMainId, KeyboardDesc> = {
+    const inMain: Record<KeyboardInMainId, KeyboardDesc> = {
       "open-full-view-grid": new KeyboardDesc(["Enter"], (event) => {
         // check focus element is not input Elements
         if (event.key === "Enter") {
@@ -314,7 +325,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         main(true);
       }, true),
     };
-    return { inBigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: onMain }
+    return { inBigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: inMain }
   }
   const keyboardEvents = initKeyboardEvent();
 

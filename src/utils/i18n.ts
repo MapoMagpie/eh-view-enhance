@@ -27,8 +27,8 @@ const keyboardCustom: KeyboardCustom = {
     "step-to-last-image": new I18nValue("Go Last Image", "跳转到最后一张图片"),
     "scale-image-increase": new I18nValue("Increase Image Scale", "放大图片"),
     "scale-image-decrease": new I18nValue("Decrease Image Scale", "缩小图片"),
-    "scroll-image-up": new I18nValue("Scroll Image Up", "向上滚动图片"),
-    "scroll-image-down": new I18nValue("Scroll Image Down", "向下滚动图片"),
+    "scroll-image-up": new I18nValue("Scroll Image Up (Please Keep Default Keys)", "向上滚动图片 (请保留默认按键)"),
+    "scroll-image-down": new I18nValue("Scroll Image Down (Please Keep Default Keys)", "向下滚动图片 (请保留默认按键)"),
   },
   inFullViewGrid: {
     "open-big-image-mode": new I18nValue("Enter Big Image Mode", "进入大图阅读模式"),

@@ -268,9 +268,9 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
             if (scrolling) return;
             scrolling = true;
             BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
-            BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 3), behavior: "smooth" })
+            BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 2), behavior: "smooth" })
           }
-          if (scrollImage("next")) {
+          if (scrollImage("prev")) {
             event.preventDefault();
             scrolling = false;
           }
@@ -284,7 +284,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
             if (scrolling) return;
             scrolling = true;
             BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
-            BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 3, behavior: "smooth" })
+            BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 2, behavior: "smooth" })
           }
           if (scrollImage("next")) {
             event.preventDefault();
@@ -350,7 +350,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
         const override = conf.keyboards.inBigImageMode[id as KeyboardInBigImageModeId];
         // override !== undefined never check defaultKeys
-        if (override !== undefined ? override.includes(key) : desc.defaultKeys.includes(key)) {
+        if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
           desc.cb(event);
           return !desc.noPreventDefault;
 
@@ -363,7 +363,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     } else if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
       const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
         const override = conf.keyboards.inFullViewGrid[id as KeyboardInFullViewGridId];
-        if (override !== undefined ? override.includes(key) : desc.defaultKeys.includes(key)) {
+        if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
           desc.cb(event);
           return !desc.noPreventDefault;
         }

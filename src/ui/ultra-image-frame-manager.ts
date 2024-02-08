@@ -23,8 +23,7 @@ export class BigImageFrameManager {
   private onShowEventContext: Map<number, () => void> = new Map();
   private onHiddenEventContext: Map<number, () => void> = new Map();
   hammer?: HammerManager;
-  preventStepLock: boolean = true;
-  preventStepLockEle?: HTMLElement;
+  preventStep: { ele?: HTMLElement, ani?: Animation, fin: boolean } = { fin: false };
   visible: boolean = false;
   html: Elements;
   frameScrollAbort?: AbortController;
@@ -99,6 +98,7 @@ export class BigImageFrameManager {
   init(start: number) {
     // remove frame's img children
     this.removeMediaNode();
+    this.resetPreventStep();
     this.currMediaNode = this.newMediaNode(start, this.queue[start]);
     this.frame.appendChild(this.currMediaNode);
 
@@ -276,12 +276,21 @@ export class BigImageFrameManager {
     }
   }
 
+  resetPreventStep(fin?: boolean) {
+    this.preventStep.ani?.cancel();
+    this.preventStep.ele?.remove();
+    this.preventStep = { fin: fin ?? false };
+  }
+
   tryPreventStep(): boolean {
     if (!conf.imgScale || conf.imgScale === 0 || conf.preventScrollPageTime === 0) {
       return false;
     }
-    if (this.preventStepLock) {
-      if (!this.preventStepLockEle) {
+    if (this.preventStep.fin) {
+      this.resetPreventStep();
+      return false;
+    } else {
+      if (!this.preventStep.ele) {
         const lockEle = document.createElement("div");
         lockEle.style.width = "100vw";
         lockEle.style.position = "fixed";
@@ -290,18 +299,12 @@ export class BigImageFrameManager {
         lockEle.style.bottom = "0px";
         lockEle.innerHTML = `<div style="width: 30vw;height: 0.4rem;background-color: #ff8181d6;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray;border-radius: 7px;border: 1px solid #510000;"><span style="position: absolute;bottom: -3px;"></span></div>`;
         this.frame.appendChild(lockEle);
-        this.preventStepLockEle = lockEle;
         const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });
-        ani.onfinish = () => {
-          this.preventStepLockEle = undefined;
-          this.preventStepLock = false;
-          this.frame.removeChild(lockEle);
-        }
+        this.preventStep = { ele: lockEle, ani: ani, fin: false }
+        ani.onfinish = () => this.resetPreventStep(true);
+        ani.oncancel = () => this.resetPreventStep(true);
       }
       return true;
-    } else {
-      this.preventStepLock = true;
-      return false;
     }
   }
 

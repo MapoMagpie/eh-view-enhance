@@ -2,13 +2,14 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.2
+// @version            4.3.3
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
 // @license            MIT
 // @icon               https://exhentai.org/favicon.ico
-// @updateURL          https://raw.githubusercontent.com/MapoMagpie/eh-view-enhance/master/dist/eh-view-enhance.user.js
+// @downloadURL        https://update.greasyfork.org/scripts/397848/E%20HENTAI%20VIEW%20ENHANCE.user.js
+// @updateURL          https://update.greasyfork.org/scripts/397848/E%20HENTAI%20VIEW%20ENHANCE.meta.js
 // @match              https://exhentai.org/g/*
 // @match              https://e-hentai.org/g/*
 // @match              https://nhentai.net/g/*
@@ -3265,9 +3266,9 @@ duration 0.04`).join("\n");
                 return;
               scrolling = true;
               BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
-              BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 3), behavior: "smooth" });
+              BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 2), behavior: "smooth" });
             }
-            if (scrollImage("next")) {
+            if (scrollImage("prev")) {
               event.preventDefault();
               scrolling = false;
             }
@@ -3283,7 +3284,7 @@ duration 0.04`).join("\n");
                 return;
               scrolling = true;
               BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
-              BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 3, behavior: "smooth" });
+              BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 2, behavior: "smooth" });
             }
             if (scrollImage("next")) {
               event.preventDefault();
@@ -3349,7 +3350,7 @@ duration 0.04`).join("\n");
       if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
         const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
           const override = conf.keyboards.inBigImageMode[id];
-          if (override !== void 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+          if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
             desc.cb(event);
             return !desc.noPreventDefault;
           }
@@ -3361,7 +3362,7 @@ duration 0.04`).join("\n");
       } else if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
         const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
           const override = conf.keyboards.inFullViewGrid[id];
-          if (override !== void 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+          if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
             desc.cb(event);
             return !desc.noPreventDefault;
           }
@@ -4452,8 +4453,7 @@ duration 0.04`).join("\n");
     onShowEventContext = /* @__PURE__ */ new Map();
     onHiddenEventContext = /* @__PURE__ */ new Map();
     hammer;
-    preventStepLock = true;
-    preventStepLockEle;
+    preventStep = { fin: false };
     visible = false;
     html;
     frameScrollAbort;
@@ -4521,6 +4521,7 @@ duration 0.04`).join("\n");
     }
     init(start) {
       this.removeMediaNode();
+      this.resetPreventStep();
       this.currMediaNode = this.newMediaNode(start, this.queue[start]);
       this.frame.appendChild(this.currMediaNode);
       if (conf.readMode === "consecutively") {
@@ -4682,12 +4683,20 @@ duration 0.04`).join("\n");
         this.consecutive();
       }
     }
+    resetPreventStep(fin) {
+      this.preventStep.ani?.cancel();
+      this.preventStep.ele?.remove();
+      this.preventStep = { fin: fin ?? false };
+    }
     tryPreventStep() {
       if (!conf.imgScale || conf.imgScale === 0 || conf.preventScrollPageTime === 0) {
         return false;
       }
-      if (this.preventStepLock) {
-        if (!this.preventStepLockEle) {
+      if (this.preventStep.fin) {
+        this.resetPreventStep();
+        return false;
+      } else {
+        if (!this.preventStep.ele) {
           const lockEle = document.createElement("div");
           lockEle.style.width = "100vw";
           lockEle.style.position = "fixed";
@@ -4696,18 +4705,12 @@ duration 0.04`).join("\n");
           lockEle.style.bottom = "0px";
           lockEle.innerHTML = `<div style="width: 30vw;height: 0.4rem;background-color: #ff8181d6;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray;border-radius: 7px;border: 1px solid #510000;"><span style="position: absolute;bottom: -3px;"></span></div>`;
           this.frame.appendChild(lockEle);
-          this.preventStepLockEle = lockEle;
           const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });
-          ani.onfinish = () => {
-            this.preventStepLockEle = void 0;
-            this.preventStepLock = false;
-            this.frame.removeChild(lockEle);
-          };
+          this.preventStep = { ele: lockEle, ani, fin: false };
+          ani.onfinish = () => this.resetPreventStep(true);
+          ani.oncancel = () => this.resetPreventStep(true);
         }
         return true;
-      } else {
-        this.preventStepLock = true;
-        return false;
       }
     }
     isReachBoundary(oriented) {

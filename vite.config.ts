@@ -27,7 +27,7 @@ export default defineConfig({
           'https://yande.re/post*'
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.3.1',
+        version: '4.3.2',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {

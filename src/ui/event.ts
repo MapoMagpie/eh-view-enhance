@@ -229,6 +229,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     return false;
   }
 
+  let scrolling = false;
   function initKeyboardEvent(): KeyboardEvents {
     const onbigImageFrame: Record<KeyboardInBigImageModeId, KeyboardDesc> = {
       "exit-big-image-mode": new KeyboardDesc(
@@ -264,9 +265,15 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         (event) => {
           const key = parseKey(event);
           if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
+            if (scrolling) return;
+            scrolling = true;
+            BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
             BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 3), behavior: "smooth" })
           }
-          scrollImage("prev") && event.preventDefault();
+          if (scrollImage("next")) {
+            event.preventDefault();
+            scrolling = false;
+          }
         }, true
       ),
       "scroll-image-down": new KeyboardDesc(
@@ -274,9 +281,15 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         (event) => {
           const key = parseKey(event);
           if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
+            if (scrolling) return;
+            scrolling = true;
+            BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
             BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 3, behavior: "smooth" })
           }
-          scrollImage("next") && event.preventDefault();
+          if (scrollImage("next")) {
+            event.preventDefault();
+            scrolling = false;
+          }
         }, true
       ),
     };

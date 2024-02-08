@@ -33,6 +33,14 @@ export function loadStyleSheel() {
   top: unset !important;
   vertical-align: middle;
 }
+.full-view-grid input:enabled:hover, .full-view-grid select:enabled:hover, .full-view-grid input:enabled:focus, .full-view-grid select:enabled:focus {
+  background-color: #34355b !important;
+}
+.full-view-grid select option {
+  background-color: #34355b !important;
+  color: #f1f1f1;
+  font-size: 1rem;
+}
 .p-label {
   cursor: pointer;
 }

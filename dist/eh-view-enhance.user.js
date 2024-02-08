@@ -3225,6 +3225,7 @@ duration 0.04`).join("\n");
       }
       return false;
     }
+    let scrolling = false;
     function initKeyboardEvent() {
       const onbigImageFrame = {
         "exit-big-image-mode": new KeyboardDesc(
@@ -3260,9 +3261,16 @@ duration 0.04`).join("\n");
           (event) => {
             const key = parseKey(event);
             if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
+              if (scrolling)
+                return;
+              scrolling = true;
+              BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
               BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 3), behavior: "smooth" });
             }
-            scrollImage("prev") && event.preventDefault();
+            if (scrollImage("next")) {
+              event.preventDefault();
+              scrolling = false;
+            }
           },
           true
         ),
@@ -3271,9 +3279,16 @@ duration 0.04`).join("\n");
           (event) => {
             const key = parseKey(event);
             if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
+              if (scrolling)
+                return;
+              scrolling = true;
+              BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
               BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 3, behavior: "smooth" });
             }
-            scrollImage("next") && event.preventDefault();
+            if (scrollImage("next")) {
+              event.preventDefault();
+              scrolling = false;
+            }
           },
           true
         )
@@ -3501,6 +3516,14 @@ duration 0.04`).join("\n");
   position: unset !important;
   top: unset !important;
   vertical-align: middle;
+}
+.full-view-grid input:enabled:hover, .full-view-grid select:enabled:hover, .full-view-grid input:enabled:focus, .full-view-grid select:enabled:focus {
+  background-color: #34355b !important;
+}
+.full-view-grid select option {
+  background-color: #34355b !important;
+  color: #f1f1f1;
+  font-size: 1rem;
 }
 .p-label {
   cursor: pointer;

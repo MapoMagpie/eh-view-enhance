@@ -4,6 +4,7 @@ import { HitomiMather } from "./hitomi";
 import { NHMatcher } from "./nhentai";
 import { Pixiv } from "./pixiv";
 import { Matcher } from "./platform";
+import { RokuHentaiMatcher } from "./rokuhentai";
 import { SteamMatcher } from "./steam";
 import { YandeMatcher } from "./yande";
 
@@ -14,6 +15,7 @@ export const matchers: Matcher[] = [
   new YandeMatcher(),
   new Pixiv(),
   new SteamMatcher(),
+  new RokuHentaiMatcher(),
 ];
 
 export function adaptMatcher(url: string): Matcher | null {

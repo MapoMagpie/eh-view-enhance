@@ -17,6 +17,7 @@
 // @match              https://hitomi.la/*
 // @match              https://www.pixiv.net/*
 // @match              https://yande.re/*
+// @match              https://rokuhentai.com/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -1486,7 +1487,7 @@
     canvas.remove();
     return result;
   }
-  async function splitImagesFromUrl(url, nodes) {
+  async function splitImagesFromUrl(url, positions) {
     url = URL.createObjectURL(await fetchImage(url));
     const img = await new Promise((resolve, reject) => {
       let img2 = new Image();
@@ -1495,7 +1496,7 @@
       img2.src = url;
     });
     URL.revokeObjectURL(url);
-    return splitSpriteImage(img, parseImagePositions(nodes.map((n) => n.style)));
+    return splitSpriteImage(img, positions);
   }
 
   const regulars = {
@@ -1599,7 +1600,7 @@
           const niStyles = nodes[i].style;
           const url = niStyles.background.match(regulars.sprite)?.[1]?.replaceAll('"', "");
           if (url) {
-            const splits = await splitImagesFromUrl(url, nodes.slice(i, i + 20));
+            const splits = await splitImagesFromUrl(url, parseImagePositions(nodes.slice(i, i + 20).map((n) => n.style)));
             urls.push(...splits);
           } else {
             break;
@@ -2540,11 +2541,105 @@ duration 0.04`).join("\n");
     return results;
   }
 
+  class RokuHentaiMatcher {
+    sprites = [];
+    fetchedThumbnail = [];
+    galleryId = "";
+    imgCount = 0;
+    workURL() {
+      return /rokuhentai.com\/\w+$/;
+    }
+    parseGalleryMeta(doc) {
+      const title = doc.querySelector(".site-manga-info__title-text")?.textContent || "UNTITLE";
+      const meta = new GalleryMeta(window.location.href, title);
+      meta.originTitle = title;
+      const tagTrList = doc.querySelectorAll("div.mdc-chip .site-tag-count");
+      const tags = {};
+      tagTrList.forEach((tr) => {
+        const splits = tr.getAttribute("data-tag")?.trim().split(":");
+        if (splits === void 0 || splits.length === 0)
+          return;
+        const cat = splits[0];
+        if (tags[cat] === void 0)
+          tags[cat] = [];
+        tags[cat].push(splits[1].replaceAll('"', ""));
+      });
+      meta.tags = tags;
+      return meta;
+    }
+    async matchImgURL(url, _) {
+      return url;
+    }
+    async parseImgNodes(source) {
+      const range = source.raw.split("-").map(Number);
+      const list = [];
+      const digits = this.imgCount.toString().length;
+      for (let i = range[0]; i < range[1]; i++) {
+        let thumbnail = `https://rokuhentai.com/_images/page-thumbnails/${this.galleryId}/${i}.jpg`;
+        if (this.sprites[i]) {
+          thumbnail = await this.fetchThumbnail(i);
+        }
+        const newNode = new ImageNode(
+          thumbnail,
+          `https://rokuhentai.com/_images/pages/${this.galleryId}/${i}.jpg`,
+          i.toString().padStart(digits, "0") + ".jpg"
+        );
+        list.push(newNode);
+      }
+      return list;
+    }
+    async *fetchPagesSource() {
+      const imgCount = parseInt(document.querySelector(".mdc-typography--caption")?.textContent || "");
+      if (isNaN(imgCount)) {
+        throw new Error("error: failed query image count!");
+      }
+      this.imgCount = imgCount;
+      this.galleryId = window.location.href.split("/").pop();
+      const images = Array.from(document.querySelectorAll(".mdc-layout-grid__cell .site-page-card__media"));
+      for (const img of images) {
+        this.fetchedThumbnail.push(void 0);
+        const x = parseInt(img.getAttribute("data-offset-x") || "");
+        const y = parseInt(img.getAttribute("data-offset-y") || "");
+        const width = parseInt(img.getAttribute("data-width") || "");
+        const height = parseInt(img.getAttribute("data-height") || "");
+        if (isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height)) {
+          this.sprites.push(void 0);
+          continue;
+        }
+        const src = img.getAttribute("data-src");
+        this.sprites.push({ src, pos: { x, y, width, height } });
+      }
+      for (let i = 0; i < this.imgCount; i += 20) {
+        yield { raw: `${i}-${Math.min(i + 20, this.imgCount)}`, typ: "json" };
+      }
+    }
+    async fetchThumbnail(index) {
+      if (this.fetchedThumbnail[index]) {
+        return this.fetchedThumbnail[index];
+      } else {
+        const src = this.sprites[index].src;
+        const positions = [];
+        for (let i = index; i < this.imgCount; i++) {
+          if (src === this.sprites[i]?.src) {
+            positions.push(this.sprites[i].pos);
+          } else {
+            break;
+          }
+        }
+        const urls = await splitImagesFromUrl(src, positions);
+        for (let i = index; i < index + urls.length; i++) {
+          this.fetchedThumbnail[i] = urls[i - index];
+        }
+        return this.fetchedThumbnail[index];
+      }
+    }
+  }
+
   const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
   class SteamMatcher {
     // 'https://steamcommunity.com/id/*/screenshots*',
     workURL() {
-      return /steamcommunity\.com\/id\/[^/]+\/screenshots.*/;
+      return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
     }
     async matchImgURL(url, _) {
       let raw = "";
@@ -2723,7 +2818,8 @@ duration 0.04`).join("\n");
     new HitomiMather(),
     new YandeMatcher(),
     new Pixiv(),
-    new SteamMatcher()
+    new SteamMatcher(),
+    new RokuHentaiMatcher()
   ];
   function adaptMatcher(url) {
     const workURLs = matchers.map((m) => m.workURL().source);

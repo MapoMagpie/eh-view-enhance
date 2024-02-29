@@ -2,7 +2,7 @@ import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { evLog } from "../utils/ev-log";
-import { splitImagesFromUrl } from "../utils/sprite-split";
+import { parseImagePositions, splitImagesFromUrl } from "../utils/sprite-split";
 import { Matcher, PagesSource } from "./platform";
 
 // EHMatcher
@@ -117,7 +117,7 @@ export class EHMatcher implements Matcher {
         const niStyles = nodes[i].style;
         const url = niStyles.background.match(regulars.sprite)?.[1]?.replaceAll("\"", "");
         if (url) {
-          const splits = await splitImagesFromUrl(url, nodes.slice(i, i + 20));
+          const splits = await splitImagesFromUrl(url, parseImagePositions(nodes.slice(i, i + 20).map(n => n.style)));
           urls.push(...splits);
         } else {
           break;

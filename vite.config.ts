@@ -23,7 +23,8 @@ export default defineConfig({
           'https://steamcommunity.com/id/*/screenshots*',
           'https://hitomi.la/*',
           'https://www.pixiv.net/*',
-          'https://yande.re/*'
+          'https://yande.re/*',
+          'https://rokuhentai.com/*',
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
         version: '4.3.4',

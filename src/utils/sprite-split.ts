@@ -28,7 +28,7 @@ export function splitSpriteImage(image: HTMLImageElement, positions: ImagePositi
   return result;
 }
 
-export async function splitImagesFromUrl(url: string, nodes: HTMLDivElement[]): Promise<string[]> {
+export async function splitImagesFromUrl(url: string, positions: ImagePosition[]): Promise<string[]> {
   url = URL.createObjectURL(await fetchImage(url));
   const img: HTMLImageElement = await new Promise((resolve, reject) => {
     let img = new Image();
@@ -37,5 +37,5 @@ export async function splitImagesFromUrl(url: string, nodes: HTMLDivElement[]): 
     img.src = url;
   });
   URL.revokeObjectURL(url);
-  return splitSpriteImage(img, parseImagePositions(nodes.map((n) => n.style)));
+  return splitSpriteImage(img, positions);
 }

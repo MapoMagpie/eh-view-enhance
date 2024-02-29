@@ -20,7 +20,7 @@
 - `前置条件`: 安装且安装了拓展 [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
 - `安装地址` 1: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)，需要登录
 - `安装地址` 2: [Sleazyfork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)，不需要登录
-- `安装地址` 2: 直接访问此处进行安装[`https://raw.githubusercontent.com/MapoMagpie/eh-view-enhance/master/dist/eh-view-enhance.user.js`](https://raw.githubusercontent.com/MapoMagpie/eh-view-enhance/master/dist/eh-view-enhance.user.js)
+- `安装地址` 2: 直接访问此处进行安装[`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
 
 ## 操作
 

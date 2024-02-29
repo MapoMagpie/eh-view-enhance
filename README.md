@@ -22,7 +22,7 @@
 - `Before`: [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
 - `Install from here` 1: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)，(need login)
 - `Install from here` 2: [Sleazyfork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)，(do not need login)
-- `Install from here` 2: direct [`https://raw.githubusercontent.com/MapoMagpie/eh-view-enhance/master/dist/eh-view-enhance.user.js`](https://raw.githubusercontent.com/MapoMagpie/eh-view-enhance/master/dist/eh-view-enhance.user.js)
+- `Install from here` 2: direct [`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
 
 ## Operates
 

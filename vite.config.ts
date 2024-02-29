@@ -28,7 +28,7 @@ export default defineConfig({
           'https://18comic.org/*',
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.3.4',
+        version: '4.3.5',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {

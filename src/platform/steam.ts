@@ -5,8 +5,10 @@ import { Matcher, PagesSource } from "./platform";
 const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
 export class SteamMatcher implements Matcher {
 
-  work(_: string): boolean {
-    return true;
+  // 'https://steamcommunity.com/id/*/screenshots*',
+  workURL(): RegExp {
+    // return /https?:\/\/steamcommunity\.com\/(id|profiles)\/[^/]+\/(screenshots|workshop)\/\?appid=\d+/;
+    return /https?:\/\/steamcommunity\.com\/id\/[^/]+\/screenshots.*/;
   }
 
   public async matchImgURL(url: string, _: boolean): Promise<string> {

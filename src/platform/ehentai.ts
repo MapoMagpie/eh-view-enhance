@@ -23,8 +23,10 @@ const regulars = {
 
 export class EHMatcher implements Matcher {
 
-  work(_: string): boolean {
-    return true;
+  // 'https://exhentai.org/g/*',
+  // 'https://e-hentai.org/g/*',
+  workURL(): RegExp {
+    return /https?:\/\/e[-x]hentai.org\/g\/\w+/;
   }
 
   public parseGalleryMeta(doc: Document): GalleryMeta {

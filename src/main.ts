@@ -5,6 +5,7 @@ import { IdleLoader } from "./idle-loader";
 import { FetchState } from "./img-fetcher";
 import { PageFetcher } from "./page-fetcher";
 import { adaptMatcher } from "./platform/adapt";
+import { Matcher } from "./platform/platform";
 import { DownloaderCanvas } from "./ui/downloader-canvas";
 import { initEvents } from "./ui/event";
 import { createHTML, addEventListeners } from "./ui/html";
@@ -15,9 +16,8 @@ import { evLog } from "./utils/ev-log";
 import revertMonkeyPatch from "./utils/revert-monkey-patch";
 
 type DestoryFunc = () => void;
-const MATCHER = adaptMatcher();
 
-function main(): DestoryFunc {
+function main(MATCHER: Matcher): DestoryFunc {
   const HTML = createHTML();
   [HTML.fullViewGrid, HTML.bigImageFrame].forEach(e => revertMonkeyPatch(e));
   const IFQ: IMGFetcherQueue = new IMGFetcherQueue();
@@ -121,15 +121,15 @@ function main(): DestoryFunc {
 })();
 
 let destoryFunc: () => void;
-window.addEventListener("locationchange", (_) => {
-  // console.log("locationchange", event);
-  if (MATCHER.work(window.location.href)) {
-    destoryFunc = main();
-  } else {
-    destoryFunc();
+window.addEventListener("locationchange", () => {
+  destoryFunc?.();
+  const matcher = adaptMatcher(window.location.href);
+  if (matcher !== null) {
+    destoryFunc = main(matcher);
   }
 });
 
-if (MATCHER.work(window.location.href)) {
-  destoryFunc = main();
+const matcher = adaptMatcher(window.location.href);
+if (matcher !== null) {
+  destoryFunc = main(matcher);
 }

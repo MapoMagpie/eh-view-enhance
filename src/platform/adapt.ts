@@ -1,3 +1,4 @@
+import { conf } from "../config";
 import { EHMatcher } from "./ehentai";
 import { HitomiMather } from "./hitomi";
 import { NHMatcher } from "./nhentai";
@@ -6,22 +7,20 @@ import { Matcher } from "./platform";
 import { SteamMatcher } from "./steam";
 import { YandeMatcher } from "./yande";
 
-export function adaptMatcher(): Matcher {
-  const host = window.location.host;
-  if (host === "nhentai.net") {
-    return new NHMatcher();
+const matchers: Matcher[] = [
+  new EHMatcher(),
+  new NHMatcher(),
+  new HitomiMather(),
+  new YandeMatcher(),
+  new Pixiv(),
+  new SteamMatcher(),
+];
+
+export function adaptMatcher(url: string): Matcher | null {
+  for (const regex of conf.excludeURLs) {
+    if (new RegExp(regex).test(url)) {
+      return null;
+    }
   }
-  if (host === "steamcommunity.com") {
-    return new SteamMatcher();
-  }
-  if (host === "hitomi.la") {
-    return new HitomiMather();
-  }
-  if (host.endsWith("pixiv.net")) {
-    return new Pixiv();
-  }
-  if (host === "yande.re") {
-    return new YandeMatcher();
-  }
-  return new EHMatcher();
+  return matchers.find(m => m.workURL().test(url)) || null;
 }

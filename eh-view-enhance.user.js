@@ -10,15 +10,13 @@
 // @icon               https://exhentai.org/favicon.ico
 // @downloadURL        https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
-// @match              https://exhentai.org/g/*
-// @match              https://e-hentai.org/g/*
-// @match              https://nhentai.net/g/*
+// @match              https://exhentai.org/*
+// @match              https://e-hentai.org/*
+// @match              https://nhentai.net/*
 // @match              https://steamcommunity.com/id/*/screenshots*
-// @match              https://hitomi.la/*/*
+// @match              https://hitomi.la/*
 // @match              https://www.pixiv.net/*
-// @match              https://yande.re/post*
-// @exclude            https://nhentai.net/g/*/*/
-// @exclude            https://yande.re/post/show/*
+// @match              https://yande.re/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -76,7 +74,8 @@
       convertTo: "GIF",
       autoCollapsePanels: true,
       minifyPageHelper: "inBigMode",
-      keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} }
+      keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
+      excludeURLs: []
     };
   }
   const VERSION = "4.1.10";
@@ -133,6 +132,10 @@
     }
     if ($conf.keyboards === void 0) {
       $conf.keyboards = { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} };
+      changed = true;
+    }
+    if ($conf.excludeURLs === void 0) {
+      $conf.excludeURLs = [];
       changed = true;
     }
     if (changed) {
@@ -1510,8 +1513,10 @@
     sprite: /url\((.*?)\)/
   };
   class EHMatcher {
-    work(_) {
-      return true;
+    // 'https://exhentai.org/g/*',
+    // 'https://e-hentai.org/g/*',
+    workURL() {
+      return /https?:\/\/e[-x]hentai.org\/g\/\w+/;
     }
     parseGalleryMeta(doc) {
       const titleList = doc.querySelectorAll("#gd2 h1");
@@ -1718,8 +1723,9 @@
   const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
   const GG_B_REGEX = /b:\s'(\d*\/)'/;
   class HitomiMather {
-    work(_) {
-      return true;
+    // 'https://hitomi.la/*/*',
+    workURL() {
+      return /https?:\/\/hitomi.la\/\w+\/\w+/;
     }
     gg;
     meta;
@@ -1800,8 +1806,10 @@
 
   const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
   class NHMatcher {
-    work(_) {
-      return true;
+    // exclude 'https://nhentai.net/g/*/*/',
+    // 'https://nhentai.net/g/*',
+    workURL() {
+      return /https?:\/\/nhentai.net\/g\/\d+\/?$/;
     }
     parseGalleryMeta(doc) {
       let title;
@@ -2379,7 +2387,6 @@ duration 0.04`).join("\n");
     }
   }
 
-  const PATH_REGEX = /pixiv\.net\/(\w*\/)?(artworks|users)\/.*/;
   const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
   class Pixiv {
     authorID;
@@ -2392,8 +2399,8 @@ duration 0.04`).join("\n");
     constructor() {
       this.meta = new GalleryMeta(window.location.href, "UNTITLE");
     }
-    work(url) {
-      return PATH_REGEX.test(url);
+    workURL() {
+      return /pixiv\.net\/(\w*\/)?(artworks|users)\/.*/;
     }
     parseGalleryMeta(_) {
       this.meta.title = `PIXIV_${this.authorID}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
@@ -2535,8 +2542,9 @@ duration 0.04`).join("\n");
 
   const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
   class SteamMatcher {
-    work(_) {
-      return true;
+    // 'https://steamcommunity.com/id/*/screenshots*',
+    workURL() {
+      return /https?:\/\/steamcommunity\.com\/id\/[^/]+\/screenshots.*/;
     }
     async matchImgURL(url, _) {
       let raw = "";
@@ -2622,8 +2630,10 @@ duration 0.04`).join("\n");
   }
 
   class YandeMatcher {
-    work(_) {
-      return true;
+    // exclude 'https://yande.re/post/show/*'
+    // 'https://yande.re/post*'
+    workURL() {
+      return /https?:\/\/yande.re\/post(?!\/show\/.*)/;
     }
     async *fetchPagesSource() {
       let currentE = document.querySelector("em.current")?.textContent || 1;
@@ -2707,24 +2717,21 @@ duration 0.04`).join("\n");
     }
   }
 
-  function adaptMatcher() {
-    const host = window.location.host;
-    if (host === "nhentai.net") {
-      return new NHMatcher();
+  const matchers = [
+    new EHMatcher(),
+    new NHMatcher(),
+    new HitomiMather(),
+    new YandeMatcher(),
+    new Pixiv(),
+    new SteamMatcher()
+  ];
+  function adaptMatcher(url) {
+    for (const regex of conf.excludeURLs) {
+      if (new RegExp(regex).test(url)) {
+        return null;
+      }
     }
-    if (host === "steamcommunity.com") {
-      return new SteamMatcher();
-    }
-    if (host === "hitomi.la") {
-      return new HitomiMather();
-    }
-    if (host.endsWith("pixiv.net")) {
-      return new Pixiv();
-    }
-    if (host === "yande.re") {
-      return new YandeMatcher();
-    }
-    return new EHMatcher();
+    return matchers.find((m) => m.workURL().test(url)) || null;
   }
 
   class DownloaderCanvas {
@@ -5092,8 +5099,7 @@ duration 0.04`).join("\n");
     });
   }
 
-  const MATCHER = adaptMatcher();
-  function main() {
+  function main(MATCHER) {
     const HTML = createHTML();
     [HTML.fullViewGrid, HTML.bigImageFrame].forEach((e) => revertMonkeyPatch(e));
     const IFQ = new IMGFetcherQueue();
@@ -5189,15 +5195,16 @@ duration 0.04`).join("\n");
     });
   })();
   let destoryFunc;
-  window.addEventListener("locationchange", (_) => {
-    if (MATCHER.work(window.location.href)) {
-      destoryFunc = main();
-    } else {
-      destoryFunc();
+  window.addEventListener("locationchange", () => {
+    destoryFunc?.();
+    const matcher2 = adaptMatcher(window.location.href);
+    if (matcher2 !== null) {
+      destoryFunc = main(matcher2);
     }
   });
-  if (MATCHER.work(window.location.href)) {
-    destoryFunc = main();
+  const matcher = adaptMatcher(window.location.href);
+  if (matcher !== null) {
+    destoryFunc = main(matcher);
   }
 
 })(saveAs, JSZip, Hammer);

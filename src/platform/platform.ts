@@ -11,6 +11,6 @@ export interface Matcher {
   parseImgNodes(page: PagesSource): Promise<ImageNode[] | never>;
   fetchPagesSource(): AsyncGenerator<PagesSource>;
   parseGalleryMeta(doc: Document): GalleryMeta;
-  work(url: string): boolean;
+  workURL(): RegExp;
 }
 

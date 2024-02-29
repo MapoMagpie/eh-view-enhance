@@ -40,7 +40,6 @@ type UgoiraMeat = {
   }
 }
 
-const PATH_REGEX = /pixiv\.net\/(\w*\/)?(artworks|users)\/.*/;
 const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
 export class Pixiv implements Matcher {
 
@@ -56,8 +55,8 @@ export class Pixiv implements Matcher {
     this.meta = new GalleryMeta(window.location.href, "UNTITLE");
   }
 
-  work(url: string): boolean {
-    return PATH_REGEX.test(url);
+  workURL(): RegExp {
+    return /pixiv\.net\/(\w*\/)?(artworks|users)\/.*/;
   }
 
   public parseGalleryMeta(_: Document): GalleryMeta {

@@ -62,7 +62,8 @@ export type Config = {
     inBigImageMode: { [key in KeyboardInBigImageModeId]?: string[] },
     inFullViewGrid: { [key in KeyboardInFullViewGridId]?: string[] },
     inMain: { [key in KeyboardInMainId]?: string[] },
-  }
+  },
+  excludeURLs: string[]
 };
 
 function defaultConf(): Config {
@@ -96,7 +97,8 @@ function defaultConf(): Config {
     convertTo: "GIF",
     autoCollapsePanels: true,
     minifyPageHelper: "inBigMode",
-    keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} }
+    keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
+    excludeURLs: []
   };
 }
 
@@ -158,6 +160,10 @@ function confHealthCheck($conf: Config): Config {
   }
   if ($conf.keyboards === undefined) {
     $conf.keyboards = { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} };
+    changed = true;
+  }
+  if ($conf.excludeURLs === undefined) {
+    $conf.excludeURLs = [];
     changed = true;
   }
   if (changed) {

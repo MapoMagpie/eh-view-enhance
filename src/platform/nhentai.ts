@@ -5,8 +5,10 @@ import { Matcher, PagesSource } from "./platform";
 const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
 export class NHMatcher implements Matcher {
 
-  work(_: string): boolean {
-    return true;
+  // exclude 'https://nhentai.net/g/*/*/',
+  // 'https://nhentai.net/g/*',
+  workURL(): RegExp {
+    return /https?:\/\/nhentai.net\/g\/\d+\/?$/;
   }
 
   public parseGalleryMeta(doc: Document): GalleryMeta {

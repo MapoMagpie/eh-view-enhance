@@ -4,8 +4,11 @@ import ImageNode from "../img-node";
 import { Matcher, PagesSource } from "./platform";
 
 export class YandeMatcher implements Matcher {
-  work(_: string): boolean {
-    return true;
+
+  // exclude 'https://yande.re/post/show/*'
+  // 'https://yande.re/post*'
+  workURL(): RegExp {
+    return /https?:\/\/yande.re\/post(?!\/show\/.*)/;
   }
 
   public async *fetchPagesSource(): AsyncGenerator<PagesSource> {

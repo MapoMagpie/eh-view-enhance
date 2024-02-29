@@ -16,18 +16,14 @@ export default defineConfig({
         namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
         downloadURL: 'https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js',
         updateURL: 'https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js',
-        exclude: [
-          'https://nhentai.net/g/*/*/',
-          'https://yande.re/post/show/*'
-        ],
         match: [
-          'https://exhentai.org/g/*',
-          'https://e-hentai.org/g/*',
-          'https://nhentai.net/g/*',
+          'https://exhentai.org/*',
+          'https://e-hentai.org/*',
+          'https://nhentai.net/*',
           'https://steamcommunity.com/id/*/screenshots*',
-          'https://hitomi.la/*/*',
+          'https://hitomi.la/*',
           'https://www.pixiv.net/*',
-          'https://yande.re/post*'
+          'https://yande.re/*'
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
         version: '4.3.4',

@@ -59,8 +59,9 @@ const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
 const GG_B_REGEX = /b:\s'(\d*\/)'/;
 export class HitomiMather implements Matcher {
 
-  work(_: string): boolean {
-    return true;
+  // 'https://hitomi.la/*/*',
+  workURL(): RegExp {
+    return /https?:\/\/hitomi.la\/\w+\/\w+/;
   }
 
   gg?: HitomiGG

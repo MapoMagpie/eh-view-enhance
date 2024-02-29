@@ -18,6 +18,7 @@
 // @match              https://www.pixiv.net/*
 // @match              https://yande.re/*
 // @match              https://rokuhentai.com/*
+// @match              https://18comic.org/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -30,6 +31,7 @@
 // @connect            i.pximg.net
 // @connect            ehgt.org
 // @connect            files.yande.re
+// @connect            *.18comic.org
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -279,6 +281,7 @@
             const ret = await this.fetchImageData();
             if (ret !== null) {
               [this.data, this.contentType] = ret;
+              this.data = await this.settings.matcher.processData(this.data, this.contentType, this.originURL);
               this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.onloaded(this.blobUrl, this.contentType, this.data.byteLength);
               if (this.rendered === 2) {
@@ -1406,7 +1409,7 @@
               this.src = src;
               this.render();
             });
-          } else {
+          } else if (this.src) {
             this.imgElement.src = this.src;
           }
         }
@@ -1479,6 +1482,135 @@
     }
   }
 
+  function get_num(gid, page) {
+    let ret = 10;
+    let m = md5(gid + page);
+    let n = m.substring(m.length - 1).charCodeAt(0);
+    if (gid >= window.atob("MjY4ODUw") && gid <= window.atob("NDIxOTI1")) {
+      n %= 10;
+    } else if (gid >= window.atob("NDIxOTI2")) {
+      n %= 8;
+    }
+    switch (n) {
+      case 0:
+        ret = 2;
+        break;
+      case 1:
+        ret = 4;
+        break;
+      case 2:
+        ret = 6;
+        break;
+      case 3:
+        ret = 8;
+        break;
+      case 4:
+        ret = 10;
+        break;
+      case 5:
+        ret = 12;
+        break;
+      case 6:
+        ret = 14;
+        break;
+      case 7:
+        ret = 16;
+        break;
+      case 8:
+        ret = 18;
+        break;
+      case 9:
+        ret = 20;
+    }
+    return ret;
+  }
+  function drawImage(ctx, e, gid, page) {
+    const width = e.width;
+    const height = e.height;
+    const s = get_num(gid, page);
+    const l = parseInt((height % s).toString());
+    const r = width;
+    for (let m = 0; m < s; m++) {
+      let c = Math.floor(height / s);
+      let g = c * m;
+      let w = height - c * (m + 1) - l;
+      0 == m ? c += l : g += l, ctx.drawImage(e, 0, w, r, c, 0, g, r, c);
+    }
+  }
+  class Comic18Matcher {
+    async processData(data, contentType, url) {
+      const reg = /(\d+)\/(\d+)\.(\w+)/;
+      const matches = url.match(reg);
+      const gid = matches[1];
+      if (gid < "220980")
+        return data;
+      const page = matches[2];
+      const ext = matches[3];
+      if (ext === "gif")
+        return data;
+      const img = await createImageBitmap(new Blob([data], { type: contentType }));
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      drawImage(ctx, img, gid, page);
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => blob?.arrayBuffer().then((buf) => new Uint8Array(buf)).then(resolve).finally(() => canvas.remove()), contentType);
+      });
+    }
+    workURL() {
+      return /18comic.org\/album\/\d+/;
+    }
+    parseGalleryMeta(doc) {
+      const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
+      const meta = new GalleryMeta(window.location.href, title);
+      meta.originTitle = title;
+      const tagTrList = doc.querySelectorAll("div.tag-block > span");
+      const tags = {};
+      tagTrList.forEach((tr) => {
+        const cat = tr.getAttribute("data-type")?.trim();
+        if (cat) {
+          const values = Array.from(tr.querySelectorAll("a")).map((a) => a.textContent).filter(Boolean);
+          if (values.length > 0) {
+            tags[cat] = values;
+          }
+        }
+      });
+      meta.tags = tags;
+      return meta;
+    }
+    // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
+    async matchImgURL(url, _) {
+      return url;
+    }
+    async parseImgNodes(source) {
+      const list = [];
+      const raw = await window.fetch(source.raw).then((resp) => resp.text());
+      const document2 = new DOMParser().parseFromString(raw, "text/html");
+      const images = Array.from(document2.querySelectorAll(".scramble-page > img"));
+      for (const img of images) {
+        const src = img.getAttribute("data-original");
+        list.push(new ImageNode("", src, src.split("/").pop()));
+      }
+      return list;
+    }
+    async *fetchPagesSource() {
+      const episode = Array.from(document.querySelectorAll(".episode > ul > a"));
+      if (episode.length > 0) {
+        for (const a of episode) {
+          const href2 = a.href;
+          yield { raw: href2, typ: "url" };
+        }
+        return;
+      }
+      const href = document.querySelector(".read-block > a")?.href;
+      if (href === void 0)
+        throw new Error("No page found");
+      yield { raw: href, typ: "url" };
+      return;
+    }
+  }
+
   function parseImagePositions(styles) {
     return styles.map((st) => {
       const [x, y] = st.backgroundPosition.split(" ").map((v) => Math.abs(parseInt(v)));
@@ -1525,8 +1657,9 @@
     sprite: /url\((.*?)\)/
   };
   class EHMatcher {
-    // 'https://exhentai.org/g/*',
-    // 'https://e-hentai.org/g/*',
+    async processData(data, _1, _2) {
+      return data;
+    }
     workURL() {
       return /e[-x]hentai.org\/g\/\w+/;
     }
@@ -1752,7 +1885,9 @@
   const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
   const GG_B_REGEX = /b:\s'(\d*\/)'/;
   class HitomiMather {
-    // 'https://hitomi.la/*/*',
+    async processData(data, _1, _2) {
+      return data;
+    }
     workURL() {
       return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
     }
@@ -1835,8 +1970,9 @@
 
   const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
   class NHMatcher {
-    // exclude 'https://nhentai.net/g/*/*/',
-    // 'https://nhentai.net/g/*',
+    async processData(data, _1, _2) {
+      return data;
+    }
     workURL() {
       return /nhentai.net\/g\/\d+\/?$/;
     }
@@ -2428,6 +2564,9 @@ duration 0.04`).join("\n");
     constructor() {
       this.meta = new GalleryMeta(window.location.href, "UNTITLE");
     }
+    async processData(data, _1, _2) {
+      return data;
+    }
     workURL() {
       return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
     }
@@ -2574,6 +2713,9 @@ duration 0.04`).join("\n");
     fetchedThumbnail = [];
     galleryId = "";
     imgCount = 0;
+    async processData(data, _1, _2) {
+      return data;
+    }
     workURL() {
       return /rokuhentai.com\/\w+$/;
     }
@@ -2665,7 +2807,9 @@ duration 0.04`).join("\n");
 
   const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
   class SteamMatcher {
-    // 'https://steamcommunity.com/id/*/screenshots*',
+    async processData(data, _1, _2) {
+      return data;
+    }
     workURL() {
       return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
     }
@@ -2753,8 +2897,9 @@ duration 0.04`).join("\n");
   }
 
   class YandeMatcher {
-    // exclude 'https://yande.re/post/show/*'
-    // 'https://yande.re/post*'
+    async processData(data, _1, _2) {
+      return data;
+    }
     workURL() {
       return /yande.re\/post(?!\/show\/.*)/;
     }
@@ -2847,7 +2992,8 @@ duration 0.04`).join("\n");
     new YandeMatcher(),
     new Pixiv(),
     new SteamMatcher(),
-    new RokuHentaiMatcher()
+    new RokuHentaiMatcher(),
+    new Comic18Matcher()
   ];
   function adaptMatcher(url) {
     const workURLs = matchers.map((m) => m.workURL().source);
@@ -3686,7 +3832,7 @@ duration 0.04`).join("\n");
   position: fixed;
   top: 0px;
   right: 0px;
-  z-index: 1000;
+  z-index: 2000;
   overflow: hidden scroll;
   transition: height 0.4s ease 0s;
   display: grid;
@@ -3781,7 +3927,7 @@ duration 0.04`).join("\n");
   right: 0;
   /*overflow: hidden scroll;*/
   overflow: auto;
-  z-index: 1001;
+  z-index: 2001;
   background-color: #000000d6;
   transition: width 0.4s;
   scrollbar-width: none;
@@ -3913,7 +4059,7 @@ duration 0.04`).join("\n");
 }
 .p-helper .clickable {
   text-decoration-line: underline;
-  z-index: 1111;
+  z-index: 2111;
   user-select: none;
   text-align: center;
 }
@@ -4059,7 +4205,7 @@ duration 0.04`).join("\n");
   width: 20%;
   height: 50%;
   position: fixed;
-  z-index: 1004;
+  z-index: 2004;
   top: 25%;
 }
 .img-land-top, .img-land-bottom {
@@ -4067,7 +4213,7 @@ duration 0.04`).join("\n");
   height: 10%;
   left: 25%;
   position: fixed;
-  z-index: 1005;
+  z-index: 2005;
 }
 .img-land-left {
   left: 0;

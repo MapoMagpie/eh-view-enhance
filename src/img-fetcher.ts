@@ -121,6 +121,7 @@ export class IMGFetcher {
           const ret = await this.fetchImageData();
           if (ret !== null) {
             [this.data, this.contentType] = ret;
+            this.data = await this.settings.matcher.processData(this.data, this.contentType, this.originURL!);
             this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
             this.node.onloaded(this.blobUrl, this.contentType, this.data.byteLength);
             if (this.rendered === 2) {

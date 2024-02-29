@@ -55,6 +55,10 @@ export class Pixiv implements Matcher {
     this.meta = new GalleryMeta(window.location.href, "UNTITLE");
   }
 
+  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
+    return data;
+  }
+
   workURL(): RegExp {
     return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
   }

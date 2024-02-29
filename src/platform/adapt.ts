@@ -1,4 +1,5 @@
 import { conf, saveConf } from "../config";
+import { Comic18Matcher } from "./18comic";
 import { EHMatcher } from "./ehentai";
 import { HitomiMather } from "./hitomi";
 import { NHMatcher } from "./nhentai";
@@ -16,6 +17,7 @@ export const matchers: Matcher[] = [
   new Pixiv(),
   new SteamMatcher(),
   new RokuHentaiMatcher(),
+  new Comic18Matcher(),
 ];
 
 export function adaptMatcher(url: string): Matcher | null {

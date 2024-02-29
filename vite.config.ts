@@ -25,6 +25,7 @@ export default defineConfig({
           'https://www.pixiv.net/*',
           'https://yande.re/*',
           'https://rokuhentai.com/*',
+          'https://18comic.org/*',
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
         version: '4.3.4',
@@ -43,7 +44,8 @@ export default defineConfig({
           'akamaihd.net',
           'i.pximg.net',
           'ehgt.org',
-          'files.yande.re'
+          'files.yande.re',
+          '*.18comic.org',
         ],
         // resource: {
         //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"

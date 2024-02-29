@@ -11,7 +11,7 @@ export function loadStyleSheel() {
   position: fixed;
   top: 0px;
   right: 0px;
-  z-index: 1000;
+  z-index: 2000;
   overflow: hidden scroll;
   transition: height 0.4s ease 0s;
   display: grid;
@@ -106,7 +106,7 @@ export function loadStyleSheel() {
   right: 0;
   /*overflow: hidden scroll;*/
   overflow: auto;
-  z-index: 1001;
+  z-index: 2001;
   background-color: #000000d6;
   transition: width 0.4s;
   scrollbar-width: none;
@@ -238,7 +238,7 @@ export function loadStyleSheel() {
 }
 .p-helper .clickable {
   text-decoration-line: underline;
-  z-index: 1111;
+  z-index: 2111;
   user-select: none;
   text-align: center;
 }
@@ -384,7 +384,7 @@ export function loadStyleSheel() {
   width: 20%;
   height: 50%;
   position: fixed;
-  z-index: 1004;
+  z-index: 2004;
   top: 25%;
 }
 .img-land-top, .img-land-bottom {
@@ -392,7 +392,7 @@ export function loadStyleSheel() {
   height: 10%;
   left: 25%;
   position: fixed;
-  z-index: 1005;
+  z-index: 2005;
 }
 .img-land-left {
   left: 0;

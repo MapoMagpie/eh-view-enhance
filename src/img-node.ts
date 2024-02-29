@@ -68,7 +68,7 @@ export default class ImageNode {
             this.src = src;
             this.render();
           });
-        } else {
+        } else if (this.src) {
           this.imgElement.src = this.src;
         }
       }

@@ -8,9 +8,15 @@ export class RokuHentaiMatcher implements Matcher {
   fetchedThumbnail: (string | undefined)[] = [];
   galleryId: string = "";
   imgCount: number = 0;
+
+  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
+    return data;
+  }
+
   workURL(): RegExp {
     return /rokuhentai.com\/\w+$/;
   }
+
   public parseGalleryMeta(doc: Document): GalleryMeta {
     const title = doc.querySelector(".site-manga-info__title-text")?.textContent || "UNTITLE";
     const meta = new GalleryMeta(window.location.href, title);

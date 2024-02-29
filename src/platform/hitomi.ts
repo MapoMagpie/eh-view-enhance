@@ -59,7 +59,10 @@ const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
 const GG_B_REGEX = /b:\s'(\d*\/)'/;
 export class HitomiMather implements Matcher {
 
-  // 'https://hitomi.la/*/*',
+  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
+    return data;
+  }
+
   workURL(): RegExp {
     return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
   }

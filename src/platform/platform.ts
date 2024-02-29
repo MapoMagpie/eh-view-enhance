@@ -12,5 +12,6 @@ export interface Matcher {
   fetchPagesSource(): AsyncGenerator<PagesSource>;
   parseGalleryMeta(doc: Document): GalleryMeta;
   workURL(): RegExp;
+  processData(data: Uint8Array, contentType: string, url: string): Promise<Uint8Array>;
 }
 

@@ -18,6 +18,7 @@
 // @match              https://www.pixiv.net/*
 // @match              https://yande.re/*
 // @match              https://rokuhentai.com/*
+// @match              https://18comic.org/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -30,6 +31,7 @@
 // @connect            i.pximg.net
 // @connect            ehgt.org
 // @connect            files.yande.re
+// @connect            *.18comic.org
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest

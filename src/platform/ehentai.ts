@@ -23,8 +23,10 @@ const regulars = {
 
 export class EHMatcher implements Matcher {
 
-  // 'https://exhentai.org/g/*',
-  // 'https://e-hentai.org/g/*',
+  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
+    return data;
+  }
+
   workURL(): RegExp {
     return /e[-x]hentai.org\/g\/\w+/;
   }

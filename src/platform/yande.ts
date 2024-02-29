@@ -5,8 +5,10 @@ import { Matcher, PagesSource } from "./platform";
 
 export class YandeMatcher implements Matcher {
 
-  // exclude 'https://yande.re/post/show/*'
-  // 'https://yande.re/post*'
+  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
+    return data;
+  }
+
   workURL(): RegExp {
     return /yande.re\/post(?!\/show\/.*)/;
   }

@@ -110,6 +110,7 @@ export class EHMatcher implements Matcher {
     }
 
     let urls: string[] = [];
+    let delayURLs: (Promise<string> | undefined)[] = [];
 
     // sprite thumbnails
     if (isSprite) {
@@ -117,8 +118,23 @@ export class EHMatcher implements Matcher {
         const niStyles = nodes[i].style;
         const url = niStyles.background.match(regulars.sprite)?.[1]?.replaceAll("\"", "");
         if (url) {
-          const splits = await splitImagesFromUrl(url, parseImagePositions(nodes.slice(i, i + 20).map(n => n.style)));
-          urls.push(...splits);
+          const range = nodes.slice(i, i + 20);
+          const resolvers: ((str: string | PromiseLike<string>) => void)[] = [];
+          const rejects: ((reason?: any) => void)[] = [];
+          for (let j = 0; j < range.length; j++) {
+            urls.push("");
+            delayURLs.push(new Promise<string>((resolve, reject) => {
+              resolvers.push(resolve);
+              rejects.push(reject);
+            }));
+          }
+          splitImagesFromUrl(url, parseImagePositions(range.map(n => n.style))).then((ret) => {
+            for (let k = 0; k < ret.length; k++) {
+              resolvers[k](ret[k]);
+            }
+          }).catch((err) => {
+            rejects.forEach(r => r(err));
+          })
         } else {
           break;
         }
@@ -135,7 +151,8 @@ export class EHMatcher implements Matcher {
       const node = new ImageNode(
         urls[i],
         nodes[i].querySelector("a")!.href,
-        nodes[i].querySelector("img")!.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg"
+        nodes[i].querySelector("img")!.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg",
+        delayURLs[i]
       );
       list.push(node);
     }

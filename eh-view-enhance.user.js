@@ -1358,15 +1358,17 @@
     title;
     onclick;
     imgElement;
+    delaySRC;
     blobUrl;
     mimeType;
     size;
     downloadBar;
     rendered = false;
-    constructor(src, href, title) {
+    constructor(src, href, title, delaySRC) {
       this.src = src;
       this.href = href;
       this.title = title;
+      this.delaySRC = delaySRC;
     }
     create() {
       this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
@@ -1397,7 +1399,16 @@
         if (this.blobUrl) {
           this.imgElement.src = this.blobUrl;
         } else {
-          this.imgElement.src = this.src;
+          const delaySRC = this.delaySRC;
+          this.delaySRC = void 0;
+          if (delaySRC) {
+            delaySRC.then((src) => {
+              this.src = src;
+              this.render();
+            });
+          } else {
+            this.imgElement.src = this.src;
+          }
         }
       }
     }
@@ -1595,13 +1606,29 @@
         return list;
       }
       let urls = [];
+      let delayURLs = [];
       if (isSprite) {
         for (let i = 0; i < nodes.length; i += 20) {
           const niStyles = nodes[i].style;
           const url = niStyles.background.match(regulars.sprite)?.[1]?.replaceAll('"', "");
           if (url) {
-            const splits = await splitImagesFromUrl(url, parseImagePositions(nodes.slice(i, i + 20).map((n) => n.style)));
-            urls.push(...splits);
+            const range = nodes.slice(i, i + 20);
+            const resolvers = [];
+            const rejects = [];
+            for (let j = 0; j < range.length; j++) {
+              urls.push("");
+              delayURLs.push(new Promise((resolve, reject) => {
+                resolvers.push(resolve);
+                rejects.push(reject);
+              }));
+            }
+            splitImagesFromUrl(url, parseImagePositions(range.map((n) => n.style))).then((ret) => {
+              for (let k = 0; k < ret.length; k++) {
+                resolvers[k](ret[k]);
+              }
+            }).catch((err) => {
+              rejects.forEach((r) => r(err));
+            });
           } else {
             break;
           }
@@ -1615,7 +1642,8 @@
         const node = new ImageNode(
           urls[i],
           nodes[i].querySelector("a").href,
-          nodes[i].querySelector("img").getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg"
+          nodes[i].querySelector("img").getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg",
+          delayURLs[i]
         );
         list.push(node);
       }

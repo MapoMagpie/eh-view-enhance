@@ -17,15 +17,17 @@ export default class ImageNode {
   title: string;
   onclick?: (event: MouseEvent) => void;
   imgElement?: HTMLImageElement;
+  delaySRC?: Promise<string>;
   private blobUrl?: string;
   private mimeType?: string;
   private size?: number;
   private downloadBar?: HTMLElement;
   private rendered: boolean = false;
-  constructor(src: string, href: string, title: string) {
+  constructor(src: string, href: string, title: string, delaySRC?: Promise<string>) {
     this.src = src;
     this.href = href;
     this.title = title;
+    this.delaySRC = delaySRC;
   }
 
   create(): HTMLElement {
@@ -59,7 +61,16 @@ export default class ImageNode {
       if (this.blobUrl) {
         this.imgElement.src = this.blobUrl;
       } else {
-        this.imgElement.src = this.src;
+        const delaySRC = this.delaySRC;
+        this.delaySRC = undefined;
+        if (delaySRC) {
+          delaySRC.then(src => {
+            this.src = src;
+            this.render();
+          });
+        } else {
+          this.imgElement.src = this.src;
+        }
       }
     }
   }

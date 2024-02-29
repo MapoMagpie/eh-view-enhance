@@ -165,6 +165,7 @@ export function loadStyleSheel() {
     width: 1.5rem;
     border: 1px solid #000000;
     border-radius: 4px;
+    line-height: initial;
   }
   .p-helper-extend .b-main {
     max-width: 24rem !important;
@@ -298,6 +299,7 @@ export function loadStyleSheel() {
   display: flex;
   justify-content: space-between;
   padding-right: 10px;
+  margin-bottom: unset;
 }
 .p-helper .p-config input {
   cursor: ns-resize;
@@ -604,6 +606,9 @@ export function loadStyleSheel() {
 .ehvp-custom-panel-list-item-disable {
   text-decoration: line-through;
   color: red;
+}
+html {
+  font-size: unset !important;
 }
 `
   style.textContent = css;

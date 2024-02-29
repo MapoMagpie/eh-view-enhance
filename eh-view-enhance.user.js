@@ -3986,6 +3986,7 @@ duration 0.04`).join("\n");
     width: 1.5rem;
     border: 1px solid #000000;
     border-radius: 4px;
+    line-height: initial;
   }
   .p-helper-extend .b-main {
     max-width: 24rem !important;
@@ -4119,6 +4120,7 @@ duration 0.04`).join("\n");
   display: flex;
   justify-content: space-between;
   padding-right: 10px;
+  margin-bottom: unset;
 }
 .p-helper .p-config input {
   cursor: ns-resize;
@@ -4425,6 +4427,9 @@ duration 0.04`).join("\n");
 .ehvp-custom-panel-list-item-disable {
   text-decoration: line-through;
   color: red;
+}
+html {
+  font-size: unset !important;
 }
 `;
     style.textContent = css;

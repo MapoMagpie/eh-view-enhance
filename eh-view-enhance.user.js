@@ -2,14 +2,14 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.3
+// @version            4.3.4
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
 // @license            MIT
 // @icon               https://exhentai.org/favicon.ico
-// @downloadURL        https://update.greasyfork.org/scripts/397848/E%20HENTAI%20VIEW%20ENHANCE.user.js
-// @updateURL          https://update.greasyfork.org/scripts/397848/E%20HENTAI%20VIEW%20ENHANCE.meta.js
+// @downloadURL        https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
+// @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/g/*
 // @match              https://e-hentai.org/g/*
 // @match              https://nhentai.net/g/*
@@ -2012,7 +2012,7 @@
                   }) :
                   // We need to duplicated the code here to enable webpack
                   // to bundle worekr.js here.
-                  new Worker(new URL('' + "/worker-Txrw2F37.js", (_documentCurrentScript && _documentCurrentScript.src || new URL('__entry.js', document.baseURI).href)), {
+                  new Worker(new URL('' + "/worker-CRu_gK8D.js", (_documentCurrentScript && _documentCurrentScript.src || new URL('__entry.js', document.baseURI).href)), {
                       type: "module",
                   });
               this.#registerHandlers();

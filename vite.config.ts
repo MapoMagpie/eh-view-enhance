@@ -5,6 +5,8 @@ import monkey from 'vite-plugin-monkey';
 export default defineConfig({
   build: {
     target: 'esnext',
+    outDir: '',
+    emptyOutDir: false,
   },
   plugins: [
     monkey({
@@ -12,8 +14,8 @@ export default defineConfig({
       userscript: {
         icon: 'https://exhentai.org/favicon.ico',
         namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
-        downloadURL: 'https://update.greasyfork.org/scripts/397848/E%20HENTAI%20VIEW%20ENHANCE.user.js',
-        updateURL: 'https://update.greasyfork.org/scripts/397848/E%20HENTAI%20VIEW%20ENHANCE.meta.js',
+        downloadURL: 'https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js',
+        updateURL: 'https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js',
         exclude: [
           'https://nhentai.net/g/*/*/',
           'https://yande.re/post/show/*'
@@ -28,7 +30,7 @@ export default defineConfig({
           'https://yande.re/post*'
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.3.3',
+        version: '4.3.4',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {
@@ -63,6 +65,7 @@ export default defineConfig({
       },
       build: {
         fileName: 'eh-view-enhance.user.js',
+        metaFileName: 'eh-view-enhance.meta.js',
         externalGlobals: {
           "jszip": "JSZip",
           "file-saver": "saveAs",

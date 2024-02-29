@@ -180,6 +180,7 @@ export function createHTML() {
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <a id="show-guide-element" class="clickable" style="color: #fff">HELP</a>
                  <a id="show-keyboard-custom-element" class="clickable" style="color: #fff">Keyboard</a>
+                 <a id="show-exclude-url-element" class="clickable" style="color: #fff">Excludes</a>
                  <a class="clickable" style="color: #fff" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">Let's Star</a>
             </div>
             <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
@@ -244,6 +245,7 @@ export function createHTML() {
     finishedElement: q("#p-finished", fullViewGrid),
     showGuideElement: q("#show-guide-element", fullViewGrid),
     showKeyboardCustomElement: q("#show-keyboard-custom-element", fullViewGrid),
+    showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
     imgLandLeft: q("#img-land-left", fullViewGrid),
     imgLandRight: q("#img-land-right", fullViewGrid),
     imgLandTop: q("#img-land-top", fullViewGrid),
@@ -324,6 +326,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
 
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
   HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
+  HTML.showExcludeURLElement.addEventListener("click", events.showExcludeURLEvent);
 
   dragElement(HTML.pageHelper, q("#dragHub", HTML.pageHelper), events.modPageHelperPostion);
 }

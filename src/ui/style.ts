@@ -596,6 +596,15 @@ export function loadStyleSheel() {
 .ehvp-custom-panel-item-add-btn:hover {
   background-color: #ffff00;
 }
+.ehvp-custom-panel-list > li {
+  line-height: 3rem;
+  margin-left: 0.5rem;
+  font-size: 1.4rem;
+}
+.ehvp-custom-panel-list-item-disable {
+  text-decoration: line-through;
+  color: red;
+}
 `
   style.textContent = css;
   document.head.appendChild(style);

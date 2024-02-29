@@ -56,7 +56,7 @@ export class Pixiv implements Matcher {
   }
 
   workURL(): RegExp {
-    return /pixiv\.net\/(\w*\/)?(artworks|users)\/.*/;
+    return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
   }
 
   public parseGalleryMeta(_: Document): GalleryMeta {

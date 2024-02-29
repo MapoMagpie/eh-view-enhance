@@ -1,4 +1,4 @@
-import { conf } from "../config";
+import { conf, saveConf } from "../config";
 import { EHMatcher } from "./ehentai";
 import { HitomiMather } from "./hitomi";
 import { NHMatcher } from "./nhentai";
@@ -7,7 +7,7 @@ import { Matcher } from "./platform";
 import { SteamMatcher } from "./steam";
 import { YandeMatcher } from "./yande";
 
-const matchers: Matcher[] = [
+export const matchers: Matcher[] = [
   new EHMatcher(),
   new NHMatcher(),
   new HitomiMather(),
@@ -17,9 +17,21 @@ const matchers: Matcher[] = [
 ];
 
 export function adaptMatcher(url: string): Matcher | null {
-  for (const regex of conf.excludeURLs) {
-    if (new RegExp(regex).test(url)) {
-      return null;
+  const workURLs = matchers.map(m => m.workURL().source);
+  // check excludeURLs health, remove invalid RegExp
+  const newExcludeURLs = conf.excludeURLs.filter(source => {
+    return workURLs.indexOf(source) > -1;
+  });
+  if (newExcludeURLs.length !== conf.excludeURLs.length) {
+    conf.excludeURLs = newExcludeURLs;
+    saveConf(conf);
+  }
+  // if all sites are excluded, don't exclude any
+  if (conf.excludeURLs.length < matchers.length) {
+    for (const regex of conf.excludeURLs) {
+      if (new RegExp(regex).test(url)) {
+        return null;
+      }
     }
   }
   return matchers.find(m => m.workURL().test(url)) || null;

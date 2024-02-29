@@ -1516,7 +1516,7 @@
     // 'https://exhentai.org/g/*',
     // 'https://e-hentai.org/g/*',
     workURL() {
-      return /https?:\/\/e[-x]hentai.org\/g\/\w+/;
+      return /e[-x]hentai.org\/g\/\w+/;
     }
     parseGalleryMeta(doc) {
       const titleList = doc.querySelectorAll("#gd2 h1");
@@ -1725,7 +1725,7 @@
   class HitomiMather {
     // 'https://hitomi.la/*/*',
     workURL() {
-      return /https?:\/\/hitomi.la\/\w+\/\w+/;
+      return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
     }
     gg;
     meta;
@@ -1809,7 +1809,7 @@
     // exclude 'https://nhentai.net/g/*/*/',
     // 'https://nhentai.net/g/*',
     workURL() {
-      return /https?:\/\/nhentai.net\/g\/\d+\/?$/;
+      return /nhentai.net\/g\/\d+\/?$/;
     }
     parseGalleryMeta(doc) {
       let title;
@@ -2400,7 +2400,7 @@ duration 0.04`).join("\n");
       this.meta = new GalleryMeta(window.location.href, "UNTITLE");
     }
     workURL() {
-      return /pixiv\.net\/(\w*\/)?(artworks|users)\/.*/;
+      return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
     }
     parseGalleryMeta(_) {
       this.meta.title = `PIXIV_${this.authorID}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
@@ -2544,7 +2544,7 @@ duration 0.04`).join("\n");
   class SteamMatcher {
     // 'https://steamcommunity.com/id/*/screenshots*',
     workURL() {
-      return /https?:\/\/steamcommunity\.com\/id\/[^/]+\/screenshots.*/;
+      return /steamcommunity\.com\/id\/[^/]+\/screenshots.*/;
     }
     async matchImgURL(url, _) {
       let raw = "";
@@ -2633,7 +2633,7 @@ duration 0.04`).join("\n");
     // exclude 'https://yande.re/post/show/*'
     // 'https://yande.re/post*'
     workURL() {
-      return /https?:\/\/yande.re\/post(?!\/show\/.*)/;
+      return /yande.re\/post(?!\/show\/.*)/;
     }
     async *fetchPagesSource() {
       let currentE = document.querySelector("em.current")?.textContent || 1;
@@ -2726,9 +2726,19 @@ duration 0.04`).join("\n");
     new SteamMatcher()
   ];
   function adaptMatcher(url) {
-    for (const regex of conf.excludeURLs) {
-      if (new RegExp(regex).test(url)) {
-        return null;
+    const workURLs = matchers.map((m) => m.workURL().source);
+    const newExcludeURLs = conf.excludeURLs.filter((source) => {
+      return workURLs.indexOf(source) > -1;
+    });
+    if (newExcludeURLs.length !== conf.excludeURLs.length) {
+      conf.excludeURLs = newExcludeURLs;
+      saveConf(conf);
+    }
+    if (conf.excludeURLs.length < matchers.length) {
+      for (const regex of conf.excludeURLs) {
+        if (new RegExp(regex).test(url)) {
+          return null;
+        }
       }
     }
     return matchers.find((m) => m.workURL().test(url)) || null;
@@ -2929,6 +2939,51 @@ duration 0.04`).join("\n");
       key = "Space";
     keys.push(key);
     return keys.join("+");
+  }
+
+  function createExcludeURLPanel(root) {
+    const HTML_STR = `
+<div class="ehvp-custom-panel">
+  <div class="ehvp-custom-panel-title">
+    <span>Exclude URL|Site</span>
+    <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
+  </div>
+    <div class="ehvp-custom-panel-content">
+        <ul class="ehvp-custom-panel-list">
+          ${matchers.map((m, index) => `
+             <li data-index="${index}" class="ehvp-custom-panel-list-item ${conf.excludeURLs.indexOf(m.workURL().source) !== -1 ? "ehvp-custom-panel-list-item-disable" : ""}">
+               <span>${m.workURL().source}</span>
+             </li>
+          `).join("")}
+        </ul>
+    </div>
+</div>
+`;
+    const fullPanel = document.createElement("div");
+    fullPanel.classList.add("ehvp-full-panel");
+    fullPanel.innerHTML = HTML_STR;
+    fullPanel.addEventListener("click", (event) => {
+      if (event.target.classList.contains("ehvp-full-panel")) {
+        fullPanel.remove();
+      }
+    });
+    root.appendChild(fullPanel);
+    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", () => fullPanel.remove());
+    const list = Array.from(fullPanel.querySelectorAll(".ehvp-custom-panel-list-item"));
+    list.forEach((li) => {
+      const index = parseInt(li.getAttribute("data-index"));
+      li.addEventListener("click", () => {
+        const i = conf.excludeURLs.indexOf(matchers[index].workURL().source);
+        if (i === -1) {
+          li.classList.add("ehvp-custom-panel-list-item-disable");
+          conf.excludeURLs.push(matchers[index].workURL().source);
+        } else {
+          li.classList.remove("ehvp-custom-panel-list-item-disable");
+          conf.excludeURLs.splice(i, 1);
+        }
+        saveConf(conf);
+      });
+    });
   }
 
   function createKeyboardCustomPanel(keyboardEvents, root) {
@@ -3421,6 +3476,9 @@ duration 0.04`).join("\n");
     function showKeyboardCustomEvent() {
       createKeyboardCustomPanel(keyboardEvents, HTML.fullViewGrid);
     }
+    function showExcludeURLEvent() {
+      createExcludeURLPanel(HTML.fullViewGrid);
+    }
     const signal = { first: true };
     function main(extend) {
       if (HTML.pageHelper) {
@@ -3455,7 +3513,8 @@ duration 0.04`).join("\n");
       showGuideEvent,
       collapsePanelEvent,
       abortMouseleavePanelEvent,
-      showKeyboardCustomEvent
+      showKeyboardCustomEvent,
+      showExcludeURLEvent
     };
   }
 
@@ -4088,6 +4147,15 @@ duration 0.04`).join("\n");
 .ehvp-custom-panel-item-add-btn:hover {
   background-color: #ffff00;
 }
+.ehvp-custom-panel-list > li {
+  line-height: 3rem;
+  margin-left: 0.5rem;
+  font-size: 1.4rem;
+}
+.ehvp-custom-panel-list-item-disable {
+  text-decoration: line-through;
+  color: red;
+}
 `;
     style.textContent = css;
     document.head.appendChild(style);
@@ -4261,6 +4329,7 @@ duration 0.04`).join("\n");
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                  <a id="show-guide-element" class="clickable" style="color: #fff">HELP</a>
                  <a id="show-keyboard-custom-element" class="clickable" style="color: #fff">Keyboard</a>
+                 <a id="show-exclude-url-element" class="clickable" style="color: #fff">Excludes</a>
                  <a class="clickable" style="color: #fff" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">Let's Star</a>
             </div>
             <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
@@ -4324,6 +4393,7 @@ duration 0.04`).join("\n");
       finishedElement: q("#p-finished", fullViewGrid),
       showGuideElement: q("#show-guide-element", fullViewGrid),
       showKeyboardCustomElement: q("#show-keyboard-custom-element", fullViewGrid),
+      showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
       imgLandLeft: q("#img-land-left", fullViewGrid),
       imgLandRight: q("#img-land-right", fullViewGrid),
       imgLandTop: q("#img-land-top", fullViewGrid),
@@ -4390,6 +4460,7 @@ duration 0.04`).join("\n");
     });
     HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
     HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
+    HTML.showExcludeURLElement.addEventListener("click", events.showExcludeURLEvent);
     dragElement(HTML.pageHelper, q("#dragHub", HTML.pageHelper), events.modPageHelperPostion);
   }
 

@@ -8,7 +8,7 @@ export class YandeMatcher implements Matcher {
   // exclude 'https://yande.re/post/show/*'
   // 'https://yande.re/post*'
   workURL(): RegExp {
-    return /https?:\/\/yande.re\/post(?!\/show\/.*)/;
+    return /yande.re\/post(?!\/show\/.*)/;
   }
 
   public async *fetchPagesSource(): AsyncGenerator<PagesSource> {

@@ -8,7 +8,7 @@ export class SteamMatcher implements Matcher {
   // 'https://steamcommunity.com/id/*/screenshots*',
   workURL(): RegExp {
     // return /https?:\/\/steamcommunity\.com\/(id|profiles)\/[^/]+\/(screenshots|workshop)\/\?appid=\d+/;
-    return /https?:\/\/steamcommunity\.com\/id\/[^/]+\/screenshots.*/;
+    return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
   }
 
   public async matchImgURL(url: string, _: boolean): Promise<string> {

@@ -5,6 +5,7 @@ import { PageFetcher } from "../page-fetcher";
 import { i18n } from "../utils/i18n";
 import parseKey from "../utils/keyboard";
 import q from "../utils/query-element";
+import createExcludeURLPanel from "./exclude-urls";
 import { Elements } from "./html";
 import createKeyboardCustomPanel from "./keyboard-custom";
 import { PageHelper } from "./page-helper";
@@ -418,6 +419,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     createKeyboardCustomPanel(keyboardEvents, HTML.fullViewGrid);
   }
 
+  function showExcludeURLEvent() {
+    createExcludeURLPanel(HTML.fullViewGrid);
+  }
+
   const signal = { first: true };
   // 入口
   function main(extend: boolean) {
@@ -457,5 +462,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     collapsePanelEvent,
     abortMouseleavePanelEvent,
     showKeyboardCustomEvent,
+    showExcludeURLEvent,
   }
 }

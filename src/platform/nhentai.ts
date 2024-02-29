@@ -8,7 +8,7 @@ export class NHMatcher implements Matcher {
   // exclude 'https://nhentai.net/g/*/*/',
   // 'https://nhentai.net/g/*',
   workURL(): RegExp {
-    return /https?:\/\/nhentai.net\/g\/\d+\/?$/;
+    return /nhentai.net\/g\/\d+\/?$/;
   }
 
   public parseGalleryMeta(doc: Document): GalleryMeta {

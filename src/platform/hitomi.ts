@@ -61,7 +61,7 @@ export class HitomiMather implements Matcher {
 
   // 'https://hitomi.la/*/*',
   workURL(): RegExp {
-    return /https?:\/\/hitomi.la\/\w+\/\w+/;
+    return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
   }
 
   gg?: HitomiGG

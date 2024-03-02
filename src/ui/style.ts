@@ -19,6 +19,9 @@ export function loadStyleSheel() {
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
 }
+.full-view-grid * {
+  font-family: initial;
+}
 .full-view-grid input, .full-view-grid select {
   color: #f1f1f1;
   background-color: #34353b !important;

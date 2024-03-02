@@ -26,9 +26,10 @@ export default defineConfig({
           'https://yande.re/*',
           'https://rokuhentai.com/*',
           'https://18comic.org/*',
+          'https://rule34.xxx/*',
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.3.5',
+        version: '4.3.6',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {
@@ -46,6 +47,7 @@ export default defineConfig({
           'ehgt.org',
           'files.yande.re',
           '*.18comic.org',
+          '*.rule34.xxx',
         ],
         // resource: {
         //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"

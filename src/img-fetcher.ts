@@ -1,5 +1,5 @@
 import ImageNode from "./img-node";
-import { Matcher } from "./platform/platform";
+import { Matcher, OriginMeta } from "./platform/platform";
 import { evLog } from "./utils/ev-log";
 import { xhrWapper } from "./utils/query";
 
@@ -109,9 +109,15 @@ export class IMGFetcher {
       switch (this.stage) {
         case FetchState.FAILED:
         case FetchState.URL:
-          let url = await this.fetchImageURL();
-          if (url !== null) {
-            this.originURL = url;
+          let meta = await this.fetchOriginMeta();
+          if (meta !== null) {
+            this.originURL = meta.url;
+            if (meta.title) {
+              this.node.title = meta.title;
+              if (this.node.imgElement) {
+                this.node.imgElement.title = meta.title;
+              }
+            }
             this.stage = FetchState.DATA;
           } else {
             this.tryTimes++;
@@ -140,14 +146,14 @@ export class IMGFetcher {
     throw new Error(`Fetch image failed, reach max try times, current stage: ${this.stage}`);
   }
 
-  async fetchImageURL(): Promise<string | null> {
+  async fetchOriginMeta(): Promise<OriginMeta | null> {
     try {
-      const imageURL = await this.settings.matcher.matchImgURL(this.node.href, this.tryTimes > 0);
-      if (!imageURL) {
+      const meta = await this.settings.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0);
+      if (!meta) {
         evLog("Fetch URL failed, the URL is empty");
         return null;
       }
-      return imageURL;
+      return meta;
     } catch (error) {
       evLog(`Fetch URL error:`, error);
       return null;

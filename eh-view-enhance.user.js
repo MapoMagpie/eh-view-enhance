@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.5
+// @version            4.3.6
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -19,6 +19,7 @@
 // @match              https://yande.re/*
 // @match              https://rokuhentai.com/*
 // @match              https://18comic.org/*
+// @match              https://rule34.xxx/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -32,6 +33,7 @@
 // @connect            ehgt.org
 // @connect            files.yande.re
 // @connect            *.18comic.org
+// @connect            *.rule34.xxx
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -269,9 +271,15 @@
         switch (this.stage) {
           case 0 /* FAILED */:
           case 1 /* URL */:
-            let url = await this.fetchImageURL();
-            if (url !== null) {
-              this.originURL = url;
+            let meta = await this.fetchOriginMeta();
+            if (meta !== null) {
+              this.originURL = meta.url;
+              if (meta.title) {
+                this.node.title = meta.title;
+                if (this.node.imgElement) {
+                  this.node.imgElement.title = meta.title;
+                }
+              }
               this.stage = 2 /* DATA */;
             } else {
               this.tryTimes++;
@@ -299,14 +307,14 @@
       }
       throw new Error(`Fetch image failed, reach max try times, current stage: ${this.stage}`);
     }
-    async fetchImageURL() {
+    async fetchOriginMeta() {
       try {
-        const imageURL = await this.settings.matcher.matchImgURL(this.node.href, this.tryTimes > 0);
-        if (!imageURL) {
+        const meta = await this.settings.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0);
+        if (!meta) {
           evLog("Fetch URL failed, the URL is empty");
           return null;
         }
-        return imageURL;
+        return meta;
       } catch (error) {
         evLog(`Fetch URL error:`, error);
         return null;
@@ -1580,8 +1588,8 @@
       return meta;
     }
     // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
-    async matchImgURL(url, _) {
-      return url;
+    async fetchOriginMeta(url, _) {
+      return { url };
     }
     async parseImgNodes(source) {
       const list = [];
@@ -1692,8 +1700,8 @@
       meta.tags = tags;
       return meta;
     }
-    async matchImgURL(url, retry) {
-      return await this.fetchImgURL(url, retry);
+    async fetchOriginMeta(href, retry) {
+      return { url: await this.fetchImgURL(href, retry) };
     }
     async parseImgNodes(page) {
       const list = [];
@@ -1894,9 +1902,9 @@
     gg;
     meta;
     info;
-    async matchImgURL(hash, _) {
+    async fetchOriginMeta(hash, _) {
       const url = this.gg.url(hash);
-      return url;
+      return { url };
     }
     async parseImgNodes(page) {
       if (!this.info) {
@@ -2008,16 +2016,16 @@
       meta.tags = tags;
       return meta;
     }
-    async matchImgURL(url, _) {
+    async fetchOriginMeta(href, _) {
       let text = "";
       try {
-        text = await window.fetch(url).then((resp) => resp.text());
+        text = await window.fetch(href).then((resp) => resp.text());
         if (!text)
           throw new Error("[text] is empty");
       } catch (error) {
         throw new Error(`Fetch source page error, expected [text]！ ${error}`);
       }
-      return NH_IMG_URL_REGEX.exec(text)[1];
+      return { url: NH_IMG_URL_REGEX.exec(text)[1] };
     }
     async parseImgNodes(page) {
       const list = [];
@@ -2576,15 +2584,15 @@ duration 0.04`).join("\n");
       this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
       return this.meta;
     }
-    async matchImgURL(url, _) {
+    async fetchOriginMeta(url, _) {
       const matches = url.match(PID_EXTRACT);
       if (!matches || matches.length < 2) {
-        return url;
+        return { url };
       }
       const pid = matches[1];
       const p = matches[2];
       if (this.works[pid]?.illustType !== 2 || p !== "ugoira") {
-        return url;
+        return { url };
       }
       const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then((resp) => resp.json());
       const data = await window.fetch(meta.body.originalSrc).then((resp) => resp.blob());
@@ -2610,7 +2618,7 @@ duration 0.04`).join("\n");
       const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
       const end = performance.now();
       evLog(`convert ugoira to ${conf.convertTo} cost ${(end - start) / 1e3} s, size: ${blob.size / 1e3} KB, original size: ${data.size / 1e3} KB`);
-      return URL.createObjectURL(blob);
+      return { url: URL.createObjectURL(blob) };
     }
     async fetchTagsByPids(pids) {
       try {
@@ -2737,8 +2745,8 @@ duration 0.04`).join("\n");
       meta.tags = tags;
       return meta;
     }
-    async matchImgURL(url, _) {
-      return url;
+    async fetchOriginMeta(url, _) {
+      return { url };
     }
     async parseImgNodes(source) {
       const range = source.raw.split("-").map(Number);
@@ -2805,6 +2813,82 @@ duration 0.04`).join("\n");
     }
   }
 
+  class Rule34Matcher {
+    tags = {};
+    count = 0;
+    async processData(data, _1, _2) {
+      return data;
+    }
+    workURL() {
+      return /rule34.xxx\/index.php\?page=post&s=list/;
+    }
+    async *fetchPagesSource() {
+      yield { raw: document, typ: "doc" };
+      let doc = document;
+      let tryTimes = 0;
+      while (true) {
+        let next = doc.querySelector(".pagination a[alt=next]");
+        if (!next)
+          break;
+        let url = next.href;
+        if (!url)
+          break;
+        try {
+          doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+        } catch (e) {
+          tryTimes++;
+          if (tryTimes > 3)
+            throw new Error(`fetch next page failed, ${e}`);
+          continue;
+        }
+        tryTimes = 0;
+        yield { raw: doc, typ: "doc" };
+      }
+    }
+    async fetchOriginMeta(href, _) {
+      let url = "";
+      const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      const img = doc.querySelector("#image");
+      if (!img) {
+        const video = doc.querySelector("#gelcomVideoPlayer");
+        if (video) {
+          url = video.querySelector("source")?.src || "";
+        }
+      } else {
+        url = img.src;
+      }
+      if (!url)
+        throw new Error("Cannot find origin image or video url");
+      let title;
+      const ext = url.split(".").pop()?.match(/^\w+/)?.[0];
+      const id = href.match(/id=(\d+)/)?.[1];
+      if (ext && id) {
+        title = `${id}.${ext}`;
+      }
+      return { url, title };
+    }
+    async parseImgNodes(page) {
+      const list = [];
+      const doc = page.raw;
+      const imgList = Array.from(doc.querySelectorAll(".image-list > .thumb > a"));
+      for (const img of imgList) {
+        const child = img.firstElementChild;
+        const title = `${img.id}.jpg`;
+        this.tags[img.id] = child.alt.split(" ");
+        this.count++;
+        list.push(new ImageNode(child.src, img.href, title));
+      }
+      return list;
+    }
+    parseGalleryMeta(_) {
+      const url = new URL(window.location.href);
+      const tags = url.searchParams.get("tags")?.trim();
+      const meta = new GalleryMeta(window.location.href, `rule34_${tags}_${this.count}`);
+      meta.tags = this.tags;
+      return meta;
+    }
+  }
+
   const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
   class SteamMatcher {
     async processData(data, _1, _2) {
@@ -2813,10 +2897,10 @@ duration 0.04`).join("\n");
     workURL() {
       return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
     }
-    async matchImgURL(url, _) {
+    async fetchOriginMeta(href, _) {
       let raw = "";
       try {
-        raw = await window.fetch(url).then((resp) => resp.text());
+        raw = await window.fetch(href).then((resp) => resp.text());
         if (!raw)
           throw new Error("[text] is empty");
       } catch (error) {
@@ -2828,7 +2912,7 @@ duration 0.04`).join("\n");
       if (!imgURL) {
         throw new Error("Cannot Query Steam original Image URL");
       }
-      return imgURL;
+      return { url: imgURL };
     }
     async parseImgNodes(page) {
       const list = [];
@@ -2921,11 +3005,11 @@ duration 0.04`).join("\n");
       url = url.replace(".png", ".jpg");
       return url;
     }
-    async matchImgURL(url, _) {
-      if (conf.fetchOriginal) {
-        return url;
+    async fetchOriginMeta(href, _) {
+      if (!conf.fetchOriginal) {
+        return { url: href };
       }
-      return this.transformBigImageToSample(url);
+      return { url: this.transformBigImageToSample(href) };
     }
     async parseImgNodes(page) {
       const list = [];
@@ -2993,7 +3077,8 @@ duration 0.04`).join("\n");
     new Pixiv(),
     new SteamMatcher(),
     new RokuHentaiMatcher(),
-    new Comic18Matcher()
+    new Comic18Matcher(),
+    new Rule34Matcher()
   ];
   function adaptMatcher(url) {
     const workURLs = matchers.map((m) => m.workURL().source);

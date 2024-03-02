@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Matcher, PagesSource } from "./platform";
+import { Matcher, OriginMeta, PagesSource } from "./platform";
 
 
 class HitomiGG {
@@ -71,10 +71,9 @@ export class HitomiMather implements Matcher {
   meta?: GalleryMeta
   info?: GalleryInfo
 
-  public async matchImgURL(hash: string, _: boolean): Promise<string> {
+  public async fetchOriginMeta(hash: string, _: boolean): Promise<OriginMeta> {
     const url = this.gg!.url(hash);
-    // console.log("hitomi image url: " + url);
-    return url;
+    return { url };
   }
 
   public async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {

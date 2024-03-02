@@ -3,7 +3,7 @@ import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { evLog } from "../utils/ev-log";
 import { parseImagePositions, splitImagesFromUrl } from "../utils/sprite-split";
-import { Matcher, PagesSource } from "./platform";
+import { Matcher, OriginMeta, PagesSource } from "./platform";
 
 // EHMatcher
 const regulars = {
@@ -60,8 +60,8 @@ export class EHMatcher implements Matcher {
     return meta;
   }
 
-  public async matchImgURL(url: string, retry: boolean): Promise<string> {
-    return await this.fetchImgURL(url, retry);
+  public async fetchOriginMeta(href: string, retry: boolean): Promise<OriginMeta> {
+    return { url: await this.fetchImgURL(href, retry) };
   }
 
   public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {

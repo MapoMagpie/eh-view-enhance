@@ -1,7 +1,7 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Matcher, PagesSource } from "./platform";
+import { Matcher, OriginMeta, PagesSource } from "./platform";
 
 export class YandeMatcher implements Matcher {
 
@@ -20,12 +20,6 @@ export class YandeMatcher implements Matcher {
 
     let curPageNumber = Number(currentE); // 20 +25
     let latestPageNumber = Number(latestE);
-
-    // let maxPageNumber = curPageNumber + DefaultFetchPageNumber;
-    // if (latestPageNumber < DefaultFetchPageNumber) {
-    //   maxPageNumber = latestPageNumber
-    // }
-    // console.log(curPageNumber, maxPageNumber, latestPageNumber)
 
     const u = new URL(location.href);
     for (let p = curPageNumber; p <= latestPageNumber; p++) {
@@ -46,11 +40,11 @@ export class YandeMatcher implements Matcher {
     return url;
   }
 
-  public async matchImgURL(url: string, _: boolean): Promise<string> {
-    if (conf.fetchOriginal) {
-      return url;
+  public async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
+    if (!conf.fetchOriginal) {
+      return { url: href };
     }
-    return this.transformBigImageToSample(url);
+    return { url: this.transformBigImageToSample(href) };
   }
 
   public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {

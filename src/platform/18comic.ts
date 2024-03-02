@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Matcher, PagesSource } from "./platform";
+import { Matcher, OriginMeta, PagesSource } from "./platform";
 
 function get_num(gid: string, page: string) {
   let ret = 10;
@@ -103,8 +103,8 @@ export class Comic18Matcher implements Matcher {
     return meta;
   }
   // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
-  public async matchImgURL(url: string, _: boolean): Promise<string> {
-    return url;
+  public async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
+    return { url };
   }
 
   public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {

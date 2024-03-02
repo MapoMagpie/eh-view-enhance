@@ -6,8 +6,13 @@ export type PagesSource = {
   typ: "doc" | "url" | "json"
 }
 
+export type OriginMeta = {
+  url: string,
+  title?: string,
+}
+
 export interface Matcher {
-  matchImgURL(url: string, retry: boolean): Promise<string>;
+  fetchOriginMeta(href: string, retry: boolean): Promise<OriginMeta>;
   parseImgNodes(page: PagesSource): Promise<ImageNode[] | never>;
   fetchPagesSource(): AsyncGenerator<PagesSource>;
   parseGalleryMeta(doc: Document): GalleryMeta;

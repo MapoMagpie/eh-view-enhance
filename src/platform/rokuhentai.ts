@@ -1,7 +1,7 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { ImagePosition, splitImagesFromUrl } from "../utils/sprite-split";
-import { Matcher, PagesSource } from "./platform";
+import { Matcher, OriginMeta, PagesSource } from "./platform";
 
 export class RokuHentaiMatcher implements Matcher {
   sprites: ({ src: string, pos: ImagePosition } | undefined)[] = [];
@@ -34,8 +34,8 @@ export class RokuHentaiMatcher implements Matcher {
     return meta;
   }
 
-  public async matchImgURL(url: string, _: boolean): Promise<string> {
-    return url;
+  public async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
+    return { url };
   }
 
   public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {

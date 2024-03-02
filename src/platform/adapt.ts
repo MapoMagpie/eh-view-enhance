@@ -6,6 +6,7 @@ import { NHMatcher } from "./nhentai";
 import { Pixiv } from "./pixiv";
 import { Matcher } from "./platform";
 import { RokuHentaiMatcher } from "./rokuhentai";
+import { Rule34Matcher } from "./rule34";
 import { SteamMatcher } from "./steam";
 import { YandeMatcher } from "./yande";
 
@@ -18,6 +19,7 @@ export const matchers: Matcher[] = [
   new SteamMatcher(),
   new RokuHentaiMatcher(),
   new Comic18Matcher(),
+  new Rule34Matcher(),
 ];
 
 export function adaptMatcher(url: string): Matcher | null {

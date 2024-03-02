@@ -1,7 +1,7 @@
 import JSZip from "jszip";
 import { GalleryMeta } from "../download/gallery-meta";
 import { evLog } from "../utils/ev-log";
-import { Matcher, PagesSource } from "./platform";
+import { Matcher, OriginMeta, PagesSource } from "./platform";
 import { FFmpegConvertor } from "../utils/ffmpeg";
 import ImageNode from "../img-node";
 import { conf } from "../config";
@@ -70,15 +70,15 @@ export class Pixiv implements Matcher {
     return this.meta;
   }
 
-  public async matchImgURL(url: string, _: boolean): Promise<string> {
+  public async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
     const matches = url.match(PID_EXTRACT);
     if (!matches || matches.length < 2) {
-      return url;
+      return { url };
     }
     const pid = matches[1];
     const p = matches[2];
     if (this.works[pid]?.illustType !== 2 || p !== "ugoira") {
-      return url;
+      return { url };
     }
     const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then(resp => resp.json()) as UgoiraMeat;
     const data = await window.fetch(meta.body.originalSrc).then(resp => resp.blob());
@@ -105,7 +105,7 @@ export class Pixiv implements Matcher {
     const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
     const end = performance.now();
     evLog(`convert ugoira to ${conf.convertTo} cost ${(end - start) / 1000} s, size: ${blob.size / 1000} KB, original size: ${data.size / 1000} KB`);
-    return URL.createObjectURL(blob);
+    return { url: URL.createObjectURL(blob) };
 
   }
 

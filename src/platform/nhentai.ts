@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Matcher, PagesSource } from "./platform";
+import { Matcher, OriginMeta, PagesSource } from "./platform";
 
 const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
 export class NHMatcher implements Matcher {
@@ -46,15 +46,15 @@ export class NHMatcher implements Matcher {
     return meta;
   }
 
-  public async matchImgURL(url: string, _: boolean): Promise<string> {
+  public async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
     let text = "";
     try {
-      text = await window.fetch(url).then(resp => resp.text());
+      text = await window.fetch(href).then(resp => resp.text());
       if (!text) throw new Error("[text] is empty");
     } catch (error) {
       throw new Error(`Fetch source page error, expected [text]！ ${error}`);
     }
-    return NH_IMG_URL_REGEX.exec(text)![1];
+    return { url: NH_IMG_URL_REGEX.exec(text)![1] };
   }
 
   public async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {

@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Matcher, PagesSource } from "./platform";
+import { Matcher, OriginMeta, PagesSource } from "./platform";
 
 const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
 export class SteamMatcher implements Matcher {
@@ -12,10 +12,10 @@ export class SteamMatcher implements Matcher {
     return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
   }
 
-  public async matchImgURL(url: string, _: boolean): Promise<string> {
+  public async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
     let raw = "";
     try {
-      raw = await window.fetch(url).then(resp => resp.text());
+      raw = await window.fetch(href).then(resp => resp.text());
       if (!raw) throw new Error("[text] is empty");
     } catch (error) {
       throw new Error(`Fetch source page error, expected [text]！ ${error}`);
@@ -26,7 +26,7 @@ export class SteamMatcher implements Matcher {
     if (!imgURL) {
       throw new Error("Cannot Query Steam original Image URL");
     }
-    return imgURL;
+    return { url: imgURL };
   }
 
   public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {

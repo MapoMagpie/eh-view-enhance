@@ -14,6 +14,7 @@ export default defineConfig({
       userscript: {
         icon: 'https://exhentai.org/favicon.ico',
         namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
+        supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',
         downloadURL: 'https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js',
         updateURL: 'https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js',
         match: [

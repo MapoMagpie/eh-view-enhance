@@ -3749,12 +3749,10 @@ duration 0.04`).join("\n");
         )
       };
       const inMain = {
-        "open-full-view-grid": new KeyboardDesc(["Enter"], (event) => {
-          if (event.key === "Enter") {
-            const activeElement = document.activeElement;
-            if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement)
-              return;
-          }
+        "open-full-view-grid": new KeyboardDesc(["Enter"], (_) => {
+          const activeElement = document.activeElement;
+          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement)
+            return;
           main(true);
         }, true)
       };

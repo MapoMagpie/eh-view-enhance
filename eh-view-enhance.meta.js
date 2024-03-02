@@ -31,9 +31,9 @@
 // @connect            akamaihd.net
 // @connect            i.pximg.net
 // @connect            ehgt.org
-// @connect            files.yande.re
-// @connect            *.18comic.org
-// @connect            *.rule34.xxx
+// @connect            yande.re
+// @connect            18comic.org
+// @connect            rule34.xxx
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest

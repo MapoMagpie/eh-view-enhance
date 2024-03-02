@@ -31,9 +31,9 @@
 // @connect            akamaihd.net
 // @connect            i.pximg.net
 // @connect            ehgt.org
-// @connect            files.yande.re
-// @connect            *.18comic.org
-// @connect            *.rule34.xxx
+// @connect            yande.re
+// @connect            18comic.org
+// @connect            rule34.xxx
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -3929,6 +3929,9 @@ duration 0.04`).join("\n");
   align-content: start;
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
+}
+.full-view-grid * {
+  font-family: initial;
 }
 .full-view-grid input, .full-view-grid select {
   color: #f1f1f1;

@@ -45,9 +45,9 @@ export default defineConfig({
           'akamaihd.net',
           'i.pximg.net',
           'ehgt.org',
-          'files.yande.re',
-          '*.18comic.org',
-          '*.rule34.xxx',
+          'yande.re',
+          '18comic.org',
+          'rule34.xxx',
         ],
         // resource: {
         //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"

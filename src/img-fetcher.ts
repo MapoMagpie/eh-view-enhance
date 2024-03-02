@@ -1,5 +1,7 @@
+import { conf } from "./config";
 import ImageNode from "./img-node";
 import { Matcher, OriginMeta } from "./platform/platform";
+import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
 import { xhrWapper } from "./utils/query";
 
@@ -206,7 +208,15 @@ export class IMGFetcher {
     }
     const imgFetcher = this;
     return new Promise(async (resolve, reject) => {
-      xhrWapper(imgFetcher.originURL!, "blob", {
+      const debouncer = new Debouncer();
+      let abort: () => void;
+      const timeout = () => {
+        debouncer.addEvent("XHR_TIMEOUT", () => {
+          reject("timeout");
+          abort();
+        }, conf.timeout * 1000);
+      };
+      abort = xhrWapper(imgFetcher.originURL!, "blob", {
         onload: function(response) {
           let data = response.response;
           if (data.type === "text/html") {
@@ -223,16 +233,15 @@ export class IMGFetcher {
         onerror: function(response) {
           reject(`error:${response.error}, response:${response.response}`);
         },
-        ontimeout: function() {
-          reject("timeout");
-        },
         onprogress: function(response) {
           imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
+          timeout();
         },
         onloadstart: function() {
           imgFetcher.setDownloadState(imgFetcher.downloadState);
         }
       });
+      timeout();
     });
   }
 

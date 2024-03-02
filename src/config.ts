@@ -78,7 +78,7 @@ function defaultConf(): Config {
     restartIdleLoader: 5000,
     threads: 3,
     downloadThreads: 3,
-    timeout: 40,
+    timeout: 16,
     version: "4.1.10",
     debug: true,
     first: true,

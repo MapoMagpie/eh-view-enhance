@@ -1,5 +1,4 @@
 import { GM_xmlhttpRequest, GmXhrRequest } from "$";
-import { conf } from "../config";
 
 type RespType = keyof {
   text: string;
@@ -14,10 +13,10 @@ type EventListener<T extends RespType> = Pick<GmXhrRequest<unknown, T>, "onload"
 
 const HOST_REGEX = /\/\/([^\/]*)\//;
 export function xhrWapper<T extends RespType>(url: string, respType: T, cb: EventListener<T>) {
-  GM_xmlhttpRequest<unknown, T>({
+  return GM_xmlhttpRequest<unknown, T>({
     method: "GET",
     url,
-    timeout: conf.timeout * 1000,
+    timeout: 0,
     responseType: respType,
     nocache: false,
     revalidate: false,
@@ -35,8 +34,8 @@ export function xhrWapper<T extends RespType>(url: string, respType: T, cb: Even
       // "Sec-Fetch-Site": "cross-site",
       "Cache-Control": "public, max-age=2592000, immutable",
     },
-    ...cb
-  });
+    ...cb,
+  }).abort;
 }
 
 export function fetchImage(url: string): Promise<Blob> {

@@ -60,7 +60,7 @@
       restartIdleLoader: 5e3,
       threads: 3,
       downloadThreads: 3,
-      timeout: 40,
+      timeout: 16,
       version: "4.1.10",
       debug: true,
       first: true,
@@ -156,6 +156,29 @@
   const ConfigSelectKeys = ["readMode", "stickyMouse", "minifyPageHelper"];
   const conf = getConf();
 
+  class Debouncer {
+    tids;
+    mode;
+    lastExecTime;
+    constructor(mode) {
+      this.tids = {};
+      this.lastExecTime = Date.now();
+      this.mode = mode || "debounce";
+    }
+    addEvent(id, event, timeout) {
+      if (this.mode === "throttle") {
+        const now = Date.now();
+        if (now - this.lastExecTime >= timeout) {
+          this.lastExecTime = now;
+          event();
+        }
+      } else if (this.mode === "debounce") {
+        window.clearTimeout(this.tids[id]);
+        this.tids[id] = window.setTimeout(event, timeout);
+      }
+    }
+  }
+
   function evLog(msg, ...info) {
     if (conf.debug) {
       console.log((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
@@ -164,10 +187,10 @@
 
   const HOST_REGEX = /\/\/([^\/]*)\//;
   function xhrWapper(url, respType, cb) {
-    _GM_xmlhttpRequest({
+    return _GM_xmlhttpRequest({
       method: "GET",
       url,
-      timeout: conf.timeout * 1e3,
+      timeout: 0,
       responseType: respType,
       nocache: false,
       revalidate: false,
@@ -186,7 +209,7 @@
         "Cache-Control": "public, max-age=2592000, immutable"
       },
       ...cb
-    });
+    }).abort;
   }
   function fetchImage(url) {
     return new Promise((resolve, reject) => {
@@ -360,7 +383,15 @@
       }
       const imgFetcher = this;
       return new Promise(async (resolve, reject) => {
-        xhrWapper(imgFetcher.originURL, "blob", {
+        const debouncer = new Debouncer();
+        let abort;
+        const timeout = () => {
+          debouncer.addEvent("XHR_TIMEOUT", () => {
+            reject("timeout");
+            abort();
+          }, conf.timeout * 1e3);
+        };
+        abort = xhrWapper(imgFetcher.originURL, "blob", {
           onload: function(response) {
             let data = response.response;
             if (data.type === "text/html") {
@@ -376,16 +407,15 @@
           onerror: function(response) {
             reject(`error:${response.error}, response:${response.response}`);
           },
-          ontimeout: function() {
-            reject("timeout");
-          },
           onprogress: function(response) {
             imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
+            timeout();
           },
           onloadstart: function() {
             imgFetcher.setDownloadState(imgFetcher.downloadState);
           }
         });
+        timeout();
       });
     }
   }
@@ -931,29 +961,6 @@
         controller.close();
       }
     });
-  }
-
-  class Debouncer {
-    tids;
-    mode;
-    lastExecTime;
-    constructor(mode) {
-      this.tids = {};
-      this.lastExecTime = Date.now();
-      this.mode = mode || "debounce";
-    }
-    addEvent(id, event, timeout) {
-      if (this.mode === "throttle") {
-        const now = Date.now();
-        if (now - this.lastExecTime >= timeout) {
-          this.lastExecTime = now;
-          event();
-        }
-      } else if (this.mode === "debounce") {
-        window.clearTimeout(this.tids[id]);
-        this.tids[id] = window.setTimeout(event, timeout);
-      }
-    }
   }
 
   class IMGFetcherQueue extends Array {

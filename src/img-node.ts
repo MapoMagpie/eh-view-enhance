@@ -35,8 +35,10 @@ export default class ImageNode {
     this.imgElement = this.root.firstElementChild!.firstElementChild! as HTMLImageElement;
     this.imgElement.setAttribute("title", this.title);
     if (this.onclick) {
-      this.imgElement!.addEventListener("click", this.onclick);
+      this.imgElement.addEventListener("click", this.onclick);
     }
+    // middle click, open in new tab by href
+    this.imgElement.addEventListener("mousedown", (event) => event.button === 1 && this.href && window.open(this.href, "_blank"));
     return this.root;
   }
 

@@ -141,7 +141,7 @@ export class PageFetcher {
   renderCurrView() {
     const [scrollTop, clientHeight] = [this.fullViewGrid.scrollTop, this.fullViewGrid.clientHeight];
     const [startRander, endRander] = this.findOutsideRoundView(scrollTop, clientHeight);
-    this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
+    this.queue.slice(startRander, endRander + 1 + conf.colCount).forEach((imgFetcher) => imgFetcher.render());
     if (this.queue.dataSize >= 1000000000) {
       const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
       unrenders.forEach(([start, end]) => this.queue.slice(start, end + 1).forEach((imgFetcher) => imgFetcher.unrender()));

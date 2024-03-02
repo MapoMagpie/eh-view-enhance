@@ -8,6 +8,7 @@
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
 // @license            MIT
 // @icon               https://exhentai.org/favicon.ico
+// @supportURL         https://github.com/MapoMagpie/eh-view-enhance/issues
 // @downloadURL        https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/*
@@ -1299,7 +1300,7 @@
     renderCurrView() {
       const [scrollTop, clientHeight] = [this.fullViewGrid.scrollTop, this.fullViewGrid.clientHeight];
       const [startRander, endRander] = this.findOutsideRoundView(scrollTop, clientHeight);
-      this.queue.slice(startRander, endRander + 1).forEach((imgFetcher) => imgFetcher.render());
+      this.queue.slice(startRander, endRander + 1 + conf.colCount).forEach((imgFetcher) => imgFetcher.render());
       if (this.queue.dataSize >= 1e9) {
         const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
         unrenders.forEach(([start, end]) => this.queue.slice(start, end + 1).forEach((imgFetcher) => imgFetcher.unrender()));

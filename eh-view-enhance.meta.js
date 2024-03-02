@@ -8,6 +8,7 @@
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
 // @license            MIT
 // @icon               https://exhentai.org/favicon.ico
+// @supportURL         https://github.com/MapoMagpie/eh-view-enhance/issues
 // @downloadURL        https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/*

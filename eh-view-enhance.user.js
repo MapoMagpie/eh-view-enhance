@@ -1509,52 +1509,10 @@
     }
   }
 
-  function get_num(gid, page) {
-    let ret = 10;
-    let m = md5(gid + page);
-    let n = m.substring(m.length - 1).charCodeAt(0);
-    if (gid >= window.atob("MjY4ODUw") && gid <= window.atob("NDIxOTI1")) {
-      n %= 10;
-    } else if (gid >= window.atob("NDIxOTI2")) {
-      n %= 8;
-    }
-    switch (n) {
-      case 0:
-        ret = 2;
-        break;
-      case 1:
-        ret = 4;
-        break;
-      case 2:
-        ret = 6;
-        break;
-      case 3:
-        ret = 8;
-        break;
-      case 4:
-        ret = 10;
-        break;
-      case 5:
-        ret = 12;
-        break;
-      case 6:
-        ret = 14;
-        break;
-      case 7:
-        ret = 16;
-        break;
-      case 8:
-        ret = 18;
-        break;
-      case 9:
-        ret = 20;
-    }
-    return ret;
-  }
   function drawImage(ctx, e, gid, page) {
     const width = e.width;
     const height = e.height;
-    const s = get_num(gid, page);
+    const s = get_num(window.btoa(gid), window.btoa(page));
     const l = parseInt((height % s).toString());
     const r = width;
     for (let m = 0; m < s; m++) {
@@ -1569,7 +1527,8 @@
       const reg = /(\d+)\/(\d+)\.(\w+)/;
       const matches = url.match(reg);
       const gid = matches[1];
-      if (gid < "220980")
+      let scrambleID = scramble_id;
+      if (gid < scrambleID.toString())
         return data;
       const page = matches[2];
       const ext = matches[3];

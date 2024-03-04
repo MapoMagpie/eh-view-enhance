@@ -36,7 +36,7 @@ export class Downloader {
     this.downloaderPanelBTN = HTML.downloaderPanelBTN;
     this.downloadForceElement.addEventListener("click", () => this.download());
     this.downloadStartElement.addEventListener("click", () => this.start());
-    this.idleLoader.setIsDownloading( () => this.downloading);
+    this.idleLoader.setIsDownloading(() => this.downloading);
     this.queue.subscribeOnDo(1, () => this.downloading);
     this.queue.subscribeOnFinishedReport(0, (_, queue) => {
       if (queue.isFinised()) {
@@ -107,7 +107,6 @@ export class Downloader {
     }
     this.flushUI("downloading")
     this.downloading = true;
-    // Temporary enable "autoload", but it may result in persisting this to the config.
     this.idleLoader.autoLoad = true;
 
     // reset img fetcher stage to url, if it's failed

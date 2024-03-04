@@ -201,12 +201,9 @@ export class BigImageFrameManager {
     this.onHiddenEventContext.forEach(cb => cb());
     this.frame.blur();
     this.html.fullViewGrid.focus();
-    this.frame.classList.add("big-img-frame-collapse");
     this.frameScrollAbort?.abort();
-    this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
-      this.removeMediaNode();
-      this.frame.childNodes.forEach(child => (child as HTMLElement).hidden = true);
-    }, 700);
+    this.frame.classList.add("big-img-frame-collapse");
+    this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
   }
 
   show(event?: Event) {
@@ -214,29 +211,12 @@ export class BigImageFrameManager {
     this.frame.classList.remove("big-img-frame-collapse");
     this.frameScrollAbort = new AbortController();
     this.frame.addEventListener("scroll", (event) => this.onScroll(event), { signal: this.frameScrollAbort.signal });
-    this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
-      this.html.fullViewGrid.blur();
-      this.frame.focus();
-      this.frame.childNodes.forEach(child => {
-        // if consecutively mode keep img land hidden
-        if (conf.readMode === "consecutively") {
-          if (child.nodeName.toLowerCase() === "a") {
-            return;
-          }
-        }
-        (child as HTMLElement).hidden = false;
-      });
-    }, 700);
-
-    this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
-      this.onShowEventContext.forEach(cb => cb());
-      // 获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
-      let start = this.queue.currIndex;
-      if (event && event.target) {
-        start = this.queue.findImgIndex(event.target as HTMLElement);
-      }
-      this.queue.do(start);
-    }, 200);
+    this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.frame.focus(), 300);
+    this.onShowEventContext.forEach(cb => cb());
+    // 获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
+    let start = this.queue.currIndex;
+    if (event && event.target) start = this.queue.findImgIndex(event.target as HTMLElement);
+    this.queue.do(start); // this will trigger imgFetcher.setNow > this.setNow > this.init
   }
 
   getMediaNodes(): HTMLElement[] {

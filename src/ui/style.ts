@@ -107,16 +107,14 @@ export function loadStyleSheel() {
   height: 100%;
   top: 0;
   right: 0;
-  /*overflow: hidden scroll;*/
   overflow: auto;
+  scrollbar-width: none;
   z-index: 2001;
   background-color: #000000d6;
-  transition: width 0.4s;
-  scrollbar-width: none;
+  transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
 }
 .big-img-frame > img, .big-img-frame > video {
   object-fit: contain;
-  /* border-bottom: 1px solid #ffffff; */
   display: block;
   margin: 0 auto;
 }
@@ -370,7 +368,7 @@ export function loadStyleSheel() {
 }
 .big-img-frame-collapse {
   width: 0px !important;
-  transition: width 0.4s;
+  transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
 }
 .big-img-frame-collapse .img-land-left,
 .big-img-frame-collapse .img-land-right,

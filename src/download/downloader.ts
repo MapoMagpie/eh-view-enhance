@@ -36,6 +36,7 @@ export class Downloader {
     this.downloaderPanelBTN = HTML.downloaderPanelBTN;
     this.downloadForceElement.addEventListener("click", () => this.download());
     this.downloadStartElement.addEventListener("click", () => this.start());
+    this.idleLoader.setIsDownloading( () => this.downloading);
     this.queue.subscribeOnDo(1, () => this.downloading);
     this.queue.subscribeOnFinishedReport(0, (_, queue) => {
       if (queue.isFinised()) {

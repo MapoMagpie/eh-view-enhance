@@ -10,6 +10,7 @@ export class IdleLoader {
   restartId?: number;
   maxWaitMS: number;
   minWaitMS: number;
+  IsDownloading?: () => boolean;
   onFailedCallback?: () => void;
   autoLoad: boolean = false;
   constructor(queue: IMGFetcherQueue) {
@@ -27,6 +28,10 @@ export class IdleLoader {
       this.abort(index);
       return false;
     });
+  }
+
+  setIsDownloading(cb: ()=>boolean) {
+    this.IsDownloading = cb;
   }
 
   onFailed(cb: () => void) {
@@ -128,6 +133,11 @@ export class IdleLoader {
     // 中止空闲加载后，会在等待一段时间后再次重启空闲加载
     window.clearTimeout(this.restartId);
     this.restartId = window.setTimeout(() => {
+      if (this.IsDownloading && this.IsDownloading()){
+        // Double check if we are downloading
+        // In case we change to a Big image, and click Download button before conf.restartIdleLoader seconds
+        return;
+      }
       this.processingIndexList = [newIndex];
       this.checkProcessingIndex();
       this.start(this.lockVer);

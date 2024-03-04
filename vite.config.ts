@@ -30,7 +30,7 @@ export default defineConfig({
           'https://rule34.xxx/*',
         ],
         name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
-        version: '4.3.6',
+        version: '4.3.7',
         license: 'MIT',
         author: 'MapoMagpie',
         description: {

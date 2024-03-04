@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.6
+// @version            4.3.7
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -422,7 +422,7 @@
   }
 
   const lang = navigator.language;
-  const i18nIndex = lang === "zh-CN" ? 1 : 0;
+  const i18nIndex = lang.startsWith("zh") ? 1 : 0;
   class I18nValue extends Array {
     constructor(...value) {
       super(...value);
@@ -822,6 +822,7 @@
       this.downloaderPanelBTN = HTML.downloaderPanelBTN;
       this.downloadForceElement.addEventListener("click", () => this.download());
       this.downloadStartElement.addEventListener("click", () => this.start());
+      this.idleLoader.setIsDownloading(() => this.downloading);
       this.queue.subscribeOnDo(1, () => this.downloading);
       this.queue.subscribeOnFinishedReport(0, (_, queue2) => {
         if (queue2.isFinised()) {
@@ -1076,6 +1077,7 @@
     restartId;
     maxWaitMS;
     minWaitMS;
+    isDownloading;
     onFailedCallback;
     autoLoad = false;
     constructor(queue) {
@@ -1090,6 +1092,9 @@
         this.abort(index);
         return false;
       });
+    }
+    setIsDownloading(cb) {
+      this.isDownloading = cb;
     }
     onFailed(cb) {
       this.onFailedCallback = cb;
@@ -1174,6 +1179,9 @@
         return;
       window.clearTimeout(this.restartId);
       this.restartId = window.setTimeout(() => {
+        if (this.isDownloading?.()) {
+          return;
+        }
         this.processingIndexList = [newIndex];
         this.checkProcessingIndex();
         this.start(this.lockVer);
@@ -4022,16 +4030,14 @@ duration 0.04`).join("\n");
   height: 100%;
   top: 0;
   right: 0;
-  /*overflow: hidden scroll;*/
   overflow: auto;
+  scrollbar-width: none;
   z-index: 2001;
   background-color: #000000d6;
-  transition: width 0.4s;
-  scrollbar-width: none;
+  transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
 }
 .big-img-frame > img, .big-img-frame > video {
   object-fit: contain;
-  /* border-bottom: 1px solid #ffffff; */
   display: block;
   margin: 0 auto;
 }
@@ -4285,7 +4291,7 @@ duration 0.04`).join("\n");
 }
 .big-img-frame-collapse {
   width: 0px !important;
-  transition: width 0.4s;
+  transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
 }
 .big-img-frame-collapse .img-land-left,
 .big-img-frame-collapse .img-land-right,
@@ -5069,38 +5075,21 @@ html {
       this.onHiddenEventContext.forEach((cb) => cb());
       this.frame.blur();
       this.html.fullViewGrid.focus();
-      this.frame.classList.add("big-img-frame-collapse");
       this.frameScrollAbort?.abort();
-      this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
-        this.removeMediaNode();
-        this.frame.childNodes.forEach((child) => child.hidden = true);
-      }, 700);
+      this.frame.classList.add("big-img-frame-collapse");
+      this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
     }
     show(event) {
       this.visible = true;
       this.frame.classList.remove("big-img-frame-collapse");
       this.frameScrollAbort = new AbortController();
       this.frame.addEventListener("scroll", (event2) => this.onScroll(event2), { signal: this.frameScrollAbort.signal });
-      this.debouncer.addEvent("TOGGLE-CHILDREN", () => {
-        this.html.fullViewGrid.blur();
-        this.frame.focus();
-        this.frame.childNodes.forEach((child) => {
-          if (conf.readMode === "consecutively") {
-            if (child.nodeName.toLowerCase() === "a") {
-              return;
-            }
-          }
-          child.hidden = false;
-        });
-      }, 700);
-      this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
-        this.onShowEventContext.forEach((cb) => cb());
-        let start = this.queue.currIndex;
-        if (event && event.target) {
-          start = this.queue.findImgIndex(event.target);
-        }
-        this.queue.do(start);
-      }, 200);
+      this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.frame.focus(), 300);
+      this.onShowEventContext.forEach((cb) => cb());
+      let start = this.queue.currIndex;
+      if (event && event.target)
+        start = this.queue.findImgIndex(event.target);
+      this.queue.do(start);
     }
     getMediaNodes() {
       const list = Array.from(this.frame.querySelectorAll("img, video"));

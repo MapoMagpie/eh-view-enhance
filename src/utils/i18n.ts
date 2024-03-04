@@ -1,7 +1,7 @@
 import { KeyboardInBigImageModeId, KeyboardInFullViewGridId, KeyboardInMainId } from "../ui/event";
 
 const lang = navigator.language;
-const i18nIndex = lang === "zh-CN" ? 1 : 0;
+const i18nIndex = lang.startsWith("zh") ? 1 : 0;
 class I18nValue extends Array<string> {
   constructor(...value: string[]) {
     super(...value);

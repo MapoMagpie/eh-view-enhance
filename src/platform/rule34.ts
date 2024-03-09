@@ -64,7 +64,7 @@ export class Rule34Matcher implements Matcher {
   public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
     const doc = page.raw as Document;
-    const imgList = Array.from(doc.querySelectorAll<HTMLAnchorElement>(".image-list > .thumb > a"));
+    const imgList = Array.from(doc.querySelectorAll<HTMLAnchorElement>(".image-list > .thumb:not(.blacklisted-image) > a"));
     for (const img of imgList) {
       const child = (img.firstElementChild as HTMLImageElement);
       const title = `${img.id}.jpg`;

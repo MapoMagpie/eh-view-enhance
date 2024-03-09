@@ -2848,7 +2848,7 @@ duration 0.04`).join("\n");
     async parseImgNodes(page) {
       const list = [];
       const doc = page.raw;
-      const imgList = Array.from(doc.querySelectorAll(".image-list > .thumb > a"));
+      const imgList = Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
       for (const img of imgList) {
         const child = img.firstElementChild;
         const title = `${img.id}.jpg`;

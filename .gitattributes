@@ -2,3 +2,7 @@
 * text=auto
 # ignore .idea files
 .idea/**/* linguist-generated=true
+# set language to typescript
+*.ts linguist-language=TypeScript
+# do not count *.js files
+*.js linguist-vendored

@@ -2547,6 +2547,7 @@ duration 0.04`).join("\n");
     works = {};
     pageSize = {};
     convertor;
+    first;
     constructor() {
       this.meta = new GalleryMeta(window.location.href, "UNTITLE");
     }
@@ -2669,6 +2670,14 @@ duration 0.04`).join("\n");
       let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
       this.pidList = [...pidList];
       pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+      this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
+      if (this.first) {
+        const index = pidList.indexOf(this.first);
+        if (index > -1) {
+          pidList.splice(index, 1);
+        }
+        pidList.unshift(this.first);
+      }
       while (pidList.length > 0) {
         const pids = pidList.splice(0, 20);
         yield { raw: JSON.stringify(pids), typ: "json" };

@@ -50,6 +50,7 @@ export class Pixiv implements Matcher {
   works: Record<string, Work> = {};
   pageSize: Record<string, [number, number]> = {};
   convertor?: FFmpegConvertor;
+  first?: string;
 
   constructor() {
     this.meta = new GalleryMeta(window.location.href, "UNTITLE");
@@ -189,6 +190,16 @@ export class Pixiv implements Matcher {
     let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
     this.pidList = [...pidList];
     pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+    // try to get current pid from href
+    this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
+    if (this.first) {
+      // remove this.first from pidList
+      const index = pidList.indexOf(this.first);
+      if (index > -1) {
+        pidList.splice(index, 1);
+      }
+      pidList.unshift(this.first);
+    }
     while (pidList.length > 0) {
       const pids = pidList.splice(0, 20);
       yield { raw: JSON.stringify(pids), typ: "json" }

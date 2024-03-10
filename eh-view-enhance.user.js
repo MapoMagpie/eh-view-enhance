@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.7
+// @version            4.3.8
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -1412,23 +1412,20 @@
     render() {
       if (this.imgElement) {
         this.rendered = true;
+        let justThumbnail = !this.blobUrl;
         if (this.mimeType === "image/gif") {
           const tip = OVERLAY_TIP.cloneNode(true);
           tip.firstChild.textContent = "GIF";
           this.root?.appendChild(tip);
-          if (this.size && this.size > 20 * 1024 * 1024) {
-            return;
-          }
+          justThumbnail = this.size != void 0 && this.size > 20 * 1024 * 1024;
         }
         if (this.mimeType === "video/mp4") {
           const tip = OVERLAY_TIP.cloneNode(true);
           tip.firstChild.textContent = "MP4";
           this.root?.appendChild(tip);
-          return;
+          justThumbnail = true;
         }
-        if (this.blobUrl) {
-          this.imgElement.src = this.blobUrl;
-        } else {
+        if (justThumbnail) {
           const delaySRC = this.delaySRC;
           this.delaySRC = void 0;
           if (delaySRC) {
@@ -1439,6 +1436,8 @@
           } else if (this.src) {
             this.imgElement.src = this.src;
           }
+        } else {
+          this.imgElement.src = this.blobUrl;
         }
       }
     }

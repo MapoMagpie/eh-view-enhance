@@ -45,24 +45,21 @@ export default class ImageNode {
   render() {
     if (this.imgElement) {
       this.rendered = true;
+      let justThumbnail = !this.blobUrl;
       if (this.mimeType === "image/gif") {
         const tip = OVERLAY_TIP.cloneNode(true);
         tip.firstChild!.textContent = "GIF";
         this.root?.appendChild(tip);
         // if gif size over 20MB, then don't render it
-        if (this.size && this.size > 20 * 1024 * 1024) {
-          return;
-        }
+        justThumbnail = this.size != undefined && this.size > 20 * 1024 * 1024;
       }
       if (this.mimeType === "video/mp4") {
         const tip = OVERLAY_TIP.cloneNode(true);
         tip.firstChild!.textContent = "MP4";
         this.root?.appendChild(tip);
-        return;
+        justThumbnail = true;
       }
-      if (this.blobUrl) {
-        this.imgElement.src = this.blobUrl;
-      } else {
+      if (justThumbnail) {
         const delaySRC = this.delaySRC;
         this.delaySRC = undefined;
         if (delaySRC) {
@@ -73,6 +70,8 @@ export default class ImageNode {
         } else if (this.src) {
           this.imgElement.src = this.src;
         }
+      } else {
+        this.imgElement.src = this.blobUrl!;
       }
     }
   }

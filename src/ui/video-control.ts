@@ -1,3 +1,5 @@
+import { conf, saveConf } from "../config";
+import { Debouncer } from "../utils/debouncer";
 import onMouse from "../utils/progress-bar";
 import q from "../utils/query-element";
 
@@ -26,10 +28,9 @@ export class VideoControl {
   ui: UI;
   currElement?: HTMLVideoElement;
   context: Map<string, VideoState> = new Map();
-  muted: boolean = false;
-  volume: number = 50;
   paused: boolean = false;
   abortController?: AbortController;
+  debouncer: Debouncer = new Debouncer();
 
   constructor(root: HTMLElement) {
     this.ui = this.create(root);
@@ -47,8 +48,9 @@ export class VideoControl {
     });
     this.ui.volumeBTN.addEventListener("click", () => {
       if (this.currElement) {
-        this.muted = !this.muted;
-        this.currElement.muted = this.muted;
+        conf.muted = !conf.muted;
+        this.currElement.muted = conf.muted;
+        saveConf(conf);
         this.flushUI(this.context.get(this.currElement.src));
       }
     });
@@ -64,8 +66,9 @@ export class VideoControl {
 
     onMouse(this.ui.volumeProgress, (percent) => {
       if (this.currElement) {
-        this.volume = percent;
-        this.currElement.volume = this.volume / 100;
+        conf.volume = percent;
+        saveConf(conf);
+        this.currElement.volume = conf.volume / 100;
         this.flushUI(this.context.get(this.currElement.src));
       }
     });
@@ -75,26 +78,28 @@ export class VideoControl {
     this.ui.root.hidden = false;
   }
 
-  hide() {
+  hidden() {
     this.ui.root.hidden = true;
   }
 
   private create(root: HTMLElement): UI {
     const ui = document.createElement("div");
     ui.classList.add("bifm-vid-ctl");
-    // ⏸️
-    // <button id="bifm-vid-ctl-vol" class="bifm-vid-ctl-btn">▶️</button>
     ui.innerHTML = `
 <div>
   <button id="bifm-vid-ctl-play" class="bifm-vid-ctl-btn">${PLAY_ICON}</button>
   <button id="bifm-vid-ctl-mute" class="bifm-vid-ctl-btn">▶️</button>
-  <progress id="bifm-vid-ctl-volume" class="bifm-vid-ctl-pg" value="50" max="100"></progress>
+  <div id="bifm-vid-ctl-volume" class="bifm-vid-ctl-pg">
+    <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
+  </div>
   <span id="bifm-vid-ctl-time" class="bifm-vid-ctl-span">00:00</span>
   <span class="bifm-vid-ctl-span">/</span>
   <span id="bifm-vid-ctl-duration" class="bifm-vid-ctl-span">10:00</span>
 </div>
 <div>
-  <progress id="bifm-vid-ctl-pg" class="bifm-vid-ctl-pg" value="50" max="100"></progress>
+  <div id="bifm-vid-ctl-pg" class="bifm-vid-ctl-pg">
+    <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
+  </div>
 </div>
 `;
     root.appendChild(ui);
@@ -111,18 +116,20 @@ export class VideoControl {
 
   private flushUI(state?: VideoState, onlyState?: boolean) {
     let { value, max } = state ? { value: state.time, max: state.duration } : { value: 0, max: 10 };
-    this.ui.progress.value = Math.floor(value * 1000);
-    this.ui.progress.max = Math.floor(max * 1000);
+    const percent = Math.floor((value / max) * 100);
+    (this.ui.progress.firstElementChild as HTMLElement).style.width = `${percent}%`;
     this.ui.time.textContent = secondsToTime(value);
     this.ui.duration.textContent = secondsToTime(max);
     if (onlyState) return;
     this.ui.playBTN.innerHTML = this.paused ? PLAY_ICON : PAUSE_ICON;
-    this.ui.volumeBTN.innerHTML = this.muted ? MUTED_ICON : VOLUME_ICON;
+    this.ui.volumeBTN.innerHTML = conf.muted ? MUTED_ICON : VOLUME_ICON;
+    (this.ui.volumeProgress.firstElementChild as HTMLElement).style.width = `${conf.volume || 30}%`;
   }
 
-  public attch(element: HTMLVideoElement) {
-    this.deattch();
-    console.log("onattch load video");
+  public attach(element: HTMLVideoElement) {
+    if (element === this.currElement) return;
+    this.detach();
+    this.show();
     this.abortController = new AbortController();
     this.currElement = element;
     let state = this.context.get(element.src);
@@ -132,7 +139,6 @@ export class VideoControl {
     } else {
       this.currElement.currentTime = state.time;
     }
-
     this.flushUI(state);
 
     this.currElement.addEventListener("timeupdate", () => {
@@ -141,15 +147,16 @@ export class VideoControl {
       this.flushUI(state, true);
     }, { signal: this.abortController.signal });
 
-    this.currElement.muted = this.muted;
-    this.currElement.volume = this.volume / 100;
+    this.currElement.muted = conf.muted || false;
+    this.currElement.volume = (conf.volume || 30) / 100;
 
     if (!this.paused) {
-      this.currElement.play();
+      // FIXME: lot bug here
+      this.debouncer.addEvent("PLAY-VID", () => this.currElement && this.currElement.play(), 50);
     }
   }
 
-  public deattch() {
+  public detach() {
     this.abortController?.abort();
     this.abortController = undefined;
     this.currElement?.pause();

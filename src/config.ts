@@ -64,6 +64,10 @@ export type Config = {
     inMain: { [key in KeyboardInMainId]?: string[] },
   },
   excludeURLs: string[]
+  /** is video muted? */
+  muted?: boolean,
+  /** video volume, min 0, max 100 */
+  volume?: number,
 };
 
 function defaultConf(): Config {
@@ -98,7 +102,9 @@ function defaultConf(): Config {
     autoCollapsePanels: true,
     minifyPageHelper: "inBigMode",
     keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
-    excludeURLs: []
+    excludeURLs: [],
+    muted: false,
+    volume: 50,
   };
 }
 

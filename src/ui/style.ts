@@ -188,6 +188,11 @@ export function loadStyleSheel() {
   #imgScaleResetBTN {
     width: 4rem;
   }
+  .bifm-vid-ctl {
+    bottom: 0.2rem;
+    left: 30%;
+    width: 40vw;
+  }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
@@ -204,7 +209,7 @@ export function loadStyleSheel() {
   }
   .p-helper .p-panel {
     width: 100vw;
-    height: 70vh;
+    height: 75vh;
     bottom: 5.7cqw;
   }
   .p-helper .p-btn {
@@ -233,6 +238,11 @@ export function loadStyleSheel() {
   }
   #imgScaleResetBTN {
     width: 14cqw;
+  }
+  .bifm-vid-ctl {
+    bottom: 5.2cqw;
+    left: 0;
+    width: 100vw;
   }
 }
 .p-helper:hover {
@@ -613,10 +623,7 @@ html {
 }
 .bifm-vid-ctl {
   position: fixed;
-  z-index: 2030;
-  bottom: 0.3rem;
-  left: 20%;
-  width: 50vw;
+  z-index: 2010;
 }
 .bifm-vid-ctl > div {
   line-height: 1.2rem;
@@ -653,18 +660,17 @@ html {
 }
 #bifm-vid-ctl-pg {
   width: 100%;
-  height: 0.3rem;
+  height: 0.2rem;
+  background-color: #333333ee;
 }
 .bifm-vid-ctl:hover #bifm-vid-ctl-pg {
   height: 0.7rem;
-  background-color: #333333ee;
 }
-.bifm-vid-ctl-pg[value]::-webkit-progress-bar {
-  background-color: #333333ee;
+.bifm-vid-ctl-pg-inner {
+  background-color: #ffffffa0;
+  height: 100%;
 }
-.bifm-vid-ctl-pg[value]::-moz-progress-bar,
-.bifm-vid-ctl-pg[value]::-webkit-progress-value
-{
+.bifm-vid-ctl:hover #bifm-vid-ctl-pg .bifm-vid-ctl-pg-inner {
   background-color: #fff;
 }
 .bifm-vid-ctl-span {

@@ -102,6 +102,7 @@ export class BigImageFrameManager {
     // remove frame's img children
     this.removeMediaNode();
     this.resetPreventStep();
+    this.vidController?.hidden();
     this.currMediaNode = this.newMediaNode(start, this.queue[start]);
     this.frame.appendChild(this.currMediaNode);
 
@@ -175,6 +176,11 @@ export class BigImageFrameManager {
   removeMediaNode() {
     for (const child of Array.from(this.frame.children)) {
       if (child.nodeName.toLowerCase() === "img" || child.nodeName.toLowerCase() === "video") {
+        if (child instanceof HTMLVideoElement) {
+          child.pause();
+          child.src = "";
+          child.load();
+        }
         child.remove();
       }
     }
@@ -189,7 +195,7 @@ export class BigImageFrameManager {
     this.frameScrollAbort?.abort();
     this.frame.classList.add("big-img-frame-collapse");
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
-    this.vidController?.deattch();
+    this.vidController?.hidden();
     this.currMediaNode = undefined;
   }
 
@@ -307,6 +313,7 @@ export class BigImageFrameManager {
         // in here, this.init() will be called again, set this.lockInit to prevent it
         this.lockInit = true;
         this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
+        this.vidController?.hidden();
         // play new current video
         this.tryPlayVideo(centerNode);
       }
@@ -427,8 +434,7 @@ export class BigImageFrameManager {
       vid.setAttribute("d-index", index.toString());
       vid.loop = true;
       vid.onloadeddata = () => {
-        console.log("video loaded");
-        if (index === this.queue.currIndex) {
+        if (this.visible && index === this.queue.currIndex) {
           this.tryPlayVideo(vid);
         }
       };
@@ -444,6 +450,7 @@ export class BigImageFrameManager {
       } else {
         img.src = imf.node.src;
         imf.onFinished("BIG-IMG-SRC-UPDATE", ($index, $imf) => {
+          if (!this.visible) return;
           if ($index === parseInt(img.getAttribute("d-index")!)) {
             if ($imf.contentType !== "video/mp4") {
               img.src = $imf.blobUrl!;
@@ -468,7 +475,7 @@ export class BigImageFrameManager {
       if (!this.vidController) {
         this.vidController = new VideoControl(this.html.fullViewGrid);
       }
-      this.vidController.attch(vid);
+      this.vidController.attach(vid);
     }
   }
 

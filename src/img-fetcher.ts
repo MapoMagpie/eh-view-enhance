@@ -78,7 +78,13 @@ export class IMGFetcher {
       this.node.changeStyle("fetching");
       await this.fetchImage();
       this.node.changeStyle("fetched");
-      this.onFinishedEventContext.forEach((callback) => callback(index, this));
+      this.onFinishedEventContext.forEach((callback) => {
+        try {
+          callback(index, this);
+        } catch (error) {
+          evLog(`wran: IMG-FETCHER onFinishedEventContext error:`, error);
+        }
+      });
     } catch (error) {
       this.node.changeStyle("failed");
       evLog(`IMG-FETCHER ERROR:`, error);

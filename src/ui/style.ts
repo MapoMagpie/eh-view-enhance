@@ -611,7 +611,79 @@ export function loadStyleSheel() {
 html {
   font-size: unset !important;
 }
+.bifm-vid-ctl {
+  position: fixed;
+  z-index: 2030;
+  bottom: 0.3rem;
+  left: 20%;
+  width: 50vw;
+}
+.bifm-vid-ctl > div {
+  line-height: 1.2rem;
+  display: flex;
+  align-items: center;
+}
+.bifm-vid-ctl > div > * {
+  margin: 0 0.1rem;
+}
+.bifm-vid-ctl:not(:hover) .bifm-vid-ctl-btn,
+.bifm-vid-ctl:not(:hover) .bifm-vid-ctl-span,
+.bifm-vid-ctl:not(:hover) #bifm-vid-ctl-volume
+{
+  opacity: 0;
+}
+.bifm-vid-ctl-btn {
+  height: 1.5rem;
+  width: 1.5rem;
+  font-size: 1.2rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background-color: #00000000;
+  cursor: pointer;
+}
+#bifm-vid-ctl-volume {
+  width: 7rem;
+  height: 0.5rem;
+}
+.bifm-vid-ctl-pg {
+  border: 1px solid #00000000;
+  background-color: #3333337e;
+  -webkit-appearance: none;
+}
+#bifm-vid-ctl-pg {
+  width: 100%;
+  height: 0.3rem;
+}
+.bifm-vid-ctl:hover #bifm-vid-ctl-pg {
+  height: 0.7rem;
+  background-color: #333333ee;
+}
+.bifm-vid-ctl-pg[value]::-webkit-progress-bar {
+  background-color: #333333ee;
+}
+.bifm-vid-ctl-pg[value]::-moz-progress-bar,
+.bifm-vid-ctl-pg[value]::-webkit-progress-value
+{
+  background-color: #fff;
+}
+.bifm-vid-ctl-span {
+  color: white;
+  font-weight: bold;
+}
 `
+
+  // <div>
+  //   <button id="bifm-vid-ctl-play" class="bifm-vid-ctl-btn">▶️</button>
+  //   <button id="bifm-vid-ctl-mute" class="bifm-vid-ctl-btn">▶️</button>
+  //   <progress id="bifm-vid-ctl-volume" class="bifm-vid-ctl-pg" value="50" max="100"></progress>
+  //   <span id="bifm-vid-ctl-time" class="bifm-vid-ctl-span">00:00</span>
+  //   <span class="bifm-vid-ctl-span">/</span>
+  //   <span id="bifm-vid-ctl-duration" class="bifm-vid-ctl-span">10:00</span>
+  // </div>
+  // <div>
+  //   <progress id="bifm-vid-ctl-pg" class="bifm-vid-ctl-pg" value="50" max="100"></progress>
+  // </div>
   style.textContent = css;
   document.head.appendChild(style);
   return style;

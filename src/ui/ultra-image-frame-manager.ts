@@ -7,6 +7,8 @@ import { sleep } from "../utils/sleep";
 import Hammer from "hammerjs";
 import { Elements } from "./html";
 import q from "../utils/query-element";
+import { VideoControl } from "./video-control";
+import onMouse from "../utils/progress-bar";
 
 export class BigImageFrameManager {
   frame: HTMLElement;
@@ -27,6 +29,7 @@ export class BigImageFrameManager {
   visible: boolean = false;
   html: Elements;
   frameScrollAbort?: AbortController;
+  vidController?: VideoControl;
   /* prevent mouse wheel step next image */
   constructor(HTML: Elements, queue: IMGFetcherQueue) {
     this.html = HTML;
@@ -109,9 +112,6 @@ export class BigImageFrameManager {
       this.hammer?.get("swipe").set({ enable: true });
     }
     this.currMediaNode.scrollIntoView();
-    if (this.currMediaNode instanceof HTMLVideoElement) {
-      this.tryPlayVideo(this.currMediaNode);
-    }
   }
 
   initFrame() {
@@ -142,23 +142,8 @@ export class BigImageFrameManager {
     q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
     q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
     q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages());
-    const progress = q("#img-scale-progress", this.imgScaleBar);
-    progress.addEventListener("mousedown", (event) => {
-      const { left } = progress.getBoundingClientRect();
-      const mouseMove = (event: MouseEvent) => {
-        const xInProgress = event.clientX - left;
-        const percent = Math.round(xInProgress / progress.clientWidth * 100);
-        this.scaleBigImages(0, 0, percent);
-      }
-      mouseMove(event);
-      progress.addEventListener("mousemove", mouseMove);
-      progress.addEventListener("mouseup", () => {
-        progress.removeEventListener("mousemove", mouseMove);
-      }, { once: true });
-      progress.addEventListener("mouseleave", () => {
-        progress.removeEventListener("mousemove", mouseMove);
-      }, { once: true });
-    });
+    const progress = q<HTMLProgressElement>("#img-scale-progress", this.imgScaleBar);
+    onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
   }
 
   createNextLand(x: number, y: number) {
@@ -204,19 +189,23 @@ export class BigImageFrameManager {
     this.frameScrollAbort?.abort();
     this.frame.classList.add("big-img-frame-collapse");
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
+    this.vidController?.deattch();
+    this.currMediaNode = undefined;
   }
 
   show(event?: Event) {
     this.visible = true;
     this.frame.classList.remove("big-img-frame-collapse");
     this.frameScrollAbort = new AbortController();
-    this.frame.addEventListener("scroll", (event) => this.onScroll(event), { signal: this.frameScrollAbort.signal });
+    this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.frame.focus(), 300);
+    this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
+      // 获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
+      let start = this.queue.currIndex;
+      if (event && event.target) start = this.queue.findImgIndex(event.target as HTMLElement);
+      this.queue.do(start); // this will trigger imgFetcher.setNow > this.setNow > this.init
+    }, 100);
     this.onShowEventContext.forEach(cb => cb());
-    // 获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
-    let start = this.queue.currIndex;
-    if (event && event.target) start = this.queue.findImgIndex(event.target as HTMLElement);
-    this.queue.do(start); // this will trigger imgFetcher.setNow > this.setNow > this.init
   }
 
   getMediaNodes(): HTMLElement[] {
@@ -250,7 +239,7 @@ export class BigImageFrameManager {
     }
   }
 
-  onScroll(_: Event) {
+  onScroll() {
     if (conf.readMode === "consecutively") {
       this.consecutive();
     }
@@ -310,23 +299,23 @@ export class BigImageFrameManager {
       let mediaNodes = this.getMediaNodes();
       let index = this.findMediaNodeIndexOnCenter(mediaNodes);
       const centerNode = mediaNodes[index];
-      // pause last old video
-      this.currMediaNode && this.tryPauseVideo(this.currMediaNode);
-      this.currMediaNode = centerNode as HTMLVideoElement | HTMLImageElement;
-      // play new current video
-      this.tryPlayVideo(this.currMediaNode);
-      const distance = this.getRealOffsetTop(this.currMediaNode) - this.frame.scrollTop;
-      // try extend imgNodes
-      if (this.tryExtend() > 0) {
-        this.restoreScrollTop(this.currMediaNode, distance);
-      }
-      const indexOfQueue = parseInt(this.currMediaNode.getAttribute("d-index")!);
+
+      const indexOfQueue = parseInt(centerNode.getAttribute("d-index")!);
       if (indexOfQueue != this.queue.currIndex) {
         // set true for prevent this.init()
         // queue.do() > imgFetcher.setNow() > this.setNow() > this.init(); 
         // in here, this.init() will be called again, set this.lockInit to prevent it
         this.lockInit = true;
         this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
+        // play new current video
+        this.tryPlayVideo(centerNode);
+      }
+
+      this.currMediaNode = centerNode as HTMLImageElement | HTMLVideoElement;
+      const distance = this.getRealOffsetTop(this.currMediaNode) - this.frame.scrollTop;
+      // try extend imgNodes
+      if (this.tryExtend() > 0) {
+        this.restoreScrollTop(this.currMediaNode, distance);
       }
     }, 60)
   }
@@ -437,7 +426,12 @@ export class BigImageFrameManager {
       const vid = document.createElement("video");
       vid.setAttribute("d-index", index.toString());
       vid.loop = true;
-      vid.muted = true;
+      vid.onloadeddata = () => {
+        console.log("video loaded");
+        if (index === this.queue.currIndex) {
+          this.tryPlayVideo(vid);
+        }
+      };
       vid.src = imf.blobUrl!;
       vid.addEventListener("click", () => this.hidden());
       return vid;
@@ -461,7 +455,6 @@ export class BigImageFrameManager {
             if (img === this.currMediaNode) {
               this.currMediaNode = vid;
             }
-            this.tryPlayVideo(vid);
             return;
           }
         });
@@ -471,18 +464,11 @@ export class BigImageFrameManager {
   }
 
   tryPlayVideo(vid: HTMLElement) {
-    if (vid instanceof HTMLVideoElement && vid === this.currMediaNode) {
-      if (vid.paused) {
-        vid.play();
-      }
-    }
-  }
-
-  tryPauseVideo(vid: HTMLElement) {
     if (vid instanceof HTMLVideoElement) {
-      if (!vid.paused) {
-        vid.pause();
+      if (!this.vidController) {
+        this.vidController = new VideoControl(this.html.fullViewGrid);
       }
+      this.vidController.attch(vid);
     }
   }
 

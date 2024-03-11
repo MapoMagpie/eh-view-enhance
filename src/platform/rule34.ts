@@ -1,5 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { evLog } from "../utils/ev-log";
 import { Matcher, OriginMeta, PagesSource } from "./platform";
 
 export class Rule34Matcher implements Matcher {
@@ -66,10 +67,16 @@ export class Rule34Matcher implements Matcher {
     const doc = page.raw as Document;
     const imgList = Array.from(doc.querySelectorAll<HTMLAnchorElement>(".image-list > .thumb:not(.blacklisted-image) > a"));
     for (const img of imgList) {
-      const child = (img.firstElementChild as HTMLImageElement);
+      const child = img.querySelector<HTMLImageElement>("img");
+      if (!child) {
+        evLog("warn", "cannot find img element", img);
+        continue;
+      }
       const title = `${img.id}.jpg`;
-      this.tags[img.id] = child.alt.split(" ");
-      this.count++;
+      if (child.alt !== undefined && child.alt !== "") {
+        this.tags[img.id] = child.alt.split(" ").map(v => v.trim()).filter(v => v !== "");
+        this.count++;
+      }
       list.push(new ImageNode(child.src, img.href, title));
     }
     return list;

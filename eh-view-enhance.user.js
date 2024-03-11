@@ -2866,10 +2866,16 @@ duration 0.04`).join("\n");
       const doc = page.raw;
       const imgList = Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
       for (const img of imgList) {
-        const child = img.firstElementChild;
+        const child = img.querySelector("img");
+        if (!child) {
+          evLog("warn", "cannot find img element", img);
+          continue;
+        }
         const title = `${img.id}.jpg`;
-        this.tags[img.id] = child.alt.split(" ");
-        this.count++;
+        if (child.alt !== void 0 && child.alt !== "") {
+          this.tags[img.id] = child.alt.split(" ").map((v) => v.trim()).filter((v) => v !== "");
+          this.count++;
+        }
         list.push(new ImageNode(child.src, img.href, title));
       }
       return list;

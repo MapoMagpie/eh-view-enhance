@@ -1,5 +1,4 @@
 import { conf, saveConf } from "../config";
-import { Debouncer } from "../utils/debouncer";
 import onMouse from "../utils/progress-bar";
 import q from "../utils/query-element";
 
@@ -26,52 +25,13 @@ type UI = {
 export class VideoControl {
 
   ui: UI;
-  currElement?: HTMLVideoElement;
   context: Map<string, VideoState> = new Map();
   paused: boolean = false;
   abortController?: AbortController;
-  debouncer: Debouncer = new Debouncer();
 
   constructor(root: HTMLElement) {
     this.ui = this.create(root);
     this.flushUI();
-    this.ui.playBTN.addEventListener("click", () => {
-      if (this.currElement) {
-        this.paused = !this.paused;
-        if (this.paused) {
-          this.currElement.pause();
-        } else {
-          this.currElement.play();
-        }
-        this.flushUI(this.context.get(this.currElement.src));
-      }
-    });
-    this.ui.volumeBTN.addEventListener("click", () => {
-      if (this.currElement) {
-        conf.muted = !conf.muted;
-        this.currElement.muted = conf.muted;
-        saveConf(conf);
-        this.flushUI(this.context.get(this.currElement.src));
-      }
-    });
-
-    onMouse(this.ui.progress, (percent) => {
-      if (this.currElement) {
-        this.currElement.currentTime = this.currElement.duration * (percent / 100);
-        const state = this.context.get(this.currElement.src)!;
-        state.time = this.currElement.currentTime;
-        this.flushUI(state);
-      }
-    });
-
-    onMouse(this.ui.volumeProgress, (percent) => {
-      if (this.currElement) {
-        conf.volume = percent;
-        saveConf(conf);
-        this.currElement.volume = conf.volume / 100;
-        this.flushUI(this.context.get(this.currElement.src));
-      }
-    });
   }
 
   show() {
@@ -127,40 +87,82 @@ export class VideoControl {
   }
 
   public attach(element: HTMLVideoElement) {
-    if (element === this.currElement) return;
     this.detach();
     this.show();
     this.abortController = new AbortController();
-    this.currElement = element;
     let state = this.context.get(element.src);
     if (!state) {
-      state = { time: this.currElement.currentTime, duration: this.currElement.duration };
+      state = { time: element.currentTime, duration: element.duration };
       this.context.set(element.src, state);
     } else {
-      this.currElement.currentTime = state.time;
+      element.currentTime = state.time;
     }
     this.flushUI(state);
-
-    this.currElement.addEventListener("timeupdate", () => {
-      if (!state || !this.currElement) return;
-      state.time = this.currElement.currentTime;
+    element.addEventListener("timeupdate", (event) => {
+      const ele = event.target as HTMLVideoElement;
+      if (!state) return;
+      state.time = ele.currentTime;
       this.flushUI(state, true);
     }, { signal: this.abortController.signal });
 
-    this.currElement.muted = conf.muted || false;
-    this.currElement.volume = (conf.volume || 30) / 100;
+    element.muted = conf.muted || false;
+    element.volume = (conf.volume || 30) / 100;
 
     if (!this.paused) {
-      // FIXME: lot bug here
-      this.debouncer.addEvent("PLAY-VID", () => this.currElement && this.currElement.play(), 50);
+      element.play();
     }
+
+    let elementID = element.id;
+    if (!elementID) {
+      elementID = "vid-" + Math.random().toString(36).slice(2);
+      element.id = elementID;
+    }
+    this.ui.playBTN.addEventListener("click", () => {
+      const vid = document.querySelector<HTMLVideoElement>(`#${elementID}`);
+      if (vid) {
+        this.paused = !this.paused;
+        if (this.paused) {
+          vid.pause();
+        } else {
+          vid.play();
+        }
+        this.flushUI(this.context.get(vid.src));
+      }
+    }, { signal: this.abortController.signal });
+    this.ui.volumeBTN.addEventListener("click", () => {
+      const vid = document.querySelector<HTMLVideoElement>(`#${elementID}`);
+      if (vid) {
+        conf.muted = !conf.muted;
+        vid.muted = conf.muted;
+        saveConf(conf);
+        this.flushUI(this.context.get(vid.src));
+      }
+    }, { signal: this.abortController.signal });
+
+    onMouse(this.ui.progress, (percent) => {
+      const vid = document.querySelector<HTMLVideoElement>(`#${elementID}`);
+      if (vid) {
+        vid.currentTime = vid.duration * (percent / 100);
+        const state = this.context.get(vid.src)!;
+        state.time = vid.currentTime;
+        this.flushUI(state);
+      }
+    }, this.abortController.signal);
+
+    onMouse(this.ui.volumeProgress, (percent) => {
+      const vid = document.querySelector<HTMLVideoElement>(`#${elementID}`);
+      if (vid) {
+        conf.volume = percent;
+        saveConf(conf);
+        vid.volume = conf.volume / 100;
+        this.flushUI(this.context.get(vid.src));
+      }
+    }, this.abortController.signal);
   }
 
   public detach() {
     this.abortController?.abort();
     this.abortController = undefined;
-    this.currElement?.pause();
-    this.currElement = undefined;
     this.flushUI();
   }
 

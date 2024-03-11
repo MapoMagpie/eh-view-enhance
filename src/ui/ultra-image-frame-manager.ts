@@ -439,6 +439,7 @@ export class BigImageFrameManager {
         }
       };
       vid.src = imf.blobUrl!;
+      // vid.play();
       vid.addEventListener("click", () => this.hidden());
       return vid;
     } else {

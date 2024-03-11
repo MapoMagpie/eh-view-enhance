@@ -1,4 +1,4 @@
-export default function onMouse(ele: HTMLProgressElement, callback: (percent: number) => void) {
+export default function onMouse(ele: HTMLProgressElement, callback: (percent: number) => void, signal?: AbortSignal) {
   ele.addEventListener("mousedown", (event) => {
     const { left } = ele.getBoundingClientRect();
     const mouseMove = (event: MouseEvent) => {
@@ -14,5 +14,5 @@ export default function onMouse(ele: HTMLProgressElement, callback: (percent: nu
     ele.addEventListener("mouseleave", () => {
       ele.removeEventListener("mousemove", mouseMove);
     }, { once: true });
-  });
+  }, { signal });
 }

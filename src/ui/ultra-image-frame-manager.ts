@@ -435,7 +435,6 @@ export class BigImageFrameManager {
     if (imf.contentType === "video/mp4") {
       const vid = document.createElement("video");
       vid.setAttribute("d-index", index.toString());
-      vid.loop = true;
       vid.onloadeddata = () => {
         if (this.visible && index === this.queue.currIndex) {
           this.tryPlayVideo(vid);

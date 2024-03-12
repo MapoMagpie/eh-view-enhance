@@ -1,4 +1,5 @@
 import { conf, saveConf } from "../config";
+import { evLog } from "../utils/ev-log";
 import onMouse from "../utils/progress-bar";
 import q from "../utils/query-element";
 
@@ -76,7 +77,7 @@ export class VideoControl {
 
   private flushUI(state?: VideoState, onlyState?: boolean) {
     let { value, max } = state ? { value: state.time, max: state.duration } : { value: 0, max: 10 };
-    const percent = Math.floor((value / max) * 100);
+    const percent = (value / max) * 100;
     (this.ui.progress.firstElementChild as HTMLElement).style.width = `${percent}%`;
     this.ui.time.textContent = secondsToTime(value);
     this.ui.duration.textContent = secondsToTime(max);
@@ -87,6 +88,7 @@ export class VideoControl {
   }
 
   public attach(element: HTMLVideoElement) {
+    evLog("attach video control")
     this.detach();
     this.show();
     this.abortController = new AbortController();
@@ -104,7 +106,9 @@ export class VideoControl {
       state.time = ele.currentTime;
       this.flushUI(state, true);
     }, { signal: this.abortController.signal });
-
+    // why onwaiting triggered when approaching the end of video?
+    element.onwaiting = () => evLog("onwaiting");
+    element.loop = true;
     element.muted = conf.muted || false;
     element.volume = (conf.volume || 30) / 100;
 

@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.9
+// @version            4.3.10
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -382,9 +382,6 @@
     //立刻将当前元素的src赋值给大图元素
     setNow(index) {
       this.settings.setNow?.(index);
-      if (this.stage === 3 /* DONE */) {
-        this.onFinishedEventContext.forEach((callback) => callback(index, this));
-      }
     }
     async fetchBigImage() {
       if (this.originURL?.startsWith("blob:")) {
@@ -5011,7 +5008,7 @@ html {
     }
     flushUI(state, onlyState) {
       let { value, max } = state ? { value: state.time, max: state.duration } : { value: 0, max: 10 };
-      const percent = Math.floor(value / max * 100);
+      const percent = value / max * 100;
       this.ui.progress.firstElementChild.style.width = `${percent}%`;
       this.ui.time.textContent = secondsToTime(value);
       this.ui.duration.textContent = secondsToTime(max);
@@ -5022,6 +5019,7 @@ html {
       this.ui.volumeProgress.firstElementChild.style.width = `${conf.volume || 30}%`;
     }
     attach(element) {
+      evLog("attach video control");
       this.detach();
       this.show();
       this.abortController = new AbortController();
@@ -5040,6 +5038,8 @@ html {
         state.time = ele.currentTime;
         this.flushUI(state, true);
       }, { signal: this.abortController.signal });
+      element.onwaiting = () => evLog("onwaiting");
+      element.loop = true;
       element.muted = conf.muted || false;
       element.volume = (conf.volume || 30) / 100;
       if (!this.paused) {
@@ -5188,7 +5188,6 @@ html {
     init(start) {
       this.removeMediaNode();
       this.resetPreventStep();
-      this.vidController?.hidden();
       this.currMediaNode = this.newMediaNode(start, this.queue[start]);
       this.frame.appendChild(this.currMediaNode);
       if (conf.readMode === "consecutively") {
@@ -5255,11 +5254,14 @@ html {
       return img;
     }
     removeMediaNode() {
+      this.currMediaNode = void 0;
+      this.vidController?.detach();
+      this.vidController?.hidden();
       for (const child of Array.from(this.frame.children)) {
         if (child.nodeName.toLowerCase() === "img" || child.nodeName.toLowerCase() === "video") {
           if (child instanceof HTMLVideoElement) {
             child.pause();
-            child.src = "";
+            child.removeAttribute("src");
             child.load();
           }
           child.remove();
@@ -5276,8 +5278,6 @@ html {
       this.frameScrollAbort?.abort();
       this.frame.classList.add("big-img-frame-collapse");
       this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
-      this.vidController?.hidden();
-      this.currMediaNode = void 0;
     }
     show(event) {
       this.visible = true;
@@ -5484,7 +5484,6 @@ html {
       if (imf.contentType === "video/mp4") {
         const vid = document.createElement("video");
         vid.setAttribute("d-index", index.toString());
-        vid.loop = true;
         vid.onloadeddata = () => {
           if (this.visible && index === this.queue.currIndex) {
             this.tryPlayVideo(vid);
@@ -5514,6 +5513,7 @@ html {
               if (img === this.currMediaNode) {
                 this.currMediaNode = vid;
               }
+              img.remove();
               return;
             }
           });

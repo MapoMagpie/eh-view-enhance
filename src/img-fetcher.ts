@@ -202,9 +202,6 @@ export class IMGFetcher {
   //立刻将当前元素的src赋值给大图元素
   setNow(index: number) {
     this.settings.setNow?.(index);
-    if (this.stage === FetchState.DONE) {
-      this.onFinishedEventContext.forEach((callback) => callback(index, this));
-    }
   }
 
 

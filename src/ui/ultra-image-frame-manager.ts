@@ -102,7 +102,7 @@ export class BigImageFrameManager {
     // remove frame's img children
     this.removeMediaNode();
     this.resetPreventStep();
-    this.vidController?.hidden();
+    // evLog("BIFM: init: newMediaNode");
     this.currMediaNode = this.newMediaNode(start, this.queue[start]);
     this.frame.appendChild(this.currMediaNode);
 
@@ -174,11 +174,14 @@ export class BigImageFrameManager {
   }
 
   removeMediaNode() {
+    this.currMediaNode = undefined;
+    this.vidController?.detach();
+    this.vidController?.hidden();
     for (const child of Array.from(this.frame.children)) {
       if (child.nodeName.toLowerCase() === "img" || child.nodeName.toLowerCase() === "video") {
         if (child instanceof HTMLVideoElement) {
           child.pause();
-          child.src = "";
+          child.removeAttribute("src");
           child.load();
         }
         child.remove();
@@ -195,8 +198,6 @@ export class BigImageFrameManager {
     this.frameScrollAbort?.abort();
     this.frame.classList.add("big-img-frame-collapse");
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
-    this.vidController?.hidden();
-    this.currMediaNode = undefined;
   }
 
   show(event?: Event) {
@@ -417,10 +418,12 @@ export class BigImageFrameManager {
     }
     if (oriented === "prev") {
       if (index === 0) return null;
+      // evLog("BIFM: extendImgNode: prev newMediaNode");
       extendedNode = this.newMediaNode(index - 1, this.queue[index - 1]);
       mediaNode.before(extendedNode);
     } else {
       if (index === this.queue.length - 1) return null;
+      // evLog("BIFM: extendImgNode: next newMediaNode");
       extendedNode = this.newMediaNode(index + 1, this.queue[index + 1]);
       mediaNode.after(extendedNode);
     }
@@ -439,7 +442,6 @@ export class BigImageFrameManager {
         }
       };
       vid.src = imf.blobUrl!;
-      // vid.play();
       vid.addEventListener("click", () => this.hidden());
       return vid;
     } else {
@@ -458,11 +460,13 @@ export class BigImageFrameManager {
               return
             }
             // if is video, then replace img with video
+            // evLog("BIFM: newMediaNode: newMediaNode");
             const vid = this.newMediaNode(index, $imf) as HTMLVideoElement;
             img.replaceWith(vid);
             if (img === this.currMediaNode) {
               this.currMediaNode = vid;
             }
+            img.remove();
             return;
           }
         });

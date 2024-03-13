@@ -329,8 +329,7 @@ export class BigImageFrameManager {
   }
 
   restoreScrollTop(imgNode: HTMLElement, distance: number) {
-    imgNode.scrollIntoView({});
-    this.frame.scrollTo({ top: imgNode.offsetTop - distance, behavior: "instant" });
+    this.frame.scrollTop = this.getRealOffsetTop(imgNode) - distance;
   }
 
   /**

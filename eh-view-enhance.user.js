@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.10
+// @version            4.3.11
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -4014,10 +4014,11 @@ duration 0.04`).join("\n");
   background-color: #000000d6;
   transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
 }
-.big-img-frame > img, .big-img-frame > video {
+.bifm-img {
   object-fit: contain;
   display: block;
   margin: 0 auto;
+  position: relative;
 }
 .p-helper {
   position: fixed;
@@ -5483,6 +5484,8 @@ html {
         throw new Error("BIFM: newMediaNode: img fetcher is null");
       if (imf.contentType === "video/mp4") {
         const vid = document.createElement("video");
+        vid.classList.add("bifm-img");
+        vid.classList.add("bifm-vid");
         vid.setAttribute("d-index", index.toString());
         vid.onloadeddata = () => {
           if (this.visible && index === this.queue.currIndex) {
@@ -5494,6 +5497,7 @@ html {
         return vid;
       } else {
         const img = document.createElement("img");
+        img.classList.add("bifm-img");
         img.addEventListener("click", () => this.hidden());
         img.setAttribute("d-index", index.toString());
         if (imf.stage === FetchState.DONE) {
@@ -5745,7 +5749,14 @@ html {
     const PF = new PageFetcher(HTML.fullViewGrid, IFQ, MATCHER, {
       matcher: MATCHER,
       downloadStateReporter: () => DLC.drawDebouce(),
-      setNow: (index) => BIFM.setNow(index),
+      setNow: (index) => {
+        BIFM.setNow(index);
+        if (!BIFM.visible)
+          return;
+        let scrollTo = IFQ[index].node.root.offsetTop - window.screen.availHeight / 3;
+        scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
+        HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
+      },
       onClick: (event) => BIFM.show(event)
     });
     PF.beforeInit = () => {
@@ -5758,20 +5769,10 @@ html {
     const PH = new PageHelper(HTML);
     IFQ.subscribeOnFinishedReport(1, (index, queue) => {
       PH.setPageState({ finished: queue.finishedIndex.size.toString() });
-      evLog(`第${index + 1}张完成，大图所在第${queue.currIndex + 1}张`);
+      evLog(`No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
       if (queue[queue.currIndex].stage === FetchState.DONE) {
         PH.setFetchState("fetched");
       }
-      return false;
-    });
-    IFQ.subscribeOnFinishedReport(2, (index, queue) => {
-      if (index !== queue.currIndex || !BIFM.visible) {
-        return false;
-      }
-      const imgFetcher = queue[index];
-      let scrollTo = imgFetcher.node.root.offsetTop - window.screen.availHeight / 3;
-      scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
-      HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
       return false;
     });
     BIFM.onShow(1, () => PH.minify(true, "bigImageFrame"));

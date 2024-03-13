@@ -434,6 +434,8 @@ export class BigImageFrameManager {
     if (!imf) throw new Error("BIFM: newMediaNode: img fetcher is null");
     if (imf.contentType === "video/mp4") {
       const vid = document.createElement("video");
+      vid.classList.add("bifm-img");
+      vid.classList.add("bifm-vid");
       vid.setAttribute("d-index", index.toString());
       vid.onloadeddata = () => {
         if (this.visible && index === this.queue.currIndex) {
@@ -445,6 +447,7 @@ export class BigImageFrameManager {
       return vid;
     } else {
       const img = document.createElement("img");
+      img.classList.add("bifm-img");
       img.addEventListener("click", () => this.hidden());
       img.setAttribute("d-index", index.toString());
       if (imf.stage === FetchState.DONE) {

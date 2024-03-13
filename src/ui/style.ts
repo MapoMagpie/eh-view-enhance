@@ -113,10 +113,11 @@ export function loadStyleSheel() {
   background-color: #000000d6;
   transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
 }
-.big-img-frame > img, .big-img-frame > video {
+.bifm-img {
   object-fit: contain;
   display: block;
   margin: 0 auto;
+  position: relative;
 }
 .p-helper {
   position: fixed;

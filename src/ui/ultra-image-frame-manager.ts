@@ -496,7 +496,7 @@ export class BigImageFrameManager {
     const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
     for (const cssRule of cssRules) {
       if (cssRule instanceof CSSStyleRule) {
-        if (cssRule.selectorText === ".big-img-frame > img, .big-img-frame > video") {
+        if (cssRule.selectorText === ".bifm-img") {
           // if is default scale, then set height to unset, and compute current width percent
           if (!conf.imgScale) conf.imgScale = 0; // fix imgScale if it is null
           if (conf.imgScale == 0 && (_percent || this.currMediaNode)) {
@@ -533,7 +533,7 @@ export class BigImageFrameManager {
     const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
     for (const cssRule of cssRules) {
       if (cssRule instanceof CSSStyleRule) {
-        if (cssRule.selectorText === ".big-img-frame > img, .big-img-frame > video") {
+        if (cssRule.selectorText === ".bifm-img") {
           cssRule.style.maxWidth = "100vw";
           if (conf.readMode === "singlePage") {
             cssRule.style.minHeight = "100vh";

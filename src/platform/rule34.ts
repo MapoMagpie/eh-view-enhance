@@ -48,7 +48,7 @@ export class Rule34Matcher implements Matcher {
         url = video.querySelector("source")?.src || "";
       }
     } else {
-      url = img.src;
+      url = img.src || img.getAttribute("data-cfsrc") || "";
     }
     if (!url) throw new Error("Cannot find origin image or video url");
     let title: string | undefined;

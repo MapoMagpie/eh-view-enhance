@@ -2846,7 +2846,7 @@ duration 0.04`).join("\n");
           url = video.querySelector("source")?.src || "";
         }
       } else {
-        url = img.src;
+        url = img.src || img.getAttribute("data-cfsrc") || "";
       }
       if (!url)
         throw new Error("Cannot find origin image or video url");
@@ -4018,7 +4018,6 @@ duration 0.04`).join("\n");
   object-fit: contain;
   display: block;
   margin: 0 auto;
-  position: relative;
 }
 .p-helper {
   position: fixed;
@@ -5543,7 +5542,7 @@ html {
       const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".big-img-frame > img, .big-img-frame > video") {
+          if (cssRule.selectorText === ".bifm-img") {
             if (!conf.imgScale)
               conf.imgScale = 0;
             if (conf.imgScale == 0 && (_percent || this.currMediaNode)) {
@@ -5578,7 +5577,7 @@ html {
       const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
       for (const cssRule of cssRules) {
         if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".big-img-frame > img, .big-img-frame > video") {
+          if (cssRule.selectorText === ".bifm-img") {
             cssRule.style.maxWidth = "100vw";
             if (conf.readMode === "singlePage") {
               cssRule.style.minHeight = "100vh";

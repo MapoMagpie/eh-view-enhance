@@ -117,7 +117,6 @@ export function loadStyleSheel() {
   object-fit: contain;
   display: block;
   margin: 0 auto;
-  position: relative;
 }
 .p-helper {
   position: fixed;

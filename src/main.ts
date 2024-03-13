@@ -30,7 +30,13 @@ function main(MATCHER: Matcher): DestoryFunc {
   const PF: PageFetcher = new PageFetcher(HTML.fullViewGrid, IFQ, MATCHER, {
     matcher: MATCHER,
     downloadStateReporter: () => DLC.drawDebouce(),
-    setNow: (index) => BIFM.setNow(index),
+    setNow: (index) => {
+      BIFM.setNow(index);
+      if (!BIFM.visible) return;
+      let scrollTo = IFQ[index].node.root!.offsetTop - window.screen.availHeight / 3;
+      scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
+      HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
+    },
     onClick: (event) => BIFM.show(event),
   });
   PF.beforeInit = () => {
@@ -43,21 +49,10 @@ function main(MATCHER: Matcher): DestoryFunc {
   const PH: PageHelper = new PageHelper(HTML);
   IFQ.subscribeOnFinishedReport(1, (index, queue) => {
     PH.setPageState({ finished: queue.finishedIndex.size.toString() });
-    evLog(`第${index + 1}张完成，大图所在第${queue.currIndex + 1}张`);
+    evLog(`No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
     if (queue[queue.currIndex].stage === FetchState.DONE) {
       PH.setFetchState("fetched");
     }
-    return false;
-  });
-  // scroll to current image that is in view
-  IFQ.subscribeOnFinishedReport(2, (index, queue) => {
-    if (index !== queue.currIndex || !BIFM.visible) {
-      return false;
-    }
-    const imgFetcher = queue[index];
-    let scrollTo = imgFetcher.node.root!.offsetTop - window.screen.availHeight / 3;
-    scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
-    HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
     return false;
   });
   BIFM.onShow(1, () => PH.minify(true, "bigImageFrame"));

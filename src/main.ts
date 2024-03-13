@@ -35,7 +35,11 @@ function main(MATCHER: Matcher): DestoryFunc {
       if (!BIFM.visible) return;
       let scrollTo = IFQ[index].node.root!.offsetTop - window.screen.availHeight / 3;
       scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
-      HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
+      if (HTML.fullViewGrid.scrollTo.toString().includes("[native code]")) {
+        HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
+      } else {
+        HTML.fullViewGrid.scrollTop = scrollTo;
+      }
     },
     onClick: (event) => BIFM.show(event),
   });

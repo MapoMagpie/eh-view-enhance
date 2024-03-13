@@ -314,8 +314,11 @@ export class BigImageFrameManager {
         // in here, this.init() will be called again, set this.lockInit to prevent it
         this.lockInit = true;
         this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
-        this.vidController?.hidden();
+        // this.vidController?.hidden();
         // play new current video
+        if (this.currMediaNode instanceof HTMLVideoElement) {
+          this.currMediaNode.pause();
+        }
         this.tryPlayVideo(centerNode);
       }
 
@@ -482,6 +485,8 @@ export class BigImageFrameManager {
         this.vidController = new VideoControl(this.html.fullViewGrid);
       }
       this.vidController.attach(vid);
+    } else {
+      this.vidController?.hidden();
     }
   }
 

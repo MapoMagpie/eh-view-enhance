@@ -5378,7 +5378,9 @@ html {
         if (indexOfQueue != this.queue.currIndex) {
           this.lockInit = true;
           this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
-          this.vidController?.hidden();
+          if (this.currMediaNode instanceof HTMLVideoElement) {
+            this.currMediaNode.pause();
+          }
           this.tryPlayVideo(centerNode);
         }
         this.currMediaNode = centerNode;
@@ -5529,6 +5531,8 @@ html {
           this.vidController = new VideoControl(this.html.fullViewGrid);
         }
         this.vidController.attach(vid);
+      } else {
+        this.vidController?.hidden();
       }
     }
     /**
@@ -5753,7 +5757,11 @@ html {
           return;
         let scrollTo = IFQ[index].node.root.offsetTop - window.screen.availHeight / 3;
         scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
-        HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
+        if (HTML.fullViewGrid.scrollTo.toString().includes("[native code]")) {
+          HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
+        } else {
+          HTML.fullViewGrid.scrollTop = scrollTo;
+        }
       },
       onClick: (event) => BIFM.show(event)
     });

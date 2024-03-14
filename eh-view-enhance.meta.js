@@ -20,6 +20,7 @@
 // @match              https://yande.re/*
 // @match              https://rokuhentai.com/*
 // @match              https://18comic.org/*
+// @match              https://18comic.vip/*
 // @match              https://rule34.xxx/*
 // @match              https://imhentai.xxx/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
@@ -35,6 +36,7 @@
 // @connect            ehgt.org
 // @connect            yande.re
 // @connect            18comic.org
+// @connect            18comic.vip
 // @connect            rule34.xxx
 // @connect            imhentai.xxx
 // @grant              GM_getValue

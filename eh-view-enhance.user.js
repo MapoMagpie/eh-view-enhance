@@ -20,6 +20,7 @@
 // @match              https://yande.re/*
 // @match              https://rokuhentai.com/*
 // @match              https://18comic.org/*
+// @match              https://18comic.vip/*
 // @match              https://rule34.xxx/*
 // @match              https://imhentai.xxx/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
@@ -35,6 +36,7 @@
 // @connect            ehgt.org
 // @connect            yande.re
 // @connect            18comic.org
+// @connect            18comic.vip
 // @connect            rule34.xxx
 // @connect            imhentai.xxx
 // @grant              GM_getValue
@@ -1551,7 +1553,7 @@
       });
     }
     workURL() {
-      return /18comic.org\/album\/\d+/;
+      return /18comic.(vip|org)\/album\/\d+/;
     }
     parseGalleryMeta(doc) {
       const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
@@ -1579,9 +1581,13 @@
       const list = [];
       const raw = await window.fetch(source.raw).then((resp) => resp.text());
       const document2 = new DOMParser().parseFromString(raw, "text/html");
-      const images = Array.from(document2.querySelectorAll(".scramble-page > img"));
+      const images = Array.from(document2.querySelectorAll(".scramble-page:not(.thewayhome) > img"));
       for (const img of images) {
         const src = img.getAttribute("data-original");
+        if (!src) {
+          evLog("warn: cannot find data-original", img);
+          continue;
+        }
         list.push(new ImageNode("", src, src.split("/").pop()));
       }
       return list;

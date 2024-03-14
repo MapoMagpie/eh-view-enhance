@@ -1,5 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { evLog } from "../utils/ev-log";
 import { Matcher, OriginMeta, PagesSource } from "./platform";
 
 function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, page: string) {
@@ -41,7 +42,7 @@ export class Comic18Matcher implements Matcher {
     });
   }
   workURL(): RegExp {
-    return /18comic.org\/album\/\d+/;
+    return /18comic.(vip|org)\/album\/\d+/;
   }
   public parseGalleryMeta(doc: Document): GalleryMeta {
     const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
@@ -70,9 +71,13 @@ export class Comic18Matcher implements Matcher {
     const list: ImageNode[] = [];
     const raw = await window.fetch(source.raw as string).then(resp => resp.text());
     const document = new DOMParser().parseFromString(raw, "text/html");
-    const images = Array.from(document.querySelectorAll<HTMLImageElement>(".scramble-page > img"));
+    const images = Array.from(document.querySelectorAll<HTMLImageElement>(".scramble-page:not(.thewayhome) > img"));
     for (const img of images) {
-      const src = img.getAttribute("data-original")!;
+      const src = img.getAttribute("data-original");
+      if (!src) {
+        evLog("warn: cannot find data-original", img);
+        continue;
+      }
       list.push(new ImageNode("", src, src.split("/").pop()!));
     }
     return list;

@@ -39,6 +39,7 @@ export default defineConfig(({ command }) => {
             'https://yande.re/*',
             'https://rokuhentai.com/*',
             'https://18comic.org/*',
+            'https://18comic.vip/*',
             'https://rule34.xxx/*',
             'https://imhentai.xxx/*'
           ],
@@ -60,6 +61,7 @@ export default defineConfig(({ command }) => {
             'ehgt.org',
             'yande.re',
             '18comic.org',
+            '18comic.vip',
             'rule34.xxx',
             'imhentai.xxx',
           ],

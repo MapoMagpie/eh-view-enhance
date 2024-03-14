@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.11
+// @version            4.3.12
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -21,6 +21,7 @@
 // @match              https://rokuhentai.com/*
 // @match              https://18comic.org/*
 // @match              https://rule34.xxx/*
+// @match              https://imhentai.xxx/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -35,6 +36,7 @@
 // @connect            yande.re
 // @connect            18comic.org
 // @connect            rule34.xxx
+// @connect            imhentai.xxx
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -1958,6 +1960,77 @@
     }
   }
 
+  class IMHentaiMatcher {
+    data;
+    async fetchOriginMeta(href, _) {
+      const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      const imgNode = doc.querySelector("#gimg");
+      if (!imgNode) {
+        throw new Error("cannot find image node from: " + href);
+      }
+      const src = imgNode.getAttribute("data-src");
+      if (!src) {
+        throw new Error("cannot find image src from: #gimg");
+      }
+      const ext = src.split(".").pop()?.match(/^\w+/)?.[0];
+      const num = href.match(/\/(\d+)\/?$/)?.[1];
+      let title;
+      if (ext && num) {
+        const digits = this.data.total.toString().length;
+        title = num.toString().padStart(digits, "0") + "." + ext;
+      }
+      return { url: src, title };
+    }
+    async parseImgNodes(_) {
+      if (!this.data) {
+        throw new Error("impossibility");
+      }
+      const ret = [];
+      const digits = this.data.total.toString().length;
+      for (let i = 1; i <= this.data.total; i++) {
+        const url = `https://m${this.data.server}.imhentai.xxx/${this.data.imgDir}/${this.data.gid}/${i}t.jpg`;
+        const href = `https://imhentai.xxx/view/${this.data.uid}/${i}/`;
+        const node = new ImageNode(url, href, `${i.toString().padStart(digits, "0")}.jpg`);
+        ret.push(node);
+      }
+      return ret;
+    }
+    async *fetchPagesSource() {
+      const server = q("#load_server").value;
+      const uid = q("#gallery_id").value;
+      const gid = q("#load_id").value;
+      const imgDir = q("#load_dir").value;
+      const total = q("#load_pages").value;
+      this.data = { server, uid, gid, imgDir, total: Number(total) };
+      yield { raw: "", typ: "doc" };
+    }
+    parseGalleryMeta(doc) {
+      const title = doc.querySelector(".right_details > h1")?.textContent || void 0;
+      const originTitle = doc.querySelector(".right_details > p.subtitle")?.textContent || void 0;
+      const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+      meta.originTitle = originTitle;
+      meta.tags = {};
+      const list = Array.from(doc.querySelectorAll(".galleries_info > li"));
+      for (const li of list) {
+        let cat = li.querySelector(".tags_text")?.textContent;
+        if (!cat)
+          continue;
+        cat = cat.replace(":", "").trim();
+        if (!cat)
+          continue;
+        const tags = Array.from(li.querySelectorAll("a.tag")).map((a) => a.firstChild?.textContent?.trim()).filter((v) => Boolean(v));
+        meta.tags[cat] = tags;
+      }
+      return meta;
+    }
+    workURL() {
+      return /imhentai.xxx\/gallery\/\d+\//;
+    }
+    async processData(data, _1, _2) {
+      return data;
+    }
+  }
+
   const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
   class NHMatcher {
     async processData(data, _1, _2) {
@@ -3075,7 +3148,8 @@ duration 0.04`).join("\n");
     new SteamMatcher(),
     new RokuHentaiMatcher(),
     new Comic18Matcher(),
-    new Rule34Matcher()
+    new Rule34Matcher(),
+    new IMHentaiMatcher()
   ];
   function adaptMatcher(url) {
     const workURLs = matchers.map((m) => m.workURL().source);

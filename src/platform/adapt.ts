@@ -2,6 +2,7 @@ import { conf, saveConf } from "../config";
 import { Comic18Matcher } from "./18comic";
 import { EHMatcher } from "./ehentai";
 import { HitomiMather } from "./hitomi";
+import { IMHentaiMatcher } from "./im-hentai";
 import { NHMatcher } from "./nhentai";
 import { Pixiv } from "./pixiv";
 import { Matcher } from "./platform";
@@ -20,6 +21,7 @@ export const matchers: Matcher[] = [
   new RokuHentaiMatcher(),
   new Comic18Matcher(),
   new Rule34Matcher(),
+  new IMHentaiMatcher(),
 ];
 
 export function adaptMatcher(url: string): Matcher | null {

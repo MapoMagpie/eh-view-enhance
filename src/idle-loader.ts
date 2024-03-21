@@ -1,4 +1,5 @@
 import { conf } from "./config";
+import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { FetchState } from "./img-fetcher";
 import { evLog } from "./utils/ev-log";
@@ -10,7 +11,6 @@ export class IdleLoader {
   restartId?: number;
   maxWaitMS: number;
   minWaitMS: number;
-  isDownloading?: () => boolean;
   onFailedCallback?: () => void;
   autoLoad: boolean = false;
   constructor(queue: IMGFetcherQueue) {
@@ -24,14 +24,17 @@ export class IdleLoader {
     this.maxWaitMS = 1000;
     this.minWaitMS = 300;
     this.autoLoad = conf.autoLoad;
-    this.queue.subscribeOnDo(9, (index) => {
-      this.abort(index);
-      return false;
+    EBUS.subscribe("ifq-on-do", (currIndex, _queue, downloading) => {
+      if (downloading) return;
+      this.abort(currIndex);
     });
-  }
-
-  setIsDownloading(cb: () => boolean) {
-    this.isDownloading = cb;
+    EBUS.subscribe("imf-on-finished", (index) => {
+      if (!this.processingIndexList.includes(index)) return;
+      this.wait().then(() => {
+        this.checkProcessingIndex();
+        this.start(this.lockVer);
+      });
+    });
   }
 
   onFailed(cb: () => void) {
@@ -48,22 +51,9 @@ export class IdleLoader {
     if (this.queue.length === 0) {
       return;
     }
-    evLog("空闲自加载启动:" + this.processingIndexList.toString());
+    evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
     for (const processingIndex of this.processingIndexList) {
-      const imgFetcher = this.queue[processingIndex];
-      imgFetcher.onFinished("IDLE-REPORT", () => {
-        this.wait().then(() => {
-          this.checkProcessingIndex();
-          this.start(lockVer);
-        });
-      });
-      imgFetcher.onFailed("IDLE-REPORT", () => {
-        this.wait().then(() => {
-          this.checkProcessingIndex();
-          this.start(lockVer);
-        });
-      });
-      imgFetcher.start(processingIndex);
+      this.queue[processingIndex].start(processingIndex);
     }
   }
 
@@ -135,9 +125,8 @@ export class IdleLoader {
     this.restartId = window.setTimeout(() => {
       // Double check if we are downloading
       // In case we change to a Big image, and click Download button before conf.restartIdleLoader seconds
-      if (this.isDownloading?.()) {
-        return;
-      }
+      if (this.queue.downloading?.()) return;
+
       this.processingIndexList = [newIndex];
       this.checkProcessingIndex();
       this.start(this.lockVer);

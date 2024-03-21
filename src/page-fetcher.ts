@@ -1,8 +1,11 @@
 import { conf } from "./config";
+import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
-import { IMGFetcher, IMGFetcherSettings } from "./img-fetcher";
+import { IMGFetcher } from "./img-fetcher";
 import ImageNode from "./img-node";
 import { Matcher, PagesSource } from "./platform/platform";
+import { Elements } from "./ui/html";
+import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
 
 type AsyncAppendFunc = () => Promise<boolean>;
@@ -16,19 +19,16 @@ export class PageFetcher {
   imgAppends: Record<"prev" | "next", AsyncAppendFunc[]>;
   matcher: Matcher;
   done: boolean = false;
-  onAppended?: (total: number, done?: boolean) => void;
-  imgFetcherSettings: IMGFetcherSettings;
   renderRangeRecord: [number, number] = [0, 0];
   beforeInit?: () => void;
   afterInit?: () => void;
   private pageSourceIter?: AsyncGenerator<PagesSource>;
   private appendPageLock: boolean = false;
   private abortb: boolean = false;
-  constructor(fullViewGrid: HTMLElement, queue: IMGFetcherQueue, matcher: Matcher, imgFetcherSettings: IMGFetcherSettings) {
-    this.fullViewGrid = fullViewGrid;
+  constructor(HTML: Elements, queue: IMGFetcherQueue, matcher: Matcher) {
+    this.fullViewGrid = HTML.fullViewGrid;
     this.queue = queue;
     this.matcher = matcher;
-    this.imgFetcherSettings = imgFetcherSettings;
     //所有页的地址
     this.pageURLs = [];
     //当前页所在的索引
@@ -37,6 +37,14 @@ export class PageFetcher {
     this.imgAppends = { prev: [], next: [] };
     //平均高度，用于渲染未加载的缩略图,单位px
     this.fetched = false;
+    this.beforeInit = () => HTML.pageLoading.style.display = "flex";
+    this.afterInit = () => HTML.pageLoading.style.display = "none";
+    const debouncer = new Debouncer();
+    EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendNextPages(index), 5));
+  }
+
+  onAppended(total: number, done?: boolean) {
+    EBUS.emit("page-fetcher-on-appended", total, done);
   }
 
   abort() {
@@ -83,7 +91,7 @@ export class PageFetcher {
         const next = await this.pageSourceIter!.next();
         if (next.done) {
           this.done = true;
-          this.onAppended?.(this.queue.length, true);
+          this.onAppended(this.queue.length, true);
           break;
         } else {
           await this.appendPageImg(next.value);
@@ -103,14 +111,14 @@ export class PageFetcher {
       const nodes = await this.obtainImageNodeList(page);
       if (this.abortb) return false;
       const IFs = nodes.map(
-        (imgNode) => new IMGFetcher(imgNode, this.imgFetcherSettings)
+        (imgNode) => new IMGFetcher(imgNode, this.matcher)
       );
       this.fullViewGrid.lastElementChild!.after(...nodes.map(node => node.create()));
       this.queue.push(...IFs);
-      this.onAppended?.(this.queue.length);
+      this.onAppended(this.queue.length);
       return true;
     } catch (error) {
-      evLog(`page fetcher append images error: `, error);
+      evLog("error", `page fetcher append images error: `, error);
       return false;
     }
   }
@@ -122,11 +130,11 @@ export class PageFetcher {
       try {
         return await this.matcher.parseImgNodes(page);
       } catch (error) {
-        evLog("warn: parse image nodes failed, retrying: ", error)
+        evLog("error", "warn: parse image nodes failed, retrying: ", error)
         tryTimes++;
       }
     }
-    evLog("warn: parse image nodes failed: reached max try times!");
+    evLog("error", "warn: parse image nodes failed: reached max try times!");
     return [];
   }
 
@@ -140,14 +148,15 @@ export class PageFetcher {
    */
   renderCurrView() {
     const [scrollTop, clientHeight] = [this.fullViewGrid.scrollTop, this.fullViewGrid.clientHeight];
-    const [startRander, endRander] = this.findOutsideRoundView(scrollTop, clientHeight);
-    this.queue.slice(startRander, endRander + 1 + conf.colCount).forEach((imgFetcher) => imgFetcher.render());
+    const [start, end] = this.findOutsideRoundView(scrollTop, clientHeight);
+    // slice will triggered IMGFetcherQueue's constructor()
+    this.queue.slice(start, end + 1 + conf.colCount).forEach((imgFetcher) => imgFetcher.render());
     if (this.queue.dataSize >= 1000000000) {
-      const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
+      const unrenders = findNotInNewRange(this.renderRangeRecord, [start, end]);
       unrenders.forEach(([start, end]) => this.queue.slice(start, end + 1).forEach((imgFetcher) => imgFetcher.unrender()));
-      evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}, 旧范围是:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, 取消渲染范围是:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
+      evLog("debug", `range of render:${start + 1}-${end + 1}, old range is:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, range of unrender:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
     }
-    this.renderRangeRecord = [startRander, endRander];
+    this.renderRangeRecord = [start, end];
   }
 
   findOutsideRoundView(currTop: number, clientHeight: number): [number, number] {

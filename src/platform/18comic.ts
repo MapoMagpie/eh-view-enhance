@@ -75,7 +75,7 @@ export class Comic18Matcher implements Matcher {
     for (const img of images) {
       const src = img.getAttribute("data-original");
       if (!src) {
-        evLog("warn: cannot find data-original", img);
+        evLog("error", "warn: cannot find data-original", img);
         continue;
       }
       list.push(new ImageNode("", src, src.split("/").pop()!));

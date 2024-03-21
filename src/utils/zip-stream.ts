@@ -197,7 +197,7 @@ export class Zip {
     await this.writer(footer.array);
     this.offsetInVolume += curr.compressedLength + 16;
     if (curr.compressedLength !== curr.file.size()) {
-      evLog("WRAN: read length:", curr.compressedLength, " origin size:", curr.file.size(), ", title: ", curr.file.name);
+      evLog("error", "WRAN: read length:", curr.compressedLength, " origin size:", curr.file.size(), ", title: ", curr.file.name);
     }
   }
 

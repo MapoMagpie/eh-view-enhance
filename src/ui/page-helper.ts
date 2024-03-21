@@ -1,10 +1,29 @@
 import { conf } from "../config";
+import EBUS from "../event-bus";
+import { FetchState } from "../img-fetcher";
+import { evLog } from "../utils/ev-log";
 import { Elements } from "./html";
 
 export class PageHelper {
   html: Elements;
   constructor(html: Elements) {
     this.html = html;
+    EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
+    EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));
+    EBUS.subscribe("ifq-on-do", (currIndex, queue) => {
+      this.setPageState({ current: (currIndex + 1).toString() });
+      const imf = queue[currIndex];
+      if (imf.stage !== FetchState.DONE) {
+        this.setFetchState("fetching");
+      }
+    });
+    EBUS.subscribe("ifq-on-finished-report", (index, queue) => {
+      this.setPageState({ finished: queue.finishedIndex.size.toString() });
+      evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
+      if (queue[queue.currIndex].stage === FetchState.DONE) {
+        this.setFetchState("fetched");
+      }
+    });
   }
   setFetchState(state: "fetching" | "fetched") {
     if (state === "fetching") {

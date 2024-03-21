@@ -1,4 +1,5 @@
 import { conf } from "./config";
+import EBUS from "./event-bus";
 import ImageNode from "./img-node";
 import { Matcher, OriginMeta } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
@@ -18,20 +19,11 @@ export type DownloadState = {
   readyState: 0 | 1 | 2 | 3 | 4;
 }
 
-type ResultCallback = (index: number, imgFetcher: IMGFetcher) => void;
-
 export enum FetchState {
   FAILED = 0,
   URL = 1,
   DATA = 2,
   DONE = 3,
-}
-
-export type IMGFetcherSettings = {
-  matcher: Matcher;
-  downloadStateReporter?: (state: DownloadState) => void;
-  setNow?: (index: number) => void;
-  onClick?: (event: MouseEvent) => void;
 }
 
 export class IMGFetcher {
@@ -46,29 +38,22 @@ export class IMGFetcher {
   contentType?: string;
   blobUrl?: string;
   downloadState: DownloadState;
-  onFinishedEventContext: Map<string, ResultCallback>;
-  onFailedEventContext: Map<string, ResultCallback>;
   downloadBar?: HTMLElement;
   timeoutId?: number;
-  settings: IMGFetcherSettings;
+  matcher: Matcher;
 
-  constructor(root: ImageNode, settings: IMGFetcherSettings) {
+  constructor(root: ImageNode, matcher: Matcher) {
     this.node = root;
-    this.node.onclick = (event) => settings.onClick?.(event);
+    this.node.onclick = (event) => EBUS.emit("imf-on-click", event);
     this.downloadState = { total: 100, loaded: 0, readyState: 0, };
-    /**
-     * 当获取完成时的回调函数，从其他地方进行事件注册
-     */
-    this.onFinishedEventContext = new Map();
-    this.onFailedEventContext = new Map();
-    this.settings = settings;
+    this.matcher = matcher;
   }
 
   // 刷新下载状态
   setDownloadState(newState: Partial<DownloadState>) {
     this.downloadState = { ...this.downloadState, ...newState };
     this.node.progress(this.downloadState);
-    this.settings.downloadStateReporter?.(this.downloadState);
+    EBUS.emit("imf-download-state-change");
   }
 
   async start(index: number) {
@@ -78,30 +63,16 @@ export class IMGFetcher {
       this.node.changeStyle("fetching");
       await this.fetchImage();
       this.node.changeStyle("fetched");
-      this.onFinishedEventContext.forEach((callback) => {
-        try {
-          callback(index, this);
-        } catch (error) {
-          evLog(`wran: IMG-FETCHER onFinishedEventContext error:`, error);
-        }
-      });
+      EBUS.emit("imf-on-finished", index, true, this);
     } catch (error) {
       this.node.changeStyle("failed");
-      evLog(`IMG-FETCHER ERROR:`, error);
+      evLog("error", `IMG-FETCHER ERROR:`, error);
       this.stage = FetchState.FAILED;
-      this.onFailedEventContext.forEach((callback) => callback(index, this));
+      EBUS.emit("imf-on-finished", index, false, this);
       // TODO: show error on image
     } finally {
       this.lock = false;
     }
-  }
-
-  onFinished(eventId: string, callback: ResultCallback) {
-    this.onFinishedEventContext.set(eventId, callback);
-  }
-
-  onFailed(eventId: string, callback: ResultCallback) {
-    this.onFailedEventContext.set(eventId, callback);
   }
 
   retry() {
@@ -135,7 +106,7 @@ export class IMGFetcher {
           const ret = await this.fetchImageData();
           if (ret !== null) {
             [this.data, this.contentType] = ret;
-            this.data = await this.settings.matcher.processData(this.data, this.contentType, this.originURL!);
+            this.data = await this.matcher.processData(this.data, this.contentType, this.originURL!);
             this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
             this.node.onloaded(this.blobUrl, this.contentType, this.data.byteLength);
             if (this.rendered === 2) {
@@ -156,14 +127,14 @@ export class IMGFetcher {
 
   async fetchOriginMeta(): Promise<OriginMeta | null> {
     try {
-      const meta = await this.settings.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0);
+      const meta = await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0);
       if (!meta) {
-        evLog("Fetch URL failed, the URL is empty");
+        evLog("error", "Fetch URL failed, the URL is empty");
         return null;
       }
       return meta;
     } catch (error) {
-      evLog(`Fetch URL error:`, error);
+      evLog("error", `Fetch URL error:`, error);
       return null;
     }
   }
@@ -176,7 +147,7 @@ export class IMGFetcher {
       }
       return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
     } catch (error) {
-      evLog(`Fetch image data error:`, error);
+      evLog("error", `Fetch image data error:`, error);
       return null;
     }
   }
@@ -201,7 +172,7 @@ export class IMGFetcher {
 
   //立刻将当前元素的src赋值给大图元素
   setNow(index: number) {
-    this.settings.setNow?.(index);
+    EBUS.emit("imf-set-now", index, this);
   }
 
 
@@ -229,7 +200,7 @@ export class IMGFetcher {
           try {
             imgFetcher.setDownloadState({ readyState: response.readyState });
           } catch (error) {
-            evLog("warn: fetch big image data onload setDownloadState error:", error);
+            evLog("error", "warn: fetch big image data onload setDownloadState error:", error);
           }
           resolve(data);
         },

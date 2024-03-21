@@ -1,18 +1,15 @@
 import { conf, saveConf } from "./config";
 import { Downloader } from "./download/downloader";
+import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
-import { FetchState } from "./img-fetcher";
 import { PageFetcher } from "./page-fetcher";
 import { adaptMatcher } from "./platform/adapt";
 import { Matcher } from "./platform/platform";
-import { DownloaderCanvas } from "./ui/downloader-canvas";
 import { initEvents } from "./ui/event";
 import { createHTML, addEventListeners } from "./ui/html";
 import { PageHelper } from "./ui/page-helper";
 import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
-import { Debouncer } from "./utils/debouncer";
-import { evLog } from "./utils/ev-log";
 import revertMonkeyPatch from "./utils/revert-monkey-patch";
 
 type DestoryFunc = () => void;
@@ -20,73 +17,43 @@ type DestoryFunc = () => void;
 function main(MATCHER: Matcher): DestoryFunc {
   const HTML = createHTML();
   [HTML.fullViewGrid, HTML.bigImageFrame].forEach(e => revertMonkeyPatch(e));
-  const IFQ: IMGFetcherQueue = new IMGFetcherQueue();
+  const IFQ: IMGFetcherQueue = IMGFetcherQueue.newQueue();
   const IL: IdleLoader = new IdleLoader(IFQ);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, IFQ);
-  const DLC: DownloaderCanvas = new DownloaderCanvas("downloader-canvas", IFQ, (index) => {
+  const PF: PageFetcher = new PageFetcher(HTML, IFQ, MATCHER);
+  const DL: Downloader = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
+  const PH: PageHelper = new PageHelper(HTML);
+
+  const events = initEvents(HTML, BIFM, IFQ, PF, IL, PH);
+  addEventListeners(events, HTML, BIFM, IFQ, DL);
+
+  EBUS.subscribe("downloader-canvas-on-click", (index) => {
     IFQ.currIndex = index;
     BIFM.show();
   });
-  const PF: PageFetcher = new PageFetcher(HTML.fullViewGrid, IFQ, MATCHER, {
-    matcher: MATCHER,
-    downloadStateReporter: () => DLC.drawDebouce(),
-    setNow: (index) => {
-      BIFM.setNow(index);
-      if (!BIFM.visible) return;
-      let scrollTo = IFQ[index].node.root!.offsetTop - window.screen.availHeight / 3;
-      scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
-      if (HTML.fullViewGrid.scrollTo.toString().includes("[native code]")) {
-        HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
-      } else {
-        HTML.fullViewGrid.scrollTop = scrollTo;
-      }
-    },
-    onClick: (event) => BIFM.show(event),
-  });
-  PF.beforeInit = () => {
-    HTML.pageLoading.style.display = "flex";
-  };
-  PF.afterInit = () => {
-    HTML.pageLoading.style.display = "none";
-  };
-  const DL: Downloader = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
-  const PH: PageHelper = new PageHelper(HTML);
-  IFQ.subscribeOnFinishedReport(1, (index, queue) => {
-    PH.setPageState({ finished: queue.finishedIndex.size.toString() });
-    evLog(`No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
-    if (queue[queue.currIndex].stage === FetchState.DONE) {
-      PH.setFetchState("fetched");
-    }
-    return false;
-  });
-  BIFM.onShow(1, () => PH.minify(true, "bigImageFrame"));
-  BIFM.onHidden(1, () => PH.minify(false, "bigImageFrame"));
-  // one image finished, call PageFetcher.appendNextPages try to append next page
-  const debouncer = new Debouncer();
-  IFQ.subscribeOnFinishedReport(3, (index) => {
-    debouncer.addEvent("APPEND-NEXT-PAGES", () => PF.appendNextPages(index), 5);
-    return false;
-  });
-  IFQ.subscribeOnDo(0, (index, queue) => {
-    PH.setPageState({ current: (index + 1).toString() });
-    const imf = queue[index];
-    if (imf.stage !== FetchState.DONE) {
-      PH.setFetchState("fetching");
-    }
-    return false;
-  });
-  PF.setOnAppended((total, done) => {
+
+  EBUS.subscribe("page-fetcher-on-appended", (total, done) => {
     PH.setPageState({ total: `${total}${done ? "" : ".."}` });
     setTimeout(() => PF.renderCurrView(), 200);
   });
 
-  const events = initEvents(HTML, BIFM, IFQ, PF, IL, PH);
-  addEventListeners(events, HTML, BIFM, IFQ, DL);
+  EBUS.subscribe("imf-set-now", (index) => {
+    if (!BIFM.visible) return;
+    let scrollTo = IFQ[index].node.root!.offsetTop - window.screen.availHeight / 3;
+    scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
+    if (HTML.fullViewGrid.scrollTo.toString().includes("[native code]")) {
+      HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
+    } else {
+      HTML.fullViewGrid.scrollTop = scrollTo;
+    }
+  });
+
   if (conf["first"]) {
     events.showGuideEvent();
     conf["first"] = false;
     saveConf(conf);
   }
+
   return () => {
     console.log("destory eh-view-enhance");
     HTML.fullViewGrid.remove();

@@ -9,6 +9,7 @@ import { Elements } from "./html";
 import q from "../utils/query-element";
 import { VideoControl } from "./video-control";
 import onMouse from "../utils/progress-bar";
+import EBUS from "../event-bus";
 
 export class BigImageFrameManager {
   frame: HTMLElement;
@@ -22,8 +23,6 @@ export class BigImageFrameManager {
   debouncer: Debouncer;
   throttler: Debouncer;
   callbackOnWheel?: (event: WheelEvent) => void;
-  private onShowEventContext: Map<number, () => void> = new Map();
-  private onHiddenEventContext: Map<number, () => void> = new Map();
   hammer?: HammerManager;
   preventStep: { ele?: HTMLElement, ani?: Animation, fin: boolean } = { fin: false };
   visible: boolean = false;
@@ -44,6 +43,25 @@ export class BigImageFrameManager {
     this.initImgScaleBar();
     this.initImgScaleStyle();
     this.initHammer();
+    EBUS.subscribe("imf-set-now", (index) => this.setNow(index));
+    EBUS.subscribe("imf-on-click", (event) => this.show(event));
+    EBUS.subscribe("imf-on-finished", (index, success, imf) => {
+      if (!this.visible || !success) return;
+      const img = this.getMediaNodes().find((img) => index === parseInt(img.getAttribute("d-index")!));
+      if (!img) return;
+      if (imf.contentType !== "video/mp4") {
+        img.setAttribute("src", imf.blobUrl!);
+        return
+      }
+      // if is video, then replace img with video
+      // evLog("BIFM: newMediaNode: newMediaNode");
+      const vid = this.newMediaNode(index, imf) as HTMLVideoElement;
+      img.replaceWith(vid);
+      if (img === this.currMediaNode) {
+        this.currMediaNode = vid;
+      }
+      img.remove();
+    });
     // enable auto page
     new AutoPage(this, HTML.autoPageBTN);
   }
@@ -167,12 +185,6 @@ export class BigImageFrameManager {
     window.setTimeout(() => nextLand.remove(), 1500)
   }
 
-  createImgElement(): HTMLImageElement {
-    const img = document.createElement("img");
-    img.addEventListener("click", () => this.hidden());
-    return img;
-  }
-
   removeMediaNode() {
     this.currMediaNode = undefined;
     this.vidController?.detach();
@@ -192,7 +204,7 @@ export class BigImageFrameManager {
   hidden(event?: MouseEvent) {
     if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
     this.visible = false;
-    this.onHiddenEventContext.forEach(cb => cb());
+    EBUS.emit("bifm-on-hidden");
     this.frame.blur();
     this.html.fullViewGrid.focus();
     this.frameScrollAbort?.abort();
@@ -207,12 +219,11 @@ export class BigImageFrameManager {
     this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
     this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.frame.focus(), 300);
     this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
-      // 获取该元素所在的索引，并执行该索引位置的图片获取器，来获取大图
       let start = this.queue.currIndex;
       if (event && event.target) start = this.queue.findImgIndex(event.target as HTMLElement);
       this.queue.do(start); // this will trigger imgFetcher.setNow > this.setNow > this.init
     }, 100);
-    this.onShowEventContext.forEach(cb => cb());
+    EBUS.emit("bifm-on-show");
   }
 
   getMediaNodes(): HTMLElement[] {
@@ -445,35 +456,17 @@ export class BigImageFrameManager {
         }
       };
       vid.src = imf.blobUrl!;
-      vid.addEventListener("click", () => this.hidden());
+      // vid.addEventListener("click", () => this.hidden());
       return vid;
     } else {
       const img = document.createElement("img");
       img.classList.add("bifm-img");
-      img.addEventListener("click", () => this.hidden());
+      // img.addEventListener("click", () => this.hidden());
       img.setAttribute("d-index", index.toString());
       if (imf.stage === FetchState.DONE) {
         img.src = imf.blobUrl!;
       } else {
         img.src = imf.node.src;
-        imf.onFinished("BIG-IMG-SRC-UPDATE", ($index, $imf) => {
-          if (!this.visible) return;
-          if ($index === parseInt(img.getAttribute("d-index")!)) {
-            if ($imf.contentType !== "video/mp4") {
-              img.src = $imf.blobUrl!;
-              return
-            }
-            // if is video, then replace img with video
-            // evLog("BIFM: newMediaNode: newMediaNode");
-            const vid = this.newMediaNode(index, $imf) as HTMLVideoElement;
-            img.replaceWith(vid);
-            if (img === this.currMediaNode) {
-              this.currMediaNode = vid;
-            }
-            img.remove();
-            return;
-          }
-        });
       }
       return img;
     }
@@ -606,12 +599,6 @@ export class BigImageFrameManager {
     return 0;
   }
 
-  onShow(id: number, callback: () => void) {
-    this.onShowEventContext.set(id, callback);
-  }
-  onHidden(id: number, callback: () => void) {
-    this.onHiddenEventContext.set(id, callback);
-  }
 }
 
 // 自动翻页
@@ -633,8 +620,8 @@ class AutoPage {
         this.start(this.lockVer);
       }
     };
-    this.frameManager.onHidden(0, () => this.stop());
-    this.frameManager.onShow(0, () => conf.autoPlay && this.start(this.lockVer));
+    EBUS.subscribe("bifm-on-hidden", () => this.stop());
+    EBUS.subscribe("bifm-on-show", () => conf.autoPlay && this.start(this.lockVer));
     this.initPlayButton();
   }
 

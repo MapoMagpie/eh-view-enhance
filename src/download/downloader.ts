@@ -9,6 +9,8 @@ import { Elements } from "../ui/html";
 import { Zip } from "../utils/zip-stream";
 import { saveAs } from "file-saver";
 import q from "../utils/query-element";
+import EBUS from "../event-bus";
+import { DownloaderCanvas } from "../ui/downloader-canvas";
 
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
 export class Downloader {
@@ -36,9 +38,9 @@ export class Downloader {
     this.downloaderPanelBTN = HTML.downloaderPanelBTN;
     this.downloadForceElement.addEventListener("click", () => this.download());
     this.downloadStartElement.addEventListener("click", () => this.start());
-    this.idleLoader.setIsDownloading(() => this.downloading);
-    this.queue.subscribeOnDo(1, () => this.downloading);
-    this.queue.subscribeOnFinishedReport(0, (_, queue) => {
+    this.queue.downloading = () => this.downloading;
+    new DownloaderCanvas("downloader-canvas", queue);
+    EBUS.subscribe("ifq-on-finished-report", (_index, queue) => {
       if (queue.isFinised()) {
         if (this.downloading) {
           this.download();
@@ -49,7 +51,6 @@ export class Downloader {
           }
         }
       }
-      return false;
     });
   }
 

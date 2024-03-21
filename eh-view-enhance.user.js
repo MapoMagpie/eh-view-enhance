@@ -163,6 +163,42 @@
   const ConfigSelectKeys = ["readMode", "stickyMouse", "minifyPageHelper"];
   const conf = getConf();
 
+  function evLog(level, msg, ...info) {
+    if (level === "debug" && !conf.debug)
+      return;
+    if (level === "error") {
+      console.warn((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
+    } else {
+      console.info((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
+    }
+  }
+
+  class EventManager {
+    events;
+    constructor() {
+      this.events = /* @__PURE__ */ new Map();
+    }
+    emit(id, ...args) {
+      if (!["imf-download-state-change"].includes(id)) {
+        evLog("debug", "event bus emitted: ", id);
+      }
+      const cbs = this.events.get(id);
+      if (cbs) {
+        cbs.forEach((cb) => cb(...args));
+      }
+    }
+    subscribe(id, cb) {
+      evLog("info", "event bus subscribed: ", id);
+      const cbs = this.events.get(id);
+      if (cbs) {
+        cbs.push(cb);
+      } else {
+        this.events.set(id, [cb]);
+      }
+    }
+  }
+  const EBUS = new EventManager();
+
   class Debouncer {
     tids;
     mode;
@@ -183,12 +219,6 @@
         window.clearTimeout(this.tids[id]);
         this.tids[id] = window.setTimeout(event, timeout);
       }
-    }
-  }
-
-  function evLog(msg, ...info) {
-    if (conf.debug) {
-      console.log((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
     }
   }
 
@@ -246,24 +276,20 @@
     contentType;
     blobUrl;
     downloadState;
-    onFinishedEventContext;
-    onFailedEventContext;
     downloadBar;
     timeoutId;
-    settings;
-    constructor(root, settings) {
+    matcher;
+    constructor(root, matcher) {
       this.node = root;
-      this.node.onclick = (event) => settings.onClick?.(event);
+      this.node.onclick = (event) => EBUS.emit("imf-on-click", event);
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
-      this.onFinishedEventContext = /* @__PURE__ */ new Map();
-      this.onFailedEventContext = /* @__PURE__ */ new Map();
-      this.settings = settings;
+      this.matcher = matcher;
     }
     // 刷新下载状态
     setDownloadState(newState) {
       this.downloadState = { ...this.downloadState, ...newState };
       this.node.progress(this.downloadState);
-      this.settings.downloadStateReporter?.(this.downloadState);
+      EBUS.emit("imf-download-state-change");
     }
     async start(index) {
       if (this.lock)
@@ -273,27 +299,15 @@
         this.node.changeStyle("fetching");
         await this.fetchImage();
         this.node.changeStyle("fetched");
-        this.onFinishedEventContext.forEach((callback) => {
-          try {
-            callback(index, this);
-          } catch (error) {
-            evLog(`wran: IMG-FETCHER onFinishedEventContext error:`, error);
-          }
-        });
+        EBUS.emit("imf-on-finished", index, true, this);
       } catch (error) {
         this.node.changeStyle("failed");
-        evLog(`IMG-FETCHER ERROR:`, error);
+        evLog("error", `IMG-FETCHER ERROR:`, error);
         this.stage = 0 /* FAILED */;
-        this.onFailedEventContext.forEach((callback) => callback(index, this));
+        EBUS.emit("imf-on-finished", index, false, this);
       } finally {
         this.lock = false;
       }
-    }
-    onFinished(eventId, callback) {
-      this.onFinishedEventContext.set(eventId, callback);
-    }
-    onFailed(eventId, callback) {
-      this.onFailedEventContext.set(eventId, callback);
     }
     retry() {
       if (this.stage !== 3 /* DONE */) {
@@ -325,7 +339,7 @@
             const ret = await this.fetchImageData();
             if (ret !== null) {
               [this.data, this.contentType] = ret;
-              this.data = await this.settings.matcher.processData(this.data, this.contentType, this.originURL);
+              this.data = await this.matcher.processData(this.data, this.contentType, this.originURL);
               this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.onloaded(this.blobUrl, this.contentType, this.data.byteLength);
               if (this.rendered === 2) {
@@ -345,14 +359,14 @@
     }
     async fetchOriginMeta() {
       try {
-        const meta = await this.settings.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0);
+        const meta = await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0);
         if (!meta) {
-          evLog("Fetch URL failed, the URL is empty");
+          evLog("error", "Fetch URL failed, the URL is empty");
           return null;
         }
         return meta;
       } catch (error) {
-        evLog(`Fetch URL error:`, error);
+        evLog("error", `Fetch URL error:`, error);
         return null;
       }
     }
@@ -364,7 +378,7 @@
         }
         return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
       } catch (error) {
-        evLog(`Fetch image data error:`, error);
+        evLog("error", `Fetch image data error:`, error);
         return null;
       }
     }
@@ -385,7 +399,7 @@
     }
     //立刻将当前元素的src赋值给大图元素
     setNow(index) {
-      this.settings.setNow?.(index);
+      EBUS.emit("imf-set-now", index, this);
     }
     async fetchBigImage() {
       if (this.originURL?.startsWith("blob:")) {
@@ -410,7 +424,7 @@
             try {
               imgFetcher.setDownloadState({ readyState: response.readyState });
             } catch (error) {
-              evLog("warn: fetch big image data onload setDownloadState error:", error);
+              evLog("error", "warn: fetch big image data onload setDownloadState error:", error);
             }
             resolve(data);
           },
@@ -747,7 +761,7 @@
       await this.writer(footer.array);
       this.offsetInVolume += curr.compressedLength + 16;
       if (curr.compressedLength !== curr.file.size()) {
-        evLog("WRAN: read length:", curr.compressedLength, " origin size:", curr.file.size(), ", title: ", curr.file.name);
+        evLog("error", "WRAN: read length:", curr.compressedLength, " origin size:", curr.file.size(), ", title: ", curr.file.name);
       }
     }
     async closeZip() {
@@ -806,6 +820,189 @@
     return element;
   }
 
+  class DownloaderCanvas {
+    canvas;
+    mousemoveState;
+    ctx;
+    queue;
+    rectSize;
+    rectGap;
+    columns;
+    padding;
+    scrollTop;
+    scrollSize;
+    debouncer;
+    onClick;
+    constructor(id, queue) {
+      this.queue = queue;
+      const canvas = document.getElementById(id);
+      if (!canvas) {
+        throw new Error("canvas not found");
+      }
+      this.canvas = canvas;
+      this.canvas.addEventListener(
+        "wheel",
+        (event) => this.onwheel(event.deltaY)
+      );
+      this.mousemoveState = { x: 0, y: 0 };
+      this.canvas.addEventListener("mousemove", (event) => {
+        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
+        this.drawDebouce();
+      });
+      this.canvas.addEventListener("click", (event) => {
+        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
+        const index = this.computeDrawList()?.find(
+          (state) => state.selected
+        )?.index;
+        if (index !== void 0) {
+          EBUS.emit("downloader-canvas-on-click", index);
+        }
+      });
+      this.ctx = this.canvas.getContext("2d");
+      this.rectSize = 12;
+      this.rectGap = 6;
+      this.columns = 15;
+      this.padding = 7;
+      this.scrollTop = 0;
+      this.scrollSize = 10;
+      this.debouncer = new Debouncer();
+      const parent = this.canvas.parentElement;
+      if (parent) {
+        parent.addEventListener("transitionend", (ev) => {
+          const ele = ev.target;
+          if (ele.clientHeight > 0) {
+            this.canvas.width = Math.floor(ele.offsetWidth - 20);
+            this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
+            this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
+            this.draw();
+          }
+        });
+      }
+      EBUS.subscribe("imf-download-state-change", () => this.drawDebouce());
+    }
+    onwheel(deltaY) {
+      const [_, h] = this.getWH();
+      const clientHeight = this.computeClientHeight();
+      if (clientHeight > h) {
+        deltaY = deltaY >> 1;
+        this.scrollTop += deltaY;
+        if (this.scrollTop < 0)
+          this.scrollTop = 0;
+        if (this.scrollTop + h > clientHeight + 20)
+          this.scrollTop = clientHeight - h + 20;
+        this.draw();
+      }
+    }
+    drawDebouce() {
+      this.debouncer.addEvent("DOWNLOADER-DRAW", () => this.draw(), 20);
+    }
+    computeDrawList() {
+      const list = [];
+      const [_, h] = this.getWH();
+      const startX = this.computeStartX();
+      const startY = -this.scrollTop + this.padding;
+      for (let i = 0, row = -1; i < this.queue.length; i++) {
+        const currCol = i % this.columns;
+        if (currCol == 0) {
+          row++;
+        }
+        const atX = startX + (this.rectSize + this.rectGap) * currCol;
+        const atY = startY + (this.rectSize + this.rectGap) * row;
+        if (atY + this.rectSize < 0) {
+          continue;
+        }
+        if (atY > h) {
+          break;
+        }
+        list.push({
+          index: i,
+          x: atX,
+          y: atY,
+          selected: this.isSelected(atX, atY)
+        });
+      }
+      return list;
+    }
+    // this function should be called by drawDebouce
+    draw() {
+      const [w, h] = this.getWH();
+      this.ctx.clearRect(0, 0, w, h);
+      const drawList = this.computeDrawList();
+      for (const node of drawList) {
+        this.drawSmallRect(
+          node.x,
+          node.y,
+          this.queue[node.index],
+          node.index === this.queue.currIndex,
+          node.selected
+        );
+      }
+    }
+    computeClientHeight() {
+      return Math.ceil(this.queue.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
+    }
+    scrollTo(index) {
+      const clientHeight = this.computeClientHeight();
+      const [_, h] = this.getWH();
+      if (clientHeight <= h) {
+        return;
+      }
+      const rowNo = Math.ceil((index + 1) / this.columns);
+      const offsetY = (rowNo - 1) * (this.rectSize + this.rectGap);
+      if (offsetY > h) {
+        this.scrollTop = offsetY + this.rectSize - h;
+        const maxScrollTop = clientHeight - h + 20;
+        if (this.scrollTop + 20 <= maxScrollTop) {
+          this.scrollTop += 20;
+        }
+      }
+    }
+    isSelected(atX, atY) {
+      return this.mousemoveState.x - atX >= 0 && this.mousemoveState.x - atX <= this.rectSize && this.mousemoveState.y - atY >= 0 && this.mousemoveState.y - atY <= this.rectSize;
+    }
+    computeStartX() {
+      const [w, _] = this.getWH();
+      const drawW = (this.rectSize + this.rectGap) * this.columns - this.rectGap;
+      let startX = w - drawW >> 1;
+      return startX;
+    }
+    drawSmallRect(x, y, imgFetcher, isCurr, isSelected) {
+      switch (imgFetcher.stage) {
+        case FetchState.FAILED:
+          this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
+          break;
+        case FetchState.URL:
+          this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
+          break;
+        case FetchState.DATA:
+          const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
+          this.ctx.fillStyle = `rgba(110, ${Math.ceil(
+          percent * 200
+        )}, 120, ${Math.max(percent, 0.1)})`;
+          break;
+        case FetchState.DONE:
+          this.ctx.fillStyle = "rgb(110, 200, 120)";
+          break;
+      }
+      this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
+      this.ctx.shadowColor = "#d53";
+      if (isSelected) {
+        this.ctx.strokeStyle = "rgb(60, 20, 200)";
+        this.ctx.lineWidth = 2;
+      } else if (isCurr) {
+        this.ctx.strokeStyle = "rgb(255, 60, 20)";
+        this.ctx.lineWidth = 2;
+      } else {
+        this.ctx.strokeStyle = "rgb(90, 90, 90)";
+        this.ctx.lineWidth = 1;
+      }
+      this.ctx.strokeRect(x, y, this.rectSize, this.rectSize);
+    }
+    getWH() {
+      return [this.canvas.width, this.canvas.height];
+    }
+  }
+
   const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
   class Downloader {
     meta;
@@ -831,9 +1028,9 @@
       this.downloaderPanelBTN = HTML.downloaderPanelBTN;
       this.downloadForceElement.addEventListener("click", () => this.download());
       this.downloadStartElement.addEventListener("click", () => this.start());
-      this.idleLoader.setIsDownloading(() => this.downloading);
-      this.queue.subscribeOnDo(1, () => this.downloading);
-      this.queue.subscribeOnFinishedReport(0, (_, queue2) => {
+      this.queue.downloading = () => this.downloading;
+      new DownloaderCanvas("downloader-canvas", queue);
+      EBUS.subscribe("ifq-on-finished-report", (_index, queue2) => {
         if (queue2.isFinised()) {
           if (this.downloading) {
             this.download();
@@ -844,7 +1041,6 @@
             }
           }
         }
-        return false;
       });
     }
     needNumberTitle() {
@@ -981,42 +1177,29 @@
     currIndex;
     finishedIndex = /* @__PURE__ */ new Set();
     debouncer;
-    onDo = /* @__PURE__ */ new Map();
-    onFinishedReport = /* @__PURE__ */ new Map();
+    downloading;
     dataSize = 0;
+    static newQueue() {
+      const queue = new IMGFetcherQueue();
+      EBUS.subscribe("imf-on-finished", (index, success, imf) => queue.finishedReport(index, success, imf));
+      return queue;
+    }
     constructor() {
       super();
       this.executableQueue = [];
       this.currIndex = 0;
       this.debouncer = new Debouncer();
     }
-    subscribeOnDo(index, callback) {
-      this.onDo.set(index, callback);
-    }
-    subscribeOnFinishedReport(index, callback) {
-      this.onFinishedReport.set(index, callback);
-    }
     isFinised() {
       return this.finishedIndex.size === this.length;
-    }
-    push(...items) {
-      items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
-      return super.push(...items);
-    }
-    unshift(...items) {
-      items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
-      return super.unshift(...items);
     }
     do(start, oriented) {
       oriented = oriented || "next";
       this.currIndex = this.fixIndex(start);
       this[this.currIndex].setNow(this.currIndex);
-      let keys = [...this.onDo.keys()].sort();
-      for (const key of keys) {
-        if (this.onDo.get(key)?.(this.currIndex, this)) {
-          return;
-        }
-      }
+      EBUS.emit("ifq-on-do", this.currIndex, this, this.downloading?.() || false);
+      if (this.downloading?.())
+        return;
       if (!this.pushInExecutableQueue(oriented))
         return;
       this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
@@ -1024,20 +1207,14 @@
       }, 300);
     }
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
-    finishedReport(index) {
-      const imgFetcher = this[index];
-      if (imgFetcher.stage !== FetchState.DONE)
+    finishedReport(index, success, imf) {
+      if (!success || imf.stage !== FetchState.DONE)
         return;
       this.finishedIndex.add(index);
       if (this.dataSize < 1e9) {
-        this.dataSize += imgFetcher.data?.byteLength || 0;
+        this.dataSize += imf.data?.byteLength || 0;
       }
-      let keys = [...this.onFinishedReport.keys()].sort();
-      for (const key of keys) {
-        if (this.onFinishedReport.get(key)?.(index, this)) {
-          return;
-        }
-      }
+      EBUS.emit("ifq-on-finished-report", index, this);
     }
     stepImageEvent(oriented) {
       let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
@@ -1086,7 +1263,6 @@
     restartId;
     maxWaitMS;
     minWaitMS;
-    isDownloading;
     onFailedCallback;
     autoLoad = false;
     constructor(queue) {
@@ -1097,13 +1273,19 @@
       this.maxWaitMS = 1e3;
       this.minWaitMS = 300;
       this.autoLoad = conf.autoLoad;
-      this.queue.subscribeOnDo(9, (index) => {
-        this.abort(index);
-        return false;
+      EBUS.subscribe("ifq-on-do", (currIndex, _queue, downloading) => {
+        if (downloading)
+          return;
+        this.abort(currIndex);
       });
-    }
-    setIsDownloading(cb) {
-      this.isDownloading = cb;
+      EBUS.subscribe("imf-on-finished", (index) => {
+        if (!this.processingIndexList.includes(index))
+          return;
+        this.wait().then(() => {
+          this.checkProcessingIndex();
+          this.start(this.lockVer);
+        });
+      });
     }
     onFailed(cb) {
       this.onFailedCallback = cb;
@@ -1117,22 +1299,9 @@
       if (this.queue.length === 0) {
         return;
       }
-      evLog("空闲自加载启动:" + this.processingIndexList.toString());
+      evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
       for (const processingIndex of this.processingIndexList) {
-        const imgFetcher = this.queue[processingIndex];
-        imgFetcher.onFinished("IDLE-REPORT", () => {
-          this.wait().then(() => {
-            this.checkProcessingIndex();
-            this.start(lockVer);
-          });
-        });
-        imgFetcher.onFailed("IDLE-REPORT", () => {
-          this.wait().then(() => {
-            this.checkProcessingIndex();
-            this.start(lockVer);
-          });
-        });
-        imgFetcher.start(processingIndex);
+        this.queue[processingIndex].start(processingIndex);
       }
     }
     checkProcessingIndex() {
@@ -1188,9 +1357,8 @@
         return;
       window.clearTimeout(this.restartId);
       this.restartId = window.setTimeout(() => {
-        if (this.isDownloading?.()) {
+        if (this.queue.downloading?.())
           return;
-        }
         this.processingIndexList = [newIndex];
         this.checkProcessingIndex();
         this.start(this.lockVer);
@@ -1207,23 +1375,27 @@
     imgAppends;
     matcher;
     done = false;
-    onAppended;
-    imgFetcherSettings;
     renderRangeRecord = [0, 0];
     beforeInit;
     afterInit;
     pageSourceIter;
     appendPageLock = false;
     abortb = false;
-    constructor(fullViewGrid, queue, matcher, imgFetcherSettings) {
-      this.fullViewGrid = fullViewGrid;
+    constructor(HTML, queue, matcher) {
+      this.fullViewGrid = HTML.fullViewGrid;
       this.queue = queue;
       this.matcher = matcher;
-      this.imgFetcherSettings = imgFetcherSettings;
       this.pageURLs = [];
       this.currPage = 0;
       this.imgAppends = { prev: [], next: [] };
       this.fetched = false;
+      this.beforeInit = () => HTML.pageLoading.style.display = "flex";
+      this.afterInit = () => HTML.pageLoading.style.display = "none";
+      const debouncer = new Debouncer();
+      EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendNextPages(index), 5));
+    }
+    onAppended(total, done) {
+      EBUS.emit("page-fetcher-on-appended", total, done);
     }
     abort() {
       this.abortb = true;
@@ -1263,7 +1435,7 @@
           const next = await this.pageSourceIter.next();
           if (next.done) {
             this.done = true;
-            this.onAppended?.(this.queue.length, true);
+            this.onAppended(this.queue.length, true);
             break;
           } else {
             await this.appendPageImg(next.value);
@@ -1282,14 +1454,14 @@
         if (this.abortb)
           return false;
         const IFs = nodes.map(
-          (imgNode) => new IMGFetcher(imgNode, this.imgFetcherSettings)
+          (imgNode) => new IMGFetcher(imgNode, this.matcher)
         );
         this.fullViewGrid.lastElementChild.after(...nodes.map((node) => node.create()));
         this.queue.push(...IFs);
-        this.onAppended?.(this.queue.length);
+        this.onAppended(this.queue.length);
         return true;
       } catch (error) {
-        evLog(`page fetcher append images error: `, error);
+        evLog("error", `page fetcher append images error: `, error);
         return false;
       }
     }
@@ -1300,11 +1472,11 @@
         try {
           return await this.matcher.parseImgNodes(page);
         } catch (error) {
-          evLog("warn: parse image nodes failed, retrying: ", error);
+          evLog("error", "warn: parse image nodes failed, retrying: ", error);
           tryTimes++;
         }
       }
-      evLog("warn: parse image nodes failed: reached max try times!");
+      evLog("error", "warn: parse image nodes failed: reached max try times!");
       return [];
     }
     //通过地址请求该页的文档
@@ -1316,14 +1488,14 @@
      */
     renderCurrView() {
       const [scrollTop, clientHeight] = [this.fullViewGrid.scrollTop, this.fullViewGrid.clientHeight];
-      const [startRander, endRander] = this.findOutsideRoundView(scrollTop, clientHeight);
-      this.queue.slice(startRander, endRander + 1 + conf.colCount).forEach((imgFetcher) => imgFetcher.render());
+      const [start, end] = this.findOutsideRoundView(scrollTop, clientHeight);
+      this.queue.slice(start, end + 1 + conf.colCount).forEach((imgFetcher) => imgFetcher.render());
       if (this.queue.dataSize >= 1e9) {
-        const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
-        unrenders.forEach(([start, end]) => this.queue.slice(start, end + 1).forEach((imgFetcher) => imgFetcher.unrender()));
-        evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}, 旧范围是:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, 取消渲染范围是:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
+        const unrenders = findNotInNewRange(this.renderRangeRecord, [start, end]);
+        unrenders.forEach(([start2, end2]) => this.queue.slice(start2, end2 + 1).forEach((imgFetcher) => imgFetcher.unrender()));
+        evLog("debug", `range of render:${start + 1}-${end + 1}, old range is:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, range of unrender:${unrenders.map(([start2, end2]) => `${start2 + 1}-${end2 + 1}`).join(",")}`);
       }
-      this.renderRangeRecord = [startRander, endRander];
+      this.renderRangeRecord = [start, end];
     }
     findOutsideRoundView(currTop, clientHeight) {
       const viewButtom = currTop + clientHeight;
@@ -1585,7 +1757,7 @@
       for (const img of images) {
         const src = img.getAttribute("data-original");
         if (!src) {
-          evLog("warn: cannot find data-original", img);
+          evLog("error", "warn: cannot find data-original", img);
           continue;
         }
         list.push(new ImageNode("", src, src.split("/").pop()));
@@ -1835,7 +2007,7 @@
       if (originChanged) {
         const nlValue = regulars.nlValue.exec(text)[1];
         const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-        evLog(`IMG-FETCHER retry url:${newUrl}`);
+        evLog("info", `IMG-FETCHER retry url:${newUrl}`);
         return await this.fetchImgURL(newUrl, false);
       } else {
         return regulars.normal.exec(text)[1];
@@ -2537,7 +2709,7 @@
         if (!this.reloadLock) {
           this.reloadLock = true;
           try {
-            evLog("FFmpegConvertor: size limit exceeded, terminate ffmpeg, verLock: ", verLock);
+            evLog("info", "FFmpegConvertor: size limit exceeded, terminate ffmpeg, verLock: ", verLock);
             this.ffmpeg.terminate();
             await this.load();
             this.size = 0;
@@ -2668,7 +2840,7 @@ duration 0.04`).join("\n");
             const img = await zip.file(f.file).async("uint8array");
             return { name: f.file, data: img };
           } catch (error) {
-            evLog("unpack ugoira file error: ", error);
+            evLog("error", "unpack ugoira file error: ", error);
             throw error;
           }
         })
@@ -2679,7 +2851,7 @@ duration 0.04`).join("\n");
       const start = performance.now();
       const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
       const end = performance.now();
-      evLog(`convert ugoira to ${conf.convertTo} cost ${(end - start) / 1e3} s, size: ${blob.size / 1e3} KB, original size: ${data.size / 1e3} KB`);
+      evLog("debug", `convert ugoira to ${conf.convertTo} cost ${(end - start) / 1e3} s, size: ${blob.size / 1e3} KB, original size: ${data.size / 1e3} KB`);
       return { url: URL.createObjectURL(blob) };
     }
     async fetchTagsByPids(pids) {
@@ -2701,10 +2873,10 @@ duration 0.04`).join("\n");
           });
           this.works = { ...this.works, ...works };
         } else {
-          evLog("WARN: fetch tags by pids error: ", data.message);
+          evLog("error", "WARN: fetch tags by pids error: ", data.message);
         }
       } catch (error) {
-        evLog("ERROR: fetch tags by pids error: ", error);
+        evLog("error", "ERROR: fetch tags by pids error: ", error);
       }
     }
     async parseImgNodes(raw) {
@@ -2944,7 +3116,7 @@ duration 0.04`).join("\n");
       for (const img of imgList) {
         const child = img.querySelector("img");
         if (!child) {
-          evLog("warn", "cannot find img element", img);
+          evLog("error", "warn: cannot find img element", img);
           continue;
         }
         const title = `${img.id}.jpg`;
@@ -3174,188 +3346,6 @@ duration 0.04`).join("\n");
       }
     }
     return matchers.find((m) => m.workURL().test(url)) || null;
-  }
-
-  class DownloaderCanvas {
-    canvas;
-    mousemoveState;
-    ctx;
-    queue;
-    rectSize;
-    rectGap;
-    columns;
-    padding;
-    scrollTop;
-    scrollSize;
-    debouncer;
-    onClick;
-    constructor(id, queue, onClick) {
-      this.queue = queue;
-      const canvas = document.getElementById(id);
-      if (!canvas) {
-        throw new Error("canvas not found");
-      }
-      this.canvas = canvas;
-      this.canvas.addEventListener(
-        "wheel",
-        (event) => this.onwheel(event.deltaY)
-      );
-      this.mousemoveState = { x: 0, y: 0 };
-      this.canvas.addEventListener("mousemove", (event) => {
-        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
-        this.drawDebouce();
-      });
-      this.canvas.addEventListener("click", (event) => {
-        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
-        const index = this.computeDrawList()?.find(
-          (state) => state.selected
-        )?.index;
-        if (index !== void 0) {
-          onClick?.(index);
-        }
-      });
-      this.ctx = this.canvas.getContext("2d");
-      this.rectSize = 12;
-      this.rectGap = 6;
-      this.columns = 15;
-      this.padding = 7;
-      this.scrollTop = 0;
-      this.scrollSize = 10;
-      this.debouncer = new Debouncer();
-      const parent = this.canvas.parentElement;
-      if (parent) {
-        parent.addEventListener("transitionend", (ev) => {
-          const ele = ev.target;
-          if (ele.clientHeight > 0) {
-            this.canvas.width = Math.floor(ele.offsetWidth - 20);
-            this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
-            this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
-            this.draw();
-          }
-        });
-      }
-    }
-    onwheel(deltaY) {
-      const [_, h] = this.getWH();
-      const clientHeight = this.computeClientHeight();
-      if (clientHeight > h) {
-        deltaY = deltaY >> 1;
-        this.scrollTop += deltaY;
-        if (this.scrollTop < 0)
-          this.scrollTop = 0;
-        if (this.scrollTop + h > clientHeight + 20)
-          this.scrollTop = clientHeight - h + 20;
-        this.draw();
-      }
-    }
-    drawDebouce() {
-      this.debouncer.addEvent("DOWNLOADER-DRAW", () => this.draw(), 20);
-    }
-    computeDrawList() {
-      const list = [];
-      const [_, h] = this.getWH();
-      const startX = this.computeStartX();
-      const startY = -this.scrollTop + this.padding;
-      for (let i = 0, row = -1; i < this.queue.length; i++) {
-        const currCol = i % this.columns;
-        if (currCol == 0) {
-          row++;
-        }
-        const atX = startX + (this.rectSize + this.rectGap) * currCol;
-        const atY = startY + (this.rectSize + this.rectGap) * row;
-        if (atY + this.rectSize < 0) {
-          continue;
-        }
-        if (atY > h) {
-          break;
-        }
-        list.push({
-          index: i,
-          x: atX,
-          y: atY,
-          selected: this.isSelected(atX, atY)
-        });
-      }
-      return list;
-    }
-    // this function should be called by drawDebouce
-    draw() {
-      const [w, h] = this.getWH();
-      this.ctx.clearRect(0, 0, w, h);
-      const drawList = this.computeDrawList();
-      for (const node of drawList) {
-        this.drawSmallRect(
-          node.x,
-          node.y,
-          this.queue[node.index],
-          node.index === this.queue.currIndex,
-          node.selected
-        );
-      }
-    }
-    computeClientHeight() {
-      return Math.ceil(this.queue.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
-    }
-    scrollTo(index) {
-      const clientHeight = this.computeClientHeight();
-      const [_, h] = this.getWH();
-      if (clientHeight <= h) {
-        return;
-      }
-      const rowNo = Math.ceil((index + 1) / this.columns);
-      const offsetY = (rowNo - 1) * (this.rectSize + this.rectGap);
-      if (offsetY > h) {
-        this.scrollTop = offsetY + this.rectSize - h;
-        const maxScrollTop = clientHeight - h + 20;
-        if (this.scrollTop + 20 <= maxScrollTop) {
-          this.scrollTop += 20;
-        }
-      }
-    }
-    isSelected(atX, atY) {
-      return this.mousemoveState.x - atX >= 0 && this.mousemoveState.x - atX <= this.rectSize && this.mousemoveState.y - atY >= 0 && this.mousemoveState.y - atY <= this.rectSize;
-    }
-    computeStartX() {
-      const [w, _] = this.getWH();
-      const drawW = (this.rectSize + this.rectGap) * this.columns - this.rectGap;
-      let startX = w - drawW >> 1;
-      return startX;
-    }
-    drawSmallRect(x, y, imgFetcher, isCurr, isSelected) {
-      switch (imgFetcher.stage) {
-        case FetchState.FAILED:
-          this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
-          break;
-        case FetchState.URL:
-          this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
-          break;
-        case FetchState.DATA:
-          const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
-          this.ctx.fillStyle = `rgba(110, ${Math.ceil(
-          percent * 200
-        )}, 120, ${Math.max(percent, 0.1)})`;
-          break;
-        case FetchState.DONE:
-          this.ctx.fillStyle = "rgb(110, 200, 120)";
-          break;
-      }
-      this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
-      this.ctx.shadowColor = "#d53";
-      if (isSelected) {
-        this.ctx.strokeStyle = "rgb(60, 20, 200)";
-        this.ctx.lineWidth = 2;
-      } else if (isCurr) {
-        this.ctx.strokeStyle = "rgb(255, 60, 20)";
-        this.ctx.lineWidth = 2;
-      } else {
-        this.ctx.strokeStyle = "rgb(90, 90, 90)";
-        this.ctx.lineWidth = 1;
-      }
-      this.ctx.strokeRect(x, y, this.rectSize, this.rectSize);
-    }
-    getWH() {
-      return [this.canvas.width, this.canvas.height];
-    }
   }
 
   function parseKey(event) {
@@ -4970,6 +4960,22 @@ html {
     html;
     constructor(html) {
       this.html = html;
+      EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
+      EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));
+      EBUS.subscribe("ifq-on-do", (currIndex, queue) => {
+        this.setPageState({ current: (currIndex + 1).toString() });
+        const imf = queue[currIndex];
+        if (imf.stage !== FetchState.DONE) {
+          this.setFetchState("fetching");
+        }
+      });
+      EBUS.subscribe("ifq-on-finished-report", (index, queue) => {
+        this.setPageState({ finished: queue.finishedIndex.size.toString() });
+        evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
+        if (queue[queue.currIndex].stage === FetchState.DONE) {
+          this.setFetchState("fetched");
+        }
+      });
     }
     setFetchState(state) {
       if (state === "fetching") {
@@ -5099,7 +5105,7 @@ html {
       this.ui.volumeProgress.firstElementChild.style.width = `${conf.volume || 30}%`;
     }
     attach(element) {
-      evLog("attach video control");
+      evLog("info", "attach video control");
       this.detach();
       this.show();
       this.abortController = new AbortController();
@@ -5118,7 +5124,7 @@ html {
         state.time = ele.currentTime;
         this.flushUI(state, true);
       }, { signal: this.abortController.signal });
-      element.onwaiting = () => evLog("onwaiting");
+      element.onwaiting = () => evLog("debug", "onwaiting");
       element.loop = true;
       element.muted = conf.muted || false;
       element.volume = (conf.volume || 30) / 100;
@@ -5195,8 +5201,6 @@ html {
     debouncer;
     throttler;
     callbackOnWheel;
-    onShowEventContext = /* @__PURE__ */ new Map();
-    onHiddenEventContext = /* @__PURE__ */ new Map();
     hammer;
     preventStep = { fin: false };
     visible = false;
@@ -5217,6 +5221,25 @@ html {
       this.initImgScaleBar();
       this.initImgScaleStyle();
       this.initHammer();
+      EBUS.subscribe("imf-set-now", (index) => this.setNow(index));
+      EBUS.subscribe("imf-on-click", (event) => this.show(event));
+      EBUS.subscribe("imf-on-finished", (index, success, imf) => {
+        if (!this.visible || !success)
+          return;
+        const img = this.getMediaNodes().find((img2) => index === parseInt(img2.getAttribute("d-index")));
+        if (!img)
+          return;
+        if (imf.contentType !== "video/mp4") {
+          img.setAttribute("src", imf.blobUrl);
+          return;
+        }
+        const vid = this.newMediaNode(index, imf);
+        img.replaceWith(vid);
+        if (img === this.currMediaNode) {
+          this.currMediaNode = vid;
+        }
+        img.remove();
+      });
       new AutoPage(this, HTML.autoPageBTN);
     }
     initHammer() {
@@ -5328,11 +5351,6 @@ html {
       this.frame.appendChild(nextLand);
       window.setTimeout(() => nextLand.remove(), 1500);
     }
-    createImgElement() {
-      const img = document.createElement("img");
-      img.addEventListener("click", () => this.hidden());
-      return img;
-    }
     removeMediaNode() {
       this.currMediaNode = void 0;
       this.vidController?.detach();
@@ -5352,7 +5370,7 @@ html {
       if (event && event.target && event.target.tagName === "SPAN")
         return;
       this.visible = false;
-      this.onHiddenEventContext.forEach((cb) => cb());
+      EBUS.emit("bifm-on-hidden");
       this.frame.blur();
       this.html.fullViewGrid.focus();
       this.frameScrollAbort?.abort();
@@ -5371,7 +5389,7 @@ html {
           start = this.queue.findImgIndex(event.target);
         this.queue.do(start);
       }, 100);
-      this.onShowEventContext.forEach((cb) => cb());
+      EBUS.emit("bifm-on-show");
     }
     getMediaNodes() {
       const list = Array.from(this.frame.querySelectorAll("img, video"));
@@ -5573,34 +5591,15 @@ html {
           }
         };
         vid.src = imf.blobUrl;
-        vid.addEventListener("click", () => this.hidden());
         return vid;
       } else {
         const img = document.createElement("img");
         img.classList.add("bifm-img");
-        img.addEventListener("click", () => this.hidden());
         img.setAttribute("d-index", index.toString());
         if (imf.stage === FetchState.DONE) {
           img.src = imf.blobUrl;
         } else {
           img.src = imf.node.src;
-          imf.onFinished("BIG-IMG-SRC-UPDATE", ($index, $imf) => {
-            if (!this.visible)
-              return;
-            if ($index === parseInt(img.getAttribute("d-index"))) {
-              if ($imf.contentType !== "video/mp4") {
-                img.src = $imf.blobUrl;
-                return;
-              }
-              const vid = this.newMediaNode(index, $imf);
-              img.replaceWith(vid);
-              if (img === this.currMediaNode) {
-                this.currMediaNode = vid;
-              }
-              img.remove();
-              return;
-            }
-          });
         }
         return img;
       }
@@ -5724,12 +5723,6 @@ html {
       }
       return 0;
     }
-    onShow(id, callback) {
-      this.onShowEventContext.set(id, callback);
-    }
-    onHidden(id, callback) {
-      this.onHiddenEventContext.set(id, callback);
-    }
   }
   class AutoPage {
     frameManager;
@@ -5749,8 +5742,8 @@ html {
           this.start(this.lockVer);
         }
       };
-      this.frameManager.onHidden(0, () => this.stop());
-      this.frameManager.onShow(0, () => conf.autoPlay && this.start(this.lockVer));
+      EBUS.subscribe("bifm-on-hidden", () => this.stop());
+      EBUS.subscribe("bifm-on-show", () => conf.autoPlay && this.start(this.lockVer));
       this.initPlayButton();
     }
     initPlayButton() {
@@ -5821,67 +5814,33 @@ html {
   function main(MATCHER) {
     const HTML = createHTML();
     [HTML.fullViewGrid, HTML.bigImageFrame].forEach((e) => revertMonkeyPatch(e));
-    const IFQ = new IMGFetcherQueue();
+    const IFQ = IMGFetcherQueue.newQueue();
     const IL = new IdleLoader(IFQ);
     const BIFM = new BigImageFrameManager(HTML, IFQ);
-    const DLC = new DownloaderCanvas("downloader-canvas", IFQ, (index) => {
+    const PF = new PageFetcher(HTML, IFQ, MATCHER);
+    const DL = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
+    const PH = new PageHelper(HTML);
+    const events = initEvents(HTML, BIFM, IFQ, PF, IL, PH);
+    addEventListeners(events, HTML, BIFM, IFQ, DL);
+    EBUS.subscribe("downloader-canvas-on-click", (index) => {
       IFQ.currIndex = index;
       BIFM.show();
     });
-    const PF = new PageFetcher(HTML.fullViewGrid, IFQ, MATCHER, {
-      matcher: MATCHER,
-      downloadStateReporter: () => DLC.drawDebouce(),
-      setNow: (index) => {
-        BIFM.setNow(index);
-        if (!BIFM.visible)
-          return;
-        let scrollTo = IFQ[index].node.root.offsetTop - window.screen.availHeight / 3;
-        scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
-        if (HTML.fullViewGrid.scrollTo.toString().includes("[native code]")) {
-          HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
-        } else {
-          HTML.fullViewGrid.scrollTop = scrollTo;
-        }
-      },
-      onClick: (event) => BIFM.show(event)
-    });
-    PF.beforeInit = () => {
-      HTML.pageLoading.style.display = "flex";
-    };
-    PF.afterInit = () => {
-      HTML.pageLoading.style.display = "none";
-    };
-    const DL = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
-    const PH = new PageHelper(HTML);
-    IFQ.subscribeOnFinishedReport(1, (index, queue) => {
-      PH.setPageState({ finished: queue.finishedIndex.size.toString() });
-      evLog(`No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
-      if (queue[queue.currIndex].stage === FetchState.DONE) {
-        PH.setFetchState("fetched");
-      }
-      return false;
-    });
-    BIFM.onShow(1, () => PH.minify(true, "bigImageFrame"));
-    BIFM.onHidden(1, () => PH.minify(false, "bigImageFrame"));
-    const debouncer = new Debouncer();
-    IFQ.subscribeOnFinishedReport(3, (index) => {
-      debouncer.addEvent("APPEND-NEXT-PAGES", () => PF.appendNextPages(index), 5);
-      return false;
-    });
-    IFQ.subscribeOnDo(0, (index, queue) => {
-      PH.setPageState({ current: (index + 1).toString() });
-      const imf = queue[index];
-      if (imf.stage !== FetchState.DONE) {
-        PH.setFetchState("fetching");
-      }
-      return false;
-    });
-    PF.setOnAppended((total, done) => {
+    EBUS.subscribe("page-fetcher-on-appended", (total, done) => {
       PH.setPageState({ total: `${total}${done ? "" : ".."}` });
       setTimeout(() => PF.renderCurrView(), 200);
     });
-    const events = initEvents(HTML, BIFM, IFQ, PF, IL, PH);
-    addEventListeners(events, HTML, BIFM, IFQ, DL);
+    EBUS.subscribe("imf-set-now", (index) => {
+      if (!BIFM.visible)
+        return;
+      let scrollTo = IFQ[index].node.root.offsetTop - window.screen.availHeight / 3;
+      scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
+      if (HTML.fullViewGrid.scrollTo.toString().includes("[native code]")) {
+        HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
+      } else {
+        HTML.fullViewGrid.scrollTop = scrollTo;
+      }
+    });
     if (conf["first"]) {
       events.showGuideEvent();
       conf["first"] = false;

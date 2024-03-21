@@ -93,7 +93,7 @@ export class Pixiv implements Matcher {
           const img = await zip.file(f.file)!.async("uint8array");
           return { name: f.file, data: img };
         } catch (error) {
-          evLog("unpack ugoira file error: ", error);
+          evLog("error", "unpack ugoira file error: ", error);
           throw error;
         }
       })
@@ -105,7 +105,7 @@ export class Pixiv implements Matcher {
     const start = performance.now();
     const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
     const end = performance.now();
-    evLog(`convert ugoira to ${conf.convertTo} cost ${(end - start) / 1000} s, size: ${blob.size / 1000} KB, original size: ${data.size / 1000} KB`);
+    evLog("debug", `convert ugoira to ${conf.convertTo} cost ${(end - start) / 1000} s, size: ${blob.size / 1000} KB, original size: ${data.size / 1000} KB`);
     return { url: URL.createObjectURL(blob) };
 
   }
@@ -130,11 +130,11 @@ export class Pixiv implements Matcher {
         })
         this.works = { ...this.works, ...works };
       } else {
-        evLog("WARN: fetch tags by pids error: ", data.message);
+        evLog("error", "WARN: fetch tags by pids error: ", data.message);
       }
       // console.log("fetch tags by pids: ", data);
     } catch (error) {
-      evLog("ERROR: fetch tags by pids error: ", error);
+      evLog("error", "ERROR: fetch tags by pids error: ", error);
     }
   }
 

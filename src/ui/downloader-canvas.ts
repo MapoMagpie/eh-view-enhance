@@ -1,3 +1,4 @@
+import EBUS from "../event-bus";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { FetchState, IMGFetcher } from "../img-fetcher";
 import { Debouncer } from "../utils/debouncer";
@@ -22,7 +23,7 @@ export class DownloaderCanvas {
   scrollSize: number;
   debouncer: Debouncer;
   onClick?: (index: number) => void;
-  constructor(id: string, queue: IMGFetcherQueue, onClick?: (index: number) => void) {
+  constructor(id: string, queue: IMGFetcherQueue) {
     this.queue = queue;
     const canvas = document.getElementById(id);
     if (!canvas) {
@@ -43,7 +44,7 @@ export class DownloaderCanvas {
         (state) => state.selected
       )?.index;
       if (index !== undefined) {
-        onClick?.(index);
+        EBUS.emit("downloader-canvas-on-click", index)
       }
     });
     this.ctx = this.canvas.getContext("2d")!;
@@ -69,6 +70,7 @@ export class DownloaderCanvas {
       });
 
     }
+    EBUS.subscribe("imf-download-state-change", () => this.drawDebouce());
   }
 
   onwheel(deltaY: number) {

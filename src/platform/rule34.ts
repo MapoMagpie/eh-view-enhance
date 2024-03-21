@@ -69,7 +69,7 @@ export class Rule34Matcher implements Matcher {
     for (const img of imgList) {
       const child = img.querySelector<HTMLImageElement>("img");
       if (!child) {
-        evLog("warn", "cannot find img element", img);
+        evLog("error", "warn: cannot find img element", img);
         continue;
       }
       const title = `${img.id}.jpg`;

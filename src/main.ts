@@ -7,6 +7,7 @@ import { PageFetcher } from "./page-fetcher";
 import { adaptMatcher } from "./platform/adapt";
 import { Matcher } from "./platform/platform";
 import { initEvents } from "./ui/event";
+import { FullViewGridManager } from "./ui/full-view-grid-manager";
 import { createHTML, addEventListeners } from "./ui/html";
 import { PageHelper } from "./ui/page-helper";
 import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
@@ -20,11 +21,12 @@ function main(MATCHER: Matcher): DestoryFunc {
   const IFQ: IMGFetcherQueue = IMGFetcherQueue.newQueue();
   const IL: IdleLoader = new IdleLoader(IFQ);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, IFQ);
-  const PF: PageFetcher = new PageFetcher(HTML, IFQ, MATCHER);
+  const FVGM: FullViewGridManager = new FullViewGridManager(HTML, IFQ);
+  const PF: PageFetcher = new PageFetcher(IFQ, MATCHER);
   const DL: Downloader = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
   const PH: PageHelper = new PageHelper(HTML);
 
-  const events = initEvents(HTML, BIFM, IFQ, PF, IL, PH);
+  const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
   addEventListeners(events, HTML, BIFM, IFQ, DL);
 
   EBUS.subscribe("downloader-canvas-on-click", (index) => {
@@ -32,9 +34,9 @@ function main(MATCHER: Matcher): DestoryFunc {
     BIFM.show();
   });
 
-  EBUS.subscribe("page-fetcher-on-appended", (total, done) => {
+  EBUS.subscribe("page-fetcher-on-appended", (total, _ifs, done) => {
     PH.setPageState({ total: `${total}${done ? "" : ".."}` });
-    setTimeout(() => PF.renderCurrView(), 200);
+    setTimeout(() => FVGM.renderCurrView(), 200);
   });
 
   EBUS.subscribe("imf-set-now", (index) => {
@@ -48,6 +50,9 @@ function main(MATCHER: Matcher): DestoryFunc {
     }
   });
 
+  PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
+  PF.afterInit = () => HTML.pageLoading.style.display = "none";
+
   if (conf["first"]) {
     events.showGuideEvent();
     conf["first"] = false;
@@ -56,7 +61,7 @@ function main(MATCHER: Matcher): DestoryFunc {
 
   return () => {
     console.log("destory eh-view-enhance");
-    HTML.fullViewGrid.remove();
+    HTML.root.remove();
     PF.abort();
     IL.abort(0);
     IFQ.length = 0;

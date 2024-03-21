@@ -475,7 +475,7 @@ export class BigImageFrameManager {
   tryPlayVideo(vid: HTMLElement) {
     if (vid instanceof HTMLVideoElement) {
       if (!this.vidController) {
-        this.vidController = new VideoControl(this.html.fullViewGrid);
+        this.vidController = new VideoControl(this.html.root);
       }
       this.vidController.attach(vid);
     } else {

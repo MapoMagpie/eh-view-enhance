@@ -1,9 +1,10 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { PagesSource } from "../page-fetcher";
+import { BaseMatcher, OriginMeta } from "./platform";
 
 const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
-export class NHMatcher implements Matcher {
+export class NHMatcher extends BaseMatcher {
 
   async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
     return data;
@@ -60,7 +61,7 @@ export class NHMatcher implements Matcher {
   public async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
 
-    const nodes = (page.raw as Document).querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb");
+    const nodes = (page as Document).querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb");
     if (!nodes || nodes.length == 0) {
       throw new Error("warn: failed query image nodes!")
     }
@@ -83,7 +84,7 @@ export class NHMatcher implements Matcher {
   }
 
   public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    yield { raw: document, typ: "doc" }
+    yield document;
   }
 
 }

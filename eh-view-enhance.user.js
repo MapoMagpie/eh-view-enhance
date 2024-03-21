@@ -1366,36 +1366,43 @@
     }
   }
 
+  class ChapterNode {
+    chapter;
+    index;
+    constructor(chapter, index) {
+      this.chapter = chapter;
+      this.index = index;
+    }
+    create() {
+      const element = document.createElement("div");
+      element.innerHTML = `<div class="chapter-node"><div class="chapter-title">${this.chapter.title}</div></div>`;
+      element.onclick = () => {
+        console.log("chapter clicked: ", this.index);
+      };
+      return element;
+    }
+    render() {
+    }
+  }
   class PageFetcher {
+    chapters = [];
+    currChapterIndex = 0;
     queue;
-    fullViewGrid;
-    pageURLs;
-    currPage;
-    fetched;
-    imgAppends;
     matcher;
     done = false;
-    renderRangeRecord = [0, 0];
     beforeInit;
     afterInit;
-    pageSourceIter;
     appendPageLock = false;
     abortb = false;
-    constructor(HTML, queue, matcher) {
-      this.fullViewGrid = HTML.fullViewGrid;
+    constructor(queue, matcher) {
       this.queue = queue;
       this.matcher = matcher;
-      this.pageURLs = [];
-      this.currPage = 0;
-      this.imgAppends = { prev: [], next: [] };
-      this.fetched = false;
-      this.beforeInit = () => HTML.pageLoading.style.display = "flex";
-      this.afterInit = () => HTML.pageLoading.style.display = "none";
       const debouncer = new Debouncer();
-      EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendNextPages(index), 5));
+      EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendA(index), 5));
+      EBUS.subscribe("fvgm-want-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendNextPage(), 5));
     }
-    onAppended(total, done) {
-      EBUS.emit("page-fetcher-on-appended", total, done);
+    onAppended(total, ifs, done) {
+      EBUS.emit("page-fetcher-on-appended", total, ifs, done);
     }
     abort() {
       this.abortb = true;
@@ -1406,59 +1413,78 @@
       this.afterInit?.();
     }
     async initPageAppend() {
-      this.pageSourceIter = this.matcher.fetchPagesSource();
-      let first = await this.pageSourceIter.next();
+      this.chapters = await this.matcher.fetchChapters();
+      this.chapters.forEach((c) => c.sourceIter = this.matcher.fetchPagesSource(c));
+      if (this.chapters.length === 1) {
+        await this.changeChapter(0);
+      }
+      if (this.chapters.length > 1) {
+        EBUS.emit("page-fetcher-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
+      }
+    }
+    async changeChapter(index) {
+      this.currChapterIndex = index;
+      this.queue.length = 0;
+      EBUS.emit("page-fetcher-change-chapter");
+      const chapter = this.chapters[this.currChapterIndex];
+      const nodes = chapter.nodes;
+      if (nodes.length > 0) {
+        const IFs = nodes.map((imgNode) => new IMGFetcher(imgNode, this.matcher));
+        this.queue.push(...IFs);
+        this.onAppended(this.queue.length, nodes);
+      }
+      if (!chapter.sourceIter) {
+        evLog("error", "chapter sourceIter is not set!");
+        return;
+      }
+      let first = await chapter.sourceIter.next();
       if (!first.done) {
         await this.appendPageImg(first.value);
       }
-      this.appendNextPages(this.queue.length - 1);
+      this.appendA(this.queue.length - 1);
     }
-    async appendNextPages(finished) {
+    async appendA(finished) {
+      while (true) {
+        if (finished + 60 < this.queue.length) {
+          break;
+        }
+        if (!await this.appendNextPage())
+          break;
+      }
+    }
+    async appendNextPage() {
       if (this.appendPageLock)
-        return;
+        return false;
       try {
         this.appendPageLock = true;
         if (this.done || this.abortb)
-          return;
-        while (true) {
-          const viewButtom = this.fullViewGrid.scrollTop + this.fullViewGrid.clientHeight;
-          if (finished !== void 0) {
-            if (finished + 60 < this.queue.length) {
-              break;
-            }
-          } else {
-            const lastImgNode = this.queue[this.queue.length - 1].node.root;
-            if (viewButtom + this.fullViewGrid.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
-              break;
-            }
-          }
-          const next = await this.pageSourceIter.next();
-          if (next.done) {
-            this.done = true;
-            this.onAppended(this.queue.length, true);
-            break;
-          } else {
-            await this.appendPageImg(next.value);
-          }
+          return false;
+        const chapter = this.chapters[this.currChapterIndex];
+        const next = await chapter.sourceIter.next();
+        if (next.done) {
+          chapter.done = true;
+          this.onAppended(this.queue.length, [], true);
+          return false;
+        } else {
+          await this.appendPageImg(next.value);
+          return true;
         }
       } finally {
         this.appendPageLock = false;
       }
     }
-    setOnAppended(onAppended) {
-      this.onAppended = onAppended;
-    }
     async appendPageImg(page) {
+      const chapter = this.chapters[this.currChapterIndex];
       try {
         const nodes = await this.obtainImageNodeList(page);
+        chapter.nodes.push(...nodes);
         if (this.abortb)
           return false;
         const IFs = nodes.map(
           (imgNode) => new IMGFetcher(imgNode, this.matcher)
         );
-        this.fullViewGrid.lastElementChild.after(...nodes.map((node) => node.create()));
         this.queue.push(...IFs);
-        this.onAppended(this.queue.length);
+        this.onAppended(this.queue.length, nodes);
         return true;
       } catch (error) {
         evLog("error", `page fetcher append images error: `, error);
@@ -1483,63 +1509,6 @@
     async fetchDocument(pageURL) {
       return await window.fetch(pageURL).then((response) => response.text());
     }
-    /**
-     *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
-     */
-    renderCurrView() {
-      const [scrollTop, clientHeight] = [this.fullViewGrid.scrollTop, this.fullViewGrid.clientHeight];
-      const [start, end] = this.findOutsideRoundView(scrollTop, clientHeight);
-      this.queue.slice(start, end + 1 + conf.colCount).forEach((imgFetcher) => imgFetcher.render());
-      if (this.queue.dataSize >= 1e9) {
-        const unrenders = findNotInNewRange(this.renderRangeRecord, [start, end]);
-        unrenders.forEach(([start2, end2]) => this.queue.slice(start2, end2 + 1).forEach((imgFetcher) => imgFetcher.unrender()));
-        evLog("debug", `range of render:${start + 1}-${end + 1}, old range is:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, range of unrender:${unrenders.map(([start2, end2]) => `${start2 + 1}-${end2 + 1}`).join(",")}`);
-      }
-      this.renderRangeRecord = [start, end];
-    }
-    findOutsideRoundView(currTop, clientHeight) {
-      const viewButtom = currTop + clientHeight;
-      let outsideTop = 0;
-      let outsideBottom = 0;
-      for (let i = 0; i < this.queue.length; i += conf.colCount) {
-        const { root } = this.queue[i].node;
-        if (!root)
-          continue;
-        if (outsideBottom === 0) {
-          if (root.offsetTop + 2 >= currTop) {
-            outsideBottom = i + 1;
-          } else {
-            outsideTop = i;
-          }
-        } else {
-          outsideBottom = i;
-          if (root.offsetTop + root.offsetHeight > viewButtom) {
-            break;
-          }
-        }
-      }
-      return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
-    }
-  }
-  function findNotInNewRange(old, neo) {
-    const ret = [];
-    if (neo[0] > old[0]) {
-      ret.push([old[0], neo[0] - 1]);
-    }
-    if (neo[1] < old[1]) {
-      ret.push([neo[1] + 1, old[1]]);
-    }
-    if (ret.length === 2) {
-      if (ret[1][0] < ret[0][1]) {
-        ret[1][0] = ret[0][1];
-        ret.shift();
-      }
-      if (ret[0][1] > ret[1][0]) {
-        ret[0][1] = ret[1][0];
-        ret.pop();
-      }
-    }
-    return ret;
   }
 
   class GalleryMeta {
@@ -1689,6 +1658,23 @@
     }
   }
 
+  class BaseMatcher {
+    async fetchChapters() {
+      return [{
+        id: "default",
+        title: "default",
+        source: document,
+        nodes: []
+      }];
+    }
+    parseGalleryMeta(doc) {
+      return new GalleryMeta(window.location.href, doc.title || "unknown");
+    }
+    async processData(data, _1, _2) {
+      return data;
+    }
+  }
+
   function drawImage(ctx, e, gid, page) {
     const width = e.width;
     const height = e.height;
@@ -1702,7 +1688,7 @@
       0 == m ? c += l : g += l, ctx.drawImage(e, 0, w, r, c, 0, g, r, c);
     }
   }
-  class Comic18Matcher {
+  class Comic18Matcher extends BaseMatcher {
     async processData(data, contentType, url) {
       const reg = /(\d+)\/(\d+)\.(\w+)/;
       const matches = url.match(reg);
@@ -1751,7 +1737,7 @@
     }
     async parseImgNodes(source) {
       const list = [];
-      const raw = await window.fetch(source.raw).then((resp) => resp.text());
+      const raw = await window.fetch(source).then((resp) => resp.text());
       const document2 = new DOMParser().parseFromString(raw, "text/html");
       const images = Array.from(document2.querySelectorAll(".scramble-page:not(.thewayhome) > img"));
       for (const img of images) {
@@ -1768,16 +1754,14 @@
       const episode = Array.from(document.querySelectorAll(".episode > ul > a"));
       if (episode.length > 0) {
         for (const a of episode) {
-          const href2 = a.href;
-          yield { raw: href2, typ: "url" };
+          yield a.href;
         }
         return;
       }
       const href = document.querySelector(".read-block > a")?.href;
       if (href === void 0)
         throw new Error("No page found");
-      yield { raw: href, typ: "url" };
-      return;
+      yield href;
     }
   }
 
@@ -1826,10 +1810,7 @@
     /** 精灵图地址提取 */
     sprite: /url\((.*?)\)/
   };
-  class EHMatcher {
-    async processData(data, _1, _2) {
-      return data;
-    }
+  class EHMatcher extends BaseMatcher {
     workURL() {
       return /e[-x]hentai.org\/g\/\w+/;
     }
@@ -1868,10 +1849,10 @@
     async parseImgNodes(page) {
       const list = [];
       let doc = await (async () => {
-        if (page.raw instanceof Document) {
-          return page.raw;
+        if (page instanceof Document) {
+          return page;
         } else {
-          const raw = await window.fetch(page.raw).then((response) => response.text());
+          const raw = await window.fetch(page).then((response) => response.text());
           if (!raw)
             return null;
           const domParser = new DOMParser();
@@ -1952,13 +1933,14 @@
       }
       return list;
     }
-    async *fetchPagesSource() {
-      let fristImageHref = document.querySelector("#gdt a")?.getAttribute("href");
+    async *fetchPagesSource(chapter) {
+      const doc = chapter.source;
+      let fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
       if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
-        yield { raw: window.location.href, typ: "url" };
+        yield window.location.href;
         return;
       }
-      let pages = Array.from(document.querySelectorAll(".gtb td a")).filter((a) => a.getAttribute("href")).map((a) => a.getAttribute("href"));
+      let pages = Array.from(doc.querySelectorAll(".gtb td a")).filter((a) => a.getAttribute("href")).map((a) => a.getAttribute("href"));
       if (pages.length === 0) {
         throw new Error("未获取到分页元素！");
       }
@@ -1976,10 +1958,10 @@
         throw new Error("未获取到分页元素！x2");
       }
       url.searchParams.delete("p");
-      yield { raw: url.href, typ: "url" };
+      yield url.href;
       for (let p = 1; p < lastPage + 1; p++) {
         url.searchParams.set("p", p.toString());
-        yield { raw: url.href, typ: "url" };
+        yield url.href;
       }
     }
     async fetchImgURL(url, originChanged) {
@@ -2054,10 +2036,7 @@
   const HASH_REGEX = /#(\d*)$/;
   const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
   const GG_B_REGEX = /b:\s'(\d*\/)'/;
-  class HitomiMather {
-    async processData(data, _1, _2) {
-      return data;
-    }
+  class HitomiMather extends BaseMatcher {
     workURL() {
       return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
     }
@@ -2073,7 +2052,7 @@
         throw new Error("warn: hitomi gallery info is null!");
       }
       const list = [];
-      const doc = page.raw;
+      const doc = page;
       const nodes = doc.querySelectorAll(".simplePagerContainer .thumbnail-container a");
       if (!nodes || nodes.length == 0) {
         throw new Error("warn: failed query image nodes!");
@@ -2103,10 +2082,11 @@
       }
       return list;
     }
-    async *fetchPagesSource() {
+    async *fetchPagesSource(chapter) {
+      const doc = chapter.source;
       const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then((resp) => resp.text());
       this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)[1], GG_M_REGEX.exec(ggRaw)[1]);
-      const galleryID = document.querySelector("#gallery-brand a")?.href?.split("/").pop()?.replace(".html", "");
+      const galleryID = doc.querySelector("#gallery-brand a")?.href?.split("/").pop()?.replace(".html", "");
       if (!galleryID) {
         throw new Error("cannot query hitomi gallery id");
       }
@@ -2120,7 +2100,7 @@
         files: info.files,
         scene_indexes: info.scene_indexes
       };
-      yield { raw: document, typ: "doc" };
+      yield doc;
     }
     setGalleryMeta(info, galleryID) {
       this.meta = new GalleryMeta(window.location.href, info["title"] || "hitomi-" + galleryID);
@@ -2138,7 +2118,7 @@
     }
   }
 
-  class IMHentaiMatcher {
+  class IMHentaiMatcher extends BaseMatcher {
     data;
     async fetchOriginMeta(href, _) {
       const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
@@ -2159,7 +2139,7 @@
       }
       return { url: src, title };
     }
-    async parseImgNodes(_) {
+    async parseImgNodes() {
       if (!this.data) {
         throw new Error("impossibility");
       }
@@ -2180,7 +2160,7 @@
       const imgDir = q("#load_dir").value;
       const total = q("#load_pages").value;
       this.data = { server, uid, gid, imgDir, total: Number(total) };
-      yield { raw: "", typ: "doc" };
+      yield "";
     }
     parseGalleryMeta(doc) {
       const title = doc.querySelector(".right_details > h1")?.textContent || void 0;
@@ -2204,13 +2184,10 @@
     workURL() {
       return /imhentai.xxx\/gallery\/\d+\//;
     }
-    async processData(data, _1, _2) {
-      return data;
-    }
   }
 
   const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
-  class NHMatcher {
+  class NHMatcher extends BaseMatcher {
     async processData(data, _1, _2) {
       return data;
     }
@@ -2262,7 +2239,7 @@
     }
     async parseImgNodes(page) {
       const list = [];
-      const nodes = page.raw.querySelectorAll(".thumb-container > .gallerythumb");
+      const nodes = page.querySelectorAll(".thumb-container > .gallerythumb");
       if (!nodes || nodes.length == 0) {
         throw new Error("warn: failed query image nodes!");
       }
@@ -2283,7 +2260,7 @@
       return list;
     }
     async *fetchPagesSource() {
-      yield { raw: document, typ: "doc" };
+      yield document;
     }
   }
 
@@ -2794,7 +2771,7 @@ duration 0.04`).join("\n");
   }
 
   const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
-  class Pixiv {
+  class Pixiv extends BaseMatcher {
     authorID;
     meta;
     pidList = [];
@@ -2804,6 +2781,7 @@ duration 0.04`).join("\n");
     convertor;
     first;
     constructor() {
+      super();
       this.meta = new GalleryMeta(window.location.href, "UNTITLE");
     }
     async processData(data, _1, _2) {
@@ -2879,9 +2857,9 @@ duration 0.04`).join("\n");
         evLog("error", "ERROR: fetch tags by pids error: ", error);
       }
     }
-    async parseImgNodes(raw) {
+    async parseImgNodes(source) {
       const list = [];
-      const pidList = JSON.parse(raw.raw);
+      const pidList = JSON.parse(source);
       this.fetchTagsByPids(pidList);
       const pageListData = await fetchUrls(pidList.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5);
       for (let i = 0; i < pidList.length; i++) {
@@ -2935,7 +2913,7 @@ duration 0.04`).join("\n");
       }
       while (pidList.length > 0) {
         const pids = pidList.splice(0, 20);
-        yield { raw: JSON.stringify(pids), typ: "json" };
+        yield JSON.stringify(pids);
       }
     }
   }
@@ -2958,14 +2936,11 @@ duration 0.04`).join("\n");
     return results;
   }
 
-  class RokuHentaiMatcher {
+  class RokuHentaiMatcher extends BaseMatcher {
     sprites = [];
     fetchedThumbnail = [];
     galleryId = "";
     imgCount = 0;
-    async processData(data, _1, _2) {
-      return data;
-    }
     workURL() {
       return /rokuhentai.com\/\w+$/;
     }
@@ -2991,7 +2966,7 @@ duration 0.04`).join("\n");
       return { url };
     }
     async parseImgNodes(source) {
-      const range = source.raw.split("-").map(Number);
+      const range = source.split("-").map(Number);
       const list = [];
       const digits = this.imgCount.toString().length;
       for (let i = range[0]; i < range[1]; i++) {
@@ -3008,14 +2983,15 @@ duration 0.04`).join("\n");
       }
       return list;
     }
-    async *fetchPagesSource() {
-      const imgCount = parseInt(document.querySelector(".mdc-typography--caption")?.textContent || "");
+    async *fetchPagesSource(chapter) {
+      const doc = chapter.source;
+      const imgCount = parseInt(doc.querySelector(".mdc-typography--caption")?.textContent || "");
       if (isNaN(imgCount)) {
         throw new Error("error: failed query image count!");
       }
       this.imgCount = imgCount;
       this.galleryId = window.location.href.split("/").pop();
-      const images = Array.from(document.querySelectorAll(".mdc-layout-grid__cell .site-page-card__media"));
+      const images = Array.from(doc.querySelectorAll(".mdc-layout-grid__cell .site-page-card__media"));
       for (const img of images) {
         this.fetchedThumbnail.push(void 0);
         const x = parseInt(img.getAttribute("data-offset-x") || "");
@@ -3030,7 +3006,7 @@ duration 0.04`).join("\n");
         this.sprites.push({ src, pos: { x, y, width, height } });
       }
       for (let i = 0; i < this.imgCount; i += 20) {
-        yield { raw: `${i}-${Math.min(i + 20, this.imgCount)}`, typ: "json" };
+        yield `${i}-${Math.min(i + 20, this.imgCount)}`;
       }
     }
     async fetchThumbnail(index) {
@@ -3055,7 +3031,7 @@ duration 0.04`).join("\n");
     }
   }
 
-  class Rule34Matcher {
+  class Rule34Matcher extends BaseMatcher {
     tags = {};
     count = 0;
     async processData(data, _1, _2) {
@@ -3064,9 +3040,9 @@ duration 0.04`).join("\n");
     workURL() {
       return /rule34.xxx\/index.php\?page=post&s=list/;
     }
-    async *fetchPagesSource() {
-      yield { raw: document, typ: "doc" };
-      let doc = document;
+    async *fetchPagesSource(chapter) {
+      let doc = chapter.source;
+      yield doc;
       let tryTimes = 0;
       while (true) {
         let next = doc.querySelector(".pagination a[alt=next]");
@@ -3084,7 +3060,7 @@ duration 0.04`).join("\n");
           continue;
         }
         tryTimes = 0;
-        yield { raw: doc, typ: "doc" };
+        yield doc;
       }
     }
     async fetchOriginMeta(href, _) {
@@ -3109,9 +3085,9 @@ duration 0.04`).join("\n");
       }
       return { url, title };
     }
-    async parseImgNodes(page) {
+    async parseImgNodes(source) {
       const list = [];
-      const doc = page.raw;
+      const doc = source;
       const imgList = Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
       for (const img of imgList) {
         const child = img.querySelector("img");
@@ -3138,10 +3114,7 @@ duration 0.04`).join("\n");
   }
 
   const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
-  class SteamMatcher {
-    async processData(data, _1, _2) {
-      return data;
-    }
+  class SteamMatcher extends BaseMatcher {
     workURL() {
       return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
     }
@@ -3162,13 +3135,13 @@ duration 0.04`).join("\n");
       }
       return { url: imgURL };
     }
-    async parseImgNodes(page) {
+    async parseImgNodes(source) {
       const list = [];
       const doc = await (async () => {
-        if (page.raw instanceof Document) {
-          return page.raw;
+        if (source instanceof Document) {
+          return source;
         } else {
-          const raw = await window.fetch(page.raw).then((response) => response.text());
+          const raw = await window.fetch(source).then((response) => response.text());
           if (!raw)
             return null;
           const domParser = new DOMParser();
@@ -3208,17 +3181,15 @@ duration 0.04`).join("\n");
         if (!doc) {
           throw new Error("warn: steam matcher failed to get document from source page!");
         }
-        doc.querySelectorAll(".pagingPageLink").forEach((ele) => {
-          totalPages = Number(ele.textContent);
-        });
+        doc.querySelectorAll(".pagingPageLink").forEach((ele) => totalPages = Number(ele.textContent));
       }
       if (totalPages > 0) {
         for (let p = 1; p <= totalPages; p++) {
           url.searchParams.set("p", p.toString());
-          yield { raw: url.href, typ: "url" };
+          yield url.href;
         }
       } else {
-        yield { raw: url.href, typ: "url" };
+        yield url.href;
       }
     }
     parseGalleryMeta(_) {
@@ -3228,10 +3199,7 @@ duration 0.04`).join("\n");
     }
   }
 
-  class YandeMatcher {
-    async processData(data, _1, _2) {
-      return data;
-    }
+  class YandeMatcher extends BaseMatcher {
     workURL() {
       return /yande.re\/post(?!\/show\/.*)/;
     }
@@ -3244,7 +3212,7 @@ duration 0.04`).join("\n");
       const u = new URL(location.href);
       for (let p = curPageNumber; p <= latestPageNumber; p++) {
         u.searchParams.set("page", p.toString());
-        yield { raw: u.href, typ: "url" };
+        yield u.href;
       }
     }
     transformBigImageToSample(url) {
@@ -3259,23 +3227,13 @@ duration 0.04`).join("\n");
       }
       return { url: this.transformBigImageToSample(href) };
     }
-    async parseImgNodes(page) {
+    async parseImgNodes(source) {
       const list = [];
-      let doc = await (async () => {
-        if (page.raw instanceof Document) {
-          return page.raw;
-        } else {
-          const raw = await window.fetch(page.raw).then((response) => response.text());
-          if (!raw)
-            return null;
-          const domParser = new DOMParser();
-          return domParser.parseFromString(raw, "text/html");
-        }
-      })();
+      const doc = await window.fetch(source).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
       if (!doc) {
         throw new Error("warn: yande matcher failed to get document from source page!");
       }
-      let url = new URL(page.raw);
+      let url = new URL(source);
       let titlePrefix = ("page" + url.searchParams.get("page") || "nopage") + " ";
       let query = doc.querySelectorAll("ul#post-list-posts li");
       query.forEach((liNode, key) => {
@@ -3536,7 +3494,7 @@ duration 0.04`).join("\n");
       this.noPreventDefault = noPreventDefault || false;
     }
   }
-  function initEvents(HTML, BIFM, IFQ, PF, IL, PH) {
+  function initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH) {
     function modPageHelperPostion() {
       const style = HTML.pageHelper.style;
       conf.pageHelperAbTop = style.top;
@@ -3672,7 +3630,7 @@ duration 0.04`).join("\n");
     let bodyOverflow = document.body.style.overflow;
     function showFullViewGrid() {
       PH.minify(true, "fullViewGrid");
-      HTML.fullViewGrid.classList.remove("full-view-grid-collapse");
+      HTML.root.classList.remove("ehvp-root-collapse");
       HTML.fullViewGrid.focus();
       document.body.style.overflow = "hidden";
     }
@@ -3684,16 +3642,16 @@ duration 0.04`).join("\n");
     function hiddenFullViewGrid() {
       BIFM.hidden();
       PH.minify(false, "fullViewGrid");
-      HTML.fullViewGrid.classList.add("full-view-grid-collapse");
+      HTML.root.classList.add("ehvp-root-collapse");
       HTML.fullViewGrid.blur();
       q("html").focus();
       document.body.style.overflow = bodyOverflow;
     }
     function scrollEvent() {
-      if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse"))
+      if (HTML.root.classList.contains("ehvp-root-collapse"))
         return;
-      PF.renderCurrView();
-      PF.appendNextPages();
+      FVGM.renderCurrView();
+      FVGM.tryExtend();
     }
     function bigImageWheelEvent(event) {
       IFQ.stepImageEvent(event.deltaY > 0 ? "next" : "prev");
@@ -3841,7 +3799,7 @@ duration 0.04`).join("\n");
         if (triggered) {
           event.preventDefault();
         }
-      } else if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
+      } else if (!HTML.root.classList.contains("ehvp-root-collapse")) {
         const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
           const override = conf.keyboards.inFullViewGrid[id];
           if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
@@ -3859,7 +3817,7 @@ duration 0.04`).join("\n");
       }
     }
     function keyboardEvent(event) {
-      if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse"))
+      if (!HTML.root.classList.contains("ehvp-root-collapse"))
         return;
       if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
         return;
@@ -3887,17 +3845,17 @@ duration 0.04`).join("\n");
       guideElement.classList.add("ehvp-full-panel");
       guideElement.setAttribute("style", `align-items: center; color: black; text-align: left;`);
       guideElement.addEventListener("click", () => guideElement.remove());
-      if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
+      if (HTML.root.classList.contains("ehvp-root-collapse")) {
         document.body.after(guideElement);
       } else {
-        HTML.fullViewGrid.appendChild(guideElement);
+        HTML.root.appendChild(guideElement);
       }
     }
     function showKeyboardCustomEvent() {
-      createKeyboardCustomPanel(keyboardEvents, HTML.fullViewGrid);
+      createKeyboardCustomPanel(keyboardEvents, HTML.root);
     }
     function showExcludeURLEvent() {
-      createExcludeURLPanel(HTML.fullViewGrid);
+      createExcludeURLPanel(HTML.root);
     }
     const signal = { first: true };
     function main(extend) {
@@ -3938,6 +3896,92 @@ duration 0.04`).join("\n");
     };
   }
 
+  class FullViewGridManager {
+    root;
+    queue;
+    renderRangeRecord = [0, 0];
+    constructor(HTML, queue) {
+      this.root = HTML.fullViewGrid;
+      this.queue = queue;
+      EBUS.subscribe("page-fetcher-on-appended", (_total, nodes) => {
+        if (nodes.length > 0) {
+          this.appendToView(nodes);
+        }
+      });
+      EBUS.subscribe("page-fetcher-change-chapter", () => {
+        this.root.innerHTML = "";
+      });
+    }
+    appendToView(nodes) {
+      this.root.append(...nodes.map((node) => node.create()));
+    }
+    tryExtend() {
+      const lastImgNode = this.queue[this.queue.length - 1].node.root;
+      const viewButtom = this.root.scrollTop + this.root.clientHeight;
+      if (viewButtom + this.root.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
+        return;
+      }
+      EBUS.emit("fvgm-want-extend");
+    }
+    /**
+     *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
+     */
+    renderCurrView() {
+      const [scrollTop, clientHeight] = [this.root.scrollTop, this.root.clientHeight];
+      const [start, end] = this.findOutsideRoundView(scrollTop, clientHeight);
+      this.queue.slice(start, end + 1 + conf.colCount).forEach((imgFetcher) => imgFetcher.render());
+      if (this.queue.dataSize >= 1e9) {
+        const unrenders = findNotInNewRange(this.renderRangeRecord, [start, end]);
+        unrenders.forEach(([start2, end2]) => this.queue.slice(start2, end2 + 1).forEach((imgFetcher) => imgFetcher.unrender()));
+        evLog("debug", `range of render:${start + 1}-${end + 1}, old range is:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, range of unrender:${unrenders.map(([start2, end2]) => `${start2 + 1}-${end2 + 1}`).join(",")}`);
+      }
+      this.renderRangeRecord = [start, end];
+    }
+    findOutsideRoundView(currTop, clientHeight) {
+      const viewButtom = currTop + clientHeight;
+      let outsideTop = 0;
+      let outsideBottom = 0;
+      for (let i = 0; i < this.queue.length; i += conf.colCount) {
+        const { root } = this.queue[i].node;
+        if (!root)
+          continue;
+        if (outsideBottom === 0) {
+          if (root.offsetTop + 2 >= currTop) {
+            outsideBottom = i + 1;
+          } else {
+            outsideTop = i;
+          }
+        } else {
+          outsideBottom = i;
+          if (root.offsetTop + root.offsetHeight > viewButtom) {
+            break;
+          }
+        }
+      }
+      return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
+    }
+  }
+  function findNotInNewRange(old, neo) {
+    const ret = [];
+    if (neo[0] > old[0]) {
+      ret.push([old[0], neo[0] - 1]);
+    }
+    if (neo[1] < old[1]) {
+      ret.push([neo[1] + 1, old[1]]);
+    }
+    if (ret.length === 2) {
+      if (ret[1][0] < ret[0][1]) {
+        ret[1][0] = ret[0][1];
+        ret.shift();
+      }
+      if (ret[0][1] > ret[1][0]) {
+        ret[0][1] = ret[1][0];
+        ret.pop();
+      }
+    }
+    return ret;
+  }
+
   function dragElement(element, dragHub, callback) {
     (dragHub ?? element).addEventListener("mousedown", (event) => {
       event.preventDefault();
@@ -3975,7 +4019,7 @@ duration 0.04`).join("\n");
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
     const style = document.createElement("style");
     const css = `
-.full-view-grid {
+.ehvp-root {
   width: 100vw;
   height: 100vh;
   background-color: rgb(0, 0, 0);
@@ -3983,17 +4027,21 @@ duration 0.04`).join("\n");
   top: 0px;
   right: 0px;
   z-index: 2000;
-  overflow: hidden scroll;
-  transition: height 0.4s ease 0s;
+  transition: height 0.2s ease 0s;
+}
+.full-view-grid {
+  width: 100%;
+  height: 100%;
   display: grid;
   align-content: start;
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
+  overflow: hidden scroll;
 }
-.full-view-grid * {
+.ehvp-root * {
   font-family: initial;
 }
-.full-view-grid input, .full-view-grid select {
+.ehvp-root input, .ehvp-root select {
   color: #f1f1f1;
   background-color: #34353b !important;
   color-scheme: dark;
@@ -4007,10 +4055,10 @@ duration 0.04`).join("\n");
   top: unset !important;
   vertical-align: middle;
 }
-.full-view-grid input:enabled:hover, .full-view-grid select:enabled:hover, .full-view-grid input:enabled:focus, .full-view-grid select:enabled:focus {
+.ehvp-root input:enabled:hover, .ehvp-root select:enabled:hover, .ehvp-root input:enabled:focus, .ehvp-root select:enabled:focus {
   background-color: #34355b !important;
 }
-.full-view-grid select option {
+.ehvp-root select option {
   background-color: #34355b !important;
   color: #f1f1f1;
   font-size: 1rem;
@@ -4065,7 +4113,7 @@ duration 0.04`).join("\n");
     left: 0%;
 	}
 }
-.full-view-grid-collapse {
+.ehvp-root-collapse {
   height: 0;
   transition: height 0.4s;
 }
@@ -4142,14 +4190,14 @@ duration 0.04`).join("\n");
   .p-helper-extend .b-main {
     max-width: 24rem !important;
   }
-  .full-view-grid input[type="checkbox"] {
+  .ehvp-root input[type="checkbox"] {
     width: 1rem;
     height: unset !important;
   }
-  .full-view-grid select {
+  .ehvp-root select {
     width: 7rem !important;
   }
-  .full-view-grid input, .full-view-grid select {
+  .ehvp-root input, .ehvp-root select {
     width: 2rem;
     height: 1.5rem;
   }
@@ -4192,14 +4240,14 @@ duration 0.04`).join("\n");
   .p-helper-extend .b-main {
     max-width: 100vw !important;
   }
-  .full-view-grid input[type="checkbox"] {
+  .ehvp-root input[type="checkbox"] {
     width: 4cqw;
     height: unset !important;
   }
-  .full-view-grid select {
+  .ehvp-root select {
     width: 25cqw !important;
   }
-  .full-view-grid input, .full-view-grid select {
+  .ehvp-root input, .ehvp-root select {
     width: 9cqw;
     height: 6cqw;
     font-size: 3cqw;
@@ -4657,13 +4705,14 @@ html {
   function createHTML() {
     const fullViewGrid = document.createElement("div");
     fullViewGrid.setAttribute("tabindex", "0");
-    fullViewGrid.classList.add("full-view-grid");
-    fullViewGrid.classList.add("full-view-grid-collapse");
+    fullViewGrid.classList.add("ehvp-root");
+    fullViewGrid.classList.add("ehvp-root-collapse");
     document.body.after(fullViewGrid);
     const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
+<div id="ehvp-nodes-container" class="full-view-grid" tabindex="0"></div>
 <div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="0">
    <a id="img-land-left" class="img-land-left"></a>
    <a id="img-land-right" class="img-land-right"></a>
@@ -4865,7 +4914,8 @@ html {
     fullViewGrid.innerHTML = HTML_STRINGS;
     const styleSheel = loadStyleSheel();
     return {
-      fullViewGrid,
+      root: fullViewGrid,
+      fullViewGrid: q("#ehvp-nodes-container", fullViewGrid),
       // root element
       bigImageFrame: q("#big-img-frame", fullViewGrid),
       // page helper
@@ -4909,9 +4959,9 @@ html {
     HTML.pageHelper.addEventListener("mouseover", () => conf.autoCollapsePanels && events.abortMouseleavePanelEvent(""));
     HTML.pageHelper.addEventListener("mouseleave", () => conf.autoCollapsePanels && ["config", "downloader"].forEach((k) => events.togglePanelEvent(k, true)));
     for (const key of ConfigNumberKeys) {
-      q(`#${key}MinusBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
-      q(`#${key}AddBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
-      q(`#${key}Input`, HTML.fullViewGrid).addEventListener("wheel", (event) => {
+      q(`#${key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
+      q(`#${key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
+      q(`#${key}Input`, HTML.root).addEventListener("wheel", (event) => {
         if (event.deltaY < 0) {
           events.modNumberConfigEvent(key, "add");
         } else if (event.deltaY > 0) {
@@ -4920,10 +4970,10 @@ html {
       });
     }
     for (const key of ConfigBooleanKeys) {
-      q(`#${key}Checkbox`, HTML.fullViewGrid).addEventListener("click", () => events.modBooleanConfigEvent(key));
+      q(`#${key}Checkbox`, HTML.root).addEventListener("click", () => events.modBooleanConfigEvent(key));
     }
     for (const key of ConfigSelectKeys) {
-      q(`#${key}Select`, HTML.fullViewGrid).addEventListener("change", () => events.modSelectConfigEvent(key));
+      q(`#${key}Select`, HTML.root).addEventListener("change", () => events.modSelectConfigEvent(key));
     }
     HTML.collapseBTN.addEventListener("click", () => events.main(false));
     HTML.gate.addEventListener("click", () => events.main(true));
@@ -5607,7 +5657,7 @@ html {
     tryPlayVideo(vid) {
       if (vid instanceof HTMLVideoElement) {
         if (!this.vidController) {
-          this.vidController = new VideoControl(this.html.fullViewGrid);
+          this.vidController = new VideoControl(this.html.root);
         }
         this.vidController.attach(vid);
       } else {
@@ -5817,18 +5867,19 @@ html {
     const IFQ = IMGFetcherQueue.newQueue();
     const IL = new IdleLoader(IFQ);
     const BIFM = new BigImageFrameManager(HTML, IFQ);
-    const PF = new PageFetcher(HTML, IFQ, MATCHER);
+    const FVGM = new FullViewGridManager(HTML, IFQ);
+    const PF = new PageFetcher(IFQ, MATCHER);
     const DL = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
     const PH = new PageHelper(HTML);
-    const events = initEvents(HTML, BIFM, IFQ, PF, IL, PH);
+    const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
     addEventListeners(events, HTML, BIFM, IFQ, DL);
     EBUS.subscribe("downloader-canvas-on-click", (index) => {
       IFQ.currIndex = index;
       BIFM.show();
     });
-    EBUS.subscribe("page-fetcher-on-appended", (total, done) => {
+    EBUS.subscribe("page-fetcher-on-appended", (total, _ifs, done) => {
       PH.setPageState({ total: `${total}${done ? "" : ".."}` });
-      setTimeout(() => PF.renderCurrView(), 200);
+      setTimeout(() => FVGM.renderCurrView(), 200);
     });
     EBUS.subscribe("imf-set-now", (index) => {
       if (!BIFM.visible)
@@ -5841,6 +5892,8 @@ html {
         HTML.fullViewGrid.scrollTop = scrollTo;
       }
     });
+    PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
+    PF.afterInit = () => HTML.pageLoading.style.display = "none";
     if (conf["first"]) {
       events.showGuideEvent();
       conf["first"] = false;
@@ -5848,7 +5901,7 @@ html {
     }
     return () => {
       console.log("destory eh-view-enhance");
-      HTML.fullViewGrid.remove();
+      HTML.root.remove();
       PF.abort();
       IL.abort(0);
       IFQ.length = 0;

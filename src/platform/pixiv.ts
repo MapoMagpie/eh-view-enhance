@@ -1,10 +1,11 @@
 import JSZip from "jszip";
 import { GalleryMeta } from "../download/gallery-meta";
 import { evLog } from "../utils/ev-log";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { BaseMatcher, OriginMeta } from "./platform";
 import { FFmpegConvertor } from "../utils/ffmpeg";
 import ImageNode from "../img-node";
 import { conf } from "../config";
+import { PagesSource } from "../page-fetcher";
 
 type Page = {
   urls: {
@@ -41,7 +42,7 @@ type UgoiraMeat = {
 }
 
 const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
-export class Pixiv implements Matcher {
+export class Pixiv extends BaseMatcher {
 
   authorID: string | undefined;
   meta: GalleryMeta;
@@ -53,10 +54,12 @@ export class Pixiv implements Matcher {
   first?: string;
 
   constructor() {
+    super()
     this.meta = new GalleryMeta(window.location.href, "UNTITLE");
   }
 
   async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
+    // TODO: ugoira convert move here
     return data;
   }
 
@@ -110,7 +113,7 @@ export class Pixiv implements Matcher {
 
   }
 
-  async fetchTagsByPids(pids: string[]): Promise<void> {
+  private async fetchTagsByPids(pids: string[]): Promise<void> {
     try {
       const raw = await window.fetch(`https://www.pixiv.net/ajax/user/${this.authorID}/profile/illusts?ids[]=${pids.join("&ids[]=")}&work_category=illustManga&is_first_page=0&lang=en`).then(resp => resp.json());
       const data = raw as { error: boolean, message: string, body: { works: Record<string, Work> } }
@@ -138,9 +141,9 @@ export class Pixiv implements Matcher {
     }
   }
 
-  public async parseImgNodes(raw: PagesSource): Promise<ImageNode[]> {
+  public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
-    const pidList = JSON.parse(raw.raw as string) as string[];
+    const pidList = JSON.parse(source as string) as string[];
     // async function but no await, it will fetch tags in background
     this.fetchTagsByPids(pidList);
 
@@ -202,7 +205,7 @@ export class Pixiv implements Matcher {
     }
     while (pidList.length > 0) {
       const pids = pidList.splice(0, 20);
-      yield { raw: JSON.stringify(pids), typ: "json" }
+      yield JSON.stringify(pids);
     }
 
   }

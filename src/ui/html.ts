@@ -15,14 +15,15 @@ export type Elements = ReturnType<typeof createHTML>;
 export function createHTML() {
   const fullViewGrid = document.createElement("div");
   fullViewGrid.setAttribute("tabindex", "0");
-  fullViewGrid.classList.add("full-view-grid");
-  fullViewGrid.classList.add("full-view-grid-collapse");
+  fullViewGrid.classList.add("ehvp-root");
+  fullViewGrid.classList.add("ehvp-root-collapse");
   document.body.after(fullViewGrid);
 
   const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
+<div id="ehvp-nodes-container" class="full-view-grid" tabindex="0"></div>
 <div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="0">
    <a id="img-land-left" class="img-land-left"></a>
    <a id="img-land-right" class="img-land-right"></a>
@@ -225,7 +226,8 @@ export function createHTML() {
   fullViewGrid.innerHTML = HTML_STRINGS;
   const styleSheel = loadStyleSheel();
   return {
-    fullViewGrid: fullViewGrid,
+    root: fullViewGrid,
+    fullViewGrid: q("#ehvp-nodes-container", fullViewGrid),
     // root element
     bigImageFrame: q("#big-img-frame", fullViewGrid),
     // page helper
@@ -273,9 +275,9 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
 
   // modify config event
   for (const key of ConfigNumberKeys) {
-    q(`#${key}MinusBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
-    q(`#${key}AddBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
-    q(`#${key}Input`, HTML.fullViewGrid).addEventListener("wheel", (event: WheelEvent) => {
+    q(`#${key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
+    q(`#${key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
+    q(`#${key}Input`, HTML.root).addEventListener("wheel", (event: WheelEvent) => {
       if (event.deltaY < 0) {
         events.modNumberConfigEvent(key as ConfigNumberType, 'add');
       } else if (event.deltaY > 0) {
@@ -284,10 +286,10 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     });
   }
   for (const key of ConfigBooleanKeys) {
-    q(`#${key}Checkbox`, HTML.fullViewGrid).addEventListener("click", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
+    q(`#${key}Checkbox`, HTML.root).addEventListener("click", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
   }
   for (const key of ConfigSelectKeys) {
-    q(`#${key}Select`, HTML.fullViewGrid).addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
+    q(`#${key}Select`, HTML.root).addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
   }
 
   // entry 入口

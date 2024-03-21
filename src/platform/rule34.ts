@@ -1,9 +1,10 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { Chapter, PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { BaseMatcher, OriginMeta } from "./platform";
 
-export class Rule34Matcher implements Matcher {
+export class Rule34Matcher extends BaseMatcher {
   tags: Record<string, string[]> = {};
   count: number = 0;
 
@@ -15,10 +16,10 @@ export class Rule34Matcher implements Matcher {
     return /rule34.xxx\/index.php\?page=post&s=list/;
   }
 
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    yield { raw: document, typ: "doc" };
+  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
+    let doc = chapter.source as Document;
+    yield doc;
     // find next page
-    let doc = document;
     let tryTimes = 0;
     while (true) {
       let next = doc.querySelector<HTMLAnchorElement>(".pagination a[alt=next]");
@@ -33,7 +34,7 @@ export class Rule34Matcher implements Matcher {
         continue;
       }
       tryTimes = 0;
-      yield { raw: doc, typ: "doc" };
+      yield doc;
     }
   }
 
@@ -62,9 +63,9 @@ export class Rule34Matcher implements Matcher {
     return { url, title };
   }
 
-  public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
+  public async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
-    const doc = page.raw as Document;
+    const doc = source as Document;
     const imgList = Array.from(doc.querySelectorAll<HTMLAnchorElement>(".image-list > .thumb:not(.blacklisted-image) > a"));
     for (const img of imgList) {
       const child = img.querySelector<HTMLImageElement>("img");

@@ -1,6 +1,7 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { Chapter, PagesSource } from "../page-fetcher";
+import { BaseMatcher, OriginMeta } from "./platform";
 
 
 class HitomiGG {
@@ -57,11 +58,7 @@ type GalleryInfo = {
 const HASH_REGEX = /#(\d*)$/;
 const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
 const GG_B_REGEX = /b:\s'(\d*\/)'/;
-export class HitomiMather implements Matcher {
-
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
-  }
+export class HitomiMather extends BaseMatcher {
 
   workURL(): RegExp {
     return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
@@ -81,7 +78,7 @@ export class HitomiMather implements Matcher {
       throw new Error("warn: hitomi gallery info is null!")
     }
     const list: ImageNode[] = [];
-    const doc = page.raw as Document;
+    const doc = page as Document;
     const nodes = doc.querySelectorAll<HTMLAnchorElement>(".simplePagerContainer .thumbnail-container a");
     if (!nodes || nodes.length == 0) {
       throw new Error("warn: failed query image nodes!")
@@ -113,13 +110,14 @@ export class HitomiMather implements Matcher {
     return list;
   }
 
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
+    const doc = chapter.source as Document;
     // fetch gg.js
     const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then(resp => resp.text());
     this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)![1], GG_M_REGEX.exec(ggRaw)![1]);
 
     // query gallery id
-    const galleryID = document.querySelector<HTMLAnchorElement>("#gallery-brand a")?.href?.split("/").pop()?.replace(".html", "");
+    const galleryID = doc.querySelector<HTMLAnchorElement>("#gallery-brand a")?.href?.split("/").pop()?.replace(".html", "");
     if (!galleryID) {
       throw new Error("cannot query hitomi gallery id");
     }
@@ -135,7 +133,7 @@ export class HitomiMather implements Matcher {
       files: info.files,
       scene_indexes: info.scene_indexes
     }
-    yield { raw: document, typ: "doc" };
+    yield doc;
   }
 
   private setGalleryMeta(info: any, galleryID: string) {

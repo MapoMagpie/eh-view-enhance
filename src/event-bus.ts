@@ -1,5 +1,6 @@
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
+import { VisualNode } from "./img-node";
 import { evLog } from "./utils/ev-log";
 
 export class EventManager {
@@ -33,13 +34,15 @@ export interface Events {
   "downloader-canvas-on-click": (index: number) => void;
   "bifm-on-show": () => void;
   "bifm-on-hidden": () => void;
-  "page-fetcher-on-appended": (total: number, done?: boolean) => void;
+  "page-fetcher-on-appended": (total: number, nodes: VisualNode[], done?: boolean) => void;
+  "page-fetcher-change-chapter": () => void;
   "imf-set-now": (index: number, imf: IMGFetcher) => void;
   "imf-on-finished": (index: number, success: boolean, imf: IMGFetcher) => void;
   "imf-on-click": (event: MouseEvent) => void;
   "imf-download-state-change": () => void;
   "ifq-on-do": (currIndex: number, queue: IMGFetcherQueue, downloading: boolean) => void;
   "ifq-on-finished-report": (index: number, queue: IMGFetcherQueue) => void;
+  "fvgm-want-extend": () => void;
 }
 
 export type EventID = keyof Events;

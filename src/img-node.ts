@@ -10,7 +10,12 @@ const OVERLAY_TIP = document.createElement("div");
 OVERLAY_TIP.classList.add("overlay-tip");
 OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
 
-export default class ImageNode {
+export interface VisualNode {
+  create(): HTMLElement;
+  render(): void;
+}
+
+export default class ImageNode implements VisualNode {
   root?: HTMLElement;
   src: string;
   href: string;

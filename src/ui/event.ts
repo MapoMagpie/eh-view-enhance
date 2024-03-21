@@ -6,6 +6,7 @@ import { i18n } from "../utils/i18n";
 import parseKey from "../utils/keyboard";
 import q from "../utils/query-element";
 import createExcludeURLPanel from "./exclude-urls";
+import { FullViewGridManager } from "./full-view-grid-manager";
 import { Elements } from "./html";
 import createKeyboardCustomPanel from "./keyboard-custom";
 import { PageHelper } from "./page-helper";
@@ -32,7 +33,7 @@ export class KeyboardDesc {
   }
 }
 
-export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader, PH: PageHelper) {
+export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: FullViewGridManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader, PH: PageHelper) {
 
   function modPageHelperPostion() {
     const style = HTML.pageHelper.style;
@@ -181,7 +182,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   function showFullViewGrid() {
     // HTML.fullViewGrid.scroll(0, 0); //否则加载会触发滚动事件
     PH.minify(true, "fullViewGrid");
-    HTML.fullViewGrid.classList.remove("full-view-grid-collapse");
+    HTML.root.classList.remove("ehvp-root-collapse");
     HTML.fullViewGrid.focus();
     document.body.style.overflow = "hidden";
   };
@@ -195,7 +196,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   function hiddenFullViewGrid() {
     BIFM.hidden();
     PH.minify(false, "fullViewGrid");
-    HTML.fullViewGrid.classList.add("full-view-grid-collapse");
+    HTML.root.classList.add("ehvp-root-collapse");
     HTML.fullViewGrid.blur();
     q("html").focus();
     document.body.style.overflow = bodyOverflow;
@@ -204,10 +205,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   //全屏阅览元素的滚动事件
   function scrollEvent() {
     //对冒泡的处理
-    if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) return;
+    if (HTML.root.classList.contains("ehvp-root-collapse")) return;
     //根据currTop获取当前滚动高度对应的未渲染缩略图的图片元素
-    PF.renderCurrView();
-    PF.appendNextPages();
+    FVGM.renderCurrView();
+    FVGM.tryExtend();
   };
 
   //大图框架元素的滚轮事件/按下鼠标右键滚动则是缩放/直接滚动则是切换到下一张或上一张
@@ -359,7 +360,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       if (triggered) {
         event.preventDefault();
       }
-    } else if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
+    } else if (!HTML.root.classList.contains("ehvp-root-collapse")) {
       const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
         const override = conf.keyboards.inFullViewGrid[id as KeyboardInFullViewGridId];
         if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
@@ -378,7 +379,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   }
 
   function keyboardEvent(event: KeyboardEvent) {
-    if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) return;
+    if (!HTML.root.classList.contains("ehvp-root-collapse")) return;
     if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
     const key = parseKey(event);
     const triggered = Object.entries(keyboardEvents.inMain).some(([id, desc]) => {
@@ -406,19 +407,19 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     guideElement.classList.add("ehvp-full-panel");
     guideElement.setAttribute("style", `align-items: center; color: black; text-align: left;`);
     guideElement.addEventListener("click", () => guideElement.remove());
-    if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
+    if (HTML.root.classList.contains("ehvp-root-collapse")) {
       document.body.after(guideElement);
     } else {
-      HTML.fullViewGrid.appendChild(guideElement);
+      HTML.root.appendChild(guideElement);
     }
   };
 
   function showKeyboardCustomEvent() {
-    createKeyboardCustomPanel(keyboardEvents, HTML.fullViewGrid);
+    createKeyboardCustomPanel(keyboardEvents, HTML.root);
   }
 
   function showExcludeURLEvent() {
-    createExcludeURLPanel(HTML.fullViewGrid);
+    createExcludeURLPanel(HTML.root);
   }
 
   const signal = { first: true };

@@ -1,13 +1,10 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { PagesSource } from "../page-fetcher";
+import { BaseMatcher, OriginMeta, } from "./platform";
 
-export class YandeMatcher implements Matcher {
-
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
-  }
+export class YandeMatcher extends BaseMatcher {
 
   workURL(): RegExp {
     return /yande.re\/post(?!\/show\/.*)/;
@@ -25,7 +22,7 @@ export class YandeMatcher implements Matcher {
     for (let p = curPageNumber; p <= latestPageNumber; p++) {
       u.searchParams.set("page", p.toString());
       // console.log(u.href);
-      yield { raw: u.href, typ: "url" };
+      yield u.href;
     }
   }
 
@@ -47,25 +44,14 @@ export class YandeMatcher implements Matcher {
     return { url: this.transformBigImageToSample(href) };
   }
 
-  public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
+  public async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
-    let doc = await (async (): Promise<Document | null> => {
-      if (page.raw instanceof Document) {
-        return page.raw;
-      } else {
-        const raw = await window.fetch(page.raw as string).then((response) => response.text());
-        if (!raw) return null;
-        const domParser = new DOMParser();
-        return domParser.parseFromString(raw, "text/html");
-      }
-    })();
-
+    const doc = await window.fetch(source as string).then(resp => resp.text()).then(text => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
     if (!doc) {
       throw new Error("warn: yande matcher failed to get document from source page!")
     }
-
     // title : page2 0001.jpg
-    let url = new URL(page.raw as string);
+    let url = new URL(source as string);
     let titlePrefix = ("page" + url.searchParams.get("page") || "nopage") + " ";
     let query = doc.querySelectorAll<HTMLLIElement>("ul#post-list-posts li");
 

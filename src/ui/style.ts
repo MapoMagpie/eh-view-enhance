@@ -4,7 +4,7 @@ export function loadStyleSheel() {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
   const style = document.createElement('style');
   const css = `
-.full-view-grid {
+.ehvp-root {
   width: 100vw;
   height: 100vh;
   background-color: rgb(0, 0, 0);
@@ -12,17 +12,21 @@ export function loadStyleSheel() {
   top: 0px;
   right: 0px;
   z-index: 2000;
-  overflow: hidden scroll;
-  transition: height 0.4s ease 0s;
+  transition: height 0.2s ease 0s;
+}
+.full-view-grid {
+  width: 100%;
+  height: 100%;
   display: grid;
   align-content: start;
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
+  overflow: hidden scroll;
 }
-.full-view-grid * {
+.ehvp-root * {
   font-family: initial;
 }
-.full-view-grid input, .full-view-grid select {
+.ehvp-root input, .ehvp-root select {
   color: #f1f1f1;
   background-color: #34353b !important;
   color-scheme: dark;
@@ -36,10 +40,10 @@ export function loadStyleSheel() {
   top: unset !important;
   vertical-align: middle;
 }
-.full-view-grid input:enabled:hover, .full-view-grid select:enabled:hover, .full-view-grid input:enabled:focus, .full-view-grid select:enabled:focus {
+.ehvp-root input:enabled:hover, .ehvp-root select:enabled:hover, .ehvp-root input:enabled:focus, .ehvp-root select:enabled:focus {
   background-color: #34355b !important;
 }
-.full-view-grid select option {
+.ehvp-root select option {
   background-color: #34355b !important;
   color: #f1f1f1;
   font-size: 1rem;
@@ -94,7 +98,7 @@ export function loadStyleSheel() {
     left: 0%;
 	}
 }
-.full-view-grid-collapse {
+.ehvp-root-collapse {
   height: 0;
   transition: height 0.4s;
 }
@@ -171,14 +175,14 @@ export function loadStyleSheel() {
   .p-helper-extend .b-main {
     max-width: 24rem !important;
   }
-  .full-view-grid input[type="checkbox"] {
+  .ehvp-root input[type="checkbox"] {
     width: 1rem;
     height: unset !important;
   }
-  .full-view-grid select {
+  .ehvp-root select {
     width: 7rem !important;
   }
-  .full-view-grid input, .full-view-grid select {
+  .ehvp-root input, .ehvp-root select {
     width: 2rem;
     height: 1.5rem;
   }
@@ -221,14 +225,14 @@ export function loadStyleSheel() {
   .p-helper-extend .b-main {
     max-width: 100vw !important;
   }
-  .full-view-grid input[type="checkbox"] {
+  .ehvp-root input[type="checkbox"] {
     width: 4cqw;
     height: unset !important;
   }
-  .full-view-grid select {
+  .ehvp-root select {
     width: 25cqw !important;
   }
-  .full-view-grid input, .full-view-grid select {
+  .ehvp-root input, .ehvp-root select {
     width: 9cqw;
     height: 6cqw;
     font-size: 3cqw;
@@ -677,19 +681,7 @@ html {
   color: white;
   font-weight: bold;
 }
-`
-
-  // <div>
-  //   <button id="bifm-vid-ctl-play" class="bifm-vid-ctl-btn">▶️</button>
-  //   <button id="bifm-vid-ctl-mute" class="bifm-vid-ctl-btn">▶️</button>
-  //   <progress id="bifm-vid-ctl-volume" class="bifm-vid-ctl-pg" value="50" max="100"></progress>
-  //   <span id="bifm-vid-ctl-time" class="bifm-vid-ctl-span">00:00</span>
-  //   <span class="bifm-vid-ctl-span">/</span>
-  //   <span id="bifm-vid-ctl-duration" class="bifm-vid-ctl-span">10:00</span>
-  // </div>
-  // <div>
-  //   <progress id="bifm-vid-ctl-pg" class="bifm-vid-ctl-pg" value="50" max="100"></progress>
-  // </div>
+`;
   style.textContent = css;
   document.head.appendChild(style);
   return style;

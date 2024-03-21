@@ -1,7 +1,8 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { BaseMatcher, OriginMeta } from "./platform";
 
 function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, page: string) {
   const width = e.width;
@@ -19,7 +20,7 @@ function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, p
   }
 }
 
-export class Comic18Matcher implements Matcher {
+export class Comic18Matcher extends BaseMatcher {
 
   async processData(data: Uint8Array, contentType: string, url: string): Promise<Uint8Array> {
     const reg = /(\d+)\/(\d+)\.(\w+)/;
@@ -69,7 +70,7 @@ export class Comic18Matcher implements Matcher {
 
   public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
-    const raw = await window.fetch(source.raw as string).then(resp => resp.text());
+    const raw = await window.fetch(source as string).then(resp => resp.text());
     const document = new DOMParser().parseFromString(raw, "text/html");
     const images = Array.from(document.querySelectorAll<HTMLImageElement>(".scramble-page:not(.thewayhome) > img"));
     for (const img of images) {
@@ -83,18 +84,17 @@ export class Comic18Matcher implements Matcher {
     return list;
   }
 
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  public async * fetchPagesSource(): AsyncGenerator<PagesSource> {
     const episode = Array.from(document.querySelectorAll<HTMLAnchorElement>(".episode > ul > a"));
     if (episode.length > 0) {
       for (const a of episode) {
-        const href = a.href;
-        yield { raw: href, typ: "url" };
+        yield a.href;
       }
       return;
     }
     const href = document.querySelector<HTMLAnchorElement>(".read-block > a")?.href;
     if (href === undefined) throw new Error("No page found");
-    yield { raw: href, typ: "url" };
-    return;
+    yield href;
   }
+
 }

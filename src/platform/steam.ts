@@ -1,13 +1,11 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { PagesSource } from "../page-fetcher";
+import { BaseMatcher, OriginMeta } from "./platform";
 
 const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
-export class SteamMatcher implements Matcher {
+export class SteamMatcher extends BaseMatcher {
 
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
-  }
   workURL(): RegExp {
     return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
   }
@@ -29,13 +27,13 @@ export class SteamMatcher implements Matcher {
     return { url: imgURL };
   }
 
-  public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
+  public async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
     const doc = await (async () => {
-      if (page.raw instanceof Document) {
-        return page.raw
+      if (source instanceof Document) {
+        return source;
       } else {
-        const raw = await window.fetch(page.raw).then((response) => response.text());
+        const raw = await window.fetch(source as string).then((response) => response.text());
         if (!raw) return null;
         const domParser = new DOMParser();
         return domParser.parseFromString(raw, "text/html");
@@ -77,17 +75,15 @@ export class SteamMatcher implements Matcher {
       if (!doc) {
         throw new Error("warn: steam matcher failed to get document from source page!")
       }
-      doc.querySelectorAll(".pagingPageLink").forEach(ele => {
-        totalPages = Number(ele.textContent);
-      });
+      doc.querySelectorAll(".pagingPageLink").forEach(ele => totalPages = Number(ele.textContent));
     }
     if (totalPages > 0) {
       for (let p = 1; p <= totalPages; p++) {
         url.searchParams.set("p", p.toString());
-        yield { raw: url.href, typ: "url" };
+        yield url.href;
       }
     } else {
-      yield { raw: url.href, typ: "url" };
+      yield url.href;
     }
   }
 

@@ -1,9 +1,10 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { Chapter, PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { parseImagePositions, splitImagesFromUrl } from "../utils/sprite-split";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { BaseMatcher, OriginMeta, } from "./platform";
 
 // EHMatcher
 const regulars = {
@@ -21,11 +22,7 @@ const regulars = {
   sprite: /url\((.*?)\)/,
 }
 
-export class EHMatcher implements Matcher {
-
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
-  }
+export class EHMatcher extends BaseMatcher {
 
   workURL(): RegExp {
     return /e[-x]hentai.org\/g\/\w+/;
@@ -67,10 +64,10 @@ export class EHMatcher implements Matcher {
   public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
     let doc = await (async (): Promise<Document | null> => {
-      if (page.raw instanceof Document) {
-        return page.raw;
+      if (page instanceof Document) {
+        return page;
       } else {
-        const raw = await window.fetch(page.raw as string).then((response) => response.text());
+        const raw = await window.fetch(page as string).then((response) => response.text());
         if (!raw) return null;
         const domParser = new DOMParser();
         return domParser.parseFromString(raw, "text/html");
@@ -161,15 +158,16 @@ export class EHMatcher implements Matcher {
     return list;
   }
 
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    let fristImageHref = document.querySelector("#gdt a")?.getAttribute("href");
+  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
+    const doc = chapter.source as Document;
+    let fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
     // MPV
     if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
-      yield { raw: window.location.href, typ: "url" };
+      yield window.location.href;
       return;
     }
     // Normal
-    let pages = Array.from(document.querySelectorAll(".gtb td a")).filter(a => a.getAttribute("href")).map(a => a.getAttribute("href")!);
+    let pages = Array.from(doc.querySelectorAll(".gtb td a")).filter(a => a.getAttribute("href")).map(a => a.getAttribute("href")!);
     if (pages.length === 0) {
       throw new Error("未获取到分页元素！");
     }
@@ -187,10 +185,10 @@ export class EHMatcher implements Matcher {
       throw new Error("未获取到分页元素！x2");
     }
     url.searchParams.delete("p");
-    yield { raw: url.href, typ: "url" };
+    yield url.href;
     for (let p = 1; p < lastPage + 1; p++) {
       url.searchParams.set("p", p.toString());
-      yield { raw: url.href, typ: "url" };
+      yield url.href;
     }
   }
 

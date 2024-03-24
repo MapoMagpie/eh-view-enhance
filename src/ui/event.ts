@@ -435,7 +435,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         showFullViewGrid();
         if (signal.first) {
           signal.first = false;
-          PF.init().then(() => IL.start(IL.lockVer));
+          PF.init();
         }
       } else {
         HTML.pageHelper.classList.remove("p-helper-extend");

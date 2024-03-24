@@ -34,7 +34,7 @@ function main(MATCHER: Matcher): DestoryFunc {
     BIFM.show();
   });
 
-  EBUS.subscribe("page-fetcher-on-appended", (total, _ifs, done) => {
+  EBUS.subscribe("pf-on-appended", (total, _ifs, done) => {
     PH.setPageState({ total: `${total}${done ? "" : ".."}` });
     setTimeout(() => FVGM.renderCurrView(), 200);
   });
@@ -51,7 +51,12 @@ function main(MATCHER: Matcher): DestoryFunc {
   });
 
   PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
-  PF.afterInit = () => HTML.pageLoading.style.display = "none";
+  PF.afterInit = () => {
+    HTML.pageLoading.style.display = "none";
+    IL.lockVer++;
+    IL.processingIndexList = [0];
+    IL.start(IL.lockVer)
+  };
 
   if (conf["first"]) {
     events.showGuideEvent();

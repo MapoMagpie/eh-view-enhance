@@ -35,7 +35,6 @@ export class Comic18Matcher extends BaseMatcher {
           title,
           source: a.href,
           thumbimg: thumb?.src,
-          nodes: []
         });
       }
     } else {
@@ -45,7 +44,6 @@ export class Comic18Matcher extends BaseMatcher {
         id: "default",
         title: "defalut",
         source: href,
-        nodes: []
       });
     }
     return ret;

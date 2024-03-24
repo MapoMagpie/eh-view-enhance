@@ -388,6 +388,8 @@
         case 1:
           this.node.render();
           this.rendered = 2;
+          if (this.stage === 3 /* DONE */)
+            this.node.changeStyle("fetched");
           break;
       }
     }
@@ -1180,6 +1182,16 @@
     debouncer;
     downloading;
     dataSize = 0;
+    clear() {
+      this.length = 0;
+      this.executableQueue = [];
+      this.currIndex = 0;
+      this.finishedIndex.clear();
+    }
+    restore(...imfs) {
+      imfs.forEach((imf, i) => imf.stage === FetchState.DONE && this.finishedIndex.add(i));
+      this.push(...imfs);
+    }
     static newQueue() {
       const queue = new IMGFetcherQueue();
       EBUS.subscribe("imf-on-finished", (index, success, imf) => queue.finishedReport(index, success, imf));
@@ -1209,6 +1221,8 @@
     }
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
     finishedReport(index, success, imf) {
+      if (this.length === 0)
+        return;
       if (!success || imf.stage !== FetchState.DONE)
         return;
       this.finishedIndex.add(index);
@@ -1558,7 +1572,7 @@
       EBUS.subscribe("fvgm-want-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendNextPage(), 5));
     }
     onAppended(total, ifs, done) {
-      EBUS.emit("page-fetcher-on-appended", total, ifs, done);
+      EBUS.emit("pf-on-appended", total, ifs, done);
     }
     abort() {
       this.abortb = true;
@@ -1577,26 +1591,25 @@
         this.changeChapter(0).finally(() => this.afterInit?.());
       }
       if (this.chapters.length > 1) {
-        EBUS.emit("page-fetcher-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
+        EBUS.emit("pf-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
       }
     }
     backChaptersSelection() {
       if (this.chapters.length > 1) {
-        this.queue.length = 0;
-        EBUS.emit("page-fetcher-change-chapter");
-        EBUS.emit("page-fetcher-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
+        this.queue.forEach((imf) => imf.unrender());
+        this.chapters[this.currChapterIndex].queue = [...this.queue];
+        this.queue.clear();
+        EBUS.emit("pf-change-chapter");
+        EBUS.emit("pf-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
       }
     }
     async changeChapter(index) {
       this.currChapterIndex = index;
-      this.queue.length = 0;
-      EBUS.emit("page-fetcher-change-chapter");
+      EBUS.emit("pf-change-chapter");
       const chapter = this.chapters[this.currChapterIndex];
-      const nodes = chapter.nodes;
-      if (nodes.length > 0) {
-        const IFs = nodes.map((imgNode) => new IMGFetcher(imgNode, this.matcher));
-        this.queue.push(...IFs);
-        this.onAppended(this.queue.length, nodes);
+      if (chapter.queue && chapter.queue.length > 0) {
+        this.queue.restore(...chapter.queue);
+        this.onAppended(this.queue.length, chapter.queue.map((imf) => imf.node));
       }
       if (!chapter.sourceIter) {
         evLog("error", "chapter sourceIter is not set!");
@@ -1608,11 +1621,11 @@
       }
       this.appendA(this.queue.length - 1);
     }
+    // append next page until the queue length is 60 more than finished
     async appendA(finished) {
       while (true) {
-        if (finished + 60 < this.queue.length) {
+        if (finished + 60 < this.queue.length)
           break;
-        }
         if (!await this.appendNextPage())
           break;
       }
@@ -1639,10 +1652,8 @@
       }
     }
     async appendPageImg(page) {
-      const chapter = this.chapters[this.currChapterIndex];
       try {
         const nodes = await this.obtainImageNodeList(page);
-        chapter.nodes.push(...nodes);
         if (this.abortb)
           return false;
         const IFs = nodes.map(
@@ -1693,8 +1704,7 @@
       return [{
         id: "default",
         title: "default",
-        source: document,
-        nodes: []
+        source: document
       }];
     }
     parseGalleryMeta(doc) {
@@ -1730,8 +1740,7 @@
             id: "",
             title,
             source: a.href,
-            thumbimg: thumb?.src,
-            nodes: []
+            thumbimg: thumb?.src
           });
         }
       } else {
@@ -1741,8 +1750,7 @@
         ret.push({
           id: "default",
           title: "defalut",
-          source: href,
-          nodes: []
+          source: href
         });
       }
       return ret;
@@ -3917,7 +3925,7 @@ duration 0.04`).join("\n");
           showFullViewGrid();
           if (signal.first) {
             signal.first = false;
-            PF.init().then(() => IL.start(IL.lockVer));
+            PF.init();
           }
         } else {
           HTML.pageHelper.classList.remove("p-helper-extend");
@@ -3955,12 +3963,12 @@ duration 0.04`).join("\n");
     constructor(HTML, queue) {
       this.root = HTML.fullViewGrid;
       this.queue = queue;
-      EBUS.subscribe("page-fetcher-on-appended", (_total, nodes) => {
+      EBUS.subscribe("pf-on-appended", (_total, nodes) => {
         if (nodes.length > 0) {
           this.appendToView(nodes);
         }
       });
-      EBUS.subscribe("page-fetcher-change-chapter", () => {
+      EBUS.subscribe("pf-change-chapter", () => {
         this.root.innerHTML = "";
       });
     }
@@ -4769,6 +4777,9 @@ html {
   color: white;
   font-weight: bold;
 }
+.p-helper-extend #ehvp-gate-book {
+  display: none !important;
+}
 `;
     style.textContent = css;
     document.head.appendChild(style);
@@ -4965,7 +4976,7 @@ html {
         </div>
     </div>
     <div id="ehvp-gate-icon">
-        <span id="gate">&lessdot;📖</span>
+        <span>&lessdot;</span><span id="ehvp-gate-book">📖</span>
     </div>
     <div id="b-main" class="b-main b-collapse">
         <div id="config-panel-btn" class="clickable">${i18n.config.get()}</div>
@@ -5002,7 +5013,7 @@ html {
       // download panel mouse leave event
       downloaderPanel: q("#downloader-panel", fullViewGrid),
       collapseBTN: q("#collapse-btn", fullViewGrid),
-      gate: q("#gate", fullViewGrid),
+      gate: q("#ehvp-gate-icon", fullViewGrid),
       currPageElement: q("#p-curr-page", fullViewGrid),
       totalPageElement: q("#p-total", fullViewGrid),
       finishedElement: q("#p-finished", fullViewGrid),
@@ -5950,7 +5961,7 @@ html {
       IFQ.currIndex = index;
       BIFM.show();
     });
-    EBUS.subscribe("page-fetcher-on-appended", (total, _ifs, done) => {
+    EBUS.subscribe("pf-on-appended", (total, _ifs, done) => {
       PH.setPageState({ total: `${total}${done ? "" : ".."}` });
       setTimeout(() => FVGM.renderCurrView(), 200);
     });
@@ -5966,7 +5977,12 @@ html {
       }
     });
     PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
-    PF.afterInit = () => HTML.pageLoading.style.display = "none";
+    PF.afterInit = () => {
+      HTML.pageLoading.style.display = "none";
+      IL.lockVer++;
+      IL.processingIndexList = [0];
+      IL.start(IL.lockVer);
+    };
     if (conf["first"]) {
       events.showGuideEvent();
       conf["first"] = false;

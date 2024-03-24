@@ -12,12 +12,12 @@ export class FullViewGridManager {
   constructor(HTML: Elements, queue: IMGFetcherQueue) {
     this.root = HTML.fullViewGrid;
     this.queue = queue;
-    EBUS.subscribe("page-fetcher-on-appended", (_total, nodes) => {
+    EBUS.subscribe("pf-on-appended", (_total, nodes) => {
       if (nodes.length > 0) {
         this.appendToView(nodes);
       }
     });
-    EBUS.subscribe("page-fetcher-change-chapter", () => {
+    EBUS.subscribe("pf-change-chapter", () => {
       this.root.innerHTML = "";
     });
   }

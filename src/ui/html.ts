@@ -203,7 +203,7 @@ export function createHTML() {
         </div>
     </div>
     <div id="ehvp-gate-icon">
-        <span id="gate">&lessdot;📖</span>
+        <span>&lessdot;</span><span id="ehvp-gate-book">📖</span>
     </div>
     <div id="b-main" class="b-main b-collapse">
         <div id="config-panel-btn" class="clickable">${i18n.config.get()}</div>
@@ -241,7 +241,7 @@ export function createHTML() {
     // download panel mouse leave event
     downloaderPanel: q("#downloader-panel", fullViewGrid),
     collapseBTN: q("#collapse-btn", fullViewGrid),
-    gate: q("#gate", fullViewGrid),
+    gate: q("#ehvp-gate-icon", fullViewGrid),
     currPageElement: q("#p-curr-page", fullViewGrid),
     totalPageElement: q("#p-total", fullViewGrid),
     finishedElement: q("#p-finished", fullViewGrid),

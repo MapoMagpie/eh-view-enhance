@@ -702,6 +702,9 @@ html {
   color: white;
   font-weight: bold;
 }
+.p-helper-extend #ehvp-gate-book {
+  display: none !important;
+}
 `;
   style.textContent = css;
   document.head.appendChild(style);

@@ -12,7 +12,7 @@ export type Chapter = {
   id: string;
   title: string | string[];
   source: PagesSource;
-  nodes: ImageNode[]
+  queue?: IMGFetcher[];
   thumbimg?: string;
   sourceIter?: AsyncGenerator<PagesSource>;
   done?: boolean;
@@ -38,7 +38,7 @@ export class PageFetcher {
   }
 
   onAppended(total: number, ifs: ImageNode[], done?: boolean) {
-    EBUS.emit("page-fetcher-on-appended", total, ifs, done);
+    EBUS.emit("pf-on-appended", total, ifs, done);
   }
 
   abort() {
@@ -60,32 +60,32 @@ export class PageFetcher {
       this.changeChapter(0).finally(() => this.afterInit?.());
     }
     if (this.chapters.length > 1) {
-      EBUS.emit("page-fetcher-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
+      EBUS.emit("pf-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
     }
   }
 
   backChaptersSelection() {
     if (this.chapters.length > 1) {
-      this.queue.length = 0;
-      EBUS.emit("page-fetcher-change-chapter");
-      EBUS.emit("page-fetcher-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
+      this.queue.forEach(imf => imf.unrender());
+      this.chapters[this.currChapterIndex].queue = [...this.queue];
+      this.queue.clear();
+      EBUS.emit("pf-change-chapter");
+      EBUS.emit("pf-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
     }
   }
 
   async changeChapter(index: number) {
     this.currChapterIndex = index;
-    // set queue to empty
-    this.queue.length = 0;
     // set full view grid to empty
-    EBUS.emit("page-fetcher-change-chapter");
+    EBUS.emit("pf-change-chapter");
+
     const chapter = this.chapters[this.currChapterIndex];
     // if chapter has nodes
-    const nodes = chapter.nodes;
-    if (nodes.length > 0) {
-      const IFs = nodes.map((imgNode) => new IMGFetcher(imgNode, this.matcher));
-      this.queue.push(...IFs);
-      this.onAppended(this.queue.length, nodes);
+    if (chapter.queue && chapter.queue.length > 0) {
+      this.queue.restore(...chapter.queue);
+      this.onAppended(this.queue.length, chapter.queue.map(imf => imf.node));
     }
+
     if (!chapter.sourceIter) {
       evLog("error", "chapter sourceIter is not set!");
       return;
@@ -97,12 +97,10 @@ export class PageFetcher {
     this.appendA(this.queue.length - 1);
   }
 
+  // append next page until the queue length is 60 more than finished
   private async appendA(finished: number) {
-    // append next page until the queue length is 60 more than finished
     while (true) {
-      if (finished + 60 < this.queue.length) {
-        break;
-      }
+      if (finished + 60 < this.queue.length) break;
       if (!await this.appendNextPage()) break;
     }
   }
@@ -128,10 +126,8 @@ export class PageFetcher {
   }
 
   async appendPageImg(page: PagesSource): Promise<boolean> {
-    const chapter = this.chapters[this.currChapterIndex];
     try {
       const nodes = await this.obtainImageNodeList(page);
-      chapter.nodes.push(...nodes);
       if (this.abortb) return false;
       const IFs = nodes.map(
         (imgNode) => new IMGFetcher(imgNode, this.matcher)

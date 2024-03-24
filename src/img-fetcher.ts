@@ -158,6 +158,7 @@ export class IMGFetcher {
       case 1:
         this.node.render();
         this.rendered = 2;
+        if (this.stage === FetchState.DONE) this.node.changeStyle("fetched");
         break;
       case 2:
         break;

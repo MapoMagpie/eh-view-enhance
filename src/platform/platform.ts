@@ -38,7 +38,6 @@ export abstract class BaseMatcher implements Matcher {
       id: "default",
       title: "default",
       source: document,
-      nodes: [],
     }];
   }
 

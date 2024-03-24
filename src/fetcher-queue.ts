@@ -11,6 +11,18 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   downloading?: () => boolean;
   dataSize: number = 0;
 
+  clear() {
+    this.length = 0;
+    this.executableQueue = [];
+    this.currIndex = 0;
+    this.finishedIndex.clear();
+  }
+
+  restore(...imfs: IMGFetcher[]) {
+    imfs.forEach((imf, i) => imf.stage === FetchState.DONE && this.finishedIndex.add(i));
+    this.push(...imfs);
+  }
+
   static newQueue() {
     const queue = new IMGFetcherQueue();
     // avoid Array.slice or some methods trigger Array.constructor
@@ -55,6 +67,8 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
 
   //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
   finishedReport(index: number, success: boolean, imf: IMGFetcher) {
+    // change chapter will clear this
+    if (this.length === 0) return;
     // evLog("ifq finished report, index: ", index, ", success: ", success, ", current index: ", this.currIndex);
     if (!success || imf.stage !== FetchState.DONE) return;
     // if (!this.finishedIndex.has(index)) { }

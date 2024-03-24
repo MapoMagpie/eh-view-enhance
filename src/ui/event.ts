@@ -165,7 +165,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
       if (!element.classList.toggle("p-collapse")) { // not collapsed
         ["config", "downloader"].filter(k => k !== id).forEach(k => togglePanelEvent(k, true));
-        if (!conf.autoCollapsePanels) {
+        if (!conf.autoCollapsePanel) {
           PH.minify(false, "fullViewGrid");
           restoreMinify = true;
         }

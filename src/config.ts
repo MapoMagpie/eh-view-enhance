@@ -54,7 +54,7 @@ export type Config = {
   /** 动图转换为 */
   convertTo: "GIF" | "MP4"
   /** 自动收起控制面板 */
-  autoCollapsePanels: boolean,
+  autoCollapsePanel: boolean,
   /** 最小化控制栏 */
   minifyPageHelper: "always" | "inBigMode" | "never",
   /** 键盘自定义 */
@@ -99,7 +99,7 @@ function defaultConf(): Config {
     preventScrollPageTime: 200,
     archiveVolumeSize: 1500,
     convertTo: "GIF",
-    autoCollapsePanels: true,
+    autoCollapsePanel: true,
     minifyPageHelper: "inBigMode",
     keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
     excludeURLs: [],
@@ -152,8 +152,8 @@ function confHealthCheck($conf: Config): Config {
     $conf.convertTo = "GIF";
     changed = true;
   }
-  if ($conf.autoCollapsePanels === undefined) {
-    $conf.autoCollapsePanels = true;
+  if ($conf.autoCollapsePanel === undefined) {
+    $conf.autoCollapsePanel = true;
     changed = true;
   }
   if ($conf.minifyPageHelper === undefined) {
@@ -183,8 +183,8 @@ export function saveConf(c: Config) {
 }
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime";
 export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanels";
-export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanels"];
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel";
+export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel"];
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper";
 export const ConfigSelectKeys: (keyof Config)[] = ["readMode", "stickyMouse", "minifyPageHelper"];
 export const conf = getConf();

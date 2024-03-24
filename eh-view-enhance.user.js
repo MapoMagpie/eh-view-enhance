@@ -82,7 +82,7 @@
       preventScrollPageTime: 200,
       archiveVolumeSize: 1500,
       convertTo: "GIF",
-      autoCollapsePanels: true,
+      autoCollapsePanel: true,
       minifyPageHelper: "inBigMode",
       keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
       excludeURLs: [],
@@ -130,8 +130,8 @@
       $conf.convertTo = "GIF";
       changed = true;
     }
-    if ($conf.autoCollapsePanels === void 0) {
-      $conf.autoCollapsePanels = true;
+    if ($conf.autoCollapsePanel === void 0) {
+      $conf.autoCollapsePanel = true;
       changed = true;
     }
     if ($conf.minifyPageHelper === void 0) {
@@ -159,7 +159,7 @@
     _GM_setValue(CONFIG_KEY, JSON.stringify(c));
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanels"];
+  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel"];
   const ConfigSelectKeys = ["readMode", "stickyMouse", "minifyPageHelper"];
   const conf = getConf();
 
@@ -481,7 +481,7 @@
     readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
     maxPreloadThreads: new I18nValue("PreloadThreads", "最大同时加载"),
     maxPreloadThreadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
-    maxDownloadThreads: new I18nValue("DonloadThreads", "最大同时下载"),
+    maxDownloadThreads: new I18nValue("DownloadThreads", "最大同时下载"),
     maxDownloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
     timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
     bestQuality: new I18nValue("Raw Image", "最佳质量"),
@@ -496,8 +496,8 @@
     packaging: new I18nValue("Packaging...", "打包中..."),
     reversePages: new I18nValue("Reverse Pages", "反向翻页"),
     reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
-    autoCollapsePanels: new I18nValue("Auto Flod Control Panels", "自动收起控制面板"),
-    autoCollapsePanelsTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
+    autoCollapsePanel: new I18nValue("Auto Flod Control Panel", "自动收起控制面板"),
+    autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
     stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
     stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
     minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
@@ -3667,7 +3667,7 @@ duration 0.04`).join("\n");
         }
         if (!element.classList.toggle("p-collapse")) {
           ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
-          if (!conf.autoCollapsePanels) {
+          if (!conf.autoCollapsePanel) {
             PH.minify(false, "fullViewGrid");
             restoreMinify = true;
           }
@@ -4759,10 +4759,10 @@ html {
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
-                    <span>${i18n.autoCollapsePanels.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelsTooltip.get()}</span></span>:
+                    <span>${i18n.autoCollapsePanel.get()}
+                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelTooltip.get()}</span></span>:
                     </span>
-                    <input id="autoCollapsePanelsCheckbox" ${conf.autoCollapsePanels ? "checked" : ""} type="checkbox" />
+                    <input id="autoCollapsePanelCheckbox" ${conf.autoCollapsePanel ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
@@ -4912,12 +4912,12 @@ html {
       DL.check();
       events.togglePanelEvent("downloader");
     });
-    HTML.configPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target, "config"));
-    HTML.configPanel.addEventListener("blur", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target, "config"));
-    HTML.downloaderPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target, "downloader"));
-    HTML.downloaderPanel.addEventListener("blur", (event) => conf.autoCollapsePanels && events.collapsePanelEvent(event.target, "downloader"));
-    HTML.pageHelper.addEventListener("mouseover", () => conf.autoCollapsePanels && events.abortMouseleavePanelEvent(""));
-    HTML.pageHelper.addEventListener("mouseleave", () => conf.autoCollapsePanels && ["config", "downloader"].forEach((k) => events.togglePanelEvent(k, true)));
+    HTML.configPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "config"));
+    HTML.configPanel.addEventListener("blur", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "config"));
+    HTML.downloaderPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "downloader"));
+    HTML.downloaderPanel.addEventListener("blur", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "downloader"));
+    HTML.pageHelper.addEventListener("mouseover", () => conf.autoCollapsePanel && events.abortMouseleavePanelEvent(""));
+    HTML.pageHelper.addEventListener("mouseleave", () => conf.autoCollapsePanel && ["config", "downloader"].forEach((k) => events.togglePanelEvent(k, true)));
     for (const key of ConfigNumberKeys) {
       q(`#${key}MinusBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
       q(`#${key}AddBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));

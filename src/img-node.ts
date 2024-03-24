@@ -1,4 +1,5 @@
 import { DownloadState } from "./img-fetcher";
+import { Chapter } from "./page-fetcher";
 
 const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
 
@@ -150,4 +151,42 @@ export default class ImageNode implements VisualNode {
     return false;
   }
 
+}
+
+
+export class ChapterNode implements VisualNode {
+  chapter: Chapter;
+  index: number;
+  constructor(chapter: Chapter, index: number) {
+    this.chapter = chapter;
+    this.index = index;
+  }
+
+  create(): HTMLElement {
+    const element = DEFAULT_NODE_TEMPLATE.cloneNode(true) as HTMLElement;
+    const anchor = element.firstElementChild as HTMLAnchorElement;
+    if (this.chapter.thumbimg) {
+      const img = anchor.firstElementChild as HTMLImageElement;
+      img.src = this.chapter.thumbimg;
+      img.title = this.chapter.title.toString();
+    }
+    // create title element
+    const description = document.createElement("div");
+    description.classList.add("ehvp-chapter-description");
+    if (Array.isArray(this.chapter.title)) {
+      description.innerHTML = this.chapter.title.map((t) => `<span>${t}</span>`).join("<br>");
+    } else {
+      description.innerHTML = `<span>${this.chapter.title}</span>`;
+    }
+    anchor.appendChild(description);
+
+    anchor.onclick = (event) => {
+      event.preventDefault();
+      console.log("chapter clicked: ", this.index);
+      this.chapter.onclick?.(this.index);
+    };
+    return element;
+  }
+
+  render(): void { }
 }

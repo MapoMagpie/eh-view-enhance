@@ -35,7 +35,8 @@ const keyboardCustom: KeyboardCustom = {
     "pause-auto-load-temporarily": new I18nValue("Pause Auto Load Temporarily", "临时停止自动加载"),
     "exit-full-view-grid": new I18nValue("Exit Read Mode", "退出阅读模式"),
     "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
-    "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量")
+    "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量"),
+    "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择"),
   },
 }
 export const i18n = {

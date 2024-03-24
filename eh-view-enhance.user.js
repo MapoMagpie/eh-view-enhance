@@ -474,7 +474,8 @@
       "pause-auto-load-temporarily": new I18nValue("Pause Auto Load Temporarily", "临时停止自动加载"),
       "exit-full-view-grid": new I18nValue("Exit Read Mode", "退出阅读模式"),
       "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
-      "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量")
+      "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量"),
+      "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择")
     }
   };
   const i18n = {
@@ -1366,6 +1367,145 @@
     }
   }
 
+  const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
+  const DEFAULT_NODE_TEMPLATE = document.createElement("div");
+  DEFAULT_NODE_TEMPLATE.classList.add("img-node");
+  DEFAULT_NODE_TEMPLATE.innerHTML = `<a style="position: relative; display: block;"><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></a>`;
+  const OVERLAY_TIP = document.createElement("div");
+  OVERLAY_TIP.classList.add("overlay-tip");
+  OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
+  class ImageNode {
+    root;
+    src;
+    href;
+    title;
+    onclick;
+    imgElement;
+    delaySRC;
+    blobUrl;
+    mimeType;
+    size;
+    downloadBar;
+    rendered = false;
+    constructor(src, href, title, delaySRC) {
+      this.src = src;
+      this.href = href;
+      this.title = title;
+      this.delaySRC = delaySRC;
+    }
+    create() {
+      this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
+      const anchor = this.root.firstElementChild;
+      anchor.href = this.href;
+      anchor.target = "_blank";
+      this.imgElement = anchor.firstElementChild;
+      this.imgElement.setAttribute("title", this.title);
+      if (this.onclick) {
+        this.imgElement.addEventListener("click", (event) => {
+          event.preventDefault();
+          this.onclick(event);
+        });
+      }
+      return this.root;
+    }
+    render() {
+      if (this.imgElement) {
+        this.rendered = true;
+        let justThumbnail = !this.blobUrl;
+        if (this.mimeType === "image/gif") {
+          const tip = OVERLAY_TIP.cloneNode(true);
+          tip.firstChild.textContent = "GIF";
+          this.root?.appendChild(tip);
+          justThumbnail = this.size != void 0 && this.size > 20 * 1024 * 1024;
+        }
+        if (this.mimeType === "video/mp4") {
+          const tip = OVERLAY_TIP.cloneNode(true);
+          tip.firstChild.textContent = "MP4";
+          this.root?.appendChild(tip);
+          justThumbnail = true;
+        }
+        if (justThumbnail) {
+          const delaySRC = this.delaySRC;
+          this.delaySRC = void 0;
+          if (delaySRC) {
+            delaySRC.then((src) => {
+              this.src = src;
+              this.render();
+            });
+          } else if (this.src) {
+            this.imgElement.src = this.src;
+          }
+        } else {
+          this.imgElement.src = this.blobUrl;
+        }
+      }
+    }
+    unrender() {
+      if (!this.rendered)
+        return;
+      if (this.imgElement) {
+        this.imgElement.src = this.src;
+      }
+    }
+    onloaded(blobUrl, mimeType, size) {
+      this.blobUrl = blobUrl;
+      this.mimeType = mimeType;
+      this.size = size;
+    }
+    progress(state) {
+      if (state.readyState === 4) {
+        if (this.downloadBar && this.downloadBar.parentNode) {
+          this.downloadBar.parentNode.removeChild(this.downloadBar);
+        }
+        return;
+      }
+      if (!this.downloadBar) {
+        const downloadBar = document.createElement("div");
+        downloadBar.classList.add("download-bar");
+        downloadBar.innerHTML = `
+      <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
+      `;
+        this.downloadBar = downloadBar;
+        this.root.firstElementChild.appendChild(this.downloadBar);
+      }
+      if (this.downloadBar) {
+        this.downloadBar.querySelector("progress").setAttribute("value", state.loaded / state.total * 100 + "");
+      }
+    }
+    changeStyle(fetchStatus) {
+      if (!this.root)
+        return;
+      switch (fetchStatus) {
+        case "fetching":
+          this.root.classList.add("img-fetching");
+          break;
+        case "fetched":
+          this.root.classList.add("img-fetched");
+          this.root.classList.remove("img-fetching");
+          break;
+        case "failed":
+          this.root.classList.add("img-fetch-failed");
+          this.root.classList.remove("img-fetching");
+          break;
+        default:
+          this.root.classList.remove("img-fetched");
+          this.root.classList.remove("img-fetch-failed");
+          this.root.classList.remove("img-fetching");
+      }
+    }
+    equal(ele) {
+      if (ele === this.root) {
+        return true;
+      }
+      if (ele === this.root?.firstElementChild) {
+        return true;
+      }
+      if (ele === this.imgElement) {
+        return true;
+      }
+      return false;
+    }
+  }
   class ChapterNode {
     chapter;
     index;
@@ -1374,16 +1514,32 @@
       this.index = index;
     }
     create() {
-      const element = document.createElement("div");
-      element.innerHTML = `<div class="chapter-node"><div class="chapter-title">${this.chapter.title}</div></div>`;
-      element.onclick = () => {
+      const element = DEFAULT_NODE_TEMPLATE.cloneNode(true);
+      const anchor = element.firstElementChild;
+      if (this.chapter.thumbimg) {
+        const img = anchor.firstElementChild;
+        img.src = this.chapter.thumbimg;
+        img.title = this.chapter.title.toString();
+      }
+      const description = document.createElement("div");
+      description.classList.add("ehvp-chapter-description");
+      if (Array.isArray(this.chapter.title)) {
+        description.innerHTML = this.chapter.title.map((t) => `<span>${t}</span>`).join("<br>");
+      } else {
+        description.innerHTML = `<span>${this.chapter.title}</span>`;
+      }
+      anchor.appendChild(description);
+      anchor.onclick = (event) => {
+        event.preventDefault();
         console.log("chapter clicked: ", this.index);
+        this.chapter.onclick?.(this.index);
       };
       return element;
     }
     render() {
     }
   }
+
   class PageFetcher {
     chapters = [];
     currChapterIndex = 0;
@@ -1408,17 +1564,26 @@
       this.abortb = true;
     }
     async init() {
-      this.beforeInit?.();
-      await this.initPageAppend();
-      this.afterInit?.();
-    }
-    async initPageAppend() {
       this.chapters = await this.matcher.fetchChapters();
-      this.chapters.forEach((c) => c.sourceIter = this.matcher.fetchPagesSource(c));
+      this.chapters.forEach((c) => {
+        c.sourceIter = this.matcher.fetchPagesSource(c);
+        c.onclick = (index) => {
+          this.beforeInit?.();
+          this.changeChapter(index).finally(() => this.afterInit?.());
+        };
+      });
       if (this.chapters.length === 1) {
-        await this.changeChapter(0);
+        this.beforeInit?.();
+        this.changeChapter(0).finally(() => this.afterInit?.());
       }
       if (this.chapters.length > 1) {
+        EBUS.emit("page-fetcher-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
+      }
+    }
+    backChaptersSelection() {
+      if (this.chapters.length > 1) {
+        this.queue.length = 0;
+        EBUS.emit("page-fetcher-change-chapter");
         EBUS.emit("page-fetcher-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
       }
     }
@@ -1523,141 +1688,6 @@
     }
   }
 
-  const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
-  const DEFAULT_NODE_TEMPLATE = document.createElement("div");
-  DEFAULT_NODE_TEMPLATE.classList.add("img-node");
-  DEFAULT_NODE_TEMPLATE.innerHTML = `<div style="position: relative;"><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></div>`;
-  const OVERLAY_TIP = document.createElement("div");
-  OVERLAY_TIP.classList.add("overlay-tip");
-  OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
-  class ImageNode {
-    root;
-    src;
-    href;
-    title;
-    onclick;
-    imgElement;
-    delaySRC;
-    blobUrl;
-    mimeType;
-    size;
-    downloadBar;
-    rendered = false;
-    constructor(src, href, title, delaySRC) {
-      this.src = src;
-      this.href = href;
-      this.title = title;
-      this.delaySRC = delaySRC;
-    }
-    create() {
-      this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
-      this.imgElement = this.root.firstElementChild.firstElementChild;
-      this.imgElement.setAttribute("title", this.title);
-      if (this.onclick) {
-        this.imgElement.addEventListener("click", this.onclick);
-      }
-      this.imgElement.addEventListener("mousedown", (event) => event.button === 1 && this.href && window.open(this.href, "_blank"));
-      return this.root;
-    }
-    render() {
-      if (this.imgElement) {
-        this.rendered = true;
-        let justThumbnail = !this.blobUrl;
-        if (this.mimeType === "image/gif") {
-          const tip = OVERLAY_TIP.cloneNode(true);
-          tip.firstChild.textContent = "GIF";
-          this.root?.appendChild(tip);
-          justThumbnail = this.size != void 0 && this.size > 20 * 1024 * 1024;
-        }
-        if (this.mimeType === "video/mp4") {
-          const tip = OVERLAY_TIP.cloneNode(true);
-          tip.firstChild.textContent = "MP4";
-          this.root?.appendChild(tip);
-          justThumbnail = true;
-        }
-        if (justThumbnail) {
-          const delaySRC = this.delaySRC;
-          this.delaySRC = void 0;
-          if (delaySRC) {
-            delaySRC.then((src) => {
-              this.src = src;
-              this.render();
-            });
-          } else if (this.src) {
-            this.imgElement.src = this.src;
-          }
-        } else {
-          this.imgElement.src = this.blobUrl;
-        }
-      }
-    }
-    unrender() {
-      if (!this.rendered)
-        return;
-      if (this.imgElement) {
-        this.imgElement.src = this.src;
-      }
-    }
-    onloaded(blobUrl, mimeType, size) {
-      this.blobUrl = blobUrl;
-      this.mimeType = mimeType;
-      this.size = size;
-    }
-    progress(state) {
-      if (state.readyState === 4) {
-        if (this.downloadBar && this.downloadBar.parentNode) {
-          this.downloadBar.parentNode.removeChild(this.downloadBar);
-        }
-        return;
-      }
-      if (!this.downloadBar) {
-        const downloadBar = document.createElement("div");
-        downloadBar.classList.add("download-bar");
-        downloadBar.innerHTML = `
-      <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
-      `;
-        this.downloadBar = downloadBar;
-        this.root.firstElementChild.appendChild(this.downloadBar);
-      }
-      if (this.downloadBar) {
-        this.downloadBar.querySelector("progress").setAttribute("value", state.loaded / state.total * 100 + "");
-      }
-    }
-    changeStyle(fetchStatus) {
-      if (!this.root)
-        return;
-      switch (fetchStatus) {
-        case "fetching":
-          this.root.classList.add("img-fetching");
-          break;
-        case "fetched":
-          this.root.classList.add("img-fetched");
-          this.root.classList.remove("img-fetching");
-          break;
-        case "failed":
-          this.root.classList.add("img-fetch-failed");
-          this.root.classList.remove("img-fetching");
-          break;
-        default:
-          this.root.classList.remove("img-fetched");
-          this.root.classList.remove("img-fetch-failed");
-          this.root.classList.remove("img-fetching");
-      }
-    }
-    equal(ele) {
-      if (ele === this.root) {
-        return true;
-      }
-      if (ele === this.root?.firstElementChild) {
-        return true;
-      }
-      if (ele === this.imgElement) {
-        return true;
-      }
-      return false;
-    }
-  }
-
   class BaseMatcher {
     async fetchChapters() {
       return [{
@@ -1689,6 +1719,52 @@
     }
   }
   class Comic18Matcher extends BaseMatcher {
+    async fetchChapters() {
+      const ret = [];
+      const thumb = document.querySelector(".thumb-overlay > img");
+      const chapters = Array.from(document.querySelectorAll(".visible-lg .episode > ul > a"));
+      if (chapters.length > 0) {
+        for (const a of chapters) {
+          const title = Array.from(a.querySelector("li")?.childNodes || []).map((n) => n.textContent?.trim()).filter(Boolean).map((n) => n);
+          ret.push({
+            id: "",
+            title,
+            source: a.href,
+            thumbimg: thumb?.src,
+            nodes: []
+          });
+        }
+      } else {
+        const href = document.querySelector(".read-block > a")?.href;
+        if (href === void 0)
+          throw new Error("No page found");
+        ret.push({
+          id: "default",
+          title: "defalut",
+          source: href,
+          nodes: []
+        });
+      }
+      return ret;
+    }
+    async *fetchPagesSource(chapter) {
+      yield chapter.source;
+    }
+    async parseImgNodes(source) {
+      const list = [];
+      const raw = await window.fetch(source).then((resp) => resp.text());
+      const document2 = new DOMParser().parseFromString(raw, "text/html");
+      const images = Array.from(document2.querySelectorAll(".scramble-page:not(.thewayhome) > img"));
+      for (const img of images) {
+        const src = img.getAttribute("data-original");
+        if (!src) {
+          evLog("error", "warn: cannot find data-original", img);
+          continue;
+        }
+        list.push(new ImageNode("", src, src.split("/").pop()));
+      }
+      return list;
+    }
     async processData(data, contentType, url) {
       const reg = /(\d+)\/(\d+)\.(\w+)/;
       const matches = url.match(reg);
@@ -1734,34 +1810,6 @@
     // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
     async fetchOriginMeta(url, _) {
       return { url };
-    }
-    async parseImgNodes(source) {
-      const list = [];
-      const raw = await window.fetch(source).then((resp) => resp.text());
-      const document2 = new DOMParser().parseFromString(raw, "text/html");
-      const images = Array.from(document2.querySelectorAll(".scramble-page:not(.thewayhome) > img"));
-      for (const img of images) {
-        const src = img.getAttribute("data-original");
-        if (!src) {
-          evLog("error", "warn: cannot find data-original", img);
-          continue;
-        }
-        list.push(new ImageNode("", src, src.split("/").pop()));
-      }
-      return list;
-    }
-    async *fetchPagesSource() {
-      const episode = Array.from(document.querySelectorAll(".episode > ul > a"));
-      if (episode.length > 0) {
-        for (const a of episode) {
-          yield a.href;
-        }
-        return;
-      }
-      const href = document.querySelector(".read-block > a")?.href;
-      if (href === void 0)
-        throw new Error("No page found");
-      yield href;
     }
   }
 
@@ -3771,6 +3819,10 @@ duration 0.04`).join("\n");
         "columns-decrease": new KeyboardDesc(
           ["-"],
           () => modNumberConfigEvent("colCount", "minus")
+        ),
+        "back-chapters-selection": new KeyboardDesc(
+          ["b"],
+          () => PF.backChaptersSelection()
         )
       };
       const inMain = {
@@ -4025,7 +4077,7 @@ duration 0.04`).join("\n");
   background-color: rgb(0, 0, 0);
   position: fixed;
   top: 0px;
-  right: 0px;
+  left: 0px;
   z-index: 2000;
   transition: height 0.2s ease 0s;
 }
@@ -4037,6 +4089,7 @@ duration 0.04`).join("\n");
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
   overflow: hidden scroll;
+  padding: 0.3rem;
 }
 .ehvp-root * {
   font-family: initial;
@@ -4075,6 +4128,21 @@ duration 0.04`).join("\n");
   height: auto;
   border: 3px solid #fff;
   box-sizing: border-box;
+}
+.img-node:hover .ehvp-chapter-description {
+  color: #ffe7f5;
+}
+.ehvp-chapter-description {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  background-color: #708090e3;
+  color: #ffe785;
+  width: 100%;
+  font-weight: 600;
+  min-height: 3rem;
+  font-size: 1.2rem;
+  padding: 0.5rem;
 }
 .img-fetched img {
   border: 3px solid #602a5c !important;

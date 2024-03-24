@@ -15,7 +15,7 @@ import { BigImageFrameManager } from "./ultra-image-frame-manager";
 export type Events = ReturnType<typeof initEvents>;
 
 export type KeyboardInBigImageModeId = "step-image-prev" | "step-image-next" | "exit-big-image-mode" | "step-to-first-image" | "step-to-last-image" | "scale-image-increase" | "scale-image-decrease" | "scroll-image-up" | "scroll-image-down";
-export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease";
+export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "back-chapters-selection";
 export type KeyboardInMainId = "open-full-view-grid";
 export type KeyboardEvents = {
   inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
@@ -328,6 +328,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       "columns-decrease": new KeyboardDesc(
         ["-"],
         () => modNumberConfigEvent("colCount", "minus")
+      ),
+      "back-chapters-selection": new KeyboardDesc(
+        ["b"],
+        () => PF.backChaptersSelection()
       ),
     };
     const inMain: Record<KeyboardInMainId, KeyboardDesc> = {

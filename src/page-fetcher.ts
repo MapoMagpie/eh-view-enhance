@@ -1,7 +1,7 @@
 import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
-import ImageNode, { VisualNode } from "./img-node";
+import ImageNode, { ChapterNode } from "./img-node";
 import { Matcher } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
@@ -10,32 +10,13 @@ export type PagesSource = string | Document;
 
 export type Chapter = {
   id: string;
-  title: string;
+  title: string | string[];
   source: PagesSource;
   nodes: ImageNode[]
   thumbimg?: string;
   sourceIter?: AsyncGenerator<PagesSource>;
   done?: boolean;
-}
-
-class ChapterNode implements VisualNode {
-  chapter: Chapter;
-  index: number;
-  constructor(chapter: Chapter, index: number) {
-    this.chapter = chapter;
-    this.index = index;
-  }
-
-  create(): HTMLElement {
-    const element = document.createElement("div");
-    element.innerHTML = `<div class="chapter-node"><div class="chapter-title">${this.chapter.title}</div></div>`;
-    element.onclick = () => {
-      console.log("chapter clicked: ", this.index);
-    }
-    return element;
-  }
-
-  render(): void { }
+  onclick?: (index: number) => void;
 }
 
 export class PageFetcher {
@@ -65,19 +46,28 @@ export class PageFetcher {
   }
 
   async init() {
-    this.beforeInit?.();
-    await this.initPageAppend();
-    this.afterInit?.();
-  }
-
-  async initPageAppend() {
     this.chapters = await this.matcher.fetchChapters();
-    this.chapters.forEach(c => c.sourceIter = this.matcher.fetchPagesSource(c));
+    this.chapters.forEach(c => {
+      c.sourceIter = this.matcher.fetchPagesSource(c);
+      c.onclick = (index) => {
+        this.beforeInit?.();
+        this.changeChapter(index).finally(() => this.afterInit?.());
+      };
+    });
 
     if (this.chapters.length === 1) {
-      await this.changeChapter(0);
+      this.beforeInit?.();
+      this.changeChapter(0).finally(() => this.afterInit?.());
     }
     if (this.chapters.length > 1) {
+      EBUS.emit("page-fetcher-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
+    }
+  }
+
+  backChaptersSelection() {
+    if (this.chapters.length > 1) {
+      this.queue.length = 0;
+      EBUS.emit("page-fetcher-change-chapter");
       EBUS.emit("page-fetcher-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
     }
   }

@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
+import { Chapter, PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta } from "./platform";
 
@@ -21,6 +21,55 @@ function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, p
 }
 
 export class Comic18Matcher extends BaseMatcher {
+
+  async fetchChapters(): Promise<Chapter[]> {
+    const ret: Chapter[] = [];
+    const thumb = document.querySelector<HTMLImageElement>(".thumb-overlay > img");
+    // const toDoc = async (url: string) => await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
+    const chapters = Array.from(document.querySelectorAll<HTMLAnchorElement>(".visible-lg .episode > ul > a"));
+    if (chapters.length > 0) {
+      for (const a of chapters) {
+        const title = Array.from(a.querySelector("li")?.childNodes || []).map(n => n.textContent?.trim()).filter(Boolean).map(n => n!);
+        ret.push({
+          id: "",
+          title,
+          source: a.href,
+          thumbimg: thumb?.src,
+          nodes: []
+        });
+      }
+    } else {
+      const href = document.querySelector<HTMLAnchorElement>(".read-block > a")?.href;
+      if (href === undefined) throw new Error("No page found");
+      ret.push({
+        id: "default",
+        title: "defalut",
+        source: href,
+        nodes: []
+      });
+    }
+    return ret;
+  }
+
+  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
+    yield chapter.source;
+  }
+
+  public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
+    const list: ImageNode[] = [];
+    const raw = await window.fetch(source as string).then(resp => resp.text());
+    const document = new DOMParser().parseFromString(raw, "text/html");
+    const images = Array.from(document.querySelectorAll<HTMLImageElement>(".scramble-page:not(.thewayhome) > img"));
+    for (const img of images) {
+      const src = img.getAttribute("data-original");
+      if (!src) {
+        evLog("error", "warn: cannot find data-original", img);
+        continue;
+      }
+      list.push(new ImageNode("", src, src.split("/").pop()!));
+    }
+    return list;
+  }
 
   async processData(data: Uint8Array, contentType: string, url: string): Promise<Uint8Array> {
     const reg = /(\d+)\/(\d+)\.(\w+)/;
@@ -67,34 +116,4 @@ export class Comic18Matcher extends BaseMatcher {
   public async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
     return { url };
   }
-
-  public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
-    const list: ImageNode[] = [];
-    const raw = await window.fetch(source as string).then(resp => resp.text());
-    const document = new DOMParser().parseFromString(raw, "text/html");
-    const images = Array.from(document.querySelectorAll<HTMLImageElement>(".scramble-page:not(.thewayhome) > img"));
-    for (const img of images) {
-      const src = img.getAttribute("data-original");
-      if (!src) {
-        evLog("error", "warn: cannot find data-original", img);
-        continue;
-      }
-      list.push(new ImageNode("", src, src.split("/").pop()!));
-    }
-    return list;
-  }
-
-  public async * fetchPagesSource(): AsyncGenerator<PagesSource> {
-    const episode = Array.from(document.querySelectorAll<HTMLAnchorElement>(".episode > ul > a"));
-    if (episode.length > 0) {
-      for (const a of episode) {
-        yield a.href;
-      }
-      return;
-    }
-    const href = document.querySelector<HTMLAnchorElement>(".read-block > a")?.href;
-    if (href === undefined) throw new Error("No page found");
-    yield href;
-  }
-
 }

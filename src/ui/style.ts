@@ -10,7 +10,7 @@ export function loadStyleSheel() {
   background-color: rgb(0, 0, 0);
   position: fixed;
   top: 0px;
-  right: 0px;
+  left: 0px;
   z-index: 2000;
   transition: height 0.2s ease 0s;
 }
@@ -22,6 +22,7 @@ export function loadStyleSheel() {
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
   overflow: hidden scroll;
+  padding: 0.3rem;
 }
 .ehvp-root * {
   font-family: initial;
@@ -60,6 +61,21 @@ export function loadStyleSheel() {
   height: auto;
   border: 3px solid #fff;
   box-sizing: border-box;
+}
+.img-node:hover .ehvp-chapter-description {
+  color: #ffe7f5;
+}
+.ehvp-chapter-description {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  background-color: #708090e3;
+  color: #ffe785;
+  width: 100%;
+  font-weight: 600;
+  min-height: 3rem;
+  font-size: 1.2rem;
+  padding: 0.5rem;
 }
 .img-fetched img {
   border: 3px solid #602a5c !important;

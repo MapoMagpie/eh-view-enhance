@@ -5,7 +5,7 @@ const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAA
 
 const DEFAULT_NODE_TEMPLATE = document.createElement("div");
 DEFAULT_NODE_TEMPLATE.classList.add("img-node");
-DEFAULT_NODE_TEMPLATE.innerHTML = `<div style="position: relative;"><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></div>`;
+DEFAULT_NODE_TEMPLATE.innerHTML = `<a style="position: relative; display: block;"><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></a>`;
 
 const OVERLAY_TIP = document.createElement("div");
 OVERLAY_TIP.classList.add("overlay-tip");
@@ -38,13 +38,17 @@ export default class ImageNode implements VisualNode {
 
   create(): HTMLElement {
     this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true) as HTMLElement;
-    this.imgElement = this.root.firstElementChild!.firstElementChild! as HTMLImageElement;
+    const anchor = this.root.firstElementChild as HTMLAnchorElement;
+    anchor.href = this.href;
+    anchor.target = "_blank";
+    this.imgElement = anchor.firstElementChild as HTMLImageElement;
     this.imgElement.setAttribute("title", this.title);
     if (this.onclick) {
-      this.imgElement.addEventListener("click", this.onclick);
+      this.imgElement.addEventListener("click", (event) => {
+        event.preventDefault();
+        this.onclick!(event);
+      });
     }
-    // middle click, open in new tab by href
-    this.imgElement.addEventListener("mousedown", (event) => event.button === 1 && this.href && window.open(this.href, "_blank"));
     return this.root;
   }
 

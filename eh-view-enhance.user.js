@@ -1385,7 +1385,7 @@
   const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
   const DEFAULT_NODE_TEMPLATE = document.createElement("div");
   DEFAULT_NODE_TEMPLATE.classList.add("img-node");
-  DEFAULT_NODE_TEMPLATE.innerHTML = `<div style="position: relative;"><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></div>`;
+  DEFAULT_NODE_TEMPLATE.innerHTML = `<a style="position: relative; display: block;"><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></a>`;
   const OVERLAY_TIP = document.createElement("div");
   OVERLAY_TIP.classList.add("overlay-tip");
   OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
@@ -1410,12 +1410,17 @@
     }
     create() {
       this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
-      this.imgElement = this.root.firstElementChild.firstElementChild;
+      const anchor = this.root.firstElementChild;
+      anchor.href = this.href;
+      anchor.target = "_blank";
+      this.imgElement = anchor.firstElementChild;
       this.imgElement.setAttribute("title", this.title);
       if (this.onclick) {
-        this.imgElement.addEventListener("click", this.onclick);
+        this.imgElement.addEventListener("click", (event) => {
+          event.preventDefault();
+          this.onclick(event);
+        });
       }
-      this.imgElement.addEventListener("mousedown", (event) => event.button === 1 && this.href && window.open(this.href, "_blank"));
       return this.root;
     }
     render() {

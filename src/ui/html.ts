@@ -19,6 +19,8 @@ export function createHTML() {
   fullViewGrid.classList.add("ehvp-root-collapse");
   document.body.after(fullViewGrid);
 
+  // <a id="img-land-top" class="img-land-top"></a>
+  // <a id="img-land-bottom" class="img-land-bottom"></a>
   const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
@@ -27,8 +29,6 @@ export function createHTML() {
 <div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="0">
    <a id="img-land-left" class="img-land-left"></a>
    <a id="img-land-right" class="img-land-right"></a>
-   <a id="img-land-top" class="img-land-top"></a>
-   <a id="img-land-bottom" class="img-land-bottom"></a>
 </div>
 <div id="p-helper" class="p-helper">
     <div style="position: relative">
@@ -253,8 +253,8 @@ export function createHTML() {
     showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
     imgLandLeft: q("#img-land-left", fullViewGrid),
     imgLandRight: q("#img-land-right", fullViewGrid),
-    imgLandTop: q("#img-land-top", fullViewGrid),
-    imgLandBottom: q("#img-land-bottom", fullViewGrid),
+    // imgLandTop: q("#img-land-top", fullViewGrid),
+    // imgLandBottom: q("#img-land-bottom", fullViewGrid),
     imgScaleBar: q("#img-scale-bar", fullViewGrid),
     autoPageBTN: q("#auto-page-btn", fullViewGrid),
     pageLoading: q("#page-loading", fullViewGrid),
@@ -320,14 +320,14 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
     event.stopPropagation();
   });
-  HTML.imgLandTop.addEventListener("click", (event) => {
-    IFQ.stepImageEvent("prev");
-    event.stopPropagation();
-  });
-  HTML.imgLandBottom.addEventListener("click", (event) => {
-    IFQ.stepImageEvent("next");
-    event.stopPropagation();
-  });
+  // HTML.imgLandTop.addEventListener("click", (event) => {
+  //   IFQ.stepImageEvent("prev");
+  //   event.stopPropagation();
+  // });
+  // HTML.imgLandBottom.addEventListener("click", (event) => {
+  //   IFQ.stepImageEvent("next");
+  //   event.stopPropagation();
+  // });
 
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
   HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);

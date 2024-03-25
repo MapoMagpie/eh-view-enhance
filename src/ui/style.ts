@@ -427,7 +427,7 @@ export function loadStyleSheel() {
   bottom: 0;
 }
 .img-land-left, .img-land-right {
-  width: 20%;
+  width: 15%;
   height: 50%;
   position: fixed;
   z-index: 2004;

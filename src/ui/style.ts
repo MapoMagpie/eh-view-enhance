@@ -66,7 +66,7 @@ export function loadStyleSheel() {
 .img-fetching img {
   border: 3px solid #00000000 !important;
 }
-.img-fetching div::after {
+.img-fetching a::after {
 	content: '';
 	position: absolute;
 	z-index: -1;
@@ -677,19 +677,7 @@ html {
   color: white;
   font-weight: bold;
 }
-`
-
-  // <div>
-  //   <button id="bifm-vid-ctl-play" class="bifm-vid-ctl-btn">▶️</button>
-  //   <button id="bifm-vid-ctl-mute" class="bifm-vid-ctl-btn">▶️</button>
-  //   <progress id="bifm-vid-ctl-volume" class="bifm-vid-ctl-pg" value="50" max="100"></progress>
-  //   <span id="bifm-vid-ctl-time" class="bifm-vid-ctl-span">00:00</span>
-  //   <span class="bifm-vid-ctl-span">/</span>
-  //   <span id="bifm-vid-ctl-duration" class="bifm-vid-ctl-span">10:00</span>
-  // </div>
-  // <div>
-  //   <progress id="bifm-vid-ctl-pg" class="bifm-vid-ctl-pg" value="50" max="100"></progress>
-  // </div>
+`;
   style.textContent = css;
   document.head.appendChild(style);
   return style;

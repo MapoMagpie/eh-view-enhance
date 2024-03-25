@@ -220,6 +220,9 @@ export function createHTML() {
     <div id="ehvp-bar-gtdot">
         <span>&gtdot;</span>
     </div>
+    <div id="ehvp-p-extra" class="b-extra">
+        <div id="backChaptersSelection" class="clickable" hidden="">${i18n.backChapters.get()}</div>
+    </div>
 </div>
 `;
 

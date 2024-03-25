@@ -5,6 +5,7 @@ import ImageNode, { ChapterNode } from "./img-node";
 import { Matcher } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
+import q from "./utils/query-element";
 
 export type PagesSource = string | Document;
 
@@ -29,9 +30,12 @@ export class PageFetcher {
   afterInit?: () => void;
   private appendPageLock: boolean = false;
   private abortb: boolean = false;
+  private chaptersSelectionElement: HTMLElement;
   constructor(queue: IMGFetcherQueue, matcher: Matcher) {
     this.queue = queue;
     this.matcher = matcher;
+    this.chaptersSelectionElement = q("#backChaptersSelection");
+    this.chaptersSelectionElement.addEventListener("click", () => this.backChaptersSelection());
     const debouncer = new Debouncer();
     EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendA(index), 5));
     EBUS.subscribe("fvgm-want-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendNextPage(), 5));
@@ -71,6 +75,7 @@ export class PageFetcher {
       this.queue.clear();
       EBUS.emit("pf-change-chapter");
       EBUS.emit("pf-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
+      this.chaptersSelectionElement.hidden = true;
     }
   }
 
@@ -93,6 +98,9 @@ export class PageFetcher {
     let first = await chapter.sourceIter.next();
     if (!first.done) {
       await this.appendPageImg(first.value);
+    }
+    if (this.chapters.length > 1) {
+      this.chaptersSelectionElement.hidden = false;
     }
     this.appendA(this.queue.length - 1);
   }

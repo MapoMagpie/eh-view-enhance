@@ -484,6 +484,7 @@
     imageScale: new I18nValue("SCALE", "缩放"),
     download: new I18nValue("DL", "下载"),
     config: new I18nValue("CONF", "配置"),
+    backChapters: new I18nValue("Chapters", "章节"),
     autoPagePlay: new I18nValue("PLAY", "播放"),
     autoPagePause: new I18nValue("PAUSE", "暂停"),
     autoPlay: new I18nValue("Auto Page", "自动翻页"),
@@ -1564,9 +1565,12 @@
     afterInit;
     appendPageLock = false;
     abortb = false;
+    chaptersSelectionElement;
     constructor(queue, matcher) {
       this.queue = queue;
       this.matcher = matcher;
+      this.chaptersSelectionElement = q("#backChaptersSelection");
+      this.chaptersSelectionElement.addEventListener("click", () => this.backChaptersSelection());
       const debouncer = new Debouncer();
       EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendA(index), 5));
       EBUS.subscribe("fvgm-want-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendNextPage(), 5));
@@ -1601,6 +1605,7 @@
         this.queue.clear();
         EBUS.emit("pf-change-chapter");
         EBUS.emit("pf-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
+        this.chaptersSelectionElement.hidden = true;
       }
     }
     async changeChapter(index) {
@@ -1618,6 +1623,9 @@
       let first = await chapter.sourceIter.next();
       if (!first.done) {
         await this.appendPageImg(first.value);
+      }
+      if (this.chapters.length > 1) {
+        this.chaptersSelectionElement.hidden = false;
       }
       this.appendA(this.queue.length - 1);
     }
@@ -4293,6 +4301,9 @@ duration 0.04`).join("\n");
     left: 30%;
     width: 40vw;
   }
+  .b-extra {
+    ${conf.pageHelperAbLeft !== "unset" ? "left" : "right"}: 100%;
+  }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
@@ -4344,6 +4355,10 @@ duration 0.04`).join("\n");
     left: 0;
     width: 100vw;
   }
+  .b-extra {
+    left: 0;
+    bottom: 101%;
+  }
 }
 .p-helper:hover {
   background-color: #3a3a3ae6;
@@ -4353,6 +4368,7 @@ duration 0.04`).join("\n");
   z-index: 2111;
   user-select: none;
   text-align: center;
+  white-space: nowrap;
 }
 .clickable:hover {
   color: #90ea90 !important;
@@ -4780,6 +4796,21 @@ html {
 .p-helper-extend #ehvp-gate-book {
   display: none !important;
 }
+.b-extra {
+  position: absolute;
+  background-color: #4a4a4ae6;
+  height: 100%;
+  display: none;
+}
+.b-extra .clickable {
+  margin: 0rem 0.1rem;
+}
+.b-extra:hover {
+  background-color: #3a3a3ae6;
+}
+.p-helper-extend:not(.p-minify) .b-extra {
+  display: flex;
+}
 `;
     style.textContent = css;
     document.head.appendChild(style);
@@ -4992,6 +5023,9 @@ html {
     </div>
     <div id="ehvp-bar-gtdot">
         <span>&gtdot;</span>
+    </div>
+    <div id="ehvp-p-extra" class="b-extra">
+        <div id="backChaptersSelection" class="clickable" hidden="">${i18n.backChapters.get()}</div>
     </div>
 </div>
 `;

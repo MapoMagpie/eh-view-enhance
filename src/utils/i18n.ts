@@ -43,6 +43,7 @@ export const i18n = {
   imageScale: new I18nValue("SCALE", "缩放"),
   download: new I18nValue("DL", "下载"),
   config: new I18nValue("CONF", "配置"),
+  backChapters: new I18nValue("Chapters", "章节"),
   autoPagePlay: new I18nValue("PLAY", "播放"),
   autoPagePause: new I18nValue("PAUSE", "暂停"),
   autoPlay: new I18nValue("Auto Page", "自动翻页"),

@@ -218,6 +218,9 @@ export function loadStyleSheel() {
     left: 30%;
     width: 40vw;
   }
+  .b-extra {
+    ${conf.pageHelperAbLeft !== "unset" ? "left" : "right"}: 100%;
+  }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
@@ -269,6 +272,10 @@ export function loadStyleSheel() {
     left: 0;
     width: 100vw;
   }
+  .b-extra {
+    left: 0;
+    bottom: 101%;
+  }
 }
 .p-helper:hover {
   background-color: #3a3a3ae6;
@@ -278,6 +285,7 @@ export function loadStyleSheel() {
   z-index: 2111;
   user-select: none;
   text-align: center;
+  white-space: nowrap;
 }
 .clickable:hover {
   color: #90ea90 !important;
@@ -704,6 +712,21 @@ html {
 }
 .p-helper-extend #ehvp-gate-book {
   display: none !important;
+}
+.b-extra {
+  position: absolute;
+  background-color: #4a4a4ae6;
+  height: 100%;
+  display: none;
+}
+.b-extra .clickable {
+  margin: 0rem 0.1rem;
+}
+.b-extra:hover {
+  background-color: #3a3a3ae6;
+}
+.p-helper-extend:not(.p-minify) .b-extra {
+  display: flex;
 }
 `;
   style.textContent = css;

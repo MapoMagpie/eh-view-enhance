@@ -35,7 +35,7 @@ export abstract class BaseMatcher implements Matcher {
 
   async fetchChapters(): Promise<Chapter[]> {
     return [{
-      id: "default",
+      id: 1,
       title: "default",
       source: document,
     }];

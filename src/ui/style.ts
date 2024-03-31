@@ -30,6 +30,9 @@ export function loadStyleSheel() {
 .ehvp-root * {
   font-family: initial;
 }
+.ehvp-root a {
+  color: unset;
+}
 .ehvp-root input, .ehvp-root select {
   color: #f1f1f1;
   background-color: #34353b !important;
@@ -731,6 +734,42 @@ html {
 }
 .p-helper-extend:not(.p-minify) .b-extra {
   display: flex;
+}
+.download-middle {
+  width: 100%;
+  height: auto;
+  flex-grow: 1;
+  overflow: hidden;
+}
+.download-middle .ehvp-tabs + div {
+  width: 100%;
+  height: calc(100% - 2rem);
+}
+.ehvp-tabs {
+  height: 2rem;
+  width: 100%;
+  line-height: 2rem;
+}
+.ehvp-p-tab {
+  border: 1px dotted #ff0;
+  font-size: 1rem;
+  padding: 0 0.4rem;
+}
+.download-chapters, .download-dashboard {
+  width: 100%;
+  height: 100%;
+}
+.download-chapters {
+  overflow: hidden auto;
+}
+.download-chapters label {
+  white-space: nowrap;
+}
+.download-chapters label span {
+  margin-left: 0.5rem;
+}
+.ehvp-p-tab-selected {
+  color: rgb(120, 240, 80) !important;
 }
 `;
   style.textContent = css;

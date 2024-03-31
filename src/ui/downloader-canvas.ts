@@ -2,6 +2,7 @@ import EBUS from "../event-bus";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { FetchState, IMGFetcher } from "../img-fetcher";
 import { Debouncer } from "../utils/debouncer";
+import { Elements } from "./html";
 
 type DrawNode = {
   index: number;
@@ -23,13 +24,12 @@ export class DownloaderCanvas {
   scrollSize: number;
   debouncer: Debouncer;
   onClick?: (index: number) => void;
-  constructor(id: string, queue: IMGFetcherQueue) {
+  constructor(canvas: HTMLCanvasElement, HTML: Elements, queue: IMGFetcherQueue) {
     this.queue = queue;
-    const canvas = document.getElementById(id);
     if (!canvas) {
       throw new Error("canvas not found");
     }
-    this.canvas = canvas as HTMLCanvasElement;
+    this.canvas = canvas;
     this.canvas.addEventListener("wheel", (event) =>
       this.onwheel(event.deltaY)
     );
@@ -57,20 +57,15 @@ export class DownloaderCanvas {
     this.debouncer = new Debouncer();
 
     // register animation event to parent for size change
-    const parent = this.canvas.parentElement;
-    if (parent) {
-      parent.addEventListener("transitionend", (ev) => {
-        const ele = ev.target as HTMLElement;
-        if (ele.clientHeight > 0) {
-          this.canvas.width = Math.floor(ele.offsetWidth - 20);
-          this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
-          this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
-          this.draw();
-        }
-      });
-
-    }
+    HTML.downloaderPanel.addEventListener("transitionend", () => this.resize(HTML.downloaderPanel));
     EBUS.subscribe("imf-download-state-change", () => this.drawDebouce());
+  }
+
+  resize(parent: HTMLElement) {
+    this.canvas.width = Math.floor(parent.offsetWidth - 20);
+    this.canvas.height = Math.floor(parent.offsetHeight);
+    this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
+    this.draw();
   }
 
   onwheel(deltaY: number) {

@@ -192,7 +192,18 @@ export function createHTML() {
         </div>
         <div id="downloader-panel" class="p-panel p-downloader p-collapse">
             <div id="download-notice" class="download-notice"></div>
-            <canvas id="downloader-canvas" width="100" height="100"></canvas>
+            <div id="download-middle" class="download-middle">
+              <div class="ehvp-tabs">
+                <a id="download-tab-dashboard" class="clickable ehvp-p-tab">Dashboard</a>
+                <a id="download-tab-chapters" class="clickable ehvp-p-tab">Select Chapters</a>
+              </div>
+              <div>
+                <div id="download-dashboard" class="download-dashboard" hidden>
+                  <canvas id="downloader-canvas" width="0" height="0"></canvas>
+                </div>
+                <div id="download-chapters" class="download-chapters" hidden></div>
+              </div>
+            </div>
             <div class="download-btn-group">
                <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.downloadStart.get()}</a>
@@ -253,6 +264,14 @@ export function createHTML() {
     imgScaleBar: q("#img-scale-bar", fullViewGrid),
     autoPageBTN: q("#auto-page-btn", fullViewGrid),
     pageLoading: q("#page-loading", fullViewGrid),
+    downloaderCanvas: q<HTMLCanvasElement>("#downloader-canvas", fullViewGrid),
+    downloadTabDashboard: q("#download-tab-dashboard", fullViewGrid),
+    downloadTabChapters: q("#download-tab-chapters", fullViewGrid),
+    downloadDashboard: q("#download-dashboard", fullViewGrid),
+    downloadChapters: q("#download-chapters", fullViewGrid),
+    downloadNotice: q("#download-notice", fullViewGrid),
+    downloadBTNForce: q<HTMLAnchorElement>("#download-force", fullViewGrid),
+    downloadBTNStart: q<HTMLAnchorElement>("#download-start", fullViewGrid),
     styleSheel,
   };
 }

@@ -28,20 +28,21 @@ export class Comic18Matcher extends BaseMatcher {
     // const toDoc = async (url: string) => await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
     const chapters = Array.from(document.querySelectorAll<HTMLAnchorElement>(".visible-lg .episode > ul > a"));
     if (chapters.length > 0) {
-      for (const a of chapters) {
-        const title = Array.from(a.querySelector("li")?.childNodes || []).map(n => n.textContent?.trim()).filter(Boolean).map(n => n!);
+      chapters.forEach((ch, i) => {
+        const title = Array.from(ch.querySelector("li")?.childNodes || []).map(n => n.textContent?.trim()).filter(Boolean).map(n => n!);
         ret.push({
-          id: "",
+          id: i,
           title,
-          source: a.href,
+          source: ch.href,
           thumbimg: thumb?.src,
         });
-      }
+
+      });
     } else {
       const href = document.querySelector<HTMLAnchorElement>(".read-block > a")?.href;
       if (href === undefined) throw new Error("No page found");
       ret.push({
-        id: "default",
+        id: 1,
         title: "defalut",
         source: href,
       });

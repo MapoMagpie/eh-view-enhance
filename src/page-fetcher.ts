@@ -10,7 +10,7 @@ import q from "./utils/query-element";
 export type PagesSource = string | Document;
 
 export type Chapter = {
-  id: string;
+  id: number;
   title: string | string[];
   source: PagesSource;
   queue?: IMGFetcher[];

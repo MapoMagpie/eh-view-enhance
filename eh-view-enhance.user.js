@@ -820,14 +820,6 @@
     }
   }
 
-  function q(selector, parent) {
-    const element = (parent || document).querySelector(selector);
-    if (!element) {
-      throw new Error(`Can't find element: ${selector}`);
-    }
-    return element;
-  }
-
   class DownloaderCanvas {
     canvas;
     mousemoveState;
@@ -841,9 +833,8 @@
     scrollSize;
     debouncer;
     onClick;
-    constructor(id, queue) {
+    constructor(canvas, HTML, queue) {
       this.queue = queue;
-      const canvas = document.getElementById(id);
       if (!canvas) {
         throw new Error("canvas not found");
       }
@@ -874,19 +865,14 @@
       this.scrollTop = 0;
       this.scrollSize = 10;
       this.debouncer = new Debouncer();
-      const parent = this.canvas.parentElement;
-      if (parent) {
-        parent.addEventListener("transitionend", (ev) => {
-          const ele = ev.target;
-          if (ele.clientHeight > 0) {
-            this.canvas.width = Math.floor(ele.offsetWidth - 20);
-            this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
-            this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
-            this.draw();
-          }
-        });
-      }
+      HTML.downloaderPanel.addEventListener("transitionend", () => this.resize(HTML.downloaderPanel));
       EBUS.subscribe("imf-download-state-change", () => this.drawDebouce());
+    }
+    resize(parent) {
+      this.canvas.width = Math.floor(parent.offsetWidth - 20);
+      this.canvas.height = Math.floor(parent.offsetHeight);
+      this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
+      this.draw();
     }
     onwheel(deltaY) {
       const [_, h] = this.getWH();
@@ -1015,29 +1001,39 @@
   class Downloader {
     meta;
     downloading;
-    downloadForceElement;
-    downloadStartElement;
-    downloadNoticeElement;
+    buttonForce;
+    buttonStart;
+    elementNotice;
     downloaderPanelBTN;
     queue;
     idleLoader;
     pageFetcher;
     done = false;
+    selectedChapters = /* @__PURE__ */ new Set();
     filenames = /* @__PURE__ */ new Set();
+    canvas;
+    dashboardTab;
+    chapterTab;
+    elementDashboard;
+    elementChapters;
     constructor(HTML, queue, idleLoader, pageFetcher, matcher) {
       this.queue = queue;
       this.idleLoader = idleLoader;
       this.pageFetcher = pageFetcher;
       this.meta = () => matcher.parseGalleryMeta(document);
       this.downloading = false;
-      this.downloadForceElement = q("#download-force");
-      this.downloadStartElement = q("#download-start");
-      this.downloadNoticeElement = q("#download-notice");
+      this.buttonForce = HTML.downloadBTNForce;
+      this.buttonStart = HTML.downloadBTNStart;
+      this.elementNotice = HTML.downloadNotice;
       this.downloaderPanelBTN = HTML.downloaderPanelBTN;
-      this.downloadForceElement.addEventListener("click", () => this.download());
-      this.downloadStartElement.addEventListener("click", () => this.start());
+      this.buttonForce.addEventListener("click", () => this.download());
+      this.buttonStart.addEventListener("click", () => this.start());
       this.queue.downloading = () => this.downloading;
-      new DownloaderCanvas("downloader-canvas", queue);
+      this.dashboardTab = HTML.downloadTabDashboard;
+      this.chapterTab = HTML.downloadTabChapters;
+      this.elementDashboard = HTML.downloadDashboard;
+      this.elementChapters = HTML.downloadChapters;
+      this.canvas = new DownloaderCanvas(HTML.downloaderCanvas, HTML, queue);
       EBUS.subscribe("ifq-on-finished-report", (_index, queue2) => {
         if (queue2.isFinised()) {
           if (this.downloading) {
@@ -1049,6 +1045,30 @@
             }
           }
         }
+      });
+      this.initTabs(HTML);
+    }
+    initTabs(HTML) {
+      const tabs = [{
+        ele: this.dashboardTab,
+        cb: () => {
+          this.elementDashboard.hidden = false;
+          this.elementChapters.hidden = true;
+          this.canvas.resize(HTML.downloaderPanel);
+        }
+      }, {
+        ele: this.chapterTab,
+        cb: () => {
+          this.elementDashboard.hidden = true;
+          this.elementChapters.hidden = false;
+        }
+      }];
+      tabs.forEach(({ ele, cb }, i) => {
+        ele.addEventListener("click", () => {
+          ele.classList.add("ehvp-p-tab-selected");
+          tabs.filter((_, j) => j != i).forEach((t) => t.ele.classList.remove("ehvp-p-tab-selected"));
+          cb();
+        });
       });
     }
     needNumberTitle() {
@@ -1078,15 +1098,42 @@
         return newTitle;
       }
     }
+    createChapterSelectList() {
+      const chapters = this.pageFetcher.chapters;
+      this.elementChapters.innerHTML = `
+<div>
+  <span id="download-chapters-select-all" class="clickable p-btn">Select All</span>
+  <span id="download-chapters-unselect-all" class="clickable p-btn">Unselect All</span>
+</div>
+${chapters.map((c) => `<div><label>
+  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${this.selectedChapters.has(c.id) ? "checked" : ""} />
+  <span>${c.title}</span></label></div>`).join("")}
+`;
+      [["#download-chapters-select-all", true], ["#download-chapters-unselect-all", false]].forEach(
+        ([id, checked]) => this.elementChapters.querySelector(id)?.addEventListener(
+          "click",
+          () => chapters.forEach((c) => {
+            const checkbox = this.elementChapters.querySelector("#ch-" + c.id);
+            if (checkbox)
+              checkbox.checked = checked;
+          })
+        )
+      );
+    }
     // check > start > download
     check() {
       if (conf.fetchOriginal)
         return;
-      if (this.downloadNoticeElement && !this.downloading) {
-        this.downloadNoticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-        this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+      if (this.elementNotice && !this.downloading) {
+        this.elementNotice.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
+        this.elementNotice.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
       }
-      if (this.pageFetcher.chapters.length > 1) ;
+      this.createChapterSelectList();
+      if (this.queue.length > 0) {
+        this.dashboardTab.click();
+      } else if (this.pageFetcher.chapters.length > 1) {
+        this.chapterTab.click();
+      }
     }
     fetchOriginalTemporarily() {
       conf.fetchOriginal = true;
@@ -1116,12 +1163,12 @@
       this.idleLoader.start(++this.idleLoader.lockVer);
     }
     flushUI(stage) {
-      if (this.downloadNoticeElement) {
-        this.downloadNoticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
+      if (this.elementNotice) {
+        this.elementNotice.innerHTML = `<span>${i18n[stage].get()}</span>`;
       }
-      if (this.downloadStartElement) {
-        this.downloadStartElement.style.color = stage === "downloadFailed" ? "red" : "";
-        this.downloadStartElement.textContent = i18n[stage].get();
+      if (this.buttonStart) {
+        this.buttonStart.style.color = stage === "downloadFailed" ? "red" : "";
+        this.buttonStart.textContent = i18n[stage].get();
       }
       this.downloaderPanelBTN.style.color = stage === "downloadFailed" ? "red" : "";
     }
@@ -1565,6 +1612,14 @@
     }
   }
 
+  function q(selector, parent) {
+    const element = (parent || document).querySelector(selector);
+    if (!element) {
+      throw new Error(`Can't find element: ${selector}`);
+    }
+    return element;
+  }
+
   class PageFetcher {
     chapters = [];
     currChapterIndex = 0;
@@ -1722,7 +1777,7 @@
   class BaseMatcher {
     async fetchChapters() {
       return [{
-        id: "default",
+        id: 1,
         title: "default",
         source: document
       }];
@@ -1754,21 +1809,21 @@
       const thumb = document.querySelector(".thumb-overlay > img");
       const chapters = Array.from(document.querySelectorAll(".visible-lg .episode > ul > a"));
       if (chapters.length > 0) {
-        for (const a of chapters) {
-          const title = Array.from(a.querySelector("li")?.childNodes || []).map((n) => n.textContent?.trim()).filter(Boolean).map((n) => n);
+        chapters.forEach((ch, i) => {
+          const title = Array.from(ch.querySelector("li")?.childNodes || []).map((n) => n.textContent?.trim()).filter(Boolean).map((n) => n);
           ret.push({
-            id: "",
+            id: i,
             title,
-            source: a.href,
+            source: ch.href,
             thumbimg: thumb?.src
           });
-        }
+        });
       } else {
         const href = document.querySelector(".read-block > a")?.href;
         if (href === void 0)
           throw new Error("No page found");
         ret.push({
-          id: "default",
+          id: 1,
           title: "defalut",
           source: href
         });
@@ -3720,7 +3775,6 @@ duration 0.04`).join("\n");
       PH.minify(false, "fullViewGrid");
       HTML.root.classList.add("ehvp-root-collapse");
       HTML.fullViewGrid.blur();
-      q("html").focus();
       document.body.style.overflow = bodyOverflow;
     }
     function scrollEvent() {
@@ -3865,35 +3919,39 @@ duration 0.04`).join("\n");
     }
     const keyboardEvents = initKeyboardEvent();
     let numberRecord = null;
-    function fullViewGridKeyBoardEvent(event) {
+    function bigImageFrameKeyBoardEvent(event) {
+      if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
+        return;
       const key = parseKey(event);
-      if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
-        const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
-          const override = conf.keyboards.inBigImageMode[id];
-          if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
-            desc.cb(event);
-            return !desc.noPreventDefault;
-          }
-          return false;
-        });
-        if (triggered) {
-          event.preventDefault();
+      const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
+        const override = conf.keyboards.inBigImageMode[id];
+        if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+          desc.cb(event);
+          return !desc.noPreventDefault;
         }
-      } else if (!HTML.root.classList.contains("ehvp-root-collapse")) {
-        const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
-          const override = conf.keyboards.inFullViewGrid[id];
-          if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
-            desc.cb(event);
-            return !desc.noPreventDefault;
-          }
-          return false;
-        });
-        if (triggered) {
-          event.preventDefault();
-        } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
-          numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
-          event.preventDefault();
+        return false;
+      });
+      if (triggered) {
+        event.preventDefault();
+      }
+    }
+    function fullViewGridKeyBoardEvent(event) {
+      if (HTML.root.classList.contains("ehvp-root-collapse"))
+        return;
+      const key = parseKey(event);
+      const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
+        const override = conf.keyboards.inFullViewGrid[id];
+        if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+          desc.cb(event);
+          return !desc.noPreventDefault;
         }
+        return false;
+      });
+      if (triggered) {
+        event.preventDefault();
+      } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+        numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
+        event.preventDefault();
       }
     }
     function keyboardEvent(event) {
@@ -3949,8 +4007,8 @@ duration 0.04`).join("\n");
           }
         } else {
           HTML.pageHelper.classList.remove("p-helper-extend");
-          hiddenFullViewGrid();
           ["config", "downloader"].forEach((id) => togglePanelEvent(id, true));
+          hiddenFullViewGrid();
         }
       }
     }
@@ -3967,6 +4025,7 @@ duration 0.04`).join("\n");
       scrollEvent,
       bigImageWheelEvent,
       fullViewGridKeyBoardEvent,
+      bigImageFrameKeyBoardEvent,
       keyboardEvent,
       showGuideEvent,
       collapsePanelEvent,
@@ -4124,6 +4183,9 @@ duration 0.04`).join("\n");
 }
 .ehvp-root * {
   font-family: initial;
+}
+.ehvp-root a {
+  color: unset;
 }
 .ehvp-root input, .ehvp-root select {
   color: #f1f1f1;
@@ -4827,6 +4889,42 @@ html {
 .p-helper-extend:not(.p-minify) .b-extra {
   display: flex;
 }
+.download-middle {
+  width: 100%;
+  height: auto;
+  flex-grow: 1;
+  overflow: hidden;
+}
+.download-middle .ehvp-tabs + div {
+  width: 100%;
+  height: calc(100% - 2rem);
+}
+.ehvp-tabs {
+  height: 2rem;
+  width: 100%;
+  line-height: 2rem;
+}
+.ehvp-p-tab {
+  border: 1px dotted #ff0;
+  font-size: 1rem;
+  padding: 0 0.4rem;
+}
+.download-chapters, .download-dashboard {
+  width: 100%;
+  height: 100%;
+}
+.download-chapters {
+  overflow: hidden auto;
+}
+.download-chapters label {
+  white-space: nowrap;
+}
+.download-chapters label span {
+  margin-left: 0.5rem;
+}
+.ehvp-p-tab-selected {
+  color: rgb(120, 240, 80) !important;
+}
 `;
     style.textContent = css;
     document.head.appendChild(style);
@@ -4842,8 +4940,8 @@ html {
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
-<div id="ehvp-nodes-container" class="full-view-grid" tabindex="0"></div>
-<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="0">
+<div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
+<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="7">
    <a id="img-land-left" class="img-land-left"></a>
    <a id="img-land-right" class="img-land-right"></a>
 </div>
@@ -5012,7 +5110,18 @@ html {
         </div>
         <div id="downloader-panel" class="p-panel p-downloader p-collapse">
             <div id="download-notice" class="download-notice"></div>
-            <canvas id="downloader-canvas" width="100" height="100"></canvas>
+            <div id="download-middle" class="download-middle">
+              <div class="ehvp-tabs">
+                <a id="download-tab-dashboard" class="clickable ehvp-p-tab">Dashboard</a>
+                <a id="download-tab-chapters" class="clickable ehvp-p-tab">Select Chapters</a>
+              </div>
+              <div>
+                <div id="download-dashboard" class="download-dashboard" hidden>
+                  <canvas id="downloader-canvas" width="0" height="0"></canvas>
+                </div>
+                <div id="download-chapters" class="download-chapters" hidden></div>
+              </div>
+            </div>
             <div class="download-btn-group">
                <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.downloadStart.get()}</a>
@@ -5069,11 +5178,17 @@ html {
       showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
       imgLandLeft: q("#img-land-left", fullViewGrid),
       imgLandRight: q("#img-land-right", fullViewGrid),
-      // imgLandTop: q("#img-land-top", fullViewGrid),
-      // imgLandBottom: q("#img-land-bottom", fullViewGrid),
       imgScaleBar: q("#img-scale-bar", fullViewGrid),
       autoPageBTN: q("#auto-page-btn", fullViewGrid),
       pageLoading: q("#page-loading", fullViewGrid),
+      downloaderCanvas: q("#downloader-canvas", fullViewGrid),
+      downloadTabDashboard: q("#download-tab-dashboard", fullViewGrid),
+      downloadTabChapters: q("#download-tab-chapters", fullViewGrid),
+      downloadDashboard: q("#download-dashboard", fullViewGrid),
+      downloadChapters: q("#download-chapters", fullViewGrid),
+      downloadNotice: q("#download-notice", fullViewGrid),
+      downloadBTNForce: q("#download-force", fullViewGrid),
+      downloadBTNStart: q("#download-start", fullViewGrid),
       styleSheel
     };
   }
@@ -5115,6 +5230,7 @@ html {
     HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event));
     document.addEventListener("keydown", (event) => events.keyboardEvent(event));
     HTML.fullViewGrid.addEventListener("keydown", (event) => events.fullViewGridKeyBoardEvent(event));
+    HTML.bigImageFrame.addEventListener("keydown", (event) => events.bigImageFrameKeyBoardEvent(event));
     HTML.imgLandLeft.addEventListener("click", (event) => {
       IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
       event.stopPropagation();
@@ -5544,7 +5660,6 @@ html {
         return;
       this.visible = false;
       EBUS.emit("bifm-on-hidden");
-      this.frame.blur();
       this.html.fullViewGrid.focus();
       this.frameScrollAbort?.abort();
       this.frame.classList.add("big-img-frame-collapse");
@@ -5553,9 +5668,9 @@ html {
     show(event) {
       this.visible = true;
       this.frame.classList.remove("big-img-frame-collapse");
+      this.frame.focus();
       this.frameScrollAbort = new AbortController();
       this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
-      this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.frame.focus(), 300);
       this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
         let start = this.queue.currIndex;
         if (event && event.target)

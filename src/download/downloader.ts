@@ -8,7 +8,6 @@ import { GalleryMeta } from "./gallery-meta";
 import { Elements } from "../ui/html";
 import { Zip } from "../utils/zip-stream";
 import { saveAs } from "file-saver";
-import q from "../utils/query-element";
 import EBUS from "../event-bus";
 import { DownloaderCanvas } from "../ui/downloader-canvas";
 import { PageFetcher } from "../page-fetcher";
@@ -17,15 +16,21 @@ const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
 export class Downloader {
   meta: () => GalleryMeta;
   downloading: boolean;
-  downloadForceElement: HTMLElement;
-  downloadStartElement: HTMLAnchorElement;
-  downloadNoticeElement: HTMLElement;
+  buttonForce: HTMLAnchorElement;
+  buttonStart: HTMLAnchorElement;
+  elementNotice: HTMLElement;
   downloaderPanelBTN: HTMLElement;
   queue: IMGFetcherQueue;
   idleLoader: IdleLoader;
   pageFetcher: PageFetcher;
   done: boolean = false;
+  selectedChapters: Set<number> = new Set();
   filenames: Set<string> = new Set();
+  canvas: DownloaderCanvas;
+  dashboardTab: HTMLElement;
+  chapterTab: HTMLElement;
+  elementDashboard: HTMLElement;
+  elementChapters: HTMLElement;
 
   constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, pageFetcher: PageFetcher, matcher: Matcher) {
     this.queue = queue;
@@ -33,14 +38,18 @@ export class Downloader {
     this.pageFetcher = pageFetcher;
     this.meta = () => matcher.parseGalleryMeta(document);
     this.downloading = false;
-    this.downloadForceElement = q("#download-force");
-    this.downloadStartElement = q("#download-start");
-    this.downloadNoticeElement = q("#download-notice");
+    this.buttonForce = HTML.downloadBTNForce;
+    this.buttonStart = HTML.downloadBTNStart;
+    this.elementNotice = HTML.downloadNotice;
     this.downloaderPanelBTN = HTML.downloaderPanelBTN;
-    this.downloadForceElement.addEventListener("click", () => this.download());
-    this.downloadStartElement.addEventListener("click", () => this.start());
+    this.buttonForce.addEventListener("click", () => this.download());
+    this.buttonStart.addEventListener("click", () => this.start());
     this.queue.downloading = () => this.downloading;
-    new DownloaderCanvas("downloader-canvas", queue);
+    this.dashboardTab = HTML.downloadTabDashboard;
+    this.chapterTab = HTML.downloadTabChapters;
+    this.elementDashboard = HTML.downloadDashboard;
+    this.elementChapters = HTML.downloadChapters;
+    this.canvas = new DownloaderCanvas(HTML.downloaderCanvas, HTML, queue);
     EBUS.subscribe("ifq-on-finished-report", (_index, queue) => {
       if (queue.isFinised()) {
         if (this.downloading) {
@@ -52,6 +61,29 @@ export class Downloader {
           }
         }
       }
+    });
+    this.initTabs(HTML);
+  }
+
+  initTabs(HTML: Elements) {
+    const tabs = [{
+      ele: this.dashboardTab, cb: () => {
+        this.elementDashboard.hidden = false;
+        this.elementChapters.hidden = true;
+        this.canvas.resize(HTML.downloaderPanel);
+      }
+    }, {
+      ele: this.chapterTab, cb: () => {
+        this.elementDashboard.hidden = true;
+        this.elementChapters.hidden = false;
+      }
+    }];
+    tabs.forEach(({ ele, cb }, i) => {
+      ele.addEventListener("click", () => {
+        ele.classList.add("ehvp-p-tab-selected")
+        tabs.filter((_, j) => j != i).forEach(t => t.ele.classList.remove("ehvp-p-tab-selected"));
+        cb();
+      });
     });
   }
 
@@ -84,16 +116,40 @@ export class Downloader {
     }
   }
 
+  createChapterSelectList() {
+    const chapters = this.pageFetcher.chapters;
+    this.elementChapters.innerHTML = `
+<div>
+  <span id="download-chapters-select-all" class="clickable p-btn">Select All</span>
+  <span id="download-chapters-unselect-all" class="clickable p-btn">Unselect All</span>
+</div>
+${chapters.map(c => `<div><label>
+  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${this.selectedChapters.has(c.id) ? "checked" : ""} />
+  <span>${c.title}</span></label></div>`).join("")}
+`;
+    ([["#download-chapters-select-all", true], ["#download-chapters-unselect-all", false]] as [string, boolean][]).forEach(([id, checked]) =>
+      this.elementChapters.querySelector<HTMLInputElement>(id)?.addEventListener("click", () =>
+        chapters.forEach(c => {
+          const checkbox = this.elementChapters.querySelector<HTMLInputElement>("#ch-" + c.id);
+          if (checkbox) checkbox.checked = checked;
+        })
+      )
+    );
+  }
+
   // check > start > download
   check() {
     if (conf.fetchOriginal) return;
     // append adviser element
-    if (this.downloadNoticeElement && !this.downloading) {
-      this.downloadNoticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-      this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+    if (this.elementNotice && !this.downloading) {
+      this.elementNotice.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
+      this.elementNotice.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
     }
-    if (this.pageFetcher.chapters.length > 1) {
-      // TODO: create list of chapters, user can select which chapter to download
+    this.createChapterSelectList();
+    if (this.queue.length > 0) {
+      this.dashboardTab.click();
+    } else if (this.pageFetcher.chapters.length > 1) {
+      this.chapterTab.click();
     }
   }
 
@@ -132,18 +188,18 @@ export class Downloader {
   }
 
   flushUI(stage: "downloadFailed" | "downloaded" | "downloading" | "downloadStart" | "packaging") {
-    if (this.downloadNoticeElement) {
-      this.downloadNoticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
+    if (this.elementNotice) {
+      this.elementNotice.innerHTML = `<span>${i18n[stage].get()}</span>`;
     }
-    if (this.downloadStartElement) {
-      this.downloadStartElement.style.color = stage === "downloadFailed" ? "red" : "";
-      this.downloadStartElement.textContent = i18n[stage].get();
+    if (this.buttonStart) {
+      this.buttonStart.style.color = stage === "downloadFailed" ? "red" : "";
+      this.buttonStart.textContent = i18n[stage].get();
     }
     this.downloaderPanelBTN.style.color = stage === "downloadFailed" ? "red" : "";
   }
 
   download() {
-    if (this.queue.length === 1) return;
+    if (this.queue.length === 0) return;
     this.downloading = false;
     this.idleLoader.abort(this.queue.currIndex);
 

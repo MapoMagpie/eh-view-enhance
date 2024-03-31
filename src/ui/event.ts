@@ -198,8 +198,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     PH.minify(false, "fullViewGrid");
     HTML.root.classList.add("ehvp-root-collapse");
     HTML.fullViewGrid.blur();
-    q("html").focus();
     document.body.style.overflow = bodyOverflow;
+    // document.body.focus();
   };
 
   //全屏阅览元素的滚动事件
@@ -348,37 +348,41 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   // use keyboardEvents
   let numberRecord: number[] | null = null;
-  function fullViewGridKeyBoardEvent(event: KeyboardEvent) {
-    const key = parseKey(event);
-    if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
-      const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
-        const override = conf.keyboards.inBigImageMode[id as KeyboardInBigImageModeId];
-        // override !== undefined never check defaultKeys
-        if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
-          desc.cb(event);
-          return !desc.noPreventDefault;
 
-        }
-        return false;
-      });
-      if (triggered) {
-        event.preventDefault();
+  function bigImageFrameKeyBoardEvent(event: KeyboardEvent) {
+    if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
+    const key = parseKey(event);
+    const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
+      const override = conf.keyboards.inBigImageMode[id as KeyboardInBigImageModeId];
+      // override !== undefined never check defaultKeys
+      if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
+        desc.cb(event);
+        return !desc.noPreventDefault;
+
       }
-    } else if (!HTML.root.classList.contains("ehvp-root-collapse")) {
-      const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
-        const override = conf.keyboards.inFullViewGrid[id as KeyboardInFullViewGridId];
-        if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
-          desc.cb(event);
-          return !desc.noPreventDefault;
-        }
-        return false;
-      });
-      if (triggered) {
-        event.preventDefault();
-      } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
-        numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
-        event.preventDefault();
+      return false;
+    });
+    if (triggered) {
+      event.preventDefault();
+    }
+  }
+
+  function fullViewGridKeyBoardEvent(event: KeyboardEvent) {
+    if (HTML.root.classList.contains("ehvp-root-collapse")) return;
+    const key = parseKey(event);
+    const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
+      const override = conf.keyboards.inFullViewGrid[id as KeyboardInFullViewGridId];
+      if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
+        desc.cb(event);
+        return !desc.noPreventDefault;
       }
+      return false;
+    });
+    if (triggered) {
+      event.preventDefault();
+    } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+      numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
+      event.preventDefault();
     }
   }
 
@@ -439,8 +443,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         }
       } else {
         HTML.pageHelper.classList.remove("p-helper-extend");
-        hiddenFullViewGrid();
         ["config", "downloader"].forEach(id => togglePanelEvent(id, true));
+        hiddenFullViewGrid();
       }
     }
   }
@@ -460,6 +464,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     scrollEvent,
     bigImageWheelEvent,
     fullViewGridKeyBoardEvent,
+    bigImageFrameKeyBoardEvent,
     keyboardEvent,
     showGuideEvent,
     collapsePanelEvent,

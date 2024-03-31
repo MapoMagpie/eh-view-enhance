@@ -18,14 +18,12 @@ export function createHTML() {
   fullViewGrid.classList.add("ehvp-root");
   fullViewGrid.classList.add("ehvp-root-collapse");
   document.body.after(fullViewGrid);
-  // <a id="img-land-top" class="img-land-top"></a>
-  // <a id="img-land-bottom" class="img-land-bottom"></a>
   const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
-<div id="ehvp-nodes-container" class="full-view-grid" tabindex="0"></div>
-<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="0">
+<div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
+<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="7">
    <a id="img-land-left" class="img-land-left"></a>
    <a id="img-land-right" class="img-land-right"></a>
 </div>
@@ -252,8 +250,6 @@ export function createHTML() {
     showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
     imgLandLeft: q("#img-land-left", fullViewGrid),
     imgLandRight: q("#img-land-right", fullViewGrid),
-    // imgLandTop: q("#img-land-top", fullViewGrid),
-    // imgLandBottom: q("#img-land-bottom", fullViewGrid),
     imgScaleBar: q("#img-scale-bar", fullViewGrid),
     autoPageBTN: q("#auto-page-btn", fullViewGrid),
     pageLoading: q("#page-loading", fullViewGrid),
@@ -310,6 +306,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   // Shortcut
   document.addEventListener("keydown", (event) => events.keyboardEvent(event));
   HTML.fullViewGrid.addEventListener("keydown", (event) => events.fullViewGridKeyBoardEvent(event));
+  HTML.bigImageFrame.addEventListener("keydown", (event) => events.bigImageFrameKeyBoardEvent(event));
   // 箭头导航
   HTML.imgLandLeft.addEventListener("click", (event) => {
     IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
@@ -319,14 +316,6 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
     event.stopPropagation();
   });
-  // HTML.imgLandTop.addEventListener("click", (event) => {
-  //   IFQ.stepImageEvent("prev");
-  //   event.stopPropagation();
-  // });
-  // HTML.imgLandBottom.addEventListener("click", (event) => {
-  //   IFQ.stepImageEvent("next");
-  //   event.stopPropagation();
-  // });
 
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
   HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);

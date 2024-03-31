@@ -205,7 +205,6 @@ export class BigImageFrameManager {
     if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
     this.visible = false;
     EBUS.emit("bifm-on-hidden");
-    this.frame.blur();
     this.html.fullViewGrid.focus();
     this.frameScrollAbort?.abort();
     this.frame.classList.add("big-img-frame-collapse");
@@ -215,9 +214,9 @@ export class BigImageFrameManager {
   show(event?: Event) {
     this.visible = true;
     this.frame.classList.remove("big-img-frame-collapse");
+    this.frame.focus();
     this.frameScrollAbort = new AbortController();
     this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
-    this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.frame.focus(), 300);
     this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
       let start = this.queue.currIndex;
       if (event && event.target) start = this.queue.findImgIndex(event.target as HTMLElement);

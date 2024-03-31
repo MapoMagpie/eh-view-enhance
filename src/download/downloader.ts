@@ -11,6 +11,7 @@ import { saveAs } from "file-saver";
 import q from "../utils/query-element";
 import EBUS from "../event-bus";
 import { DownloaderCanvas } from "../ui/downloader-canvas";
+import { PageFetcher } from "../page-fetcher";
 
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
 export class Downloader {
@@ -22,14 +23,14 @@ export class Downloader {
   downloaderPanelBTN: HTMLElement;
   queue: IMGFetcherQueue;
   idleLoader: IdleLoader;
+  pageFetcher: PageFetcher;
   done: boolean = false;
-  isReady: () => boolean;
   filenames: Set<string> = new Set();
 
-  constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, matcher: Matcher, allPagesReady: () => boolean) {
+  constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, pageFetcher: PageFetcher, matcher: Matcher) {
     this.queue = queue;
     this.idleLoader = idleLoader;
-    this.isReady = allPagesReady;
+    this.pageFetcher = pageFetcher;
     this.meta = () => matcher.parseGalleryMeta(document);
     this.downloading = false;
     this.downloadForceElement = q("#download-force");
@@ -91,6 +92,9 @@ export class Downloader {
       this.downloadNoticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
       this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
     }
+    if (this.pageFetcher.chapters.length > 1) {
+      // TODO: create list of chapters, user can select which chapter to download
+    }
   }
 
   fetchOriginalTemporarily() {
@@ -139,6 +143,7 @@ export class Downloader {
   }
 
   download() {
+    if (this.queue.length === 1) return;
     this.downloading = false;
     this.idleLoader.abort(this.queue.currIndex);
 

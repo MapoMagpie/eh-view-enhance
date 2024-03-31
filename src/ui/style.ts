@@ -12,12 +12,13 @@ export function loadStyleSheel() {
   top: 0px;
   left: 0px;
   z-index: 2000;
-  transition: height 0.2s ease 0s;
+  transition: height 0.3s linear;
   box-sizing: border-box;
+  overflow: hidden;
 }
 .full-view-grid {
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   display: grid;
   align-content: start;
   grid-gap: 0.7rem;
@@ -118,10 +119,7 @@ export function loadStyleSheel() {
 }
 .ehvp-root-collapse {
   height: 0;
-  transition: height 0.2s;
-}
-.ehvp-root-collapse .full-view-grid {
-  padding: 0;
+  transition: height 0.3s linear;
 }
 .big-img-frame::-webkit-scrollbar {
   display: none;
@@ -152,7 +150,7 @@ export function loadStyleSheel() {
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  transition: min-width 0.4s ease;
+  transition: min-width 0.4s linear;
   min-width: 0px;
 }
 .p-helper .p-panel {
@@ -328,11 +326,11 @@ export function loadStyleSheel() {
   display: flex;
   justify-content: space-between;
   white-space: nowrap !important;
-  transition: flex-grow 0.6s ease, max-width 0.5s ease;
+  transition: flex-grow 0.6s ease, max-width 0.4s ease;
 }
 .p-helper-extend .b-main {
   flex-grow: 1;
-  transition: flex-grow 0.6s ease, max-width 0.5s ease;
+  transition: flex-grow 0.6s ease, max-width 0.4s ease;
 }
 .p-helper .p-config {
   display: grid;
@@ -424,7 +422,9 @@ export function loadStyleSheel() {
   height: 0.5rem;
   width: 100%;
   position: absolute;
-  bottom: 0;
+  bottom: -3px;
+  border-left: 3px solid #00000000;
+  border-right: 3px solid #00000000;
 }
 .img-land-left, .img-land-right {
   width: 15%;
@@ -588,8 +588,12 @@ export function loadStyleSheel() {
   justify-content: space-between;
   padding-left: 1rem;
 }
+.ehvp-custom-panel-close {
+  width: 2rem;
+  text-align: center;
+}
 .ehvp-custom-panel-close:hover {
-  background-color: #c30090;
+  background-color: #c3c0e0;
 }
 .ehvp-custom-panel-content {
   border: 1px solid #000000;

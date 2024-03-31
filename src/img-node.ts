@@ -126,10 +126,13 @@ export default class ImageNode implements VisualNode {
     switch (fetchStatus) {
       case "fetching":
         this.root.classList.add("img-fetching");
+        this.root.classList.remove("img-fetched");
+        this.root.classList.remove("img-fetch-failed");
         break
       case "fetched":
         this.root.classList.add("img-fetched");
         this.root.classList.remove("img-fetching");
+        this.root.classList.remove("img-fetch-failed");
         break;
       case "failed":
         this.root.classList.add("img-fetch-failed");

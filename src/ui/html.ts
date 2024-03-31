@@ -14,11 +14,10 @@ export type Elements = ReturnType<typeof createHTML>;
 
 export function createHTML() {
   const fullViewGrid = document.createElement("div");
-  fullViewGrid.setAttribute("tabindex", "0");
+  // fullViewGrid.setAttribute("tabindex", "0");
   fullViewGrid.classList.add("ehvp-root");
   fullViewGrid.classList.add("ehvp-root-collapse");
   document.body.after(fullViewGrid);
-
   // <a id="img-land-top" class="img-land-top"></a>
   // <a id="img-land-bottom" class="img-land-bottom"></a>
   const HTML_STRINGS = `
@@ -178,11 +177,11 @@ export function createHTML() {
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                 </label>
             </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                 <a id="show-guide-element" class="clickable" style="color: #fff">HELP</a>
-                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff">Keyboard</a>
-                 <a id="show-exclude-url-element" class="clickable" style="color: #fff">Excludes</a>
-                 <a class="clickable" style="color: #fff" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">Let's Star</a>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px; text-align: left;">
+                 <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
+                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
+                 <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
+                 <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
             </div>
             <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>

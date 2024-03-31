@@ -23,7 +23,7 @@ function main(MATCHER: Matcher): DestoryFunc {
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, IFQ);
   const FVGM: FullViewGridManager = new FullViewGridManager(HTML, IFQ);
   const PF: PageFetcher = new PageFetcher(IFQ, MATCHER);
-  const DL: Downloader = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
+  const DL: Downloader = new Downloader(HTML, IFQ, IL, PF, MATCHER);
   const PH: PageHelper = new PageHelper(HTML);
 
   const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);

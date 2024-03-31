@@ -81,6 +81,10 @@ export const i18n = {
   minifyPageHelperTooltip: new I18nValue("Minify Control Bar", "最小化控制栏"),
   dragToMove: new I18nValue("Drag to Move", "拖动移动"),
   originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
+  showHelp: new I18nValue("Help", "帮助"),
+  showKeyboard: new I18nValue("Keyboard", "快捷键"),
+  showExcludes: new I18nValue("Excludes", "站点排除"),
+  letUsStar: new I18nValue("Let's Star", "点星"),
   help: new I18nValue(`
     <h1>GUIDE:</h1>
     <ol>

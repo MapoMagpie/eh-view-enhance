@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.12
+// @version            4.4.0
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -522,6 +522,10 @@
     minifyPageHelperTooltip: new I18nValue("Minify Control Bar", "最小化控制栏"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
+    showHelp: new I18nValue("Help", "帮助"),
+    showKeyboard: new I18nValue("Keyboard", "快捷键"),
+    showExcludes: new I18nValue("Excludes", "站点排除"),
+    letUsStar: new I18nValue("Let's Star", "点星"),
     help: new I18nValue(`
     <h1>GUIDE:</h1>
     <ol>
@@ -1017,13 +1021,13 @@
     downloaderPanelBTN;
     queue;
     idleLoader;
+    pageFetcher;
     done = false;
-    isReady;
     filenames = /* @__PURE__ */ new Set();
-    constructor(HTML, queue, idleLoader, matcher, allPagesReady) {
+    constructor(HTML, queue, idleLoader, pageFetcher, matcher) {
       this.queue = queue;
       this.idleLoader = idleLoader;
-      this.isReady = allPagesReady;
+      this.pageFetcher = pageFetcher;
       this.meta = () => matcher.parseGalleryMeta(document);
       this.downloading = false;
       this.downloadForceElement = q("#download-force");
@@ -1082,6 +1086,7 @@
         this.downloadNoticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
         this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
       }
+      if (this.pageFetcher.chapters.length > 1) ;
     }
     fetchOriginalTemporarily() {
       conf.fetchOriginal = true;
@@ -1121,6 +1126,8 @@
       this.downloaderPanelBTN.style.color = stage === "downloadFailed" ? "red" : "";
     }
     download() {
+      if (this.queue.length === 1)
+        return;
       this.downloading = false;
       this.idleLoader.abort(this.queue.currIndex);
       this.flushUI("packaging");
@@ -1493,10 +1500,13 @@
       switch (fetchStatus) {
         case "fetching":
           this.root.classList.add("img-fetching");
+          this.root.classList.remove("img-fetched");
+          this.root.classList.remove("img-fetch-failed");
           break;
         case "fetched":
           this.root.classList.add("img-fetched");
           this.root.classList.remove("img-fetching");
+          this.root.classList.remove("img-fetch-failed");
           break;
         case "failed":
           this.root.classList.add("img-fetch-failed");
@@ -1699,11 +1709,13 @@
     url;
     title;
     originTitle;
+    downloader;
     tags;
     constructor(url, title) {
       this.url = url;
       this.title = title;
       this.tags = {};
+      this.downloader = "https://github.com/MapoMagpie/eh-view-enhance";
     }
   }
 
@@ -4095,12 +4107,13 @@ duration 0.04`).join("\n");
   top: 0px;
   left: 0px;
   z-index: 2000;
-  transition: height 0.2s ease 0s;
+  transition: height 0.3s linear;
   box-sizing: border-box;
+  overflow: hidden;
 }
 .full-view-grid {
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   display: grid;
   align-content: start;
   grid-gap: 0.7rem;
@@ -4201,10 +4214,7 @@ duration 0.04`).join("\n");
 }
 .ehvp-root-collapse {
   height: 0;
-  transition: height 0.2s;
-}
-.ehvp-root-collapse .full-view-grid {
-  padding: 0;
+  transition: height 0.3s linear;
 }
 .big-img-frame::-webkit-scrollbar {
   display: none;
@@ -4235,7 +4245,7 @@ duration 0.04`).join("\n");
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  transition: min-width 0.4s ease;
+  transition: min-width 0.4s linear;
   min-width: 0px;
 }
 .p-helper .p-panel {
@@ -4411,11 +4421,11 @@ duration 0.04`).join("\n");
   display: flex;
   justify-content: space-between;
   white-space: nowrap !important;
-  transition: flex-grow 0.6s ease, max-width 0.5s ease;
+  transition: flex-grow 0.6s ease, max-width 0.4s ease;
 }
 .p-helper-extend .b-main {
   flex-grow: 1;
-  transition: flex-grow 0.6s ease, max-width 0.5s ease;
+  transition: flex-grow 0.6s ease, max-width 0.4s ease;
 }
 .p-helper .p-config {
   display: grid;
@@ -4507,10 +4517,12 @@ duration 0.04`).join("\n");
   height: 0.5rem;
   width: 100%;
   position: absolute;
-  bottom: 0;
+  bottom: -3px;
+  border-left: 3px solid #00000000;
+  border-right: 3px solid #00000000;
 }
 .img-land-left, .img-land-right {
-  width: 20%;
+  width: 15%;
   height: 50%;
   position: fixed;
   z-index: 2004;
@@ -4671,8 +4683,12 @@ duration 0.04`).join("\n");
   justify-content: space-between;
   padding-left: 1rem;
 }
+.ehvp-custom-panel-close {
+  width: 2rem;
+  text-align: center;
+}
 .ehvp-custom-panel-close:hover {
-  background-color: #c30090;
+  background-color: #c3c0e0;
 }
 .ehvp-custom-panel-content {
   border: 1px solid #000000;
@@ -4819,7 +4835,6 @@ html {
 
   function createHTML() {
     const fullViewGrid = document.createElement("div");
-    fullViewGrid.setAttribute("tabindex", "0");
     fullViewGrid.classList.add("ehvp-root");
     fullViewGrid.classList.add("ehvp-root-collapse");
     document.body.after(fullViewGrid);
@@ -4831,8 +4846,6 @@ html {
 <div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="0">
    <a id="img-land-left" class="img-land-left"></a>
    <a id="img-land-right" class="img-land-right"></a>
-   <a id="img-land-top" class="img-land-top"></a>
-   <a id="img-land-bottom" class="img-land-bottom"></a>
 </div>
 <div id="p-helper" class="p-helper">
     <div style="position: relative">
@@ -4982,11 +4995,11 @@ html {
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                 </label>
             </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                 <a id="show-guide-element" class="clickable" style="color: #fff">HELP</a>
-                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff">Keyboard</a>
-                 <a id="show-exclude-url-element" class="clickable" style="color: #fff">Excludes</a>
-                 <a class="clickable" style="color: #fff" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">Let's Star</a>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px; text-align: left;">
+                 <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
+                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
+                 <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
+                 <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
             </div>
             <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>
@@ -5056,8 +5069,8 @@ html {
       showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
       imgLandLeft: q("#img-land-left", fullViewGrid),
       imgLandRight: q("#img-land-right", fullViewGrid),
-      imgLandTop: q("#img-land-top", fullViewGrid),
-      imgLandBottom: q("#img-land-bottom", fullViewGrid),
+      // imgLandTop: q("#img-land-top", fullViewGrid),
+      // imgLandBottom: q("#img-land-bottom", fullViewGrid),
       imgScaleBar: q("#img-scale-bar", fullViewGrid),
       autoPageBTN: q("#auto-page-btn", fullViewGrid),
       pageLoading: q("#page-loading", fullViewGrid),
@@ -5108,14 +5121,6 @@ html {
     });
     HTML.imgLandRight.addEventListener("click", (event) => {
       IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
-      event.stopPropagation();
-    });
-    HTML.imgLandTop.addEventListener("click", (event) => {
-      IFQ.stepImageEvent("prev");
-      event.stopPropagation();
-    });
-    HTML.imgLandBottom.addEventListener("click", (event) => {
-      IFQ.stepImageEvent("next");
       event.stopPropagation();
     });
     HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
@@ -5987,7 +5992,7 @@ html {
     const BIFM = new BigImageFrameManager(HTML, IFQ);
     const FVGM = new FullViewGridManager(HTML, IFQ);
     const PF = new PageFetcher(IFQ, MATCHER);
-    const DL = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
+    const DL = new Downloader(HTML, IFQ, IL, PF, MATCHER);
     const PH = new PageHelper(HTML);
     const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
     addEventListeners(events, HTML, BIFM, IFQ, DL);

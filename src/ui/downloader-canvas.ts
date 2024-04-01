@@ -62,7 +62,7 @@ export class DownloaderCanvas {
   }
 
   resize(parent: HTMLElement) {
-    this.canvas.width = Math.floor(parent.offsetWidth - 20);
+    this.canvas.width = Math.floor(parent.offsetWidth);
     this.canvas.height = Math.floor(parent.offsetHeight);
     this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
     this.draw();

@@ -106,6 +106,12 @@ export function createHTML() {
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
+                    <span>${i18n.disableCssAnimation.get()} :</span>
+                    <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
+                </label>
+            </div>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                <label class="p-label">
                     <span>${i18n.autoCollapsePanel.get()}
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelTooltip.get()}</span></span>:
                     </span>
@@ -279,16 +285,19 @@ export function createHTML() {
 export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, DL: Downloader) {
   HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
   HTML.downloaderPanelBTN.addEventListener("click", () => {
-    DL.check();
     events.togglePanelEvent("downloader");
+    DL.check();
   });
-
-  HTML.configPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target as HTMLElement, "config"));
-  HTML.configPanel.addEventListener("blur", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target as HTMLElement, "config"));
-  HTML.downloaderPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target as HTMLElement, "downloader"));
-  HTML.downloaderPanel.addEventListener("blur", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target as HTMLElement, "downloader"));
-  HTML.pageHelper.addEventListener("mouseover", () => conf.autoCollapsePanel && events.abortMouseleavePanelEvent(""));
-  HTML.pageHelper.addEventListener("mouseleave", () => conf.autoCollapsePanel && ["config", "downloader"].forEach(k => events.togglePanelEvent(k, true)));
+  function collapsePanel(key: "config" | "downloader") {
+    const elements = { "config": HTML.configPanel, "downloader": HTML.downloaderPanel };
+    conf.autoCollapsePanel && events.collapsePanelEvent(elements[key], key)
+  }
+  HTML.configPanel.addEventListener("mouseleave", () => collapsePanel("config"));
+  HTML.configPanel.addEventListener("blur", () => collapsePanel("config"));
+  HTML.downloaderPanel.addEventListener("mouseleave", () => collapsePanel("downloader"));
+  HTML.downloaderPanel.addEventListener("blur", () => collapsePanel("downloader"));
+  HTML.pageHelper.addEventListener("mouseover", () => events.abortMouseleavePanelEvent());
+  HTML.pageHelper.addEventListener("mouseleave", () => ["config", "downloader"].forEach(k => collapsePanel(k as "config" | "downloader")));
 
   // modify config event
   for (const key of ConfigNumberKeys) {

@@ -146,36 +146,34 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   let restoreMinify = false;
   function togglePanelEvent(id: string, collapse?: boolean) {
-    setTimeout(() => {
-      let element = q(`#${id}-panel`);
-      if (!element) return;
-      if (collapse === false) {
-        element.classList.remove("p-collapse");
-        return;
+    let element = q(`#${id}-panel`);
+    if (!element) return;
+    if (collapse === false) {
+      element.classList.remove("p-collapse");
+      return;
+    }
+    if (collapse === true) {
+      collapsePanelEvent(element, id);
+      if (BIFM.visible) {
+        BIFM.frame.focus();
+      } else {
+        HTML.fullViewGrid.focus();
       }
-      if (collapse === true) {
-        collapsePanelEvent(element, id);
-        if (BIFM.visible) {
-          BIFM.frame.focus();
-        } else {
-          HTML.fullViewGrid.focus();
-        }
-        return;
-      }
+      return;
+    }
 
-      if (!element.classList.toggle("p-collapse")) { // not collapsed
-        ["config", "downloader"].filter(k => k !== id).forEach(k => togglePanelEvent(k, true));
-        if (!conf.autoCollapsePanel) {
-          PH.minify(false, "fullViewGrid");
-          restoreMinify = true;
-        }
-      } else { // collapsed
-        if (restoreMinify) {
-          PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
-          restoreMinify = false;
-        }
+    if (!element.classList.toggle("p-collapse")) { // not collapsed
+      ["config", "downloader"].filter(k => k !== id).forEach(k => togglePanelEvent(k, true));
+      if (!conf.autoCollapsePanel) {
+        PH.minify(false, "fullViewGrid");
+        restoreMinify = true;
       }
-    }, 10);
+    } else { // collapsed
+      if (restoreMinify) {
+        PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+        restoreMinify = false;
+      }
+    }
   }
 
   let bodyOverflow = document.body.style.overflow;

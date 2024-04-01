@@ -3,6 +3,49 @@ import { conf } from "../config";
 export function loadStyleSheel() {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
   const style = document.createElement('style');
+  const animation = `
+.ehvp-root {
+  transition: height 0.3s linear;
+}
+.ehvp-root-collapse {
+  transition: height 0.3s linear;
+}
+.big-img-frame {
+  transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
+}
+.p-helper {
+  transition: min-width 0.4s linear;
+}
+.p-helper .p-panel {
+  transition: width 0.4s ease 0s, height 0.4s ease 0s;
+}
+.p-collapse {
+  transition: height 0.4s;
+}
+.p-helper .b-main {
+  transition: flex-grow 0.6s ease, max-width 0.4s ease;
+}
+.p-helper-extend .b-main {
+  transition: flex-grow 0.6s ease, max-width 0.4s ease;
+}
+.big-img-frame-collapse {
+  transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
+}
+.p-minify:not(:hover),
+.p-minify:not(:hover) .lightgreen {
+  transition: color 0.5s ease-in-out, background-color 0.3s ease-in-out;
+}
+@media (min-width: ${isMobile ? "1440px" : "720px"}) {
+  .p-helper.p-helper-extend {
+    transition: min-width 0.4s ease, color 0.5s ease-in-out, background-color 0.3s ease-in-out;
+  }
+}
+@media (max-width: ${isMobile ? "1440px" : "720px"}) {
+  .p-helper.p-helper-extend {
+    transition: min-width 0.4s ease;
+  }
+}
+`;
   const css = `
 .ehvp-root {
   width: 100vw;
@@ -12,10 +55,13 @@ export function loadStyleSheel() {
   top: 0px;
   left: 0px;
   z-index: 2000;
-  transition: height 0.3s linear;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: clip;
 }
+.ehvp-root-collapse {
+  height: 0;
+}
+${conf.disableCssAnimation ? "" : animation}
 .full-view-grid {
   width: 100vw;
   height: 100vh;
@@ -120,10 +166,6 @@ export function loadStyleSheel() {
     left: 0%;
 	}
 }
-.ehvp-root-collapse {
-  height: 0;
-  transition: height 0.3s linear;
-}
 .big-img-frame::-webkit-scrollbar {
   display: none;
 }
@@ -137,7 +179,6 @@ export function loadStyleSheel() {
   scrollbar-width: none;
   z-index: 2001;
   background-color: #000000d6;
-  transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
 }
 .bifm-img {
   object-fit: contain;
@@ -153,7 +194,6 @@ export function loadStyleSheel() {
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  transition: min-width 0.4s linear;
   min-width: 0px;
 }
 .p-helper .p-panel {
@@ -164,13 +204,11 @@ export function loadStyleSheel() {
   color: rgb(200, 222, 200);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   overflow: hidden;
-  transition: width 0.4s ease 0s, height 0.4s ease 0s;
   padding: 3px;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
     min-width: 24rem;
-    transition: min-width 0.4s ease, color 0.5s ease-in-out, background-color 0.3s ease-in-out;
     font-size: 1rem;
     line-height: 1.2rem;
   }
@@ -184,7 +222,7 @@ export function loadStyleSheel() {
   }
   .p-helper .p-panel {
     width: 24rem;
-    height: 30rem;
+    height: 32rem;
     bottom: 1.3rem;
   }
   .p-helper .p-btn {
@@ -226,7 +264,6 @@ export function loadStyleSheel() {
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
     min-width: 100vw;
-    transition: min-width 0.4s ease;
     font-size: 4.2cqw;
     line-height: 5cqw;
   }
@@ -320,7 +357,6 @@ export function loadStyleSheel() {
 }
 .p-collapse {
   height: 0px !important;
-  transition: height 0.4s;
   padding: 0px !important;
 }
 .p-helper .b-main {
@@ -329,11 +365,9 @@ export function loadStyleSheel() {
   display: flex;
   justify-content: space-between;
   white-space: nowrap !important;
-  transition: flex-grow 0.6s ease, max-width 0.4s ease;
 }
 .p-helper-extend .b-main {
   flex-grow: 1;
-  transition: flex-grow 0.6s ease, max-width 0.4s ease;
 }
 .p-helper .p-config {
   display: grid;
@@ -412,7 +446,6 @@ export function loadStyleSheel() {
 }
 .big-img-frame-collapse {
   width: 0px !important;
-  transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
 }
 .big-img-frame-collapse .img-land-left,
 .big-img-frame-collapse .img-land-right,
@@ -544,7 +577,6 @@ export function loadStyleSheel() {
 .p-minify:not(:hover) .lightgreen {
   color: #00000000 !important;
   background-color: #00000000 !important;
-  transition: color 0.5s ease-in-out, background-color 0.3s ease-in-out;
 }
 .p-minify:not(:hover) .b-main .b-m-page {
   order: ${conf.pageHelperAbLeft !== "unset" ? -2 : 1};

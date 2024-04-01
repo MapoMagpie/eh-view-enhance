@@ -62,15 +62,15 @@ export class Downloader {
         }
       }
     });
-    this.initTabs(HTML);
+    this.initTabs();
   }
 
-  initTabs(HTML: Elements) {
+  initTabs() {
     const tabs = [{
       ele: this.dashboardTab, cb: () => {
         this.elementDashboard.hidden = false;
         this.elementChapters.hidden = true;
-        this.canvas.resize(HTML.downloadDashboard);
+        this.canvas.resize(this.elementDashboard);
       }
     }, {
       ele: this.chapterTab, cb: () => {
@@ -139,12 +139,14 @@ ${chapters.map(c => `<div><label>
 
   // check > start > download
   check() {
-    if (conf.fetchOriginal) return;
-    // append adviser element
-    if (this.elementNotice && !this.downloading) {
-      this.elementNotice.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-      this.elementNotice.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+    if (!conf.fetchOriginal) {
+      // append adviser element
+      if (this.elementNotice && !this.downloading) {
+        this.elementNotice.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
+        this.elementNotice.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+      }
     }
+    setTimeout(() => this.canvas.resize(this.elementDashboard), 110);
     this.createChapterSelectList();
     if (this.queue.length > 0) {
       this.dashboardTab.click();

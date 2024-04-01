@@ -68,6 +68,8 @@ export type Config = {
   muted?: boolean,
   /** video volume, min 0, max 100 */
   volume?: number,
+  /** disable css animation */
+  disableCssAnimation: boolean,
 };
 
 function defaultConf(): Config {
@@ -105,6 +107,7 @@ function defaultConf(): Config {
     excludeURLs: [],
     muted: false,
     volume: 50,
+    disableCssAnimation: false,
   };
 }
 
@@ -172,6 +175,10 @@ function confHealthCheck($conf: Config): Config {
     $conf.excludeURLs = [];
     changed = true;
   }
+  if ($conf.disableCssAnimation === undefined) {
+    $conf.disableCssAnimation = false;
+    changed = true;
+  }
   if (changed) {
     saveConf($conf);
   }
@@ -183,8 +190,8 @@ export function saveConf(c: Config) {
 }
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime";
 export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel";
-export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel"];
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation";
+export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation"];
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper";
 export const ConfigSelectKeys: (keyof Config)[] = ["readMode", "stickyMouse", "minifyPageHelper"];
 export const conf = getConf();

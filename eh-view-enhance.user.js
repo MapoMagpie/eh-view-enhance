@@ -87,7 +87,8 @@
       keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
       excludeURLs: [],
       muted: false,
-      volume: 50
+      volume: 50,
+      disableCssAnimation: false
     };
   }
   const VERSION = "4.1.10";
@@ -150,6 +151,10 @@
       $conf.excludeURLs = [];
       changed = true;
     }
+    if ($conf.disableCssAnimation === void 0) {
+      $conf.disableCssAnimation = false;
+      changed = true;
+    }
     if (changed) {
       saveConf($conf);
     }
@@ -159,7 +164,7 @@
     _GM_setValue(CONFIG_KEY, JSON.stringify(c));
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel"];
+  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation"];
   const ConfigSelectKeys = ["readMode", "stickyMouse", "minifyPageHelper"];
   const conf = getConf();
 
@@ -516,6 +521,7 @@
     reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
     autoCollapsePanel: new I18nValue("Auto Fold Control Panel", "自动收起控制面板"),
     autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
+    disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
     stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
     stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
     minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
@@ -865,11 +871,11 @@
       this.scrollTop = 0;
       this.scrollSize = 10;
       this.debouncer = new Debouncer();
-      HTML.downloaderPanel.addEventListener("transitionend", () => this.resize(HTML.downloaderPanel));
+      HTML.downloaderPanel.addEventListener("transitionend", () => this.resize(HTML.downloadDashboard));
       EBUS.subscribe("imf-download-state-change", () => this.drawDebouce());
     }
     resize(parent) {
-      this.canvas.width = Math.floor(parent.offsetWidth - 20);
+      this.canvas.width = Math.floor(parent.offsetWidth);
       this.canvas.height = Math.floor(parent.offsetHeight);
       this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
       this.draw();
@@ -1046,15 +1052,15 @@
           }
         }
       });
-      this.initTabs(HTML);
+      this.initTabs();
     }
-    initTabs(HTML) {
+    initTabs() {
       const tabs = [{
         ele: this.dashboardTab,
         cb: () => {
           this.elementDashboard.hidden = false;
           this.elementChapters.hidden = true;
-          this.canvas.resize(HTML.downloaderPanel);
+          this.canvas.resize(this.elementDashboard);
         }
       }, {
         ele: this.chapterTab,
@@ -1122,12 +1128,13 @@ ${chapters.map((c) => `<div><label>
     }
     // check > start > download
     check() {
-      if (conf.fetchOriginal)
-        return;
-      if (this.elementNotice && !this.downloading) {
-        this.elementNotice.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-        this.elementNotice.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+      if (!conf.fetchOriginal) {
+        if (this.elementNotice && !this.downloading) {
+          this.elementNotice.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
+          this.elementNotice.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+        }
       }
+      setTimeout(() => this.canvas.resize(this.elementDashboard), 110);
       this.createChapterSelectList();
       if (this.queue.length > 0) {
         this.dashboardTab.click();
@@ -1173,7 +1180,7 @@ ${chapters.map((c) => `<div><label>
       this.downloaderPanelBTN.style.color = stage === "downloadFailed" ? "red" : "";
     }
     download() {
-      if (this.queue.length === 1)
+      if (this.queue.length === 0)
         return;
       this.downloading = false;
       this.idleLoader.abort(this.queue.currIndex);
@@ -3727,36 +3734,34 @@ duration 0.04`).join("\n");
     }
     let restoreMinify = false;
     function togglePanelEvent(id, collapse) {
-      setTimeout(() => {
-        let element = q(`#${id}-panel`);
-        if (!element)
-          return;
-        if (collapse === false) {
-          element.classList.remove("p-collapse");
-          return;
-        }
-        if (collapse === true) {
-          collapsePanelEvent(element, id);
-          if (BIFM.visible) {
-            BIFM.frame.focus();
-          } else {
-            HTML.fullViewGrid.focus();
-          }
-          return;
-        }
-        if (!element.classList.toggle("p-collapse")) {
-          ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
-          if (!conf.autoCollapsePanel) {
-            PH.minify(false, "fullViewGrid");
-            restoreMinify = true;
-          }
+      let element = q(`#${id}-panel`);
+      if (!element)
+        return;
+      if (collapse === false) {
+        element.classList.remove("p-collapse");
+        return;
+      }
+      if (collapse === true) {
+        collapsePanelEvent(element, id);
+        if (BIFM.visible) {
+          BIFM.frame.focus();
         } else {
-          if (restoreMinify) {
-            PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
-            restoreMinify = false;
-          }
+          HTML.fullViewGrid.focus();
         }
-      }, 10);
+        return;
+      }
+      if (!element.classList.toggle("p-collapse")) {
+        ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
+        if (!conf.autoCollapsePanel) {
+          PH.minify(false, "fullViewGrid");
+          restoreMinify = true;
+        }
+      } else {
+        if (restoreMinify) {
+          PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+          restoreMinify = false;
+        }
+      }
     }
     let bodyOverflow = document.body.style.overflow;
     function showFullViewGrid() {
@@ -4157,6 +4162,49 @@ duration 0.04`).join("\n");
   function loadStyleSheel() {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
     const style = document.createElement("style");
+    const animation = `
+.ehvp-root {
+  transition: height 0.3s linear;
+}
+.ehvp-root-collapse {
+  transition: height 0.3s linear;
+}
+.big-img-frame {
+  transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
+}
+.p-helper {
+  transition: min-width 0.4s linear;
+}
+.p-helper .p-panel {
+  transition: width 0.4s ease 0s, height 0.4s ease 0s;
+}
+.p-collapse {
+  transition: height 0.4s;
+}
+.p-helper .b-main {
+  transition: flex-grow 0.6s ease, max-width 0.4s ease;
+}
+.p-helper-extend .b-main {
+  transition: flex-grow 0.6s ease, max-width 0.4s ease;
+}
+.big-img-frame-collapse {
+  transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
+}
+.p-minify:not(:hover),
+.p-minify:not(:hover) .lightgreen {
+  transition: color 0.5s ease-in-out, background-color 0.3s ease-in-out;
+}
+@media (min-width: ${isMobile ? "1440px" : "720px"}) {
+  .p-helper.p-helper-extend {
+    transition: min-width 0.4s ease, color 0.5s ease-in-out, background-color 0.3s ease-in-out;
+  }
+}
+@media (max-width: ${isMobile ? "1440px" : "720px"}) {
+  .p-helper.p-helper-extend {
+    transition: min-width 0.4s ease;
+  }
+}
+`;
     const css = `
 .ehvp-root {
   width: 100vw;
@@ -4166,10 +4214,13 @@ duration 0.04`).join("\n");
   top: 0px;
   left: 0px;
   z-index: 2000;
-  transition: height 0.3s linear;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: clip;
 }
+.ehvp-root-collapse {
+  height: 0;
+}
+${conf.disableCssAnimation ? "" : animation}
 .full-view-grid {
   width: 100vw;
   height: 100vh;
@@ -4274,10 +4325,6 @@ duration 0.04`).join("\n");
     left: 0%;
 	}
 }
-.ehvp-root-collapse {
-  height: 0;
-  transition: height 0.3s linear;
-}
 .big-img-frame::-webkit-scrollbar {
   display: none;
 }
@@ -4291,7 +4338,6 @@ duration 0.04`).join("\n");
   scrollbar-width: none;
   z-index: 2001;
   background-color: #000000d6;
-  transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
 }
 .bifm-img {
   object-fit: contain;
@@ -4307,7 +4353,6 @@ duration 0.04`).join("\n");
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  transition: min-width 0.4s linear;
   min-width: 0px;
 }
 .p-helper .p-panel {
@@ -4318,13 +4363,11 @@ duration 0.04`).join("\n");
   color: rgb(200, 222, 200);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   overflow: hidden;
-  transition: width 0.4s ease 0s, height 0.4s ease 0s;
   padding: 3px;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
     min-width: 24rem;
-    transition: min-width 0.4s ease, color 0.5s ease-in-out, background-color 0.3s ease-in-out;
     font-size: 1rem;
     line-height: 1.2rem;
   }
@@ -4338,7 +4381,7 @@ duration 0.04`).join("\n");
   }
   .p-helper .p-panel {
     width: 24rem;
-    height: 30rem;
+    height: 32rem;
     bottom: 1.3rem;
   }
   .p-helper .p-btn {
@@ -4380,7 +4423,6 @@ duration 0.04`).join("\n");
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
     min-width: 100vw;
-    transition: min-width 0.4s ease;
     font-size: 4.2cqw;
     line-height: 5cqw;
   }
@@ -4474,7 +4516,6 @@ duration 0.04`).join("\n");
 }
 .p-collapse {
   height: 0px !important;
-  transition: height 0.4s;
   padding: 0px !important;
 }
 .p-helper .b-main {
@@ -4483,11 +4524,9 @@ duration 0.04`).join("\n");
   display: flex;
   justify-content: space-between;
   white-space: nowrap !important;
-  transition: flex-grow 0.6s ease, max-width 0.4s ease;
 }
 .p-helper-extend .b-main {
   flex-grow: 1;
-  transition: flex-grow 0.6s ease, max-width 0.4s ease;
 }
 .p-helper .p-config {
   display: grid;
@@ -4566,7 +4605,6 @@ duration 0.04`).join("\n");
 }
 .big-img-frame-collapse {
   width: 0px !important;
-  transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
 }
 .big-img-frame-collapse .img-land-left,
 .big-img-frame-collapse .img-land-right,
@@ -4698,7 +4736,6 @@ duration 0.04`).join("\n");
 .p-minify:not(:hover) .lightgreen {
   color: #00000000 !important;
   background-color: #00000000 !important;
-  transition: color 0.5s ease-in-out, background-color 0.3s ease-in-out;
 }
 .p-minify:not(:hover) .b-main .b-m-page {
   order: ${conf.pageHelperAbLeft !== "unset" ? -2 : 1};
@@ -5024,6 +5061,12 @@ html {
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
+                    <span>${i18n.disableCssAnimation.get()} :</span>
+                    <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
+                </label>
+            </div>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                <label class="p-label">
                     <span>${i18n.autoCollapsePanel.get()}
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelTooltip.get()}</span></span>:
                     </span>
@@ -5195,15 +5238,19 @@ html {
   function addEventListeners(events, HTML, BIFM, IFQ, DL) {
     HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
     HTML.downloaderPanelBTN.addEventListener("click", () => {
-      DL.check();
       events.togglePanelEvent("downloader");
+      DL.check();
     });
-    HTML.configPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "config"));
-    HTML.configPanel.addEventListener("blur", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "config"));
-    HTML.downloaderPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "downloader"));
-    HTML.downloaderPanel.addEventListener("blur", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "downloader"));
-    HTML.pageHelper.addEventListener("mouseover", () => conf.autoCollapsePanel && events.abortMouseleavePanelEvent(""));
-    HTML.pageHelper.addEventListener("mouseleave", () => conf.autoCollapsePanel && ["config", "downloader"].forEach((k) => events.togglePanelEvent(k, true)));
+    function collapsePanel(key) {
+      const elements = { "config": HTML.configPanel, "downloader": HTML.downloaderPanel };
+      conf.autoCollapsePanel && events.collapsePanelEvent(elements[key], key);
+    }
+    HTML.configPanel.addEventListener("mouseleave", () => collapsePanel("config"));
+    HTML.configPanel.addEventListener("blur", () => collapsePanel("config"));
+    HTML.downloaderPanel.addEventListener("mouseleave", () => collapsePanel("downloader"));
+    HTML.downloaderPanel.addEventListener("blur", () => collapsePanel("downloader"));
+    HTML.pageHelper.addEventListener("mouseover", () => events.abortMouseleavePanelEvent());
+    HTML.pageHelper.addEventListener("mouseleave", () => ["config", "downloader"].forEach((k) => collapsePanel(k)));
     for (const key of ConfigNumberKeys) {
       q(`#${key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
       q(`#${key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));

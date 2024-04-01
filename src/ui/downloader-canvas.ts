@@ -57,7 +57,7 @@ export class DownloaderCanvas {
     this.debouncer = new Debouncer();
 
     // register animation event to parent for size change
-    HTML.downloaderPanel.addEventListener("transitionend", () => this.resize(HTML.downloaderPanel));
+    HTML.downloaderPanel.addEventListener("transitionend", () => this.resize(HTML.downloadDashboard));
     EBUS.subscribe("imf-download-state-change", () => this.drawDebouce());
   }
 

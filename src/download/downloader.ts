@@ -70,7 +70,7 @@ export class Downloader {
       ele: this.dashboardTab, cb: () => {
         this.elementDashboard.hidden = false;
         this.elementChapters.hidden = true;
-        this.canvas.resize(HTML.downloaderPanel);
+        this.canvas.resize(HTML.downloadDashboard);
       }
     }, {
       ele: this.chapterTab, cb: () => {

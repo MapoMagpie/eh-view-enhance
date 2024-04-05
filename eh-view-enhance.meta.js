@@ -13,6 +13,7 @@
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/*
 // @match              https://e-hentai.org/*
+// @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://nhentai.net/*
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*
@@ -29,6 +30,7 @@
 // @connect            exhentai.org
 // @connect            e-hentai.org
 // @connect            hath.network
+// @connect            exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion
 // @connect            nhentai.net
 // @connect            hitomi.la
 // @connect            akamaihd.net

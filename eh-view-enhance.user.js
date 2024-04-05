@@ -13,6 +13,7 @@
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/*
 // @match              https://e-hentai.org/*
+// @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://nhentai.net/*
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*
@@ -29,6 +30,7 @@
 // @connect            exhentai.org
 // @connect            e-hentai.org
 // @connect            hath.network
+// @connect            exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion
 // @connect            nhentai.net
 // @connect            hitomi.la
 // @connect            akamaihd.net
@@ -228,17 +230,17 @@
   }
 
   const HOST_REGEX = /\/\/([^\/]*)\//;
-  function xhrWapper(url, respType, cb) {
+  function xhrWapper(url, respType, cb, timeout) {
     return _GM_xmlhttpRequest({
       method: "GET",
       url,
-      timeout: 0,
+      timeout: timeout || 0,
       responseType: respType,
       nocache: false,
       revalidate: false,
       // fetch: false,
       headers: {
-        "Host": HOST_REGEX.exec(url)[1],
+        "Host": HOST_REGEX.exec(url)?.[1] || window.location.host,
         // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0",
         "Accept": "image/avif,image/webp,*/*",
         // "Accept-Language": "en-US,en;q=0.5",
@@ -258,7 +260,7 @@
       xhrWapper(url, "blob", {
         onload: (response) => resolve(response.response),
         onerror: (error) => reject(error)
-      });
+      }, 10 * 1e3);
     });
   }
 
@@ -1149,7 +1151,17 @@ ${chapters.map((c) => `<div><label>
       });
       this.start();
     }
+    getSelectedChapters() {
+      this.selectedChapters.clear();
+      this.elementChapters.querySelectorAll("input[type=checkbox][id^=ch-]:checked").forEach((checkbox) => this.selectedChapters.add(Number(checkbox.value)));
+      evLog("debug", "get selected chapters: ", this.selectedChapters);
+      return this.pageFetcher.chapters.filter((c) => this.selectedChapters.has(c.id));
+    }
     start() {
+      const chapters = this.getSelectedChapters();
+      for (const ch of chapters) {
+        this.pageFetcher.changeChapter(ch.id);
+      }
       if (this.queue.isFinised()) {
         this.download();
         return;
@@ -1923,7 +1935,17 @@ ${chapters.map((c) => `<div><label>
     return result;
   }
   async function splitImagesFromUrl(url, positions) {
-    url = URL.createObjectURL(await fetchImage(url));
+    let data;
+    for (let i = 0; i < 3; i++) {
+      try {
+        data = await fetchImage(url);
+        break;
+      } catch (err) {
+      }
+    }
+    if (!data)
+      throw new Error("load sprite image error");
+    url = URL.createObjectURL(data);
     const img = await new Promise((resolve, reject) => {
       let img2 = new Image();
       img2.onload = () => resolve(img2);
@@ -1949,8 +1971,9 @@ ${chapters.map((c) => `<div><label>
     sprite: /url\((.*?)\)/
   };
   class EHMatcher extends BaseMatcher {
+    // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
     workURL() {
-      return /e[-x]hentai.org\/g\/\w+/;
+      return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
     }
     parseGalleryMeta(doc) {
       const titleList = doc.querySelectorAll("#gd2 h1");
@@ -1984,13 +2007,13 @@ ${chapters.map((c) => `<div><label>
     async fetchOriginMeta(href, retry) {
       return { url: await this.fetchImgURL(href, retry) };
     }
-    async parseImgNodes(page) {
+    async parseImgNodes(source) {
       const list = [];
       let doc = await (async () => {
-        if (page instanceof Document) {
-          return page;
+        if (source instanceof Document) {
+          return source;
         } else {
-          const raw = await window.fetch(page).then((response) => response.text());
+          const raw = await window.fetch(source).then((response) => response.text());
           if (!raw)
             return null;
           const domParser = new DOMParser();
@@ -2030,31 +2053,39 @@ ${chapters.map((c) => `<div><label>
       let urls = [];
       let delayURLs = [];
       if (isSprite) {
-        for (let i = 0; i < nodes.length; i += 20) {
-          const niStyles = nodes[i].style;
-          const url = niStyles.background.match(regulars.sprite)?.[1]?.replaceAll('"', "");
-          if (url) {
-            const range = nodes.slice(i, i + 20);
-            const resolvers = [];
-            const rejects = [];
-            for (let j = 0; j < range.length; j++) {
-              urls.push("");
-              delayURLs.push(new Promise((resolve, reject) => {
-                resolvers.push(resolve);
-                rejects.push(reject);
-              }));
-            }
-            splitImagesFromUrl(url, parseImagePositions(range.map((n) => n.style))).then((ret) => {
-              for (let k = 0; k < ret.length; k++) {
-                resolvers[k](ret[k]);
-              }
-            }).catch((err) => {
-              rejects.forEach((r) => r(err));
-            });
-          } else {
+        let spriteURLs = [];
+        for (let i = 0; i < nodes.length; i++) {
+          const nodeStyles = nodes[i].style;
+          const url = nodeStyles.background.match(regulars.sprite)?.[1]?.replaceAll('"', "");
+          if (!url)
             break;
+          if (spriteURLs.length === 0 || spriteURLs[spriteURLs.length - 1].url !== url) {
+            spriteURLs.push({ url, range: [{ index: i, style: nodeStyles }] });
+          } else {
+            spriteURLs[spriteURLs.length - 1].range.push({ index: i, style: nodeStyles });
           }
         }
+        spriteURLs.forEach(({ url, range }) => {
+          const resolvers = [];
+          const rejects = [];
+          for (let i = 0; i < range.length; i++) {
+            urls.push("");
+            delayURLs.push(new Promise((resolve, reject) => {
+              resolvers.push(resolve);
+              rejects.push(reject);
+            }));
+          }
+          if (!url.startsWith("http")) {
+            url = window.location.origin + url;
+          }
+          splitImagesFromUrl(url, parseImagePositions(range.map((n) => n.style))).then((ret) => {
+            for (let k = 0; k < ret.length; k++) {
+              resolvers[k](ret[k]);
+            }
+          }).catch((err) => {
+            rejects.forEach((r) => r(err));
+          });
+        });
       } else {
         if (urls.length == 0) {
           urls = nodes.map((n) => n.firstElementChild.firstElementChild.src);
@@ -2106,32 +2137,37 @@ ${chapters.map((c) => `<div><label>
       let text = "";
       try {
         text = await window.fetch(url).then((resp) => resp.text());
-        if (!text)
-          throw new Error("[text] is empty");
       } catch (error) {
         throw new Error(`Fetch source page error, expected [text]！ ${error}`);
       }
+      if (!text)
+        throw new Error("[text] is empty");
       if (conf.fetchOriginal) {
         const matchs = regulars.original.exec(text);
         if (matchs && matchs.length > 0) {
           return matchs[1].replace(/&amp;/g, "&");
-        } else {
-          const normalMatchs = regulars["normal"].exec(text);
-          if (normalMatchs == null || normalMatchs.length == 0) {
-            throw new Error(`Cannot matching the image url, content: ${text}`);
-          } else {
-            return normalMatchs[1];
-          }
         }
       }
+      let src;
       if (originChanged) {
-        const nlValue = regulars.nlValue.exec(text)[1];
-        const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-        evLog("info", `IMG-FETCHER retry url:${newUrl}`);
-        return await this.fetchImgURL(newUrl, false);
-      } else {
-        return regulars.normal.exec(text)[1];
+        const nlValue = regulars.nlValue.exec(text)?.[1];
+        if (nlValue) {
+          const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
+          evLog("info", `IMG-FETCHER retry url:${newUrl}`);
+          src = await this.fetchImgURL(newUrl, false);
+        } else {
+          evLog("error", `Cannot matching the nlValue, content: ${text}`);
+        }
       }
+      if (!src) {
+        src = regulars.normal.exec(text)?.[1];
+      }
+      if (!src)
+        throw new Error(`Cannot matching the image url, content: ${text}`);
+      if (!src.startsWith("http")) {
+        src = window.location.origin + src;
+      }
+      return src;
     }
   }
 

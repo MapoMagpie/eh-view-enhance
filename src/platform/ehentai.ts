@@ -24,8 +24,9 @@ const regulars = {
 
 export class EHMatcher extends BaseMatcher {
 
+  // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
   workURL(): RegExp {
-    return /e[-x]hentai.org\/g\/\w+/;
+    return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
   }
 
   public parseGalleryMeta(doc: Document): GalleryMeta {
@@ -61,13 +62,13 @@ export class EHMatcher extends BaseMatcher {
     return { url: await this.fetchImgURL(href, retry) };
   }
 
-  public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
+  public async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
     let doc = await (async (): Promise<Document | null> => {
-      if (page instanceof Document) {
-        return page;
+      if (source instanceof Document) {
+        return source;
       } else {
-        const raw = await window.fetch(page as string).then((response) => response.text());
+        const raw = await window.fetch(source as string).then((response) => response.text());
         if (!raw) return null;
         const domParser = new DOMParser();
         return domParser.parseFromString(raw, "text/html");
@@ -113,31 +114,39 @@ export class EHMatcher extends BaseMatcher {
 
     // sprite thumbnails
     if (isSprite) {
-      for (let i = 0; i < nodes.length; i += 20) {
-        const niStyles = nodes[i].style;
-        const url = niStyles.background.match(regulars.sprite)?.[1]?.replaceAll("\"", "");
-        if (url) {
-          const range = nodes.slice(i, i + 20);
-          const resolvers: ((str: string | PromiseLike<string>) => void)[] = [];
-          const rejects: ((reason?: any) => void)[] = [];
-          for (let j = 0; j < range.length; j++) {
-            urls.push("");
-            delayURLs.push(new Promise<string>((resolve, reject) => {
-              resolvers.push(resolve);
-              rejects.push(reject);
-            }));
-          }
-          splitImagesFromUrl(url, parseImagePositions(range.map(n => n.style))).then((ret) => {
-            for (let k = 0; k < ret.length; k++) {
-              resolvers[k](ret[k]);
-            }
-          }).catch((err) => {
-            rejects.forEach(r => r(err));
-          })
+      let spriteURLs: { url: string, range: { index: number, style: CSSStyleDeclaration }[] }[] = [];
+      for (let i = 0; i < nodes.length; i++) {
+        const nodeStyles = nodes[i].style;
+        const url = nodeStyles.background.match(regulars.sprite)?.[1]?.replaceAll("\"", "");
+        if (!url) break;
+        if (spriteURLs.length === 0 || spriteURLs[spriteURLs.length - 1].url !== url) {
+          spriteURLs.push({ url, range: [{ index: i, style: nodeStyles }] });
         } else {
-          break;
+          spriteURLs[spriteURLs.length - 1].range.push({ index: i, style: nodeStyles });
         }
       }
+      spriteURLs.forEach(({ url, range }) => {
+        const resolvers: ((str: string | PromiseLike<string>) => void)[] = [];
+        const rejects: ((reason?: any) => void)[] = [];
+        for (let i = 0; i < range.length; i++) {
+          urls.push("");
+          delayURLs.push(new Promise<string>((resolve, reject) => {
+            resolvers.push(resolve);
+            rejects.push(reject);
+          }));
+        }
+        // check url has host prefix
+        if (!url.startsWith("http")) {
+          url = window.location.origin + url;
+        }
+        splitImagesFromUrl(url, parseImagePositions(range.map(n => n.style))).then((ret) => {
+          for (let k = 0; k < ret.length; k++) {
+            resolvers[k](ret[k]);
+          }
+        }).catch((err) => {
+          rejects.forEach(r => r(err));
+        })
+      });
     }
     // large thumbnails
     else {
@@ -196,33 +205,40 @@ export class EHMatcher extends BaseMatcher {
     let text = "";
     try {
       text = await window.fetch(url).then(resp => resp.text());
-      if (!text) throw new Error("[text] is empty");
     } catch (error) {
       throw new Error(`Fetch source page error, expected [text]！ ${error}`);
     }
+    if (!text) throw new Error("[text] is empty");
+
     // TODO: Your IP address has been temporarily banned for excessive pageloads which indicates that you are using automated mirroring/harvesting software. The ban expires in 2 days and 23 hours
     if (conf.fetchOriginal) {
       const matchs = regulars.original.exec(text);
       if (matchs && matchs.length > 0) {
         return matchs[1].replace(/&amp;/g, "&");
-      } else {
-        const normalMatchs = regulars["normal"].exec(text);
-        if (normalMatchs == null || normalMatchs.length == 0) {
-          throw new Error(`Cannot matching the image url, content: ${text}`);
-        } else {
-          return normalMatchs[1];
-        }
       }
     }
+    let src: string | undefined;
+    // EH change the url
     if (originChanged) {
-      // EH change the url
-      const nlValue = regulars.nlValue.exec(text)![1];
-      const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-      evLog("info", `IMG-FETCHER retry url:${newUrl}`);
-      return await this.fetchImgURL(newUrl, false);
-    } else {
-      return regulars.normal.exec(text)![1];
+      const nlValue = regulars.nlValue.exec(text)?.[1];
+      if (nlValue) {
+        const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
+        evLog("info", `IMG-FETCHER retry url:${newUrl}`);
+        src = await this.fetchImgURL(newUrl, false);
+      } else {
+        evLog("error", `Cannot matching the nlValue, content: ${text}`);
+      }
     }
+    if (!src) {
+      // normal
+      src = regulars.normal.exec(text)?.[1];
+    }
+    if (!src) throw new Error(`Cannot matching the image url, content: ${text}`);
+    // check src has host prefix
+    if (!src.startsWith("http")) {
+      src = window.location.origin + src;
+    }
+    return src;
   }
 }
 

@@ -10,6 +10,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   private debouncer: Debouncer;
   downloading?: () => boolean;
   dataSize: number = 0;
+  chapterIndex: number = 0;
 
   clear() {
     this.length = 0;
@@ -18,7 +19,9 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     this.finishedIndex.clear();
   }
 
-  restore(...imfs: IMGFetcher[]) {
+  restore(chapterIndex: number, ...imfs: IMGFetcher[]) {
+    this.clear();
+    this.chapterIndex = chapterIndex;
     imfs.forEach((imf, i) => imf.stage === FetchState.DONE && this.finishedIndex.add(i));
     this.push(...imfs);
   }
@@ -26,7 +29,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   static newQueue() {
     const queue = new IMGFetcherQueue();
     // avoid Array.slice or some methods trigger Array.constructor
-    EBUS.subscribe("imf-on-finished", (index, success, imf) => queue.finishedReport(index, success, imf));
+    EBUS.subscribe("imf-on-finished", (chapter, index, success, imf) => queue.chapterIndex === chapter && queue.finishedReport(index, success, imf));
     return queue;
   }
 
@@ -49,7 +52,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     //边界约束
     this.currIndex = this.fixIndex(start);
     this[this.currIndex].setNow(this.currIndex);
-    EBUS.emit("ifq-on-do", this.currIndex, this, this.downloading?.() || false);
+    EBUS.emit("ifq-on-do", this.chapterIndex, this.currIndex, this, this.downloading?.() || false);
     if (this.downloading?.()) return;
 
     //从当前索引开始往后,放入指定数量的图片获取器,如果该图片获取器已经获取完成则向后延伸.
@@ -61,7 +64,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
             因此会有一个时间上的延迟，在这段时间里，executableQueue中的IMGFetcher图片请求器会不断更替，300毫秒结束后，只调用最新的executableQueue中的IMGFetcher图片请求器。
         */
     this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
-      this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(imgFetcherIndex));
+      this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(this.chapterIndex, imgFetcherIndex));
     }, 300);
   }
 
@@ -76,12 +79,14 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     if (this.dataSize < 1000000000) { // 1GB
       this.dataSize += imf.data?.byteLength || 0;
     }
-    EBUS.emit("ifq-on-finished-report", index, this);
+    EBUS.emit("ifq-on-finished-report", this.chapterIndex, index, this);
   }
 
-  stepImageEvent(oriented: Oriented) {
+  stepImageEvent(chapterIndex: number, oriented: Oriented) {
     let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
-    this.do(start, oriented);
+    if (chapterIndex === this.chapterIndex) {
+      this.do(start, oriented);
+    }
   }
 
   //如果开始的索引小于0,则修正索引为0,如果开始的索引超过队列的长度,则修正索引为队列的最后一位

@@ -211,7 +211,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   //大图框架元素的滚轮事件/按下鼠标右键滚动则是缩放/直接滚动则是切换到下一张或上一张
   function bigImageWheelEvent(event: WheelEvent) {
-    IFQ.stepImageEvent(event.deltaY > 0 ? "next" : "prev");
+    IFQ.stepImageEvent(FVGM.chapterIndex, event.deltaY > 0 ? "next" : "prev");
   };
 
 
@@ -238,11 +238,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       ),
       "step-image-prev": new KeyboardDesc(
         ["ArrowLeft"],
-        () => IFQ.stepImageEvent(conf.reversePages ? "next" : "prev")
+        () => IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "next" : "prev")
       ),
       "step-image-next": new KeyboardDesc(
         ["ArrowRight"],
-        () => IFQ.stepImageEvent(conf.reversePages ? "prev" : "next")
+        () => IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "prev" : "next")
       ),
       "step-to-first-image": new KeyboardDesc(
         ["Home"],

@@ -10,14 +10,16 @@ export class PageHelper {
     this.html = html;
     EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
     EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));
-    EBUS.subscribe("ifq-on-do", (currIndex, queue) => {
+    EBUS.subscribe("ifq-on-do", (chapterIndex, currIndex, queue) => {
+      if (chapterIndex !== queue.chapterIndex) return;
       this.setPageState({ current: (currIndex + 1).toString() });
       const imf = queue[currIndex];
       if (imf.stage !== FetchState.DONE) {
         this.setFetchState("fetching");
       }
     });
-    EBUS.subscribe("ifq-on-finished-report", (index, queue) => {
+    EBUS.subscribe("ifq-on-finished-report", (chapterIndex, index, queue) => {
+      if (chapterIndex !== queue.chapterIndex) return;
       this.setPageState({ finished: queue.finishedIndex.size.toString() });
       evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
       if (queue[queue.currIndex].stage === FetchState.DONE) {

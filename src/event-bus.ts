@@ -35,14 +35,14 @@ export interface Events {
   "bifm-on-show": () => void;
   "bifm-on-hidden": () => void;
   "pf-on-appended": (total: number, nodes: VisualNode[], done?: boolean) => void;
-  "pf-change-chapter": () => void;
+  "pf-change-chapter": (index: number) => void;
   "imf-set-now": (index: number, imf: IMGFetcher) => void;
-  "imf-on-finished": (index: number, success: boolean, imf: IMGFetcher) => void;
+  "imf-on-finished": (chapterIndex: number, index: number, success: boolean, imf: IMGFetcher) => void;
   "imf-on-click": (event: MouseEvent) => void;
   "imf-download-state-change": () => void;
-  "ifq-on-do": (currIndex: number, queue: IMGFetcherQueue, downloading: boolean) => void;
-  "ifq-on-finished-report": (index: number, queue: IMGFetcherQueue) => void;
-  "fvgm-want-extend": () => void;
+  "ifq-on-do": (chapterIndex: number, currIndex: number, queue: IMGFetcherQueue, downloading: boolean) => void;
+  "ifq-on-finished-report": (chapterIndex: number, index: number, queue: IMGFetcherQueue) => void;
+  "pf-try-extend": () => void;
 }
 
 export type EventID = keyof Events;

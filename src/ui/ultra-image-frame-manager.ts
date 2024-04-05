@@ -29,6 +29,7 @@ export class BigImageFrameManager {
   html: Elements;
   frameScrollAbort?: AbortController;
   vidController?: VideoControl;
+  chapterIndex: number = 0;
   /* prevent mouse wheel step next image */
   constructor(HTML: Elements, queue: IMGFetcherQueue) {
     this.html = HTML;
@@ -43,9 +44,11 @@ export class BigImageFrameManager {
     this.initImgScaleBar();
     this.initImgScaleStyle();
     this.initHammer();
+    EBUS.subscribe("pf-change-chapter", index => this.chapterIndex = index);
     EBUS.subscribe("imf-set-now", (index) => this.setNow(index));
     EBUS.subscribe("imf-on-click", (event) => this.show(event));
-    EBUS.subscribe("imf-on-finished", (index, success, imf) => {
+    EBUS.subscribe("imf-on-finished", (chapterIndex, index, success, imf) => {
+      if (chapterIndex !== this.queue.chapterIndex) return;
       if (!this.visible || !success) return;
       const img = this.getMediaNodes().find((img) => index === parseInt(img.getAttribute("d-index")!));
       if (!img) return;
@@ -78,16 +81,16 @@ export class BigImageFrameManager {
       if (conf.readMode === "singlePage") {
         switch (ev.direction) {
           case Hammer.DIRECTION_LEFT:
-            this.queue.stepImageEvent(conf.reversePages ? "prev" : "next");
+            this.queue.stepImageEvent(this.chapterIndex, conf.reversePages ? "prev" : "next");
             break;
           case Hammer.DIRECTION_UP:
-            this.queue.stepImageEvent("next");
+            this.queue.stepImageEvent(this.chapterIndex, "next");
             break;
           case Hammer.DIRECTION_RIGHT:
-            this.queue.stepImageEvent(conf.reversePages ? "next" : "prev");
+            this.queue.stepImageEvent(this.chapterIndex, conf.reversePages ? "next" : "prev");
             break;
           case Hammer.DIRECTION_DOWN:
-            this.queue.stepImageEvent("prev");
+            this.queue.stepImageEvent(this.chapterIndex, "prev");
             break;
         }
       }
@@ -179,7 +182,7 @@ export class BigImageFrameManager {
     nextLand.innerHTML = svg_bg;
     nextLand.addEventListener("mouseover", () => {
       nextLand.remove();
-      this.queue.stepImageEvent("next");
+      this.queue.stepImageEvent(this.chapterIndex, "next");
     });
     this.frame.appendChild(nextLand);
     window.setTimeout(() => nextLand.remove(), 1500)
@@ -248,7 +251,7 @@ export class BigImageFrameManager {
       if (this.isReachBoundary(oriented)) {
         event.preventDefault();
         if (!this.tryPreventStep()) {
-          this.queue.stepImageEvent(oriented);
+          this.queue.stepImageEvent(this.chapterIndex, oriented);
         }
       }
     } else {

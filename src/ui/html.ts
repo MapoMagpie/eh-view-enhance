@@ -6,6 +6,7 @@ import { dragElement } from "../utils/drag-element";
 import { i18n } from "../utils/i18n";
 import q from "../utils/query-element";
 import { Events } from "./event";
+import { FullViewGridManager } from "./full-view-grid-manager";
 import { loadStyleSheel } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
@@ -282,7 +283,7 @@ export function createHTML() {
   };
 }
 
-export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, DL: Downloader) {
+export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, FVGM: FullViewGridManager, IFQ: IMGFetcherQueue, DL: Downloader) {
   HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
   HTML.downloaderPanelBTN.addEventListener("click", () => {
     events.togglePanelEvent("downloader");
@@ -337,11 +338,11 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.bigImageFrame.addEventListener("keydown", (event) => events.bigImageFrameKeyBoardEvent(event));
   // 箭头导航
   HTML.imgLandLeft.addEventListener("click", (event) => {
-    IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
+    IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "next" : "prev");
     event.stopPropagation();
   });
   HTML.imgLandRight.addEventListener("click", (event) => {
-    IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
+    IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "prev" : "next");
     event.stopPropagation();
   });
 

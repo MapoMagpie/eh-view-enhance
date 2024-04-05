@@ -21,13 +21,13 @@ function main(MATCHER: Matcher): DestoryFunc {
   const IFQ: IMGFetcherQueue = IMGFetcherQueue.newQueue();
   const IL: IdleLoader = new IdleLoader(IFQ);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, IFQ);
-  const FVGM: FullViewGridManager = new FullViewGridManager(HTML, IFQ);
+  const FVGM: FullViewGridManager = new FullViewGridManager(HTML);
   const PF: PageFetcher = new PageFetcher(IFQ, MATCHER);
   const DL: Downloader = new Downloader(HTML, IFQ, IL, PF, MATCHER);
   const PH: PageHelper = new PageHelper(HTML);
 
   const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
-  addEventListeners(events, HTML, BIFM, IFQ, DL);
+  addEventListeners(events, HTML, BIFM, FVGM, IFQ, DL);
 
   EBUS.subscribe("downloader-canvas-on-click", (index) => {
     IFQ.currIndex = index;
@@ -53,9 +53,8 @@ function main(MATCHER: Matcher): DestoryFunc {
   PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
   PF.afterInit = () => {
     HTML.pageLoading.style.display = "none";
-    IL.lockVer++;
     IL.processingIndexList = [0];
-    IL.start(IL.lockVer)
+    IL.start();
   };
 
   if (conf["first"]) {

@@ -7,7 +7,6 @@ import { evLog } from "./utils/ev-log";
 export class IdleLoader {
   queue: IMGFetcherQueue;
   processingIndexList: number[];
-  lockVer: number;
   restartId?: number;
   maxWaitMS: number;
   minWaitMS: number;
@@ -18,7 +17,6 @@ export class IdleLoader {
     this.queue = queue;
     //当前处理的索引列表
     this.processingIndexList = [0];
-    this.lockVer = 0;
     //中止后的用于重新启动的延迟器的id
     this.restartId;
     this.maxWaitMS = 1000;
@@ -29,10 +27,11 @@ export class IdleLoader {
       this.abort(currIndex);
     });
     EBUS.subscribe("imf-on-finished", (index) => {
+      // this.processingIndexList not include index mean curr task dont go continue, it aborted
       if (!this.processingIndexList.includes(index)) return;
       this.wait().then(() => {
         this.checkProcessingIndex();
-        this.start(this.lockVer);
+        this.start();
       });
     });
   }
@@ -41,9 +40,9 @@ export class IdleLoader {
     this.onFailedCallback = cb;
   }
 
-  start(lockVer: number) {
+  start() {
     // 如果被中止了，则停止
-    if (this.lockVer != lockVer || !this.autoLoad) return;
+    if (!this.autoLoad) return;
     // 如果已经没有要处理的列表
     if (this.processingIndexList.length === 0) {
       return;
@@ -53,7 +52,7 @@ export class IdleLoader {
     }
     evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
     for (const processingIndex of this.processingIndexList) {
-      this.queue[processingIndex].start(processingIndex);
+      this.queue[processingIndex].start(this.queue.chapterIndex, processingIndex);
     }
   }
 
@@ -116,21 +115,23 @@ export class IdleLoader {
     });
   }
 
-  abort(newIndex: number) {
-    this.lockVer++;
+  abort(newIndex?: number) {
+    // set empty to abort the old task
+    this.processingIndexList = [];
     if (!this.autoLoad) return;
     // evLog(`终止空闲自加载, 下次将从第${newIndex + 1}张开始加载`);
     // 中止空闲加载后，会在等待一段时间后再次重启空闲加载
     window.clearTimeout(this.restartId);
-    this.restartId = window.setTimeout(() => {
-      // Double check if we are downloading
-      // In case we change to a Big image, and click Download button before conf.restartIdleLoader seconds
-      if (this.queue.downloading?.()) return;
-
-      this.processingIndexList = [newIndex];
-      this.checkProcessingIndex();
-      this.start(this.lockVer);
-    }, conf.restartIdleLoader);
+    if (newIndex !== undefined) {
+      this.restartId = window.setTimeout(() => {
+        // Double check if we are downloading
+        // In case we change to a Big image, and click Download button before conf.restartIdleLoader seconds
+        if (this.queue.downloading?.()) return;
+        this.processingIndexList = [newIndex];
+        this.checkProcessingIndex();
+        this.start();
+      }, conf.restartIdleLoader);
+    }
   }
 }
 

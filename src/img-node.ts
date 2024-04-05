@@ -16,7 +16,7 @@ export interface VisualNode {
   render(): void;
 }
 
-export default class ImageNode implements VisualNode {
+export default class ImageNode {
   root?: HTMLElement;
   src: string;
   href: string;

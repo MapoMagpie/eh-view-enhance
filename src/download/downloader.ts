@@ -11,6 +11,7 @@ import { saveAs } from "file-saver";
 import EBUS from "../event-bus";
 import { DownloaderCanvas } from "../ui/downloader-canvas";
 import { PageFetcher } from "../page-fetcher";
+import { evLog } from "../utils/ev-log";
 
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
 export class Downloader {
@@ -24,7 +25,7 @@ export class Downloader {
   idleLoader: IdleLoader;
   pageFetcher: PageFetcher;
   done: boolean = false;
-  selectedChapters: Set<number> = new Set();
+  selectedChapters: ChapterStat[] = [];
   filenames: Set<string> = new Set();
   canvas: DownloaderCanvas;
   dashboardTab: HTMLElement;
@@ -50,14 +51,19 @@ export class Downloader {
     this.elementDashboard = HTML.downloadDashboard;
     this.elementChapters = HTML.downloadChapters;
     this.canvas = new DownloaderCanvas(HTML.downloaderCanvas, HTML, queue);
-    EBUS.subscribe("ifq-on-finished-report", (_index, queue) => {
+    EBUS.subscribe("ifq-on-finished-report", (chapterIndex, _, queue) => {
       if (queue.isFinised()) {
-        if (this.downloading) {
-          this.download();
-        } else if (!this.done && !this.downloaderPanelBTN.classList.contains("lightgreen")) {
-          this.downloaderPanelBTN.classList.add("lightgreen");
-          if (!/✓/.test(this.downloaderPanelBTN.textContent!)) {
-            this.downloaderPanelBTN.textContent += "✓";
+        const sel = this.selectedChapters.find(sel => sel.index === chapterIndex);
+        if (sel) {
+          sel.done = true;
+          sel.resolve(true);
+        }
+        if (this.selectedChapters.find(sel => !sel.done)) {
+          if (!this.downloading && !this.done && !this.downloaderPanelBTN.classList.contains("lightgreen")) {
+            this.downloaderPanelBTN.classList.add("lightgreen");
+            if (!/✓/.test(this.downloaderPanelBTN.textContent!)) {
+              this.downloaderPanelBTN.textContent += "✓";
+            }
           }
         }
       }
@@ -123,8 +129,8 @@ export class Downloader {
   <span id="download-chapters-select-all" class="clickable p-btn">Select All</span>
   <span id="download-chapters-unselect-all" class="clickable p-btn">Unselect All</span>
 </div>
-${chapters.map(c => `<div><label>
-  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${this.selectedChapters.has(c.id) ? "checked" : ""} />
+${chapters.map((c, i) => `<div><label>
+  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${this.selectedChapters.find(sel => sel.index === i) ? "checked" : ""} />
   <span>${c.title}</span></label></div>`).join("")}
 `;
     ([["#download-chapters-select-all", true], ["#download-chapters-unselect-all", false]] as [string, boolean][]).forEach(([id, checked]) =>
@@ -139,6 +145,7 @@ ${chapters.map(c => `<div><label>
 
   // check > start > download
   check() {
+    if (this.downloading) return;
     if (!conf.fetchOriginal) {
       // append adviser element
       if (this.elementNotice && !this.downloading) {
@@ -163,30 +170,59 @@ ${chapters.map(c => `<div><label>
     this.start();
   }
 
-  start() {
-    if (this.queue.isFinised()) {
-      this.download();
-      return;
+  setSelectedChapters() {
+    this.selectedChapters.length = 0;
+    const idSet = new Set<number>();
+    this.elementChapters.querySelectorAll<HTMLInputElement>("input[type=checkbox][id^=ch-]:checked").forEach(checkbox => idSet.add(Number(checkbox.value)));
+    if (idSet.size === 0) {
+      this.selectedChapters.push({ index: 0, done: false, ...promiseWithResolveAndReject() });
+    } else {
+      this.selectedChapters = this.pageFetcher.chapters.filter(c => idSet.has(c.id)).map(c => ({ index: c.id, done: false, ...promiseWithResolveAndReject() }));
     }
-    this.flushUI("downloading")
+    evLog("debug", "get selected chapters: ", this.selectedChapters);
+    return this.selectedChapters;
+  }
+
+  async start() {
+    if (this.downloading) return;
+    this.flushUI("downloading");
     this.downloading = true;
     this.idleLoader.autoLoad = true;
 
-    // reset img fetcher stage to url, if it's failed
-    this.queue.forEach((imf) => {
-      if (imf.stage === FetchState.FAILED) {
-        imf.retry();
+    const chapters = this.setSelectedChapters();
+    try {
+      for (const chapter of chapters) {
+        // the queue has been reset
+        await this.pageFetcher.changeChapter(chapter.index, false);
+        // reset img fetcher stage to url, if it's failed
+        this.queue.forEach((imf) => {
+          if (imf.stage === FetchState.FAILED) {
+            imf.retry();
+          }
+        });
+        if (this.queue.isFinised()) {
+          chapter.done = true;
+          chapter.resolve(true);
+        } else {
+          // find all of unloading imgFetcher and splice frist few imgFetchers
+          this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => (!imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1))
+            .filter((index) => index >= 0)
+            .splice(0, conf.downloadThreads);
+          this.idleLoader.onFailed(() => chapter.reject("download failed"));
+          this.idleLoader.start();
+        }
+        // wait all finished
+        await chapter.promise;
       }
-    });
-    // find all of unloading imgFetcher and splice frist few imgFetchers
-    this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => (!imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1))
-      .filter((index) => index >= 0)
-      .splice(0, conf.downloadThreads);
-    this.idleLoader.onFailed(() => {
+      this.download();
+    } catch (error) {
       this.downloading = false;
       this.flushUI("downloadFailed")
-    });
-    this.idleLoader.start(++this.idleLoader.lockVer);
+      evLog("error", "download failed: ", error);
+      return;
+    } finally {
+      this.downloading = false;
+    }
   }
 
   flushUI(stage: "downloadFailed" | "downloaded" | "downloading" | "downloadStart" | "packaging") {
@@ -204,9 +240,7 @@ ${chapters.map(c => `<div><label>
     if (this.queue.length === 0) return;
     this.downloading = false;
     this.idleLoader.abort(this.queue.currIndex);
-
     this.flushUI("packaging");
-
     let checkTitle: (title: string, index: number) => string;
     const needNumberTitle = this.needNumberTitle();
     if (needNumberTitle) {
@@ -265,4 +299,21 @@ function uint8ArrayToReadableStream(arr: Uint8Array): ReadableStream<Uint8Array>
       controller.close();
     }
   });
+}
+type ChapterStat = {
+  index: number,
+  done: boolean,
+  promise: Promise<boolean>,
+  reject: (reason?: any) => void
+  resolve: (value: boolean | PromiseLike<boolean>) => void
+};
+
+function promiseWithResolveAndReject() {
+  let resolve: (value: boolean | PromiseLike<boolean>) => void;
+  let reject: (reason?: any) => void;
+  const promise = new Promise<boolean>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { resolve: resolve!, reject: reject!, promise };
 }

@@ -1,6 +1,6 @@
 import { conf } from "./config";
 import EBUS from "./event-bus";
-import ImageNode from "./img-node";
+import ImageNode, { VisualNode } from "./img-node";
 import { Matcher, OriginMeta } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
@@ -26,7 +26,7 @@ export enum FetchState {
   DONE = 3,
 }
 
-export class IMGFetcher {
+export class IMGFetcher implements VisualNode {
   node: ImageNode;
   originURL?: string;
   stage: FetchState = FetchState.URL;
@@ -49,6 +49,10 @@ export class IMGFetcher {
     this.matcher = matcher;
   }
 
+  create(): HTMLElement {
+    return this.node.create();
+  }
+
   // 刷新下载状态
   setDownloadState(newState: Partial<DownloadState>) {
     this.downloadState = { ...this.downloadState, ...newState };
@@ -56,19 +60,19 @@ export class IMGFetcher {
     EBUS.emit("imf-download-state-change");
   }
 
-  async start(index: number) {
+  async start(chapterIndex: number, index: number) {
     if (this.lock) return;
     this.lock = true;
     try {
       this.node.changeStyle("fetching");
       await this.fetchImage();
       this.node.changeStyle("fetched");
-      EBUS.emit("imf-on-finished", index, true, this);
+      EBUS.emit("imf-on-finished", chapterIndex, index, true, this);
     } catch (error) {
       this.node.changeStyle("failed");
       evLog("error", `IMG-FETCHER ERROR:`, error);
       this.stage = FetchState.FAILED;
-      EBUS.emit("imf-on-finished", index, false, this);
+      EBUS.emit("imf-on-finished", chapterIndex, index, false, this);
       // TODO: show error on image
     } finally {
       this.lock = false;

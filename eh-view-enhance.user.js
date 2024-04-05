@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.13
+// @version            4.3.13.1
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -12,6 +12,7 @@
 // @downloadURL        https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/*
+// @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://e-hentai.org/*
 // @match              https://nhentai.net/*
 // @match              https://steamcommunity.com/id/*/screenshots*
@@ -39,6 +40,7 @@
 // @connect            18comic.vip
 // @connect            rule34.xxx
 // @connect            imhentai.xxx
+// @connect            exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -194,6 +196,16 @@
 
   const HOST_REGEX = /\/\/([^\/]*)\//;
   function xhrWapper(url, respType, cb) {
+    /* 
+    in the onion site, the img link does't contain the domain name.
+    i have been working on it for hours...x_x
+    exbranchio
+    */
+    evLog(url);
+    if (!HOST_REGEX.exec(url)) {
+      url = "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion" + url;
+    }
+    evLog(url);
     return _GM_xmlhttpRequest({
       method: "GET",
       url,
@@ -1649,22 +1661,23 @@
     /** 有压缩的大图地址 */
     normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
     /** 原图地址 */
-    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai\.org\/fullimg?[^"\\]*)\"\>/,
+    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai(\.org|55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad\.onion)\/fullimg?[^"\\]*)\"\>/,
     /** 大图重载地址 */
     nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
     /** 是否开启自动多页查看器 */
-    isMPV: /https?:\/\/e[-x]hentai.org\/mpv\/\w+\/\w+\/#page\w/,
+    isMPV: /https?:\/\/e[-x]hentai(\.org|55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad\.onion)\/mpv\/\w+\/\w+\/#page\w/,
     /** 多页查看器图片列表提取 */
     mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g,
     /** 精灵图地址提取 */
     sprite: /url\((.*?)\)/
-  };
+};
+
   class EHMatcher {
     async processData(data, _1, _2) {
       return data;
     }
     workURL() {
-      return /e[-x]hentai.org\/g\/\w+/;
+      return /e[-x]hentai(\.org|55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad\.onion)\/g\/\w+/;
     }
     parseGalleryMeta(doc) {
       const titleList = doc.querySelectorAll("#gd2 h1");

@@ -50,10 +50,6 @@
   'use strict';
 
   var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
-  // src/native/alias.ts
-  var _GM_getValue = /* @__PURE__ */ (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
-  var _GM_setValue = /* @__PURE__ */ (() => typeof GM_setValue != "undefined" ? GM_setValue : void 0)();
-  var _GM_xmlhttpRequest = /* @__PURE__ */ (() => typeof GM_xmlhttpRequest != "undefined" ? GM_xmlhttpRequest : void 0)();
 
   function defaultConf() {
     const screenWidth = window.screen.width;
@@ -95,7 +91,7 @@
   const VERSION = "4.1.10";
   const CONFIG_KEY = "ehvh_cfg_";
   function getConf() {
-    let cfgStr = _GM_getValue(CONFIG_KEY);
+    let cfgStr = GM_getValue(CONFIG_KEY);
     if (cfgStr) {
       let cfg2 = JSON.parse(cfgStr);
       if (cfg2.version === VERSION) {
@@ -158,7 +154,7 @@
     return $conf;
   }
   function saveConf(c) {
-    _GM_setValue(CONFIG_KEY, JSON.stringify(c));
+    GM_setValue(CONFIG_KEY, JSON.stringify(c));
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
   const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel"];
@@ -206,7 +202,7 @@
       url = "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion" + url;
     }
     evLog(url);
-    return _GM_xmlhttpRequest({
+    return GM_xmlhttpRequest({
       method: "GET",
       url,
       timeout: 0,

@@ -15,7 +15,7 @@ export class PageHelper {
       const queue = getChapter(index)?.queue;
       if (!queue) return;
       const finished = queue.filter(imf => imf.stage === FetchState.DONE).length;
-      this.setPageState({ finished: finished.toString() });
+      this.setPageState({ finished: finished.toString(), total: queue.length.toString(), current: "1" });
     });
     EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
     EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));

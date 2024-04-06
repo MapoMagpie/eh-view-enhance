@@ -133,7 +133,7 @@ export class IMGFetcher implements VisualNode {
 
   async fetchOriginMeta(): Promise<OriginMeta | null> {
     try {
-      const meta = await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0);
+      const meta = await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0, this.chapterIndex);
       if (!meta) {
         evLog("error", "Fetch URL failed, the URL is empty");
         return null;

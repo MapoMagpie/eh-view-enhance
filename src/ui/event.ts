@@ -107,11 +107,9 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     if (key === "readMode") {
       BIFM.resetScaleBigImages();
       if (conf.readMode === "singlePage", BIFM.currMediaNode) {
-        const queue = BIFM.getChapter(BIFM.chapterIndex)?.queue;
-        if (queue) {
-          const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
-          BIFM.initElement(queue[index]);
-        }
+        const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
+        const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
+        BIFM.initElement(queue[index]);
       }
     }
     if (key === "minifyPageHelper") {

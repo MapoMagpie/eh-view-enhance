@@ -34,6 +34,7 @@ export class Comic18Matcher extends BaseMatcher {
           id: i,
           title,
           source: ch.href,
+          queue: [],
           thumbimg: thumb?.src,
         });
 
@@ -45,6 +46,7 @@ export class Comic18Matcher extends BaseMatcher {
         id: 1,
         title: "defalut",
         source: href,
+        queue: [],
       });
     }
     return ret;

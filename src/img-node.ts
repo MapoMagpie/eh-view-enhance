@@ -100,6 +100,7 @@ export default class ImageNode {
   }
 
   progress(state: DownloadState) {
+    if (!this.root) return;
     if (state.readyState === 4) {
       if (this.downloadBar && this.downloadBar.parentNode) {
         // this.downloadBar.remove(); // in steam, it randomly throw parentNode is null
@@ -114,7 +115,7 @@ export default class ImageNode {
       <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
       `;
       this.downloadBar = downloadBar;
-      this.root!.firstElementChild!.appendChild(this.downloadBar);
+      this.root.firstElementChild!.appendChild(this.downloadBar);
     }
     if (this.downloadBar) {
       this.downloadBar.querySelector("progress")!.setAttribute("value", (state.loaded / state.total) * 100 + "");
@@ -189,7 +190,6 @@ export class ChapterNode implements VisualNode {
 
     anchor.onclick = (event) => {
       event.preventDefault();
-      console.log("chapter clicked: ", this.index);
       this.chapter.onclick?.(this.index);
     };
     return element;

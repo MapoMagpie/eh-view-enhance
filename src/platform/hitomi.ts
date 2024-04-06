@@ -13,6 +13,9 @@ class HitomiGG {
     this.b = b;
     this.m = new Function("g", m);
   }
+  real_full_path_from_hash(hash: string) {
+    return hash.replace(/^.*(..)(.)$/, '$2/$1/' + hash);
+  }
   s(h: string) {
     const m = /(..)(.)$/.exec(h)!;
     return parseInt(m[2] + m[1], 16).toString(10);
@@ -35,7 +38,13 @@ class HitomiGG {
     return retval;
   }
 
-  url(hash: string): string {
+  thumbURL(hash: string): string {
+    hash = hash.replace(/^.*(..)(.)$/, '$2/$1/' + hash);
+    let url = 'https://a.hitomi.la/' + 'webpsmalltn' + '/' + hash + '.' + 'webp';
+    return url.replace(/\/\/..?\.hitomi\.la\//, '//' + this.subdomain_from_url(url, 'tn') + '.hitomi.la/');
+  }
+
+  originURL(hash: string): string {
     let url = 'https://a.hitomi.la/' + this.ext + '/' + this.b + this.s(hash) + '/' + hash + '.' + this.ext;
     url = url.replace(/\/\/..?\.hitomi\.la\//, '//' + this.subdomain_from_url(url, this.base) + '.hitomi.la/');
     return url;
@@ -55,69 +64,50 @@ type GalleryInfo = {
   }[]
 }
 
-const HASH_REGEX = /#(\d*)$/;
+// const HASH_REGEX = /#(\d*)$/;
 const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
 const GG_B_REGEX = /b:\s'(\d*\/)'/;
 export class HitomiMather extends BaseMatcher {
+
+  gg?: HitomiGG;
+  meta?: GalleryMeta;
+  infoRecord: Record<number, GalleryInfo> = {};
 
   workURL(): RegExp {
     return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
   }
 
-  gg?: HitomiGG
-  meta?: GalleryMeta
-  info?: GalleryInfo
-
-  public async fetchOriginMeta(hash: string, _: boolean): Promise<OriginMeta> {
-    const url = this.gg!.url(hash);
-    return { url };
-  }
-
-  public async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
-    if (!this.info) {
-      throw new Error("warn: hitomi gallery info is null!")
-    }
-    const list: ImageNode[] = [];
-    const doc = page as Document;
-    const nodes = doc.querySelectorAll<HTMLAnchorElement>(".simplePagerContainer .thumbnail-container a");
-    if (!nodes || nodes.length == 0) {
-      throw new Error("warn: failed query image nodes!")
-    }
-    for (const node of Array.from(nodes)) {
-      const sceneIndex = Number(HASH_REGEX.exec(node.href)![1]) - 1;
-      const img = node.querySelector<HTMLImageElement>("img");
-      if (!img) {
-        throw new Error("warn: failed query image node!")
-      }
-      const src = img.src;
-      if (!src) {
-        throw new Error(`warn: failed get Image Src`);
-      }
-      const badge = (() => {
-        const badge = node.querySelector(".badge");
-        return badge ? Number(badge.textContent) : 1;
-      })();
-
-      for (let i = 0; i < badge; i++) {
-        const node = new ImageNode(
-          src,
-          this.info.files[i + sceneIndex].hash,
-          this.info.files[i + sceneIndex].name,
-        );
-        list.push(node);
-      }
-    }
-    return list;
-  }
-
-  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
-    const doc = chapter.source as Document;
+  public async fetchChapters(): Promise<Chapter[]> {
     // fetch gg.js
     const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then(resp => resp.text());
     this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)![1], GG_M_REGEX.exec(ggRaw)![1]);
+    const ret: Chapter[] = [];
+    ret.push({
+      id: 0,
+      title: document.querySelector("#gallery-brand")?.textContent || "default",
+      source: window.location.href,
+      queue: [],
+      thumbimg: document.querySelector<HTMLImageElement>(".content > .cover-column > .cover img")?.src
+    });
+    document.querySelectorAll("#related-content > div").forEach((element, i) => {
+      const a = element.querySelector<HTMLAnchorElement>("h1.lillie > a");
+      if (a) {
+        ret.push({
+          id: i,
+          title: a.textContent || "default-" + i,
+          source: a.href,
+          queue: [],
+          thumbimg: element.querySelector<HTMLImageElement>("img")?.src
+        });
+      }
+    });
+    return ret;
+  }
 
-    // query gallery id
-    const galleryID = doc.querySelector<HTMLAnchorElement>("#gallery-brand a")?.href?.split("/").pop()?.replace(".html", "");
+  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
+    const url = chapter.source as string;
+
+    const galleryID = url.match(/([0-9]+)(?:\.html)/)?.[1];
     if (!galleryID) {
       throw new Error("cannot query hitomi gallery id");
     }
@@ -129,11 +119,36 @@ export class HitomiMather extends BaseMatcher {
 
     const info = JSON.parse(infoRaw);
     this.setGalleryMeta(info, galleryID);
-    this.info = {
+    this.infoRecord[chapter.id] = {
       files: info.files,
       scene_indexes: info.scene_indexes
     }
+    const doc = await window.fetch(url).then(resp => resp.text()).then(text => new DOMParser().parseFromString(text, "text/html"));
     yield doc;
+  }
+
+  public async parseImgNodes(_page: PagesSource, chapterID: number): Promise<ImageNode[]> {
+    if (!this.infoRecord[chapterID]) {
+      throw new Error("warn: hitomi gallery info is null!")
+    }
+    const files = this.infoRecord[chapterID].files;
+    // const sceneIndexes = this.infoRecord[chapterID].scene_indexes;
+    // let nextSceneIndex = 0;
+    const list: ImageNode[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const node = new ImageNode(
+        this.gg!.thumbURL(files[i].hash),
+        files[i].hash,
+        files[i].name,
+      );
+      list.push(node);
+    }
+    return list;
+  }
+
+  public async fetchOriginMeta(hash: string, _: boolean): Promise<OriginMeta> {
+    const url = this.gg!.originURL(hash);
+    return { url };
   }
 
   private setGalleryMeta(info: any, galleryID: string) {

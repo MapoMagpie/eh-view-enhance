@@ -194,9 +194,9 @@ export class BigImageFrameManager {
     this.removeMediaNode();
     this.resetPreventStep();
     // evLog("BIFM: init: newMediaNode");
-    const queue = this.getChapter(this.chapterIndex)?.queue;
-    if (!queue) return;
+    const queue = this.getChapter(this.chapterIndex).queue;
     const index = queue.indexOf(imf);
+    if (index === -1) return;
     this.currMediaNode = this.newMediaNode(index, imf);
     EBUS.emit("ifq-do", index, imf, "next");
     this.frame.appendChild(this.currMediaNode);
@@ -242,8 +242,8 @@ export class BigImageFrameManager {
 
   stepNext(oriented: Oriented) {
     if (!this.currMediaNode) return;
-    const queue = this.getChapter(this.chapterIndex)?.queue;
-    if (!queue) return;
+    const queue = this.getChapter(this.chapterIndex).queue;
+    if (queue.length === 0) return
     let index = parseInt(this.currMediaNode.getAttribute("d-index")!);
     index = oriented === "next" ? index + 1 : index - 1;
     if (index < 0) return
@@ -333,8 +333,8 @@ export class BigImageFrameManager {
         const oldIndex = parseInt(this.currMediaNode?.getAttribute("d-index")!);
         const newIndex = parseInt(centerNode.getAttribute("d-index")!);
         const oriented = oldIndex < newIndex ? "next" : "prev";
-        const queue = this.getChapter(this.chapterIndex)?.queue;
-        if (!queue) return;
+        const queue = this.getChapter(this.chapterIndex).queue;
+        if (queue.length === 0) return;
         const imf = queue[newIndex];
         EBUS.emit("ifq-do", newIndex, imf, oriented);
         // play new current video
@@ -439,8 +439,8 @@ export class BigImageFrameManager {
     if (isNaN(index)) {
       throw new Error("BIFM: extendImgNode: media node index is NaN");
     }
-    const queue = this.getChapter(this.chapterIndex)?.queue;
-    if (!queue) return null;
+    const queue = this.getChapter(this.chapterIndex).queue;
+    if (queue.length === 0) return null;
     if (oriented === "prev") {
       if (index === 0) return null;
       // evLog("BIFM: extendImgNode: prev newMediaNode");
@@ -652,8 +652,8 @@ class AutoPage {
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
     const b = this.frameManager.frame;
     if (this.frameManager.frame.classList.contains("big-img-frame-collapse")) {
-      const queue = this.frameManager.getChapter(this.frameManager.chapterIndex)?.queue;
-      if (!queue) return;
+      const queue = this.frameManager.getChapter(this.frameManager.chapterIndex).queue;
+      if (queue.length === 0) return;
       const index = parseInt(this.frameManager.currMediaNode?.getAttribute("d-index") || "0");
       this.frameManager.show(queue[index]);
     }
@@ -676,8 +676,7 @@ class AutoPage {
 
       if (!this.frameManager.currMediaNode) break;
       const index = parseInt(this.frameManager.currMediaNode.getAttribute("d-index")!);
-      const queue = this.frameManager.getChapter(this.frameManager.chapterIndex)?.queue;
-      if (!queue) break;
+      const queue = this.frameManager.getChapter(this.frameManager.chapterIndex).queue;
       if (index >= queue.length) break;
 
       const deltaY = this.frameManager.frame.offsetHeight / 2;

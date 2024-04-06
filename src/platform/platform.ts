@@ -20,11 +20,11 @@ export interface Matcher {
   /**
    * step 2: parse img nodes from page source
    */
-  parseImgNodes(page: PagesSource): Promise<ImageNode[] | never>;
+  parseImgNodes(page: PagesSource, chapterID?: number): Promise<ImageNode[] | never>;
   /**
    * step 3: fetch origin img url from every single image node's href
    */
-  fetchOriginMeta(href: string, retry: boolean): Promise<OriginMeta>;
+  fetchOriginMeta(href: string, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
   parseGalleryMeta(doc: Document): GalleryMeta;
   workURL(): RegExp;
@@ -38,12 +38,13 @@ export abstract class BaseMatcher implements Matcher {
       id: 1,
       title: "default",
       source: document,
+      queue: [],
     }];
   }
 
   abstract fetchPagesSource(source: Chapter): AsyncGenerator<PagesSource>;
-  abstract parseImgNodes(page: PagesSource): Promise<ImageNode[]>;
-  abstract fetchOriginMeta(href: string, retry: boolean): Promise<OriginMeta>;
+  abstract parseImgNodes(page: PagesSource, chapterID?: number): Promise<ImageNode[]>;
+  abstract fetchOriginMeta(href: string, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
   parseGalleryMeta(doc: Document): GalleryMeta {
     return new GalleryMeta(window.location.href, doc.title || "unknown");

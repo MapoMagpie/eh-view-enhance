@@ -371,7 +371,7 @@
     }
     async fetchOriginMeta() {
       try {
-        const meta = await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0);
+        const meta = await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0, this.chapterIndex);
         if (!meta) {
           evLog("error", "Fetch URL failed, the URL is empty");
           return null;
@@ -1297,7 +1297,7 @@ ${chapters.map((c, i) => `<div><label>
       this.currIndex = 0;
       this.finishedIndex.clear();
     }
-    restore(chapterIndex, ...imfs) {
+    restore(chapterIndex, imfs) {
       this.clear();
       this.chapterIndex = chapterIndex;
       imfs.forEach((imf, i) => imf.stage === FetchState.DONE && this.finishedIndex.add(i));
@@ -1584,6 +1584,8 @@ ${chapters.map((c, i) => `<div><label>
       this.size = size;
     }
     progress(state) {
+      if (!this.root)
+        return;
       if (state.readyState === 4) {
         if (this.downloadBar && this.downloadBar.parentNode) {
           this.downloadBar.parentNode.removeChild(this.downloadBar);
@@ -1665,7 +1667,6 @@ ${chapters.map((c, i) => `<div><label>
       anchor.appendChild(description);
       anchor.onclick = (event) => {
         event.preventDefault();
-        console.log("chapter clicked: ", this.index);
         this.chapter.onclick?.(this.index);
       };
       return element;
@@ -1702,8 +1703,8 @@ ${chapters.map((c, i) => `<div><label>
       EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index, !this.queue.downloading?.()), 5));
       EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(true), 5));
     }
-    appendToView(total, ifs, done) {
-      EBUS.emit("pf-on-appended", total, ifs, done);
+    appendToView(total, nodes, done) {
+      EBUS.emit("pf-on-appended", total, nodes, done);
     }
     abort() {
       this.abortb = true;
@@ -1715,7 +1716,7 @@ ${chapters.map((c, i) => `<div><label>
         c.onclick = (index) => {
           EBUS.emit("pf-change-chapter", index);
           if (this.chapters[index].queue) {
-            EBUS.emit("pf-on-appended", this.chapters[index].queue.length, this.chapters[index].queue, false);
+            this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, false);
           }
           if (!this.queue.downloading?.()) {
             this.beforeInit?.();
@@ -1728,7 +1729,7 @@ ${chapters.map((c, i) => `<div><label>
         this.changeChapter(0, true).finally(() => this.afterInit?.());
       }
       if (this.chapters.length > 1) {
-        EBUS.emit("pf-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
+        this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
       }
     }
     backChaptersSelection() {
@@ -1737,7 +1738,7 @@ ${chapters.map((c, i) => `<div><label>
           this.queue.forEach((imf) => imf.unrender());
         }
         EBUS.emit("pf-change-chapter", 0);
-        EBUS.emit("pf-on-appended", this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)));
+        this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
         this.chaptersSelectionElement.hidden = true;
       }
     }
@@ -1745,9 +1746,7 @@ ${chapters.map((c, i) => `<div><label>
     async changeChapter(index, appendToView) {
       this.chapterIndex = index;
       const chapter = this.chapters[this.chapterIndex];
-      if (chapter.queue && chapter.queue.length > 0) {
-        this.queue.restore(this.chapterIndex, ...chapter.queue);
-      }
+      this.queue.restore(index, chapter.queue);
       if (!chapter.sourceIter) {
         evLog("error", "chapter sourceIter is not set!");
         return;
@@ -1800,7 +1799,7 @@ ${chapters.map((c, i) => `<div><label>
           (imgNode) => new IMGFetcher(imgNode, this.matcher, this.chapterIndex)
         );
         this.queue.push(...IFs);
-        this.chapters[this.chapterIndex].queue = [...this.queue];
+        this.chapters[this.chapterIndex].queue.push(...IFs);
         if (appendToView) {
           this.appendToView(this.queue.length, IFs);
         }
@@ -1815,7 +1814,7 @@ ${chapters.map((c, i) => `<div><label>
       let tryTimes = 0;
       while (tryTimes < 3) {
         try {
-          return await this.matcher.parseImgNodes(page);
+          return await this.matcher.parseImgNodes(page, this.chapters[this.chapterIndex].id);
         } catch (error) {
           evLog("error", "warn: parse image nodes failed, retrying: ", error);
           tryTimes++;
@@ -1849,7 +1848,8 @@ ${chapters.map((c, i) => `<div><label>
       return [{
         id: 1,
         title: "default",
-        source: document
+        source: document,
+        queue: []
       }];
     }
     parseGalleryMeta(doc) {
@@ -1885,6 +1885,7 @@ ${chapters.map((c, i) => `<div><label>
             id: i,
             title,
             source: ch.href,
+            queue: [],
             thumbimg: thumb?.src
           });
         });
@@ -1895,7 +1896,8 @@ ${chapters.map((c, i) => `<div><label>
         ret.push({
           id: 1,
           title: "defalut",
-          source: href
+          source: href,
+          queue: []
         });
       }
       return ret;
@@ -2231,6 +2233,9 @@ ${chapters.map((c, i) => `<div><label>
       this.b = b;
       this.m = new Function("g", m);
     }
+    real_full_path_from_hash(hash) {
+      return hash.replace(/^.*(..)(.)$/, "$2/$1/" + hash);
+    }
     s(h) {
       const m = /(..)(.)$/.exec(h);
       return parseInt(m[2] + m[1], 16).toString(10);
@@ -2252,66 +2257,54 @@ ${chapters.map((c, i) => `<div><label>
       }
       return retval;
     }
-    url(hash) {
+    thumbURL(hash) {
+      hash = hash.replace(/^.*(..)(.)$/, "$2/$1/" + hash);
+      let url = "https://a.hitomi.la/webpsmalltn/" + hash + ".webp";
+      return url.replace(/\/\/..?\.hitomi\.la\//, "//" + this.subdomain_from_url(url, "tn") + ".hitomi.la/");
+    }
+    originURL(hash) {
       let url = "https://a.hitomi.la/" + this.ext + "/" + this.b + this.s(hash) + "/" + hash + "." + this.ext;
       url = url.replace(/\/\/..?\.hitomi\.la\//, "//" + this.subdomain_from_url(url, this.base) + ".hitomi.la/");
       return url;
     }
   }
-  const HASH_REGEX = /#(\d*)$/;
   const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
   const GG_B_REGEX = /b:\s'(\d*\/)'/;
   class HitomiMather extends BaseMatcher {
+    gg;
+    meta;
+    infoRecord = {};
     workURL() {
       return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
     }
-    gg;
-    meta;
-    info;
-    async fetchOriginMeta(hash, _) {
-      const url = this.gg.url(hash);
-      return { url };
-    }
-    async parseImgNodes(page) {
-      if (!this.info) {
-        throw new Error("warn: hitomi gallery info is null!");
-      }
-      const list = [];
-      const doc = page;
-      const nodes = doc.querySelectorAll(".simplePagerContainer .thumbnail-container a");
-      if (!nodes || nodes.length == 0) {
-        throw new Error("warn: failed query image nodes!");
-      }
-      for (const node of Array.from(nodes)) {
-        const sceneIndex = Number(HASH_REGEX.exec(node.href)[1]) - 1;
-        const img = node.querySelector("img");
-        if (!img) {
-          throw new Error("warn: failed query image node!");
-        }
-        const src = img.src;
-        if (!src) {
-          throw new Error(`warn: failed get Image Src`);
-        }
-        const badge = (() => {
-          const badge2 = node.querySelector(".badge");
-          return badge2 ? Number(badge2.textContent) : 1;
-        })();
-        for (let i = 0; i < badge; i++) {
-          const node2 = new ImageNode(
-            src,
-            this.info.files[i + sceneIndex].hash,
-            this.info.files[i + sceneIndex].name
-          );
-          list.push(node2);
-        }
-      }
-      return list;
-    }
-    async *fetchPagesSource(chapter) {
-      const doc = chapter.source;
+    async fetchChapters() {
       const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then((resp) => resp.text());
       this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)[1], GG_M_REGEX.exec(ggRaw)[1]);
-      const galleryID = doc.querySelector("#gallery-brand a")?.href?.split("/").pop()?.replace(".html", "");
+      const ret = [];
+      ret.push({
+        id: 0,
+        title: document.querySelector("#gallery-brand")?.textContent || "default",
+        source: window.location.href,
+        queue: [],
+        thumbimg: document.querySelector(".content > .cover-column > .cover img")?.src
+      });
+      document.querySelectorAll("#related-content > div").forEach((element, i) => {
+        const a = element.querySelector("h1.lillie > a");
+        if (a) {
+          ret.push({
+            id: i,
+            title: a.textContent || "default-" + i,
+            source: a.href,
+            queue: [],
+            thumbimg: element.querySelector("img")?.src
+          });
+        }
+      });
+      return ret;
+    }
+    async *fetchPagesSource(chapter) {
+      const url = chapter.source;
+      const galleryID = url.match(/([0-9]+)(?:\.html)/)?.[1];
       if (!galleryID) {
         throw new Error("cannot query hitomi gallery id");
       }
@@ -2321,11 +2314,32 @@ ${chapters.map((c, i) => `<div><label>
       }
       const info = JSON.parse(infoRaw);
       this.setGalleryMeta(info, galleryID);
-      this.info = {
+      this.infoRecord[chapter.id] = {
         files: info.files,
         scene_indexes: info.scene_indexes
       };
+      const doc = await window.fetch(url).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       yield doc;
+    }
+    async parseImgNodes(_page, chapterID) {
+      if (!this.infoRecord[chapterID]) {
+        throw new Error("warn: hitomi gallery info is null!");
+      }
+      const files = this.infoRecord[chapterID].files;
+      const list = [];
+      for (let i = 0; i < files.length; i++) {
+        const node = new ImageNode(
+          this.gg.thumbURL(files[i].hash),
+          files[i].hash,
+          files[i].name
+        );
+        list.push(node);
+      }
+      return list;
+    }
+    async fetchOriginMeta(hash, _) {
+      const url = this.gg.originURL(hash);
+      return { url };
     }
     setGalleryMeta(info, galleryID) {
       this.meta = new GalleryMeta(window.location.href, info["title"] || "hitomi-" + galleryID);
@@ -3786,11 +3800,9 @@ duration 0.04`).join("\n");
       if (key === "readMode") {
         BIFM.resetScaleBigImages();
         if (conf.readMode === "singlePage", BIFM.currMediaNode) {
-          const queue = BIFM.getChapter(BIFM.chapterIndex)?.queue;
-          if (queue) {
-            const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
-            BIFM.initElement(queue[index]);
-          }
+          const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
+          const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
+          BIFM.initElement(queue[index]);
         }
       }
       if (key === "minifyPageHelper") {
@@ -4377,6 +4389,7 @@ ${conf.disableCssAnimation ? "" : animation}
   min-height: 3rem;
   font-size: 1.2rem;
   padding: 0.5rem;
+  box-sizing: border-box;
 }
 .img-fetched img {
   border: 3px solid #602a5c !important;
@@ -5392,7 +5405,7 @@ html {
         if (!queue)
           return;
         const finished = queue.filter((imf) => imf.stage === FetchState.DONE).length;
-        this.setPageState({ finished: finished.toString() });
+        this.setPageState({ finished: finished.toString(), total: queue.length.toString(), current: "1" });
       });
       EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
       EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));
@@ -5813,10 +5826,10 @@ html {
     initElement(imf) {
       this.removeMediaNode();
       this.resetPreventStep();
-      const queue = this.getChapter(this.chapterIndex)?.queue;
-      if (!queue)
-        return;
+      const queue = this.getChapter(this.chapterIndex).queue;
       const index = queue.indexOf(imf);
+      if (index === -1)
+        return;
       this.currMediaNode = this.newMediaNode(index, imf);
       EBUS.emit("ifq-do", index, imf, "next");
       this.frame.appendChild(this.currMediaNode);
@@ -5858,8 +5871,8 @@ html {
     stepNext(oriented) {
       if (!this.currMediaNode)
         return;
-      const queue = this.getChapter(this.chapterIndex)?.queue;
-      if (!queue)
+      const queue = this.getChapter(this.chapterIndex).queue;
+      if (queue.length === 0)
         return;
       let index = parseInt(this.currMediaNode.getAttribute("d-index"));
       index = oriented === "next" ? index + 1 : index - 1;
@@ -5942,8 +5955,8 @@ html {
           const oldIndex = parseInt(this.currMediaNode?.getAttribute("d-index"));
           const newIndex = parseInt(centerNode.getAttribute("d-index"));
           const oriented = oldIndex < newIndex ? "next" : "prev";
-          const queue = this.getChapter(this.chapterIndex)?.queue;
-          if (!queue)
+          const queue = this.getChapter(this.chapterIndex).queue;
+          if (queue.length === 0)
             return;
           const imf = queue[newIndex];
           EBUS.emit("ifq-do", newIndex, imf, oriented);
@@ -6035,8 +6048,8 @@ html {
       if (isNaN(index)) {
         throw new Error("BIFM: extendImgNode: media node index is NaN");
       }
-      const queue = this.getChapter(this.chapterIndex)?.queue;
-      if (!queue)
+      const queue = this.getChapter(this.chapterIndex).queue;
+      if (queue.length === 0)
         return null;
       if (oriented === "prev") {
         if (index === 0)
@@ -6234,8 +6247,8 @@ html {
       this.button.firstElementChild.innerText = i18n.autoPagePause.get();
       const b = this.frameManager.frame;
       if (this.frameManager.frame.classList.contains("big-img-frame-collapse")) {
-        const queue = this.frameManager.getChapter(this.frameManager.chapterIndex)?.queue;
-        if (!queue)
+        const queue = this.frameManager.getChapter(this.frameManager.chapterIndex).queue;
+        if (queue.length === 0)
           return;
         const index = parseInt(this.frameManager.currMediaNode?.getAttribute("d-index") || "0");
         this.frameManager.show(queue[index]);
@@ -6259,9 +6272,7 @@ html {
         if (!this.frameManager.currMediaNode)
           break;
         const index = parseInt(this.frameManager.currMediaNode.getAttribute("d-index"));
-        const queue = this.frameManager.getChapter(this.frameManager.chapterIndex)?.queue;
-        if (!queue)
-          break;
+        const queue = this.frameManager.getChapter(this.frameManager.chapterIndex).queue;
         if (index >= queue.length)
           break;
         const deltaY = this.frameManager.frame.offsetHeight / 2;

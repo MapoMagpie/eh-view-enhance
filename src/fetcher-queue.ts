@@ -19,7 +19,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     this.finishedIndex.clear();
   }
 
-  restore(chapterIndex: number, ...imfs: IMGFetcher[]) {
+  restore(chapterIndex: number, imfs: IMGFetcher[]) {
     this.clear();
     this.chapterIndex = chapterIndex;
     imfs.forEach((imf, i) => imf.stage === FetchState.DONE && this.finishedIndex.add(i));

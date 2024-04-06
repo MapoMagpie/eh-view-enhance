@@ -112,8 +112,30 @@ export const VERSION = "4.1.10";
 export const signal = { first: true };
 
 const CONFIG_KEY = "ehvh_cfg_";
+
+function getStorageMethod() {
+  if (typeof GM_getValue === 'function' && typeof GM_setValue === 'function') {
+    // Greasemonkey or Tampermonkey API
+    return {
+      setItem: (key: string, value: string) => GM_setValue(key, value),
+      getItem: (key: string): string | null => GM_getValue(key, null),
+    };
+  } else if (typeof localStorage !== 'undefined') {
+    // Web Storage API
+    return {
+      setItem: (key: string, value: string) => localStorage.setItem(key, value),
+      getItem: (key: string): string | null => localStorage.getItem(key),
+    };
+  } else {
+    // No supported API
+    throw new Error('No supported storage method found');
+  }
+}
+
+const storage = getStorageMethod();
+
 function getConf(): Config {
-  let cfgStr = GM_getValue<string>(CONFIG_KEY);
+  let cfgStr = storage.getItem(CONFIG_KEY);
   if (cfgStr) {
     let cfg: Config = JSON.parse(cfgStr);
     if (cfg.version === VERSION) {
@@ -179,7 +201,7 @@ function confHealthCheck($conf: Config): Config {
 }
 
 export function saveConf(c: Config) {
-  GM_setValue(CONFIG_KEY, JSON.stringify(c));
+  storage.setItem(CONFIG_KEY, JSON.stringify(c));
 }
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime";
 export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];

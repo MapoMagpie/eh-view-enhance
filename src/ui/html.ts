@@ -1,12 +1,10 @@
 import { ConfigBooleanKeys, ConfigBooleanType, ConfigNumberKeys, ConfigNumberType, ConfigSelectKeys, ConfigSelectType, conf } from "../config";
 import { Downloader } from "../download/downloader";
-import { IMGFetcherQueue } from "../fetcher-queue";
 import { Debouncer } from "../utils/debouncer";
 import { dragElement } from "../utils/drag-element";
 import { i18n } from "../utils/i18n";
 import q from "../utils/query-element";
 import { Events } from "./event";
-import { FullViewGridManager } from "./full-view-grid-manager";
 import { loadStyleSheel } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
@@ -283,7 +281,7 @@ export function createHTML() {
   };
 }
 
-export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, FVGM: FullViewGridManager, IFQ: IMGFetcherQueue, DL: Downloader) {
+export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, DL: Downloader) {
   HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
   HTML.downloaderPanelBTN.addEventListener("click", () => {
     events.togglePanelEvent("downloader");
@@ -329,8 +327,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
   HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
 
-  HTML.currPageElement.addEventListener("click", () => BIFM.show());
-  HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event as WheelEvent));
+  HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev"));
 
   // Shortcut
   document.addEventListener("keydown", (event) => events.keyboardEvent(event));
@@ -338,11 +335,11 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.bigImageFrame.addEventListener("keydown", (event) => events.bigImageFrameKeyBoardEvent(event));
   // 箭头导航
   HTML.imgLandLeft.addEventListener("click", (event) => {
-    IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "next" : "prev");
+    BIFM.stepNext(conf.reversePages ? "next" : "prev");
     event.stopPropagation();
   });
   HTML.imgLandRight.addEventListener("click", (event) => {
-    IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "prev" : "next");
+    BIFM.stepNext(conf.reversePages ? "prev" : "next");
     event.stopPropagation();
   });
 

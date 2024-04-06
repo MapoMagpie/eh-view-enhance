@@ -52,7 +52,7 @@ export class IdleLoader {
     }
     evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
     for (const processingIndex of this.processingIndexList) {
-      this.queue[processingIndex].start(this.queue.chapterIndex, processingIndex);
+      this.queue[processingIndex].start(processingIndex);
     }
   }
 

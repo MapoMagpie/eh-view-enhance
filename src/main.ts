@@ -18,37 +18,26 @@ type DestoryFunc = () => void;
 function main(MATCHER: Matcher): DestoryFunc {
   const HTML = createHTML();
   [HTML.fullViewGrid, HTML.bigImageFrame].forEach(e => revertMonkeyPatch(e));
+
   const IFQ: IMGFetcherQueue = IMGFetcherQueue.newQueue();
   const IL: IdleLoader = new IdleLoader(IFQ);
-  const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, IFQ);
-  const FVGM: FullViewGridManager = new FullViewGridManager(HTML);
   const PF: PageFetcher = new PageFetcher(IFQ, MATCHER);
   const DL: Downloader = new Downloader(HTML, IFQ, IL, PF, MATCHER);
-  const PH: PageHelper = new PageHelper(HTML);
+
+  // UI Manager
+  const PH: PageHelper = new PageHelper(HTML, (index) => PF.chapters[index]);
+  const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
+  const FVGM: FullViewGridManager = new FullViewGridManager(HTML);
 
   const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
-  addEventListeners(events, HTML, BIFM, FVGM, IFQ, DL);
+  addEventListeners(events, HTML, BIFM, DL);
 
   EBUS.subscribe("downloader-canvas-on-click", (index) => {
     IFQ.currIndex = index;
-    BIFM.show();
+    if (IFQ.chapterIndex !== BIFM.chapterIndex) return;
+    BIFM.show(IFQ[index]);
   });
 
-  EBUS.subscribe("pf-on-appended", (total, _ifs, done) => {
-    PH.setPageState({ total: `${total}${done ? "" : ".."}` });
-    setTimeout(() => FVGM.renderCurrView(), 200);
-  });
-
-  EBUS.subscribe("imf-set-now", (index) => {
-    if (!BIFM.visible) return;
-    let scrollTo = IFQ[index].node.root!.offsetTop - window.screen.availHeight / 3;
-    scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
-    if (HTML.fullViewGrid.scrollTo.toString().includes("[native code]")) {
-      HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
-    } else {
-      HTML.fullViewGrid.scrollTop = scrollTo;
-    }
-  });
 
   PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
   PF.afterInit = () => {

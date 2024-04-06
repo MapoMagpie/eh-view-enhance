@@ -22,7 +22,7 @@ export type Chapter = {
 
 export class PageFetcher {
   chapters: Chapter[] = [];
-  currChapterIndex: number = 0;
+  chapterIndex: number = 0;
   queue: IMGFetcherQueue;
   matcher: Matcher;
   done: boolean = false;
@@ -31,6 +31,7 @@ export class PageFetcher {
   private appendPageLock: boolean = false;
   private abortb: boolean = false;
   private chaptersSelectionElement: HTMLElement;
+
   constructor(queue: IMGFetcherQueue, matcher: Matcher) {
     this.queue = queue;
     this.matcher = matcher;
@@ -87,11 +88,11 @@ export class PageFetcher {
 
   /// start the chapter by index
   async changeChapter(index: number, appendToView: boolean) {
-    this.currChapterIndex = index;
-    const chapter = this.chapters[this.currChapterIndex];
+    this.chapterIndex = index;
+    const chapter = this.chapters[this.chapterIndex];
     // if chapter has nodes
     if (chapter.queue && chapter.queue.length > 0) {
-      this.queue.restore(this.currChapterIndex, ...chapter.queue);
+      this.queue.restore(this.chapterIndex, ...chapter.queue);
     }
 
     if (!chapter.sourceIter) {
@@ -121,7 +122,7 @@ export class PageFetcher {
     try {
       this.appendPageLock = true;
       if (this.done || this.abortb) return false;
-      const chapter = this.chapters[this.currChapterIndex];
+      const chapter = this.chapters[this.chapterIndex];
       const next = await chapter.sourceIter!.next();
       if (next.done) {
         chapter.done = true;
@@ -141,10 +142,10 @@ export class PageFetcher {
       const nodes = await this.obtainImageNodeList(page);
       if (this.abortb) return false;
       const IFs = nodes.map(
-        (imgNode) => new IMGFetcher(imgNode, this.matcher)
+        (imgNode) => new IMGFetcher(imgNode, this.matcher, this.chapterIndex)
       );
       this.queue.push(...IFs);
-      this.chapters[this.currChapterIndex].queue = [...this.queue];
+      this.chapters[this.chapterIndex].queue = [...this.queue];
       if (appendToView) {
         this.appendToView(this.queue.length, IFs);
       }

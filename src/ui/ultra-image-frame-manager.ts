@@ -1,5 +1,4 @@
 import { conf, saveConf, Oriented } from "../config";
-import { IMGFetcherQueue } from "../fetcher-queue";
 import { FetchState, IMGFetcher } from "../img-fetcher";
 import { Debouncer } from "../utils/debouncer";
 import { i18n } from "../utils/i18n";
@@ -10,10 +9,10 @@ import q from "../utils/query-element";
 import { VideoControl } from "./video-control";
 import onMouse from "../utils/progress-bar";
 import EBUS from "../event-bus";
+import { Chapter } from "../page-fetcher";
 
 export class BigImageFrameManager {
   frame: HTMLElement;
-  queue: IMGFetcherQueue;
   lockInit: boolean;
   currMediaNode?: HTMLImageElement | HTMLVideoElement;
   lastMouseY?: number;
@@ -30,25 +29,25 @@ export class BigImageFrameManager {
   frameScrollAbort?: AbortController;
   vidController?: VideoControl;
   chapterIndex: number = 0;
-  /* prevent mouse wheel step next image */
-  constructor(HTML: Elements, queue: IMGFetcherQueue) {
+  getChapter: (index: number) => Chapter;
+
+  constructor(HTML: Elements, getChapter: (index: number) => Chapter) {
     this.html = HTML;
     this.frame = HTML.bigImageFrame;
-    this.queue = queue;
     this.imgScaleBar = HTML.imgScaleBar;
     this.debouncer = new Debouncer();
     this.throttler = new Debouncer("throttle");
     this.lockInit = false;
+    this.getChapter = getChapter;
     this.resetStickyMouse();
     this.initFrame();
     this.initImgScaleBar();
     this.initImgScaleStyle();
     this.initHammer();
     EBUS.subscribe("pf-change-chapter", index => this.chapterIndex = index);
-    EBUS.subscribe("imf-set-now", (index) => this.setNow(index));
-    EBUS.subscribe("imf-on-click", (event) => this.show(event));
-    EBUS.subscribe("imf-on-finished", (chapterIndex, index, success, imf) => {
-      if (chapterIndex !== this.queue.chapterIndex) return;
+    EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
+    EBUS.subscribe("imf-on-finished", (index, success, imf) => {
+      if (imf.chapterIndex !== this.chapterIndex) return;
       if (!this.visible || !success) return;
       const img = this.getMediaNodes().find((img) => index === parseInt(img.getAttribute("d-index")!));
       if (!img) return;
@@ -65,6 +64,7 @@ export class BigImageFrameManager {
       }
       img.remove();
     });
+
     // enable auto page
     new AutoPage(this, HTML.autoPageBTN);
   }
@@ -81,16 +81,16 @@ export class BigImageFrameManager {
       if (conf.readMode === "singlePage") {
         switch (ev.direction) {
           case Hammer.DIRECTION_LEFT:
-            this.queue.stepImageEvent(this.chapterIndex, conf.reversePages ? "prev" : "next");
+            this.stepNext(conf.reversePages ? "prev" : "next");
             break;
           case Hammer.DIRECTION_UP:
-            this.queue.stepImageEvent(this.chapterIndex, "next");
+            this.stepNext("next");
             break;
           case Hammer.DIRECTION_RIGHT:
-            this.queue.stepImageEvent(this.chapterIndex, conf.reversePages ? "next" : "prev");
+            this.stepNext(conf.reversePages ? "next" : "prev");
             break;
           case Hammer.DIRECTION_DOWN:
-            this.queue.stepImageEvent(this.chapterIndex, "prev");
+            this.stepNext("prev");
             break;
         }
       }
@@ -106,34 +106,6 @@ export class BigImageFrameManager {
   flushImgScaleBar() {
     q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
     q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
-  }
-
-  setNow(index: number) {
-    if (!this.visible) return;
-    this.resetStickyMouse();
-    // every time call this.onWheel(), will set this.lockInit to true
-    if (this.lockInit) {
-      this.lockInit = false;
-      return
-    }
-    this.init(index);
-  }
-
-  init(start: number) {
-    // remove frame's img children
-    this.removeMediaNode();
-    this.resetPreventStep();
-    // evLog("BIFM: init: newMediaNode");
-    this.currMediaNode = this.newMediaNode(start, this.queue[start]);
-    this.frame.appendChild(this.currMediaNode);
-
-    if (conf.readMode === "consecutively") {
-      this.hammer?.get("swipe").set({ enable: false });
-      this.tryExtend();
-    } else {
-      this.hammer?.get("swipe").set({ enable: true });
-    }
-    this.currMediaNode.scrollIntoView();
   }
 
   initFrame() {
@@ -182,10 +154,60 @@ export class BigImageFrameManager {
     nextLand.innerHTML = svg_bg;
     nextLand.addEventListener("mouseover", () => {
       nextLand.remove();
-      this.queue.stepImageEvent(this.chapterIndex, "next");
+      this.stepNext("next");
     });
     this.frame.appendChild(nextLand);
     window.setTimeout(() => nextLand.remove(), 1500)
+  }
+
+  hidden(event?: MouseEvent) {
+    if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
+    this.visible = false;
+    EBUS.emit("bifm-on-hidden");
+    this.html.fullViewGrid.focus();
+    this.frameScrollAbort?.abort();
+    this.frame.classList.add("big-img-frame-collapse");
+    this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
+  }
+
+  show(imf: IMGFetcher) {
+    this.visible = true;
+    this.frame.classList.remove("big-img-frame-collapse");
+    this.frame.focus();
+    this.frameScrollAbort = new AbortController();
+    this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
+    this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
+      if (imf.chapterIndex !== this.chapterIndex) return;
+      this.setNow(imf);
+    }, 100);
+    EBUS.emit("bifm-on-show");
+  }
+
+  setNow(imf: IMGFetcher) {
+    if (!this.visible) return;
+    this.resetStickyMouse();
+    this.initElement(imf);
+  }
+
+  initElement(imf: IMGFetcher) {
+    // remove frame's img children
+    this.removeMediaNode();
+    this.resetPreventStep();
+    // evLog("BIFM: init: newMediaNode");
+    const queue = this.getChapter(this.chapterIndex)?.queue;
+    if (!queue) return;
+    const index = queue.indexOf(imf);
+    this.currMediaNode = this.newMediaNode(index, imf);
+    EBUS.emit("ifq-do", index, imf, "next");
+    this.frame.appendChild(this.currMediaNode);
+
+    if (conf.readMode === "consecutively") {
+      this.hammer?.get("swipe").set({ enable: false });
+      this.tryExtend();
+    } else {
+      this.hammer?.get("swipe").set({ enable: true });
+    }
+    this.currMediaNode.scrollIntoView();
   }
 
   removeMediaNode() {
@@ -204,30 +226,6 @@ export class BigImageFrameManager {
     }
   }
 
-  hidden(event?: MouseEvent) {
-    if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
-    this.visible = false;
-    EBUS.emit("bifm-on-hidden");
-    this.html.fullViewGrid.focus();
-    this.frameScrollAbort?.abort();
-    this.frame.classList.add("big-img-frame-collapse");
-    this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
-  }
-
-  show(event?: Event) {
-    this.visible = true;
-    this.frame.classList.remove("big-img-frame-collapse");
-    this.frame.focus();
-    this.frameScrollAbort = new AbortController();
-    this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
-    this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
-      let start = this.queue.currIndex;
-      if (event && event.target) start = this.queue.findImgIndex(event.target as HTMLElement);
-      this.queue.do(start); // this will trigger imgFetcher.setNow > this.setNow > this.init
-    }, 100);
-    EBUS.emit("bifm-on-show");
-  }
-
   getMediaNodes(): HTMLElement[] {
     const list = Array.from(this.frame.querySelectorAll<HTMLElement>("img, video"));
     // check list is ordered by d-index
@@ -242,6 +240,17 @@ export class BigImageFrameManager {
     return list;
   }
 
+  stepNext(oriented: Oriented) {
+    if (!this.currMediaNode) return;
+    const queue = this.getChapter(this.chapterIndex)?.queue;
+    if (!queue) return;
+    let index = parseInt(this.currMediaNode.getAttribute("d-index")!);
+    index = oriented === "next" ? index + 1 : index - 1;
+    if (index < 0) return
+    if (index >= queue.length) return;
+    this.setNow(queue[index]);
+  }
+
   onWheel(event: WheelEvent) {
     if (event.buttons === 2) {
       event.preventDefault();
@@ -251,7 +260,7 @@ export class BigImageFrameManager {
       if (this.isReachBoundary(oriented)) {
         event.preventDefault();
         if (!this.tryPreventStep()) {
-          this.queue.stepImageEvent(this.chapterIndex, oriented);
+          this.stepNext(oriented);
         }
       }
     } else {
@@ -320,21 +329,20 @@ export class BigImageFrameManager {
       let index = this.findMediaNodeIndexOnCenter(mediaNodes);
       const centerNode = mediaNodes[index];
 
-      const indexOfQueue = parseInt(centerNode.getAttribute("d-index")!);
-      if (indexOfQueue != this.queue.currIndex) {
-        // set true for prevent this.init()
-        // queue.do() > imgFetcher.setNow() > this.setNow() > this.init(); 
-        // in here, this.init() will be called again, set this.lockInit to prevent it
-        this.lockInit = true;
-        this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
-        // this.vidController?.hidden();
+      if (this.currMediaNode != centerNode) {
+        const oldIndex = parseInt(this.currMediaNode?.getAttribute("d-index")!);
+        const newIndex = parseInt(centerNode.getAttribute("d-index")!);
+        const oriented = oldIndex < newIndex ? "next" : "prev";
+        const queue = this.getChapter(this.chapterIndex)?.queue;
+        if (!queue) return;
+        const imf = queue[newIndex];
+        EBUS.emit("ifq-do", newIndex, imf, oriented);
         // play new current video
         if (this.currMediaNode instanceof HTMLVideoElement) {
           this.currMediaNode.pause();
         }
         this.tryPlayVideo(centerNode);
       }
-
       this.currMediaNode = centerNode as HTMLImageElement | HTMLVideoElement;
       const distance = this.getRealOffsetTop(this.currMediaNode) - this.frame.scrollTop;
       // try extend imgNodes
@@ -431,15 +439,17 @@ export class BigImageFrameManager {
     if (isNaN(index)) {
       throw new Error("BIFM: extendImgNode: media node index is NaN");
     }
+    const queue = this.getChapter(this.chapterIndex)?.queue;
+    if (!queue) return null;
     if (oriented === "prev") {
       if (index === 0) return null;
       // evLog("BIFM: extendImgNode: prev newMediaNode");
-      extendedNode = this.newMediaNode(index - 1, this.queue[index - 1]);
+      extendedNode = this.newMediaNode(index - 1, queue[index - 1]);
       mediaNode.before(extendedNode);
     } else {
-      if (index === this.queue.length - 1) return null;
+      if (index === queue.length - 1) return null;
       // evLog("BIFM: extendImgNode: next newMediaNode");
-      extendedNode = this.newMediaNode(index + 1, this.queue[index + 1]);
+      extendedNode = this.newMediaNode(index + 1, queue[index + 1]);
       mediaNode.after(extendedNode);
     }
     return extendedNode;
@@ -453,7 +463,7 @@ export class BigImageFrameManager {
       vid.classList.add("bifm-vid");
       vid.setAttribute("d-index", index.toString());
       vid.onloadeddata = () => {
-        if (this.visible && index === this.queue.currIndex) {
+        if (this.visible && vid === this.currMediaNode) {
           this.tryPlayVideo(vid);
         }
       };
@@ -642,7 +652,10 @@ class AutoPage {
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
     const b = this.frameManager.frame;
     if (this.frameManager.frame.classList.contains("big-img-frame-collapse")) {
-      this.frameManager.show();
+      const queue = this.frameManager.getChapter(this.frameManager.chapterIndex)?.queue;
+      if (!queue) return;
+      const index = parseInt(this.frameManager.currMediaNode?.getAttribute("d-index") || "0");
+      this.frameManager.show(queue[index]);
     }
     const progress = q("#auto-page-progress", this.button);
     while (true) {
@@ -660,13 +673,18 @@ class AutoPage {
       if (this.status !== "running") {
         break;
       }
-      if (this.frameManager.queue.currIndex >= this.frameManager.queue.length - 1) {
-        break;
-      }
+
+      if (!this.frameManager.currMediaNode) break;
+      const index = parseInt(this.frameManager.currMediaNode.getAttribute("d-index")!);
+      const queue = this.frameManager.getChapter(this.frameManager.chapterIndex)?.queue;
+      if (!queue) break;
+      if (index >= queue.length) break;
+
       const deltaY = this.frameManager.frame.offsetHeight / 2;
+      // read mode = singlePage
       if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
         this.frameManager.onWheel(new WheelEvent("wheel", { deltaY }));
-      } else {
+      } else { // read mode = consecutively
         b.scrollBy({ top: deltaY, behavior: "smooth" });
         if (conf.readMode === "consecutively") {
           this.frameManager.onWheel(new WheelEvent("wheel", { deltaY }));

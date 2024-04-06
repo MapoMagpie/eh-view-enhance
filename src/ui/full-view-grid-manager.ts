@@ -18,12 +18,25 @@ export class FullViewGridManager {
     EBUS.subscribe("pf-on-appended", (_total, nodes, done) => {
       this.append(nodes);
       this.done = done || false;
+      setTimeout(() => this.renderCurrView(), 200);
     });
     EBUS.subscribe("pf-change-chapter", (index) => {
       this.chapterIndex = index;
       this.root.innerHTML = "";
       this.queue = [];
       this.done = false;
+    });
+    // scroll to the element that is in full view grid
+    EBUS.subscribe("ifq-do", (_, imf) => {
+      if (imf.chapterIndex !== this.chapterIndex) return;
+      if (!imf.node.root) return;
+      let scrollTo = imf.node.root.offsetTop - window.screen.availHeight / 3;
+      scrollTo = scrollTo <= 0 ? 0 : scrollTo >= this.root.scrollHeight ? this.root.scrollHeight : scrollTo;
+      if (this.root.scrollTo.toString().includes("[native code]")) {
+        this.root.scrollTo({ top: scrollTo, behavior: "smooth" });
+      } else {
+        this.root.scrollTop = scrollTo;
+      }
     });
   }
 

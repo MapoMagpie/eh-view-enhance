@@ -41,12 +41,14 @@ export class IMGFetcher implements VisualNode {
   downloadBar?: HTMLElement;
   timeoutId?: number;
   matcher: Matcher;
+  chapterIndex: number;
 
-  constructor(root: ImageNode, matcher: Matcher) {
+  constructor(root: ImageNode, matcher: Matcher, chapterIndex: number) {
     this.node = root;
-    this.node.onclick = (event) => EBUS.emit("imf-on-click", event);
+    this.node.onclick = () => EBUS.emit("imf-on-click", this);
     this.downloadState = { total: 100, loaded: 0, readyState: 0, };
     this.matcher = matcher;
+    this.chapterIndex = chapterIndex;
   }
 
   create(): HTMLElement {
@@ -60,19 +62,19 @@ export class IMGFetcher implements VisualNode {
     EBUS.emit("imf-download-state-change");
   }
 
-  async start(chapterIndex: number, index: number) {
+  async start(index: number) {
     if (this.lock) return;
     this.lock = true;
     try {
       this.node.changeStyle("fetching");
       await this.fetchImage();
       this.node.changeStyle("fetched");
-      EBUS.emit("imf-on-finished", chapterIndex, index, true, this);
+      EBUS.emit("imf-on-finished", index, true, this);
     } catch (error) {
       this.node.changeStyle("failed");
       evLog("error", `IMG-FETCHER ERROR:`, error);
       this.stage = FetchState.FAILED;
-      EBUS.emit("imf-on-finished", chapterIndex, index, false, this);
+      EBUS.emit("imf-on-finished", index, false, this);
       // TODO: show error on image
     } finally {
       this.lock = false;
@@ -174,12 +176,6 @@ export class IMGFetcher implements VisualNode {
     this.rendered = 1;
     this.node.unrender();
   }
-
-  //立刻将当前元素的src赋值给大图元素
-  setNow(index: number) {
-    EBUS.emit("imf-set-now", index, this);
-  }
-
 
   async fetchBigImage(): Promise<Blob | null> {
     if (this.originURL?.startsWith("blob:")) {

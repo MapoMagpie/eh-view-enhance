@@ -286,11 +286,13 @@
     downloadBar;
     timeoutId;
     matcher;
-    constructor(root, matcher) {
+    chapterIndex;
+    constructor(root, matcher, chapterIndex) {
       this.node = root;
-      this.node.onclick = (event) => EBUS.emit("imf-on-click", event);
+      this.node.onclick = () => EBUS.emit("imf-on-click", this);
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
       this.matcher = matcher;
+      this.chapterIndex = chapterIndex;
     }
     create() {
       return this.node.create();
@@ -301,7 +303,7 @@
       this.node.progress(this.downloadState);
       EBUS.emit("imf-download-state-change");
     }
-    async start(chapterIndex, index) {
+    async start(index) {
       if (this.lock)
         return;
       this.lock = true;
@@ -309,12 +311,12 @@
         this.node.changeStyle("fetching");
         await this.fetchImage();
         this.node.changeStyle("fetched");
-        EBUS.emit("imf-on-finished", chapterIndex, index, true, this);
+        EBUS.emit("imf-on-finished", index, true, this);
       } catch (error) {
         this.node.changeStyle("failed");
         evLog("error", `IMG-FETCHER ERROR:`, error);
         this.stage = 0 /* FAILED */;
-        EBUS.emit("imf-on-finished", chapterIndex, index, false, this);
+        EBUS.emit("imf-on-finished", index, false, this);
       } finally {
         this.lock = false;
       }
@@ -408,10 +410,6 @@
         return;
       this.rendered = 1;
       this.node.unrender();
-    }
-    //立刻将当前元素的src赋值给大图元素
-    setNow(index) {
-      EBUS.emit("imf-set-now", index, this);
     }
     async fetchBigImage() {
       if (this.originURL?.startsWith("blob:")) {
@@ -1045,9 +1043,9 @@
       this.elementDashboard = HTML.downloadDashboard;
       this.elementChapters = HTML.downloadChapters;
       this.canvas = new DownloaderCanvas(HTML.downloaderCanvas, HTML, queue);
-      EBUS.subscribe("ifq-on-finished-report", (chapterIndex, _, queue2) => {
+      EBUS.subscribe("ifq-on-finished-report", (_, queue2) => {
         if (queue2.isFinised()) {
-          const sel = this.selectedChapters.find((sel2) => sel2.index === chapterIndex);
+          const sel = this.selectedChapters.find((sel2) => sel2.index === queue2.chapterIndex);
           if (sel) {
             sel.done = true;
             sel.resolve(true);
@@ -1307,7 +1305,12 @@ ${chapters.map((c, i) => `<div><label>
     }
     static newQueue() {
       const queue = new IMGFetcherQueue();
-      EBUS.subscribe("imf-on-finished", (chapter, index, success, imf) => queue.chapterIndex === chapter && queue.finishedReport(index, success, imf));
+      EBUS.subscribe("imf-on-finished", (index, success, imf) => queue.chapterIndex === imf.chapterIndex && queue.finishedReport(index, success, imf));
+      EBUS.subscribe("ifq-do", (index, imf, oriented) => {
+        if (imf.chapterIndex !== queue.chapterIndex)
+          return;
+        queue.do(index, oriented);
+      });
       return queue;
     }
     constructor() {
@@ -1322,14 +1325,13 @@ ${chapters.map((c, i) => `<div><label>
     do(start, oriented) {
       oriented = oriented || "next";
       this.currIndex = this.fixIndex(start);
-      this[this.currIndex].setNow(this.currIndex);
-      EBUS.emit("ifq-on-do", this.chapterIndex, this.currIndex, this, this.downloading?.() || false);
+      EBUS.emit("ifq-on-do", this.currIndex, this, this.downloading?.() || false);
       if (this.downloading?.())
         return;
       if (!this.pushInExecutableQueue(oriented))
         return;
       this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
-        this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(this.chapterIndex, imgFetcherIndex));
+        this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(imgFetcherIndex));
       }, 300);
     }
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
@@ -1342,14 +1344,14 @@ ${chapters.map((c, i) => `<div><label>
       if (this.dataSize < 1e9) {
         this.dataSize += imf.data?.byteLength || 0;
       }
-      EBUS.emit("ifq-on-finished-report", this.chapterIndex, index, this);
+      EBUS.emit("ifq-on-finished-report", index, this);
     }
-    stepImageEvent(chapterIndex, oriented) {
-      let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
-      if (chapterIndex === this.chapterIndex) {
-        this.do(start, oriented);
-      }
-    }
+    // stepImageEvent(chapterIndex: number, oriented: Oriented) {
+    //   let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
+    //   if (chapterIndex === this.chapterIndex) {
+    //     this.do(start, oriented);
+    //   }
+    // }
     //如果开始的索引小于0,则修正索引为0,如果开始的索引超过队列的长度,则修正索引为队列的最后一位
     fixIndex(start) {
       return start < 0 ? 0 : start > this.length - 1 ? this.length - 1 : start;
@@ -1429,7 +1431,7 @@ ${chapters.map((c, i) => `<div><label>
       }
       evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
       for (const processingIndex of this.processingIndexList) {
-        this.queue[processingIndex].start(this.queue.chapterIndex, processingIndex);
+        this.queue[processingIndex].start(processingIndex);
       }
     }
     checkProcessingIndex() {
@@ -1682,7 +1684,7 @@ ${chapters.map((c, i) => `<div><label>
 
   class PageFetcher {
     chapters = [];
-    currChapterIndex = 0;
+    chapterIndex = 0;
     queue;
     matcher;
     done = false;
@@ -1741,10 +1743,10 @@ ${chapters.map((c, i) => `<div><label>
     }
     /// start the chapter by index
     async changeChapter(index, appendToView) {
-      this.currChapterIndex = index;
-      const chapter = this.chapters[this.currChapterIndex];
+      this.chapterIndex = index;
+      const chapter = this.chapters[this.chapterIndex];
       if (chapter.queue && chapter.queue.length > 0) {
-        this.queue.restore(this.currChapterIndex, ...chapter.queue);
+        this.queue.restore(this.chapterIndex, ...chapter.queue);
       }
       if (!chapter.sourceIter) {
         evLog("error", "chapter sourceIter is not set!");
@@ -1775,7 +1777,7 @@ ${chapters.map((c, i) => `<div><label>
         this.appendPageLock = true;
         if (this.done || this.abortb)
           return false;
-        const chapter = this.chapters[this.currChapterIndex];
+        const chapter = this.chapters[this.chapterIndex];
         const next = await chapter.sourceIter.next();
         if (next.done) {
           chapter.done = true;
@@ -1795,10 +1797,10 @@ ${chapters.map((c, i) => `<div><label>
         if (this.abortb)
           return false;
         const IFs = nodes.map(
-          (imgNode) => new IMGFetcher(imgNode, this.matcher)
+          (imgNode) => new IMGFetcher(imgNode, this.matcher, this.chapterIndex)
         );
         this.queue.push(...IFs);
-        this.chapters[this.currChapterIndex].queue = [...this.queue];
+        this.chapters[this.chapterIndex].queue = [...this.queue];
         if (appendToView) {
           this.appendToView(this.queue.length, IFs);
         }
@@ -3783,8 +3785,12 @@ duration 0.04`).join("\n");
       }
       if (key === "readMode") {
         BIFM.resetScaleBigImages();
-        if (conf.readMode === "singlePage") {
-          BIFM.init(BIFM.queue.currIndex);
+        if (conf.readMode === "singlePage", BIFM.currMediaNode) {
+          const queue = BIFM.getChapter(BIFM.chapterIndex)?.queue;
+          if (queue) {
+            const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
+            BIFM.initElement(queue[index]);
+          }
         }
       }
       if (key === "minifyPageHelper") {
@@ -3873,9 +3879,6 @@ duration 0.04`).join("\n");
       FVGM.renderCurrView();
       FVGM.tryExtend();
     }
-    function bigImageWheelEvent(event) {
-      IFQ.stepImageEvent(FVGM.chapterIndex, event.deltaY > 0 ? "next" : "prev");
-    }
     function scrollImage(oriented) {
       BIFM.frame.addEventListener("scrollend", () => {
         if (conf.readMode === "singlePage" && BIFM.isReachBoundary(oriented)) {
@@ -3897,11 +3900,11 @@ duration 0.04`).join("\n");
         ),
         "step-image-prev": new KeyboardDesc(
           ["ArrowLeft"],
-          () => IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "next" : "prev")
+          () => BIFM.stepNext(conf.reversePages ? "next" : "prev")
         ),
         "step-image-next": new KeyboardDesc(
           ["ArrowRight"],
-          () => IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "prev" : "next")
+          () => BIFM.stepNext(conf.reversePages ? "prev" : "next")
         ),
         "step-to-first-image": new KeyboardDesc(
           ["Home"],
@@ -4113,7 +4116,6 @@ duration 0.04`).join("\n");
       hiddenFullViewGridEvent,
       hiddenFullViewGrid,
       scrollEvent,
-      bigImageWheelEvent,
       fullViewGridKeyBoardEvent,
       bigImageFrameKeyBoardEvent,
       keyboardEvent,
@@ -4136,12 +4138,26 @@ duration 0.04`).join("\n");
       EBUS.subscribe("pf-on-appended", (_total, nodes, done) => {
         this.append(nodes);
         this.done = done || false;
+        setTimeout(() => this.renderCurrView(), 200);
       });
       EBUS.subscribe("pf-change-chapter", (index) => {
         this.chapterIndex = index;
         this.root.innerHTML = "";
         this.queue = [];
         this.done = false;
+      });
+      EBUS.subscribe("ifq-do", (_, imf) => {
+        if (imf.chapterIndex !== this.chapterIndex)
+          return;
+        if (!imf.node.root)
+          return;
+        let scrollTo = imf.node.root.offsetTop - window.screen.availHeight / 3;
+        scrollTo = scrollTo <= 0 ? 0 : scrollTo >= this.root.scrollHeight ? this.root.scrollHeight : scrollTo;
+        if (this.root.scrollTo.toString().includes("[native code]")) {
+          this.root.scrollTo({ top: scrollTo, behavior: "smooth" });
+        } else {
+          this.root.scrollTop = scrollTo;
+        }
       });
     }
     append(nodes) {
@@ -5309,7 +5325,7 @@ html {
       styleSheel
     };
   }
-  function addEventListeners(events, HTML, BIFM, FVGM, IFQ, DL) {
+  function addEventListeners(events, HTML, BIFM, DL) {
     HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
     HTML.downloaderPanelBTN.addEventListener("click", () => {
       events.togglePanelEvent("downloader");
@@ -5347,17 +5363,16 @@ html {
     const debouncer = new Debouncer();
     HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
     HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
-    HTML.currPageElement.addEventListener("click", () => BIFM.show());
-    HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event));
+    HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev"));
     document.addEventListener("keydown", (event) => events.keyboardEvent(event));
     HTML.fullViewGrid.addEventListener("keydown", (event) => events.fullViewGridKeyBoardEvent(event));
     HTML.bigImageFrame.addEventListener("keydown", (event) => events.bigImageFrameKeyBoardEvent(event));
     HTML.imgLandLeft.addEventListener("click", (event) => {
-      IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "next" : "prev");
+      BIFM.stepNext(conf.reversePages ? "next" : "prev");
       event.stopPropagation();
     });
     HTML.imgLandRight.addEventListener("click", (event) => {
-      IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "prev" : "next");
+      BIFM.stepNext(conf.reversePages ? "prev" : "next");
       event.stopPropagation();
     });
     HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
@@ -5368,27 +5383,49 @@ html {
 
   class PageHelper {
     html;
-    constructor(html) {
+    chapterIndex = 0;
+    constructor(html, getChapter) {
       this.html = html;
+      EBUS.subscribe("pf-change-chapter", (index) => {
+        this.chapterIndex = index;
+        const queue = getChapter(index)?.queue;
+        if (!queue)
+          return;
+        const finished = queue.filter((imf) => imf.stage === FetchState.DONE).length;
+        this.setPageState({ finished: finished.toString() });
+      });
       EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
       EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));
-      EBUS.subscribe("ifq-on-do", (chapterIndex, currIndex, queue) => {
-        if (chapterIndex !== queue.chapterIndex)
+      EBUS.subscribe("ifq-do", (index, imf) => {
+        if (imf.chapterIndex !== this.chapterIndex)
           return;
-        this.setPageState({ current: (currIndex + 1).toString() });
-        const imf = queue[currIndex];
+        const queue = getChapter(this.chapterIndex)?.queue;
+        if (!queue)
+          return;
+        this.setPageState({ current: (index + 1).toString() });
         if (imf.stage !== FetchState.DONE) {
           this.setFetchState("fetching");
         }
       });
-      EBUS.subscribe("ifq-on-finished-report", (chapterIndex, index, queue) => {
-        if (chapterIndex !== queue.chapterIndex)
+      EBUS.subscribe("ifq-on-finished-report", (index, queue) => {
+        if (queue.chapterIndex !== this.chapterIndex)
           return;
         this.setPageState({ finished: queue.finishedIndex.size.toString() });
         evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
         if (queue[queue.currIndex].stage === FetchState.DONE) {
           this.setFetchState("fetched");
         }
+      });
+      EBUS.subscribe("pf-on-appended", (total, _ifs, done) => {
+        this.setPageState({ total: `${total}${done ? "" : ".."}` });
+      });
+      html.currPageElement.addEventListener("click", (event) => {
+        const ele = event.target;
+        const index = parseInt(ele.getAttribute("data-index") || "1") - 1;
+        const queue = getChapter(this.chapterIndex)?.queue;
+        if (!queue)
+          return;
+        EBUS.emit("imf-on-click", queue[index]);
       });
     }
     setFetchState(state) {
@@ -5604,7 +5641,6 @@ html {
 
   class BigImageFrameManager {
     frame;
-    queue;
     lockInit;
     currMediaNode;
     lastMouseY;
@@ -5622,25 +5658,24 @@ html {
     frameScrollAbort;
     vidController;
     chapterIndex = 0;
-    /* prevent mouse wheel step next image */
-    constructor(HTML, queue) {
+    getChapter;
+    constructor(HTML, getChapter) {
       this.html = HTML;
       this.frame = HTML.bigImageFrame;
-      this.queue = queue;
       this.imgScaleBar = HTML.imgScaleBar;
       this.debouncer = new Debouncer();
       this.throttler = new Debouncer("throttle");
       this.lockInit = false;
+      this.getChapter = getChapter;
       this.resetStickyMouse();
       this.initFrame();
       this.initImgScaleBar();
       this.initImgScaleStyle();
       this.initHammer();
       EBUS.subscribe("pf-change-chapter", (index) => this.chapterIndex = index);
-      EBUS.subscribe("imf-set-now", (index) => this.setNow(index));
-      EBUS.subscribe("imf-on-click", (event) => this.show(event));
-      EBUS.subscribe("imf-on-finished", (chapterIndex, index, success, imf) => {
-        if (chapterIndex !== this.queue.chapterIndex)
+      EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
+      EBUS.subscribe("imf-on-finished", (index, success, imf) => {
+        if (imf.chapterIndex !== this.chapterIndex)
           return;
         if (!this.visible || !success)
           return;
@@ -5672,16 +5707,16 @@ html {
         if (conf.readMode === "singlePage") {
           switch (ev.direction) {
             case Hammer.DIRECTION_LEFT:
-              this.queue.stepImageEvent(this.chapterIndex, conf.reversePages ? "prev" : "next");
+              this.stepNext(conf.reversePages ? "prev" : "next");
               break;
             case Hammer.DIRECTION_UP:
-              this.queue.stepImageEvent(this.chapterIndex, "next");
+              this.stepNext("next");
               break;
             case Hammer.DIRECTION_RIGHT:
-              this.queue.stepImageEvent(this.chapterIndex, conf.reversePages ? "next" : "prev");
+              this.stepNext(conf.reversePages ? "next" : "prev");
               break;
             case Hammer.DIRECTION_DOWN:
-              this.queue.stepImageEvent(this.chapterIndex, "prev");
+              this.stepNext("prev");
               break;
           }
         }
@@ -5695,29 +5730,6 @@ html {
     flushImgScaleBar() {
       q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
       q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
-    }
-    setNow(index) {
-      if (!this.visible)
-        return;
-      this.resetStickyMouse();
-      if (this.lockInit) {
-        this.lockInit = false;
-        return;
-      }
-      this.init(index);
-    }
-    init(start) {
-      this.removeMediaNode();
-      this.resetPreventStep();
-      this.currMediaNode = this.newMediaNode(start, this.queue[start]);
-      this.frame.appendChild(this.currMediaNode);
-      if (conf.readMode === "consecutively") {
-        this.hammer?.get("swipe").set({ enable: false });
-        this.tryExtend();
-      } else {
-        this.hammer?.get("swipe").set({ enable: true });
-      }
-      this.currMediaNode.scrollIntoView();
     }
     initFrame() {
       this.frame.addEventListener("wheel", (event) => {
@@ -5764,10 +5776,57 @@ html {
       nextLand.innerHTML = svg_bg;
       nextLand.addEventListener("mouseover", () => {
         nextLand.remove();
-        this.queue.stepImageEvent(this.chapterIndex, "next");
+        this.stepNext("next");
       });
       this.frame.appendChild(nextLand);
       window.setTimeout(() => nextLand.remove(), 1500);
+    }
+    hidden(event) {
+      if (event && event.target && event.target.tagName === "SPAN")
+        return;
+      this.visible = false;
+      EBUS.emit("bifm-on-hidden");
+      this.html.fullViewGrid.focus();
+      this.frameScrollAbort?.abort();
+      this.frame.classList.add("big-img-frame-collapse");
+      this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
+    }
+    show(imf) {
+      this.visible = true;
+      this.frame.classList.remove("big-img-frame-collapse");
+      this.frame.focus();
+      this.frameScrollAbort = new AbortController();
+      this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
+      this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
+        if (imf.chapterIndex !== this.chapterIndex)
+          return;
+        this.setNow(imf);
+      }, 100);
+      EBUS.emit("bifm-on-show");
+    }
+    setNow(imf) {
+      if (!this.visible)
+        return;
+      this.resetStickyMouse();
+      this.initElement(imf);
+    }
+    initElement(imf) {
+      this.removeMediaNode();
+      this.resetPreventStep();
+      const queue = this.getChapter(this.chapterIndex)?.queue;
+      if (!queue)
+        return;
+      const index = queue.indexOf(imf);
+      this.currMediaNode = this.newMediaNode(index, imf);
+      EBUS.emit("ifq-do", index, imf, "next");
+      this.frame.appendChild(this.currMediaNode);
+      if (conf.readMode === "consecutively") {
+        this.hammer?.get("swipe").set({ enable: false });
+        this.tryExtend();
+      } else {
+        this.hammer?.get("swipe").set({ enable: true });
+      }
+      this.currMediaNode.scrollIntoView();
     }
     removeMediaNode() {
       this.currMediaNode = void 0;
@@ -5784,30 +5843,6 @@ html {
         }
       }
     }
-    hidden(event) {
-      if (event && event.target && event.target.tagName === "SPAN")
-        return;
-      this.visible = false;
-      EBUS.emit("bifm-on-hidden");
-      this.html.fullViewGrid.focus();
-      this.frameScrollAbort?.abort();
-      this.frame.classList.add("big-img-frame-collapse");
-      this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
-    }
-    show(event) {
-      this.visible = true;
-      this.frame.classList.remove("big-img-frame-collapse");
-      this.frame.focus();
-      this.frameScrollAbort = new AbortController();
-      this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
-      this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
-        let start = this.queue.currIndex;
-        if (event && event.target)
-          start = this.queue.findImgIndex(event.target);
-        this.queue.do(start);
-      }, 100);
-      EBUS.emit("bifm-on-show");
-    }
     getMediaNodes() {
       const list = Array.from(this.frame.querySelectorAll("img, video"));
       let last = 0;
@@ -5820,6 +5855,20 @@ html {
       }
       return list;
     }
+    stepNext(oriented) {
+      if (!this.currMediaNode)
+        return;
+      const queue = this.getChapter(this.chapterIndex)?.queue;
+      if (!queue)
+        return;
+      let index = parseInt(this.currMediaNode.getAttribute("d-index"));
+      index = oriented === "next" ? index + 1 : index - 1;
+      if (index < 0)
+        return;
+      if (index >= queue.length)
+        return;
+      this.setNow(queue[index]);
+    }
     onWheel(event) {
       if (event.buttons === 2) {
         event.preventDefault();
@@ -5829,7 +5878,7 @@ html {
         if (this.isReachBoundary(oriented)) {
           event.preventDefault();
           if (!this.tryPreventStep()) {
-            this.queue.stepImageEvent(this.chapterIndex, oriented);
+            this.stepNext(oriented);
           }
         }
       } else ;
@@ -5889,10 +5938,15 @@ html {
         let mediaNodes = this.getMediaNodes();
         let index = this.findMediaNodeIndexOnCenter(mediaNodes);
         const centerNode = mediaNodes[index];
-        const indexOfQueue = parseInt(centerNode.getAttribute("d-index"));
-        if (indexOfQueue != this.queue.currIndex) {
-          this.lockInit = true;
-          this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
+        if (this.currMediaNode != centerNode) {
+          const oldIndex = parseInt(this.currMediaNode?.getAttribute("d-index"));
+          const newIndex = parseInt(centerNode.getAttribute("d-index"));
+          const oriented = oldIndex < newIndex ? "next" : "prev";
+          const queue = this.getChapter(this.chapterIndex)?.queue;
+          if (!queue)
+            return;
+          const imf = queue[newIndex];
+          EBUS.emit("ifq-do", newIndex, imf, oriented);
           if (this.currMediaNode instanceof HTMLVideoElement) {
             this.currMediaNode.pause();
           }
@@ -5981,15 +6035,18 @@ html {
       if (isNaN(index)) {
         throw new Error("BIFM: extendImgNode: media node index is NaN");
       }
+      const queue = this.getChapter(this.chapterIndex)?.queue;
+      if (!queue)
+        return null;
       if (oriented === "prev") {
         if (index === 0)
           return null;
-        extendedNode = this.newMediaNode(index - 1, this.queue[index - 1]);
+        extendedNode = this.newMediaNode(index - 1, queue[index - 1]);
         mediaNode.before(extendedNode);
       } else {
-        if (index === this.queue.length - 1)
+        if (index === queue.length - 1)
           return null;
-        extendedNode = this.newMediaNode(index + 1, this.queue[index + 1]);
+        extendedNode = this.newMediaNode(index + 1, queue[index + 1]);
         mediaNode.after(extendedNode);
       }
       return extendedNode;
@@ -6003,7 +6060,7 @@ html {
         vid.classList.add("bifm-vid");
         vid.setAttribute("d-index", index.toString());
         vid.onloadeddata = () => {
-          if (this.visible && index === this.queue.currIndex) {
+          if (this.visible && vid === this.currMediaNode) {
             this.tryPlayVideo(vid);
           }
         };
@@ -6177,7 +6234,11 @@ html {
       this.button.firstElementChild.innerText = i18n.autoPagePause.get();
       const b = this.frameManager.frame;
       if (this.frameManager.frame.classList.contains("big-img-frame-collapse")) {
-        this.frameManager.show();
+        const queue = this.frameManager.getChapter(this.frameManager.chapterIndex)?.queue;
+        if (!queue)
+          return;
+        const index = parseInt(this.frameManager.currMediaNode?.getAttribute("d-index") || "0");
+        this.frameManager.show(queue[index]);
       }
       const progress = q("#auto-page-progress", this.button);
       while (true) {
@@ -6195,9 +6256,14 @@ html {
         if (this.status !== "running") {
           break;
         }
-        if (this.frameManager.queue.currIndex >= this.frameManager.queue.length - 1) {
+        if (!this.frameManager.currMediaNode)
           break;
-        }
+        const index = parseInt(this.frameManager.currMediaNode.getAttribute("d-index"));
+        const queue = this.frameManager.getChapter(this.frameManager.chapterIndex)?.queue;
+        if (!queue)
+          break;
+        if (index >= queue.length)
+          break;
         const deltaY = this.frameManager.frame.offsetHeight / 2;
         if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
           this.frameManager.onWheel(new WheelEvent("wheel", { deltaY }));
@@ -6233,31 +6299,18 @@ html {
     [HTML.fullViewGrid, HTML.bigImageFrame].forEach((e) => revertMonkeyPatch(e));
     const IFQ = IMGFetcherQueue.newQueue();
     const IL = new IdleLoader(IFQ);
-    const BIFM = new BigImageFrameManager(HTML, IFQ);
-    const FVGM = new FullViewGridManager(HTML);
     const PF = new PageFetcher(IFQ, MATCHER);
     const DL = new Downloader(HTML, IFQ, IL, PF, MATCHER);
-    const PH = new PageHelper(HTML);
+    const PH = new PageHelper(HTML, (index) => PF.chapters[index]);
+    const BIFM = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
+    const FVGM = new FullViewGridManager(HTML);
     const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
-    addEventListeners(events, HTML, BIFM, FVGM, IFQ, DL);
+    addEventListeners(events, HTML, BIFM, DL);
     EBUS.subscribe("downloader-canvas-on-click", (index) => {
       IFQ.currIndex = index;
-      BIFM.show();
-    });
-    EBUS.subscribe("pf-on-appended", (total, _ifs, done) => {
-      PH.setPageState({ total: `${total}${done ? "" : ".."}` });
-      setTimeout(() => FVGM.renderCurrView(), 200);
-    });
-    EBUS.subscribe("imf-set-now", (index) => {
-      if (!BIFM.visible)
+      if (IFQ.chapterIndex !== BIFM.chapterIndex)
         return;
-      let scrollTo = IFQ[index].node.root.offsetTop - window.screen.availHeight / 3;
-      scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
-      if (HTML.fullViewGrid.scrollTo.toString().includes("[native code]")) {
-        HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
-      } else {
-        HTML.fullViewGrid.scrollTop = scrollTo;
-      }
+      BIFM.show(IFQ[index]);
     });
     PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
     PF.afterInit = () => {

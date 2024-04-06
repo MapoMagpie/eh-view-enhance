@@ -106,8 +106,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     }
     if (key === "readMode") {
       BIFM.resetScaleBigImages();
-      if (conf.readMode === "singlePage") {
-        BIFM.init(BIFM.queue.currIndex);
+      if (conf.readMode === "singlePage", BIFM.currMediaNode) {
+        const queue = BIFM.getChapter(BIFM.chapterIndex)?.queue;
+        if (queue) {
+          const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
+          BIFM.initElement(queue[index]);
+        }
       }
     }
     if (key === "minifyPageHelper") {
@@ -209,12 +213,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     FVGM.tryExtend();
   };
 
-  //大图框架元素的滚轮事件/按下鼠标右键滚动则是缩放/直接滚动则是切换到下一张或上一张
-  function bigImageWheelEvent(event: WheelEvent) {
-    IFQ.stepImageEvent(FVGM.chapterIndex, event.deltaY > 0 ? "next" : "prev");
-  };
-
-
   // keyboardEvents
   function scrollImage(oriented: Oriented): boolean {
     BIFM.frame.addEventListener("scrollend", () => {
@@ -238,11 +236,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       ),
       "step-image-prev": new KeyboardDesc(
         ["ArrowLeft"],
-        () => IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "next" : "prev")
+        () => BIFM.stepNext(conf.reversePages ? "next" : "prev")
       ),
       "step-image-next": new KeyboardDesc(
         ["ArrowRight"],
-        () => IFQ.stepImageEvent(FVGM.chapterIndex, conf.reversePages ? "prev" : "next")
+        () => BIFM.stepNext(conf.reversePages ? "prev" : "next")
       ),
       "step-to-first-image": new KeyboardDesc(
         ["Home"],
@@ -460,7 +458,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     hiddenFullViewGrid,
 
     scrollEvent,
-    bigImageWheelEvent,
     fullViewGridKeyBoardEvent,
     bigImageFrameKeyBoardEvent,
     keyboardEvent,

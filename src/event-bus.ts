@@ -1,3 +1,4 @@
+import { Oriented } from "./config";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
 import { VisualNode } from "./img-node";
@@ -36,12 +37,12 @@ export interface Events {
   "bifm-on-hidden": () => void;
   "pf-on-appended": (total: number, nodes: VisualNode[], done?: boolean) => void;
   "pf-change-chapter": (index: number) => void;
-  "imf-set-now": (index: number, imf: IMGFetcher) => void;
-  "imf-on-finished": (chapterIndex: number, index: number, success: boolean, imf: IMGFetcher) => void;
-  "imf-on-click": (event: MouseEvent) => void;
+  "imf-on-finished": (index: number, success: boolean, imf: IMGFetcher) => void;
+  "imf-on-click": (imf: IMGFetcher) => void;
   "imf-download-state-change": () => void;
-  "ifq-on-do": (chapterIndex: number, currIndex: number, queue: IMGFetcherQueue, downloading: boolean) => void;
-  "ifq-on-finished-report": (chapterIndex: number, index: number, queue: IMGFetcherQueue) => void;
+  "ifq-do": (index: number, imf: IMGFetcher, oriented: Oriented) => void;
+  "ifq-on-do": (index: number, queue: IMGFetcherQueue, downloading: boolean) => void;
+  "ifq-on-finished-report": (index: number, queue: IMGFetcherQueue) => void;
   "pf-try-extend": () => void;
 }
 

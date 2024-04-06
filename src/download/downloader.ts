@@ -51,9 +51,9 @@ export class Downloader {
     this.elementDashboard = HTML.downloadDashboard;
     this.elementChapters = HTML.downloadChapters;
     this.canvas = new DownloaderCanvas(HTML.downloaderCanvas, HTML, queue);
-    EBUS.subscribe("ifq-on-finished-report", (chapterIndex, _, queue) => {
+    EBUS.subscribe("ifq-on-finished-report", (_, queue) => {
       if (queue.isFinised()) {
-        const sel = this.selectedChapters.find(sel => sel.index === chapterIndex);
+        const sel = this.selectedChapters.find(sel => sel.index === queue.chapterIndex);
         if (sel) {
           sel.done = true;
           sel.resolve(true);

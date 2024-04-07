@@ -35,13 +35,15 @@ const keyboardCustom: KeyboardCustom = {
     "pause-auto-load-temporarily": new I18nValue("Pause Auto Load Temporarily", "临时停止自动加载"),
     "exit-full-view-grid": new I18nValue("Exit Read Mode", "退出阅读模式"),
     "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
-    "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量")
+    "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量"),
+    "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择"),
   },
 }
 export const i18n = {
   imageScale: new I18nValue("SCALE", "缩放"),
   download: new I18nValue("DL", "下载"),
   config: new I18nValue("CONF", "配置"),
+  backChapters: new I18nValue("Chapters", "章节"),
   autoPagePlay: new I18nValue("PLAY", "播放"),
   autoPagePause: new I18nValue("PAUSE", "暂停"),
   autoPlay: new I18nValue("Auto Page", "自动翻页"),
@@ -73,12 +75,17 @@ export const i18n = {
   reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
   autoCollapsePanel: new I18nValue("Auto Fold Control Panel", "自动收起控制面板"),
   autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
+  disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
   stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
   stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
   minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
   minifyPageHelperTooltip: new I18nValue("Minify Control Bar", "最小化控制栏"),
   dragToMove: new I18nValue("Drag to Move", "拖动移动"),
   originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
+  showHelp: new I18nValue("Help", "帮助"),
+  showKeyboard: new I18nValue("Keyboard", "快捷键"),
+  showExcludes: new I18nValue("Excludes", "站点排除"),
+  letUsStar: new I18nValue("Let's Star", "点星"),
   help: new I18nValue(`
     <h1>GUIDE:</h1>
     <ol>

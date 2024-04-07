@@ -1,24 +1,21 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { BaseMatcher, OriginMeta } from "./platform";
 
-export class Rule34Matcher implements Matcher {
+export class Rule34Matcher extends BaseMatcher {
   tags: Record<string, string[]> = {};
   count: number = 0;
-
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
-  }
 
   workURL(): RegExp {
     return /rule34.xxx\/index.php\?page=post&s=list/;
   }
 
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    yield { raw: document, typ: "doc" };
-    // find next page
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     let doc = document;
+    yield doc;
+    // find next page
     let tryTimes = 0;
     while (true) {
       let next = doc.querySelector<HTMLAnchorElement>(".pagination a[alt=next]");
@@ -33,11 +30,11 @@ export class Rule34Matcher implements Matcher {
         continue;
       }
       tryTimes = 0;
-      yield { raw: doc, typ: "doc" };
+      yield doc;
     }
   }
 
-  public async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
     let url = "";
     const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
     const img = doc.querySelector<HTMLImageElement>("#image");
@@ -62,14 +59,14 @@ export class Rule34Matcher implements Matcher {
     return { url, title };
   }
 
-  public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
+  public async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
-    const doc = page.raw as Document;
+    const doc = source as Document;
     const imgList = Array.from(doc.querySelectorAll<HTMLAnchorElement>(".image-list > .thumb:not(.blacklisted-image) > a"));
     for (const img of imgList) {
       const child = img.querySelector<HTMLImageElement>("img");
       if (!child) {
-        evLog("warn", "cannot find img element", img);
+        evLog("error", "warn: cannot find img element", img);
         continue;
       }
       const title = `${img.id}.jpg`;
@@ -82,7 +79,7 @@ export class Rule34Matcher implements Matcher {
     return list;
   }
 
-  public parseGalleryMeta(_: Document): GalleryMeta {
+  galleryMeta(): GalleryMeta {
     const url = new URL(window.location.href);
     const tags = url.searchParams.get("tags")?.trim();
     const meta = new GalleryMeta(window.location.href, `rule34_${tags}_${this.count}`);

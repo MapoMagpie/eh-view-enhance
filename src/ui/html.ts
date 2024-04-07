@@ -1,6 +1,5 @@
 import { ConfigBooleanKeys, ConfigBooleanType, ConfigNumberKeys, ConfigNumberType, ConfigSelectKeys, ConfigSelectType, conf } from "../config";
 import { Downloader } from "../download/downloader";
-import { IMGFetcherQueue } from "../fetcher-queue";
 import { Debouncer } from "../utils/debouncer";
 import { dragElement } from "../utils/drag-element";
 import { i18n } from "../utils/i18n";
@@ -14,20 +13,18 @@ export type Elements = ReturnType<typeof createHTML>;
 
 export function createHTML() {
   const fullViewGrid = document.createElement("div");
-  fullViewGrid.setAttribute("tabindex", "0");
-  fullViewGrid.classList.add("full-view-grid");
-  fullViewGrid.classList.add("full-view-grid-collapse");
+  // fullViewGrid.setAttribute("tabindex", "0");
+  fullViewGrid.classList.add("ehvp-root");
+  fullViewGrid.classList.add("ehvp-root-collapse");
   document.body.after(fullViewGrid);
-
   const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
-<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="0">
+<div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
+<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="7">
    <a id="img-land-left" class="img-land-left"></a>
    <a id="img-land-right" class="img-land-right"></a>
-   <a id="img-land-top" class="img-land-top"></a>
-   <a id="img-land-bottom" class="img-land-bottom"></a>
 </div>
 <div id="p-helper" class="p-helper">
     <div style="position: relative">
@@ -108,6 +105,12 @@ export function createHTML() {
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
+                    <span>${i18n.disableCssAnimation.get()} :</span>
+                    <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
+                </label>
+            </div>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                <label class="p-label">
                     <span>${i18n.autoCollapsePanel.get()}
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelTooltip.get()}</span></span>:
                     </span>
@@ -177,11 +180,11 @@ export function createHTML() {
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                 </label>
             </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                 <a id="show-guide-element" class="clickable" style="color: #fff">HELP</a>
-                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff">Keyboard</a>
-                 <a id="show-exclude-url-element" class="clickable" style="color: #fff">Excludes</a>
-                 <a class="clickable" style="color: #fff" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">Let's Star</a>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px; text-align: left;">
+                 <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
+                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
+                 <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
+                 <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
             </div>
             <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>
@@ -194,7 +197,18 @@ export function createHTML() {
         </div>
         <div id="downloader-panel" class="p-panel p-downloader p-collapse">
             <div id="download-notice" class="download-notice"></div>
-            <canvas id="downloader-canvas" width="100" height="100"></canvas>
+            <div id="download-middle" class="download-middle">
+              <div class="ehvp-tabs">
+                <a id="download-tab-dashboard" class="clickable ehvp-p-tab">Dashboard</a>
+                <a id="download-tab-chapters" class="clickable ehvp-p-tab">Select Chapters</a>
+              </div>
+              <div>
+                <div id="download-dashboard" class="download-dashboard" hidden>
+                  <canvas id="downloader-canvas" width="0" height="0"></canvas>
+                </div>
+                <div id="download-chapters" class="download-chapters" hidden></div>
+              </div>
+            </div>
             <div class="download-btn-group">
                <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.downloadStart.get()}</a>
@@ -202,7 +216,7 @@ export function createHTML() {
         </div>
     </div>
     <div id="ehvp-gate-icon">
-        <span id="gate">&lessdot;📖</span>
+        <span>&lessdot;</span><span id="ehvp-gate-book">📖</span>
     </div>
     <div id="b-main" class="b-main b-collapse">
         <div id="config-panel-btn" class="clickable">${i18n.config.get()}</div>
@@ -219,13 +233,17 @@ export function createHTML() {
     <div id="ehvp-bar-gtdot">
         <span>&gtdot;</span>
     </div>
+    <div id="ehvp-p-extra" class="b-extra">
+        <div id="backChaptersSelection" class="clickable" hidden="">${i18n.backChapters.get()}</div>
+    </div>
 </div>
 `;
 
   fullViewGrid.innerHTML = HTML_STRINGS;
   const styleSheel = loadStyleSheel();
   return {
-    fullViewGrid: fullViewGrid,
+    root: fullViewGrid,
+    fullViewGrid: q("#ehvp-nodes-container", fullViewGrid),
     // root element
     bigImageFrame: q("#big-img-frame", fullViewGrid),
     // page helper
@@ -239,7 +257,7 @@ export function createHTML() {
     // download panel mouse leave event
     downloaderPanel: q("#downloader-panel", fullViewGrid),
     collapseBTN: q("#collapse-btn", fullViewGrid),
-    gate: q("#gate", fullViewGrid),
+    gate: q("#ehvp-gate-icon", fullViewGrid),
     currPageElement: q("#p-curr-page", fullViewGrid),
     totalPageElement: q("#p-total", fullViewGrid),
     finishedElement: q("#p-finished", fullViewGrid),
@@ -248,34 +266,43 @@ export function createHTML() {
     showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
     imgLandLeft: q("#img-land-left", fullViewGrid),
     imgLandRight: q("#img-land-right", fullViewGrid),
-    imgLandTop: q("#img-land-top", fullViewGrid),
-    imgLandBottom: q("#img-land-bottom", fullViewGrid),
     imgScaleBar: q("#img-scale-bar", fullViewGrid),
     autoPageBTN: q("#auto-page-btn", fullViewGrid),
     pageLoading: q("#page-loading", fullViewGrid),
+    downloaderCanvas: q<HTMLCanvasElement>("#downloader-canvas", fullViewGrid),
+    downloadTabDashboard: q("#download-tab-dashboard", fullViewGrid),
+    downloadTabChapters: q("#download-tab-chapters", fullViewGrid),
+    downloadDashboard: q("#download-dashboard", fullViewGrid),
+    downloadChapters: q("#download-chapters", fullViewGrid),
+    downloadNotice: q("#download-notice", fullViewGrid),
+    downloadBTNForce: q<HTMLAnchorElement>("#download-force", fullViewGrid),
+    downloadBTNStart: q<HTMLAnchorElement>("#download-start", fullViewGrid),
     styleSheel,
   };
 }
 
-export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, DL: Downloader) {
+export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, DL: Downloader) {
   HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
   HTML.downloaderPanelBTN.addEventListener("click", () => {
-    DL.check();
     events.togglePanelEvent("downloader");
+    DL.check();
   });
-
-  HTML.configPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target as HTMLElement, "config"));
-  HTML.configPanel.addEventListener("blur", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target as HTMLElement, "config"));
-  HTML.downloaderPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target as HTMLElement, "downloader"));
-  HTML.downloaderPanel.addEventListener("blur", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target as HTMLElement, "downloader"));
-  HTML.pageHelper.addEventListener("mouseover", () => conf.autoCollapsePanel && events.abortMouseleavePanelEvent(""));
-  HTML.pageHelper.addEventListener("mouseleave", () => conf.autoCollapsePanel && ["config", "downloader"].forEach(k => events.togglePanelEvent(k, true)));
+  function collapsePanel(key: "config" | "downloader") {
+    const elements = { "config": HTML.configPanel, "downloader": HTML.downloaderPanel };
+    conf.autoCollapsePanel && events.collapsePanelEvent(elements[key], key)
+  }
+  HTML.configPanel.addEventListener("mouseleave", () => collapsePanel("config"));
+  HTML.configPanel.addEventListener("blur", () => collapsePanel("config"));
+  HTML.downloaderPanel.addEventListener("mouseleave", () => collapsePanel("downloader"));
+  HTML.downloaderPanel.addEventListener("blur", () => collapsePanel("downloader"));
+  HTML.pageHelper.addEventListener("mouseover", () => events.abortMouseleavePanelEvent());
+  HTML.pageHelper.addEventListener("mouseleave", () => ["config", "downloader"].forEach(k => collapsePanel(k as "config" | "downloader")));
 
   // modify config event
   for (const key of ConfigNumberKeys) {
-    q(`#${key}MinusBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
-    q(`#${key}AddBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
-    q(`#${key}Input`, HTML.fullViewGrid).addEventListener("wheel", (event: WheelEvent) => {
+    q(`#${key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
+    q(`#${key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
+    q(`#${key}Input`, HTML.root).addEventListener("wheel", (event: WheelEvent) => {
       if (event.deltaY < 0) {
         events.modNumberConfigEvent(key as ConfigNumberType, 'add');
       } else if (event.deltaY > 0) {
@@ -284,10 +311,10 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     });
   }
   for (const key of ConfigBooleanKeys) {
-    q(`#${key}Checkbox`, HTML.fullViewGrid).addEventListener("click", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
+    q(`#${key}Checkbox`, HTML.root).addEventListener("click", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
   }
   for (const key of ConfigSelectKeys) {
-    q(`#${key}Select`, HTML.fullViewGrid).addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
+    q(`#${key}Select`, HTML.root).addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
   }
 
   // entry 入口
@@ -300,27 +327,19 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
   HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
 
-  HTML.currPageElement.addEventListener("click", () => BIFM.show());
-  HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event as WheelEvent));
+  HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", parseInt((event.target as HTMLElement).textContent || "") - 1));
 
   // Shortcut
   document.addEventListener("keydown", (event) => events.keyboardEvent(event));
   HTML.fullViewGrid.addEventListener("keydown", (event) => events.fullViewGridKeyBoardEvent(event));
+  HTML.bigImageFrame.addEventListener("keydown", (event) => events.bigImageFrameKeyBoardEvent(event));
   // 箭头导航
   HTML.imgLandLeft.addEventListener("click", (event) => {
-    IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
+    BIFM.stepNext(conf.reversePages ? "next" : "prev");
     event.stopPropagation();
   });
   HTML.imgLandRight.addEventListener("click", (event) => {
-    IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
-    event.stopPropagation();
-  });
-  HTML.imgLandTop.addEventListener("click", (event) => {
-    IFQ.stepImageEvent("prev");
-    event.stopPropagation();
-  });
-  HTML.imgLandBottom.addEventListener("click", (event) => {
-    IFQ.stepImageEvent("next");
+    BIFM.stepNext(conf.reversePages ? "prev" : "next");
     event.stopPropagation();
   });
 

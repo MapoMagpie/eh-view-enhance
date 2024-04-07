@@ -1,18 +1,43 @@
 import { Debouncer } from "./utils/debouncer";
 import { FetchState, IMGFetcher } from "./img-fetcher";
 import { Oriented, conf } from "./config";
-
-/// return boolean, true means stop, false means continue
-type Callback = (index: number, queue: IMGFetcherQueue) => boolean;
+import EBUS from "./event-bus";
 
 export class IMGFetcherQueue extends Array<IMGFetcher> {
   executableQueue: number[];
   currIndex: number;
   finishedIndex: Set<number> = new Set();
   private debouncer: Debouncer;
-  private onDo: Map<number, Callback> = new Map();
-  private onFinishedReport: Map<number, Callback> = new Map();
+  downloading?: () => boolean;
   dataSize: number = 0;
+  chapterIndex: number = 0;
+
+  clear() {
+    this.length = 0;
+    this.executableQueue = [];
+    this.currIndex = 0;
+    this.finishedIndex.clear();
+  }
+
+  restore(chapterIndex: number, imfs: IMGFetcher[]) {
+    this.clear();
+    this.chapterIndex = chapterIndex;
+    imfs.forEach((imf, i) => imf.stage === FetchState.DONE && this.finishedIndex.add(i));
+    this.push(...imfs);
+  }
+
+  static newQueue() {
+    const queue = new IMGFetcherQueue();
+    // avoid Array.slice or some methods trigger Array.constructor
+    EBUS.subscribe("imf-on-finished", (index, success, imf) => queue.chapterIndex === imf.chapterIndex && queue.finishedReport(index, success, imf));
+    EBUS.subscribe("ifq-do", (index, imf, oriented) => {
+      if (imf.chapterIndex !== queue.chapterIndex) return;
+      queue.do(index, oriented);
+    });
+    EBUS.subscribe("pf-change-chapter", () => queue.forEach(imf => imf.unrender()));
+    return queue;
+  }
+
   constructor() {
     super();
     //可执行队列
@@ -23,41 +48,16 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     this.debouncer = new Debouncer();
   }
 
-  subscribeOnDo(index: number, callback: Callback) {
-    this.onDo.set(index, callback);
-  }
-
-  subscribeOnFinishedReport(index: number, callback: Callback) {
-    this.onFinishedReport.set(index, callback);
-  }
-
   isFinised() {
     return this.finishedIndex.size === this.length;
-  }
-
-  push(...items: IMGFetcher[]): number {
-    items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
-    return super.push(...items);
-  }
-
-  unshift(...items: IMGFetcher[]): number {
-    items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
-    return super.unshift(...items);
   }
 
   do(start: number, oriented?: Oriented) {
     oriented = oriented || "next";
     //边界约束
     this.currIndex = this.fixIndex(start);
-    this[this.currIndex].setNow(this.currIndex);
-
-    // keys will be empty in yande site
-    let keys = [...this.onDo.keys()].sort();
-    for (const key of keys) {
-      if (this.onDo.get(key)?.(this.currIndex, this)) {
-        return;
-      }
-    }
+    EBUS.emit("ifq-on-do", this.currIndex, this, this.downloading?.() || false);
+    if (this.downloading?.()) return;
 
     //从当前索引开始往后,放入指定数量的图片获取器,如果该图片获取器已经获取完成则向后延伸.
     //如果最后放入的数量为0,说明已经没有可以继续执行的图片获取器,可能意味着后面所有的图片都已经加载完毕,也可能意味着中间出现了什么错误
@@ -73,26 +73,25 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   }
 
   //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
-  finishedReport(index: number) {
-    const imgFetcher = this[index];
-    if (imgFetcher.stage !== FetchState.DONE) return;
+  finishedReport(index: number, success: boolean, imf: IMGFetcher) {
+    // change chapter will clear this
+    if (this.length === 0) return;
+    // evLog("ifq finished report, index: ", index, ", success: ", success, ", current index: ", this.currIndex);
+    if (!success || imf.stage !== FetchState.DONE) return;
+    // if (!this.finishedIndex.has(index)) { }
     this.finishedIndex.add(index);
     if (this.dataSize < 1000000000) { // 1GB
-      this.dataSize += imgFetcher.data?.byteLength || 0;
+      this.dataSize += imf.data?.byteLength || 0;
     }
-
-    let keys = [...this.onFinishedReport.keys()].sort();
-    for (const key of keys) {
-      if (this.onFinishedReport.get(key)?.(index, this)) {
-        return;
-      }
-    }
+    EBUS.emit("ifq-on-finished-report", index, this);
   }
 
-  stepImageEvent(oriented: Oriented) {
-    let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
-    this.do(start, oriented);
-  }
+  // stepImageEvent(chapterIndex: number, oriented: Oriented) {
+  //   let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
+  //   if (chapterIndex === this.chapterIndex) {
+  //     this.do(start, oriented);
+  //   }
+  // }
 
   //如果开始的索引小于0,则修正索引为0,如果开始的索引超过队列的长度,则修正索引为队列的最后一位
   fixIndex(start: number) {

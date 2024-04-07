@@ -88,7 +88,7 @@ export class VideoControl {
   }
 
   public attach(element: HTMLVideoElement) {
-    evLog("attach video control")
+    evLog("info", "attach video control")
     this.detach();
     this.show();
     this.abortController = new AbortController();
@@ -107,7 +107,7 @@ export class VideoControl {
       this.flushUI(state, true);
     }, { signal: this.abortController.signal });
     // why onwaiting triggered when approaching the end of video?
-    element.onwaiting = () => evLog("onwaiting");
+    element.onwaiting = () => evLog("debug", "onwaiting");
     element.loop = true;
     element.muted = conf.muted || false;
     element.volume = (conf.volume || 30) / 100;

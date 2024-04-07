@@ -6,6 +6,7 @@ import { i18n } from "../utils/i18n";
 import parseKey from "../utils/keyboard";
 import q from "../utils/query-element";
 import createExcludeURLPanel from "./exclude-urls";
+import { FullViewGridManager } from "./full-view-grid-manager";
 import { Elements } from "./html";
 import createKeyboardCustomPanel from "./keyboard-custom";
 import { PageHelper } from "./page-helper";
@@ -14,7 +15,7 @@ import { BigImageFrameManager } from "./ultra-image-frame-manager";
 export type Events = ReturnType<typeof initEvents>;
 
 export type KeyboardInBigImageModeId = "step-image-prev" | "step-image-next" | "exit-big-image-mode" | "step-to-first-image" | "step-to-last-image" | "scale-image-increase" | "scale-image-decrease" | "scroll-image-up" | "scroll-image-down";
-export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease";
+export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "back-chapters-selection";
 export type KeyboardInMainId = "open-full-view-grid";
 export type KeyboardEvents = {
   inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
@@ -32,7 +33,7 @@ export class KeyboardDesc {
   }
 }
 
-export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader, PH: PageHelper) {
+export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: FullViewGridManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader, PH: PageHelper) {
 
   function modPageHelperPostion() {
     const style = HTML.pageHelper.style;
@@ -105,8 +106,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     }
     if (key === "readMode") {
       BIFM.resetScaleBigImages();
-      if (conf.readMode === "singlePage") {
-        BIFM.init(BIFM.queue.currIndex);
+      if (conf.readMode === "singlePage", BIFM.currMediaNode) {
+        const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
+        const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
+        BIFM.initElement(queue[index]);
       }
     }
     if (key === "minifyPageHelper") {
@@ -145,43 +148,41 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
 
   let restoreMinify = false;
   function togglePanelEvent(id: string, collapse?: boolean) {
-    setTimeout(() => {
-      let element = q(`#${id}-panel`);
-      if (!element) return;
-      if (collapse === false) {
-        element.classList.remove("p-collapse");
-        return;
+    let element = q(`#${id}-panel`);
+    if (!element) return;
+    if (collapse === false) {
+      element.classList.remove("p-collapse");
+      return;
+    }
+    if (collapse === true) {
+      collapsePanelEvent(element, id);
+      if (BIFM.visible) {
+        BIFM.frame.focus();
+      } else {
+        HTML.fullViewGrid.focus();
       }
-      if (collapse === true) {
-        collapsePanelEvent(element, id);
-        if (BIFM.visible) {
-          BIFM.frame.focus();
-        } else {
-          HTML.fullViewGrid.focus();
-        }
-        return;
-      }
+      return;
+    }
 
-      if (!element.classList.toggle("p-collapse")) { // not collapsed
-        ["config", "downloader"].filter(k => k !== id).forEach(k => togglePanelEvent(k, true));
-        if (!conf.autoCollapsePanel) {
-          PH.minify(false, "fullViewGrid");
-          restoreMinify = true;
-        }
-      } else { // collapsed
-        if (restoreMinify) {
-          PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
-          restoreMinify = false;
-        }
+    if (!element.classList.toggle("p-collapse")) { // not collapsed
+      ["config", "downloader"].filter(k => k !== id).forEach(k => togglePanelEvent(k, true));
+      if (!conf.autoCollapsePanel) {
+        PH.minify(false, "fullViewGrid");
+        restoreMinify = true;
       }
-    }, 10);
+    } else { // collapsed
+      if (restoreMinify) {
+        PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+        restoreMinify = false;
+      }
+    }
   }
 
   let bodyOverflow = document.body.style.overflow;
   function showFullViewGrid() {
     // HTML.fullViewGrid.scroll(0, 0); //否则加载会触发滚动事件
     PH.minify(true, "fullViewGrid");
-    HTML.fullViewGrid.classList.remove("full-view-grid-collapse");
+    HTML.root.classList.remove("ehvp-root-collapse");
     HTML.fullViewGrid.focus();
     document.body.style.overflow = "hidden";
   };
@@ -195,26 +196,20 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   function hiddenFullViewGrid() {
     BIFM.hidden();
     PH.minify(false, "fullViewGrid");
-    HTML.fullViewGrid.classList.add("full-view-grid-collapse");
+    HTML.root.classList.add("ehvp-root-collapse");
     HTML.fullViewGrid.blur();
-    q("html").focus();
     document.body.style.overflow = bodyOverflow;
+    // document.body.focus();
   };
 
   //全屏阅览元素的滚动事件
   function scrollEvent() {
     //对冒泡的处理
-    if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) return;
+    if (HTML.root.classList.contains("ehvp-root-collapse")) return;
     //根据currTop获取当前滚动高度对应的未渲染缩略图的图片元素
-    PF.renderCurrView();
-    PF.appendNextPages();
+    FVGM.renderCurrView();
+    FVGM.tryExtend();
   };
-
-  //大图框架元素的滚轮事件/按下鼠标右键滚动则是缩放/直接滚动则是切换到下一张或上一张
-  function bigImageWheelEvent(event: WheelEvent) {
-    IFQ.stepImageEvent(event.deltaY > 0 ? "next" : "prev");
-  };
-
 
   // keyboardEvents
   function scrollImage(oriented: Oriented): boolean {
@@ -239,11 +234,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       ),
       "step-image-prev": new KeyboardDesc(
         ["ArrowLeft"],
-        () => IFQ.stepImageEvent(conf.reversePages ? "next" : "prev")
+        () => BIFM.stepNext(conf.reversePages ? "next" : "prev")
       ),
       "step-image-next": new KeyboardDesc(
         ["ArrowRight"],
-        () => IFQ.stepImageEvent(conf.reversePages ? "prev" : "next")
+        () => BIFM.stepNext(conf.reversePages ? "prev" : "next")
       ),
       "step-to-first-image": new KeyboardDesc(
         ["Home"],
@@ -328,6 +323,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         ["-"],
         () => modNumberConfigEvent("colCount", "minus")
       ),
+      "back-chapters-selection": new KeyboardDesc(
+        ["b"],
+        () => PF.backChaptersSelection()
+      ),
     };
     const inMain: Record<KeyboardInMainId, KeyboardDesc> = {
       "open-full-view-grid": new KeyboardDesc(["Enter"], (_) => {
@@ -343,42 +342,46 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
 
   // use keyboardEvents
   let numberRecord: number[] | null = null;
-  function fullViewGridKeyBoardEvent(event: KeyboardEvent) {
-    const key = parseKey(event);
-    if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
-      const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
-        const override = conf.keyboards.inBigImageMode[id as KeyboardInBigImageModeId];
-        // override !== undefined never check defaultKeys
-        if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
-          desc.cb(event);
-          return !desc.noPreventDefault;
 
-        }
-        return false;
-      });
-      if (triggered) {
-        event.preventDefault();
+  function bigImageFrameKeyBoardEvent(event: KeyboardEvent) {
+    if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
+    const key = parseKey(event);
+    const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
+      const override = conf.keyboards.inBigImageMode[id as KeyboardInBigImageModeId];
+      // override !== undefined never check defaultKeys
+      if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
+        desc.cb(event);
+        return !desc.noPreventDefault;
+
       }
-    } else if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
-      const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
-        const override = conf.keyboards.inFullViewGrid[id as KeyboardInFullViewGridId];
-        if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
-          desc.cb(event);
-          return !desc.noPreventDefault;
-        }
-        return false;
-      });
-      if (triggered) {
-        event.preventDefault();
-      } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
-        numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
-        event.preventDefault();
+      return false;
+    });
+    if (triggered) {
+      event.preventDefault();
+    }
+  }
+
+  function fullViewGridKeyBoardEvent(event: KeyboardEvent) {
+    if (HTML.root.classList.contains("ehvp-root-collapse")) return;
+    const key = parseKey(event);
+    const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
+      const override = conf.keyboards.inFullViewGrid[id as KeyboardInFullViewGridId];
+      if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
+        desc.cb(event);
+        return !desc.noPreventDefault;
       }
+      return false;
+    });
+    if (triggered) {
+      event.preventDefault();
+    } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+      numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
+      event.preventDefault();
     }
   }
 
   function keyboardEvent(event: KeyboardEvent) {
-    if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) return;
+    if (!HTML.root.classList.contains("ehvp-root-collapse")) return;
     if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
     const key = parseKey(event);
     const triggered = Object.entries(keyboardEvents.inMain).some(([id, desc]) => {
@@ -406,19 +409,19 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     guideElement.classList.add("ehvp-full-panel");
     guideElement.setAttribute("style", `align-items: center; color: black; text-align: left;`);
     guideElement.addEventListener("click", () => guideElement.remove());
-    if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
+    if (HTML.root.classList.contains("ehvp-root-collapse")) {
       document.body.after(guideElement);
     } else {
-      HTML.fullViewGrid.appendChild(guideElement);
+      HTML.root.appendChild(guideElement);
     }
   };
 
   function showKeyboardCustomEvent() {
-    createKeyboardCustomPanel(keyboardEvents, HTML.fullViewGrid);
+    createKeyboardCustomPanel(keyboardEvents, HTML.root);
   }
 
   function showExcludeURLEvent() {
-    createExcludeURLPanel(HTML.fullViewGrid);
+    createExcludeURLPanel(HTML.root);
   }
 
   const signal = { first: true };
@@ -430,12 +433,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         showFullViewGrid();
         if (signal.first) {
           signal.first = false;
-          PF.init().then(() => IL.start(IL.lockVer));
+          PF.init();
         }
       } else {
         HTML.pageHelper.classList.remove("p-helper-extend");
-        hiddenFullViewGrid();
         ["config", "downloader"].forEach(id => togglePanelEvent(id, true));
+        hiddenFullViewGrid();
       }
     }
   }
@@ -453,8 +456,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     hiddenFullViewGrid,
 
     scrollEvent,
-    bigImageWheelEvent,
     fullViewGridKeyBoardEvent,
+    bigImageFrameKeyBoardEvent,
     keyboardEvent,
     showGuideEvent,
     collapsePanelEvent,

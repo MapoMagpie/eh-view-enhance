@@ -12,17 +12,17 @@ type RespType = keyof {
 type EventListener<T extends RespType> = Pick<GmXhrRequest<unknown, T>, "onload" | "onprogress" | "onerror" | "ontimeout" | "onloadstart">;
 
 const HOST_REGEX = /\/\/([^\/]*)\//;
-export function xhrWapper<T extends RespType>(url: string, respType: T, cb: EventListener<T>) {
+export function xhrWapper<T extends RespType>(url: string, respType: T, cb: EventListener<T>, timeout?: number) {
   return GM_xmlhttpRequest<unknown, T>({
     method: "GET",
     url,
-    timeout: 0,
+    timeout: timeout || 0,
     responseType: respType,
     nocache: false,
     revalidate: false,
     // fetch: false,
     headers: {
-      "Host": HOST_REGEX.exec(url)![1],
+      "Host": HOST_REGEX.exec(url)?.[1] || window.location.host,
       // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0",
       "Accept": "image/avif,image/webp,*/*",
       // "Accept-Language": "en-US,en;q=0.5",
@@ -43,6 +43,6 @@ export function fetchImage(url: string): Promise<Blob> {
     xhrWapper(url, "blob", {
       onload: (response) => resolve(response.response),
       onerror: (error) => reject(error)
-    });
+    }, 10 * 1000);
   });
 }

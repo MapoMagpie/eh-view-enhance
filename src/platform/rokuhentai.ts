@@ -1,23 +1,20 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { PagesSource } from "../page-fetcher";
 import { ImagePosition, splitImagesFromUrl } from "../utils/sprite-split";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { BaseMatcher, OriginMeta } from "./platform";
 
-export class RokuHentaiMatcher implements Matcher {
+export class RokuHentaiMatcher extends BaseMatcher {
   sprites: ({ src: string, pos: ImagePosition } | undefined)[] = [];
   fetchedThumbnail: (string | undefined)[] = [];
   galleryId: string = "";
   imgCount: number = 0;
 
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
-  }
-
   workURL(): RegExp {
     return /rokuhentai.com\/\w+$/;
   }
 
-  public parseGalleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(doc: Document): GalleryMeta {
     const title = doc.querySelector(".site-manga-info__title-text")?.textContent || "UNTITLE";
     const meta = new GalleryMeta(window.location.href, title);
     meta.originTitle = title;
@@ -34,12 +31,12 @@ export class RokuHentaiMatcher implements Matcher {
     return meta;
   }
 
-  public async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
     return { url };
   }
 
-  public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
-    const range = (source.raw as string).split("-").map(Number);
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
+    const range = (source as string).split("-").map(Number);
     const list: ImageNode[] = [];
     const digits = this.imgCount.toString().length;
     for (let i = range[0]; i < range[1]; i++) {
@@ -57,15 +54,16 @@ export class RokuHentaiMatcher implements Matcher {
     return list;
   }
 
-  public async * fetchPagesSource(): AsyncGenerator<PagesSource> {
-    const imgCount = parseInt(document.querySelector(".mdc-typography--caption")?.textContent || "");
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+    const doc = document;
+    const imgCount = parseInt(doc.querySelector(".mdc-typography--caption")?.textContent || "");
     if (isNaN(imgCount)) {
       throw new Error("error: failed query image count!")
     }
     this.imgCount = imgCount;
-    this.galleryId = window.location.href.split("/").pop()!;
+    this.galleryId = window.location.href.split("/").pop()!; // TODO: maybe extract galleryId from doc;
     // check sprite thumbnails
-    const images = Array.from(document.querySelectorAll<HTMLElement>(".mdc-layout-grid__cell .site-page-card__media"));
+    const images = Array.from(doc.querySelectorAll<HTMLElement>(".mdc-layout-grid__cell .site-page-card__media"));
     for (const img of images) {
       this.fetchedThumbnail.push(undefined);
       const x = parseInt(img.getAttribute("data-offset-x") || "");
@@ -81,7 +79,7 @@ export class RokuHentaiMatcher implements Matcher {
     }
     // split to range by 20 from image count
     for (let i = 0; i < this.imgCount; i += 20) {
-      yield { raw: `${i}-${Math.min(i + 20, this.imgCount)}`, typ: "json" }
+      yield `${i}-${Math.min(i + 20, this.imgCount)}`;
     }
   }
 

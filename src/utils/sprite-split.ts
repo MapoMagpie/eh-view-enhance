@@ -22,14 +22,22 @@ export function splitSpriteImage(image: HTMLImageElement, positions: ImagePositi
     canvas.width = pos.width;
     canvas.height = pos.height;
     ctx.drawImage(image, pos.x, pos.y, pos.width, pos.height, 0, 0, pos.width, pos.height);
-    result.push(canvas.toDataURL());
+    result.push(canvas.toDataURL()); // broken image in tor browser, don't why
   }
   canvas.remove();
   return result;
 }
 
 export async function splitImagesFromUrl(url: string, positions: ImagePosition[]): Promise<string[]> {
-  url = URL.createObjectURL(await fetchImage(url));
+  let data: Blob | undefined;
+  for (let i = 0; i < 3; i++) {
+    try {
+      data = await fetchImage(url);
+      break;
+    } catch (err) { }
+  }
+  if (!data) throw new Error("load sprite image error");
+  url = URL.createObjectURL(data);
   const img: HTMLImageElement = await new Promise((resolve, reject) => {
     let img = new Image();
     img.onload = () => resolve(img);

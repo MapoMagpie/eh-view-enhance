@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.3.13.1
+// @version            4.4.0
 // @author             MapoMagpie
 // @description        Improve the comic reading experience by displaying all thumbnails, Auto loading large images, Downloading as archive, and keeping the site’s load low.
 // @description:zh-CN  提升漫画阅读体验，陈列所有缩略图，自动加载大图，打包下载，同时保持对站点的低负载。
@@ -14,6 +14,7 @@
 // @match              https://exhentai.org/*
 // @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://e-hentai.org/*
+// @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://nhentai.net/*
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*
@@ -30,6 +31,7 @@
 // @connect            exhentai.org
 // @connect            e-hentai.org
 // @connect            hath.network
+// @connect            exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion
 // @connect            nhentai.net
 // @connect            hitomi.la
 // @connect            akamaihd.net
@@ -66,9 +68,9 @@
       fetchOriginal: false,
       restartIdleLoader: 5e3,
       threads: 3,
-      downloadThreads: 3,
-      timeout: 16,
-      version: "4.1.10",
+      downloadThreads: 4,
+      timeout: 8,
+      version: VERSION,
       debug: true,
       first: true,
       reversePages: false,
@@ -78,24 +80,41 @@
       pageHelperAbRight: "unset",
       imgScale: 0,
       stickyMouse: "enable",
-      autoPageInterval: 1e4,
+      autoPageInterval: 8e3,
       autoPlay: false,
       filenameTemplate: "{number}-{title}",
-      preventScrollPageTime: 200,
-      archiveVolumeSize: 1500,
+      preventScrollPageTime: 100,
+      archiveVolumeSize: 1200,
       convertTo: "GIF",
       autoCollapsePanel: true,
       minifyPageHelper: "inBigMode",
       keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
       excludeURLs: [],
       muted: false,
-      volume: 50
+      volume: 50,
+      disableCssAnimation: true
     };
   }
-  const VERSION = "4.1.10";
+  const VERSION = "4.4.0";
   const CONFIG_KEY = "ehvh_cfg_";
+  function getStorageMethod() {
+    if (typeof _GM_getValue === "function" && typeof _GM_setValue === "function") {
+      return {
+        setItem: (key, value) => _GM_setValue(key, value),
+        getItem: (key) => _GM_getValue(key)
+      };
+    } else if (typeof localStorage !== "undefined") {
+      return {
+        setItem: (key, value) => localStorage.setItem(key, value),
+        getItem: (key) => localStorage.getItem(key)
+      };
+    } else {
+      throw new Error("No supported storage method found");
+    }
+  }
+  const storage = getStorageMethod();
   function getConf() {
-    let cfgStr = _GM_getValue(CONFIG_KEY);
+    let cfgStr = storage.getItem(CONFIG_KEY);
     if (cfgStr) {
       let cfg2 = JSON.parse(cfgStr);
       if (cfg2.version === VERSION) {
@@ -106,64 +125,74 @@
     saveConf(cfg);
     return cfg;
   }
-  function confHealthCheck($conf) {
+  function confHealthCheck(cf) {
     let changed = false;
-    if ($conf.pageHelperAbTop !== "unset") {
-      $conf.pageHelperAbTop = Math.max(parseInt($conf.pageHelperAbTop), 500) + "px";
-      changed = true;
-    }
-    if ($conf.pageHelperAbBottom !== "unset") {
-      $conf.pageHelperAbBottom = Math.max(parseInt($conf.pageHelperAbBottom), 5) + "px";
-      changed = true;
-    }
-    if ($conf.pageHelperAbLeft !== "unset") {
-      $conf.pageHelperAbLeft = Math.max(parseInt($conf.pageHelperAbLeft), 5) + "px";
-      changed = true;
-    }
-    if ($conf.pageHelperAbRight !== "unset") {
-      $conf.pageHelperAbRight = Math.max(parseInt($conf.pageHelperAbRight), 5) + "px";
-      changed = true;
-    }
-    if ($conf.archiveVolumeSize === void 0) {
-      $conf.archiveVolumeSize = 1500;
-      changed = true;
-    }
-    if ($conf.convertTo === void 0) {
-      $conf.convertTo = "GIF";
-      changed = true;
-    }
-    if ($conf.autoCollapsePanel === void 0) {
-      $conf.autoCollapsePanel = true;
-      changed = true;
-    }
-    if ($conf.minifyPageHelper === void 0) {
-      $conf.minifyPageHelper = "inBigMode";
-      changed = true;
-    }
-    if ($conf.restartIdleLoader === 8e3) {
-      $conf.restartIdleLoader = 5e3;
-      changed = true;
-    }
-    if ($conf.keyboards === void 0) {
-      $conf.keyboards = { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} };
-      changed = true;
-    }
-    if ($conf.excludeURLs === void 0) {
-      $conf.excludeURLs = [];
-      changed = true;
-    }
+    const defa = defaultConf();
+    const keys = Object.keys(defa);
+    keys.forEach((key) => {
+      if (cf[key] === void 0) {
+        cf[key] = defa[key];
+        changed = true;
+      }
+    });
+    ["pageHelperAbTop", "pageHelperAbLeft", "pageHelperAbBottom", "pageHelperAbRight"].forEach((key) => {
+      if (cf[key] !== "unset") {
+        let pos = parseInt(cf[key]);
+        const screenLimit = key.endsWith("Right") || key.endsWith("Left") ? window.screen.width : window.screen.height;
+        if (isNaN(pos) || pos < 5 || pos > screenLimit) {
+          cf[key] = "5px";
+          changed = true;
+        }
+      }
+    });
     if (changed) {
-      saveConf($conf);
+      saveConf(cf);
     }
-    return $conf;
+    return cf;
   }
   function saveConf(c) {
-    _GM_setValue(CONFIG_KEY, JSON.stringify(c));
+    storage.setItem(CONFIG_KEY, JSON.stringify(c));
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel"];
+  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation"];
   const ConfigSelectKeys = ["readMode", "stickyMouse", "minifyPageHelper"];
   const conf = getConf();
+
+  function evLog(level, msg, ...info) {
+    if (level === "debug" && !conf.debug)
+      return;
+    if (level === "error") {
+      console.warn((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
+    } else {
+      console.info((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
+    }
+  }
+
+  class EventManager {
+    events;
+    constructor() {
+      this.events = /* @__PURE__ */ new Map();
+    }
+    emit(id, ...args) {
+      if (!["imf-download-state-change"].includes(id)) {
+        evLog("debug", "event bus emitted: ", id);
+      }
+      const cbs = this.events.get(id);
+      if (cbs) {
+        cbs.forEach((cb) => cb(...args));
+      }
+    }
+    subscribe(id, cb) {
+      evLog("info", "event bus subscribed: ", id);
+      const cbs = this.events.get(id);
+      if (cbs) {
+        cbs.push(cb);
+      } else {
+        this.events.set(id, [cb]);
+      }
+    }
+  }
+  const EBUS = new EventManager();
 
   class Debouncer {
     tids;
@@ -188,34 +217,18 @@
     }
   }
 
-  function evLog(msg, ...info) {
-    if (conf.debug) {
-      console.log((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
-    }
-  }
-
   const HOST_REGEX = /\/\/([^\/]*)\//;
-  function xhrWapper(url, respType, cb) {
-    /* 
-    in the onion site, the img link does't contain the domain name.
-    i have been working on it for hours...x_x
-    exbranchio
-    */
-    evLog(url);
-    if (!HOST_REGEX.exec(url)) {
-      url = "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion" + url;
-    }
-    evLog(url);
+  function xhrWapper(url, respType, cb, timeout) {
     return _GM_xmlhttpRequest({
       method: "GET",
       url,
-      timeout: 0,
+      timeout: timeout || 0,
       responseType: respType,
       nocache: false,
       revalidate: false,
       // fetch: false,
       headers: {
-        "Host": HOST_REGEX.exec(url)[1],
+        "Host": HOST_REGEX.exec(url)?.[1] || window.location.host,
         // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0",
         "Accept": "image/avif,image/webp,*/*",
         // "Accept-Language": "en-US,en;q=0.5",
@@ -235,7 +248,7 @@
       xhrWapper(url, "blob", {
         onload: (response) => resolve(response.response),
         onerror: (error) => reject(error)
-      });
+      }, 10 * 1e3);
     });
   }
 
@@ -258,24 +271,25 @@
     contentType;
     blobUrl;
     downloadState;
-    onFinishedEventContext;
-    onFailedEventContext;
     downloadBar;
     timeoutId;
-    settings;
-    constructor(root, settings) {
+    matcher;
+    chapterIndex;
+    constructor(root, matcher, chapterIndex) {
       this.node = root;
-      this.node.onclick = (event) => settings.onClick?.(event);
+      this.node.onclick = () => EBUS.emit("imf-on-click", this);
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
-      this.onFinishedEventContext = /* @__PURE__ */ new Map();
-      this.onFailedEventContext = /* @__PURE__ */ new Map();
-      this.settings = settings;
+      this.matcher = matcher;
+      this.chapterIndex = chapterIndex;
+    }
+    create() {
+      return this.node.create();
     }
     // 刷新下载状态
     setDownloadState(newState) {
       this.downloadState = { ...this.downloadState, ...newState };
       this.node.progress(this.downloadState);
-      this.settings.downloadStateReporter?.(this.downloadState);
+      EBUS.emit("imf-download-state-change");
     }
     async start(index) {
       if (this.lock)
@@ -285,27 +299,15 @@
         this.node.changeStyle("fetching");
         await this.fetchImage();
         this.node.changeStyle("fetched");
-        this.onFinishedEventContext.forEach((callback) => {
-          try {
-            callback(index, this);
-          } catch (error) {
-            evLog(`wran: IMG-FETCHER onFinishedEventContext error:`, error);
-          }
-        });
+        EBUS.emit("imf-on-finished", index, true, this);
       } catch (error) {
         this.node.changeStyle("failed");
-        evLog(`IMG-FETCHER ERROR:`, error);
+        evLog("error", `IMG-FETCHER ERROR:`, error);
         this.stage = 0 /* FAILED */;
-        this.onFailedEventContext.forEach((callback) => callback(index, this));
+        EBUS.emit("imf-on-finished", index, false, this);
       } finally {
         this.lock = false;
       }
-    }
-    onFinished(eventId, callback) {
-      this.onFinishedEventContext.set(eventId, callback);
-    }
-    onFailed(eventId, callback) {
-      this.onFailedEventContext.set(eventId, callback);
     }
     retry() {
       if (this.stage !== 3 /* DONE */) {
@@ -337,7 +339,7 @@
             const ret = await this.fetchImageData();
             if (ret !== null) {
               [this.data, this.contentType] = ret;
-              this.data = await this.settings.matcher.processData(this.data, this.contentType, this.originURL);
+              this.data = await this.matcher.processData(this.data, this.contentType, this.originURL);
               this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.onloaded(this.blobUrl, this.contentType, this.data.byteLength);
               if (this.rendered === 2) {
@@ -357,14 +359,14 @@
     }
     async fetchOriginMeta() {
       try {
-        const meta = await this.settings.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0);
+        const meta = await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0, this.chapterIndex);
         if (!meta) {
-          evLog("Fetch URL failed, the URL is empty");
+          evLog("error", "Fetch URL failed, the URL is empty");
           return null;
         }
         return meta;
       } catch (error) {
-        evLog(`Fetch URL error:`, error);
+        evLog("error", `Fetch URL error:`, error);
         return null;
       }
     }
@@ -376,7 +378,7 @@
         }
         return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
       } catch (error) {
-        evLog(`Fetch image data error:`, error);
+        evLog("error", `Fetch image data error:`, error);
         return null;
       }
     }
@@ -386,6 +388,8 @@
         case 1:
           this.node.render();
           this.rendered = 2;
+          if (this.stage === 3 /* DONE */)
+            this.node.changeStyle("fetched");
           break;
       }
     }
@@ -394,10 +398,6 @@
         return;
       this.rendered = 1;
       this.node.unrender();
-    }
-    //立刻将当前元素的src赋值给大图元素
-    setNow(index) {
-      this.settings.setNow?.(index);
     }
     async fetchBigImage() {
       if (this.originURL?.startsWith("blob:")) {
@@ -422,7 +422,7 @@
             try {
               imgFetcher.setDownloadState({ readyState: response.readyState });
             } catch (error) {
-              evLog("warn: fetch big image data onload setDownloadState error:", error);
+              evLog("error", "warn: fetch big image data onload setDownloadState error:", error);
             }
             resolve(data);
           },
@@ -472,13 +472,15 @@
       "pause-auto-load-temporarily": new I18nValue("Pause Auto Load Temporarily", "临时停止自动加载"),
       "exit-full-view-grid": new I18nValue("Exit Read Mode", "退出阅读模式"),
       "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
-      "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量")
+      "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量"),
+      "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择")
     }
   };
   const i18n = {
     imageScale: new I18nValue("SCALE", "缩放"),
     download: new I18nValue("DL", "下载"),
     config: new I18nValue("CONF", "配置"),
+    backChapters: new I18nValue("Chapters", "章节"),
     autoPagePlay: new I18nValue("PLAY", "播放"),
     autoPagePause: new I18nValue("PAUSE", "暂停"),
     autoPlay: new I18nValue("Auto Page", "自动翻页"),
@@ -510,12 +512,17 @@
     reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
     autoCollapsePanel: new I18nValue("Auto Fold Control Panel", "自动收起控制面板"),
     autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
+    disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
     stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
     stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
     minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
     minifyPageHelperTooltip: new I18nValue("Minify Control Bar", "最小化控制栏"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
+    showHelp: new I18nValue("Help", "帮助"),
+    showKeyboard: new I18nValue("Keyboard", "快捷键"),
+    showExcludes: new I18nValue("Excludes", "站点排除"),
+    letUsStar: new I18nValue("Let's Star", "点星"),
     help: new I18nValue(`
     <h1>GUIDE:</h1>
     <ol>
@@ -759,7 +766,7 @@
       await this.writer(footer.array);
       this.offsetInVolume += curr.compressedLength + 16;
       if (curr.compressedLength !== curr.file.size()) {
-        evLog("WRAN: read length:", curr.compressedLength, " origin size:", curr.file.size(), ", title: ", curr.file.name);
+        evLog("error", "WRAN: read length:", curr.compressedLength, " origin size:", curr.file.size(), ", title: ", curr.file.name);
       }
     }
     async closeZip() {
@@ -810,58 +817,271 @@
     }
   }
 
-  function q(selector, parent) {
-    const element = (parent || document).querySelector(selector);
-    if (!element) {
-      throw new Error(`Can't find element: ${selector}`);
+  class DownloaderCanvas {
+    canvas;
+    mousemoveState;
+    ctx;
+    queue;
+    rectSize;
+    rectGap;
+    columns;
+    padding;
+    scrollTop;
+    scrollSize;
+    debouncer;
+    onClick;
+    constructor(canvas, HTML, queue) {
+      this.queue = queue;
+      if (!canvas) {
+        throw new Error("canvas not found");
+      }
+      this.canvas = canvas;
+      this.canvas.addEventListener(
+        "wheel",
+        (event) => this.onwheel(event.deltaY)
+      );
+      this.mousemoveState = { x: 0, y: 0 };
+      this.canvas.addEventListener("mousemove", (event) => {
+        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
+        this.drawDebouce();
+      });
+      this.canvas.addEventListener("click", (event) => {
+        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
+        const index = this.computeDrawList()?.find(
+          (state) => state.selected
+        )?.index;
+        if (index !== void 0) {
+          EBUS.emit("downloader-canvas-on-click", index);
+        }
+      });
+      this.ctx = this.canvas.getContext("2d");
+      this.rectSize = 12;
+      this.rectGap = 6;
+      this.columns = 15;
+      this.padding = 7;
+      this.scrollTop = 0;
+      this.scrollSize = 10;
+      this.debouncer = new Debouncer();
+      HTML.downloaderPanel.addEventListener("transitionend", () => this.resize(HTML.downloadDashboard));
+      EBUS.subscribe("imf-download-state-change", () => this.drawDebouce());
     }
-    return element;
+    resize(parent) {
+      this.canvas.width = Math.floor(parent.offsetWidth);
+      this.canvas.height = Math.floor(parent.offsetHeight);
+      this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
+      this.draw();
+    }
+    onwheel(deltaY) {
+      const [_, h] = this.getWH();
+      const clientHeight = this.computeClientHeight();
+      if (clientHeight > h) {
+        deltaY = deltaY >> 1;
+        this.scrollTop += deltaY;
+        if (this.scrollTop < 0)
+          this.scrollTop = 0;
+        if (this.scrollTop + h > clientHeight + 20)
+          this.scrollTop = clientHeight - h + 20;
+        this.draw();
+      }
+    }
+    drawDebouce() {
+      this.debouncer.addEvent("DOWNLOADER-DRAW", () => this.draw(), 20);
+    }
+    computeDrawList() {
+      const list = [];
+      const [_, h] = this.getWH();
+      const startX = this.computeStartX();
+      const startY = -this.scrollTop + this.padding;
+      for (let i = 0, row = -1; i < this.queue.length; i++) {
+        const currCol = i % this.columns;
+        if (currCol == 0) {
+          row++;
+        }
+        const atX = startX + (this.rectSize + this.rectGap) * currCol;
+        const atY = startY + (this.rectSize + this.rectGap) * row;
+        if (atY + this.rectSize < 0) {
+          continue;
+        }
+        if (atY > h) {
+          break;
+        }
+        list.push({
+          index: i,
+          x: atX,
+          y: atY,
+          selected: this.isSelected(atX, atY)
+        });
+      }
+      return list;
+    }
+    // this function should be called by drawDebouce
+    draw() {
+      const [w, h] = this.getWH();
+      this.ctx.clearRect(0, 0, w, h);
+      const drawList = this.computeDrawList();
+      for (const node of drawList) {
+        this.drawSmallRect(
+          node.x,
+          node.y,
+          this.queue[node.index],
+          node.index === this.queue.currIndex,
+          node.selected
+        );
+      }
+    }
+    computeClientHeight() {
+      return Math.ceil(this.queue.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
+    }
+    scrollTo(index) {
+      const clientHeight = this.computeClientHeight();
+      const [_, h] = this.getWH();
+      if (clientHeight <= h) {
+        return;
+      }
+      const rowNo = Math.ceil((index + 1) / this.columns);
+      const offsetY = (rowNo - 1) * (this.rectSize + this.rectGap);
+      if (offsetY > h) {
+        this.scrollTop = offsetY + this.rectSize - h;
+        const maxScrollTop = clientHeight - h + 20;
+        if (this.scrollTop + 20 <= maxScrollTop) {
+          this.scrollTop += 20;
+        }
+      }
+    }
+    isSelected(atX, atY) {
+      return this.mousemoveState.x - atX >= 0 && this.mousemoveState.x - atX <= this.rectSize && this.mousemoveState.y - atY >= 0 && this.mousemoveState.y - atY <= this.rectSize;
+    }
+    computeStartX() {
+      const [w, _] = this.getWH();
+      const drawW = (this.rectSize + this.rectGap) * this.columns - this.rectGap;
+      let startX = w - drawW >> 1;
+      return startX;
+    }
+    drawSmallRect(x, y, imgFetcher, isCurr, isSelected) {
+      switch (imgFetcher.stage) {
+        case FetchState.FAILED:
+          this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
+          break;
+        case FetchState.URL:
+          this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
+          break;
+        case FetchState.DATA:
+          const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
+          this.ctx.fillStyle = `rgba(110, ${Math.ceil(
+          percent * 200
+        )}, 120, ${Math.max(percent, 0.1)})`;
+          break;
+        case FetchState.DONE:
+          this.ctx.fillStyle = "rgb(110, 200, 120)";
+          break;
+      }
+      this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
+      this.ctx.shadowColor = "#d53";
+      if (isSelected) {
+        this.ctx.strokeStyle = "rgb(60, 20, 200)";
+        this.ctx.lineWidth = 2;
+      } else if (isCurr) {
+        this.ctx.strokeStyle = "rgb(255, 60, 20)";
+        this.ctx.lineWidth = 2;
+      } else {
+        this.ctx.strokeStyle = "rgb(90, 90, 90)";
+        this.ctx.lineWidth = 1;
+      }
+      this.ctx.strokeRect(x, y, this.rectSize, this.rectSize);
+    }
+    getWH() {
+      return [this.canvas.width, this.canvas.height];
+    }
   }
 
-  const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
+  const FILENAME_INVALIDCHAR = /[\\/:*?"<>|\n]/g;
   class Downloader {
     meta;
+    title;
     downloading;
-    downloadForceElement;
-    downloadStartElement;
-    downloadNoticeElement;
+    buttonForce;
+    buttonStart;
+    elementNotice;
     downloaderPanelBTN;
     queue;
     idleLoader;
+    pageFetcher;
     done = false;
-    isReady;
+    selectedChapters = [];
     filenames = /* @__PURE__ */ new Set();
-    constructor(HTML, queue, idleLoader, matcher, allPagesReady) {
+    canvas;
+    dashboardTab;
+    chapterTab;
+    elementDashboard;
+    elementChapters;
+    constructor(HTML, queue, idleLoader, pageFetcher, matcher) {
       this.queue = queue;
       this.idleLoader = idleLoader;
-      this.isReady = allPagesReady;
-      this.meta = () => matcher.parseGalleryMeta(document);
+      this.pageFetcher = pageFetcher;
+      this.meta = (ch) => matcher.galleryMeta(document, ch);
+      this.title = () => matcher.title(document);
       this.downloading = false;
-      this.downloadForceElement = q("#download-force");
-      this.downloadStartElement = q("#download-start");
-      this.downloadNoticeElement = q("#download-notice");
+      this.buttonForce = HTML.downloadBTNForce;
+      this.buttonStart = HTML.downloadBTNStart;
+      this.elementNotice = HTML.downloadNotice;
       this.downloaderPanelBTN = HTML.downloaderPanelBTN;
-      this.downloadForceElement.addEventListener("click", () => this.download());
-      this.downloadStartElement.addEventListener("click", () => this.start());
-      this.idleLoader.setIsDownloading(() => this.downloading);
-      this.queue.subscribeOnDo(1, () => this.downloading);
-      this.queue.subscribeOnFinishedReport(0, (_, queue2) => {
+      this.buttonForce.addEventListener("click", () => this.download(this.pageFetcher.chapters));
+      this.buttonStart.addEventListener("click", () => {
+        if (this.downloading) {
+          this.abort("downloadStart");
+        } else {
+          this.start();
+        }
+      });
+      this.queue.downloading = () => this.downloading;
+      this.dashboardTab = HTML.downloadTabDashboard;
+      this.chapterTab = HTML.downloadTabChapters;
+      this.elementDashboard = HTML.downloadDashboard;
+      this.elementChapters = HTML.downloadChapters;
+      this.canvas = new DownloaderCanvas(HTML.downloaderCanvas, HTML, queue);
+      EBUS.subscribe("ifq-on-finished-report", (_, queue2) => {
         if (queue2.isFinised()) {
-          if (this.downloading) {
-            this.download();
-          } else if (!this.done && !this.downloaderPanelBTN.classList.contains("lightgreen")) {
+          const sel = this.selectedChapters.find((sel2) => sel2.index === queue2.chapterIndex);
+          if (sel) {
+            sel.done = true;
+            sel.resolve(true);
+          }
+          if (!this.downloading && !this.done && !this.downloaderPanelBTN.classList.contains("lightgreen")) {
             this.downloaderPanelBTN.classList.add("lightgreen");
             if (!/✓/.test(this.downloaderPanelBTN.textContent)) {
               this.downloaderPanelBTN.textContent += "✓";
             }
           }
         }
-        return false;
+      });
+      this.initTabs();
+    }
+    initTabs() {
+      const tabs = [{
+        ele: this.dashboardTab,
+        cb: () => {
+          this.elementDashboard.hidden = false;
+          this.elementChapters.hidden = true;
+          this.canvas.resize(this.elementDashboard);
+        }
+      }, {
+        ele: this.chapterTab,
+        cb: () => {
+          this.elementDashboard.hidden = true;
+          this.elementChapters.hidden = false;
+        }
+      }];
+      tabs.forEach(({ ele, cb }, i) => {
+        ele.addEventListener("click", () => {
+          ele.classList.add("ehvp-p-tab-selected");
+          tabs.filter((_, j) => j != i).forEach((t) => t.ele.classList.remove("ehvp-p-tab-selected"));
+          cb();
+        });
       });
     }
-    needNumberTitle() {
+    needNumberTitle(queue) {
       let lastTitle = "";
-      for (const fetcher of this.queue) {
+      for (const fetcher of queue) {
         if (fetcher.node.title < lastTitle) {
           return true;
         }
@@ -869,8 +1089,8 @@
       }
       return false;
     }
-    checkDuplicateTitle(index, $title) {
-      let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");
+    checkDuplicateTitle(index, title) {
+      let newTitle = title;
       if (this.filenames.has(newTitle)) {
         let splits = newTitle.split(".");
         const ext = splits.pop();
@@ -883,78 +1103,149 @@
         }
         return this.checkDuplicateTitle(index, newTitle);
       } else {
+        this.filenames.add(newTitle);
         return newTitle;
       }
     }
+    createChapterSelectList() {
+      const chapters = this.pageFetcher.chapters;
+      const selectAll = chapters.length === 1;
+      this.elementChapters.innerHTML = `
+<div>
+  <span id="download-chapters-select-all" class="clickable p-btn">Select All</span>
+  <span id="download-chapters-unselect-all" class="clickable p-btn">Unselect All</span>
+</div>
+${chapters.map((c, i) => `<div><label>
+  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || this.selectedChapters.find((sel) => sel.index === i) ? "checked" : ""} />
+  <span>${c.title}</span></label></div>`).join("")}
+`;
+      [["#download-chapters-select-all", true], ["#download-chapters-unselect-all", false]].forEach(
+        ([id, checked]) => this.elementChapters.querySelector(id)?.addEventListener(
+          "click",
+          () => chapters.forEach((c) => {
+            const checkbox = this.elementChapters.querySelector("#ch-" + c.id);
+            if (checkbox)
+              checkbox.checked = checked;
+          })
+        )
+      );
+    }
     // check > start > download
     check() {
-      if (conf.fetchOriginal)
+      if (this.downloading)
         return;
-      if (this.downloadNoticeElement && !this.downloading) {
-        this.downloadNoticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-        this.downloadNoticeElement.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+      if (!conf.fetchOriginal) {
+        if (this.elementNotice && !this.downloading) {
+          this.elementNotice.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
+          this.elementNotice.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
+        }
+      }
+      setTimeout(() => this.canvas.resize(this.elementDashboard), 110);
+      this.createChapterSelectList();
+      if (this.queue.length > 0) {
+        this.dashboardTab.click();
+      } else if (this.pageFetcher.chapters.length > 1) {
+        this.chapterTab.click();
       }
     }
     fetchOriginalTemporarily() {
       conf.fetchOriginal = true;
-      this.queue.forEach((imgFetcher) => {
-        imgFetcher.stage = FetchState.URL;
+      this.pageFetcher.chapters.forEach((ch) => {
+        ch.done = false;
+        ch.queue.forEach((imf) => imf.stage = FetchState.URL);
       });
       this.start();
     }
-    start() {
-      if (this.queue.isFinised()) {
-        this.download();
-        return;
+    checkSelectedChapters() {
+      this.selectedChapters.length = 0;
+      const idSet = /* @__PURE__ */ new Set();
+      this.elementChapters.querySelectorAll("input[type=checkbox][id^=ch-]:checked").forEach((checkbox) => idSet.add(Number(checkbox.value)));
+      if (idSet.size === 0) {
+        this.selectedChapters.push({ index: 0, done: false, ...promiseWithResolveAndReject() });
+      } else {
+        this.selectedChapters = this.pageFetcher.chapters.filter((c) => idSet.has(c.id)).map((c) => ({ index: c.id, done: false, ...promiseWithResolveAndReject() }));
       }
+      evLog("debug", "get selected chapters: ", this.selectedChapters);
+      return this.selectedChapters;
+    }
+    async start() {
+      if (this.downloading)
+        return;
       this.flushUI("downloading");
       this.downloading = true;
       this.idleLoader.autoLoad = true;
-      this.queue.forEach((imf) => {
-        if (imf.stage === FetchState.FAILED) {
-          imf.retry();
+      this.checkSelectedChapters();
+      try {
+        for (const sel of this.selectedChapters) {
+          if (!this.downloading)
+            return;
+          await this.pageFetcher.changeChapter(sel.index, false);
+          this.queue.forEach((imf) => {
+            if (imf.stage === FetchState.FAILED) {
+              imf.retry();
+            }
+          });
+          if (this.queue.isFinised()) {
+            sel.done = true;
+            sel.resolve(true);
+          } else {
+            this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
+            this.idleLoader.onFailed(() => sel.reject("download failed or canceled"));
+            this.idleLoader.start();
+          }
+          await sel.promise;
         }
-      });
-      this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
-      this.idleLoader.onFailed(() => {
+        if (this.downloading)
+          await this.download(this.selectedChapters.filter((sel) => sel.done).map((sel) => this.pageFetcher.chapters[sel.index]));
+      } catch (error) {
+        if ("abort" === error)
+          return;
+        this.abort("downloadFailed");
+        evLog("error", "download failed: ", error);
+      } finally {
         this.downloading = false;
-        this.flushUI("downloadFailed");
-      });
-      this.idleLoader.start(++this.idleLoader.lockVer);
+      }
     }
     flushUI(stage) {
-      if (this.downloadNoticeElement) {
-        this.downloadNoticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
+      if (this.elementNotice) {
+        this.elementNotice.innerHTML = `<span>${i18n[stage].get()}</span>`;
       }
-      if (this.downloadStartElement) {
-        this.downloadStartElement.style.color = stage === "downloadFailed" ? "red" : "";
-        this.downloadStartElement.textContent = i18n[stage].get();
+      if (this.buttonStart) {
+        this.buttonStart.style.color = stage === "downloadFailed" ? "red" : "";
+        this.buttonStart.textContent = i18n[stage].get();
       }
       this.downloaderPanelBTN.style.color = stage === "downloadFailed" ? "red" : "";
     }
-    download() {
-      this.downloading = false;
-      this.idleLoader.abort(this.queue.currIndex);
-      this.flushUI("packaging");
+    mapToFileLikes(chapter, singleChapter, separator) {
+      if (!chapter || chapter.queue.length === 0)
+        return [];
       let checkTitle;
-      const needNumberTitle = this.needNumberTitle();
+      const needNumberTitle = this.needNumberTitle(chapter.queue);
       if (needNumberTitle) {
-        const digits = this.queue.length.toString().length;
-        checkTitle = (title, index) => `${index + 1}`.padStart(digits, "0") + "_" + title;
+        const digits = chapter.queue.length.toString().length;
+        checkTitle = (title, index) => `${index + 1}`.padStart(digits, "0") + "_" + title.replaceAll(FILENAME_INVALIDCHAR, "_");
       } else {
-        checkTitle = (title, index) => this.checkDuplicateTitle(index, title);
+        this.filenames.clear();
+        checkTitle = (title, index) => this.checkDuplicateTitle(index, title.replaceAll(FILENAME_INVALIDCHAR, "_"));
       }
-      let files = this.queue.filter((imf) => imf.stage === FetchState.DONE && imf.data).map((imf, index) => {
+      let directory = (() => {
+        if (singleChapter)
+          return "";
+        if (chapter.title instanceof Array) {
+          return chapter.title.join("_").replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
+        } else {
+          return chapter.title.replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
+        }
+      })();
+      const ret = chapter.queue.filter((imf) => imf.stage === FetchState.DONE && imf.data).map((imf, index) => {
         return {
           stream: () => Promise.resolve(uint8ArrayToReadableStream(imf.data)),
           size: () => imf.data.byteLength,
-          name: checkTitle(imf.node.title, index)
+          name: directory + checkTitle(imf.node.title, index)
         };
       });
-      const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
-      files.forEach((file) => zip.add(file));
-      let meta = new TextEncoder().encode(JSON.stringify(this.meta(), null, 2));
-      zip.add({
+      let meta = new TextEncoder().encode(JSON.stringify(this.meta(chapter), null, 2));
+      ret.push({
         stream: () => Promise.resolve(new ReadableStream({
           start(c) {
             c.enqueue(meta);
@@ -962,21 +1253,44 @@
           }
         })),
         size: () => meta.byteLength,
-        name: "meta.json"
+        name: directory + "meta.json"
       });
-      let save = async () => {
-        let readable;
-        while (readable = zip.nextReadableStream()) {
-          const blob = await new Response(readable).blob();
-          let ext = zip.currVolumeNo === zip.volumes - 1 ? "zip" : "z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
-          fileSaver.saveAs(blob, `${this.meta().originTitle || this.meta().title}.${ext}`);
+      return ret;
+    }
+    async download(chapters) {
+      try {
+        let archiveName = this.title().replaceAll(FILENAME_INVALIDCHAR, "_");
+        let separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
+        let singleChapter = chapters.length === 1;
+        this.flushUI("packaging");
+        const files = [];
+        for (const chapter of chapters) {
+          const ret = this.mapToFileLikes(chapter, singleChapter, separator);
+          files.push(...ret);
         }
-        this.flushUI("downloaded");
+        const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
+        files.forEach((file) => zip.add(file));
+        let save = async () => {
+          let readable;
+          while (readable = zip.nextReadableStream()) {
+            const blob = await new Response(readable).blob();
+            let ext = zip.currVolumeNo === zip.volumes - 1 ? "zip" : "z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
+            fileSaver.saveAs(blob, `${archiveName}.${ext}`);
+          }
+        };
+        await save();
         this.done = true;
-        this.downloaderPanelBTN.textContent = i18n.download.get();
-        this.downloaderPanelBTN.classList.remove("lightgreen");
-      };
-      save();
+      } finally {
+        this.abort(this.done ? "downloaded" : "downloadFailed");
+      }
+    }
+    abort(stage) {
+      this.downloaderPanelBTN.textContent = i18n.download.get();
+      this.downloaderPanelBTN.classList.remove("lightgreen");
+      this.downloading = false;
+      this.flushUI(stage);
+      this.idleLoader.abort();
+      this.selectedChapters.forEach((sel) => sel.reject("abort"));
     }
   }
   function uint8ArrayToReadableStream(arr) {
@@ -987,48 +1301,62 @@
       }
     });
   }
+  function promiseWithResolveAndReject() {
+    let resolve;
+    let reject;
+    const promise = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { resolve, reject, promise };
+  }
 
   class IMGFetcherQueue extends Array {
     executableQueue;
     currIndex;
     finishedIndex = /* @__PURE__ */ new Set();
     debouncer;
-    onDo = /* @__PURE__ */ new Map();
-    onFinishedReport = /* @__PURE__ */ new Map();
+    downloading;
     dataSize = 0;
+    chapterIndex = 0;
+    clear() {
+      this.length = 0;
+      this.executableQueue = [];
+      this.currIndex = 0;
+      this.finishedIndex.clear();
+    }
+    restore(chapterIndex, imfs) {
+      this.clear();
+      this.chapterIndex = chapterIndex;
+      imfs.forEach((imf, i) => imf.stage === FetchState.DONE && this.finishedIndex.add(i));
+      this.push(...imfs);
+    }
+    static newQueue() {
+      const queue = new IMGFetcherQueue();
+      EBUS.subscribe("imf-on-finished", (index, success, imf) => queue.chapterIndex === imf.chapterIndex && queue.finishedReport(index, success, imf));
+      EBUS.subscribe("ifq-do", (index, imf, oriented) => {
+        if (imf.chapterIndex !== queue.chapterIndex)
+          return;
+        queue.do(index, oriented);
+      });
+      EBUS.subscribe("pf-change-chapter", () => queue.forEach((imf) => imf.unrender()));
+      return queue;
+    }
     constructor() {
       super();
       this.executableQueue = [];
       this.currIndex = 0;
       this.debouncer = new Debouncer();
     }
-    subscribeOnDo(index, callback) {
-      this.onDo.set(index, callback);
-    }
-    subscribeOnFinishedReport(index, callback) {
-      this.onFinishedReport.set(index, callback);
-    }
     isFinised() {
       return this.finishedIndex.size === this.length;
-    }
-    push(...items) {
-      items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
-      return super.push(...items);
-    }
-    unshift(...items) {
-      items.forEach((imgFetcher) => imgFetcher.onFinished("QUEUE-REPORT", (index) => this.finishedReport(index)));
-      return super.unshift(...items);
     }
     do(start, oriented) {
       oriented = oriented || "next";
       this.currIndex = this.fixIndex(start);
-      this[this.currIndex].setNow(this.currIndex);
-      let keys = [...this.onDo.keys()].sort();
-      for (const key of keys) {
-        if (this.onDo.get(key)?.(this.currIndex, this)) {
-          return;
-        }
-      }
+      EBUS.emit("ifq-on-do", this.currIndex, this, this.downloading?.() || false);
+      if (this.downloading?.())
+        return;
       if (!this.pushInExecutableQueue(oriented))
         return;
       this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
@@ -1036,25 +1364,23 @@
       }, 300);
     }
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
-    finishedReport(index) {
-      const imgFetcher = this[index];
-      if (imgFetcher.stage !== FetchState.DONE)
+    finishedReport(index, success, imf) {
+      if (this.length === 0)
+        return;
+      if (!success || imf.stage !== FetchState.DONE)
         return;
       this.finishedIndex.add(index);
       if (this.dataSize < 1e9) {
-        this.dataSize += imgFetcher.data?.byteLength || 0;
+        this.dataSize += imf.data?.byteLength || 0;
       }
-      let keys = [...this.onFinishedReport.keys()].sort();
-      for (const key of keys) {
-        if (this.onFinishedReport.get(key)?.(index, this)) {
-          return;
-        }
-      }
+      EBUS.emit("ifq-on-finished-report", index, this);
     }
-    stepImageEvent(oriented) {
-      let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
-      this.do(start, oriented);
-    }
+    // stepImageEvent(chapterIndex: number, oriented: Oriented) {
+    //   let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
+    //   if (chapterIndex === this.chapterIndex) {
+    //     this.do(start, oriented);
+    //   }
+    // }
     //如果开始的索引小于0,则修正索引为0,如果开始的索引超过队列的长度,则修正索引为队列的最后一位
     fixIndex(start) {
       return start < 0 ? 0 : start > this.length - 1 ? this.length - 1 : start;
@@ -1094,57 +1420,42 @@
   class IdleLoader {
     queue;
     processingIndexList;
-    lockVer;
     restartId;
     maxWaitMS;
     minWaitMS;
-    isDownloading;
     onFailedCallback;
     autoLoad = false;
     constructor(queue) {
       this.queue = queue;
       this.processingIndexList = [0];
-      this.lockVer = 0;
       this.restartId;
       this.maxWaitMS = 1e3;
       this.minWaitMS = 300;
       this.autoLoad = conf.autoLoad;
-      this.queue.subscribeOnDo(9, (index) => {
-        this.abort(index);
-        return false;
+      EBUS.subscribe("ifq-on-do", (currIndex, _, downloading) => !downloading && this.abort(currIndex));
+      EBUS.subscribe("imf-on-finished", (index) => {
+        if (!this.processingIndexList.includes(index))
+          return;
+        this.wait().then(() => {
+          this.checkProcessingIndex();
+          this.start();
+        });
       });
-    }
-    setIsDownloading(cb) {
-      this.isDownloading = cb;
+      EBUS.subscribe("pf-change-chapter", (index) => !this.queue.downloading?.() && this.abort(index > 0 ? 0 : void 0));
     }
     onFailed(cb) {
       this.onFailedCallback = cb;
     }
-    start(lockVer) {
-      if (this.lockVer != lockVer || !this.autoLoad)
+    start() {
+      if (!this.autoLoad)
         return;
-      if (this.processingIndexList.length === 0) {
+      if (this.processingIndexList.length === 0)
         return;
-      }
-      if (this.queue.length === 0) {
+      if (this.queue.length === 0)
         return;
-      }
-      evLog("空闲自加载启动:" + this.processingIndexList.toString());
+      evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
       for (const processingIndex of this.processingIndexList) {
-        const imgFetcher = this.queue[processingIndex];
-        imgFetcher.onFinished("IDLE-REPORT", () => {
-          this.wait().then(() => {
-            this.checkProcessingIndex();
-            this.start(lockVer);
-          });
-        });
-        imgFetcher.onFailed("IDLE-REPORT", () => {
-          this.wait().then(() => {
-            this.checkProcessingIndex();
-            this.start(lockVer);
-          });
-        });
-        imgFetcher.start(processingIndex);
+        this.queue[processingIndex].start(processingIndex);
       }
     }
     checkProcessingIndex() {
@@ -1195,202 +1506,19 @@
       });
     }
     abort(newIndex) {
-      this.lockVer++;
+      this.processingIndexList = [];
       if (!this.autoLoad)
         return;
       window.clearTimeout(this.restartId);
-      this.restartId = window.setTimeout(() => {
-        if (this.isDownloading?.()) {
-          return;
-        }
-        this.processingIndexList = [newIndex];
-        this.checkProcessingIndex();
-        this.start(this.lockVer);
-      }, conf.restartIdleLoader);
-    }
-  }
-
-  class PageFetcher {
-    queue;
-    fullViewGrid;
-    pageURLs;
-    currPage;
-    fetched;
-    imgAppends;
-    matcher;
-    done = false;
-    onAppended;
-    imgFetcherSettings;
-    renderRangeRecord = [0, 0];
-    beforeInit;
-    afterInit;
-    pageSourceIter;
-    appendPageLock = false;
-    abortb = false;
-    constructor(fullViewGrid, queue, matcher, imgFetcherSettings) {
-      this.fullViewGrid = fullViewGrid;
-      this.queue = queue;
-      this.matcher = matcher;
-      this.imgFetcherSettings = imgFetcherSettings;
-      this.pageURLs = [];
-      this.currPage = 0;
-      this.imgAppends = { prev: [], next: [] };
-      this.fetched = false;
-    }
-    abort() {
-      this.abortb = true;
-    }
-    async init() {
-      this.beforeInit?.();
-      await this.initPageAppend();
-      this.afterInit?.();
-    }
-    async initPageAppend() {
-      this.pageSourceIter = this.matcher.fetchPagesSource();
-      let first = await this.pageSourceIter.next();
-      if (!first.done) {
-        await this.appendPageImg(first.value);
+      if (newIndex !== void 0) {
+        this.restartId = window.setTimeout(() => {
+          if (this.queue.downloading?.())
+            return;
+          this.processingIndexList = [newIndex];
+          this.checkProcessingIndex();
+          this.start();
+        }, conf.restartIdleLoader);
       }
-      this.appendNextPages(this.queue.length - 1);
-    }
-    async appendNextPages(finished) {
-      if (this.appendPageLock)
-        return;
-      try {
-        this.appendPageLock = true;
-        if (this.done || this.abortb)
-          return;
-        while (true) {
-          const viewButtom = this.fullViewGrid.scrollTop + this.fullViewGrid.clientHeight;
-          if (finished !== void 0) {
-            if (finished + 60 < this.queue.length) {
-              break;
-            }
-          } else {
-            const lastImgNode = this.queue[this.queue.length - 1].node.root;
-            if (viewButtom + this.fullViewGrid.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
-              break;
-            }
-          }
-          const next = await this.pageSourceIter.next();
-          if (next.done) {
-            this.done = true;
-            this.onAppended?.(this.queue.length, true);
-            break;
-          } else {
-            await this.appendPageImg(next.value);
-          }
-        }
-      } finally {
-        this.appendPageLock = false;
-      }
-    }
-    setOnAppended(onAppended) {
-      this.onAppended = onAppended;
-    }
-    async appendPageImg(page) {
-      try {
-        const nodes = await this.obtainImageNodeList(page);
-        if (this.abortb)
-          return false;
-        const IFs = nodes.map(
-          (imgNode) => new IMGFetcher(imgNode, this.imgFetcherSettings)
-        );
-        this.fullViewGrid.lastElementChild.after(...nodes.map((node) => node.create()));
-        this.queue.push(...IFs);
-        this.onAppended?.(this.queue.length);
-        return true;
-      } catch (error) {
-        evLog(`page fetcher append images error: `, error);
-        return false;
-      }
-    }
-    //从文档的字符串中创建缩略图元素列表
-    async obtainImageNodeList(page) {
-      let tryTimes = 0;
-      while (tryTimes < 3) {
-        try {
-          return await this.matcher.parseImgNodes(page);
-        } catch (error) {
-          evLog("warn: parse image nodes failed, retrying: ", error);
-          tryTimes++;
-        }
-      }
-      evLog("warn: parse image nodes failed: reached max try times!");
-      return [];
-    }
-    //通过地址请求该页的文档
-    async fetchDocument(pageURL) {
-      return await window.fetch(pageURL).then((response) => response.text());
-    }
-    /**
-     *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
-     */
-    renderCurrView() {
-      const [scrollTop, clientHeight] = [this.fullViewGrid.scrollTop, this.fullViewGrid.clientHeight];
-      const [startRander, endRander] = this.findOutsideRoundView(scrollTop, clientHeight);
-      this.queue.slice(startRander, endRander + 1 + conf.colCount).forEach((imgFetcher) => imgFetcher.render());
-      if (this.queue.dataSize >= 1e9) {
-        const unrenders = findNotInNewRange(this.renderRangeRecord, [startRander, endRander]);
-        unrenders.forEach(([start, end]) => this.queue.slice(start, end + 1).forEach((imgFetcher) => imgFetcher.unrender()));
-        evLog(`要渲染的范围是:${startRander + 1}-${endRander + 1}, 旧范围是:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, 取消渲染范围是:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
-      }
-      this.renderRangeRecord = [startRander, endRander];
-    }
-    findOutsideRoundView(currTop, clientHeight) {
-      const viewButtom = currTop + clientHeight;
-      let outsideTop = 0;
-      let outsideBottom = 0;
-      for (let i = 0; i < this.queue.length; i += conf.colCount) {
-        const { root } = this.queue[i].node;
-        if (!root)
-          continue;
-        if (outsideBottom === 0) {
-          if (root.offsetTop + 2 >= currTop) {
-            outsideBottom = i + 1;
-          } else {
-            outsideTop = i;
-          }
-        } else {
-          outsideBottom = i;
-          if (root.offsetTop + root.offsetHeight > viewButtom) {
-            break;
-          }
-        }
-      }
-      return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
-    }
-  }
-  function findNotInNewRange(old, neo) {
-    const ret = [];
-    if (neo[0] > old[0]) {
-      ret.push([old[0], neo[0] - 1]);
-    }
-    if (neo[1] < old[1]) {
-      ret.push([neo[1] + 1, old[1]]);
-    }
-    if (ret.length === 2) {
-      if (ret[1][0] < ret[0][1]) {
-        ret[1][0] = ret[0][1];
-        ret.shift();
-      }
-      if (ret[0][1] > ret[1][0]) {
-        ret[0][1] = ret[1][0];
-        ret.pop();
-      }
-    }
-    return ret;
-  }
-
-  class GalleryMeta {
-    url;
-    title;
-    originTitle;
-    tags;
-    constructor(url, title) {
-      this.url = url;
-      this.title = title;
-      this.tags = {};
     }
   }
 
@@ -1480,6 +1608,8 @@
       this.size = size;
     }
     progress(state) {
+      if (!this.root)
+        return;
       if (state.readyState === 4) {
         if (this.downloadBar && this.downloadBar.parentNode) {
           this.downloadBar.parentNode.removeChild(this.downloadBar);
@@ -1505,10 +1635,13 @@
       switch (fetchStatus) {
         case "fetching":
           this.root.classList.add("img-fetching");
+          this.root.classList.remove("img-fetched");
+          this.root.classList.remove("img-fetch-failed");
           break;
         case "fetched":
           this.root.classList.add("img-fetched");
           this.root.classList.remove("img-fetching");
+          this.root.classList.remove("img-fetch-failed");
           break;
         case "failed":
           this.root.classList.add("img-fetch-failed");
@@ -1533,6 +1666,222 @@
       return false;
     }
   }
+  class ChapterNode {
+    chapter;
+    index;
+    constructor(chapter, index) {
+      this.chapter = chapter;
+      this.index = index;
+    }
+    create() {
+      const element = DEFAULT_NODE_TEMPLATE.cloneNode(true);
+      const anchor = element.firstElementChild;
+      if (this.chapter.thumbimg) {
+        const img = anchor.firstElementChild;
+        img.src = this.chapter.thumbimg;
+        img.title = this.chapter.title.toString();
+      }
+      const description = document.createElement("div");
+      description.classList.add("ehvp-chapter-description");
+      if (Array.isArray(this.chapter.title)) {
+        description.innerHTML = this.chapter.title.map((t) => `<span>${t}</span>`).join("<br>");
+      } else {
+        description.innerHTML = `<span>${this.chapter.title}</span>`;
+      }
+      anchor.appendChild(description);
+      anchor.onclick = (event) => {
+        event.preventDefault();
+        this.chapter.onclick?.(this.index);
+      };
+      return element;
+    }
+    render() {
+    }
+  }
+
+  function q(selector, parent) {
+    const element = (parent || document).querySelector(selector);
+    if (!element) {
+      throw new Error(`Can't find element: ${selector}`);
+    }
+    return element;
+  }
+
+  class PageFetcher {
+    chapters = [];
+    chapterIndex = 0;
+    queue;
+    matcher;
+    done = false;
+    beforeInit;
+    afterInit;
+    appendPageLock = false;
+    abortb = false;
+    chaptersSelectionElement;
+    constructor(queue, matcher) {
+      this.queue = queue;
+      this.matcher = matcher;
+      this.chaptersSelectionElement = q("#backChaptersSelection");
+      this.chaptersSelectionElement.addEventListener("click", () => this.backChaptersSelection());
+      const debouncer = new Debouncer();
+      EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index, !this.queue.downloading?.()), 5));
+      EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(true), 5));
+    }
+    appendToView(total, nodes, done) {
+      EBUS.emit("pf-on-appended", total, nodes, done);
+    }
+    abort() {
+      this.abortb = true;
+    }
+    async init() {
+      this.chapters = await this.matcher.fetchChapters();
+      this.chapters.forEach((c) => {
+        c.sourceIter = this.matcher.fetchPagesSource(c);
+        c.onclick = (index) => {
+          EBUS.emit("pf-change-chapter", index);
+          if (this.chapters[index].queue) {
+            this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, false);
+            if (this.chapters.length > 1) {
+              this.chaptersSelectionElement.hidden = false;
+            }
+          }
+          if (!this.queue.downloading?.()) {
+            this.beforeInit?.();
+            this.changeChapter(index, true).finally(() => this.afterInit?.());
+          }
+        };
+      });
+      if (this.chapters.length === 1) {
+        this.beforeInit?.();
+        this.changeChapter(0, true).finally(() => this.afterInit?.());
+      }
+      if (this.chapters.length > 1) {
+        this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
+      }
+    }
+    backChaptersSelection() {
+      EBUS.emit("pf-change-chapter", -1);
+      this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
+      this.chaptersSelectionElement.hidden = true;
+    }
+    /// start the chapter by index
+    async changeChapter(index, appendToView) {
+      this.chapterIndex = index;
+      const chapter = this.chapters[this.chapterIndex];
+      this.queue.restore(index, chapter.queue);
+      if (!chapter.sourceIter) {
+        evLog("error", "chapter sourceIter is not set!");
+        return;
+      }
+      let first = await chapter.sourceIter.next();
+      if (!first.done) {
+        await this.appendImages(first.value, appendToView);
+      }
+      this.appendPages(this.queue.length - 1, appendToView);
+    }
+    // append next page until the queue length is 60 more than finished
+    async appendPages(appendedCount, appendToView) {
+      while (true) {
+        if (appendedCount + 60 < this.queue.length)
+          break;
+        if (!await this.appendNextPage(appendToView))
+          break;
+      }
+    }
+    async appendNextPage(appendToView) {
+      if (this.appendPageLock)
+        return false;
+      try {
+        this.appendPageLock = true;
+        if (this.done || this.abortb)
+          return false;
+        const chapter = this.chapters[this.chapterIndex];
+        const next = await chapter.sourceIter.next();
+        if (next.done) {
+          chapter.done = true;
+          this.appendToView(this.queue.length, [], true);
+          return false;
+        } else {
+          await this.appendImages(next.value, appendToView);
+          return true;
+        }
+      } finally {
+        this.appendPageLock = false;
+      }
+    }
+    async appendImages(page, appendToView) {
+      try {
+        const nodes = await this.obtainImageNodeList(page);
+        if (this.abortb)
+          return false;
+        const IFs = nodes.map(
+          (imgNode) => new IMGFetcher(imgNode, this.matcher, this.chapterIndex)
+        );
+        this.queue.push(...IFs);
+        this.chapters[this.chapterIndex].queue.push(...IFs);
+        if (appendToView) {
+          this.appendToView(this.queue.length, IFs);
+        }
+        return true;
+      } catch (error) {
+        evLog("error", `page fetcher append images error: `, error);
+        return false;
+      }
+    }
+    //从文档的字符串中创建缩略图元素列表
+    async obtainImageNodeList(page) {
+      let tryTimes = 0;
+      while (tryTimes < 3) {
+        try {
+          return await this.matcher.parseImgNodes(page, this.chapters[this.chapterIndex].id);
+        } catch (error) {
+          evLog("error", "warn: parse image nodes failed, retrying: ", error);
+          tryTimes++;
+        }
+      }
+      evLog("error", "warn: parse image nodes failed: reached max try times!");
+      return [];
+    }
+    //通过地址请求该页的文档
+    async fetchDocument(pageURL) {
+      return await window.fetch(pageURL).then((response) => response.text());
+    }
+  }
+
+  class GalleryMeta {
+    url;
+    title;
+    originTitle;
+    downloader;
+    tags;
+    constructor(url, title) {
+      this.url = url;
+      this.title = title;
+      this.tags = {};
+      this.downloader = "https://github.com/MapoMagpie/eh-view-enhance";
+    }
+  }
+
+  class BaseMatcher {
+    async fetchChapters() {
+      return [{
+        id: 1,
+        title: "Default",
+        source: window.location.href,
+        queue: []
+      }];
+    }
+    title(doc) {
+      const meta = this.galleryMeta(doc);
+      return meta.originTitle || meta.title || "unknown";
+    }
+    galleryMeta(doc, _chapter) {
+      return new GalleryMeta(window.location.href, doc.title || "unknown");
+    }
+    async processData(data, _1, _2) {
+      return data;
+    }
+  }
 
   function drawImage(ctx, e, gid, page) {
     const width = e.width;
@@ -1547,7 +1896,60 @@
       0 == m ? c += l : g += l, ctx.drawImage(e, 0, w, r, c, 0, g, r, c);
     }
   }
-  class Comic18Matcher {
+  class Comic18Matcher extends BaseMatcher {
+    meta;
+    async fetchChapters() {
+      const ret = [];
+      const thumb = document.querySelector(".thumb-overlay > img");
+      const chapters = Array.from(document.querySelectorAll(".visible-lg .episode > ul > a"));
+      if (chapters.length > 0) {
+        chapters.forEach((ch, i) => {
+          const title = Array.from(ch.querySelector("li")?.childNodes || []).map((n) => n.textContent?.trim()).filter(Boolean).map((n) => n);
+          ret.push({
+            id: i,
+            title,
+            source: ch.href,
+            queue: [],
+            thumbimg: thumb?.src
+          });
+        });
+      } else {
+        const href = document.querySelector(".read-block > a")?.href;
+        if (href === void 0)
+          throw new Error("No page found");
+        ret.push({
+          id: 0,
+          title: "Default",
+          source: href,
+          queue: []
+        });
+      }
+      return ret;
+    }
+    async *fetchPagesSource(chapter) {
+      yield chapter.source;
+    }
+    async parseImgNodes(source) {
+      const list = [];
+      const raw = await window.fetch(source).then((resp) => resp.text());
+      const document2 = new DOMParser().parseFromString(raw, "text/html");
+      const elements = Array.from(document2.querySelectorAll(".scramble-page:not(.thewayhome)"));
+      for (const element of elements) {
+        const title = element.id;
+        const img = element.querySelector("img");
+        if (!img) {
+          evLog("error", "warn: cannot find img element", element);
+          continue;
+        }
+        const src = img.getAttribute("data-original");
+        if (!src) {
+          evLog("error", "warn: cannot find data-original", element);
+          continue;
+        }
+        list.push(new ImageNode("", src, title));
+      }
+      return list;
+    }
     async processData(data, contentType, url) {
       const reg = /(\d+)\/(\d+)\.(\w+)/;
       const matches = url.match(reg);
@@ -1572,10 +1974,12 @@
     workURL() {
       return /18comic.(vip|org)\/album\/\d+/;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
+      if (this.meta)
+        return this.meta;
       const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
-      const meta = new GalleryMeta(window.location.href, title);
-      meta.originTitle = title;
+      this.meta = new GalleryMeta(window.location.href, title);
+      this.meta.originTitle = title;
       const tagTrList = doc.querySelectorAll("div.tag-block > span");
       const tags = {};
       tagTrList.forEach((tr) => {
@@ -1587,42 +1991,12 @@
           }
         }
       });
-      meta.tags = tags;
-      return meta;
+      this.meta.tags = tags;
+      return this.meta;
     }
     // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
-    async fetchOriginMeta(url, _) {
+    async fetchOriginMeta(url) {
       return { url };
-    }
-    async parseImgNodes(source) {
-      const list = [];
-      const raw = await window.fetch(source.raw).then((resp) => resp.text());
-      const document2 = new DOMParser().parseFromString(raw, "text/html");
-      const images = Array.from(document2.querySelectorAll(".scramble-page:not(.thewayhome) > img"));
-      for (const img of images) {
-        const src = img.getAttribute("data-original");
-        if (!src) {
-          evLog("warn: cannot find data-original", img);
-          continue;
-        }
-        list.push(new ImageNode("", src, src.split("/").pop()));
-      }
-      return list;
-    }
-    async *fetchPagesSource() {
-      const episode = Array.from(document.querySelectorAll(".episode > ul > a"));
-      if (episode.length > 0) {
-        for (const a of episode) {
-          const href2 = a.href;
-          yield { raw: href2, typ: "url" };
-        }
-        return;
-      }
-      const href = document.querySelector(".read-block > a")?.href;
-      if (href === void 0)
-        throw new Error("No page found");
-      yield { raw: href, typ: "url" };
-      return;
     }
   }
 
@@ -1646,7 +2020,17 @@
     return result;
   }
   async function splitImagesFromUrl(url, positions) {
-    url = URL.createObjectURL(await fetchImage(url));
+    let data;
+    for (let i = 0; i < 3; i++) {
+      try {
+        data = await fetchImage(url);
+        break;
+      } catch (err) {
+      }
+    }
+    if (!data)
+      throw new Error("load sprite image error");
+    url = URL.createObjectURL(data);
     const img = await new Promise((resolve, reject) => {
       let img2 = new Image();
       img2.onload = () => resolve(img2);
@@ -1670,16 +2054,13 @@
     mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g,
     /** 精灵图地址提取 */
     sprite: /url\((.*?)\)/
-};
-
-  class EHMatcher {
-    async processData(data, _1, _2) {
-      return data;
-    }
+  };
+  class EHMatcher extends BaseMatcher {
+    // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
     workURL() {
-      return /e[-x]hentai(\.org|55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad\.onion)\/g\/\w+/;
+      return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       const titleList = doc.querySelectorAll("#gd2 h1");
       let title;
       let originTitle;
@@ -1711,13 +2092,13 @@
     async fetchOriginMeta(href, retry) {
       return { url: await this.fetchImgURL(href, retry) };
     }
-    async parseImgNodes(page) {
+    async parseImgNodes(source) {
       const list = [];
       let doc = await (async () => {
-        if (page.raw instanceof Document) {
-          return page.raw;
+        if (source instanceof Document) {
+          return source;
         } else {
-          const raw = await window.fetch(page.raw).then((response) => response.text());
+          const raw = await window.fetch(source).then((response) => response.text());
           if (!raw)
             return null;
           const domParser = new DOMParser();
@@ -1757,31 +2138,39 @@
       let urls = [];
       let delayURLs = [];
       if (isSprite) {
-        for (let i = 0; i < nodes.length; i += 20) {
-          const niStyles = nodes[i].style;
-          const url = niStyles.background.match(regulars.sprite)?.[1]?.replaceAll('"', "");
-          if (url) {
-            const range = nodes.slice(i, i + 20);
-            const resolvers = [];
-            const rejects = [];
-            for (let j = 0; j < range.length; j++) {
-              urls.push("");
-              delayURLs.push(new Promise((resolve, reject) => {
-                resolvers.push(resolve);
-                rejects.push(reject);
-              }));
-            }
-            splitImagesFromUrl(url, parseImagePositions(range.map((n) => n.style))).then((ret) => {
-              for (let k = 0; k < ret.length; k++) {
-                resolvers[k](ret[k]);
-              }
-            }).catch((err) => {
-              rejects.forEach((r) => r(err));
-            });
-          } else {
+        let spriteURLs = [];
+        for (let i = 0; i < nodes.length; i++) {
+          const nodeStyles = nodes[i].style;
+          const url = nodeStyles.background.match(regulars.sprite)?.[1]?.replaceAll('"', "");
+          if (!url)
             break;
+          if (spriteURLs.length === 0 || spriteURLs[spriteURLs.length - 1].url !== url) {
+            spriteURLs.push({ url, range: [{ index: i, style: nodeStyles }] });
+          } else {
+            spriteURLs[spriteURLs.length - 1].range.push({ index: i, style: nodeStyles });
           }
         }
+        spriteURLs.forEach(({ url, range }) => {
+          const resolvers = [];
+          const rejects = [];
+          for (let i = 0; i < range.length; i++) {
+            urls.push("");
+            delayURLs.push(new Promise((resolve, reject) => {
+              resolvers.push(resolve);
+              rejects.push(reject);
+            }));
+          }
+          if (!url.startsWith("http")) {
+            url = window.location.origin + url;
+          }
+          splitImagesFromUrl(url, parseImagePositions(range.map((n) => n.style))).then((ret) => {
+            for (let k = 0; k < ret.length; k++) {
+              resolvers[k](ret[k]);
+            }
+          }).catch((err) => {
+            rejects.forEach((r) => r(err));
+          });
+        });
       } else {
         if (urls.length == 0) {
           urls = nodes.map((n) => n.firstElementChild.firstElementChild.src);
@@ -1799,12 +2188,13 @@
       return list;
     }
     async *fetchPagesSource() {
-      let fristImageHref = document.querySelector("#gdt a")?.getAttribute("href");
+      const doc = document;
+      let fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
       if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
-        yield { raw: window.location.href, typ: "url" };
+        yield window.location.href;
         return;
       }
-      let pages = Array.from(document.querySelectorAll(".gtb td a")).filter((a) => a.getAttribute("href")).map((a) => a.getAttribute("href"));
+      let pages = Array.from(doc.querySelectorAll(".gtb td a")).filter((a) => a.getAttribute("href")).map((a) => a.getAttribute("href"));
       if (pages.length === 0) {
         throw new Error("未获取到分页元素！");
       }
@@ -1822,42 +2212,47 @@
         throw new Error("未获取到分页元素！x2");
       }
       url.searchParams.delete("p");
-      yield { raw: url.href, typ: "url" };
+      yield url.href;
       for (let p = 1; p < lastPage + 1; p++) {
         url.searchParams.set("p", p.toString());
-        yield { raw: url.href, typ: "url" };
+        yield url.href;
       }
     }
     async fetchImgURL(url, originChanged) {
       let text = "";
       try {
         text = await window.fetch(url).then((resp) => resp.text());
-        if (!text)
-          throw new Error("[text] is empty");
       } catch (error) {
         throw new Error(`Fetch source page error, expected [text]！ ${error}`);
       }
+      if (!text)
+        throw new Error("[text] is empty");
       if (conf.fetchOriginal) {
         const matchs = regulars.original.exec(text);
         if (matchs && matchs.length > 0) {
           return matchs[1].replace(/&amp;/g, "&");
-        } else {
-          const normalMatchs = regulars["normal"].exec(text);
-          if (normalMatchs == null || normalMatchs.length == 0) {
-            throw new Error(`Cannot matching the image url, content: ${text}`);
-          } else {
-            return normalMatchs[1];
-          }
         }
       }
+      let src;
       if (originChanged) {
-        const nlValue = regulars.nlValue.exec(text)[1];
-        const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-        evLog(`IMG-FETCHER retry url:${newUrl}`);
-        return await this.fetchImgURL(newUrl, false);
-      } else {
-        return regulars.normal.exec(text)[1];
+        const nlValue = regulars.nlValue.exec(text)?.[1];
+        if (nlValue) {
+          const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
+          evLog("info", `IMG-FETCHER retry url:${newUrl}`);
+          src = await this.fetchImgURL(newUrl, false);
+        } else {
+          evLog("error", `Cannot matching the nlValue, content: ${text}`);
+        }
       }
+      if (!src) {
+        src = regulars.normal.exec(text)?.[1];
+      }
+      if (!src)
+        throw new Error(`Cannot matching the image url, content: ${text}`);
+      if (!src.startsWith("http")) {
+        src = window.location.origin + src;
+      }
+      return src;
     }
   }
 
@@ -1869,6 +2264,9 @@
     constructor(b, m) {
       this.b = b;
       this.m = new Function("g", m);
+    }
+    real_full_path_from_hash(hash) {
+      return hash.replace(/^.*(..)(.)$/, "$2/$1/" + hash);
     }
     s(h) {
       const m = /(..)(.)$/.exec(h);
@@ -1891,68 +2289,54 @@
       }
       return retval;
     }
-    url(hash) {
+    thumbURL(hash) {
+      hash = hash.replace(/^.*(..)(.)$/, "$2/$1/" + hash);
+      let url = "https://a.hitomi.la/webpsmalltn/" + hash + ".webp";
+      return url.replace(/\/\/..?\.hitomi\.la\//, "//" + this.subdomain_from_url(url, "tn") + ".hitomi.la/");
+    }
+    originURL(hash) {
       let url = "https://a.hitomi.la/" + this.ext + "/" + this.b + this.s(hash) + "/" + hash + "." + this.ext;
       url = url.replace(/\/\/..?\.hitomi\.la\//, "//" + this.subdomain_from_url(url, this.base) + ".hitomi.la/");
       return url;
     }
   }
-  const HASH_REGEX = /#(\d*)$/;
   const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
   const GG_B_REGEX = /b:\s'(\d*\/)'/;
-  class HitomiMather {
-    async processData(data, _1, _2) {
-      return data;
-    }
+  class HitomiMather extends BaseMatcher {
+    gg;
+    meta = {};
+    infoRecord = {};
     workURL() {
       return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
     }
-    gg;
-    meta;
-    info;
-    async fetchOriginMeta(hash, _) {
-      const url = this.gg.url(hash);
-      return { url };
-    }
-    async parseImgNodes(page) {
-      if (!this.info) {
-        throw new Error("warn: hitomi gallery info is null!");
-      }
-      const list = [];
-      const doc = page.raw;
-      const nodes = doc.querySelectorAll(".simplePagerContainer .thumbnail-container a");
-      if (!nodes || nodes.length == 0) {
-        throw new Error("warn: failed query image nodes!");
-      }
-      for (const node of Array.from(nodes)) {
-        const sceneIndex = Number(HASH_REGEX.exec(node.href)[1]) - 1;
-        const img = node.querySelector("img");
-        if (!img) {
-          throw new Error("warn: failed query image node!");
-        }
-        const src = img.src;
-        if (!src) {
-          throw new Error(`warn: failed get Image Src`);
-        }
-        const badge = (() => {
-          const badge2 = node.querySelector(".badge");
-          return badge2 ? Number(badge2.textContent) : 1;
-        })();
-        for (let i = 0; i < badge; i++) {
-          const node2 = new ImageNode(
-            src,
-            this.info.files[i + sceneIndex].hash,
-            this.info.files[i + sceneIndex].name
-          );
-          list.push(node2);
-        }
-      }
-      return list;
-    }
-    async *fetchPagesSource() {
+    async fetchChapters() {
       const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then((resp) => resp.text());
       this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)[1], GG_M_REGEX.exec(ggRaw)[1]);
-      const galleryID = document.querySelector("#gallery-brand a")?.href?.split("/").pop()?.replace(".html", "");
+      const ret = [];
+      ret.push({
+        id: 0,
+        title: document.querySelector("#gallery-brand")?.textContent || "default",
+        source: window.location.href,
+        queue: [],
+        thumbimg: document.querySelector(".content > .cover-column > .cover img")?.src
+      });
+      document.querySelectorAll("#related-content > div").forEach((element, i) => {
+        const a = element.querySelector("h1.lillie > a");
+        if (a) {
+          ret.push({
+            id: i + 1,
+            title: a.textContent || "default-" + (i + 1),
+            source: a.href,
+            queue: [],
+            thumbimg: element.querySelector("img")?.src
+          });
+        }
+      });
+      return ret;
+    }
+    async *fetchPagesSource(chapter) {
+      const url = chapter.source;
+      const galleryID = url.match(/([0-9]+)(?:\.html)/)?.[1];
       if (!galleryID) {
         throw new Error("cannot query hitomi gallery id");
       }
@@ -1961,30 +2345,58 @@
         throw new Error("cannot query hitomi gallery info");
       }
       const info = JSON.parse(infoRaw);
-      this.setGalleryMeta(info, galleryID);
-      this.info = {
-        files: info.files,
-        scene_indexes: info.scene_indexes
-      };
-      yield { raw: document, typ: "doc" };
+      this.setGalleryMeta(info, galleryID, chapter);
+      const doc = await window.fetch(url).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      yield doc;
     }
-    setGalleryMeta(info, galleryID) {
-      this.meta = new GalleryMeta(window.location.href, info["title"] || "hitomi-" + galleryID);
-      this.meta.originTitle = info["japanese_title"];
+    async parseImgNodes(_page, chapterID) {
+      if (!this.infoRecord[chapterID]) {
+        throw new Error("warn: hitomi gallery info is null!");
+      }
+      const files = this.infoRecord[chapterID].files;
+      const list = [];
+      for (let i = 0; i < files.length; i++) {
+        const node = new ImageNode(
+          this.gg.thumbURL(files[i].hash),
+          files[i].hash,
+          files[i].name
+        );
+        list.push(node);
+      }
+      return list;
+    }
+    async fetchOriginMeta(hash, _) {
+      const url = this.gg.originURL(hash);
+      return { url };
+    }
+    setGalleryMeta(info, galleryID, chapter) {
+      this.infoRecord[chapter.id] = info;
+      this.meta[chapter.id] = new GalleryMeta(chapter.source, info.title || "hitomi-" + galleryID);
+      this.meta[chapter.id].originTitle = info.japanese_title || void 0;
       const excludes = ["scene_indexes", "files"];
       for (const key in info) {
         if (excludes.indexOf(key) > -1) {
           continue;
         }
-        this.meta.tags[key] = info[key];
+        this.meta[chapter.id].tags[key] = info[key];
       }
     }
-    parseGalleryMeta(_) {
-      return this.meta || new GalleryMeta(window.location.href, "hitomi");
+    galleryMeta(_, chapter) {
+      return this.meta[chapter.id];
+    }
+    title() {
+      const entries = Object.entries(this.infoRecord);
+      if (entries.length === 0)
+        return "hitomi-unknown";
+      if (entries.length === 1) {
+        return entries[0][1].japanese_title || entries[0][1].title || "hitomi-unknown";
+      } else {
+        return "hitomi-multiple" + entries.map((entry) => entry[1].id).join("_");
+      }
     }
   }
 
-  class IMHentaiMatcher {
+  class IMHentaiMatcher extends BaseMatcher {
     data;
     async fetchOriginMeta(href, _) {
       const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
@@ -2005,7 +2417,7 @@
       }
       return { url: src, title };
     }
-    async parseImgNodes(_) {
+    async parseImgNodes() {
       if (!this.data) {
         throw new Error("impossibility");
       }
@@ -2026,9 +2438,9 @@
       const imgDir = q("#load_dir").value;
       const total = q("#load_pages").value;
       this.data = { server, uid, gid, imgDir, total: Number(total) };
-      yield { raw: "", typ: "doc" };
+      yield document;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       const title = doc.querySelector(".right_details > h1")?.textContent || void 0;
       const originTitle = doc.querySelector(".right_details > p.subtitle")?.textContent || void 0;
       const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
@@ -2050,20 +2462,14 @@
     workURL() {
       return /imhentai.xxx\/gallery\/\d+\//;
     }
-    async processData(data, _1, _2) {
-      return data;
-    }
   }
 
   const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
-  class NHMatcher {
-    async processData(data, _1, _2) {
-      return data;
-    }
+  class NHMatcher extends BaseMatcher {
     workURL() {
       return /nhentai.net\/g\/\d+\/?$/;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       let title;
       let originTitle;
       doc.querySelectorAll("#info .title").forEach((ele) => {
@@ -2095,7 +2501,7 @@
       meta.tags = tags;
       return meta;
     }
-    async fetchOriginMeta(href, _) {
+    async fetchOriginMeta(href) {
       let text = "";
       try {
         text = await window.fetch(href).then((resp) => resp.text());
@@ -2106,9 +2512,9 @@
       }
       return { url: NH_IMG_URL_REGEX.exec(text)[1] };
     }
-    async parseImgNodes(page) {
+    async parseImgNodes(source) {
       const list = [];
-      const nodes = page.raw.querySelectorAll(".thumb-container > .gallerythumb");
+      const nodes = source.querySelectorAll(".thumb-container > .gallerythumb");
       if (!nodes || nodes.length == 0) {
         throw new Error("warn: failed query image nodes!");
       }
@@ -2129,7 +2535,7 @@
       return list;
     }
     async *fetchPagesSource() {
-      yield { raw: document, typ: "doc" };
+      yield document;
     }
   }
 
@@ -2555,7 +2961,7 @@
         if (!this.reloadLock) {
           this.reloadLock = true;
           try {
-            evLog("FFmpegConvertor: size limit exceeded, terminate ffmpeg, verLock: ", verLock);
+            evLog("info", "FFmpegConvertor: size limit exceeded, terminate ffmpeg, verLock: ", verLock);
             this.ffmpeg.terminate();
             await this.load();
             this.size = 0;
@@ -2640,7 +3046,7 @@ duration 0.04`).join("\n");
   }
 
   const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
-  class Pixiv {
+  class Pixiv extends BaseMatcher {
     authorID;
     meta;
     pidList = [];
@@ -2650,6 +3056,7 @@ duration 0.04`).join("\n");
     convertor;
     first;
     constructor() {
+      super();
       this.meta = new GalleryMeta(window.location.href, "UNTITLE");
     }
     async processData(data, _1, _2) {
@@ -2658,7 +3065,7 @@ duration 0.04`).join("\n");
     workURL() {
       return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
     }
-    parseGalleryMeta(_) {
+    galleryMeta() {
       this.meta.title = `PIXIV_${this.authorID}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
       let tags = Object.values(this.works).map((w) => w.tags).flat();
       this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
@@ -2686,7 +3093,7 @@ duration 0.04`).join("\n");
             const img = await zip.file(f.file).async("uint8array");
             return { name: f.file, data: img };
           } catch (error) {
-            evLog("unpack ugoira file error: ", error);
+            evLog("error", "unpack ugoira file error: ", error);
             throw error;
           }
         })
@@ -2697,7 +3104,7 @@ duration 0.04`).join("\n");
       const start = performance.now();
       const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
       const end = performance.now();
-      evLog(`convert ugoira to ${conf.convertTo} cost ${(end - start) / 1e3} s, size: ${blob.size / 1e3} KB, original size: ${data.size / 1e3} KB`);
+      evLog("debug", `convert ugoira to ${conf.convertTo} cost ${(end - start) / 1e3} s, size: ${blob.size / 1e3} KB, original size: ${data.size / 1e3} KB`);
       return { url: URL.createObjectURL(blob) };
     }
     async fetchTagsByPids(pids) {
@@ -2719,15 +3126,15 @@ duration 0.04`).join("\n");
           });
           this.works = { ...this.works, ...works };
         } else {
-          evLog("WARN: fetch tags by pids error: ", data.message);
+          evLog("error", "WARN: fetch tags by pids error: ", data.message);
         }
       } catch (error) {
-        evLog("ERROR: fetch tags by pids error: ", error);
+        evLog("error", "ERROR: fetch tags by pids error: ", error);
       }
     }
-    async parseImgNodes(raw) {
+    async parseImgNodes(source) {
       const list = [];
-      const pidList = JSON.parse(raw.raw);
+      const pidList = JSON.parse(source);
       this.fetchTagsByPids(pidList);
       const pageListData = await fetchUrls(pidList.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5);
       for (let i = 0; i < pidList.length; i++) {
@@ -2781,7 +3188,7 @@ duration 0.04`).join("\n");
       }
       while (pidList.length > 0) {
         const pids = pidList.splice(0, 20);
-        yield { raw: JSON.stringify(pids), typ: "json" };
+        yield JSON.stringify(pids);
       }
     }
   }
@@ -2804,18 +3211,15 @@ duration 0.04`).join("\n");
     return results;
   }
 
-  class RokuHentaiMatcher {
+  class RokuHentaiMatcher extends BaseMatcher {
     sprites = [];
     fetchedThumbnail = [];
     galleryId = "";
     imgCount = 0;
-    async processData(data, _1, _2) {
-      return data;
-    }
     workURL() {
       return /rokuhentai.com\/\w+$/;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       const title = doc.querySelector(".site-manga-info__title-text")?.textContent || "UNTITLE";
       const meta = new GalleryMeta(window.location.href, title);
       meta.originTitle = title;
@@ -2837,7 +3241,7 @@ duration 0.04`).join("\n");
       return { url };
     }
     async parseImgNodes(source) {
-      const range = source.raw.split("-").map(Number);
+      const range = source.split("-").map(Number);
       const list = [];
       const digits = this.imgCount.toString().length;
       for (let i = range[0]; i < range[1]; i++) {
@@ -2855,13 +3259,14 @@ duration 0.04`).join("\n");
       return list;
     }
     async *fetchPagesSource() {
-      const imgCount = parseInt(document.querySelector(".mdc-typography--caption")?.textContent || "");
+      const doc = document;
+      const imgCount = parseInt(doc.querySelector(".mdc-typography--caption")?.textContent || "");
       if (isNaN(imgCount)) {
         throw new Error("error: failed query image count!");
       }
       this.imgCount = imgCount;
       this.galleryId = window.location.href.split("/").pop();
-      const images = Array.from(document.querySelectorAll(".mdc-layout-grid__cell .site-page-card__media"));
+      const images = Array.from(doc.querySelectorAll(".mdc-layout-grid__cell .site-page-card__media"));
       for (const img of images) {
         this.fetchedThumbnail.push(void 0);
         const x = parseInt(img.getAttribute("data-offset-x") || "");
@@ -2876,7 +3281,7 @@ duration 0.04`).join("\n");
         this.sprites.push({ src, pos: { x, y, width, height } });
       }
       for (let i = 0; i < this.imgCount; i += 20) {
-        yield { raw: `${i}-${Math.min(i + 20, this.imgCount)}`, typ: "json" };
+        yield `${i}-${Math.min(i + 20, this.imgCount)}`;
       }
     }
     async fetchThumbnail(index) {
@@ -2901,18 +3306,15 @@ duration 0.04`).join("\n");
     }
   }
 
-  class Rule34Matcher {
+  class Rule34Matcher extends BaseMatcher {
     tags = {};
     count = 0;
-    async processData(data, _1, _2) {
-      return data;
-    }
     workURL() {
       return /rule34.xxx\/index.php\?page=post&s=list/;
     }
     async *fetchPagesSource() {
-      yield { raw: document, typ: "doc" };
       let doc = document;
+      yield doc;
       let tryTimes = 0;
       while (true) {
         let next = doc.querySelector(".pagination a[alt=next]");
@@ -2930,7 +3332,7 @@ duration 0.04`).join("\n");
           continue;
         }
         tryTimes = 0;
-        yield { raw: doc, typ: "doc" };
+        yield doc;
       }
     }
     async fetchOriginMeta(href, _) {
@@ -2955,14 +3357,14 @@ duration 0.04`).join("\n");
       }
       return { url, title };
     }
-    async parseImgNodes(page) {
+    async parseImgNodes(source) {
       const list = [];
-      const doc = page.raw;
+      const doc = source;
       const imgList = Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
       for (const img of imgList) {
         const child = img.querySelector("img");
         if (!child) {
-          evLog("warn", "cannot find img element", img);
+          evLog("error", "warn: cannot find img element", img);
           continue;
         }
         const title = `${img.id}.jpg`;
@@ -2974,7 +3376,7 @@ duration 0.04`).join("\n");
       }
       return list;
     }
-    parseGalleryMeta(_) {
+    galleryMeta() {
       const url = new URL(window.location.href);
       const tags = url.searchParams.get("tags")?.trim();
       const meta = new GalleryMeta(window.location.href, `rule34_${tags}_${this.count}`);
@@ -2984,14 +3386,11 @@ duration 0.04`).join("\n");
   }
 
   const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
-  class SteamMatcher {
-    async processData(data, _1, _2) {
-      return data;
-    }
+  class SteamMatcher extends BaseMatcher {
     workURL() {
       return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
     }
-    async fetchOriginMeta(href, _) {
+    async fetchOriginMeta(href) {
       let raw = "";
       try {
         raw = await window.fetch(href).then((resp) => resp.text());
@@ -3008,19 +3407,9 @@ duration 0.04`).join("\n");
       }
       return { url: imgURL };
     }
-    async parseImgNodes(page) {
+    async parseImgNodes(source) {
       const list = [];
-      const doc = await (async () => {
-        if (page.raw instanceof Document) {
-          return page.raw;
-        } else {
-          const raw = await window.fetch(page.raw).then((response) => response.text());
-          if (!raw)
-            return null;
-          const domParser = new DOMParser();
-          return domParser.parseFromString(raw, "text/html");
-        }
-      })();
+      const doc = await window.fetch(source).then((resp) => resp.text()).then((raw) => new DOMParser().parseFromString(raw, "text/html"));
       if (!doc) {
         throw new Error("warn: steam matcher failed to get document from source page!");
       }
@@ -3054,30 +3443,25 @@ duration 0.04`).join("\n");
         if (!doc) {
           throw new Error("warn: steam matcher failed to get document from source page!");
         }
-        doc.querySelectorAll(".pagingPageLink").forEach((ele) => {
-          totalPages = Number(ele.textContent);
-        });
+        doc.querySelectorAll(".pagingPageLink").forEach((ele) => totalPages = Number(ele.textContent));
       }
       if (totalPages > 0) {
         for (let p = 1; p <= totalPages; p++) {
           url.searchParams.set("p", p.toString());
-          yield { raw: url.href, typ: "url" };
+          yield url.href;
         }
       } else {
-        yield { raw: url.href, typ: "url" };
+        yield url.href;
       }
     }
-    parseGalleryMeta(_) {
+    parseGalleryMeta() {
       const url = new URL(window.location.href);
       let appid = url.searchParams.get("appid");
       return new GalleryMeta(window.location.href, "steam-" + appid || "all");
     }
   }
 
-  class YandeMatcher {
-    async processData(data, _1, _2) {
-      return data;
-    }
+  class YandeMatcher extends BaseMatcher {
     workURL() {
       return /yande.re\/post(?!\/show\/.*)/;
     }
@@ -3090,7 +3474,7 @@ duration 0.04`).join("\n");
       const u = new URL(location.href);
       for (let p = curPageNumber; p <= latestPageNumber; p++) {
         u.searchParams.set("page", p.toString());
-        yield { raw: u.href, typ: "url" };
+        yield u.href;
       }
     }
     transformBigImageToSample(url) {
@@ -3099,29 +3483,19 @@ duration 0.04`).join("\n");
       url = url.replace(".png", ".jpg");
       return url;
     }
-    async fetchOriginMeta(href, _) {
+    async fetchOriginMeta(href) {
       if (!conf.fetchOriginal) {
         return { url: href };
       }
       return { url: this.transformBigImageToSample(href) };
     }
-    async parseImgNodes(page) {
+    async parseImgNodes(source) {
       const list = [];
-      let doc = await (async () => {
-        if (page.raw instanceof Document) {
-          return page.raw;
-        } else {
-          const raw = await window.fetch(page.raw).then((response) => response.text());
-          if (!raw)
-            return null;
-          const domParser = new DOMParser();
-          return domParser.parseFromString(raw, "text/html");
-        }
-      })();
+      const doc = await window.fetch(source).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
       if (!doc) {
         throw new Error("warn: yande matcher failed to get document from source page!");
       }
-      let url = new URL(page.raw);
+      let url = new URL(source);
       let titlePrefix = ("page" + url.searchParams.get("page") || "nopage") + " ";
       let query = doc.querySelectorAll("ul#post-list-posts li");
       query.forEach((liNode, key) => {
@@ -3136,7 +3510,7 @@ duration 0.04`).join("\n");
       });
       return list;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       const meta = new GalleryMeta(window.location.href, "yande");
       let ul = doc.querySelector("ul#tag-sidebar");
       let tagLabels = [
@@ -3192,188 +3566,6 @@ duration 0.04`).join("\n");
       }
     }
     return matchers.find((m) => m.workURL().test(url)) || null;
-  }
-
-  class DownloaderCanvas {
-    canvas;
-    mousemoveState;
-    ctx;
-    queue;
-    rectSize;
-    rectGap;
-    columns;
-    padding;
-    scrollTop;
-    scrollSize;
-    debouncer;
-    onClick;
-    constructor(id, queue, onClick) {
-      this.queue = queue;
-      const canvas = document.getElementById(id);
-      if (!canvas) {
-        throw new Error("canvas not found");
-      }
-      this.canvas = canvas;
-      this.canvas.addEventListener(
-        "wheel",
-        (event) => this.onwheel(event.deltaY)
-      );
-      this.mousemoveState = { x: 0, y: 0 };
-      this.canvas.addEventListener("mousemove", (event) => {
-        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
-        this.drawDebouce();
-      });
-      this.canvas.addEventListener("click", (event) => {
-        this.mousemoveState = { x: event.offsetX, y: event.offsetY };
-        const index = this.computeDrawList()?.find(
-          (state) => state.selected
-        )?.index;
-        if (index !== void 0) {
-          onClick?.(index);
-        }
-      });
-      this.ctx = this.canvas.getContext("2d");
-      this.rectSize = 12;
-      this.rectGap = 6;
-      this.columns = 15;
-      this.padding = 7;
-      this.scrollTop = 0;
-      this.scrollSize = 10;
-      this.debouncer = new Debouncer();
-      const parent = this.canvas.parentElement;
-      if (parent) {
-        parent.addEventListener("transitionend", (ev) => {
-          const ele = ev.target;
-          if (ele.clientHeight > 0) {
-            this.canvas.width = Math.floor(ele.offsetWidth - 20);
-            this.canvas.height = Math.floor(ele.offsetHeight * 0.8);
-            this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
-            this.draw();
-          }
-        });
-      }
-    }
-    onwheel(deltaY) {
-      const [_, h] = this.getWH();
-      const clientHeight = this.computeClientHeight();
-      if (clientHeight > h) {
-        deltaY = deltaY >> 1;
-        this.scrollTop += deltaY;
-        if (this.scrollTop < 0)
-          this.scrollTop = 0;
-        if (this.scrollTop + h > clientHeight + 20)
-          this.scrollTop = clientHeight - h + 20;
-        this.draw();
-      }
-    }
-    drawDebouce() {
-      this.debouncer.addEvent("DOWNLOADER-DRAW", () => this.draw(), 20);
-    }
-    computeDrawList() {
-      const list = [];
-      const [_, h] = this.getWH();
-      const startX = this.computeStartX();
-      const startY = -this.scrollTop + this.padding;
-      for (let i = 0, row = -1; i < this.queue.length; i++) {
-        const currCol = i % this.columns;
-        if (currCol == 0) {
-          row++;
-        }
-        const atX = startX + (this.rectSize + this.rectGap) * currCol;
-        const atY = startY + (this.rectSize + this.rectGap) * row;
-        if (atY + this.rectSize < 0) {
-          continue;
-        }
-        if (atY > h) {
-          break;
-        }
-        list.push({
-          index: i,
-          x: atX,
-          y: atY,
-          selected: this.isSelected(atX, atY)
-        });
-      }
-      return list;
-    }
-    // this function should be called by drawDebouce
-    draw() {
-      const [w, h] = this.getWH();
-      this.ctx.clearRect(0, 0, w, h);
-      const drawList = this.computeDrawList();
-      for (const node of drawList) {
-        this.drawSmallRect(
-          node.x,
-          node.y,
-          this.queue[node.index],
-          node.index === this.queue.currIndex,
-          node.selected
-        );
-      }
-    }
-    computeClientHeight() {
-      return Math.ceil(this.queue.length / this.columns) * (this.rectSize + this.rectGap) - this.rectGap;
-    }
-    scrollTo(index) {
-      const clientHeight = this.computeClientHeight();
-      const [_, h] = this.getWH();
-      if (clientHeight <= h) {
-        return;
-      }
-      const rowNo = Math.ceil((index + 1) / this.columns);
-      const offsetY = (rowNo - 1) * (this.rectSize + this.rectGap);
-      if (offsetY > h) {
-        this.scrollTop = offsetY + this.rectSize - h;
-        const maxScrollTop = clientHeight - h + 20;
-        if (this.scrollTop + 20 <= maxScrollTop) {
-          this.scrollTop += 20;
-        }
-      }
-    }
-    isSelected(atX, atY) {
-      return this.mousemoveState.x - atX >= 0 && this.mousemoveState.x - atX <= this.rectSize && this.mousemoveState.y - atY >= 0 && this.mousemoveState.y - atY <= this.rectSize;
-    }
-    computeStartX() {
-      const [w, _] = this.getWH();
-      const drawW = (this.rectSize + this.rectGap) * this.columns - this.rectGap;
-      let startX = w - drawW >> 1;
-      return startX;
-    }
-    drawSmallRect(x, y, imgFetcher, isCurr, isSelected) {
-      switch (imgFetcher.stage) {
-        case FetchState.FAILED:
-          this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
-          break;
-        case FetchState.URL:
-          this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
-          break;
-        case FetchState.DATA:
-          const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
-          this.ctx.fillStyle = `rgba(110, ${Math.ceil(
-          percent * 200
-        )}, 120, ${Math.max(percent, 0.1)})`;
-          break;
-        case FetchState.DONE:
-          this.ctx.fillStyle = "rgb(110, 200, 120)";
-          break;
-      }
-      this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
-      this.ctx.shadowColor = "#d53";
-      if (isSelected) {
-        this.ctx.strokeStyle = "rgb(60, 20, 200)";
-        this.ctx.lineWidth = 2;
-      } else if (isCurr) {
-        this.ctx.strokeStyle = "rgb(255, 60, 20)";
-        this.ctx.lineWidth = 2;
-      } else {
-        this.ctx.strokeStyle = "rgb(90, 90, 90)";
-        this.ctx.lineWidth = 1;
-      }
-      this.ctx.strokeRect(x, y, this.rectSize, this.rectSize);
-    }
-    getWH() {
-      return [this.canvas.width, this.canvas.height];
-    }
   }
 
   function parseKey(event) {
@@ -3564,7 +3756,7 @@ duration 0.04`).join("\n");
       this.noPreventDefault = noPreventDefault || false;
     }
   }
-  function initEvents(HTML, BIFM, IFQ, PF, IL, PH) {
+  function initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH) {
     function modPageHelperPostion() {
       const style = HTML.pageHelper.style;
       conf.pageHelperAbTop = style.top;
@@ -3630,8 +3822,10 @@ duration 0.04`).join("\n");
       }
       if (key === "readMode") {
         BIFM.resetScaleBigImages();
-        if (conf.readMode === "singlePage") {
-          BIFM.init(BIFM.queue.currIndex);
+        if (conf.readMode === "singlePage", BIFM.currMediaNode) {
+          const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
+          const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
+          BIFM.initElement(queue[index]);
         }
       }
       if (key === "minifyPageHelper") {
@@ -3666,41 +3860,39 @@ duration 0.04`).join("\n");
     }
     let restoreMinify = false;
     function togglePanelEvent(id, collapse) {
-      setTimeout(() => {
-        let element = q(`#${id}-panel`);
-        if (!element)
-          return;
-        if (collapse === false) {
-          element.classList.remove("p-collapse");
-          return;
-        }
-        if (collapse === true) {
-          collapsePanelEvent(element, id);
-          if (BIFM.visible) {
-            BIFM.frame.focus();
-          } else {
-            HTML.fullViewGrid.focus();
-          }
-          return;
-        }
-        if (!element.classList.toggle("p-collapse")) {
-          ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
-          if (!conf.autoCollapsePanel) {
-            PH.minify(false, "fullViewGrid");
-            restoreMinify = true;
-          }
+      let element = q(`#${id}-panel`);
+      if (!element)
+        return;
+      if (collapse === false) {
+        element.classList.remove("p-collapse");
+        return;
+      }
+      if (collapse === true) {
+        collapsePanelEvent(element, id);
+        if (BIFM.visible) {
+          BIFM.frame.focus();
         } else {
-          if (restoreMinify) {
-            PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
-            restoreMinify = false;
-          }
+          HTML.fullViewGrid.focus();
         }
-      }, 10);
+        return;
+      }
+      if (!element.classList.toggle("p-collapse")) {
+        ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
+        if (!conf.autoCollapsePanel) {
+          PH.minify(false, "fullViewGrid");
+          restoreMinify = true;
+        }
+      } else {
+        if (restoreMinify) {
+          PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+          restoreMinify = false;
+        }
+      }
     }
     let bodyOverflow = document.body.style.overflow;
     function showFullViewGrid() {
       PH.minify(true, "fullViewGrid");
-      HTML.fullViewGrid.classList.remove("full-view-grid-collapse");
+      HTML.root.classList.remove("ehvp-root-collapse");
       HTML.fullViewGrid.focus();
       document.body.style.overflow = "hidden";
     }
@@ -3712,19 +3904,15 @@ duration 0.04`).join("\n");
     function hiddenFullViewGrid() {
       BIFM.hidden();
       PH.minify(false, "fullViewGrid");
-      HTML.fullViewGrid.classList.add("full-view-grid-collapse");
+      HTML.root.classList.add("ehvp-root-collapse");
       HTML.fullViewGrid.blur();
-      q("html").focus();
       document.body.style.overflow = bodyOverflow;
     }
     function scrollEvent() {
-      if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse"))
+      if (HTML.root.classList.contains("ehvp-root-collapse"))
         return;
-      PF.renderCurrView();
-      PF.appendNextPages();
-    }
-    function bigImageWheelEvent(event) {
-      IFQ.stepImageEvent(event.deltaY > 0 ? "next" : "prev");
+      FVGM.renderCurrView();
+      FVGM.tryExtend();
     }
     function scrollImage(oriented) {
       BIFM.frame.addEventListener("scrollend", () => {
@@ -3747,11 +3935,11 @@ duration 0.04`).join("\n");
         ),
         "step-image-prev": new KeyboardDesc(
           ["ArrowLeft"],
-          () => IFQ.stepImageEvent(conf.reversePages ? "next" : "prev")
+          () => BIFM.stepNext(conf.reversePages ? "next" : "prev")
         ),
         "step-image-next": new KeyboardDesc(
           ["ArrowRight"],
-          () => IFQ.stepImageEvent(conf.reversePages ? "prev" : "next")
+          () => BIFM.stepNext(conf.reversePages ? "prev" : "next")
         ),
         "step-to-first-image": new KeyboardDesc(
           ["Home"],
@@ -3841,6 +4029,10 @@ duration 0.04`).join("\n");
         "columns-decrease": new KeyboardDesc(
           ["-"],
           () => modNumberConfigEvent("colCount", "minus")
+        ),
+        "back-chapters-selection": new KeyboardDesc(
+          ["b"],
+          () => PF.backChaptersSelection()
         )
       };
       const inMain = {
@@ -3855,39 +4047,43 @@ duration 0.04`).join("\n");
     }
     const keyboardEvents = initKeyboardEvent();
     let numberRecord = null;
-    function fullViewGridKeyBoardEvent(event) {
+    function bigImageFrameKeyBoardEvent(event) {
+      if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
+        return;
       const key = parseKey(event);
-      if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) {
-        const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
-          const override = conf.keyboards.inBigImageMode[id];
-          if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
-            desc.cb(event);
-            return !desc.noPreventDefault;
-          }
-          return false;
-        });
-        if (triggered) {
-          event.preventDefault();
+      const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
+        const override = conf.keyboards.inBigImageMode[id];
+        if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+          desc.cb(event);
+          return !desc.noPreventDefault;
         }
-      } else if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
-        const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
-          const override = conf.keyboards.inFullViewGrid[id];
-          if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
-            desc.cb(event);
-            return !desc.noPreventDefault;
-          }
-          return false;
-        });
-        if (triggered) {
-          event.preventDefault();
-        } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
-          numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
-          event.preventDefault();
+        return false;
+      });
+      if (triggered) {
+        event.preventDefault();
+      }
+    }
+    function fullViewGridKeyBoardEvent(event) {
+      if (HTML.root.classList.contains("ehvp-root-collapse"))
+        return;
+      const key = parseKey(event);
+      const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
+        const override = conf.keyboards.inFullViewGrid[id];
+        if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+          desc.cb(event);
+          return !desc.noPreventDefault;
         }
+        return false;
+      });
+      if (triggered) {
+        event.preventDefault();
+      } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+        numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
+        event.preventDefault();
       }
     }
     function keyboardEvent(event) {
-      if (!HTML.fullViewGrid.classList.contains("full-view-grid-collapse"))
+      if (!HTML.root.classList.contains("ehvp-root-collapse"))
         return;
       if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
         return;
@@ -3915,17 +4111,17 @@ duration 0.04`).join("\n");
       guideElement.classList.add("ehvp-full-panel");
       guideElement.setAttribute("style", `align-items: center; color: black; text-align: left;`);
       guideElement.addEventListener("click", () => guideElement.remove());
-      if (HTML.fullViewGrid.classList.contains("full-view-grid-collapse")) {
+      if (HTML.root.classList.contains("ehvp-root-collapse")) {
         document.body.after(guideElement);
       } else {
-        HTML.fullViewGrid.appendChild(guideElement);
+        HTML.root.appendChild(guideElement);
       }
     }
     function showKeyboardCustomEvent() {
-      createKeyboardCustomPanel(keyboardEvents, HTML.fullViewGrid);
+      createKeyboardCustomPanel(keyboardEvents, HTML.root);
     }
     function showExcludeURLEvent() {
-      createExcludeURLPanel(HTML.fullViewGrid);
+      createExcludeURLPanel(HTML.root);
     }
     const signal = { first: true };
     function main(extend) {
@@ -3935,12 +4131,12 @@ duration 0.04`).join("\n");
           showFullViewGrid();
           if (signal.first) {
             signal.first = false;
-            PF.init().then(() => IL.start(IL.lockVer));
+            PF.init();
           }
         } else {
           HTML.pageHelper.classList.remove("p-helper-extend");
-          hiddenFullViewGrid();
           ["config", "downloader"].forEach((id) => togglePanelEvent(id, true));
+          hiddenFullViewGrid();
         }
       }
     }
@@ -3955,8 +4151,8 @@ duration 0.04`).join("\n");
       hiddenFullViewGridEvent,
       hiddenFullViewGrid,
       scrollEvent,
-      bigImageWheelEvent,
       fullViewGridKeyBoardEvent,
+      bigImageFrameKeyBoardEvent,
       keyboardEvent,
       showGuideEvent,
       collapsePanelEvent,
@@ -3964,6 +4160,97 @@ duration 0.04`).join("\n");
       showKeyboardCustomEvent,
       showExcludeURLEvent
     };
+  }
+
+  class FullViewGridManager {
+    root;
+    // renderRangeRecord: [number, number] = [0, 0];
+    queue = [];
+    done = false;
+    chapterIndex = 0;
+    constructor(HTML, BIFM) {
+      this.root = HTML.fullViewGrid;
+      EBUS.subscribe("pf-on-appended", (_total, nodes, done) => {
+        this.append(nodes);
+        this.done = done || false;
+        setTimeout(() => this.renderCurrView(), 200);
+      });
+      EBUS.subscribe("pf-change-chapter", (index) => {
+        this.chapterIndex = Math.max(0, index);
+        this.root.innerHTML = "";
+        this.queue = [];
+        this.done = false;
+      });
+      EBUS.subscribe("ifq-do", (_, imf) => {
+        if (!BIFM.visible)
+          return;
+        if (imf.chapterIndex !== this.chapterIndex)
+          return;
+        if (!imf.node.root)
+          return;
+        let scrollTo = imf.node.root.offsetTop - window.screen.availHeight / 3;
+        scrollTo = scrollTo <= 0 ? 0 : scrollTo >= this.root.scrollHeight ? this.root.scrollHeight : scrollTo;
+        if (this.root.scrollTo.toString().includes("[native code]")) {
+          this.root.scrollTo({ top: scrollTo, behavior: "smooth" });
+        } else {
+          this.root.scrollTop = scrollTo;
+        }
+      });
+    }
+    append(nodes) {
+      if (nodes.length > 0) {
+        const list = nodes.map((n) => {
+          return {
+            node: n,
+            element: n.create()
+          };
+        });
+        this.queue.push(...list);
+        this.root.append(...list.map((l) => l.element));
+      }
+    }
+    tryExtend() {
+      if (this.done)
+        return;
+      const nodes = Array.from(this.root.childNodes);
+      if (nodes.length === 0)
+        return;
+      const lastImgNode = nodes[nodes.length - 1];
+      const viewButtom = this.root.scrollTop + this.root.clientHeight;
+      if (viewButtom + this.root.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
+        return;
+      }
+      EBUS.emit("pf-try-extend");
+    }
+    /**
+     *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
+     */
+    renderCurrView() {
+      const [scrollTop, clientHeight] = [this.root.scrollTop, this.root.clientHeight];
+      const [start, end] = this.findOutsideRoundView(scrollTop, clientHeight);
+      this.queue.slice(start, end + 1 + conf.colCount).forEach((e) => e.node.render());
+    }
+    findOutsideRoundView(currTop, clientHeight) {
+      const viewButtom = currTop + clientHeight;
+      let outsideTop = 0;
+      let outsideBottom = 0;
+      for (let i = 0; i < this.queue.length; i += conf.colCount) {
+        const element = this.queue[i].element;
+        if (outsideBottom === 0) {
+          if (element.offsetTop + 2 >= currTop) {
+            outsideBottom = i + 1;
+          } else {
+            outsideTop = i;
+          }
+        } else {
+          outsideBottom = i;
+          if (element.offsetTop + element.offsetHeight > viewButtom) {
+            break;
+          }
+        }
+      }
+      return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
+    }
   }
 
   function dragElement(element, dragHub, callback) {
@@ -3976,7 +4263,7 @@ duration 0.04`).join("\n");
         const mouseX = event2.clientX;
         const mouseY = event2.clientY;
         if (mouseY <= wh / 2) {
-          element.style.top = Math.max(mouseY, 500) + "px";
+          element.style.top = Math.max(mouseY, 5) + "px";
           element.style.bottom = "unset";
         } else {
           element.style.bottom = Math.max(wh - mouseY - element.clientHeight, 5) + "px";
@@ -4002,26 +4289,83 @@ duration 0.04`).join("\n");
   function loadStyleSheel() {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
     const style = document.createElement("style");
+    const animation = `
+.ehvp-root {
+  transition: height 0.3s linear;
+}
+.ehvp-root-collapse {
+  transition: height 0.3s linear;
+}
+.big-img-frame {
+  transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
+}
+.p-helper {
+  transition: min-width 0.4s linear;
+}
+.p-helper .p-panel {
+  transition: width 0.4s ease 0s, height 0.4s ease 0s;
+}
+.p-collapse {
+  transition: height 0.4s;
+}
+.p-helper .b-main {
+  transition: flex-grow 0.6s ease, max-width 0.4s ease;
+}
+.p-helper-extend .b-main {
+  transition: flex-grow 0.6s ease, max-width 0.4s ease;
+}
+.big-img-frame-collapse {
+  transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
+}
+.p-minify:not(:hover),
+.p-minify:not(:hover) .lightgreen {
+  transition: color 0.5s ease-in-out, background-color 0.3s ease-in-out;
+}
+@media (min-width: ${isMobile ? "1440px" : "720px"}) {
+  .p-helper.p-helper-extend {
+    transition: min-width 0.4s ease, color 0.5s ease-in-out, background-color 0.3s ease-in-out;
+  }
+}
+@media (max-width: ${isMobile ? "1440px" : "720px"}) {
+  .p-helper.p-helper-extend {
+    transition: min-width 0.4s ease;
+  }
+}
+`;
     const css = `
-.full-view-grid {
+.ehvp-root {
   width: 100vw;
   height: 100vh;
   background-color: rgb(0, 0, 0);
   position: fixed;
   top: 0px;
-  right: 0px;
+  left: 0px;
   z-index: 2000;
-  overflow: hidden scroll;
-  transition: height 0.4s ease 0s;
+  box-sizing: border-box;
+  overflow: clip;
+}
+.ehvp-root-collapse {
+  height: 0;
+}
+${conf.disableCssAnimation ? "" : animation}
+.full-view-grid {
+  width: 100vw;
+  height: 100vh;
   display: grid;
   align-content: start;
   grid-gap: 0.7rem;
   grid-template-columns: repeat(${conf.colCount}, 1fr);
+  overflow: hidden scroll;
+  padding: 0.3rem;
+  box-sizing: border-box;
 }
-.full-view-grid * {
+.ehvp-root * {
   font-family: initial;
 }
-.full-view-grid input, .full-view-grid select {
+.ehvp-root a {
+  color: unset;
+}
+.ehvp-root input, .ehvp-root select {
   color: #f1f1f1;
   background-color: #34353b !important;
   color-scheme: dark;
@@ -4035,10 +4379,10 @@ duration 0.04`).join("\n");
   top: unset !important;
   vertical-align: middle;
 }
-.full-view-grid input:enabled:hover, .full-view-grid select:enabled:hover, .full-view-grid input:enabled:focus, .full-view-grid select:enabled:focus {
+.ehvp-root input:enabled:hover, .ehvp-root select:enabled:hover, .ehvp-root input:enabled:focus, .ehvp-root select:enabled:focus {
   background-color: #34355b !important;
 }
-.full-view-grid select option {
+.ehvp-root select option {
   background-color: #34355b !important;
   color: #f1f1f1;
   font-size: 1rem;
@@ -4054,6 +4398,22 @@ duration 0.04`).join("\n");
   width: 100%;
   height: auto;
   border: 3px solid #fff;
+  box-sizing: border-box;
+}
+.img-node:hover .ehvp-chapter-description {
+  color: #ffe7f5;
+}
+.ehvp-chapter-description {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  background-color: #708090e3;
+  color: #ffe785;
+  width: 100%;
+  font-weight: 600;
+  min-height: 3rem;
+  font-size: 1.2rem;
+  padding: 0.5rem;
   box-sizing: border-box;
 }
 .img-fetched img {
@@ -4093,10 +4453,6 @@ duration 0.04`).join("\n");
     left: 0%;
 	}
 }
-.full-view-grid-collapse {
-  height: 0;
-  transition: height 0.4s;
-}
 .big-img-frame::-webkit-scrollbar {
   display: none;
 }
@@ -4110,7 +4466,6 @@ duration 0.04`).join("\n");
   scrollbar-width: none;
   z-index: 2001;
   background-color: #000000d6;
-  transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
 }
 .bifm-img {
   object-fit: contain;
@@ -4126,7 +4481,6 @@ duration 0.04`).join("\n");
   box-sizing: border-box;
   font-weight: bold;
   color: #fff;
-  transition: min-width 0.4s ease;
   min-width: 0px;
 }
 .p-helper .p-panel {
@@ -4137,13 +4491,11 @@ duration 0.04`).join("\n");
   color: rgb(200, 222, 200);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
   overflow: hidden;
-  transition: width 0.4s ease 0s, height 0.4s ease 0s;
   padding: 3px;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
     min-width: 24rem;
-    transition: min-width 0.4s ease, color 0.5s ease-in-out, background-color 0.3s ease-in-out;
     font-size: 1rem;
     line-height: 1.2rem;
   }
@@ -4157,8 +4509,8 @@ duration 0.04`).join("\n");
   }
   .p-helper .p-panel {
     width: 24rem;
-    height: 30rem;
-    bottom: 1.3rem;
+    height: 32rem;
+    ${conf.pageHelperAbBottom === "unset" ? "top: 100%" : "bottom: 100%"}
   }
   .p-helper .p-btn {
     height: 1.5rem;
@@ -4170,14 +4522,14 @@ duration 0.04`).join("\n");
   .p-helper-extend .b-main {
     max-width: 24rem !important;
   }
-  .full-view-grid input[type="checkbox"] {
+  .ehvp-root input[type="checkbox"] {
     width: 1rem;
     height: unset !important;
   }
-  .full-view-grid select {
+  .ehvp-root select {
     width: 7rem !important;
   }
-  .full-view-grid input, .full-view-grid select {
+  .ehvp-root input, .ehvp-root select {
     width: 2rem;
     height: 1.5rem;
   }
@@ -4192,11 +4544,13 @@ duration 0.04`).join("\n");
     left: 30%;
     width: 40vw;
   }
+  .b-extra {
+    ${conf.pageHelperAbLeft !== "unset" ? "left" : "right"}: 100%;
+  }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
     min-width: 100vw;
-    transition: min-width 0.4s ease;
     font-size: 4.2cqw;
     line-height: 5cqw;
   }
@@ -4220,14 +4574,14 @@ duration 0.04`).join("\n");
   .p-helper-extend .b-main {
     max-width: 100vw !important;
   }
-  .full-view-grid input[type="checkbox"] {
+  .ehvp-root input[type="checkbox"] {
     width: 4cqw;
     height: unset !important;
   }
-  .full-view-grid select {
+  .ehvp-root select {
     width: 25cqw !important;
   }
-  .full-view-grid input, .full-view-grid select {
+  .ehvp-root input, .ehvp-root select {
     width: 9cqw;
     height: 6cqw;
     font-size: 3cqw;
@@ -4243,6 +4597,10 @@ duration 0.04`).join("\n");
     left: 0;
     width: 100vw;
   }
+  .b-extra {
+    left: 0;
+    bottom: 101%;
+  }
 }
 .p-helper:hover {
   background-color: #3a3a3ae6;
@@ -4252,6 +4610,7 @@ duration 0.04`).join("\n");
   z-index: 2111;
   user-select: none;
   text-align: center;
+  white-space: nowrap;
 }
 .clickable:hover {
   color: #90ea90 !important;
@@ -4285,7 +4644,6 @@ duration 0.04`).join("\n");
 }
 .p-collapse {
   height: 0px !important;
-  transition: height 0.4s;
   padding: 0px !important;
 }
 .p-helper .b-main {
@@ -4294,11 +4652,9 @@ duration 0.04`).join("\n");
   display: flex;
   justify-content: space-between;
   white-space: nowrap !important;
-  transition: flex-grow 0.6s ease, max-width 0.5s ease;
 }
 .p-helper-extend .b-main {
   flex-grow: 1;
-  transition: flex-grow 0.6s ease, max-width 0.5s ease;
 }
 .p-helper .p-config {
   display: grid;
@@ -4377,7 +4733,6 @@ duration 0.04`).join("\n");
 }
 .big-img-frame-collapse {
   width: 0px !important;
-  transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
 }
 .big-img-frame-collapse .img-land-left,
 .big-img-frame-collapse .img-land-right,
@@ -4390,10 +4745,13 @@ duration 0.04`).join("\n");
   height: 0.5rem;
   width: 100%;
   position: absolute;
-  bottom: 0;
+  bottom: -3px;
+  border-left: 3px solid #00000000;
+  border-right: 3px solid #00000000;
+  box-sizing: border-box;
 }
 .img-land-left, .img-land-right {
-  width: 20%;
+  width: 15%;
   height: 50%;
   position: fixed;
   z-index: 2004;
@@ -4507,7 +4865,6 @@ duration 0.04`).join("\n");
 .p-minify:not(:hover) .lightgreen {
   color: #00000000 !important;
   background-color: #00000000 !important;
-  transition: color 0.5s ease-in-out, background-color 0.3s ease-in-out;
 }
 .p-minify:not(:hover) .b-main .b-m-page {
   order: ${conf.pageHelperAbLeft !== "unset" ? -2 : 1};
@@ -4554,8 +4911,12 @@ duration 0.04`).join("\n");
   justify-content: space-between;
   padding-left: 1rem;
 }
+.ehvp-custom-panel-close {
+  width: 2rem;
+  text-align: center;
+}
 .ehvp-custom-panel-close:hover {
-  background-color: #c30090;
+  background-color: #c3c0e0;
 }
 .ehvp-custom-panel-content {
   border: 1px solid #000000;
@@ -4676,6 +5037,60 @@ html {
   color: white;
   font-weight: bold;
 }
+.p-helper-extend #ehvp-gate-book {
+  display: none !important;
+}
+.b-extra {
+  position: absolute;
+  background-color: #4a4a4ae6;
+  height: 100%;
+  display: none;
+}
+.b-extra .clickable {
+  margin: 0rem 0.1rem;
+}
+.b-extra:hover {
+  background-color: #3a3a3ae6;
+}
+.p-helper-extend:not(.p-minify) .b-extra {
+  display: flex;
+}
+.download-middle {
+  width: 100%;
+  height: auto;
+  flex-grow: 1;
+  overflow: hidden;
+}
+.download-middle .ehvp-tabs + div {
+  width: 100%;
+  height: calc(100% - 2rem);
+}
+.ehvp-tabs {
+  height: 2rem;
+  width: 100%;
+  line-height: 2rem;
+}
+.ehvp-p-tab {
+  border: 1px dotted #ff0;
+  font-size: 1rem;
+  padding: 0 0.4rem;
+}
+.download-chapters, .download-dashboard {
+  width: 100%;
+  height: 100%;
+}
+.download-chapters {
+  overflow: hidden auto;
+}
+.download-chapters label {
+  white-space: nowrap;
+}
+.download-chapters label span {
+  margin-left: 0.5rem;
+}
+.ehvp-p-tab-selected {
+  color: rgb(120, 240, 80) !important;
+}
 `;
     style.textContent = css;
     document.head.appendChild(style);
@@ -4684,19 +5099,17 @@ html {
 
   function createHTML() {
     const fullViewGrid = document.createElement("div");
-    fullViewGrid.setAttribute("tabindex", "0");
-    fullViewGrid.classList.add("full-view-grid");
-    fullViewGrid.classList.add("full-view-grid-collapse");
+    fullViewGrid.classList.add("ehvp-root");
+    fullViewGrid.classList.add("ehvp-root-collapse");
     document.body.after(fullViewGrid);
     const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
-<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="0">
+<div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
+<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="7">
    <a id="img-land-left" class="img-land-left"></a>
    <a id="img-land-right" class="img-land-right"></a>
-   <a id="img-land-top" class="img-land-top"></a>
-   <a id="img-land-bottom" class="img-land-bottom"></a>
 </div>
 <div id="p-helper" class="p-helper">
     <div style="position: relative">
@@ -4777,6 +5190,12 @@ html {
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
+                    <span>${i18n.disableCssAnimation.get()} :</span>
+                    <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
+                </label>
+            </div>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                <label class="p-label">
                     <span>${i18n.autoCollapsePanel.get()}
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelTooltip.get()}</span></span>:
                     </span>
@@ -4846,11 +5265,11 @@ html {
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                 </label>
             </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                 <a id="show-guide-element" class="clickable" style="color: #fff">HELP</a>
-                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff">Keyboard</a>
-                 <a id="show-exclude-url-element" class="clickable" style="color: #fff">Excludes</a>
-                 <a class="clickable" style="color: #fff" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">Let's Star</a>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px; text-align: left;">
+                 <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
+                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
+                 <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
+                 <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
             </div>
             <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>
@@ -4863,7 +5282,18 @@ html {
         </div>
         <div id="downloader-panel" class="p-panel p-downloader p-collapse">
             <div id="download-notice" class="download-notice"></div>
-            <canvas id="downloader-canvas" width="100" height="100"></canvas>
+            <div id="download-middle" class="download-middle">
+              <div class="ehvp-tabs">
+                <a id="download-tab-dashboard" class="clickable ehvp-p-tab">Dashboard</a>
+                <a id="download-tab-chapters" class="clickable ehvp-p-tab">Select Chapters</a>
+              </div>
+              <div>
+                <div id="download-dashboard" class="download-dashboard" hidden>
+                  <canvas id="downloader-canvas" width="0" height="0"></canvas>
+                </div>
+                <div id="download-chapters" class="download-chapters" hidden></div>
+              </div>
+            </div>
             <div class="download-btn-group">
                <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
                <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.downloadStart.get()}</a>
@@ -4871,7 +5301,7 @@ html {
         </div>
     </div>
     <div id="ehvp-gate-icon">
-        <span id="gate">&lessdot;📖</span>
+        <span>&lessdot;</span><span id="ehvp-gate-book">📖</span>
     </div>
     <div id="b-main" class="b-main b-collapse">
         <div id="config-panel-btn" class="clickable">${i18n.config.get()}</div>
@@ -4888,12 +5318,16 @@ html {
     <div id="ehvp-bar-gtdot">
         <span>&gtdot;</span>
     </div>
+    <div id="ehvp-p-extra" class="b-extra">
+        <div id="backChaptersSelection" class="clickable" hidden="">${i18n.backChapters.get()}</div>
+    </div>
 </div>
 `;
     fullViewGrid.innerHTML = HTML_STRINGS;
     const styleSheel = loadStyleSheel();
     return {
-      fullViewGrid,
+      root: fullViewGrid,
+      fullViewGrid: q("#ehvp-nodes-container", fullViewGrid),
       // root element
       bigImageFrame: q("#big-img-frame", fullViewGrid),
       // page helper
@@ -4907,7 +5341,7 @@ html {
       // download panel mouse leave event
       downloaderPanel: q("#downloader-panel", fullViewGrid),
       collapseBTN: q("#collapse-btn", fullViewGrid),
-      gate: q("#gate", fullViewGrid),
+      gate: q("#ehvp-gate-icon", fullViewGrid),
       currPageElement: q("#p-curr-page", fullViewGrid),
       totalPageElement: q("#p-total", fullViewGrid),
       finishedElement: q("#p-finished", fullViewGrid),
@@ -4916,30 +5350,40 @@ html {
       showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
       imgLandLeft: q("#img-land-left", fullViewGrid),
       imgLandRight: q("#img-land-right", fullViewGrid),
-      imgLandTop: q("#img-land-top", fullViewGrid),
-      imgLandBottom: q("#img-land-bottom", fullViewGrid),
       imgScaleBar: q("#img-scale-bar", fullViewGrid),
       autoPageBTN: q("#auto-page-btn", fullViewGrid),
       pageLoading: q("#page-loading", fullViewGrid),
+      downloaderCanvas: q("#downloader-canvas", fullViewGrid),
+      downloadTabDashboard: q("#download-tab-dashboard", fullViewGrid),
+      downloadTabChapters: q("#download-tab-chapters", fullViewGrid),
+      downloadDashboard: q("#download-dashboard", fullViewGrid),
+      downloadChapters: q("#download-chapters", fullViewGrid),
+      downloadNotice: q("#download-notice", fullViewGrid),
+      downloadBTNForce: q("#download-force", fullViewGrid),
+      downloadBTNStart: q("#download-start", fullViewGrid),
       styleSheel
     };
   }
-  function addEventListeners(events, HTML, BIFM, IFQ, DL) {
+  function addEventListeners(events, HTML, BIFM, DL) {
     HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
     HTML.downloaderPanelBTN.addEventListener("click", () => {
-      DL.check();
       events.togglePanelEvent("downloader");
+      DL.check();
     });
-    HTML.configPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "config"));
-    HTML.configPanel.addEventListener("blur", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "config"));
-    HTML.downloaderPanel.addEventListener("mouseleave", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "downloader"));
-    HTML.downloaderPanel.addEventListener("blur", (event) => conf.autoCollapsePanel && events.collapsePanelEvent(event.target, "downloader"));
-    HTML.pageHelper.addEventListener("mouseover", () => conf.autoCollapsePanel && events.abortMouseleavePanelEvent(""));
-    HTML.pageHelper.addEventListener("mouseleave", () => conf.autoCollapsePanel && ["config", "downloader"].forEach((k) => events.togglePanelEvent(k, true)));
+    function collapsePanel(key) {
+      const elements = { "config": HTML.configPanel, "downloader": HTML.downloaderPanel };
+      conf.autoCollapsePanel && events.collapsePanelEvent(elements[key], key);
+    }
+    HTML.configPanel.addEventListener("mouseleave", () => collapsePanel("config"));
+    HTML.configPanel.addEventListener("blur", () => collapsePanel("config"));
+    HTML.downloaderPanel.addEventListener("mouseleave", () => collapsePanel("downloader"));
+    HTML.downloaderPanel.addEventListener("blur", () => collapsePanel("downloader"));
+    HTML.pageHelper.addEventListener("mouseover", () => events.abortMouseleavePanelEvent());
+    HTML.pageHelper.addEventListener("mouseleave", () => ["config", "downloader"].forEach((k) => collapsePanel(k)));
     for (const key of ConfigNumberKeys) {
-      q(`#${key}MinusBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
-      q(`#${key}AddBTN`, HTML.fullViewGrid).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
-      q(`#${key}Input`, HTML.fullViewGrid).addEventListener("wheel", (event) => {
+      q(`#${key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
+      q(`#${key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
+      q(`#${key}Input`, HTML.root).addEventListener("wheel", (event) => {
         if (event.deltaY < 0) {
           events.modNumberConfigEvent(key, "add");
         } else if (event.deltaY > 0) {
@@ -4948,34 +5392,26 @@ html {
       });
     }
     for (const key of ConfigBooleanKeys) {
-      q(`#${key}Checkbox`, HTML.fullViewGrid).addEventListener("click", () => events.modBooleanConfigEvent(key));
+      q(`#${key}Checkbox`, HTML.root).addEventListener("click", () => events.modBooleanConfigEvent(key));
     }
     for (const key of ConfigSelectKeys) {
-      q(`#${key}Select`, HTML.fullViewGrid).addEventListener("change", () => events.modSelectConfigEvent(key));
+      q(`#${key}Select`, HTML.root).addEventListener("change", () => events.modSelectConfigEvent(key));
     }
     HTML.collapseBTN.addEventListener("click", () => events.main(false));
     HTML.gate.addEventListener("click", () => events.main(true));
     const debouncer = new Debouncer();
     HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
     HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
-    HTML.currPageElement.addEventListener("click", () => BIFM.show());
-    HTML.currPageElement.addEventListener("wheel", (event) => events.bigImageWheelEvent(event));
+    HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", parseInt(event.target.textContent || "") - 1));
     document.addEventListener("keydown", (event) => events.keyboardEvent(event));
     HTML.fullViewGrid.addEventListener("keydown", (event) => events.fullViewGridKeyBoardEvent(event));
+    HTML.bigImageFrame.addEventListener("keydown", (event) => events.bigImageFrameKeyBoardEvent(event));
     HTML.imgLandLeft.addEventListener("click", (event) => {
-      IFQ.stepImageEvent(conf.reversePages ? "next" : "prev");
+      BIFM.stepNext(conf.reversePages ? "next" : "prev");
       event.stopPropagation();
     });
     HTML.imgLandRight.addEventListener("click", (event) => {
-      IFQ.stepImageEvent(conf.reversePages ? "prev" : "next");
-      event.stopPropagation();
-    });
-    HTML.imgLandTop.addEventListener("click", (event) => {
-      IFQ.stepImageEvent("prev");
-      event.stopPropagation();
-    });
-    HTML.imgLandBottom.addEventListener("click", (event) => {
-      IFQ.stepImageEvent("next");
+      BIFM.stepNext(conf.reversePages ? "prev" : "next");
       event.stopPropagation();
     });
     HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
@@ -4986,8 +5422,53 @@ html {
 
   class PageHelper {
     html;
-    constructor(html) {
+    chapterIndex = 0;
+    constructor(html, getChapter) {
       this.html = html;
+      EBUS.subscribe("pf-change-chapter", (index) => {
+        this.chapterIndex = index;
+        const [total, finished] = (() => {
+          const queue = getChapter(index)?.queue;
+          if (!queue)
+            return [0, 0];
+          const finished2 = queue.filter((imf) => imf.stage === FetchState.DONE).length;
+          return [finished2, queue.length];
+        })();
+        this.setPageState({ finished: finished.toString(), total: total.toString(), current: "1" });
+      });
+      EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
+      EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));
+      EBUS.subscribe("ifq-do", (index, imf) => {
+        if (imf.chapterIndex !== this.chapterIndex)
+          return;
+        const queue = getChapter(this.chapterIndex)?.queue;
+        if (!queue)
+          return;
+        this.setPageState({ current: (index + 1).toString() });
+        if (imf.stage !== FetchState.DONE) {
+          this.setFetchState("fetching");
+        }
+      });
+      EBUS.subscribe("ifq-on-finished-report", (index, queue) => {
+        if (queue.chapterIndex !== this.chapterIndex)
+          return;
+        this.setPageState({ finished: queue.finishedIndex.size.toString() });
+        evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
+        if (queue[queue.currIndex].stage === FetchState.DONE) {
+          this.setFetchState("fetched");
+        }
+      });
+      EBUS.subscribe("pf-on-appended", (total, _ifs, done) => {
+        this.setPageState({ total: `${total}${done ? "" : ".."}` });
+      });
+      html.currPageElement.addEventListener("click", (event) => {
+        const ele = event.target;
+        const index = parseInt(ele.textContent || "1") - 1;
+        const queue = getChapter(this.chapterIndex)?.queue;
+        if (!queue || !queue[index])
+          return;
+        EBUS.emit("imf-on-click", queue[index]);
+      });
     }
     setFetchState(state) {
       if (state === "fetching") {
@@ -5117,7 +5598,7 @@ html {
       this.ui.volumeProgress.firstElementChild.style.width = `${conf.volume || 30}%`;
     }
     attach(element) {
-      evLog("attach video control");
+      evLog("info", "attach video control");
       this.detach();
       this.show();
       this.abortController = new AbortController();
@@ -5136,7 +5617,7 @@ html {
         state.time = ele.currentTime;
         this.flushUI(state, true);
       }, { signal: this.abortController.signal });
-      element.onwaiting = () => evLog("onwaiting");
+      element.onwaiting = () => evLog("debug", "onwaiting");
       element.loop = true;
       element.muted = conf.muted || false;
       element.volume = (conf.volume || 30) / 100;
@@ -5202,7 +5683,6 @@ html {
 
   class BigImageFrameManager {
     frame;
-    queue;
     lockInit;
     currMediaNode;
     lastMouseY;
@@ -5213,28 +5693,48 @@ html {
     debouncer;
     throttler;
     callbackOnWheel;
-    onShowEventContext = /* @__PURE__ */ new Map();
-    onHiddenEventContext = /* @__PURE__ */ new Map();
     hammer;
     preventStep = { fin: false };
     visible = false;
     html;
     frameScrollAbort;
     vidController;
-    /* prevent mouse wheel step next image */
-    constructor(HTML, queue) {
+    chapterIndex = 0;
+    getChapter;
+    constructor(HTML, getChapter) {
       this.html = HTML;
       this.frame = HTML.bigImageFrame;
-      this.queue = queue;
       this.imgScaleBar = HTML.imgScaleBar;
       this.debouncer = new Debouncer();
       this.throttler = new Debouncer("throttle");
       this.lockInit = false;
+      this.getChapter = getChapter;
       this.resetStickyMouse();
       this.initFrame();
       this.initImgScaleBar();
       this.initImgScaleStyle();
       this.initHammer();
+      EBUS.subscribe("pf-change-chapter", (index) => this.chapterIndex = Math.max(0, index));
+      EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
+      EBUS.subscribe("imf-on-finished", (index, success, imf) => {
+        if (imf.chapterIndex !== this.chapterIndex)
+          return;
+        if (!this.visible || !success)
+          return;
+        const img = this.getMediaNodes().find((img2) => index === parseInt(img2.getAttribute("d-index")));
+        if (!img)
+          return;
+        if (imf.contentType !== "video/mp4") {
+          img.setAttribute("src", imf.blobUrl);
+          return;
+        }
+        const vid = this.newMediaNode(index, imf);
+        img.replaceWith(vid);
+        if (img === this.currMediaNode) {
+          this.currMediaNode = vid;
+        }
+        img.remove();
+      });
       new AutoPage(this, HTML.autoPageBTN);
     }
     initHammer() {
@@ -5249,16 +5749,16 @@ html {
         if (conf.readMode === "singlePage") {
           switch (ev.direction) {
             case Hammer.DIRECTION_LEFT:
-              this.queue.stepImageEvent(conf.reversePages ? "prev" : "next");
+              this.stepNext(conf.reversePages ? "prev" : "next");
               break;
             case Hammer.DIRECTION_UP:
-              this.queue.stepImageEvent("next");
+              this.stepNext("next");
               break;
             case Hammer.DIRECTION_RIGHT:
-              this.queue.stepImageEvent(conf.reversePages ? "next" : "prev");
+              this.stepNext(conf.reversePages ? "next" : "prev");
               break;
             case Hammer.DIRECTION_DOWN:
-              this.queue.stepImageEvent("prev");
+              this.stepNext("prev");
               break;
           }
         }
@@ -5272,29 +5772,6 @@ html {
     flushImgScaleBar() {
       q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
       q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
-    }
-    setNow(index) {
-      if (!this.visible)
-        return;
-      this.resetStickyMouse();
-      if (this.lockInit) {
-        this.lockInit = false;
-        return;
-      }
-      this.init(index);
-    }
-    init(start) {
-      this.removeMediaNode();
-      this.resetPreventStep();
-      this.currMediaNode = this.newMediaNode(start, this.queue[start]);
-      this.frame.appendChild(this.currMediaNode);
-      if (conf.readMode === "consecutively") {
-        this.hammer?.get("swipe").set({ enable: false });
-        this.tryExtend();
-      } else {
-        this.hammer?.get("swipe").set({ enable: true });
-      }
-      this.currMediaNode.scrollIntoView();
     }
     initFrame() {
       this.frame.addEventListener("wheel", (event) => {
@@ -5341,15 +5818,63 @@ html {
       nextLand.innerHTML = svg_bg;
       nextLand.addEventListener("mouseover", () => {
         nextLand.remove();
-        this.queue.stepImageEvent("next");
+        this.stepNext("next");
       });
       this.frame.appendChild(nextLand);
       window.setTimeout(() => nextLand.remove(), 1500);
     }
-    createImgElement() {
-      const img = document.createElement("img");
-      img.addEventListener("click", () => this.hidden());
-      return img;
+    hidden(event) {
+      if (event && event.target && event.target.tagName === "SPAN")
+        return;
+      this.visible = false;
+      EBUS.emit("bifm-on-hidden");
+      this.html.fullViewGrid.focus();
+      this.frameScrollAbort?.abort();
+      this.frame.classList.add("big-img-frame-collapse");
+      this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
+    }
+    show(imf) {
+      this.visible = true;
+      this.frame.classList.remove("big-img-frame-collapse");
+      this.frame.focus();
+      this.frameScrollAbort = new AbortController();
+      this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
+      this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
+        if (imf.chapterIndex !== this.chapterIndex)
+          return;
+        this.setNow(imf);
+      }, 100);
+      EBUS.emit("bifm-on-show");
+    }
+    setNow(imf, oriented) {
+      if (this.visible) {
+        this.resetStickyMouse();
+        this.initElement(imf, oriented);
+      } else {
+        const queue = this.getChapter(this.chapterIndex).queue;
+        const index = queue.indexOf(imf);
+        if (index === -1)
+          return;
+        EBUS.emit("ifq-do", index, imf, oriented || "next");
+      }
+    }
+    initElement(imf, oriented) {
+      this.removeMediaNode();
+      this.resetPreventStep();
+      const queue = this.getChapter(this.chapterIndex).queue;
+      const index = queue.indexOf(imf);
+      if (index === -1)
+        return;
+      this.currMediaNode = this.newMediaNode(index, imf);
+      EBUS.emit("ifq-do", index, imf, oriented || "next");
+      this.frame.appendChild(this.currMediaNode);
+      if (conf.readMode === "consecutively") {
+        this.hammer?.get("swipe").set({ enable: false });
+        this.tryExtend();
+      } else {
+        this.hammer?.get("swipe").set({ enable: true });
+      }
+      this.currMediaNode.scrollIntoView();
     }
     removeMediaNode() {
       this.currMediaNode = void 0;
@@ -5366,31 +5891,6 @@ html {
         }
       }
     }
-    hidden(event) {
-      if (event && event.target && event.target.tagName === "SPAN")
-        return;
-      this.visible = false;
-      this.onHiddenEventContext.forEach((cb) => cb());
-      this.frame.blur();
-      this.html.fullViewGrid.focus();
-      this.frameScrollAbort?.abort();
-      this.frame.classList.add("big-img-frame-collapse");
-      this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
-    }
-    show(event) {
-      this.visible = true;
-      this.frame.classList.remove("big-img-frame-collapse");
-      this.frameScrollAbort = new AbortController();
-      this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
-      this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.frame.focus(), 300);
-      this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
-        let start = this.queue.currIndex;
-        if (event && event.target)
-          start = this.queue.findImgIndex(event.target);
-        this.queue.do(start);
-      }, 100);
-      this.onShowEventContext.forEach((cb) => cb());
-    }
     getMediaNodes() {
       const list = Array.from(this.frame.querySelectorAll("img, video"));
       let last = 0;
@@ -5403,6 +5903,18 @@ html {
       }
       return list;
     }
+    stepNext(oriented, current) {
+      let index = this.currMediaNode ? parseInt(this.currMediaNode.getAttribute("d-index")) : current;
+      if (index === void 0 || isNaN(index))
+        return;
+      const queue = this.getChapter(this.chapterIndex)?.queue;
+      if (!queue || queue.length === 0)
+        return;
+      index = oriented === "next" ? index + 1 : index - 1;
+      if (!queue[index])
+        return;
+      this.setNow(queue[index], oriented);
+    }
     onWheel(event) {
       if (event.buttons === 2) {
         event.preventDefault();
@@ -5412,7 +5924,7 @@ html {
         if (this.isReachBoundary(oriented)) {
           event.preventDefault();
           if (!this.tryPreventStep()) {
-            this.queue.stepImageEvent(oriented);
+            this.stepNext(oriented);
           }
         }
       } else ;
@@ -5472,10 +5984,15 @@ html {
         let mediaNodes = this.getMediaNodes();
         let index = this.findMediaNodeIndexOnCenter(mediaNodes);
         const centerNode = mediaNodes[index];
-        const indexOfQueue = parseInt(centerNode.getAttribute("d-index"));
-        if (indexOfQueue != this.queue.currIndex) {
-          this.lockInit = true;
-          this.queue.do(indexOfQueue, indexOfQueue < this.queue.currIndex ? "prev" : "next");
+        if (this.currMediaNode != centerNode) {
+          const oldIndex = parseInt(this.currMediaNode?.getAttribute("d-index"));
+          const newIndex = parseInt(centerNode.getAttribute("d-index"));
+          const oriented = oldIndex < newIndex ? "next" : "prev";
+          const queue = this.getChapter(this.chapterIndex).queue;
+          if (queue.length === 0)
+            return;
+          const imf = queue[newIndex];
+          EBUS.emit("ifq-do", newIndex, imf, oriented);
           if (this.currMediaNode instanceof HTMLVideoElement) {
             this.currMediaNode.pause();
           }
@@ -5564,15 +6081,18 @@ html {
       if (isNaN(index)) {
         throw new Error("BIFM: extendImgNode: media node index is NaN");
       }
+      const queue = this.getChapter(this.chapterIndex).queue;
+      if (queue.length === 0)
+        return null;
       if (oriented === "prev") {
         if (index === 0)
           return null;
-        extendedNode = this.newMediaNode(index - 1, this.queue[index - 1]);
+        extendedNode = this.newMediaNode(index - 1, queue[index - 1]);
         mediaNode.before(extendedNode);
       } else {
-        if (index === this.queue.length - 1)
+        if (index === queue.length - 1)
           return null;
-        extendedNode = this.newMediaNode(index + 1, this.queue[index + 1]);
+        extendedNode = this.newMediaNode(index + 1, queue[index + 1]);
         mediaNode.after(extendedNode);
       }
       return extendedNode;
@@ -5586,39 +6106,20 @@ html {
         vid.classList.add("bifm-vid");
         vid.setAttribute("d-index", index.toString());
         vid.onloadeddata = () => {
-          if (this.visible && index === this.queue.currIndex) {
+          if (this.visible && vid === this.currMediaNode) {
             this.tryPlayVideo(vid);
           }
         };
         vid.src = imf.blobUrl;
-        vid.addEventListener("click", () => this.hidden());
         return vid;
       } else {
         const img = document.createElement("img");
         img.classList.add("bifm-img");
-        img.addEventListener("click", () => this.hidden());
         img.setAttribute("d-index", index.toString());
         if (imf.stage === FetchState.DONE) {
           img.src = imf.blobUrl;
         } else {
           img.src = imf.node.src;
-          imf.onFinished("BIG-IMG-SRC-UPDATE", ($index, $imf) => {
-            if (!this.visible)
-              return;
-            if ($index === parseInt(img.getAttribute("d-index"))) {
-              if ($imf.contentType !== "video/mp4") {
-                img.src = $imf.blobUrl;
-                return;
-              }
-              const vid = this.newMediaNode(index, $imf);
-              img.replaceWith(vid);
-              if (img === this.currMediaNode) {
-                this.currMediaNode = vid;
-              }
-              img.remove();
-              return;
-            }
-          });
         }
         return img;
       }
@@ -5626,7 +6127,7 @@ html {
     tryPlayVideo(vid) {
       if (vid instanceof HTMLVideoElement) {
         if (!this.vidController) {
-          this.vidController = new VideoControl(this.html.fullViewGrid);
+          this.vidController = new VideoControl(this.html.root);
         }
         this.vidController.attach(vid);
       } else {
@@ -5742,12 +6243,6 @@ html {
       }
       return 0;
     }
-    onShow(id, callback) {
-      this.onShowEventContext.set(id, callback);
-    }
-    onHidden(id, callback) {
-      this.onHiddenEventContext.set(id, callback);
-    }
   }
   class AutoPage {
     frameManager;
@@ -5767,8 +6262,8 @@ html {
           this.start(this.lockVer);
         }
       };
-      this.frameManager.onHidden(0, () => this.stop());
-      this.frameManager.onShow(0, () => conf.autoPlay && this.start(this.lockVer));
+      EBUS.subscribe("bifm-on-hidden", () => this.stop());
+      EBUS.subscribe("bifm-on-show", () => conf.autoPlay && this.start(this.lockVer));
       this.initPlayButton();
     }
     initPlayButton() {
@@ -5785,7 +6280,11 @@ html {
       this.button.firstElementChild.innerText = i18n.autoPagePause.get();
       const b = this.frameManager.frame;
       if (this.frameManager.frame.classList.contains("big-img-frame-collapse")) {
-        this.frameManager.show();
+        const queue = this.frameManager.getChapter(this.frameManager.chapterIndex).queue;
+        if (queue.length === 0)
+          return;
+        const index = parseInt(this.frameManager.currMediaNode?.getAttribute("d-index") || "0");
+        this.frameManager.show(queue[index]);
       }
       const progress = q("#auto-page-progress", this.button);
       while (true) {
@@ -5803,9 +6302,12 @@ html {
         if (this.status !== "running") {
           break;
         }
-        if (this.frameManager.queue.currIndex >= this.frameManager.queue.length - 1) {
+        if (!this.frameManager.currMediaNode)
           break;
-        }
+        const index = parseInt(this.frameManager.currMediaNode.getAttribute("d-index"));
+        const queue = this.frameManager.getChapter(this.frameManager.chapterIndex).queue;
+        if (index >= queue.length)
+          break;
         const deltaY = this.frameManager.frame.offsetHeight / 2;
         if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
           this.frameManager.onWheel(new WheelEvent("wheel", { deltaY }));
@@ -5839,67 +6341,27 @@ html {
   function main(MATCHER) {
     const HTML = createHTML();
     [HTML.fullViewGrid, HTML.bigImageFrame].forEach((e) => revertMonkeyPatch(e));
-    const IFQ = new IMGFetcherQueue();
+    const IFQ = IMGFetcherQueue.newQueue();
     const IL = new IdleLoader(IFQ);
-    const BIFM = new BigImageFrameManager(HTML, IFQ);
-    const DLC = new DownloaderCanvas("downloader-canvas", IFQ, (index) => {
+    const PF = new PageFetcher(IFQ, MATCHER);
+    const DL = new Downloader(HTML, IFQ, IL, PF, MATCHER);
+    const PH = new PageHelper(HTML, (index) => PF.chapters[index]);
+    const BIFM = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
+    const FVGM = new FullViewGridManager(HTML, BIFM);
+    const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
+    addEventListeners(events, HTML, BIFM, DL);
+    EBUS.subscribe("downloader-canvas-on-click", (index) => {
       IFQ.currIndex = index;
-      BIFM.show();
+      if (IFQ.chapterIndex !== BIFM.chapterIndex)
+        return;
+      BIFM.show(IFQ[index]);
     });
-    const PF = new PageFetcher(HTML.fullViewGrid, IFQ, MATCHER, {
-      matcher: MATCHER,
-      downloadStateReporter: () => DLC.drawDebouce(),
-      setNow: (index) => {
-        BIFM.setNow(index);
-        if (!BIFM.visible)
-          return;
-        let scrollTo = IFQ[index].node.root.offsetTop - window.screen.availHeight / 3;
-        scrollTo = scrollTo <= 0 ? 0 : scrollTo >= HTML.fullViewGrid.scrollHeight ? HTML.fullViewGrid.scrollHeight : scrollTo;
-        if (HTML.fullViewGrid.scrollTo.toString().includes("[native code]")) {
-          HTML.fullViewGrid.scrollTo({ top: scrollTo, behavior: "smooth" });
-        } else {
-          HTML.fullViewGrid.scrollTop = scrollTo;
-        }
-      },
-      onClick: (event) => BIFM.show(event)
-    });
-    PF.beforeInit = () => {
-      HTML.pageLoading.style.display = "flex";
-    };
+    PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
     PF.afterInit = () => {
       HTML.pageLoading.style.display = "none";
+      IL.processingIndexList = [0];
+      IL.start();
     };
-    const DL = new Downloader(HTML, IFQ, IL, MATCHER, () => PF.done);
-    const PH = new PageHelper(HTML);
-    IFQ.subscribeOnFinishedReport(1, (index, queue) => {
-      PH.setPageState({ finished: queue.finishedIndex.size.toString() });
-      evLog(`No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
-      if (queue[queue.currIndex].stage === FetchState.DONE) {
-        PH.setFetchState("fetched");
-      }
-      return false;
-    });
-    BIFM.onShow(1, () => PH.minify(true, "bigImageFrame"));
-    BIFM.onHidden(1, () => PH.minify(false, "bigImageFrame"));
-    const debouncer = new Debouncer();
-    IFQ.subscribeOnFinishedReport(3, (index) => {
-      debouncer.addEvent("APPEND-NEXT-PAGES", () => PF.appendNextPages(index), 5);
-      return false;
-    });
-    IFQ.subscribeOnDo(0, (index, queue) => {
-      PH.setPageState({ current: (index + 1).toString() });
-      const imf = queue[index];
-      if (imf.stage !== FetchState.DONE) {
-        PH.setFetchState("fetching");
-      }
-      return false;
-    });
-    PF.setOnAppended((total, done) => {
-      PH.setPageState({ total: `${total}${done ? "" : ".."}` });
-      setTimeout(() => PF.renderCurrView(), 200);
-    });
-    const events = initEvents(HTML, BIFM, IFQ, PF, IL, PH);
-    addEventListeners(events, HTML, BIFM, IFQ, DL);
     if (conf["first"]) {
       events.showGuideEvent();
       conf["first"] = false;
@@ -5907,9 +6369,9 @@ html {
     }
     return () => {
       console.log("destory eh-view-enhance");
-      HTML.fullViewGrid.remove();
+      HTML.root.remove();
       PF.abort();
-      IL.abort(0);
+      IL.abort();
       IFQ.length = 0;
     };
   }

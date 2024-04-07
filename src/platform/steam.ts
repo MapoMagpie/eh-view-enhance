@@ -1,18 +1,16 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { PagesSource } from "../page-fetcher";
+import { BaseMatcher, OriginMeta } from "./platform";
 
 const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
-export class SteamMatcher implements Matcher {
+export class SteamMatcher extends BaseMatcher {
 
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
-  }
   workURL(): RegExp {
     return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
   }
 
-  public async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(href: string): Promise<OriginMeta> {
     let raw = "";
     try {
       raw = await window.fetch(href).then(resp => resp.text());
@@ -29,23 +27,12 @@ export class SteamMatcher implements Matcher {
     return { url: imgURL };
   }
 
-  public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
-    const doc = await (async () => {
-      if (page.raw instanceof Document) {
-        return page.raw
-      } else {
-        const raw = await window.fetch(page.raw).then((response) => response.text());
-        if (!raw) return null;
-        const domParser = new DOMParser();
-        return domParser.parseFromString(raw, "text/html");
-      }
-    })();
-
+    const doc = await window.fetch(source as string).then((resp) => resp.text()).then(raw => new DOMParser().parseFromString(raw, "text/html"));
     if (!doc) {
       throw new Error("warn: steam matcher failed to get document from source page!")
     }
-
     const nodes = doc.querySelectorAll(".profile_media_item");
     if (!nodes || nodes.length == 0) {
       throw new Error("warn: failed query image nodes!")
@@ -65,7 +52,7 @@ export class SteamMatcher implements Matcher {
     return list;
   }
 
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     let totalPages = -1;
     document.querySelectorAll(".pagingPageLink").forEach(ele => {
       totalPages = Number(ele.textContent);
@@ -77,21 +64,19 @@ export class SteamMatcher implements Matcher {
       if (!doc) {
         throw new Error("warn: steam matcher failed to get document from source page!")
       }
-      doc.querySelectorAll(".pagingPageLink").forEach(ele => {
-        totalPages = Number(ele.textContent);
-      });
+      doc.querySelectorAll(".pagingPageLink").forEach(ele => totalPages = Number(ele.textContent));
     }
     if (totalPages > 0) {
       for (let p = 1; p <= totalPages; p++) {
         url.searchParams.set("p", p.toString());
-        yield { raw: url.href, typ: "url" };
+        yield url.href;
       }
     } else {
-      yield { raw: url.href, typ: "url" };
+      yield url.href;
     }
   }
 
-  parseGalleryMeta(_: Document): GalleryMeta {
+  parseGalleryMeta(): GalleryMeta {
     const url = new URL(window.location.href);
     let appid = url.searchParams.get("appid");
     return new GalleryMeta(window.location.href, "steam-" + appid || "all");

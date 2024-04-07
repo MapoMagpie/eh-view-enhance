@@ -1,9 +1,10 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { parseImagePositions, splitImagesFromUrl } from "../utils/sprite-split";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { BaseMatcher, OriginMeta, } from "./platform";
 
 // EHMatcher
 const regulars = {
@@ -21,17 +22,14 @@ const regulars = {
   sprite: /url\((.*?)\)/,
 }
 
-export class EHMatcher implements Matcher {
+export class EHMatcher extends BaseMatcher {
 
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
-  }
-
+  // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
   workURL(): RegExp {
-    return /e[-x]hentai.org\/g\/\w+/;
+    return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
   }
 
-  public parseGalleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(doc: Document): GalleryMeta {
     const titleList = doc.querySelectorAll<HTMLElement>("#gd2 h1");
     let title: string | undefined;
     let originTitle: string | undefined;
@@ -60,17 +58,17 @@ export class EHMatcher implements Matcher {
     return meta;
   }
 
-  public async fetchOriginMeta(href: string, retry: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(href: string, retry: boolean): Promise<OriginMeta> {
     return { url: await this.fetchImgURL(href, retry) };
   }
 
-  public async parseImgNodes(page: PagesSource): Promise<ImageNode[] | never> {
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
     let doc = await (async (): Promise<Document | null> => {
-      if (page.raw instanceof Document) {
-        return page.raw;
+      if (source instanceof Document) {
+        return source;
       } else {
-        const raw = await window.fetch(page.raw as string).then((response) => response.text());
+        const raw = await window.fetch(source as string).then((response) => response.text());
         if (!raw) return null;
         const domParser = new DOMParser();
         return domParser.parseFromString(raw, "text/html");
@@ -116,31 +114,39 @@ export class EHMatcher implements Matcher {
 
     // sprite thumbnails
     if (isSprite) {
-      for (let i = 0; i < nodes.length; i += 20) {
-        const niStyles = nodes[i].style;
-        const url = niStyles.background.match(regulars.sprite)?.[1]?.replaceAll("\"", "");
-        if (url) {
-          const range = nodes.slice(i, i + 20);
-          const resolvers: ((str: string | PromiseLike<string>) => void)[] = [];
-          const rejects: ((reason?: any) => void)[] = [];
-          for (let j = 0; j < range.length; j++) {
-            urls.push("");
-            delayURLs.push(new Promise<string>((resolve, reject) => {
-              resolvers.push(resolve);
-              rejects.push(reject);
-            }));
-          }
-          splitImagesFromUrl(url, parseImagePositions(range.map(n => n.style))).then((ret) => {
-            for (let k = 0; k < ret.length; k++) {
-              resolvers[k](ret[k]);
-            }
-          }).catch((err) => {
-            rejects.forEach(r => r(err));
-          })
+      let spriteURLs: { url: string, range: { index: number, style: CSSStyleDeclaration }[] }[] = [];
+      for (let i = 0; i < nodes.length; i++) {
+        const nodeStyles = nodes[i].style;
+        const url = nodeStyles.background.match(regulars.sprite)?.[1]?.replaceAll("\"", "");
+        if (!url) break;
+        if (spriteURLs.length === 0 || spriteURLs[spriteURLs.length - 1].url !== url) {
+          spriteURLs.push({ url, range: [{ index: i, style: nodeStyles }] });
         } else {
-          break;
+          spriteURLs[spriteURLs.length - 1].range.push({ index: i, style: nodeStyles });
         }
       }
+      spriteURLs.forEach(({ url, range }) => {
+        const resolvers: ((str: string | PromiseLike<string>) => void)[] = [];
+        const rejects: ((reason?: any) => void)[] = [];
+        for (let i = 0; i < range.length; i++) {
+          urls.push("");
+          delayURLs.push(new Promise<string>((resolve, reject) => {
+            resolvers.push(resolve);
+            rejects.push(reject);
+          }));
+        }
+        // check url has host prefix
+        if (!url.startsWith("http")) {
+          url = window.location.origin + url;
+        }
+        splitImagesFromUrl(url, parseImagePositions(range.map(n => n.style))).then((ret) => {
+          for (let k = 0; k < ret.length; k++) {
+            resolvers[k](ret[k]);
+          }
+        }).catch((err) => {
+          rejects.forEach(r => r(err));
+        })
+      });
     }
     // large thumbnails
     else {
@@ -161,15 +167,17 @@ export class EHMatcher implements Matcher {
     return list;
   }
 
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    let fristImageHref = document.querySelector("#gdt a")?.getAttribute("href");
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+    // const doc = await window.fetch(chapter.source).then((resp) => resp.text()).then(raw => new DOMParser().parseFromString(raw, "text/html"));
+    const doc = document;
+    let fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
     // MPV
     if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
-      yield { raw: window.location.href, typ: "url" };
+      yield window.location.href;
       return;
     }
     // Normal
-    let pages = Array.from(document.querySelectorAll(".gtb td a")).filter(a => a.getAttribute("href")).map(a => a.getAttribute("href")!);
+    let pages = Array.from(doc.querySelectorAll(".gtb td a")).filter(a => a.getAttribute("href")).map(a => a.getAttribute("href")!);
     if (pages.length === 0) {
       throw new Error("未获取到分页元素！");
     }
@@ -187,10 +195,10 @@ export class EHMatcher implements Matcher {
       throw new Error("未获取到分页元素！x2");
     }
     url.searchParams.delete("p");
-    yield { raw: url.href, typ: "url" };
+    yield url.href;
     for (let p = 1; p < lastPage + 1; p++) {
       url.searchParams.set("p", p.toString());
-      yield { raw: url.href, typ: "url" };
+      yield url.href;
     }
   }
 
@@ -198,33 +206,40 @@ export class EHMatcher implements Matcher {
     let text = "";
     try {
       text = await window.fetch(url).then(resp => resp.text());
-      if (!text) throw new Error("[text] is empty");
     } catch (error) {
       throw new Error(`Fetch source page error, expected [text]！ ${error}`);
     }
+    if (!text) throw new Error("[text] is empty");
+
     // TODO: Your IP address has been temporarily banned for excessive pageloads which indicates that you are using automated mirroring/harvesting software. The ban expires in 2 days and 23 hours
     if (conf.fetchOriginal) {
       const matchs = regulars.original.exec(text);
       if (matchs && matchs.length > 0) {
         return matchs[1].replace(/&amp;/g, "&");
-      } else {
-        const normalMatchs = regulars["normal"].exec(text);
-        if (normalMatchs == null || normalMatchs.length == 0) {
-          throw new Error(`Cannot matching the image url, content: ${text}`);
-        } else {
-          return normalMatchs[1];
-        }
       }
     }
+    let src: string | undefined;
+    // EH change the url
     if (originChanged) {
-      // EH change the url
-      const nlValue = regulars.nlValue.exec(text)![1];
-      const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-      evLog(`IMG-FETCHER retry url:${newUrl}`);
-      return await this.fetchImgURL(newUrl, false);
-    } else {
-      return regulars.normal.exec(text)![1];
+      const nlValue = regulars.nlValue.exec(text)?.[1];
+      if (nlValue) {
+        const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
+        evLog("info", `IMG-FETCHER retry url:${newUrl}`);
+        src = await this.fetchImgURL(newUrl, false);
+      } else {
+        evLog("error", `Cannot matching the nlValue, content: ${text}`);
+      }
     }
+    if (!src) {
+      // normal
+      src = regulars.normal.exec(text)?.[1];
+    }
+    if (!src) throw new Error(`Cannot matching the image url, content: ${text}`);
+    // check src has host prefix
+    if (!src.startsWith("http")) {
+      src = window.location.origin + src;
+    }
+    return src;
   }
 }
 

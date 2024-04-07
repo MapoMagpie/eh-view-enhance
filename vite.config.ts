@@ -23,7 +23,7 @@ export default defineConfig(({ command }) => {
       monkey({
         entry: 'src/main.ts',
         userscript: {
-          version: '4.3.13',
+          version: '4.4.0',
           icon: 'https://exhentai.org/favicon.ico',
           namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
           supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',
@@ -32,6 +32,7 @@ export default defineConfig(({ command }) => {
           match: [
             'https://exhentai.org/*',
             'https://e-hentai.org/*',
+            "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
             'https://nhentai.net/*',
             'https://steamcommunity.com/id/*/screenshots*',
             'https://hitomi.la/*',
@@ -41,7 +42,7 @@ export default defineConfig(({ command }) => {
             'https://18comic.org/*',
             'https://18comic.vip/*',
             'https://rule34.xxx/*',
-            'https://imhentai.xxx/*'
+            'https://imhentai.xxx/*',
           ],
           name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
           license: 'MIT',
@@ -54,6 +55,7 @@ export default defineConfig(({ command }) => {
             'exhentai.org',
             'e-hentai.org',
             'hath.network',
+            "exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion",
             'nhentai.net',
             'hitomi.la',
             'akamaihd.net',
@@ -88,6 +90,7 @@ export default defineConfig(({ command }) => {
             "file-saver": "saveAs",
             "hammerjs": "Hammer",
           },
+          autoGrant: true,
           // externalResource: {
           //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"
           // }

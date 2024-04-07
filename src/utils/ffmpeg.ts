@@ -52,7 +52,7 @@ export class FFmpegConvertor {
       if (!this.reloadLock) {
         this.reloadLock = true
         try {
-          evLog("FFmpegConvertor: size limit exceeded, terminate ffmpeg, verLock: ", verLock);
+          evLog("info", "FFmpegConvertor: size limit exceeded, terminate ffmpeg, verLock: ", verLock);
           this.ffmpeg.terminate();
           await this.load();
           this.size = 0;

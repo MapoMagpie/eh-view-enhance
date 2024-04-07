@@ -1,7 +1,8 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { Chapter, PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { BaseMatcher, OriginMeta } from "./platform";
 
 function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, page: string) {
   const width = e.width;
@@ -19,7 +20,65 @@ function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, p
   }
 }
 
-export class Comic18Matcher implements Matcher {
+export class Comic18Matcher extends BaseMatcher {
+
+  meta?: GalleryMeta;
+
+  async fetchChapters(): Promise<Chapter[]> {
+    const ret: Chapter[] = [];
+    const thumb = document.querySelector<HTMLImageElement>(".thumb-overlay > img");
+    // const toDoc = async (url: string) => await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
+    const chapters = Array.from(document.querySelectorAll<HTMLAnchorElement>(".visible-lg .episode > ul > a"));
+    if (chapters.length > 0) {
+      chapters.forEach((ch, i) => {
+        const title = Array.from(ch.querySelector("li")?.childNodes || []).map(n => n.textContent?.trim()).filter(Boolean).map(n => n!);
+        ret.push({
+          id: i,
+          title,
+          source: ch.href,
+          queue: [],
+          thumbimg: thumb?.src,
+        });
+
+      });
+    } else {
+      const href = document.querySelector<HTMLAnchorElement>(".read-block > a")?.href;
+      if (href === undefined) throw new Error("No page found");
+      ret.push({
+        id: 0,
+        title: "Default",
+        source: href,
+        queue: [],
+      });
+    }
+    return ret;
+  }
+
+  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
+    yield chapter.source;
+  }
+
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
+    const list: ImageNode[] = [];
+    const raw = await window.fetch(source as string).then(resp => resp.text());
+    const document = new DOMParser().parseFromString(raw, "text/html");
+    const elements = Array.from(document.querySelectorAll<HTMLDivElement>(".scramble-page:not(.thewayhome)"));
+    for (const element of elements) {
+      const title = element.id;
+      const img = element.querySelector("img");
+      if (!img) {
+        evLog("error", "warn: cannot find img element", element);
+        continue;
+      }
+      const src = img.getAttribute("data-original");
+      if (!src) {
+        evLog("error", "warn: cannot find data-original", element);
+        continue;
+      }
+      list.push(new ImageNode("", src, title));
+    }
+    return list;
+  }
 
   async processData(data: Uint8Array, contentType: string, url: string): Promise<Uint8Array> {
     const reg = /(\d+)\/(\d+)\.(\w+)/;
@@ -41,13 +100,16 @@ export class Comic18Matcher implements Matcher {
       canvas.toBlob((blob) => blob?.arrayBuffer().then(buf => new Uint8Array(buf)).then(resolve).finally(() => canvas.remove()), contentType);
     });
   }
+
   workURL(): RegExp {
     return /18comic.(vip|org)\/album\/\d+/;
   }
-  public parseGalleryMeta(doc: Document): GalleryMeta {
+
+  galleryMeta(doc: Document): GalleryMeta {
+    if (this.meta) return this.meta;
     const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
-    const meta = new GalleryMeta(window.location.href, title);
-    meta.originTitle = title;
+    this.meta = new GalleryMeta(window.location.href, title);
+    this.meta.originTitle = title;
     const tagTrList = doc.querySelectorAll<HTMLElement>("div.tag-block > span");
     const tags: Record<string, string[]> = {};
     tagTrList.forEach((tr) => {
@@ -59,42 +121,11 @@ export class Comic18Matcher implements Matcher {
         }
       }
     });
-    meta.tags = tags;
-    return meta;
+    this.meta.tags = tags;
+    return this.meta;
   }
   // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
-  public async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(url: string): Promise<OriginMeta> {
     return { url };
-  }
-
-  public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
-    const list: ImageNode[] = [];
-    const raw = await window.fetch(source.raw as string).then(resp => resp.text());
-    const document = new DOMParser().parseFromString(raw, "text/html");
-    const images = Array.from(document.querySelectorAll<HTMLImageElement>(".scramble-page:not(.thewayhome) > img"));
-    for (const img of images) {
-      const src = img.getAttribute("data-original");
-      if (!src) {
-        evLog("warn: cannot find data-original", img);
-        continue;
-      }
-      list.push(new ImageNode("", src, src.split("/").pop()!));
-    }
-    return list;
-  }
-
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    const episode = Array.from(document.querySelectorAll<HTMLAnchorElement>(".episode > ul > a"));
-    if (episode.length > 0) {
-      for (const a of episode) {
-        const href = a.href;
-        yield { raw: href, typ: "url" };
-      }
-      return;
-    }
-    const href = document.querySelector<HTMLAnchorElement>(".read-block > a")?.href;
-    if (href === undefined) throw new Error("No page found");
-    yield { raw: href, typ: "url" };
-    return;
   }
 }

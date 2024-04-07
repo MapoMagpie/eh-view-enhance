@@ -1,4 +1,5 @@
 import { DownloadState } from "./img-fetcher";
+import { Chapter } from "./page-fetcher";
 
 const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
 
@@ -9,6 +10,11 @@ DEFAULT_NODE_TEMPLATE.innerHTML = `<a style="position: relative; display: block;
 const OVERLAY_TIP = document.createElement("div");
 OVERLAY_TIP.classList.add("overlay-tip");
 OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
+
+export interface VisualNode {
+  create(): HTMLElement;
+  render(): void;
+}
 
 export default class ImageNode {
   root?: HTMLElement;
@@ -94,6 +100,7 @@ export default class ImageNode {
   }
 
   progress(state: DownloadState) {
+    if (!this.root) return;
     if (state.readyState === 4) {
       if (this.downloadBar && this.downloadBar.parentNode) {
         // this.downloadBar.remove(); // in steam, it randomly throw parentNode is null
@@ -108,7 +115,7 @@ export default class ImageNode {
       <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
       `;
       this.downloadBar = downloadBar;
-      this.root!.firstElementChild!.appendChild(this.downloadBar);
+      this.root.firstElementChild!.appendChild(this.downloadBar);
     }
     if (this.downloadBar) {
       this.downloadBar.querySelector("progress")!.setAttribute("value", (state.loaded / state.total) * 100 + "");
@@ -120,10 +127,13 @@ export default class ImageNode {
     switch (fetchStatus) {
       case "fetching":
         this.root.classList.add("img-fetching");
+        this.root.classList.remove("img-fetched");
+        this.root.classList.remove("img-fetch-failed");
         break
       case "fetched":
         this.root.classList.add("img-fetched");
         this.root.classList.remove("img-fetching");
+        this.root.classList.remove("img-fetch-failed");
         break;
       case "failed":
         this.root.classList.add("img-fetch-failed");
@@ -149,4 +159,41 @@ export default class ImageNode {
     return false;
   }
 
+}
+
+
+export class ChapterNode implements VisualNode {
+  chapter: Chapter;
+  index: number;
+  constructor(chapter: Chapter, index: number) {
+    this.chapter = chapter;
+    this.index = index;
+  }
+
+  create(): HTMLElement {
+    const element = DEFAULT_NODE_TEMPLATE.cloneNode(true) as HTMLElement;
+    const anchor = element.firstElementChild as HTMLAnchorElement;
+    if (this.chapter.thumbimg) {
+      const img = anchor.firstElementChild as HTMLImageElement;
+      img.src = this.chapter.thumbimg;
+      img.title = this.chapter.title.toString();
+    }
+    // create title element
+    const description = document.createElement("div");
+    description.classList.add("ehvp-chapter-description");
+    if (Array.isArray(this.chapter.title)) {
+      description.innerHTML = this.chapter.title.map((t) => `<span>${t}</span>`).join("<br>");
+    } else {
+      description.innerHTML = `<span>${this.chapter.title}</span>`;
+    }
+    anchor.appendChild(description);
+
+    anchor.onclick = (event) => {
+      event.preventDefault();
+      this.chapter.onclick?.(this.index);
+    };
+    return element;
+  }
+
+  render(): void { }
 }

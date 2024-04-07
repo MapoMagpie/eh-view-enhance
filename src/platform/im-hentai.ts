@@ -1,9 +1,10 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { PagesSource } from "../page-fetcher";
 import q from "../utils/query-element";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { BaseMatcher, OriginMeta } from "./platform";
 
-export class IMHentaiMatcher implements Matcher {
+export class IMHentaiMatcher extends BaseMatcher {
   data?: { server: string, uid: string, gid: string, imgDir: string, total: number };
 
   async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
@@ -28,7 +29,7 @@ export class IMHentaiMatcher implements Matcher {
     return { url: src, title };
   }
 
-  async parseImgNodes(_: PagesSource): Promise<ImageNode[]> {
+  async parseImgNodes(): Promise<ImageNode[]> {
     if (!this.data) {
       throw new Error("impossibility");
     }
@@ -52,10 +53,10 @@ export class IMHentaiMatcher implements Matcher {
     const imgDir = q<HTMLInputElement>("#load_dir").value;
     const total = q<HTMLInputElement>("#load_pages").value;
     this.data = { server, uid, gid, imgDir, total: Number(total) };
-    yield { raw: "", typ: "doc" };
+    yield document;
   }
 
-  parseGalleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(doc: Document): GalleryMeta {
     const title = doc.querySelector(".right_details > h1")?.textContent || undefined;
     const originTitle = doc.querySelector(".right_details > p.subtitle")?.textContent || undefined;
     const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
@@ -75,10 +76,6 @@ export class IMHentaiMatcher implements Matcher {
 
   workURL(): RegExp {
     return /imhentai.xxx\/gallery\/\d+\//;
-  }
-
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
   }
 
 }

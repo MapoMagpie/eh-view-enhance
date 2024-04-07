@@ -1,10 +1,11 @@
 import JSZip from "jszip";
 import { GalleryMeta } from "../download/gallery-meta";
 import { evLog } from "../utils/ev-log";
-import { Matcher, OriginMeta, PagesSource } from "./platform";
+import { BaseMatcher, OriginMeta } from "./platform";
 import { FFmpegConvertor } from "../utils/ffmpeg";
 import ImageNode from "../img-node";
 import { conf } from "../config";
+import { PagesSource } from "../page-fetcher";
 
 type Page = {
   urls: {
@@ -41,7 +42,7 @@ type UgoiraMeat = {
 }
 
 const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
-export class Pixiv implements Matcher {
+export class Pixiv extends BaseMatcher {
 
   authorID: string | undefined;
   meta: GalleryMeta;
@@ -53,10 +54,12 @@ export class Pixiv implements Matcher {
   first?: string;
 
   constructor() {
+    super()
     this.meta = new GalleryMeta(window.location.href, "UNTITLE");
   }
 
   async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
+    // TODO: ugoira convert move here
     return data;
   }
 
@@ -64,7 +67,7 @@ export class Pixiv implements Matcher {
     return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
   }
 
-  public parseGalleryMeta(_: Document): GalleryMeta {
+  galleryMeta(): GalleryMeta {
     this.meta.title = `PIXIV_${this.authorID}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
     let tags = Object.values(this.works).map(w => w.tags).flat();
     this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
@@ -93,7 +96,7 @@ export class Pixiv implements Matcher {
           const img = await zip.file(f.file)!.async("uint8array");
           return { name: f.file, data: img };
         } catch (error) {
-          evLog("unpack ugoira file error: ", error);
+          evLog("error", "unpack ugoira file error: ", error);
           throw error;
         }
       })
@@ -105,12 +108,12 @@ export class Pixiv implements Matcher {
     const start = performance.now();
     const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
     const end = performance.now();
-    evLog(`convert ugoira to ${conf.convertTo} cost ${(end - start) / 1000} s, size: ${blob.size / 1000} KB, original size: ${data.size / 1000} KB`);
+    evLog("debug", `convert ugoira to ${conf.convertTo} cost ${(end - start) / 1000} s, size: ${blob.size / 1000} KB, original size: ${data.size / 1000} KB`);
     return { url: URL.createObjectURL(blob) };
 
   }
 
-  async fetchTagsByPids(pids: string[]): Promise<void> {
+  private async fetchTagsByPids(pids: string[]): Promise<void> {
     try {
       const raw = await window.fetch(`https://www.pixiv.net/ajax/user/${this.authorID}/profile/illusts?ids[]=${pids.join("&ids[]=")}&work_category=illustManga&is_first_page=0&lang=en`).then(resp => resp.json());
       const data = raw as { error: boolean, message: string, body: { works: Record<string, Work> } }
@@ -130,17 +133,17 @@ export class Pixiv implements Matcher {
         })
         this.works = { ...this.works, ...works };
       } else {
-        evLog("WARN: fetch tags by pids error: ", data.message);
+        evLog("error", "WARN: fetch tags by pids error: ", data.message);
       }
       // console.log("fetch tags by pids: ", data);
     } catch (error) {
-      evLog("ERROR: fetch tags by pids error: ", error);
+      evLog("error", "ERROR: fetch tags by pids error: ", error);
     }
   }
 
-  public async parseImgNodes(raw: PagesSource): Promise<ImageNode[]> {
+  public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
-    const pidList = JSON.parse(raw.raw as string) as string[];
+    const pidList = JSON.parse(source as string) as string[];
     // async function but no await, it will fetch tags in background
     this.fetchTagsByPids(pidList);
 
@@ -202,7 +205,7 @@ export class Pixiv implements Matcher {
     }
     while (pidList.length > 0) {
       const pids = pidList.splice(0, 20);
-      yield { raw: JSON.stringify(pids), typ: "json" }
+      yield JSON.stringify(pids);
     }
 
   }

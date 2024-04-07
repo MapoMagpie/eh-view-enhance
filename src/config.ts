@@ -83,9 +83,9 @@ function defaultConf(): Config {
     fetchOriginal: false,
     restartIdleLoader: 5000,
     threads: 3,
-    downloadThreads: 3,
-    timeout: 16,
-    version: "4.1.10",
+    downloadThreads: 4,
+    timeout: 8,
+    version: VERSION,
     debug: true,
     first: true,
     reversePages: false,
@@ -95,11 +95,11 @@ function defaultConf(): Config {
     pageHelperAbRight: "unset",
     imgScale: 0,
     stickyMouse: "enable",
-    autoPageInterval: 10000,
+    autoPageInterval: 8000,
     autoPlay: false,
     filenameTemplate: "{number}-{title}",
-    preventScrollPageTime: 200,
-    archiveVolumeSize: 1500,
+    preventScrollPageTime: 100,
+    archiveVolumeSize: 1200,
     convertTo: "GIF",
     autoCollapsePanel: true,
     minifyPageHelper: "inBigMode",
@@ -107,11 +107,11 @@ function defaultConf(): Config {
     excludeURLs: [],
     muted: false,
     volume: 50,
-    disableCssAnimation: false,
+    disableCssAnimation: true,
   };
 }
 
-export const VERSION = "4.1.10";
+export const VERSION = "4.4.0";
 export const signal = { first: true };
 
 const CONFIG_KEY = "ehvh_cfg_";
@@ -121,7 +121,7 @@ function getStorageMethod() {
     // Greasemonkey or Tampermonkey API
     return {
       setItem: (key: string, value: string) => GM_setValue(key, value),
-      getItem: (key: string): string | null => GM_getValue(key, null),
+      getItem: (key: string): string | null => GM_getValue<string>(key),
     };
   } else if (typeof localStorage !== 'undefined') {
     // Web Storage API
@@ -150,61 +150,31 @@ function getConf(): Config {
   return cfg;
 }
 
-function confHealthCheck($conf: Config): Config {
+function confHealthCheck(cf: Config): Config {
   let changed = false;
-  // check postions
-  if ($conf.pageHelperAbTop !== "unset") {
-    $conf.pageHelperAbTop = Math.max(parseInt($conf.pageHelperAbTop), 500) + "px";
-    changed = true;
-  }
-  if ($conf.pageHelperAbBottom !== "unset") {
-    $conf.pageHelperAbBottom = Math.max(parseInt($conf.pageHelperAbBottom), 5) + "px";
-    changed = true;
-  }
-  if ($conf.pageHelperAbLeft !== "unset") {
-    $conf.pageHelperAbLeft = Math.max(parseInt($conf.pageHelperAbLeft), 5) + "px";
-    changed = true;
-  }
-  if ($conf.pageHelperAbRight !== "unset") {
-    $conf.pageHelperAbRight = Math.max(parseInt($conf.pageHelperAbRight), 5) + "px";
-    changed = true;
-  }
-  if ($conf.archiveVolumeSize === undefined) {
-    $conf.archiveVolumeSize = 1500;
-    changed = true;
-  }
-  if ($conf.convertTo === undefined) {
-    $conf.convertTo = "GIF";
-    changed = true;
-  }
-  if ($conf.autoCollapsePanel === undefined) {
-    $conf.autoCollapsePanel = true;
-    changed = true;
-  }
-  if ($conf.minifyPageHelper === undefined) {
-    $conf.minifyPageHelper = "inBigMode";
-    changed = true;
-  }
-  if ($conf.restartIdleLoader === 8000) {
-    $conf.restartIdleLoader = 5000;
-    changed = true;
-  }
-  if ($conf.keyboards === undefined) {
-    $conf.keyboards = { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} };
-    changed = true;
-  }
-  if ($conf.excludeURLs === undefined) {
-    $conf.excludeURLs = [];
-    changed = true;
-  }
-  if ($conf.disableCssAnimation === undefined) {
-    $conf.disableCssAnimation = false;
-    changed = true;
-  }
+  // check config keys and values undefined
+  const defa = defaultConf();
+  const keys = Object.keys(defa) as (keyof Config)[];
+  keys.forEach((key) => {
+    if (cf[key] === undefined) {
+      (cf[key] as any) = defa[key];
+      changed = true;
+    }
+  });
+  (["pageHelperAbTop", "pageHelperAbLeft", "pageHelperAbBottom", "pageHelperAbRight"] as (keyof Config)[]).forEach((key) => {
+    if ((cf[key]) !== "unset") {
+      let pos = parseInt(cf[key] as string);
+      const screenLimit = key.endsWith("Right") || key.endsWith("Left") ? window.screen.width : window.screen.height;
+      if (isNaN(pos) || pos < 5 || pos > screenLimit) {
+        (cf[key] as any) = 5 + "px";
+        changed = true;
+      }
+    }
+  })
   if (changed) {
-    saveConf($conf);
+    saveConf(cf);
   }
-  return $conf;
+  return cf;
 }
 
 export function saveConf(c: Config) {

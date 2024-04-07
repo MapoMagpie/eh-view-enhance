@@ -224,7 +224,7 @@ ${conf.disableCssAnimation ? "" : animation}
   .p-helper .p-panel {
     width: 24rem;
     height: 32rem;
-    bottom: 1.3rem;
+    ${conf.pageHelperAbBottom === "unset" ? "top: 100%" : "bottom: 100%"}
   }
   .p-helper .p-btn {
     height: 1.5rem;
@@ -462,6 +462,7 @@ ${conf.disableCssAnimation ? "" : animation}
   bottom: -3px;
   border-left: 3px solid #00000000;
   border-right: 3px solid #00000000;
+  box-sizing: border-box;
 }
 .img-land-left, .img-land-right {
   width: 15%;

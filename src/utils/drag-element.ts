@@ -8,7 +8,7 @@ export function dragElement(element: HTMLElement, dragHub?: HTMLElement, callbac
       const mouseX = event.clientX;
       const mouseY = event.clientY;
       if (mouseY <= wh / 2) {
-        element.style.top = Math.max(mouseY, 500) + "px";
+        element.style.top = Math.max(mouseY, 5) + "px";
         element.style.bottom = "unset";
       } else {
         element.style.bottom = Math.max(wh - mouseY - element.clientHeight, 5) + "px";

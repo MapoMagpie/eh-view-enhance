@@ -66,9 +66,9 @@
       fetchOriginal: false,
       restartIdleLoader: 5e3,
       threads: 3,
-      downloadThreads: 3,
-      timeout: 16,
-      version: "4.1.10",
+      downloadThreads: 4,
+      timeout: 8,
+      version: VERSION,
       debug: true,
       first: true,
       reversePages: false,
@@ -78,11 +78,11 @@
       pageHelperAbRight: "unset",
       imgScale: 0,
       stickyMouse: "enable",
-      autoPageInterval: 1e4,
+      autoPageInterval: 8e3,
       autoPlay: false,
       filenameTemplate: "{number}-{title}",
-      preventScrollPageTime: 200,
-      archiveVolumeSize: 1500,
+      preventScrollPageTime: 100,
+      archiveVolumeSize: 1200,
       convertTo: "GIF",
       autoCollapsePanel: true,
       minifyPageHelper: "inBigMode",
@@ -90,13 +90,29 @@
       excludeURLs: [],
       muted: false,
       volume: 50,
-      disableCssAnimation: false
+      disableCssAnimation: true
     };
   }
-  const VERSION = "4.1.10";
+  const VERSION = "4.4.0";
   const CONFIG_KEY = "ehvh_cfg_";
+  function getStorageMethod() {
+    if (typeof _GM_getValue === "function" && typeof _GM_setValue === "function") {
+      return {
+        setItem: (key, value) => _GM_setValue(key, value),
+        getItem: (key) => _GM_getValue(key)
+      };
+    } else if (typeof localStorage !== "undefined") {
+      return {
+        setItem: (key, value) => localStorage.setItem(key, value),
+        getItem: (key) => localStorage.getItem(key)
+      };
+    } else {
+      throw new Error("No supported storage method found");
+    }
+  }
+  const storage = getStorageMethod();
   function getConf() {
-    let cfgStr = _GM_getValue(CONFIG_KEY);
+    let cfgStr = storage.getItem(CONFIG_KEY);
     if (cfgStr) {
       let cfg2 = JSON.parse(cfgStr);
       if (cfg2.version === VERSION) {
@@ -107,63 +123,33 @@
     saveConf(cfg);
     return cfg;
   }
-  function confHealthCheck($conf) {
+  function confHealthCheck(cf) {
     let changed = false;
-    if ($conf.pageHelperAbTop !== "unset") {
-      $conf.pageHelperAbTop = Math.max(parseInt($conf.pageHelperAbTop), 500) + "px";
-      changed = true;
-    }
-    if ($conf.pageHelperAbBottom !== "unset") {
-      $conf.pageHelperAbBottom = Math.max(parseInt($conf.pageHelperAbBottom), 5) + "px";
-      changed = true;
-    }
-    if ($conf.pageHelperAbLeft !== "unset") {
-      $conf.pageHelperAbLeft = Math.max(parseInt($conf.pageHelperAbLeft), 5) + "px";
-      changed = true;
-    }
-    if ($conf.pageHelperAbRight !== "unset") {
-      $conf.pageHelperAbRight = Math.max(parseInt($conf.pageHelperAbRight), 5) + "px";
-      changed = true;
-    }
-    if ($conf.archiveVolumeSize === void 0) {
-      $conf.archiveVolumeSize = 1500;
-      changed = true;
-    }
-    if ($conf.convertTo === void 0) {
-      $conf.convertTo = "GIF";
-      changed = true;
-    }
-    if ($conf.autoCollapsePanel === void 0) {
-      $conf.autoCollapsePanel = true;
-      changed = true;
-    }
-    if ($conf.minifyPageHelper === void 0) {
-      $conf.minifyPageHelper = "inBigMode";
-      changed = true;
-    }
-    if ($conf.restartIdleLoader === 8e3) {
-      $conf.restartIdleLoader = 5e3;
-      changed = true;
-    }
-    if ($conf.keyboards === void 0) {
-      $conf.keyboards = { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} };
-      changed = true;
-    }
-    if ($conf.excludeURLs === void 0) {
-      $conf.excludeURLs = [];
-      changed = true;
-    }
-    if ($conf.disableCssAnimation === void 0) {
-      $conf.disableCssAnimation = false;
-      changed = true;
-    }
+    const defa = defaultConf();
+    const keys = Object.keys(defa);
+    keys.forEach((key) => {
+      if (cf[key] === void 0) {
+        cf[key] = defa[key];
+        changed = true;
+      }
+    });
+    ["pageHelperAbTop", "pageHelperAbLeft", "pageHelperAbBottom", "pageHelperAbRight"].forEach((key) => {
+      if (cf[key] !== "unset") {
+        let pos = parseInt(cf[key]);
+        const screenLimit = key.endsWith("Right") || key.endsWith("Left") ? window.screen.width : window.screen.height;
+        if (isNaN(pos) || pos < 5 || pos > screenLimit) {
+          cf[key] = "5px";
+          changed = true;
+        }
+      }
+    });
     if (changed) {
-      saveConf($conf);
+      saveConf(cf);
     }
-    return $conf;
+    return cf;
   }
   function saveConf(c) {
-    _GM_setValue(CONFIG_KEY, JSON.stringify(c));
+    storage.setItem(CONFIG_KEY, JSON.stringify(c));
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
   const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation"];
@@ -4231,7 +4217,7 @@ duration 0.04`).join("\n");
         const mouseX = event2.clientX;
         const mouseY = event2.clientY;
         if (mouseY <= wh / 2) {
-          element.style.top = Math.max(mouseY, 500) + "px";
+          element.style.top = Math.max(mouseY, 5) + "px";
           element.style.bottom = "unset";
         } else {
           element.style.bottom = Math.max(wh - mouseY - element.clientHeight, 5) + "px";
@@ -4478,7 +4464,7 @@ ${conf.disableCssAnimation ? "" : animation}
   .p-helper .p-panel {
     width: 24rem;
     height: 32rem;
-    bottom: 1.3rem;
+    ${conf.pageHelperAbBottom === "unset" ? "top: 100%" : "bottom: 100%"}
   }
   .p-helper .p-btn {
     height: 1.5rem;
@@ -4716,6 +4702,7 @@ ${conf.disableCssAnimation ? "" : animation}
   bottom: -3px;
   border-left: 3px solid #00000000;
   border-right: 3px solid #00000000;
+  box-sizing: border-box;
 }
 .img-land-left, .img-land-right {
   width: 15%;

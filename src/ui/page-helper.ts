@@ -44,9 +44,9 @@ export class PageHelper {
     });
     html.currPageElement.addEventListener("click", (event) => {
       const ele = event.target as HTMLElement;
-      const index = parseInt(ele.getAttribute("data-index") || "1") - 1;
+      const index = parseInt(ele.textContent || "1") - 1;
       const queue = getChapter(this.chapterIndex)?.queue;
-      if (!queue) return;
+      if (!queue || !queue[index]) return;
       EBUS.emit("imf-on-click", queue[index]);
     });
   }

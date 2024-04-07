@@ -327,7 +327,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
   HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
 
-  HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev"));
+  HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", parseInt((event.target as HTMLElement).textContent || "") - 1));
 
   // Shortcut
   document.addEventListener("keydown", (event) => events.keyboardEvent(event));

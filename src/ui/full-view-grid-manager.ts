@@ -2,6 +2,7 @@ import { conf } from "../config";
 import EBUS from "../event-bus";
 import { VisualNode } from "../img-node";
 import { Elements } from "./html";
+import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
 type E = {
   node: VisualNode,
@@ -13,7 +14,7 @@ export class FullViewGridManager {
   queue: E[] = [];
   done: boolean = false;
   chapterIndex: number = 0;
-  constructor(HTML: Elements) {
+  constructor(HTML: Elements, BIFM: BigImageFrameManager) {
     this.root = HTML.fullViewGrid;
     EBUS.subscribe("pf-on-appended", (_total, nodes, done) => {
       this.append(nodes);
@@ -28,6 +29,7 @@ export class FullViewGridManager {
     });
     // scroll to the element that is in full view grid
     EBUS.subscribe("ifq-do", (_, imf) => {
+      if (!BIFM.visible) return;
       if (imf.chapterIndex !== this.chapterIndex) return;
       if (!imf.node.root) return;
       let scrollTo = imf.node.root.offsetTop - window.screen.availHeight / 3;

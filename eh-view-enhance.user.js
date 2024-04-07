@@ -4124,7 +4124,7 @@ duration 0.04`).join("\n");
     queue = [];
     done = false;
     chapterIndex = 0;
-    constructor(HTML) {
+    constructor(HTML, BIFM) {
       this.root = HTML.fullViewGrid;
       EBUS.subscribe("pf-on-appended", (_total, nodes, done) => {
         this.append(nodes);
@@ -4138,6 +4138,8 @@ duration 0.04`).join("\n");
         this.done = false;
       });
       EBUS.subscribe("ifq-do", (_, imf) => {
+        if (!BIFM.visible)
+          return;
         if (imf.chapterIndex !== this.chapterIndex)
           return;
         if (!imf.node.root)
@@ -5356,7 +5358,7 @@ html {
     const debouncer = new Debouncer();
     HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
     HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
-    HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev"));
+    HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", parseInt(event.target.textContent || "") - 1));
     document.addEventListener("keydown", (event) => events.keyboardEvent(event));
     HTML.fullViewGrid.addEventListener("keydown", (event) => events.fullViewGridKeyBoardEvent(event));
     HTML.bigImageFrame.addEventListener("keydown", (event) => events.bigImageFrameKeyBoardEvent(event));
@@ -5417,9 +5419,9 @@ html {
       });
       html.currPageElement.addEventListener("click", (event) => {
         const ele = event.target;
-        const index = parseInt(ele.getAttribute("data-index") || "1") - 1;
+        const index = parseInt(ele.textContent || "1") - 1;
         const queue = getChapter(this.chapterIndex)?.queue;
-        if (!queue)
+        if (!queue || !queue[index])
           return;
         EBUS.emit("imf-on-click", queue[index]);
       });
@@ -5800,13 +5802,19 @@ html {
       }, 100);
       EBUS.emit("bifm-on-show");
     }
-    setNow(imf) {
-      if (!this.visible)
-        return;
-      this.resetStickyMouse();
-      this.initElement(imf);
+    setNow(imf, oriented) {
+      if (this.visible) {
+        this.resetStickyMouse();
+        this.initElement(imf, oriented);
+      } else {
+        const queue = this.getChapter(this.chapterIndex).queue;
+        const index = queue.indexOf(imf);
+        if (index === -1)
+          return;
+        EBUS.emit("ifq-do", index, imf, oriented || "next");
+      }
     }
-    initElement(imf) {
+    initElement(imf, oriented) {
       this.removeMediaNode();
       this.resetPreventStep();
       const queue = this.getChapter(this.chapterIndex).queue;
@@ -5814,7 +5822,7 @@ html {
       if (index === -1)
         return;
       this.currMediaNode = this.newMediaNode(index, imf);
-      EBUS.emit("ifq-do", index, imf, "next");
+      EBUS.emit("ifq-do", index, imf, oriented || "next");
       this.frame.appendChild(this.currMediaNode);
       if (conf.readMode === "consecutively") {
         this.hammer?.get("swipe").set({ enable: false });
@@ -5851,19 +5859,17 @@ html {
       }
       return list;
     }
-    stepNext(oriented) {
-      if (!this.currMediaNode)
+    stepNext(oriented, current) {
+      let index = this.currMediaNode ? parseInt(this.currMediaNode.getAttribute("d-index")) : current;
+      if (index === void 0 || isNaN(index))
         return;
-      const queue = this.getChapter(this.chapterIndex).queue;
-      if (queue.length === 0)
+      const queue = this.getChapter(this.chapterIndex)?.queue;
+      if (!queue || queue.length === 0)
         return;
-      let index = parseInt(this.currMediaNode.getAttribute("d-index"));
       index = oriented === "next" ? index + 1 : index - 1;
-      if (index < 0)
+      if (!queue[index])
         return;
-      if (index >= queue.length)
-        return;
-      this.setNow(queue[index]);
+      this.setNow(queue[index], oriented);
     }
     onWheel(event) {
       if (event.buttons === 2) {
@@ -6297,7 +6303,7 @@ html {
     const DL = new Downloader(HTML, IFQ, IL, PF, MATCHER);
     const PH = new PageHelper(HTML, (index) => PF.chapters[index]);
     const BIFM = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
-    const FVGM = new FullViewGridManager(HTML);
+    const FVGM = new FullViewGridManager(HTML, BIFM);
     const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
     addEventListeners(events, HTML, BIFM, DL);
     EBUS.subscribe("downloader-canvas-on-click", (index) => {

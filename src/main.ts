@@ -27,7 +27,7 @@ function main(MATCHER: Matcher): DestoryFunc {
   // UI Manager
   const PH: PageHelper = new PageHelper(HTML, (index) => PF.chapters[index]);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
-  const FVGM: FullViewGridManager = new FullViewGridManager(HTML);
+  const FVGM: FullViewGridManager = new FullViewGridManager(HTML, BIFM);
 
   const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
   addEventListeners(events, HTML, BIFM, DL);

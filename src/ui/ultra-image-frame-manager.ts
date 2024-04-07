@@ -183,13 +183,19 @@ export class BigImageFrameManager {
     EBUS.emit("bifm-on-show");
   }
 
-  setNow(imf: IMGFetcher) {
-    if (!this.visible) return;
-    this.resetStickyMouse();
-    this.initElement(imf);
+  setNow(imf: IMGFetcher, oriented?: Oriented) {
+    if (this.visible) {
+      this.resetStickyMouse();
+      this.initElement(imf, oriented);
+    } else {
+      const queue = this.getChapter(this.chapterIndex).queue;
+      const index = queue.indexOf(imf);
+      if (index === -1) return;
+      EBUS.emit("ifq-do", index, imf, oriented || "next");
+    }
   }
 
-  initElement(imf: IMGFetcher) {
+  initElement(imf: IMGFetcher, oriented?: Oriented) {
     // remove frame's img children
     this.removeMediaNode();
     this.resetPreventStep();
@@ -198,7 +204,7 @@ export class BigImageFrameManager {
     const index = queue.indexOf(imf);
     if (index === -1) return;
     this.currMediaNode = this.newMediaNode(index, imf);
-    EBUS.emit("ifq-do", index, imf, "next");
+    EBUS.emit("ifq-do", index, imf, oriented || "next");
     this.frame.appendChild(this.currMediaNode);
 
     if (conf.readMode === "consecutively") {
@@ -240,15 +246,14 @@ export class BigImageFrameManager {
     return list;
   }
 
-  stepNext(oriented: Oriented) {
-    if (!this.currMediaNode) return;
-    const queue = this.getChapter(this.chapterIndex).queue;
-    if (queue.length === 0) return
-    let index = parseInt(this.currMediaNode.getAttribute("d-index")!);
+  stepNext(oriented: Oriented, current?: number) {
+    let index = this.currMediaNode ? parseInt(this.currMediaNode.getAttribute("d-index")!) : current;
+    if (index === undefined || isNaN(index)) return;
+    const queue = this.getChapter(this.chapterIndex)?.queue;
+    if (!queue || queue.length === 0) return;
     index = oriented === "next" ? index + 1 : index - 1;
-    if (index < 0) return
-    if (index >= queue.length) return;
-    this.setNow(queue[index]);
+    if (!queue[index]) return
+    this.setNow(queue[index], oriented);
   }
 
   onWheel(event: WheelEvent) {

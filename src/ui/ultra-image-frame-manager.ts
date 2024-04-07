@@ -44,7 +44,7 @@ export class BigImageFrameManager {
     this.initImgScaleBar();
     this.initImgScaleStyle();
     this.initHammer();
-    EBUS.subscribe("pf-change-chapter", index => this.chapterIndex = index);
+    EBUS.subscribe("pf-change-chapter", index => this.chapterIndex = Math.max(0, index));
     EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
     EBUS.subscribe("imf-on-finished", (index, success, imf) => {
       if (imf.chapterIndex !== this.chapterIndex) return;

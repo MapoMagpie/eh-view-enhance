@@ -90,6 +90,7 @@ export default defineConfig(({ command }) => {
             "file-saver": "saveAs",
             "hammerjs": "Hammer",
           },
+          autoGrant: true,
           // externalResource: {
           //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"
           // }

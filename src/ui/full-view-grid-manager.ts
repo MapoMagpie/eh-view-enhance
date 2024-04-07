@@ -21,7 +21,7 @@ export class FullViewGridManager {
       setTimeout(() => this.renderCurrView(), 200);
     });
     EBUS.subscribe("pf-change-chapter", (index) => {
-      this.chapterIndex = index;
+      this.chapterIndex = Math.max(0, index);
       this.root.innerHTML = "";
       this.queue = [];
       this.done = false;

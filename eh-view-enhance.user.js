@@ -1311,6 +1311,7 @@ ${chapters.map((c, i) => `<div><label>
           return;
         queue.do(index, oriented);
       });
+      EBUS.subscribe("pf-change-chapter", (index) => index < 0 && !queue.downloading?.() && queue.forEach((imf) => imf.unrender()));
       return queue;
     }
     constructor() {
@@ -1403,11 +1404,7 @@ ${chapters.map((c, i) => `<div><label>
       this.maxWaitMS = 1e3;
       this.minWaitMS = 300;
       this.autoLoad = conf.autoLoad;
-      EBUS.subscribe("ifq-on-do", (currIndex, _queue, downloading) => {
-        if (downloading)
-          return;
-        this.abort(currIndex);
-      });
+      EBUS.subscribe("ifq-on-do", (currIndex, _, downloading) => !downloading && this.abort(currIndex));
       EBUS.subscribe("imf-on-finished", (index) => {
         if (!this.processingIndexList.includes(index))
           return;
@@ -1416,6 +1413,7 @@ ${chapters.map((c, i) => `<div><label>
           this.start();
         });
       });
+      EBUS.subscribe("pf-change-chapter", (index) => !this.queue.downloading?.() && this.abort(index > 0 ? 0 : void 0));
     }
     onFailed(cb) {
       this.onFailedCallback = cb;
@@ -1733,14 +1731,9 @@ ${chapters.map((c, i) => `<div><label>
       }
     }
     backChaptersSelection() {
-      if (this.chapters.length > 1) {
-        if (!this.queue.downloading?.()) {
-          this.queue.forEach((imf) => imf.unrender());
-        }
-        EBUS.emit("pf-change-chapter", 0);
-        this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
-        this.chaptersSelectionElement.hidden = true;
-      }
+      EBUS.emit("pf-change-chapter", -1);
+      this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
+      this.chaptersSelectionElement.hidden = true;
     }
     /// start the chapter by index
     async changeChapter(index, appendToView) {
@@ -4153,7 +4146,7 @@ duration 0.04`).join("\n");
         setTimeout(() => this.renderCurrView(), 200);
       });
       EBUS.subscribe("pf-change-chapter", (index) => {
-        this.chapterIndex = index;
+        this.chapterIndex = Math.max(0, index);
         this.root.innerHTML = "";
         this.queue = [];
         this.done = false;
@@ -5401,11 +5394,14 @@ html {
       this.html = html;
       EBUS.subscribe("pf-change-chapter", (index) => {
         this.chapterIndex = index;
-        const queue = getChapter(index)?.queue;
-        if (!queue)
-          return;
-        const finished = queue.filter((imf) => imf.stage === FetchState.DONE).length;
-        this.setPageState({ finished: finished.toString(), total: queue.length.toString(), current: "1" });
+        const [total, finished] = (() => {
+          const queue = getChapter(index)?.queue;
+          if (!queue)
+            return [0, 0];
+          const finished2 = queue.filter((imf) => imf.stage === FetchState.DONE).length;
+          return [finished2, queue.length];
+        })();
+        this.setPageState({ finished: finished.toString(), total: total.toString(), current: "1" });
       });
       EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
       EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));
@@ -5685,7 +5681,7 @@ html {
       this.initImgScaleBar();
       this.initImgScaleStyle();
       this.initHammer();
-      EBUS.subscribe("pf-change-chapter", (index) => this.chapterIndex = index);
+      EBUS.subscribe("pf-change-chapter", (index) => this.chapterIndex = Math.max(0, index));
       EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
       EBUS.subscribe("imf-on-finished", (index, success, imf) => {
         if (imf.chapterIndex !== this.chapterIndex)
@@ -6338,7 +6334,7 @@ html {
       console.log("destory eh-view-enhance");
       HTML.root.remove();
       PF.abort();
-      IL.abort(0);
+      IL.abort();
       IFQ.length = 0;
     };
   }

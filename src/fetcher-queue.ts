@@ -34,6 +34,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
       if (imf.chapterIndex !== queue.chapterIndex) return;
       queue.do(index, oriented);
     });
+    EBUS.subscribe("pf-change-chapter", (index) => index < 0 && !queue.downloading?.() && queue.forEach(imf => imf.unrender()));
     return queue;
   }
 

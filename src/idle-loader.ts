@@ -22,10 +22,7 @@ export class IdleLoader {
     this.maxWaitMS = 1000;
     this.minWaitMS = 300;
     this.autoLoad = conf.autoLoad;
-    EBUS.subscribe("ifq-on-do", (currIndex, _queue, downloading) => {
-      if (downloading) return;
-      this.abort(currIndex);
-    });
+    EBUS.subscribe("ifq-on-do", (currIndex, _, downloading) => !downloading && this.abort(currIndex));
     EBUS.subscribe("imf-on-finished", (index) => {
       // this.processingIndexList not include index mean curr task dont go continue, it aborted
       if (!this.processingIndexList.includes(index)) return;
@@ -34,6 +31,8 @@ export class IdleLoader {
         this.start();
       });
     });
+    // if not downloading, abort idle loader, if chapter index < 0, mean back to the chapters selection, then abort without restart
+    EBUS.subscribe("pf-change-chapter", (index) => !this.queue.downloading?.() && this.abort(index > 0 ? 0 : undefined));
   }
 
   onFailed(cb: () => void) {

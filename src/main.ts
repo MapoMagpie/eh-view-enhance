@@ -56,7 +56,7 @@ function main(MATCHER: Matcher): DestoryFunc {
     console.log("destory eh-view-enhance");
     HTML.root.remove();
     PF.abort();
-    IL.abort(0);
+    IL.abort();
     IFQ.length = 0;
   }
 }

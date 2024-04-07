@@ -12,10 +12,13 @@ export class PageHelper {
     this.html = html;
     EBUS.subscribe("pf-change-chapter", (index) => {
       this.chapterIndex = index;
-      const queue = getChapter(index)?.queue;
-      if (!queue) return;
-      const finished = queue.filter(imf => imf.stage === FetchState.DONE).length;
-      this.setPageState({ finished: finished.toString(), total: queue.length.toString(), current: "1" });
+      const [total, finished] = (() => {
+        const queue = getChapter(index)?.queue;
+        if (!queue) return [0, 0];
+        const finished = queue.filter(imf => imf.stage === FetchState.DONE).length;
+        return [finished, queue.length];
+      })();
+      this.setPageState({ finished: finished.toString(), total: total.toString(), current: "1" });
     });
     EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
     EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));

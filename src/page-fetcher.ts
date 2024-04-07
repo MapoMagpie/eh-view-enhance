@@ -76,14 +76,9 @@ export class PageFetcher {
   }
 
   backChaptersSelection() {
-    if (this.chapters.length > 1) {
-      if (!this.queue.downloading?.()) {
-        this.queue.forEach(imf => imf.unrender());
-      }
-      EBUS.emit("pf-change-chapter", 0);
-      this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
-      this.chaptersSelectionElement.hidden = true;
-    }
+    EBUS.emit("pf-change-chapter", -1);
+    this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
+    this.chaptersSelectionElement.hidden = true;
   }
 
   /// start the chapter by index

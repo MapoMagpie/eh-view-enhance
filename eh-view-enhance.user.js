@@ -1161,7 +1161,7 @@ ${chapters.map((c, i) => `<div><label>
       if (idSet.size === 0) {
         this.selectedChapters.push({ index: 0, done: false, ...promiseWithResolveAndReject() });
       } else {
-        this.selectedChapters = this.pageFetcher.chapters.filter((c) => idSet.has(c.id)).map((c) => ({ index: c.id, done: false, ...promiseWithResolveAndReject() }));
+        this.pageFetcher.chapters.forEach((c, i) => idSet.has(c.id) && this.selectedChapters.push({ index: i, done: false, ...promiseWithResolveAndReject() }));
       }
       evLog("debug", "get selected chapters: ", this.selectedChapters);
       return this.selectedChapters;

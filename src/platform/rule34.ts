@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Chapter, PagesSource } from "../page-fetcher";
+import { PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta } from "./platform";
 
@@ -8,16 +8,12 @@ export class Rule34Matcher extends BaseMatcher {
   tags: Record<string, string[]> = {};
   count: number = 0;
 
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
-  }
-
   workURL(): RegExp {
     return /rule34.xxx\/index.php\?page=post&s=list/;
   }
 
-  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
-    let doc = chapter.source as Document;
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+    let doc = document;
     yield doc;
     // find next page
     let tryTimes = 0;
@@ -38,7 +34,7 @@ export class Rule34Matcher extends BaseMatcher {
     }
   }
 
-  public async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
     let url = "";
     const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
     const img = doc.querySelector<HTMLImageElement>("#image");
@@ -83,7 +79,7 @@ export class Rule34Matcher extends BaseMatcher {
     return list;
   }
 
-  public parseGalleryMeta(_: Document): GalleryMeta {
+  galleryMeta(): GalleryMeta {
     const url = new URL(window.location.href);
     const tags = url.searchParams.get("tags")?.trim();
     const meta = new GalleryMeta(window.location.href, `rule34_${tags}_${this.count}`);

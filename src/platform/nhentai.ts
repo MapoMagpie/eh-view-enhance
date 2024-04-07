@@ -6,15 +6,11 @@ import { BaseMatcher, OriginMeta } from "./platform";
 const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
 export class NHMatcher extends BaseMatcher {
 
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
-  }
-
   workURL(): RegExp {
     return /nhentai.net\/g\/\d+\/?$/;
   }
 
-  public parseGalleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(doc: Document): GalleryMeta {
     let title: string | undefined;
     let originTitle: string | undefined;
     doc.querySelectorAll("#info .title").forEach(ele => {
@@ -47,7 +43,7 @@ export class NHMatcher extends BaseMatcher {
     return meta;
   }
 
-  public async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(href: string): Promise<OriginMeta> {
     let text = "";
     try {
       text = await window.fetch(href).then(resp => resp.text());
@@ -58,10 +54,10 @@ export class NHMatcher extends BaseMatcher {
     return { url: NH_IMG_URL_REGEX.exec(text)![1] };
   }
 
-  public async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
 
-    const nodes = (page as Document).querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb");
+    const nodes = (source as Document).querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb");
     if (!nodes || nodes.length == 0) {
       throw new Error("warn: failed query image nodes!")
     }

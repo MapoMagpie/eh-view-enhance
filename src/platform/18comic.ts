@@ -44,7 +44,7 @@ export class Comic18Matcher extends BaseMatcher {
       if (href === undefined) throw new Error("No page found");
       ret.push({
         id: 1,
-        title: "defalut",
+        title: "Default",
         source: href,
         queue: [],
       });
@@ -52,11 +52,11 @@ export class Comic18Matcher extends BaseMatcher {
     return ret;
   }
 
-  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
     yield chapter.source;
   }
 
-  public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
     const raw = await window.fetch(source as string).then(resp => resp.text());
     const document = new DOMParser().parseFromString(raw, "text/html");
@@ -92,10 +92,12 @@ export class Comic18Matcher extends BaseMatcher {
       canvas.toBlob((blob) => blob?.arrayBuffer().then(buf => new Uint8Array(buf)).then(resolve).finally(() => canvas.remove()), contentType);
     });
   }
+
   workURL(): RegExp {
     return /18comic.(vip|org)\/album\/\d+/;
   }
-  public parseGalleryMeta(doc: Document): GalleryMeta {
+
+  galleryMeta(doc: Document): GalleryMeta {
     const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
     const meta = new GalleryMeta(window.location.href, title);
     meta.originTitle = title;
@@ -114,7 +116,7 @@ export class Comic18Matcher extends BaseMatcher {
     return meta;
   }
   // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
-  public async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(url: string): Promise<OriginMeta> {
     return { url };
   }
 }

@@ -995,6 +995,7 @@
   const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
   class Downloader {
     meta;
+    title;
     downloading;
     buttonForce;
     buttonStart;
@@ -1015,14 +1016,21 @@
       this.queue = queue;
       this.idleLoader = idleLoader;
       this.pageFetcher = pageFetcher;
-      this.meta = () => matcher.parseGalleryMeta(document);
+      this.meta = (ch) => matcher.galleryMeta(document, ch);
+      this.title = () => matcher.title(document);
       this.downloading = false;
       this.buttonForce = HTML.downloadBTNForce;
       this.buttonStart = HTML.downloadBTNStart;
       this.elementNotice = HTML.downloadNotice;
       this.downloaderPanelBTN = HTML.downloaderPanelBTN;
-      this.buttonForce.addEventListener("click", () => this.download());
-      this.buttonStart.addEventListener("click", () => this.start());
+      this.buttonForce.addEventListener("click", () => this.download(this.pageFetcher.chapters));
+      this.buttonStart.addEventListener("click", () => {
+        if (this.downloading) {
+          this.abort("downloadStart");
+        } else {
+          this.start();
+        }
+      });
       this.queue.downloading = () => this.downloading;
       this.dashboardTab = HTML.downloadTabDashboard;
       this.chapterTab = HTML.downloadTabChapters;
@@ -1036,12 +1044,10 @@
             sel.done = true;
             sel.resolve(true);
           }
-          if (this.selectedChapters.find((sel2) => !sel2.done)) {
-            if (!this.downloading && !this.done && !this.downloaderPanelBTN.classList.contains("lightgreen")) {
-              this.downloaderPanelBTN.classList.add("lightgreen");
-              if (!/✓/.test(this.downloaderPanelBTN.textContent)) {
-                this.downloaderPanelBTN.textContent += "✓";
-              }
+          if (!this.downloading && !this.done && !this.downloaderPanelBTN.classList.contains("lightgreen")) {
+            this.downloaderPanelBTN.classList.add("lightgreen");
+            if (!/✓/.test(this.downloaderPanelBTN.textContent)) {
+              this.downloaderPanelBTN.textContent += "✓";
             }
           }
         }
@@ -1071,9 +1077,9 @@
         });
       });
     }
-    needNumberTitle() {
+    needNumberTitle(queue) {
       let lastTitle = "";
-      for (const fetcher of this.queue) {
+      for (const fetcher of queue) {
         if (fetcher.node.title < lastTitle) {
           return true;
         }
@@ -1081,8 +1087,8 @@
       }
       return false;
     }
-    checkDuplicateTitle(index, $title) {
-      let newTitle = $title.replace(FILENAME_INVALIDCHAR, "_");
+    checkDuplicateTitle(index, title) {
+      let newTitle = title;
       if (this.filenames.has(newTitle)) {
         let splits = newTitle.split(".");
         const ext = splits.pop();
@@ -1095,18 +1101,20 @@
         }
         return this.checkDuplicateTitle(index, newTitle);
       } else {
+        this.filenames.add(newTitle);
         return newTitle;
       }
     }
     createChapterSelectList() {
       const chapters = this.pageFetcher.chapters;
+      const selectAll = chapters.length === 1;
       this.elementChapters.innerHTML = `
 <div>
   <span id="download-chapters-select-all" class="clickable p-btn">Select All</span>
   <span id="download-chapters-unselect-all" class="clickable p-btn">Unselect All</span>
 </div>
 ${chapters.map((c, i) => `<div><label>
-  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${this.selectedChapters.find((sel) => sel.index === i) ? "checked" : ""} />
+  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || this.selectedChapters.find((sel) => sel.index === i) ? "checked" : ""} />
   <span>${c.title}</span></label></div>`).join("")}
 `;
       [["#download-chapters-select-all", true], ["#download-chapters-unselect-all", false]].forEach(
@@ -1140,12 +1148,13 @@ ${chapters.map((c, i) => `<div><label>
     }
     fetchOriginalTemporarily() {
       conf.fetchOriginal = true;
-      this.queue.forEach((imgFetcher) => {
-        imgFetcher.stage = FetchState.URL;
+      this.pageFetcher.chapters.forEach((ch) => {
+        ch.done = false;
+        ch.queue.forEach((imf) => imf.stage = FetchState.URL);
       });
       this.start();
     }
-    setSelectedChapters() {
+    checkSelectedChapters() {
       this.selectedChapters.length = 0;
       const idSet = /* @__PURE__ */ new Set();
       this.elementChapters.querySelectorAll("input[type=checkbox][id^=ch-]:checked").forEach((checkbox) => idSet.add(Number(checkbox.value)));
@@ -1163,31 +1172,34 @@ ${chapters.map((c, i) => `<div><label>
       this.flushUI("downloading");
       this.downloading = true;
       this.idleLoader.autoLoad = true;
-      const chapters = this.setSelectedChapters();
+      this.checkSelectedChapters();
       try {
-        for (const chapter of chapters) {
-          await this.pageFetcher.changeChapter(chapter.index, false);
+        for (const sel of this.selectedChapters) {
+          if (!this.downloading)
+            return;
+          await this.pageFetcher.changeChapter(sel.index, false);
           this.queue.forEach((imf) => {
             if (imf.stage === FetchState.FAILED) {
               imf.retry();
             }
           });
           if (this.queue.isFinised()) {
-            chapter.done = true;
-            chapter.resolve(true);
+            sel.done = true;
+            sel.resolve(true);
           } else {
             this.idleLoader.processingIndexList = this.queue.map((imgFetcher, index) => !imgFetcher.lock && imgFetcher.stage === FetchState.URL ? index : -1).filter((index) => index >= 0).splice(0, conf.downloadThreads);
-            this.idleLoader.onFailed(() => chapter.reject("download failed"));
+            this.idleLoader.onFailed(() => sel.reject("download failed or canceled"));
             this.idleLoader.start();
           }
-          await chapter.promise;
+          await sel.promise;
         }
-        this.download();
+        if (this.downloading)
+          await this.download(this.selectedChapters.filter((sel) => sel.done).map((sel) => this.pageFetcher.chapters[sel.index]));
       } catch (error) {
-        this.downloading = false;
-        this.flushUI("downloadFailed");
+        if ("abort" === error)
+          return;
+        this.abort("downloadFailed");
         evLog("error", "download failed: ", error);
-        return;
       } finally {
         this.downloading = false;
       }
@@ -1202,31 +1214,36 @@ ${chapters.map((c, i) => `<div><label>
       }
       this.downloaderPanelBTN.style.color = stage === "downloadFailed" ? "red" : "";
     }
-    download() {
-      if (this.queue.length === 0)
-        return;
-      this.downloading = false;
-      this.idleLoader.abort(this.queue.currIndex);
-      this.flushUI("packaging");
+    mapToFileLikes(chapter, singleChapter, separator) {
+      if (!chapter || chapter.queue.length === 0)
+        return [];
       let checkTitle;
-      const needNumberTitle = this.needNumberTitle();
+      const needNumberTitle = this.needNumberTitle(chapter.queue);
       if (needNumberTitle) {
-        const digits = this.queue.length.toString().length;
-        checkTitle = (title, index) => `${index + 1}`.padStart(digits, "0") + "_" + title;
+        const digits = chapter.queue.length.toString().length;
+        checkTitle = (title, index) => `${index + 1}`.padStart(digits, "0") + "_" + title.replaceAll(FILENAME_INVALIDCHAR, "_");
       } else {
-        checkTitle = (title, index) => this.checkDuplicateTitle(index, title);
+        this.filenames.clear();
+        checkTitle = (title, index) => this.checkDuplicateTitle(index, title.replaceAll(FILENAME_INVALIDCHAR, "_"));
       }
-      let files = this.queue.filter((imf) => imf.stage === FetchState.DONE && imf.data).map((imf, index) => {
+      let directory = (() => {
+        if (singleChapter)
+          return "";
+        if (chapter.title instanceof Array) {
+          return chapter.title.join("_").replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
+        } else {
+          return chapter.title.replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
+        }
+      })();
+      const ret = chapter.queue.filter((imf) => imf.stage === FetchState.DONE && imf.data).map((imf, index) => {
         return {
           stream: () => Promise.resolve(uint8ArrayToReadableStream(imf.data)),
           size: () => imf.data.byteLength,
-          name: checkTitle(imf.node.title, index)
+          name: directory + checkTitle(imf.node.title, index)
         };
       });
-      const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
-      files.forEach((file) => zip.add(file));
-      let meta = new TextEncoder().encode(JSON.stringify(this.meta(), null, 2));
-      zip.add({
+      let meta = new TextEncoder().encode(JSON.stringify(this.meta(chapter), null, 2));
+      ret.push({
         stream: () => Promise.resolve(new ReadableStream({
           start(c) {
             c.enqueue(meta);
@@ -1234,21 +1251,44 @@ ${chapters.map((c, i) => `<div><label>
           }
         })),
         size: () => meta.byteLength,
-        name: "meta.json"
+        name: directory + "meta.json"
       });
-      let save = async () => {
-        let readable;
-        while (readable = zip.nextReadableStream()) {
-          const blob = await new Response(readable).blob();
-          let ext = zip.currVolumeNo === zip.volumes - 1 ? "zip" : "z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
-          fileSaver.saveAs(blob, `${this.meta().originTitle || this.meta().title}.${ext}`);
+      return ret;
+    }
+    async download(chapters) {
+      try {
+        let archiveName = this.title().replaceAll(FILENAME_INVALIDCHAR, "_");
+        let separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
+        let singleChapter = chapters.length === 1;
+        this.flushUI("packaging");
+        const files = [];
+        for (const chapter of chapters) {
+          const ret = this.mapToFileLikes(chapter, singleChapter, separator);
+          files.push(...ret);
         }
-        this.flushUI("downloaded");
+        const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
+        files.forEach((file) => zip.add(file));
+        let save = async () => {
+          let readable;
+          while (readable = zip.nextReadableStream()) {
+            const blob = await new Response(readable).blob();
+            let ext = zip.currVolumeNo === zip.volumes - 1 ? "zip" : "z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
+            fileSaver.saveAs(blob, `${archiveName}.${ext}`);
+          }
+        };
+        await save();
         this.done = true;
-        this.downloaderPanelBTN.textContent = i18n.download.get();
-        this.downloaderPanelBTN.classList.remove("lightgreen");
-      };
-      save();
+      } finally {
+        this.abort(this.done ? "downloaded" : "downloadFailed");
+      }
+    }
+    abort(stage) {
+      this.downloaderPanelBTN.textContent = i18n.download.get();
+      this.downloaderPanelBTN.classList.remove("lightgreen");
+      this.downloading = false;
+      this.flushUI(stage);
+      this.idleLoader.abort();
+      this.selectedChapters.forEach((sel) => sel.reject("abort"));
     }
   }
   function uint8ArrayToReadableStream(arr) {
@@ -1297,7 +1337,7 @@ ${chapters.map((c, i) => `<div><label>
           return;
         queue.do(index, oriented);
       });
-      EBUS.subscribe("pf-change-chapter", (index) => index < 0 && !queue.downloading?.() && queue.forEach((imf) => imf.unrender()));
+      EBUS.subscribe("pf-change-chapter", () => queue.forEach((imf) => imf.unrender()));
       return queue;
     }
     constructor() {
@@ -1407,12 +1447,10 @@ ${chapters.map((c, i) => `<div><label>
     start() {
       if (!this.autoLoad)
         return;
-      if (this.processingIndexList.length === 0) {
+      if (this.processingIndexList.length === 0)
         return;
-      }
-      if (this.queue.length === 0) {
+      if (this.queue.length === 0)
         return;
-      }
       evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
       for (const processingIndex of this.processingIndexList) {
         this.queue[processingIndex].start(processingIndex);
@@ -1826,12 +1864,16 @@ ${chapters.map((c, i) => `<div><label>
     async fetchChapters() {
       return [{
         id: 1,
-        title: "default",
-        source: document,
+        title: "Default",
+        source: window.location.href,
         queue: []
       }];
     }
-    parseGalleryMeta(doc) {
+    title(doc) {
+      const meta = this.galleryMeta(doc);
+      return meta.originTitle || meta.title || "unknown";
+    }
+    galleryMeta(doc, _chapter) {
       return new GalleryMeta(window.location.href, doc.title || "unknown");
     }
     async processData(data, _1, _2) {
@@ -1874,7 +1916,7 @@ ${chapters.map((c, i) => `<div><label>
           throw new Error("No page found");
         ret.push({
           id: 1,
-          title: "defalut",
+          title: "Default",
           source: href,
           queue: []
         });
@@ -1923,7 +1965,7 @@ ${chapters.map((c, i) => `<div><label>
     workURL() {
       return /18comic.(vip|org)\/album\/\d+/;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
       const meta = new GalleryMeta(window.location.href, title);
       meta.originTitle = title;
@@ -1942,7 +1984,7 @@ ${chapters.map((c, i) => `<div><label>
       return meta;
     }
     // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
-    async fetchOriginMeta(url, _) {
+    async fetchOriginMeta(url) {
       return { url };
     }
   }
@@ -2007,7 +2049,7 @@ ${chapters.map((c, i) => `<div><label>
     workURL() {
       return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       const titleList = doc.querySelectorAll("#gd2 h1");
       let title;
       let originTitle;
@@ -2134,8 +2176,8 @@ ${chapters.map((c, i) => `<div><label>
       }
       return list;
     }
-    async *fetchPagesSource(chapter) {
-      const doc = chapter.source;
+    async *fetchPagesSource() {
+      const doc = document;
       let fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
       if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
         yield window.location.href;
@@ -2251,7 +2293,7 @@ ${chapters.map((c, i) => `<div><label>
   const GG_B_REGEX = /b:\s'(\d*\/)'/;
   class HitomiMather extends BaseMatcher {
     gg;
-    meta;
+    meta = {};
     infoRecord = {};
     workURL() {
       return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
@@ -2271,8 +2313,8 @@ ${chapters.map((c, i) => `<div><label>
         const a = element.querySelector("h1.lillie > a");
         if (a) {
           ret.push({
-            id: i,
-            title: a.textContent || "default-" + i,
+            id: i + 1,
+            title: a.textContent || "default-" + (i + 1),
             source: a.href,
             queue: [],
             thumbimg: element.querySelector("img")?.src
@@ -2292,11 +2334,7 @@ ${chapters.map((c, i) => `<div><label>
         throw new Error("cannot query hitomi gallery info");
       }
       const info = JSON.parse(infoRaw);
-      this.setGalleryMeta(info, galleryID);
-      this.infoRecord[chapter.id] = {
-        files: info.files,
-        scene_indexes: info.scene_indexes
-      };
+      this.setGalleryMeta(info, galleryID, chapter);
       const doc = await window.fetch(url).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       yield doc;
     }
@@ -2320,19 +2358,30 @@ ${chapters.map((c, i) => `<div><label>
       const url = this.gg.originURL(hash);
       return { url };
     }
-    setGalleryMeta(info, galleryID) {
-      this.meta = new GalleryMeta(window.location.href, info["title"] || "hitomi-" + galleryID);
-      this.meta.originTitle = info["japanese_title"];
+    setGalleryMeta(info, galleryID, chapter) {
+      this.infoRecord[chapter.id] = info;
+      this.meta[chapter.id] = new GalleryMeta(chapter.source, info.title || "hitomi-" + galleryID);
+      this.meta[chapter.id].originTitle = info.japanese_title || void 0;
       const excludes = ["scene_indexes", "files"];
       for (const key in info) {
         if (excludes.indexOf(key) > -1) {
           continue;
         }
-        this.meta.tags[key] = info[key];
+        this.meta[chapter.id].tags[key] = info[key];
       }
     }
-    parseGalleryMeta(_) {
-      return this.meta || new GalleryMeta(window.location.href, "hitomi");
+    galleryMeta(_, chapter) {
+      return this.meta[chapter.id];
+    }
+    title() {
+      const entries = Object.entries(this.infoRecord);
+      if (entries.length === 0)
+        return "hitomi-unknown";
+      if (entries.length === 1) {
+        return entries[0][1].japanese_title || entries[0][1].title || "hitomi-unknown";
+      } else {
+        return "hitomi-multiple" + entries.map((entry) => entry[1].id).join("_");
+      }
     }
   }
 
@@ -2378,9 +2427,9 @@ ${chapters.map((c, i) => `<div><label>
       const imgDir = q("#load_dir").value;
       const total = q("#load_pages").value;
       this.data = { server, uid, gid, imgDir, total: Number(total) };
-      yield "";
+      yield document;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       const title = doc.querySelector(".right_details > h1")?.textContent || void 0;
       const originTitle = doc.querySelector(".right_details > p.subtitle")?.textContent || void 0;
       const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
@@ -2406,13 +2455,10 @@ ${chapters.map((c, i) => `<div><label>
 
   const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
   class NHMatcher extends BaseMatcher {
-    async processData(data, _1, _2) {
-      return data;
-    }
     workURL() {
       return /nhentai.net\/g\/\d+\/?$/;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       let title;
       let originTitle;
       doc.querySelectorAll("#info .title").forEach((ele) => {
@@ -2444,7 +2490,7 @@ ${chapters.map((c, i) => `<div><label>
       meta.tags = tags;
       return meta;
     }
-    async fetchOriginMeta(href, _) {
+    async fetchOriginMeta(href) {
       let text = "";
       try {
         text = await window.fetch(href).then((resp) => resp.text());
@@ -2455,9 +2501,9 @@ ${chapters.map((c, i) => `<div><label>
       }
       return { url: NH_IMG_URL_REGEX.exec(text)[1] };
     }
-    async parseImgNodes(page) {
+    async parseImgNodes(source) {
       const list = [];
-      const nodes = page.querySelectorAll(".thumb-container > .gallerythumb");
+      const nodes = source.querySelectorAll(".thumb-container > .gallerythumb");
       if (!nodes || nodes.length == 0) {
         throw new Error("warn: failed query image nodes!");
       }
@@ -3008,7 +3054,7 @@ duration 0.04`).join("\n");
     workURL() {
       return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
     }
-    parseGalleryMeta(_) {
+    galleryMeta() {
       this.meta.title = `PIXIV_${this.authorID}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
       let tags = Object.values(this.works).map((w) => w.tags).flat();
       this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
@@ -3162,7 +3208,7 @@ duration 0.04`).join("\n");
     workURL() {
       return /rokuhentai.com\/\w+$/;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       const title = doc.querySelector(".site-manga-info__title-text")?.textContent || "UNTITLE";
       const meta = new GalleryMeta(window.location.href, title);
       meta.originTitle = title;
@@ -3201,8 +3247,8 @@ duration 0.04`).join("\n");
       }
       return list;
     }
-    async *fetchPagesSource(chapter) {
-      const doc = chapter.source;
+    async *fetchPagesSource() {
+      const doc = document;
       const imgCount = parseInt(doc.querySelector(".mdc-typography--caption")?.textContent || "");
       if (isNaN(imgCount)) {
         throw new Error("error: failed query image count!");
@@ -3252,14 +3298,11 @@ duration 0.04`).join("\n");
   class Rule34Matcher extends BaseMatcher {
     tags = {};
     count = 0;
-    async processData(data, _1, _2) {
-      return data;
-    }
     workURL() {
       return /rule34.xxx\/index.php\?page=post&s=list/;
     }
-    async *fetchPagesSource(chapter) {
-      let doc = chapter.source;
+    async *fetchPagesSource() {
+      let doc = document;
       yield doc;
       let tryTimes = 0;
       while (true) {
@@ -3322,7 +3365,7 @@ duration 0.04`).join("\n");
       }
       return list;
     }
-    parseGalleryMeta(_) {
+    galleryMeta() {
       const url = new URL(window.location.href);
       const tags = url.searchParams.get("tags")?.trim();
       const meta = new GalleryMeta(window.location.href, `rule34_${tags}_${this.count}`);
@@ -3336,7 +3379,7 @@ duration 0.04`).join("\n");
     workURL() {
       return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
     }
-    async fetchOriginMeta(href, _) {
+    async fetchOriginMeta(href) {
       let raw = "";
       try {
         raw = await window.fetch(href).then((resp) => resp.text());
@@ -3355,17 +3398,7 @@ duration 0.04`).join("\n");
     }
     async parseImgNodes(source) {
       const list = [];
-      const doc = await (async () => {
-        if (source instanceof Document) {
-          return source;
-        } else {
-          const raw = await window.fetch(source).then((response) => response.text());
-          if (!raw)
-            return null;
-          const domParser = new DOMParser();
-          return domParser.parseFromString(raw, "text/html");
-        }
-      })();
+      const doc = await window.fetch(source).then((resp) => resp.text()).then((raw) => new DOMParser().parseFromString(raw, "text/html"));
       if (!doc) {
         throw new Error("warn: steam matcher failed to get document from source page!");
       }
@@ -3410,7 +3443,7 @@ duration 0.04`).join("\n");
         yield url.href;
       }
     }
-    parseGalleryMeta(_) {
+    parseGalleryMeta() {
       const url = new URL(window.location.href);
       let appid = url.searchParams.get("appid");
       return new GalleryMeta(window.location.href, "steam-" + appid || "all");
@@ -3439,7 +3472,7 @@ duration 0.04`).join("\n");
       url = url.replace(".png", ".jpg");
       return url;
     }
-    async fetchOriginMeta(href, _) {
+    async fetchOriginMeta(href) {
       if (!conf.fetchOriginal) {
         return { url: href };
       }
@@ -3466,7 +3499,7 @@ duration 0.04`).join("\n");
       });
       return list;
     }
-    parseGalleryMeta(doc) {
+    galleryMeta(doc) {
       const meta = new GalleryMeta(window.location.href, "yande");
       let ul = doc.querySelector("ul#tag-sidebar");
       let tagLabels = [

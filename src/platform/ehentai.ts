@@ -1,7 +1,7 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Chapter, PagesSource } from "../page-fetcher";
+import { PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { parseImagePositions, splitImagesFromUrl } from "../utils/sprite-split";
 import { BaseMatcher, OriginMeta, } from "./platform";
@@ -29,7 +29,7 @@ export class EHMatcher extends BaseMatcher {
     return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
   }
 
-  public parseGalleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(doc: Document): GalleryMeta {
     const titleList = doc.querySelectorAll<HTMLElement>("#gd2 h1");
     let title: string | undefined;
     let originTitle: string | undefined;
@@ -58,11 +58,11 @@ export class EHMatcher extends BaseMatcher {
     return meta;
   }
 
-  public async fetchOriginMeta(href: string, retry: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(href: string, retry: boolean): Promise<OriginMeta> {
     return { url: await this.fetchImgURL(href, retry) };
   }
 
-  public async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
     let doc = await (async (): Promise<Document | null> => {
       if (source instanceof Document) {
@@ -167,8 +167,9 @@ export class EHMatcher extends BaseMatcher {
     return list;
   }
 
-  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
-    const doc = chapter.source as Document;
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+    // const doc = await window.fetch(chapter.source).then((resp) => resp.text()).then(raw => new DOMParser().parseFromString(raw, "text/html"));
+    const doc = document;
     let fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
     // MPV
     if (fristImageHref && regulars.isMPV.test(fristImageHref)) {

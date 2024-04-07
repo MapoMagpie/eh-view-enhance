@@ -26,7 +26,8 @@ export interface Matcher {
    */
   fetchOriginMeta(href: string, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
-  parseGalleryMeta(doc: Document): GalleryMeta;
+  galleryMeta(doc: Document, chapter?: Chapter): GalleryMeta;
+  title(doc: Document): string;
   workURL(): RegExp;
   processData(data: Uint8Array, contentType: string, url: string): Promise<Uint8Array>;
 }
@@ -36,8 +37,8 @@ export abstract class BaseMatcher implements Matcher {
   async fetchChapters(): Promise<Chapter[]> {
     return [{
       id: 1,
-      title: "default",
-      source: document,
+      title: "Default",
+      source: window.location.href,
       queue: [],
     }];
   }
@@ -46,9 +47,15 @@ export abstract class BaseMatcher implements Matcher {
   abstract parseImgNodes(page: PagesSource, chapterID?: number): Promise<ImageNode[]>;
   abstract fetchOriginMeta(href: string, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
-  parseGalleryMeta(doc: Document): GalleryMeta {
+  title(doc: Document): string {
+    const meta = this.galleryMeta(doc);
+    return meta.originTitle || meta.title || "unknown";
+  }
+
+  galleryMeta(doc: Document, _chapter?: Chapter): GalleryMeta {
     return new GalleryMeta(window.location.href, doc.title || "unknown");
   }
+
   abstract workURL(): RegExp;
   async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
     return data;

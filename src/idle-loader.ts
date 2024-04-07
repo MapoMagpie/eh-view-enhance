@@ -40,17 +40,13 @@ export class IdleLoader {
   }
 
   start() {
-    // 如果被中止了，则停止
     if (!this.autoLoad) return;
-    // 如果已经没有要处理的列表
-    if (this.processingIndexList.length === 0) {
-      return;
-    }
-    if (this.queue.length === 0) {
-      return;
-    }
+    // processingIndexList.length === 0 means idle loader aborted
+    if (this.processingIndexList.length === 0) return;
+    if (this.queue.length === 0) return;
     evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
     for (const processingIndex of this.processingIndexList) {
+      // start sereval img fetchers, when img fetcher is done, it will triggered event:imf-on-finished
       this.queue[processingIndex].start(processingIndex);
     }
   }

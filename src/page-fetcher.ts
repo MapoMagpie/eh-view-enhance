@@ -12,7 +12,7 @@ export type PagesSource = string | Document;
 export type Chapter = {
   id: number;
   title: string | string[];
-  source: PagesSource;
+  source: string; // url
   queue: IMGFetcher[];
   thumbimg?: string;
   sourceIter?: AsyncGenerator<PagesSource>;

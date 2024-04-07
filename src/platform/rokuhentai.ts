@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Chapter, PagesSource } from "../page-fetcher";
+import { PagesSource } from "../page-fetcher";
 import { ImagePosition, splitImagesFromUrl } from "../utils/sprite-split";
 import { BaseMatcher, OriginMeta } from "./platform";
 
@@ -14,7 +14,7 @@ export class RokuHentaiMatcher extends BaseMatcher {
     return /rokuhentai.com\/\w+$/;
   }
 
-  public parseGalleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(doc: Document): GalleryMeta {
     const title = doc.querySelector(".site-manga-info__title-text")?.textContent || "UNTITLE";
     const meta = new GalleryMeta(window.location.href, title);
     meta.originTitle = title;
@@ -31,11 +31,11 @@ export class RokuHentaiMatcher extends BaseMatcher {
     return meta;
   }
 
-  public async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
     return { url };
   }
 
-  public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
     const range = (source as string).split("-").map(Number);
     const list: ImageNode[] = [];
     const digits = this.imgCount.toString().length;
@@ -54,8 +54,8 @@ export class RokuHentaiMatcher extends BaseMatcher {
     return list;
   }
 
-  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
-    const doc = chapter.source as Document;
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+    const doc = document;
     const imgCount = parseInt(doc.querySelector(".mdc-typography--caption")?.textContent || "");
     if (isNaN(imgCount)) {
       throw new Error("error: failed query image count!")

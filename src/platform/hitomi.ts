@@ -52,7 +52,9 @@ class HitomiGG {
 }
 
 type GalleryInfo = {
-  scene_indexes: number[]
+  japanese_title: string | null,
+  id: string,
+  title: string,
   files: {
     name: string,
     hasavif: 1 | 0,
@@ -61,7 +63,8 @@ type GalleryInfo = {
     haswebp: 1 | 0,
     height: number,
     width: number
-  }[]
+  }[],
+  [key: string]: any
 }
 
 // const HASH_REGEX = /#(\d*)$/;
@@ -70,14 +73,14 @@ const GG_B_REGEX = /b:\s'(\d*\/)'/;
 export class HitomiMather extends BaseMatcher {
 
   gg?: HitomiGG;
-  meta?: GalleryMeta;
+  meta: Record<number, GalleryMeta> = {};
   infoRecord: Record<number, GalleryInfo> = {};
 
   workURL(): RegExp {
     return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
   }
 
-  public async fetchChapters(): Promise<Chapter[]> {
+  async fetchChapters(): Promise<Chapter[]> {
     // fetch gg.js
     const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then(resp => resp.text());
     this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)![1], GG_M_REGEX.exec(ggRaw)![1]);
@@ -93,8 +96,8 @@ export class HitomiMather extends BaseMatcher {
       const a = element.querySelector<HTMLAnchorElement>("h1.lillie > a");
       if (a) {
         ret.push({
-          id: i,
-          title: a.textContent || "default-" + i,
+          id: i + 1,
+          title: a.textContent || "default-" + (i + 1),
           source: a.href,
           queue: [],
           thumbimg: element.querySelector<HTMLImageElement>("img")?.src
@@ -104,9 +107,8 @@ export class HitomiMather extends BaseMatcher {
     return ret;
   }
 
-  public async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
-    const url = chapter.source as string;
-
+  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
+    const url = chapter.source;
     const galleryID = url.match(/([0-9]+)(?:\.html)/)?.[1];
     if (!galleryID) {
       throw new Error("cannot query hitomi gallery id");
@@ -117,17 +119,13 @@ export class HitomiMather extends BaseMatcher {
       throw new Error("cannot query hitomi gallery info");
     }
 
-    const info = JSON.parse(infoRaw);
-    this.setGalleryMeta(info, galleryID);
-    this.infoRecord[chapter.id] = {
-      files: info.files,
-      scene_indexes: info.scene_indexes
-    }
+    const info: GalleryInfo = JSON.parse(infoRaw);
+    this.setGalleryMeta(info, galleryID, chapter);
     const doc = await window.fetch(url).then(resp => resp.text()).then(text => new DOMParser().parseFromString(text, "text/html"));
     yield doc;
   }
 
-  public async parseImgNodes(_page: PagesSource, chapterID: number): Promise<ImageNode[]> {
+  async parseImgNodes(_page: PagesSource, chapterID: number): Promise<ImageNode[]> {
     if (!this.infoRecord[chapterID]) {
       throw new Error("warn: hitomi gallery info is null!")
     }
@@ -146,25 +144,36 @@ export class HitomiMather extends BaseMatcher {
     return list;
   }
 
-  public async fetchOriginMeta(hash: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(hash: string, _: boolean): Promise<OriginMeta> {
     const url = this.gg!.originURL(hash);
     return { url };
   }
 
-  private setGalleryMeta(info: any, galleryID: string) {
-    this.meta = new GalleryMeta(window.location.href, info["title"] as string || "hitomi-" + galleryID);
-    this.meta.originTitle = info["japanese_title"] as string;
+  private setGalleryMeta(info: GalleryInfo, galleryID: string, chapter: Chapter) {
+    this.infoRecord[chapter.id] = info;
+    this.meta[chapter.id] = new GalleryMeta(chapter.source, info.title || "hitomi-" + galleryID);
+    this.meta[chapter.id].originTitle = info.japanese_title || undefined;
     const excludes = ["scene_indexes", "files"];
     for (const key in info) {
       if (excludes.indexOf(key) > -1) {
         continue;
       }
-      this.meta.tags[key] = info[key];
+      this.meta[chapter.id].tags[key] = info[key];
     }
   }
 
-  public parseGalleryMeta(_: Document): GalleryMeta {
-    return this.meta || new GalleryMeta(window.location.href, "hitomi");
+  galleryMeta(_: Document, chapter: Chapter): GalleryMeta {
+    return this.meta[chapter.id];
+  }
+
+  title(): string {
+    const entries = Object.entries(this.infoRecord);
+    if (entries.length === 0) return "hitomi-unknown";
+    if (entries.length === 1) {
+      return entries[0][1].japanese_title || entries[0][1].title || "hitomi-unknown";
+    } else {
+      return "hitomi-multiple" + entries.map(entry => entry[1].id).join("_");
+    }
   }
 
 }

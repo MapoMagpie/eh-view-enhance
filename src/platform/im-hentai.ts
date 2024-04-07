@@ -53,10 +53,10 @@ export class IMHentaiMatcher extends BaseMatcher {
     const imgDir = q<HTMLInputElement>("#load_dir").value;
     const total = q<HTMLInputElement>("#load_pages").value;
     this.data = { server, uid, gid, imgDir, total: Number(total) };
-    yield "";
+    yield document;
   }
 
-  parseGalleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(doc: Document): GalleryMeta {
     const title = doc.querySelector(".right_details > h1")?.textContent || undefined;
     const originTitle = doc.querySelector(".right_details > p.subtitle")?.textContent || undefined;
     const meta = new GalleryMeta(window.location.href, title || "UNTITLE");

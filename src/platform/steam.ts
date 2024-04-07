@@ -10,7 +10,7 @@ export class SteamMatcher extends BaseMatcher {
     return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
   }
 
-  public async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(href: string): Promise<OriginMeta> {
     let raw = "";
     try {
       raw = await window.fetch(href).then(resp => resp.text());
@@ -27,23 +27,12 @@ export class SteamMatcher extends BaseMatcher {
     return { url: imgURL };
   }
 
-  public async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
-    const doc = await (async () => {
-      if (source instanceof Document) {
-        return source;
-      } else {
-        const raw = await window.fetch(source as string).then((response) => response.text());
-        if (!raw) return null;
-        const domParser = new DOMParser();
-        return domParser.parseFromString(raw, "text/html");
-      }
-    })();
-
+    const doc = await window.fetch(source as string).then((resp) => resp.text()).then(raw => new DOMParser().parseFromString(raw, "text/html"));
     if (!doc) {
       throw new Error("warn: steam matcher failed to get document from source page!")
     }
-
     const nodes = doc.querySelectorAll(".profile_media_item");
     if (!nodes || nodes.length == 0) {
       throw new Error("warn: failed query image nodes!")
@@ -63,7 +52,7 @@ export class SteamMatcher extends BaseMatcher {
     return list;
   }
 
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     let totalPages = -1;
     document.querySelectorAll(".pagingPageLink").forEach(ele => {
       totalPages = Number(ele.textContent);
@@ -87,7 +76,7 @@ export class SteamMatcher extends BaseMatcher {
     }
   }
 
-  parseGalleryMeta(_: Document): GalleryMeta {
+  parseGalleryMeta(): GalleryMeta {
     const url = new URL(window.location.href);
     let appid = url.searchParams.get("appid");
     return new GalleryMeta(window.location.href, "steam-" + appid || "all");

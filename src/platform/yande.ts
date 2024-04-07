@@ -10,12 +10,12 @@ export class YandeMatcher extends BaseMatcher {
     return /yande.re\/post(?!\/show\/.*)/;
   }
 
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     let currentE = document.querySelector("em.current")?.textContent || 1;
     let allA = document.querySelectorAll("div.pagination a");
     let latestE = allA.length > 0 ? allA[allA.length - 2].textContent || 1 : 1;
 
-    let curPageNumber = Number(currentE); // 20 +25
+    let curPageNumber = Number(currentE);
     let latestPageNumber = Number(latestE);
 
     const u = new URL(location.href);
@@ -37,14 +37,14 @@ export class YandeMatcher extends BaseMatcher {
     return url;
   }
 
-  public async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
+  async fetchOriginMeta(href: string): Promise<OriginMeta> {
     if (!conf.fetchOriginal) {
       return { url: href };
     }
     return { url: this.transformBigImageToSample(href) };
   }
 
-  public async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
     const doc = await window.fetch(source as string).then(resp => resp.text()).then(text => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
     if (!doc) {
@@ -69,10 +69,9 @@ export class YandeMatcher extends BaseMatcher {
     return list;
   }
 
-  public parseGalleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(doc: Document): GalleryMeta {
     const meta = new GalleryMeta(window.location.href, "yande");
     let ul = doc.querySelector("ul#tag-sidebar");
-
     let tagLabels = [
       { className: "circle", tagName: "artist" },
       { className: "artist", tagName: "artist" },

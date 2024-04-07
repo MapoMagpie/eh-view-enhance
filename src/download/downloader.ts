@@ -13,7 +13,7 @@ import { DownloaderCanvas } from "../ui/downloader-canvas";
 import { Chapter, PageFetcher } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 
-const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
+const FILENAME_INVALIDCHAR = /[\\/:*?"<>|\n]/g;
 export class Downloader {
   meta: (ch: Chapter) => GalleryMeta;
   title: () => string;

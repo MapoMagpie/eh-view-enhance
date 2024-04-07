@@ -58,6 +58,9 @@ export class PageFetcher {
         EBUS.emit("pf-change-chapter", index);
         if (this.chapters[index].queue) {
           this.appendToView(this.chapters[index].queue!.length, this.chapters[index].queue!, false);
+          if (this.chapters.length > 1) {
+            this.chaptersSelectionElement.hidden = false;
+          }
         }
         if (!this.queue.downloading?.()) {
           this.beforeInit?.();
@@ -94,9 +97,6 @@ export class PageFetcher {
     let first = await chapter.sourceIter.next();
     if (!first.done) {
       await this.appendImages(first.value, appendToView);
-    }
-    if (this.chapters.length > 1) {
-      this.chaptersSelectionElement.hidden = false;
     }
     this.appendPages(this.queue.length - 1, appendToView);
   }

@@ -992,7 +992,7 @@
     }
   }
 
-  const FILENAME_INVALIDCHAR = /[\\/:*?"<>|]/g;
+  const FILENAME_INVALIDCHAR = /[\\/:*?"<>|\n]/g;
   class Downloader {
     meta;
     title;
@@ -1739,6 +1739,9 @@ ${chapters.map((c, i) => `<div><label>
           EBUS.emit("pf-change-chapter", index);
           if (this.chapters[index].queue) {
             this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, false);
+            if (this.chapters.length > 1) {
+              this.chaptersSelectionElement.hidden = false;
+            }
           }
           if (!this.queue.downloading?.()) {
             this.beforeInit?.();
@@ -1771,9 +1774,6 @@ ${chapters.map((c, i) => `<div><label>
       let first = await chapter.sourceIter.next();
       if (!first.done) {
         await this.appendImages(first.value, appendToView);
-      }
-      if (this.chapters.length > 1) {
-        this.chaptersSelectionElement.hidden = false;
       }
       this.appendPages(this.queue.length - 1, appendToView);
     }
@@ -1895,6 +1895,7 @@ ${chapters.map((c, i) => `<div><label>
     }
   }
   class Comic18Matcher extends BaseMatcher {
+    meta;
     async fetchChapters() {
       const ret = [];
       const thumb = document.querySelector(".thumb-overlay > img");
@@ -1915,7 +1916,7 @@ ${chapters.map((c, i) => `<div><label>
         if (href === void 0)
           throw new Error("No page found");
         ret.push({
-          id: 1,
+          id: 0,
           title: "Default",
           source: href,
           queue: []
@@ -1930,14 +1931,20 @@ ${chapters.map((c, i) => `<div><label>
       const list = [];
       const raw = await window.fetch(source).then((resp) => resp.text());
       const document2 = new DOMParser().parseFromString(raw, "text/html");
-      const images = Array.from(document2.querySelectorAll(".scramble-page:not(.thewayhome) > img"));
-      for (const img of images) {
-        const src = img.getAttribute("data-original");
-        if (!src) {
-          evLog("error", "warn: cannot find data-original", img);
+      const elements = Array.from(document2.querySelectorAll(".scramble-page:not(.thewayhome)"));
+      for (const element of elements) {
+        const title = element.id;
+        const img = element.querySelector("img");
+        if (!img) {
+          evLog("error", "warn: cannot find img element", element);
           continue;
         }
-        list.push(new ImageNode("", src, src.split("/").pop()));
+        const src = img.getAttribute("data-original");
+        if (!src) {
+          evLog("error", "warn: cannot find data-original", element);
+          continue;
+        }
+        list.push(new ImageNode("", src, title));
       }
       return list;
     }
@@ -1966,9 +1973,11 @@ ${chapters.map((c, i) => `<div><label>
       return /18comic.(vip|org)\/album\/\d+/;
     }
     galleryMeta(doc) {
+      if (this.meta)
+        return this.meta;
       const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
-      const meta = new GalleryMeta(window.location.href, title);
-      meta.originTitle = title;
+      this.meta = new GalleryMeta(window.location.href, title);
+      this.meta.originTitle = title;
       const tagTrList = doc.querySelectorAll("div.tag-block > span");
       const tags = {};
       tagTrList.forEach((tr) => {
@@ -1980,8 +1989,8 @@ ${chapters.map((c, i) => `<div><label>
           }
         }
       });
-      meta.tags = tags;
-      return meta;
+      this.meta.tags = tags;
+      return this.meta;
     }
     // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
     async fetchOriginMeta(url) {

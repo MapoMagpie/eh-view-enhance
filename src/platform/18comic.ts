@@ -22,6 +22,8 @@ function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, p
 
 export class Comic18Matcher extends BaseMatcher {
 
+  meta?: GalleryMeta;
+
   async fetchChapters(): Promise<Chapter[]> {
     const ret: Chapter[] = [];
     const thumb = document.querySelector<HTMLImageElement>(".thumb-overlay > img");
@@ -43,7 +45,7 @@ export class Comic18Matcher extends BaseMatcher {
       const href = document.querySelector<HTMLAnchorElement>(".read-block > a")?.href;
       if (href === undefined) throw new Error("No page found");
       ret.push({
-        id: 1,
+        id: 0,
         title: "Default",
         source: href,
         queue: [],
@@ -60,14 +62,20 @@ export class Comic18Matcher extends BaseMatcher {
     const list: ImageNode[] = [];
     const raw = await window.fetch(source as string).then(resp => resp.text());
     const document = new DOMParser().parseFromString(raw, "text/html");
-    const images = Array.from(document.querySelectorAll<HTMLImageElement>(".scramble-page:not(.thewayhome) > img"));
-    for (const img of images) {
-      const src = img.getAttribute("data-original");
-      if (!src) {
-        evLog("error", "warn: cannot find data-original", img);
+    const elements = Array.from(document.querySelectorAll<HTMLDivElement>(".scramble-page:not(.thewayhome)"));
+    for (const element of elements) {
+      const title = element.id;
+      const img = element.querySelector("img");
+      if (!img) {
+        evLog("error", "warn: cannot find img element", element);
         continue;
       }
-      list.push(new ImageNode("", src, src.split("/").pop()!));
+      const src = img.getAttribute("data-original");
+      if (!src) {
+        evLog("error", "warn: cannot find data-original", element);
+        continue;
+      }
+      list.push(new ImageNode("", src, title));
     }
     return list;
   }
@@ -98,9 +106,10 @@ export class Comic18Matcher extends BaseMatcher {
   }
 
   galleryMeta(doc: Document): GalleryMeta {
+    if (this.meta) return this.meta;
     const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
-    const meta = new GalleryMeta(window.location.href, title);
-    meta.originTitle = title;
+    this.meta = new GalleryMeta(window.location.href, title);
+    this.meta.originTitle = title;
     const tagTrList = doc.querySelectorAll<HTMLElement>("div.tag-block > span");
     const tags: Record<string, string[]> = {};
     tagTrList.forEach((tr) => {
@@ -112,8 +121,8 @@ export class Comic18Matcher extends BaseMatcher {
         }
       }
     });
-    meta.tags = tags;
-    return meta;
+    this.meta.tags = tags;
+    return this.meta;
   }
   // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
   async fetchOriginMeta(url: string): Promise<OriginMeta> {

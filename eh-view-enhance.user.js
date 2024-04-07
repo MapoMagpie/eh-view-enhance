@@ -12,7 +12,6 @@
 // @downloadURL        https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/*
-// @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://e-hentai.org/*
 // @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://nhentai.net/*
@@ -42,7 +41,6 @@
 // @connect            18comic.vip
 // @connect            rule34.xxx
 // @connect            imhentai.xxx
-// @connect            exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -2045,11 +2043,11 @@ ${chapters.map((c, i) => `<div><label>
     /** 有压缩的大图地址 */
     normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
     /** 原图地址 */
-    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai(\.org|55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad\.onion)\/fullimg?[^"\\]*)\"\>/,
+    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai.*?\.(org|onion)\/fullimg?[^"\\]*)\"\>/,
     /** 大图重载地址 */
     nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
     /** 是否开启自动多页查看器 */
-    isMPV: /https?:\/\/e[-x]hentai(\.org|55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad\.onion)\/mpv\/\w+\/\w+\/#page\w/,
+    isMPV: /https?:\/\/e[-x]hentai.*?\.(onion)\/mpv\/\w+\/\w+\/#page\w/,
     /** 多页查看器图片列表提取 */
     mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g,
     /** 精灵图地址提取 */

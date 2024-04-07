@@ -12,7 +12,6 @@
 // @downloadURL        https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/*
-// @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://e-hentai.org/*
 // @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://nhentai.net/*
@@ -42,7 +41,6 @@
 // @connect            18comic.vip
 // @connect            rule34.xxx
 // @connect            imhentai.xxx
-// @connect            exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest

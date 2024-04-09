@@ -109,25 +109,17 @@ export class BigImageFrameManager {
   }
 
   initFrame() {
-    this.frame.addEventListener("wheel", event => {
-      this.callbackOnWheel?.(event);
-      this.onWheel(event);
-    });
+    this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
     // this.frame.addEventListener("scroll", (event) => this.onScroll(event)); // move to show()
     this.frame.addEventListener("click", (event) => this.hidden(event));
     this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
     const debouncer = new Debouncer("throttle");
     this.frame.addEventListener("mousemove", event => {
       debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
-        let stepImage = false;
         if (this.lastMouseY && conf.imgScale > 0) {
-          [stepImage] = this.stickyMouse(event, this.lastMouseY);
+          this.stickyMouse(event, this.lastMouseY);
         }
-        if (stepImage) {
-          this.createNextLand(event.clientX, event.clientY);
-        } else {
-          this.lastMouseY = event.clientY;
-        }
+        this.lastMouseY = event.clientY;
       }, 5);
     });
   }
@@ -140,25 +132,26 @@ export class BigImageFrameManager {
     onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
   }
 
-  createNextLand(x: number, y: number) {
-    this.frame.querySelector<HTMLElement>("#nextLand")?.remove();
-    const nextLand = document.createElement("div");
-    nextLand.setAttribute("id", "nextLand");
-    const svg_bg = `<svg version="1.1" width="150" height="40" viewBox="0 0 256 256" xml:space="preserve" id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"><defs id="defs1" /><path style="color:#000000;display:inline;mix-blend-mode:normal;fill:#86e690;fill-opacity:0.942853;fill-rule:evenodd;stroke:#000000;stroke-width:2.56;stroke-linejoin:bevel;stroke-miterlimit:10;stroke-dasharray:61.44, 2.56;stroke-dashoffset:0.768;stroke-opacity:0.319655" d="M -0.07467348,3.2775653 -160.12951,3.3501385 127.96339,156.87088 415.93447,3.2743495 255.93798,3.2807133 128.00058,48.081351 Z" id="path15" /></svg>`;
-    let yFix = this.frame.clientHeight / 9;
-    if (conf.stickyMouse === "reverse") {
-      yFix = -yFix
-    }
-    nextLand.setAttribute("style",
-      `position: fixed; width: 150px; height: 40px; top: ${y + yFix}px; left: ${x - 75}px; z-index: 1006;`);
-    nextLand.innerHTML = svg_bg;
-    nextLand.addEventListener("mouseover", () => {
-      nextLand.remove();
-      this.stepNext("next");
-    });
-    this.frame.appendChild(nextLand);
-    window.setTimeout(() => nextLand.remove(), 1500)
-  }
+  // Deprecated
+  // createNextLand(x: number, y: number) {
+  //   this.frame.querySelector<HTMLElement>("#nextLand")?.remove();
+  //   const nextLand = document.createElement("div");
+  //   nextLand.setAttribute("id", "nextLand");
+  //   const svg_bg = `<svg version="1.1" width="150" height="40" viewBox="0 0 256 256" xml:space="preserve" id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"><defs id="defs1" /><path style="color:#000000;display:inline;mix-blend-mode:normal;fill:#86e690;fill-opacity:0.942853;fill-rule:evenodd;stroke:#000000;stroke-width:2.56;stroke-linejoin:bevel;stroke-miterlimit:10;stroke-dasharray:61.44, 2.56;stroke-dashoffset:0.768;stroke-opacity:0.319655" d="M -0.07467348,3.2775653 -160.12951,3.3501385 127.96339,156.87088 415.93447,3.2743495 255.93798,3.2807133 128.00058,48.081351 Z" id="path15" /></svg>`;
+  //   let yFix = this.frame.clientHeight / 9;
+  //   if (conf.stickyMouse === "reverse") {
+  //     yFix = -yFix
+  //   }
+  //   nextLand.setAttribute("style",
+  //     `position: fixed; width: 150px; height: 40px; top: ${y + yFix}px; left: ${x - 75}px; z-index: 1006;`);
+  //   nextLand.innerHTML = svg_bg;
+  //   nextLand.addEventListener("mouseover", () => {
+  //     nextLand.remove();
+  //     this.stepNext("next");
+  //   });
+  //   this.frame.appendChild(nextLand);
+  //   window.setTimeout(() => nextLand.remove(), 1500)
+  // }
 
   hidden(event?: MouseEvent) {
     if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
@@ -247,30 +240,39 @@ export class BigImageFrameManager {
   }
 
   stepNext(oriented: Oriented, current?: number) {
-    let index = this.currMediaNode ? parseInt(this.currMediaNode.getAttribute("d-index")!) : current;
+    let index = current ? current : this.currMediaNode ? parseInt(this.currMediaNode.getAttribute("d-index")!) : undefined;
     if (index === undefined || isNaN(index)) return;
     const queue = this.getChapter(this.chapterIndex)?.queue;
     if (!queue || queue.length === 0) return;
     index = oriented === "next" ? index + 1 : index - 1;
+    // current is -1 and oriented is prev, means step to last
+    if (index < -1) index = queue.length - 1;
     if (!queue[index]) return
     this.setNow(queue[index], oriented);
   }
 
-  onWheel(event: WheelEvent) {
+  // isMouse: onWheel triggered by mousewheel, if not, means by keyboard control
+  onWheel(event: WheelEvent, isMouse?: boolean, preventCallback?: boolean) {
+    if (!preventCallback) this.callbackOnWheel?.(event);
+    // right click + scroll
     if (event.buttons === 2) {
       event.preventDefault();
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
-    } else if (conf.readMode === "singlePage") {
-      const oriented: Oriented = event.deltaY > 0 ? "next" : "prev";
-      if (this.isReachBoundary(oriented)) {
-        event.preventDefault();
-        if (!this.tryPreventStep()) {
-          this.stepNext(oriented);
-        }
-      }
-    } else {
-      // move to onScroll
+      return;
     }
+    // consecutively will proceed by onScroll
+    if (conf.readMode === "consecutively") return;
+
+    const oriented: Oriented = event.deltaY > 0 ? "next" : "prev";
+
+    // if sticky mouse is enabled, just simplely scroll to next page;
+    if (conf.stickyMouse === "disable") {
+      if (!this.isReachedBoundary(oriented)) return;
+      if (isMouse && this.tryPreventStep()) return;
+    }
+    event.preventDefault();
+    // this.frame.addEventListener("scrollend", () => this.isReachedBoundary(oriented) && isMouse && this.tryPreventStep(), { once: true })
+    this.stepNext(oriented);
   }
 
   onScroll() {
@@ -285,6 +287,7 @@ export class BigImageFrameManager {
     this.preventStep = { fin: fin ?? false };
   }
 
+  // prevent scroll to next page while mouse scrolling;
   tryPreventStep(): boolean {
     if (!conf.imgScale || conf.imgScale === 0 || conf.preventScrollPageTime === 0) {
       return false;
@@ -311,12 +314,12 @@ export class BigImageFrameManager {
     }
   }
 
-  isReachBoundary(oriented: Oriented): boolean {
+  isReachedBoundary(oriented: Oriented): boolean {
     if (oriented === "prev") {
       return this.frame.scrollTop <= 0;
     }
     if (oriented === "next") {
-      return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight
+      return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight;
     }
     return false;
   }
@@ -578,6 +581,7 @@ export class BigImageFrameManager {
     }
   }
 
+  // return [stepImage, distance]
   stickyMouse(event: MouseEvent, lastMouseY: number): [boolean, number] {
     let [stepImage, distance] = [false, 0];
     if (conf.readMode === "singlePage" && conf.stickyMouse !== "disable") {
@@ -620,18 +624,18 @@ export class BigImageFrameManager {
 
 // 自动翻页
 class AutoPage {
-  frameManager: BigImageFrameManager;
+  bifm: BigImageFrameManager;
   status: 'stop' | 'running';
   button: HTMLElement;
   lockVer: number;
   restart: boolean;
-  constructor(frameManager: BigImageFrameManager, root: HTMLElement) {
-    this.frameManager = frameManager;
+  constructor(BIFM: BigImageFrameManager, root: HTMLElement) {
+    this.bifm = BIFM;
     this.status = "stop";
     this.button = root;
     this.lockVer = 0;
     this.restart = false;
-    this.frameManager.callbackOnWheel = () => {
+    this.bifm.callbackOnWheel = () => {
       if (this.status === "running") {
         this.stop();
         this.start(this.lockVer);
@@ -655,12 +659,12 @@ class AutoPage {
   async start(lockVer: number) {
     this.status = "running";
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
-    const b = this.frameManager.frame;
-    if (this.frameManager.frame.classList.contains("big-img-frame-collapse")) {
-      const queue = this.frameManager.getChapter(this.frameManager.chapterIndex).queue;
+    const b = this.bifm.frame;
+    if (this.bifm.frame.classList.contains("big-img-frame-collapse")) {
+      const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
       if (queue.length === 0) return;
-      const index = parseInt(this.frameManager.currMediaNode?.getAttribute("d-index") || "0");
-      this.frameManager.show(queue[index]);
+      const index = parseInt(this.bifm.currMediaNode?.getAttribute("d-index") || "0");
+      this.bifm.show(queue[index]);
     }
     const progress = q("#auto-page-progress", this.button);
     while (true) {
@@ -679,21 +683,17 @@ class AutoPage {
         break;
       }
 
-      if (!this.frameManager.currMediaNode) break;
-      const index = parseInt(this.frameManager.currMediaNode.getAttribute("d-index")!);
-      const queue = this.frameManager.getChapter(this.frameManager.chapterIndex).queue;
+      if (!this.bifm.currMediaNode) break;
+      const index = parseInt(this.bifm.currMediaNode.getAttribute("d-index")!);
+      const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
       if (index >= queue.length) break;
 
-      const deltaY = this.frameManager.frame.offsetHeight / 2;
-      // read mode = singlePage
-      if (conf.readMode === "singlePage" && b.scrollTop >= b.scrollHeight - b.offsetHeight) {
-        this.frameManager.onWheel(new WheelEvent("wheel", { deltaY }));
-      } else { // read mode = consecutively
-        b.scrollBy({ top: deltaY, behavior: "smooth" });
-        if (conf.readMode === "consecutively") {
-          this.frameManager.onWheel(new WheelEvent("wheel", { deltaY }));
-        }
+      const deltaY = this.bifm.frame.offsetHeight / 2;
+      if (this.bifm.isReachedBoundary("next")) {
+        this.bifm.onWheel(new WheelEvent("wheel", { deltaY }), false, true);
+        if (conf.readMode === "singlePage") continue;
       }
+      b.scrollBy({ top: deltaY, behavior: "smooth" });
     }
     this.stop();
   }

@@ -212,14 +212,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
   };
 
   // keyboardEvents
-  function scrollImage(oriented: Oriented): boolean {
-    BIFM.frame.addEventListener("scrollend", () => {
-      if (conf.readMode === "singlePage" && BIFM.isReachBoundary(oriented)) {
-        BIFM.tryPreventStep();
-      }
-    }, { once: true });
-    if (BIFM.isReachBoundary(oriented)) {
-      HTML.bigImageFrame.dispatchEvent(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }));
+  function scrollImage(oriented: Oriented, key: string): boolean {
+    if (BIFM.isReachedBoundary(oriented)) {
+      const isSpace = key === "Space" || key === "Shift+Space";
+      if (!isSpace && conf.stickyMouse !== "disable" && BIFM.tryPreventStep()) return false;
+      BIFM.onWheel(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }), !isSpace);
       return true;
     }
     return false;
@@ -242,11 +239,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       ),
       "step-to-first-image": new KeyboardDesc(
         ["Home"],
-        () => IFQ.do(0, "next")
+        () => BIFM.stepNext("next", -1)
       ),
       "step-to-last-image": new KeyboardDesc(
         ["End"],
-        () => IFQ.do(IFQ.length - 1, "prev")
+        () => BIFM.stepNext("prev", -1)
       ),
       "scale-image-increase": new KeyboardDesc(
         ["="],
@@ -266,7 +263,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
             BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
             BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 2), behavior: "smooth" })
           }
-          if (scrollImage("prev")) {
+          if (scrollImage("prev", key)) {
             event.preventDefault();
             scrolling = false;
           }
@@ -282,7 +279,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
             BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
             BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 2, behavior: "smooth" })
           }
-          if (scrollImage("next")) {
+          if (scrollImage("next", key)) {
             event.preventDefault();
             scrolling = false;
           }

@@ -105,7 +105,9 @@ export function createHTML() {
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
-                    <span>${i18n.disableCssAnimation.get()} :</span>
+                    <span>${i18n.disableCssAnimation.get()}
+                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.disableCssAnimationTooltip.get()}</span></span>:
+                    </span>
                     <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
                 </label>
             </div>

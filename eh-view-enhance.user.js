@@ -90,7 +90,8 @@
       excludeURLs: [],
       muted: false,
       volume: 50,
-      disableCssAnimation: true
+      disableCssAnimation: true,
+      mcInSites: ["18comic"]
     };
   }
   const VERSION = "4.4.0";
@@ -2319,6 +2320,9 @@ ${chapters.map((c, i) => `<div><label>
         queue: [],
         thumbimg: document.querySelector(".content > .cover-column > .cover img")?.src
       });
+      if (conf.mcInSites?.indexOf("hitomi") === -1) {
+        return ret;
+      }
       document.querySelectorAll("#related-content > div").forEach((element, i) => {
         const a = element.querySelector("h1.lillie > a");
         if (a) {

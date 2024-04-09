@@ -70,6 +70,8 @@ export type Config = {
   volume?: number,
   /** disable css animation */
   disableCssAnimation: boolean,
+  /** the feature of `multiple chapters` is enabled in a site */
+  mcInSites: string[],
 };
 
 function defaultConf(): Config {
@@ -108,6 +110,7 @@ function defaultConf(): Config {
     muted: false,
     volume: 50,
     disableCssAnimation: true,
+    mcInSites: ["18comic"],
   };
 }
 

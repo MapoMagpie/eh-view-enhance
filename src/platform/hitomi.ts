@@ -1,3 +1,4 @@
+import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { Chapter, PagesSource } from "../page-fetcher";
@@ -92,6 +93,9 @@ export class HitomiMather extends BaseMatcher {
       queue: [],
       thumbimg: document.querySelector<HTMLImageElement>(".content > .cover-column > .cover img")?.src
     });
+    if (conf.mcInSites?.indexOf("hitomi") === -1) {
+      return ret;
+    }
     document.querySelectorAll("#related-content > div").forEach((element, i) => {
       const a = element.querySelector<HTMLAnchorElement>("h1.lillie > a");
       if (a) {

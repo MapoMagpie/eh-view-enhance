@@ -86,7 +86,7 @@ export class Comic18Matcher extends BaseMatcher {
     const gid = matches![1];
     //@ts-ignore
     let scrambleID: number = scramble_id;
-    if (gid < scrambleID.toString()) return data;
+    if (Number(gid) < scrambleID) return data;
     const page = matches![2];
     const ext = matches![3];
     if (ext === "gif") return data;

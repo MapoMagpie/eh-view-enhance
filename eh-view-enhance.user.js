@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.1
+// @version            4.4.2
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx
@@ -1955,7 +1955,7 @@ ${chapters.map((c, i) => `<div><label>
       const matches = url.match(reg);
       const gid = matches[1];
       let scrambleID = scramble_id;
-      if (gid < scrambleID.toString())
+      if (Number(gid) < scrambleID)
         return data;
       const page = matches[2];
       const ext = matches[3];

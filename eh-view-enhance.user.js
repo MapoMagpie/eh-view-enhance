@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.2
+// @version            4.4.3
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx
@@ -1883,6 +1883,24 @@ ${chapters.map((c, i) => `<div><label>
     }
   }
 
+  function toMD5(s) {
+    return md5(s);
+  }
+  function get_num(gid, page) {
+    gid = window.atob(gid);
+    page = window.atob(page);
+    let n = toMD5(gid + page).slice(-1).charCodeAt(0);
+    if (gid >= window.atob("MjY4ODUw") && gid <= window.atob("NDIxOTI1")) {
+      n %= 10;
+    } else if (gid >= window.atob("NDIxOTI2")) {
+      n %= 8;
+    }
+    if (n < 10) {
+      return 2 + 2 * n;
+    } else {
+      return 10;
+    }
+  }
   function drawImage(ctx, e, gid, page) {
     const width = e.width;
     const height = e.height;
@@ -1954,7 +1972,7 @@ ${chapters.map((c, i) => `<div><label>
       const reg = /(\d+)\/(\d+)\.(\w+)/;
       const matches = url.match(reg);
       const gid = matches[1];
-      let scrambleID = scramble_id;
+      let scrambleID = 220980;
       if (Number(gid) < scrambleID)
         return data;
       const page = matches[2];

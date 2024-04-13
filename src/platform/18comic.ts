@@ -4,6 +4,28 @@ import { Chapter, PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta } from "./platform";
 
+// TODO: don't reference the md5 on the page, to avoid errors when the script is not loaded
+function toMD5(s: string): string {
+  // @ts-ignore
+  return md5(s);
+}
+
+function get_num(gid: string, page: string): number {
+  gid = window.atob(gid);
+  page = window.atob(page);
+  let n = toMD5(gid + page).slice(-1).charCodeAt(0);
+  if (gid >= window.atob('MjY4ODUw') && gid <= window.atob('NDIxOTI1')) {
+    n %= 10;
+  } else if (gid >= window.atob('NDIxOTI2')) {
+    n %= 8;
+  }
+  if (n < 10) {
+    return 2 + (2 * n);
+  } else {
+    return 10;
+  }
+}
+
 function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, page: string) {
   const width = e.width;
   const height = e.height;
@@ -84,8 +106,8 @@ export class Comic18Matcher extends BaseMatcher {
     const reg = /(\d+)\/(\d+)\.(\w+)/;
     const matches = url.match(reg);
     const gid = matches![1];
-    //@ts-ignore
-    let scrambleID: number = scramble_id;
+    // let scrambleID: number = scramble_id;
+    let scrambleID = 220980;
     if (Number(gid) < scrambleID) return data;
     const page = matches![2];
     const ext = matches![3];

@@ -9,7 +9,7 @@
 - 将画廊中所有的缩略图一次性地`陈列`出来，一目了然。
 - `画廊下载`，保存所有的原图以及画廊信息，方便后续的管理。
 - `大图阅览`，具有单页模式与连续阅读模式。
-- `多站点支持`，目前支持: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx.
+- `多站点支持`，目前支持: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us.
 - `分卷下载`，绕过浏览器大小限制。
 - `Pixiv动图转Gif`。
 - `移动端优化`，（需要支持脚本管理器拓展的浏览器，如:Firefox Nightly、Kiwi Browser)

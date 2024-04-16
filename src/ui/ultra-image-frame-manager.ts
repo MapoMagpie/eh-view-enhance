@@ -51,18 +51,18 @@ export class BigImageFrameManager {
       if (!this.visible || !success) return;
       const img = this.getMediaNodes().find((img) => index === parseInt(img.getAttribute("d-index")!));
       if (!img) return;
-      if (imf.contentType !== "video/mp4") {
-        img.setAttribute("src", imf.blobUrl!);
+      // if is video, then replace img with video
+      if (imf.contentType?.startsWith("video")) {
+        // evLog("BIFM: newMediaNode: newMediaNode");
+        const vid = this.newMediaNode(index, imf) as HTMLVideoElement;
+        img.replaceWith(vid);
+        if (img === this.currMediaNode) {
+          this.currMediaNode = vid;
+        }
+        img.remove();
         return
       }
-      // if is video, then replace img with video
-      // evLog("BIFM: newMediaNode: newMediaNode");
-      const vid = this.newMediaNode(index, imf) as HTMLVideoElement;
-      img.replaceWith(vid);
-      if (img === this.currMediaNode) {
-        this.currMediaNode = vid;
-      }
-      img.remove();
+      img.setAttribute("src", imf.blobUrl!);
     });
 
     // enable auto page
@@ -465,7 +465,7 @@ export class BigImageFrameManager {
 
   newMediaNode(index: number, imf: IMGFetcher): HTMLImageElement | HTMLVideoElement {
     if (!imf) throw new Error("BIFM: newMediaNode: img fetcher is null");
-    if (imf.contentType === "video/mp4") {
+    if (imf.contentType?.startsWith("video")) {
       const vid = document.createElement("video");
       vid.classList.add("bifm-img");
       vid.classList.add("bifm-vid");

@@ -63,9 +63,9 @@ export default class ImageNode {
         // if gif size over 20MB, then don't render it
         justThumbnail = this.size != undefined && this.size > 20 * 1024 * 1024;
       }
-      if (this.mimeType === "video/mp4") {
+      if (this.mimeType?.startsWith("video")) {
         const tip = OVERLAY_TIP.cloneNode(true);
-        tip.firstChild!.textContent = "MP4";
+        tip.firstChild!.textContent = this.mimeType.split("/")[1].toUpperCase();
         this.root?.appendChild(tip);
         justThumbnail = true;
       }

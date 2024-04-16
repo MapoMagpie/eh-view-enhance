@@ -23,7 +23,7 @@ export default defineConfig(({ command }) => {
       monkey({
         entry: 'src/main.ts',
         userscript: {
-          version: '4.4.3',
+          version: '4.4.4',
           icon: 'https://exhentai.org/favicon.ico',
           namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
           supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',
@@ -43,6 +43,7 @@ export default defineConfig(({ command }) => {
             'https://18comic.vip/*',
             'https://rule34.xxx/*',
             'https://imhentai.xxx/*',
+            'https://danbooru.donmai.us/*',
           ],
           name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
           license: 'MIT',
@@ -66,6 +67,7 @@ export default defineConfig(({ command }) => {
             '18comic.vip',
             'rule34.xxx',
             'imhentai.xxx',
+            'donmai.us',
           ],
           // resource: {
           //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"

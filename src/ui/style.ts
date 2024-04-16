@@ -563,7 +563,6 @@ ${conf.disableCssAnimation ? "" : animation}
   top: 3px;
   right: 3px;
   z-index: 10;
-  width: 2rem;
   height: 1rem;
   border-radius: 10%;
   border: 1px solid #333;

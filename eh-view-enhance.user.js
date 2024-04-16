@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.3
+// @version            4.4.4
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx
@@ -24,6 +24,7 @@
 // @match              https://18comic.vip/*
 // @match              https://rule34.xxx/*
 // @match              https://imhentai.xxx/*
+// @match              https://danbooru.donmai.us/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -41,6 +42,7 @@
 // @connect            18comic.vip
 // @connect            rule34.xxx
 // @connect            imhentai.xxx
+// @connect            donmai.us
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -1573,9 +1575,9 @@ ${chapters.map((c, i) => `<div><label>
           this.root?.appendChild(tip);
           justThumbnail = this.size != void 0 && this.size > 20 * 1024 * 1024;
         }
-        if (this.mimeType === "video/mp4") {
+        if (this.mimeType?.startsWith("video")) {
           const tip = OVERLAY_TIP.cloneNode(true);
-          tip.firstChild.textContent = "MP4";
+          tip.firstChild.textContent = this.mimeType.split("/")[1].toUpperCase();
           this.root?.appendChild(tip);
           justThumbnail = true;
         }
@@ -1878,6 +1880,9 @@ ${chapters.map((c, i) => `<div><label>
     galleryMeta(doc, _chapter) {
       return new GalleryMeta(window.location.href, doc.title || "unknown");
     }
+    workURLs() {
+      return [this.workURL()];
+    }
     async processData(data, _1, _2) {
       return data;
     }
@@ -2015,6 +2020,231 @@ ${chapters.map((c, i) => `<div><label>
     // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
     async fetchOriginMeta(url) {
       return { url };
+    }
+  }
+
+  class DanbooruMatcher extends BaseMatcher {
+    tags = {};
+    count = 0;
+    async *fetchPagesSource() {
+      let doc = document;
+      yield doc;
+      let tryTimes = 0;
+      while (true) {
+        const url = this.nextPage(doc);
+        if (!url)
+          break;
+        try {
+          doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+        } catch (e) {
+          tryTimes++;
+          if (tryTimes > 3)
+            throw new Error(`fetch next page failed, ${e}`);
+          continue;
+        }
+        tryTimes = 0;
+        yield doc;
+      }
+    }
+    async fetchOriginMeta(href) {
+      let url = null;
+      const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      if (conf.fetchOriginal) {
+        url = this.getOriginalURL(doc);
+      }
+      if (!url) {
+        url = this.getNormalURL(doc);
+      }
+      if (!url)
+        throw new Error("Cannot find origin image or video url");
+      let title;
+      const ext = url.split(".").pop()?.match(/^\w+/)?.[0];
+      const id = this.extractIDFromHref(href);
+      if (ext && id) {
+        title = `${id}.${ext}`;
+      }
+      return { url, title };
+    }
+    async parseImgNodes(source) {
+      const list = [];
+      const doc = source;
+      this.queryList(doc).forEach((ele) => {
+        const [imgNode, tags] = this.toImgNode(ele);
+        if (!imgNode)
+          return;
+        this.count++;
+        if (tags !== "") {
+          this.tags[imgNode.title.split(".")[0]] = tags.trim().replaceAll(": ", ":").split(" ").map((v) => v.trim()).filter((v) => v !== "");
+        }
+        list.push(imgNode);
+      });
+      return list;
+    }
+    galleryMeta() {
+      const url = new URL(window.location.href);
+      const tags = url.searchParams.get("tags")?.trim();
+      const meta = new GalleryMeta(window.location.href, `${this.site()}_${tags}_${this.count}`);
+      meta.tags = this.tags;
+      return meta;
+    }
+  }
+  class DanbooruDonmaiMatcher extends DanbooruMatcher {
+    site() {
+      return "danbooru";
+    }
+    workURL() {
+      return /danbooru.donmai.us\/(posts(?!\/)|$)/;
+    }
+    nextPage(doc) {
+      return doc.querySelector(".paginator a.paginator-next")?.href || null;
+    }
+    queryList(doc) {
+      return Array.from(doc.querySelectorAll(".posts-container > article:not(.blacklisted-active)"));
+    }
+    toImgNode(ele) {
+      const anchor = ele.querySelector("a");
+      if (!anchor) {
+        evLog("error", "warn: cannot find anchor element", anchor);
+        return [null, ""];
+      }
+      const img = anchor.querySelector("img");
+      if (!img) {
+        evLog("error", "warn: cannot find img element", img);
+        return [null, ""];
+      }
+      const href = anchor.getAttribute("href");
+      if (!href) {
+        evLog("error", "warn: cannot find href", anchor);
+        return [null, ""];
+      }
+      return [new ImageNode(img.src, href, `${ele.getAttribute("data-id") || ele.id}.jpg`), ele.getAttribute("data-tags") || ""];
+    }
+    getOriginalURL(doc) {
+      return doc.querySelector("#image-resize-notice > a")?.href || null;
+    }
+    getNormalURL(doc) {
+      return doc.querySelector("#image")?.getAttribute("src") || null;
+    }
+    extractIDFromHref(href) {
+      return href.match(/posts\/(\d+)/)?.[1];
+    }
+  }
+  class Rule34Matcher extends DanbooruMatcher {
+    site() {
+      return "rule34";
+    }
+    workURL() {
+      return /rule34.xxx\/index.php\?page=post&s=list/;
+    }
+    nextPage(doc) {
+      return doc.querySelector(".pagination a[alt=next]")?.href || null;
+    }
+    queryList(doc) {
+      return Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
+    }
+    toImgNode(ele) {
+      const img = ele.querySelector("img");
+      if (!img) {
+        evLog("error", "warn: cannot find img element", img);
+        return [null, ""];
+      }
+      const href = ele.getAttribute("href");
+      if (!href) {
+        evLog("error", "warn: cannot find href", ele);
+        return [null, ""];
+      }
+      return [new ImageNode(img.src, href, `${ele.id}.jpg`), img.getAttribute("alt") || ""];
+    }
+    getOriginalURL(doc) {
+      const raw = doc.querySelector("#note-container + script")?.textContent?.trim().replace("image = ", "").replace(";", "").replaceAll("'", '"');
+      try {
+        if (raw) {
+          const info = JSON.parse(raw);
+          return `${info.domain}/${info.base_dir}/${info.dir}/${info.img}`;
+        }
+      } catch (error) {
+        evLog("error", "get original url failed", error);
+      }
+      return null;
+    }
+    getNormalURL(doc) {
+      return doc.querySelector("#image,#gelcomVideoPlayer > source")?.getAttribute("src") || null;
+    }
+    extractIDFromHref(href) {
+      return href.match(/id=(\d+)/)?.[1];
+    }
+  }
+  const POST_INFO_REGEX = /Post\.register\((.*)\)/g;
+  class YandereMatcher extends BaseMatcher {
+    infos = {};
+    count = 0;
+    workURL() {
+      return /yande.re\/post(?!\/show\/.*)/;
+    }
+    async *fetchPagesSource() {
+      let doc = document;
+      yield doc;
+      let tryTimes = 0;
+      while (true) {
+        const url = doc.querySelector("#paginator a.next_page")?.href;
+        if (!url)
+          break;
+        try {
+          doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+        } catch (e) {
+          tryTimes++;
+          if (tryTimes > 3)
+            throw new Error(`fetch next page failed, ${e}`);
+          continue;
+        }
+        tryTimes = 0;
+        yield doc;
+      }
+    }
+    async parseImgNodes(source) {
+      const doc = source;
+      const raw = doc.querySelector("body > form + script")?.textContent;
+      if (!raw)
+        throw new Error("cannot find post list from script");
+      const matches = raw.matchAll(POST_INFO_REGEX);
+      const ret = [];
+      for (const match of matches) {
+        if (!match || match.length < 2)
+          continue;
+        try {
+          const info = JSON.parse(match[1]);
+          this.infos[info.id.toString()] = info;
+          this.count++;
+          ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${info.file_ext}`));
+        } catch (error) {
+          evLog("error", "parse post info failed", error);
+          continue;
+        }
+      }
+      return ret;
+    }
+    async fetchOriginMeta(href) {
+      let id = href.split("/").pop();
+      if (!id) {
+        throw new Error(`cannot find id from ${href}`);
+      }
+      let url;
+      if (conf.fetchOriginal) {
+        url = this.infos[id]?.file_url;
+      } else {
+        url = this.infos[id]?.sample_url;
+      }
+      if (!url) {
+        throw new Error(`cannot find url for id ${id}`);
+      }
+      return { url };
+    }
+    galleryMeta() {
+      const url = new URL(window.location.href);
+      const tags = url.searchParams.get("tags")?.trim();
+      const meta = new GalleryMeta(window.location.href, `yande_${tags}_${this.count}`);
+      meta["infos"] = this.infos;
+      return meta;
     }
   }
 
@@ -3327,85 +3557,6 @@ duration 0.04`).join("\n");
     }
   }
 
-  class Rule34Matcher extends BaseMatcher {
-    tags = {};
-    count = 0;
-    workURL() {
-      return /rule34.xxx\/index.php\?page=post&s=list/;
-    }
-    async *fetchPagesSource() {
-      let doc = document;
-      yield doc;
-      let tryTimes = 0;
-      while (true) {
-        let next = doc.querySelector(".pagination a[alt=next]");
-        if (!next)
-          break;
-        let url = next.href;
-        if (!url)
-          break;
-        try {
-          doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-        } catch (e) {
-          tryTimes++;
-          if (tryTimes > 3)
-            throw new Error(`fetch next page failed, ${e}`);
-          continue;
-        }
-        tryTimes = 0;
-        yield doc;
-      }
-    }
-    async fetchOriginMeta(href, _) {
-      let url = "";
-      const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-      const img = doc.querySelector("#image");
-      if (!img) {
-        const video = doc.querySelector("#gelcomVideoPlayer");
-        if (video) {
-          url = video.querySelector("source")?.src || "";
-        }
-      } else {
-        url = img.src || img.getAttribute("data-cfsrc") || "";
-      }
-      if (!url)
-        throw new Error("Cannot find origin image or video url");
-      let title;
-      const ext = url.split(".").pop()?.match(/^\w+/)?.[0];
-      const id = href.match(/id=(\d+)/)?.[1];
-      if (ext && id) {
-        title = `${id}.${ext}`;
-      }
-      return { url, title };
-    }
-    async parseImgNodes(source) {
-      const list = [];
-      const doc = source;
-      const imgList = Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
-      for (const img of imgList) {
-        const child = img.querySelector("img");
-        if (!child) {
-          evLog("error", "warn: cannot find img element", img);
-          continue;
-        }
-        const title = `${img.id}.jpg`;
-        if (child.alt !== void 0 && child.alt !== "") {
-          this.tags[img.id] = child.alt.split(" ").map((v) => v.trim()).filter((v) => v !== "");
-          this.count++;
-        }
-        list.push(new ImageNode(child.src, img.href, title));
-      }
-      return list;
-    }
-    galleryMeta() {
-      const url = new URL(window.location.href);
-      const tags = url.searchParams.get("tags")?.trim();
-      const meta = new GalleryMeta(window.location.href, `rule34_${tags}_${this.count}`);
-      meta.tags = this.tags;
-      return meta;
-    }
-  }
-
   const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
   class SteamMatcher extends BaseMatcher {
     workURL() {
@@ -3482,96 +3633,21 @@ duration 0.04`).join("\n");
     }
   }
 
-  class YandeMatcher extends BaseMatcher {
-    workURL() {
-      return /yande.re\/post(?!\/show\/.*)/;
-    }
-    async *fetchPagesSource() {
-      let currentE = document.querySelector("em.current")?.textContent || 1;
-      let allA = document.querySelectorAll("div.pagination a");
-      let latestE = allA.length > 0 ? allA[allA.length - 2].textContent || 1 : 1;
-      let curPageNumber = Number(currentE);
-      let latestPageNumber = Number(latestE);
-      const u = new URL(location.href);
-      for (let p = curPageNumber; p <= latestPageNumber; p++) {
-        u.searchParams.set("page", p.toString());
-        yield u.href;
-      }
-    }
-    transformBigImageToSample(url) {
-      url = url.replace("image", "sample");
-      url = url.replace(/(yande.re%20\d+)/, "$1%20sample");
-      url = url.replace(".png", ".jpg");
-      return url;
-    }
-    async fetchOriginMeta(href) {
-      if (!conf.fetchOriginal) {
-        return { url: href };
-      }
-      return { url: this.transformBigImageToSample(href) };
-    }
-    async parseImgNodes(source) {
-      const list = [];
-      const doc = await window.fetch(source).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
-      if (!doc) {
-        throw new Error("warn: yande matcher failed to get document from source page!");
-      }
-      let url = new URL(source);
-      let titlePrefix = ("page" + url.searchParams.get("page") || "nopage") + " ";
-      let query = doc.querySelectorAll("ul#post-list-posts li");
-      query.forEach((liNode, key) => {
-        let largeImgNode = liNode.querySelector("a.directlink");
-        let previewNode = liNode.querySelector("img.preview");
-        const newNode = new ImageNode(
-          previewNode.src,
-          largeImgNode.href,
-          titlePrefix + ("000" + (key + 1)).slice(-4) + ".jpg" || "untitle.jpg"
-        );
-        list.push(newNode);
-      });
-      return list;
-    }
-    galleryMeta(doc) {
-      const meta = new GalleryMeta(window.location.href, "yande");
-      let ul = doc.querySelector("ul#tag-sidebar");
-      let tagLabels = [
-        { className: "circle", tagName: "artist" },
-        { className: "artist", tagName: "artist" },
-        { className: "copyright", tagName: "copyright" },
-        { className: "character", tagName: "character" },
-        { className: "general", tagName: "general" }
-        //xp
-      ];
-      tagLabels.forEach((label) => {
-        let elements = ul?.querySelectorAll("li.tag-type-" + label.className);
-        if (!meta.tags[label.tagName])
-          meta.tags[label.tagName] = [];
-        elements?.forEach((e) => {
-          let tag = e?.querySelectorAll("a")[3]?.textContent;
-          if (!!tag)
-            meta.tags[label.tagName].push(tag);
-        });
-        if (meta.tags[label.tagName].length == 0)
-          delete meta.tags[label.tagName];
-      });
-      return meta;
-    }
-  }
-
   const matchers = [
     new EHMatcher(),
     new NHMatcher(),
     new HitomiMather(),
-    new YandeMatcher(),
     new Pixiv(),
     new SteamMatcher(),
     new RokuHentaiMatcher(),
     new Comic18Matcher(),
+    new DanbooruDonmaiMatcher(),
     new Rule34Matcher(),
+    new YandereMatcher(),
     new IMHentaiMatcher()
   ];
   function adaptMatcher(url) {
-    const workURLs = matchers.map((m) => m.workURL().source);
+    const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
     const newExcludeURLs = conf.excludeURLs.filter((source) => {
       return workURLs.indexOf(source) > -1;
     });
@@ -3586,7 +3662,7 @@ duration 0.04`).join("\n");
         }
       }
     }
-    return matchers.find((m) => m.workURL().test(url)) || null;
+    return matchers.find((m) => m.workURLs().find((r) => r.test(url))) || null;
   }
 
   function parseKey(event) {
@@ -3605,6 +3681,7 @@ duration 0.04`).join("\n");
   }
 
   function createExcludeURLPanel(root) {
+    const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
     const HTML_STR = `
 <div class="ehvp-custom-panel">
   <div class="ehvp-custom-panel-title">
@@ -3613,9 +3690,9 @@ duration 0.04`).join("\n");
   </div>
     <div class="ehvp-custom-panel-content">
         <ul class="ehvp-custom-panel-list">
-          ${matchers.map((m, index) => `
-             <li data-index="${index}" class="ehvp-custom-panel-list-item ${conf.excludeURLs.indexOf(m.workURL().source) !== -1 ? "ehvp-custom-panel-list-item-disable" : ""}">
-               <span>${m.workURL().source}</span>
+          ${workURLs.map((r, index) => `
+             <li data-index="${index}" class="ehvp-custom-panel-list-item ${conf.excludeURLs.indexOf(r) !== -1 ? "ehvp-custom-panel-list-item-disable" : ""}">
+               <span>${r}</span>
              </li>
           `).join("")}
         </ul>
@@ -3636,10 +3713,10 @@ duration 0.04`).join("\n");
     list.forEach((li) => {
       const index = parseInt(li.getAttribute("data-index"));
       li.addEventListener("click", () => {
-        const i = conf.excludeURLs.indexOf(matchers[index].workURL().source);
+        const i = conf.excludeURLs.indexOf(workURLs[index]);
         if (i === -1) {
           li.classList.add("ehvp-custom-panel-list-item-disable");
-          conf.excludeURLs.push(matchers[index].workURL().source);
+          conf.excludeURLs.push(workURLs[index]);
         } else {
           li.classList.remove("ehvp-custom-panel-list-item-disable");
           conf.excludeURLs.splice(i, 1);
@@ -4868,7 +4945,6 @@ ${conf.disableCssAnimation ? "" : animation}
   top: 3px;
   right: 3px;
   z-index: 10;
-  width: 2rem;
   height: 1rem;
   border-radius: 10%;
   border: 1px solid #333;
@@ -5745,16 +5821,16 @@ html {
         const img = this.getMediaNodes().find((img2) => index === parseInt(img2.getAttribute("d-index")));
         if (!img)
           return;
-        if (imf.contentType !== "video/mp4") {
-          img.setAttribute("src", imf.blobUrl);
+        if (imf.contentType?.startsWith("video")) {
+          const vid = this.newMediaNode(index, imf);
+          img.replaceWith(vid);
+          if (img === this.currMediaNode) {
+            this.currMediaNode = vid;
+          }
+          img.remove();
           return;
         }
-        const vid = this.newMediaNode(index, imf);
-        img.replaceWith(vid);
-        if (img === this.currMediaNode) {
-          this.currMediaNode = vid;
-        }
-        img.remove();
+        img.setAttribute("src", imf.blobUrl);
       });
       new AutoPage(this, HTML.autoPageBTN);
     }
@@ -6122,7 +6198,7 @@ html {
     newMediaNode(index, imf) {
       if (!imf)
         throw new Error("BIFM: newMediaNode: img fetcher is null");
-      if (imf.contentType === "video/mp4") {
+      if (imf.contentType?.startsWith("video")) {
         const vid = document.createElement("video");
         vid.classList.add("bifm-img");
         vid.classList.add("bifm-vid");

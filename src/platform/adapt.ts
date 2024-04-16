@@ -1,5 +1,6 @@
 import { conf, saveConf } from "../config";
 import { Comic18Matcher } from "./18comic";
+import { DanbooruDonmaiMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
 import { EHMatcher } from "./ehentai";
 import { HitomiMather } from "./hitomi";
 import { IMHentaiMatcher } from "./im-hentai";
@@ -7,25 +8,24 @@ import { NHMatcher } from "./nhentai";
 import { Pixiv } from "./pixiv";
 import { Matcher } from "./platform";
 import { RokuHentaiMatcher } from "./rokuhentai";
-import { Rule34Matcher } from "./rule34";
 import { SteamMatcher } from "./steam";
-import { YandeMatcher } from "./yande";
 
 export const matchers: Matcher[] = [
   new EHMatcher(),
   new NHMatcher(),
   new HitomiMather(),
-  new YandeMatcher(),
   new Pixiv(),
   new SteamMatcher(),
   new RokuHentaiMatcher(),
   new Comic18Matcher(),
+  new DanbooruDonmaiMatcher(),
   new Rule34Matcher(),
+  new YandereMatcher(),
   new IMHentaiMatcher(),
 ];
 
 export function adaptMatcher(url: string): Matcher | null {
-  const workURLs = matchers.map(m => m.workURL().source);
+  const workURLs = matchers.flatMap(m => m.workURLs()).map(r => r.source);
   // check excludeURLs health, remove invalid RegExp
   const newExcludeURLs = conf.excludeURLs.filter(source => {
     return workURLs.indexOf(source) > -1;
@@ -42,5 +42,5 @@ export function adaptMatcher(url: string): Matcher | null {
       }
     }
   }
-  return matchers.find(m => m.workURL().test(url)) || null;
+  return matchers.find(m => m.workURLs().find(r => r.test(url))) || null;
 }

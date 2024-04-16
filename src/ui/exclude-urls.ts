@@ -2,6 +2,7 @@ import { conf, saveConf } from "../config";
 import { matchers } from "../platform/adapt";
 
 export default function createExcludeURLPanel(root: HTMLElement) {
+  const workURLs = matchers.flatMap(m => m.workURLs()).map(r => r.source);
   const HTML_STR = `
 <div class="ehvp-custom-panel">
   <div class="ehvp-custom-panel-title">
@@ -10,9 +11,9 @@ export default function createExcludeURLPanel(root: HTMLElement) {
   </div>
     <div class="ehvp-custom-panel-content">
         <ul class="ehvp-custom-panel-list">
-          ${matchers.map((m, index) => `
-             <li data-index="${index}" class="ehvp-custom-panel-list-item ${conf.excludeURLs.indexOf(m.workURL().source) !== -1 ? "ehvp-custom-panel-list-item-disable" : ""}">
-               <span>${m.workURL().source}</span>
+          ${workURLs.map((r, index) => `
+             <li data-index="${index}" class="ehvp-custom-panel-list-item ${conf.excludeURLs.indexOf(r) !== -1 ? "ehvp-custom-panel-list-item-disable" : ""}">
+               <span>${r}</span>
              </li>
           `).join("")}
         </ul>
@@ -34,10 +35,10 @@ export default function createExcludeURLPanel(root: HTMLElement) {
   list.forEach((li) => {
     const index = parseInt(li.getAttribute("data-index")!);
     li.addEventListener("click", () => {
-      const i = conf.excludeURLs.indexOf(matchers[index].workURL().source);
+      const i = conf.excludeURLs.indexOf(workURLs[index]);
       if (i === -1) {
         li.classList.add("ehvp-custom-panel-list-item-disable");
-        conf.excludeURLs.push(matchers[index].workURL().source);
+        conf.excludeURLs.push(workURLs[index]);
       } else {
         li.classList.remove("ehvp-custom-panel-list-item-disable");
         conf.excludeURLs.splice(i, 1);

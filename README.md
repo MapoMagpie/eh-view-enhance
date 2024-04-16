@@ -11,7 +11,7 @@
 - Display all the thumbnails in the grid, quick browsing them.
 - `Download`，Save all origin images and gallery detail to local.
 - `Reading`，Here is two way 'single' and 'Consecutively' for Reading the origin image.
-- `Multi-site Support`，Now supported: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx.
+- `Multi-site Support`，Now supported: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us.
 - `Download by volume`，To bypass the object size limit of the browser.
 - `Pixiv ugoria convert to GIF`.
 - `Mobile page adaptation`，（Android browser that needs to support browser extensions，e.g:Firefox Nightly、Kiwi Browser).

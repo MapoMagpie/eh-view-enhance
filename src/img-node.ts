@@ -5,7 +5,7 @@ const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAA
 
 const DEFAULT_NODE_TEMPLATE = document.createElement("div");
 DEFAULT_NODE_TEMPLATE.classList.add("img-node");
-DEFAULT_NODE_TEMPLATE.innerHTML = `<a style="position: relative; display: block;"><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></a>`;
+DEFAULT_NODE_TEMPLATE.innerHTML = `<a><img decoding="async" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></a>`;
 
 const OVERLAY_TIP = document.createElement("div");
 OVERLAY_TIP.classList.add("overlay-tip");
@@ -111,14 +111,12 @@ export default class ImageNode {
     if (!this.downloadBar) {
       const downloadBar = document.createElement("div");
       downloadBar.classList.add("download-bar");
-      downloadBar.innerHTML = `
-      <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
-      `;
+      downloadBar.innerHTML = `<div style="width: 0%"></div>`;
       this.downloadBar = downloadBar;
       this.root.firstElementChild!.appendChild(this.downloadBar);
     }
     if (this.downloadBar) {
-      this.downloadBar.querySelector("progress")!.setAttribute("value", (state.loaded / state.total) * 100 + "");
+      (this.downloadBar.firstElementChild as HTMLDivElement).style.width = (state.loaded / state.total) * 100 + "%";
     }
   }
 

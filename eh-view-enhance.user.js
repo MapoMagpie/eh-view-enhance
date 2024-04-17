@@ -1527,7 +1527,7 @@ ${chapters.map((c, i) => `<div><label>
   const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
   const DEFAULT_NODE_TEMPLATE = document.createElement("div");
   DEFAULT_NODE_TEMPLATE.classList.add("img-node");
-  DEFAULT_NODE_TEMPLATE.innerHTML = `<a style="position: relative; display: block;"><img decoding="sync" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></a>`;
+  DEFAULT_NODE_TEMPLATE.innerHTML = `<a><img decoding="async" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></a>`;
   const OVERLAY_TIP = document.createElement("div");
   OVERLAY_TIP.classList.add("overlay-tip");
   OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
@@ -1621,14 +1621,12 @@ ${chapters.map((c, i) => `<div><label>
       if (!this.downloadBar) {
         const downloadBar = document.createElement("div");
         downloadBar.classList.add("download-bar");
-        downloadBar.innerHTML = `
-      <progress style="position: absolute; width: 100%; height: 7px; left: 0; bottom: 0; border: none;" value="0" max="100" />
-      `;
+        downloadBar.innerHTML = `<div style="width: 0%"></div>`;
         this.downloadBar = downloadBar;
         this.root.firstElementChild.appendChild(this.downloadBar);
       }
       if (this.downloadBar) {
-        this.downloadBar.querySelector("progress").setAttribute("value", state.loaded / state.total * 100 + "");
+        this.downloadBar.firstElementChild.style.width = state.loaded / state.total * 100 + "%";
       }
     }
     changeStyle(fetchStatus) {
@@ -4499,6 +4497,11 @@ ${conf.disableCssAnimation ? "" : animation}
 .img-node:hover .ehvp-chapter-description {
   color: #ffe7f5;
 }
+.img-node > a {
+  display: block;
+  line-height: 0;
+  position: relative;
+}
 .ehvp-chapter-description {
   display: block;
   position: absolute;
@@ -4837,14 +4840,19 @@ ${conf.disableCssAnimation ? "" : animation}
   display: none !important;
 }
 .download-bar {
-  background-color: rgba(100, 100, 100, 0.8);
+  background-color: #333333c0;
   height: 0.5rem;
   width: 100%;
+  bottom: -0.5rem;
   position: absolute;
-  bottom: -3px;
   border-left: 3px solid #00000000;
   border-right: 3px solid #00000000;
   box-sizing: border-box;
+}
+.download-bar > div {
+  background-color: #f0fff0;
+  height: 100%;
+  border: none;
 }
 .img-land-left, .img-land-right {
   width: 15%;

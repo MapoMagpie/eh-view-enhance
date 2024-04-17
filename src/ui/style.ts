@@ -117,6 +117,11 @@ ${conf.disableCssAnimation ? "" : animation}
 .img-node:hover .ehvp-chapter-description {
   color: #ffe7f5;
 }
+.img-node > a {
+  display: block;
+  line-height: 0;
+  position: relative;
+}
 .ehvp-chapter-description {
   display: block;
   position: absolute;
@@ -455,14 +460,19 @@ ${conf.disableCssAnimation ? "" : animation}
   display: none !important;
 }
 .download-bar {
-  background-color: rgba(100, 100, 100, 0.8);
+  background-color: #333333c0;
   height: 0.5rem;
   width: 100%;
+  bottom: -0.5rem;
   position: absolute;
-  bottom: -3px;
   border-left: 3px solid #00000000;
   border-right: 3px solid #00000000;
   box-sizing: border-box;
+}
+.download-bar > div {
+  background-color: #f0fff0;
+  height: 100%;
+  border: none;
 }
 .img-land-left, .img-land-right {
   width: 15%;

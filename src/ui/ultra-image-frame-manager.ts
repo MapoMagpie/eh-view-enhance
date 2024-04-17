@@ -240,7 +240,7 @@ export class BigImageFrameManager {
   }
 
   stepNext(oriented: Oriented, current?: number) {
-    let index = current ? current : this.currMediaNode ? parseInt(this.currMediaNode.getAttribute("d-index")!) : undefined;
+    let index = current !== undefined ? current : this.currMediaNode ? parseInt(this.currMediaNode.getAttribute("d-index")!) : undefined;
     if (index === undefined || isNaN(index)) return;
     const queue = this.getChapter(this.chapterIndex)?.queue;
     if (!queue || queue.length === 0) return;

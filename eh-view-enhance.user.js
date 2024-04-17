@@ -5507,7 +5507,7 @@ html {
     const debouncer = new Debouncer();
     HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
     HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
-    HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", parseInt(event.target.textContent || "") - 1));
+    HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", parseInt(event.target.textContent ?? "") - 1));
     document.addEventListener("keydown", (event) => events.keyboardEvent(event));
     HTML.fullViewGrid.addEventListener("keydown", (event) => events.fullViewGridKeyBoardEvent(event));
     HTML.bigImageFrame.addEventListener("keydown", (event) => events.bigImageFrameKeyBoardEvent(event));
@@ -6000,7 +6000,7 @@ html {
       return list;
     }
     stepNext(oriented, current) {
-      let index = current ? current : this.currMediaNode ? parseInt(this.currMediaNode.getAttribute("d-index")) : void 0;
+      let index = current !== void 0 ? current : this.currMediaNode ? parseInt(this.currMediaNode.getAttribute("d-index")) : void 0;
       if (index === void 0 || isNaN(index))
         return;
       const queue = this.getChapter(this.chapterIndex)?.queue;

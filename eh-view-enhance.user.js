@@ -1365,7 +1365,7 @@ ${chapters.map((c, i) => `<div><label>
       if (!this.pushInExecutableQueue(oriented))
         return;
       this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
-        this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(imgFetcherIndex));
+        this[this.currIndex].start(this.currIndex).then(() => this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(imgFetcherIndex)));
       }, 300);
     }
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
@@ -4675,7 +4675,7 @@ ${conf.disableCssAnimation ? "" : animation}
   }
   .p-helper .p-panel {
     width: 100vw;
-    height: 75vh;
+    height: 80vh;
     bottom: 5.7cqw;
   }
   .p-helper .p-btn {
@@ -4700,7 +4700,7 @@ ${conf.disableCssAnimation ? "" : animation}
     font-size: 3cqw;
   }
   .p-helper .p-config {
-    line-height: 9cqw;
+    line-height: 8.2cqw;
   }
   #imgScaleResetBTN {
     width: 14cqw;

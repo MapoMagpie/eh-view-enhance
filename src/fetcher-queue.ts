@@ -68,7 +68,8 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
             因此会有一个时间上的延迟，在这段时间里，executableQueue中的IMGFetcher图片请求器会不断更替，300毫秒结束后，只调用最新的executableQueue中的IMGFetcher图片请求器。
         */
     this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
-      this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(imgFetcherIndex));
+      this[this.currIndex].start(this.currIndex)
+        .then(() => this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(imgFetcherIndex)));
     }, 300);
   }
 

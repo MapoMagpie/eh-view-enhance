@@ -60,7 +60,7 @@ export default class ImageNode {
     this.imgElement.addEventListener("mouseout", () => {
       if (!conf.keepSmallThumbnail) return;
       if (this.imgElement!.src === this.src) return;
-      this.imgElement!.src = this.src;
+      this.imgElement!.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
     })
     return this.root;
   }

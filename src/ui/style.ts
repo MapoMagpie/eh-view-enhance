@@ -134,6 +134,7 @@ ${conf.disableCssAnimation ? "" : animation}
   font-size: 1.2rem;
   padding: 0.5rem;
   box-sizing: border-box;
+  line-height: 1.3rem;
 }
 .img-fetched img {
   border: 3px solid #90ffae !important;

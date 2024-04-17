@@ -1,3 +1,4 @@
+import { conf } from "./config";
 import { DownloadState } from "./img-fetcher";
 import { Chapter } from "./page-fetcher";
 
@@ -49,48 +50,53 @@ export default class ImageNode {
         this.onclick!(event);
       });
     }
+    this.imgElement.addEventListener("mouseover", () => {
+      if (!conf.keepSmallThumbnail) return;
+      if (!this.blobUrl) return;
+      if (this.mimeType?.startsWith("video")) return;
+      if (this.imgElement!.src === this.blobUrl) return;
+      this.imgElement!.src = this.blobUrl;
+    });
+    this.imgElement.addEventListener("mouseout", () => {
+      if (!conf.keepSmallThumbnail) return;
+      if (this.imgElement!.src === this.src) return;
+      this.imgElement!.src = this.src;
+    })
     return this.root;
   }
 
   render() {
-    if (this.imgElement) {
-      this.rendered = true;
-      let justThumbnail = !this.blobUrl;
-      if (this.mimeType === "image/gif") {
-        const tip = OVERLAY_TIP.cloneNode(true);
-        tip.firstChild!.textContent = "GIF";
-        this.root?.appendChild(tip);
-        // if gif size over 20MB, then don't render it
-        justThumbnail = this.size != undefined && this.size > 20 * 1024 * 1024;
-      }
-      if (this.mimeType?.startsWith("video")) {
-        const tip = OVERLAY_TIP.cloneNode(true);
-        tip.firstChild!.textContent = this.mimeType.split("/")[1].toUpperCase();
-        this.root?.appendChild(tip);
-        justThumbnail = true;
-      }
-      if (justThumbnail) {
-        const delaySRC = this.delaySRC;
-        this.delaySRC = undefined;
-        if (delaySRC) {
-          delaySRC.then(src => {
-            this.src = src;
-            this.render();
-          });
-        } else if (this.src) {
-          this.imgElement.src = this.src;
-        }
-      } else {
-        this.imgElement.src = this.blobUrl!;
-      }
+    if (!this.imgElement) return;
+    this.rendered = true;
+    let justThumbnail = conf.keepSmallThumbnail || !this.blobUrl;
+    if (this.mimeType === "image/gif") {
+      const tip = OVERLAY_TIP.cloneNode(true);
+      tip.firstChild!.textContent = "GIF";
+      this.root?.appendChild(tip);
+      // if gif size over 20MB, then don't render it
+      justThumbnail = this.size != undefined && this.size > 10 * 1024 * 1024;
     }
+    if (this.mimeType?.startsWith("video")) {
+      const tip = OVERLAY_TIP.cloneNode(true);
+      tip.firstChild!.textContent = this.mimeType.split("/")[1].toUpperCase();
+      this.root?.appendChild(tip);
+      justThumbnail = true;
+    }
+
+    const delaySRC = this.delaySRC;
+    this.delaySRC = undefined;
+    if (delaySRC) delaySRC.then(src => (this.src = src) && this.render());
+
+    if (justThumbnail) {
+      this.imgElement.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
+      return;
+    }
+    this.imgElement.src = this.blobUrl || this.src || DEFAULT_THUMBNAIL;
   }
 
   unrender() {
-    if (!this.rendered) return;
-    if (this.imgElement) {
-      this.imgElement.src = this.src;
-    }
+    if (!this.rendered || !this.imgElement) return;
+    this.imgElement.src = this.src;
   }
 
   onloaded(blobUrl: string, mimeType: string, size: number) {

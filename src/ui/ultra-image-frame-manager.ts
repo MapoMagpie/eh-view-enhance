@@ -480,6 +480,7 @@ export class BigImageFrameManager {
       return vid;
     } else {
       const img = document.createElement("img");
+      img.decoding = "sync";
       img.classList.add("bifm-img");
       // img.addEventListener("click", () => this.hidden());
       img.setAttribute("d-index", index.toString());

@@ -77,6 +77,8 @@ export const i18n = {
   autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
   disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
   disableCssAnimationTooltip: new I18nValue("Valid after refreshing the page", "刷新页面后生效"),
+  keepSmallThumbnail: new I18nValue("Small Thumbnail", "小缩略图"),
+  keepSmallThumbnailTooltip: new I18nValue("Keep the thumbnails in the grid as small as possible to improve page performance. Only display clearer images when the mouse hovers over them.", "使网格中缩略图保持为小尺寸，用于提升页面性能。只有在鼠标悬停时才显示更加清晰的图片。"),
   stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
   stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
   minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),

@@ -136,7 +136,7 @@ ${conf.disableCssAnimation ? "" : animation}
   box-sizing: border-box;
 }
 .img-fetched img {
-  border: 3px solid #602a5c !important;
+  border: 3px solid #90ffae !important;
 }
 .img-fetch-failed img {
   border: 3px solid red !important;
@@ -253,7 +253,7 @@ ${conf.disableCssAnimation ? "" : animation}
     height: 1.5rem;
   }
   .p-helper .p-config {
-    line-height: 2rem;
+    line-height: 1.85rem;
   }
   #imgScaleResetBTN {
     width: 4rem;
@@ -281,7 +281,7 @@ ${conf.disableCssAnimation ? "" : animation}
   }
   .p-helper .p-panel {
     width: 100vw;
-    height: 75vh;
+    height: 80vh;
     bottom: 5.7cqw;
   }
   .p-helper .p-btn {
@@ -306,7 +306,7 @@ ${conf.disableCssAnimation ? "" : animation}
     font-size: 3cqw;
   }
   .p-helper .p-config {
-    line-height: 9cqw;
+    line-height: 8.2cqw;
   }
   #imgScaleResetBTN {
     width: 14cqw;
@@ -461,9 +461,9 @@ ${conf.disableCssAnimation ? "" : animation}
 }
 .download-bar {
   background-color: #333333c0;
-  height: 0.5rem;
+  height: 0.3rem;
   width: 100%;
-  bottom: -0.5rem;
+  bottom: -0.3rem;
   position: absolute;
   border-left: 3px solid #00000000;
   border-right: 3px solid #00000000;

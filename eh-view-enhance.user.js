@@ -93,7 +93,8 @@
       muted: false,
       volume: 50,
       disableCssAnimation: true,
-      mcInSites: ["18comic"]
+      mcInSites: ["18comic"],
+      keepSmallThumbnail: true
     };
   }
   const VERSION = "4.4.0";
@@ -155,7 +156,7 @@
     storage.setItem(CONFIG_KEY, JSON.stringify(c));
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation"];
+  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation", "keepSmallThumbnail"];
   const ConfigSelectKeys = ["readMode", "stickyMouse", "minifyPageHelper"];
   const conf = getConf();
 
@@ -515,6 +516,8 @@
     autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
     disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
     disableCssAnimationTooltip: new I18nValue("Valid after refreshing the page", "刷新页面后生效"),
+    keepSmallThumbnail: new I18nValue("Small Thumbnail", "小缩略图"),
+    keepSmallThumbnailTooltip: new I18nValue("Keep the thumbnails in the grid as small as possible to improve page performance. Only display clearer images when the mouse hovers over them.", "使网格中缩略图保持为小尺寸，用于提升页面性能。只有在鼠标悬停时才显示更加清晰的图片。"),
     stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
     stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
     minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
@@ -1563,46 +1566,57 @@ ${chapters.map((c, i) => `<div><label>
           this.onclick(event);
         });
       }
+      this.imgElement.addEventListener("mouseover", () => {
+        if (!conf.keepSmallThumbnail)
+          return;
+        if (!this.blobUrl)
+          return;
+        if (this.mimeType?.startsWith("video"))
+          return;
+        if (this.imgElement.src === this.blobUrl)
+          return;
+        this.imgElement.src = this.blobUrl;
+      });
+      this.imgElement.addEventListener("mouseout", () => {
+        if (!conf.keepSmallThumbnail)
+          return;
+        if (this.imgElement.src === this.src)
+          return;
+        this.imgElement.src = this.src;
+      });
       return this.root;
     }
     render() {
-      if (this.imgElement) {
-        this.rendered = true;
-        let justThumbnail = !this.blobUrl;
-        if (this.mimeType === "image/gif") {
-          const tip = OVERLAY_TIP.cloneNode(true);
-          tip.firstChild.textContent = "GIF";
-          this.root?.appendChild(tip);
-          justThumbnail = this.size != void 0 && this.size > 20 * 1024 * 1024;
-        }
-        if (this.mimeType?.startsWith("video")) {
-          const tip = OVERLAY_TIP.cloneNode(true);
-          tip.firstChild.textContent = this.mimeType.split("/")[1].toUpperCase();
-          this.root?.appendChild(tip);
-          justThumbnail = true;
-        }
-        if (justThumbnail) {
-          const delaySRC = this.delaySRC;
-          this.delaySRC = void 0;
-          if (delaySRC) {
-            delaySRC.then((src) => {
-              this.src = src;
-              this.render();
-            });
-          } else if (this.src) {
-            this.imgElement.src = this.src;
-          }
-        } else {
-          this.imgElement.src = this.blobUrl;
-        }
+      if (!this.imgElement)
+        return;
+      this.rendered = true;
+      let justThumbnail = conf.keepSmallThumbnail || !this.blobUrl;
+      if (this.mimeType === "image/gif") {
+        const tip = OVERLAY_TIP.cloneNode(true);
+        tip.firstChild.textContent = "GIF";
+        this.root?.appendChild(tip);
+        justThumbnail = this.size != void 0 && this.size > 10 * 1024 * 1024;
       }
+      if (this.mimeType?.startsWith("video")) {
+        const tip = OVERLAY_TIP.cloneNode(true);
+        tip.firstChild.textContent = this.mimeType.split("/")[1].toUpperCase();
+        this.root?.appendChild(tip);
+        justThumbnail = true;
+      }
+      const delaySRC = this.delaySRC;
+      this.delaySRC = void 0;
+      if (delaySRC)
+        delaySRC.then((src) => (this.src = src) && this.render());
+      if (justThumbnail) {
+        this.imgElement.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
+        return;
+      }
+      this.imgElement.src = this.blobUrl || this.src || DEFAULT_THUMBNAIL;
     }
     unrender() {
-      if (!this.rendered)
+      if (!this.rendered || !this.imgElement)
         return;
-      if (this.imgElement) {
-        this.imgElement.src = this.src;
-      }
+      this.imgElement.src = this.src;
     }
     onloaded(blobUrl, mimeType, size) {
       this.blobUrl = blobUrl;
@@ -4516,7 +4530,7 @@ ${conf.disableCssAnimation ? "" : animation}
   box-sizing: border-box;
 }
 .img-fetched img {
-  border: 3px solid #602a5c !important;
+  border: 3px solid #90ffae !important;
 }
 .img-fetch-failed img {
   border: 3px solid red !important;
@@ -4633,7 +4647,7 @@ ${conf.disableCssAnimation ? "" : animation}
     height: 1.5rem;
   }
   .p-helper .p-config {
-    line-height: 2rem;
+    line-height: 1.85rem;
   }
   #imgScaleResetBTN {
     width: 4rem;
@@ -4841,9 +4855,9 @@ ${conf.disableCssAnimation ? "" : animation}
 }
 .download-bar {
   background-color: #333333c0;
-  height: 0.5rem;
+  height: 0.3rem;
   width: 100%;
-  bottom: -0.5rem;
+  bottom: -0.3rem;
   position: absolute;
   border-left: 3px solid #00000000;
   border-right: 3px solid #00000000;
@@ -5297,6 +5311,14 @@ html {
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.disableCssAnimationTooltip.get()}</span></span>:
                     </span>
                     <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
+                </label>
+            </div>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                <label class="p-label">
+                    <span>${i18n.keepSmallThumbnail.get()}
+                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.keepSmallThumbnailTooltip.get()}</span></span>:
+                    </span>
+                    <input id="keepSmallThumbnailCheckbox" ${conf.keepSmallThumbnail ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
@@ -6220,6 +6242,7 @@ html {
         return vid;
       } else {
         const img = document.createElement("img");
+        img.decoding = "sync";
         img.classList.add("bifm-img");
         img.setAttribute("d-index", index.toString());
         if (imf.stage === FetchState.DONE) {

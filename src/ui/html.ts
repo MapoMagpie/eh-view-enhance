@@ -113,6 +113,14 @@ export function createHTML() {
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
+                    <span>${i18n.keepSmallThumbnail.get()}
+                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.keepSmallThumbnailTooltip.get()}</span></span>:
+                    </span>
+                    <input id="keepSmallThumbnailCheckbox" ${conf.keepSmallThumbnail ? "checked" : ""} type="checkbox" />
+                </label>
+            </div>
+            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+                <label class="p-label">
                     <span>${i18n.autoCollapsePanel.get()}
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelTooltip.get()}</span></span>:
                     </span>

@@ -72,6 +72,8 @@ export type Config = {
   disableCssAnimation: boolean,
   /** the feature of `multiple chapters` is enabled in a site */
   mcInSites: string[],
+  /** keep the small thumbnail in full view grid, do not change src to original, it will improve the performance */
+  keepSmallThumbnail: boolean
 };
 
 function defaultConf(): Config {
@@ -111,6 +113,7 @@ function defaultConf(): Config {
     volume: 50,
     disableCssAnimation: true,
     mcInSites: ["18comic"],
+    keepSmallThumbnail: true,
   };
 }
 
@@ -185,8 +188,8 @@ export function saveConf(c: Config) {
 }
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime";
 export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation";
-export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation"];
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation" | "keepSmallThumbnail";
+export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation", "keepSmallThumbnail"];
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper";
 export const ConfigSelectKeys: (keyof Config)[] = ["readMode", "stickyMouse", "minifyPageHelper"];
 export const conf = getConf();

@@ -4791,9 +4791,9 @@ html {
       }
       if (key === "readMode") {
         BIFM.resetScaleBigImages();
-        if (conf.readMode === "singlePage", BIFM.currMediaNode) {
+        if (conf.readMode === "singlePage" && BIFM.currMediaNode) {
           const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
-          const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
+          const index = parseInt(BIFM.currMediaNode.getAttribute("d-index") || "0");
           BIFM.initElement(queue[index]);
         }
       }

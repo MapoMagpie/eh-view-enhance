@@ -64,23 +64,11 @@ export default class ImageNode {
       if (!this.canvasSized) {
         this.canvasElement!.width = this.root!.offsetWidth;
         this.canvasElement!.height = Math.floor(this.root!.offsetWidth * this.imgElement!.naturalHeight / this.imgElement!.naturalWidth);
-        this.canvasSized = true;
+        this.canvasSized = this.imgElement.src !== DEFAULT_THUMBNAIL;
       }
       this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height);
       this.imgElement!.src = "";
     }
-    // this.imgElement.addEventListener("mouseover", () => {
-    //   if (!conf.keepSmallThumbnail) return;
-    //   if (!this.blobUrl) return;
-    //   if (this.mimeType?.startsWith("video")) return;
-    //   if (this.imgElement!.src === this.blobUrl) return;
-    //   this.imgElement!.src = this.blobUrl;
-    // });
-    // this.imgElement.addEventListener("mouseout", () => {
-    //   if (!conf.keepSmallThumbnail) return;
-    //   if (this.imgElement!.src === this.src) return;
-    //   this.imgElement!.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
-    // })
     return this.root;
   }
 

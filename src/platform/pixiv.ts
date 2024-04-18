@@ -29,7 +29,7 @@ type Work = {
   pageCount: number,
 }
 
-type UgoiraMeat = {
+type UgoiraMeta = {
   error: boolean,
   message: string,
   body: {
@@ -49,6 +49,7 @@ export class Pixiv extends BaseMatcher {
   pidList: string[] = [];
   pageCount: number = 0;
   works: Record<string, Work> = {};
+  ugoiraMetas: Record<string, UgoiraMeta> = {};
   pageSize: Record<string, [number, number]> = {};
   convertor?: FFmpegConvertor;
   first?: string;
@@ -58,9 +59,40 @@ export class Pixiv extends BaseMatcher {
     this.meta = new GalleryMeta(window.location.href, "UNTITLE");
   }
 
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    // TODO: ugoira convert move here
-    return data;
+  async processData(data: Uint8Array, contentType: string, url: string): Promise<[Uint8Array, string]> {
+    const meta = this.ugoiraMetas[url];
+    if (!meta) return [data, contentType];
+    const zip = await new JSZip().loadAsync(data);
+    const start = performance.now();
+    if (!this.convertor) this.convertor = await new FFmpegConvertor().init();
+    const initConvertorEnd = performance.now();
+    const files = await Promise.all(
+      meta.body.frames.map(async (f) => {
+        try {
+          const img = await zip.file(f.file)!.async("uint8array");
+          return { name: f.file, data: img };
+        } catch (error) {
+          evLog("error", "unpack ugoira file error: ", error);
+          throw error;
+        }
+      })
+    );
+    const unpackUgoira = performance.now();
+    if (files.length !== meta.body.frames.length) {
+      throw new Error("unpack ugoira file error: file count not equal to meta");
+    }
+    // record cost time
+    const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
+    const convertEnd = performance.now();
+    evLog("debug", `convert ugoira to ${conf.convertTo}
+init convertor cost: ${(initConvertorEnd - start)}ms
+unpack ugoira  cost: ${(unpackUgoira - initConvertorEnd)}ms
+ffmpeg convert cost: ${(convertEnd - unpackUgoira)}ms
+total cost: ${(convertEnd - start) / 1000}s
+size: ${blob.size / 1000} KB, original size: ${data.byteLength / 1000} KB
+before contentType: ${contentType}, after contentType: ${blob.type}
+`);
+    return blob.arrayBuffer().then((buffer) => [new Uint8Array(buffer), blob.type]);
   }
 
   workURL(): RegExp {
@@ -74,7 +106,7 @@ export class Pixiv extends BaseMatcher {
     return this.meta;
   }
 
-  public async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
+  public async fetchOriginMeta(url: string): Promise<OriginMeta> {
     const matches = url.match(PID_EXTRACT);
     if (!matches || matches.length < 2) {
       return { url };
@@ -84,33 +116,9 @@ export class Pixiv extends BaseMatcher {
     if (this.works[pid]?.illustType !== 2 || p !== "ugoira") {
       return { url };
     }
-    const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then(resp => resp.json()) as UgoiraMeat;
-    const data = await window.fetch(meta.body.originalSrc).then(resp => resp.blob());
-    const zip = await new JSZip().loadAsync(data);
-    if (!this.convertor) {
-      this.convertor = await new FFmpegConvertor().init();
-    }
-    const files = await Promise.all(
-      meta.body.frames.map(async (f) => {
-        try {
-          const img = await zip.file(f.file)!.async("uint8array");
-          return { name: f.file, data: img };
-        } catch (error) {
-          evLog("error", "unpack ugoira file error: ", error);
-          throw error;
-        }
-      })
-    );
-    if (files.length !== meta.body.frames.length) {
-      throw new Error("unpack ugoira file error: file count not equal to meta");
-    }
-    // record cost time
-    const start = performance.now();
-    const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
-    const end = performance.now();
-    evLog("debug", `convert ugoira to ${conf.convertTo} cost ${(end - start) / 1000} s, size: ${blob.size / 1000} KB, original size: ${data.size / 1000} KB`);
-    return { url: URL.createObjectURL(blob) };
-
+    const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then(resp => resp.json()) as UgoiraMeta;
+    this.ugoiraMetas[meta.body.src] = meta;
+    return { url: meta.body.src }
   }
 
   private async fetchTagsByPids(pids: string[]): Promise<void> {

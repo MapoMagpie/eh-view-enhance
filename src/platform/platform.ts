@@ -29,7 +29,7 @@ export interface Matcher {
   galleryMeta(doc: Document, chapter?: Chapter): GalleryMeta;
   title(doc: Document): string;
   workURLs(): RegExp[];
-  processData(data: Uint8Array, contentType: string, url: string): Promise<Uint8Array>;
+  processData(data: Uint8Array, contentType: string, url: string): Promise<[Uint8Array, string]>;
 }
 
 export abstract class BaseMatcher implements Matcher {
@@ -62,8 +62,8 @@ export abstract class BaseMatcher implements Matcher {
     return [this.workURL()];
   }
 
-  async processData(data: Uint8Array, _1: string, _2: string): Promise<Uint8Array> {
-    return data;
+  async processData(data: Uint8Array, contentType: string, _url: string): Promise<[Uint8Array, string]> {
+    return [data, contentType];
   }
 
 }

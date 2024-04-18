@@ -102,25 +102,28 @@ export class Comic18Matcher extends BaseMatcher {
     return list;
   }
 
-  async processData(data: Uint8Array, contentType: string, url: string): Promise<Uint8Array> {
+  async processData(data: Uint8Array, contentType: string, url: string): Promise<[Uint8Array, string]> {
     const reg = /(\d+)\/(\d+)\.(\w+)/;
     const matches = url.match(reg);
     const gid = matches![1];
     // let scrambleID: number = scramble_id;
     let scrambleID = 220980;
-    if (Number(gid) < scrambleID) return data;
+    if (Number(gid) < scrambleID) return [data, contentType];
     const page = matches![2];
     const ext = matches![3];
-    if (ext === "gif") return data;
+    if (ext === "gif") return [data, contentType];
     const img = await createImageBitmap(new Blob([data], { type: contentType }));
     const canvas = document.createElement("canvas");
     canvas.width = img.width;
     canvas.height = img.height;
     const ctx = canvas.getContext("2d")!;
     drawImage(ctx, img, gid, page);
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => blob?.arrayBuffer().then(buf => new Uint8Array(buf)).then(resolve).finally(() => canvas.remove()), contentType);
-    });
+    return new Promise(resolve =>
+      canvas.toBlob(
+        (blob) => blob?.arrayBuffer().then(buf => resolve([new Uint8Array(buf), blob.type])).finally(() => canvas.remove()),
+        contentType
+      )
+    );
   }
 
   workURL(): RegExp {

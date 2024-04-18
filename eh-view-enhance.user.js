@@ -349,7 +349,7 @@
             const ret = await this.fetchImageData();
             if (ret !== null) {
               [this.data, this.contentType] = ret;
-              this.data = await this.matcher.processData(this.data, this.contentType, this.originURL);
+              [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL);
               this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.onloaded(this.blobUrl, this.contentType);
               if (this.rendered === 2) {
@@ -1900,8 +1900,8 @@ ${chapters.map((c, i) => `<div><label>
     workURLs() {
       return [this.workURL()];
     }
-    async processData(data, _1, _2) {
-      return data;
+    async processData(data, contentType, _url) {
+      return [data, contentType];
     }
   }
 
@@ -1996,20 +1996,23 @@ ${chapters.map((c, i) => `<div><label>
       const gid = matches[1];
       let scrambleID = 220980;
       if (Number(gid) < scrambleID)
-        return data;
+        return [data, contentType];
       const page = matches[2];
       const ext = matches[3];
       if (ext === "gif")
-        return data;
+        return [data, contentType];
       const img = await createImageBitmap(new Blob([data], { type: contentType }));
       const canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext("2d");
       drawImage(ctx, img, gid, page);
-      return new Promise((resolve) => {
-        canvas.toBlob((blob) => blob?.arrayBuffer().then((buf) => new Uint8Array(buf)).then(resolve).finally(() => canvas.remove()), contentType);
-      });
+      return new Promise(
+        (resolve) => canvas.toBlob(
+          (blob) => blob?.arrayBuffer().then((buf) => resolve([new Uint8Array(buf), blob.type])).finally(() => canvas.remove()),
+          contentType
+        )
+      );
     }
     workURL() {
       return /18comic.(vip|org)\/album\/\d+/;
@@ -3320,6 +3323,7 @@ duration 0.04`).join("\n");
     pidList = [];
     pageCount = 0;
     works = {};
+    ugoiraMetas = {};
     pageSize = {};
     convertor;
     first;
@@ -3327,34 +3331,15 @@ duration 0.04`).join("\n");
       super();
       this.meta = new GalleryMeta(window.location.href, "UNTITLE");
     }
-    async processData(data, _1, _2) {
-      return data;
-    }
-    workURL() {
-      return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
-    }
-    galleryMeta() {
-      this.meta.title = `PIXIV_${this.authorID}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
-      let tags = Object.values(this.works).map((w) => w.tags).flat();
-      this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
-      return this.meta;
-    }
-    async fetchOriginMeta(url, _) {
-      const matches = url.match(PID_EXTRACT);
-      if (!matches || matches.length < 2) {
-        return { url };
-      }
-      const pid = matches[1];
-      const p = matches[2];
-      if (this.works[pid]?.illustType !== 2 || p !== "ugoira") {
-        return { url };
-      }
-      const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then((resp) => resp.json());
-      const data = await window.fetch(meta.body.originalSrc).then((resp) => resp.blob());
+    async processData(data, contentType, url) {
+      const meta = this.ugoiraMetas[url];
+      if (!meta)
+        return [data, contentType];
       const zip = await new JSZip().loadAsync(data);
-      if (!this.convertor) {
+      const start = performance.now();
+      if (!this.convertor)
         this.convertor = await new FFmpegConvertor().init();
-      }
+      const initConvertorEnd = performance.now();
       const files = await Promise.all(
         meta.body.frames.map(async (f) => {
           try {
@@ -3366,14 +3351,44 @@ duration 0.04`).join("\n");
           }
         })
       );
+      const unpackUgoira = performance.now();
       if (files.length !== meta.body.frames.length) {
         throw new Error("unpack ugoira file error: file count not equal to meta");
       }
-      const start = performance.now();
       const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
-      const end = performance.now();
-      evLog("debug", `convert ugoira to ${conf.convertTo} cost ${(end - start) / 1e3} s, size: ${blob.size / 1e3} KB, original size: ${data.size / 1e3} KB`);
-      return { url: URL.createObjectURL(blob) };
+      const convertEnd = performance.now();
+      evLog("debug", `convert ugoira to ${conf.convertTo}
+init convertor cost: ${initConvertorEnd - start}ms
+unpack ugoira  cost: ${unpackUgoira - initConvertorEnd}ms
+ffmpeg convert cost: ${convertEnd - unpackUgoira}ms
+total cost: ${(convertEnd - start) / 1e3}s
+size: ${blob.size / 1e3} KB, original size: ${data.byteLength / 1e3} KB
+before contentType: ${contentType}, after contentType: ${blob.type}
+`);
+      return blob.arrayBuffer().then((buffer) => [new Uint8Array(buffer), blob.type]);
+    }
+    workURL() {
+      return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
+    }
+    galleryMeta() {
+      this.meta.title = `PIXIV_${this.authorID}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
+      let tags = Object.values(this.works).map((w) => w.tags).flat();
+      this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
+      return this.meta;
+    }
+    async fetchOriginMeta(url) {
+      const matches = url.match(PID_EXTRACT);
+      if (!matches || matches.length < 2) {
+        return { url };
+      }
+      const pid = matches[1];
+      const p = matches[2];
+      if (this.works[pid]?.illustType !== 2 || p !== "ugoira") {
+        return { url };
+      }
+      const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then((resp) => resp.json());
+      this.ugoiraMetas[meta.body.src] = meta;
+      return { url: meta.body.src };
     }
     async fetchTagsByPids(pids) {
       try {

@@ -10,6 +10,7 @@ import { FullViewGridManager } from "./full-view-grid-manager";
 import { Elements } from "./html";
 import createKeyboardCustomPanel from "./keyboard-custom";
 import { PageHelper } from "./page-helper";
+import { toggleAnimationStyle } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
 export type Events = ReturnType<typeof initEvents>;
@@ -94,6 +95,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         IL.abort(IFQ.currIndex);
       }
     }
+    if (key === "disableCssAnimation") toggleAnimationStyle(conf.disableCssAnimation);
   }
 
   // modify config

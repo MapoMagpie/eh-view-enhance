@@ -5,7 +5,7 @@ import { dragElement } from "../utils/drag-element";
 import { i18n } from "../utils/i18n";
 import q from "../utils/query-element";
 import { Events } from "./event";
-import { loadStyleSheel } from "./style";
+import { toggleAnimationStyle, loadStyleSheel } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
 
@@ -112,9 +112,7 @@ export function createHTML() {
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
-                    <span>${i18n.disableCssAnimation.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.disableCssAnimationTooltip.get()}</span></span>:
-                    </span>
+                    <span>${i18n.disableCssAnimation.get()} :</span>
                     <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
@@ -250,6 +248,9 @@ export function createHTML() {
 
   fullViewGrid.innerHTML = HTML_STRINGS;
   const styleSheel = loadStyleSheel();
+  if (!conf.disableCssAnimation) {
+    toggleAnimationStyle(conf.disableCssAnimation);
+  }
   return {
     root: fullViewGrid,
     fullViewGrid: q("#ehvp-nodes-container", fullViewGrid),

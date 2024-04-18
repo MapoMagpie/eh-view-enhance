@@ -1,9 +1,12 @@
 import { conf } from "../config";
 
-export function loadStyleSheel() {
+export function toggleAnimationStyle(disable: boolean) {
+  removeAnimationStyleSheel();
+  if (disable) return;
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
   const style = document.createElement('style');
-  const animation = `
+  style.id = "ehvp-style-animation";
+  const css = `
 .ehvp-root {
   transition: height 0.3s linear;
 }
@@ -46,6 +49,21 @@ export function loadStyleSheel() {
   }
 }
 `;
+  style.textContent = css;
+  document.head.appendChild(style);
+}
+
+function removeAnimationStyleSheel() {
+  const style = document.getElementById("ehvp-style-animation");
+  if (style) {
+    document.head.removeChild(style);
+  }
+}
+
+export function loadStyleSheel() {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+  const style = document.createElement('style');
+  style.id = "ehvp-style";
   const css = `
 .ehvp-root {
   width: 100vw;
@@ -61,7 +79,6 @@ export function loadStyleSheel() {
 .ehvp-root-collapse {
   height: 0;
 }
-${conf.disableCssAnimation ? "" : animation}
 .full-view-grid {
   width: 100vw;
   height: 100vh;

@@ -1589,7 +1589,7 @@ ${chapters.map((c, i) => `<div><label>
         if (!this.canvasSized) {
           this.canvasElement.width = this.root.offsetWidth;
           this.canvasElement.height = Math.floor(this.root.offsetWidth * this.imgElement.naturalHeight / this.imgElement.naturalWidth);
-          this.canvasSized = true;
+          this.canvasSized = this.imgElement.src !== DEFAULT_THUMBNAIL;
         }
         this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
         this.imgElement.src = "";
@@ -3876,548 +3876,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     });
   }
 
-  class KeyboardDesc {
-    defaultKeys;
-    cb;
-    noPreventDefault = false;
-    constructor(defaultKeys, cb, noPreventDefault) {
-      this.defaultKeys = defaultKeys;
-      this.cb = cb;
-      this.noPreventDefault = noPreventDefault || false;
-    }
-  }
-  function initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH) {
-    function modPageHelperPostion() {
-      const style = HTML.pageHelper.style;
-      conf.pageHelperAbTop = style.top;
-      conf.pageHelperAbLeft = style.left;
-      conf.pageHelperAbBottom = style.bottom;
-      conf.pageHelperAbRight = style.right;
-      saveConf(conf);
-    }
-    function modNumberConfigEvent(key, data) {
-      const range = {
-        colCount: [1, 12],
-        threads: [1, 10],
-        downloadThreads: [1, 10],
-        timeout: [8, 40],
-        autoPageInterval: [500, 9e4],
-        preventScrollPageTime: [0, 9e4]
-      };
-      let mod = key === "autoPageInterval" ? 100 : 1;
-      mod = key === "preventScrollPageTime" ? 10 : mod;
-      if (data === "add") {
-        if (conf[key] < range[key][1]) {
-          conf[key] += mod;
-        }
-      } else if (data === "minus") {
-        if (conf[key] > range[key][0]) {
-          conf[key] -= mod;
-        }
-      }
-      const inputElement = q(`#${key}Input`);
-      if (inputElement) {
-        inputElement.value = conf[key].toString();
-      }
-      if (key === "colCount") {
-        const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules || []);
-        for (const cssRule of cssRules) {
-          if (cssRule instanceof CSSStyleRule) {
-            if (cssRule.selectorText === ".full-view-grid") {
-              cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
-              break;
-            }
-          }
-        }
-      }
-      saveConf(conf);
-    }
-    function modBooleanConfigEvent(key) {
-      const inputElement = q(`#${key}Checkbox`);
-      conf[key] = inputElement?.checked || false;
-      saveConf(conf);
-      if (key === "autoLoad") {
-        IL.autoLoad = conf.autoLoad;
-        if (IL.autoLoad) {
-          IL.abort(IFQ.currIndex);
-        }
-      }
-    }
-    function modSelectConfigEvent(key) {
-      const inputElement = q(`#${key}Select`);
-      const value = inputElement?.value;
-      if (value) {
-        conf[key] = value;
-        saveConf(conf);
-      }
-      if (key === "readMode") {
-        BIFM.resetScaleBigImages();
-        if (conf.readMode === "singlePage", BIFM.currMediaNode) {
-          const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
-          const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
-          BIFM.initElement(queue[index]);
-        }
-      }
-      if (key === "minifyPageHelper") {
-        switch (conf.minifyPageHelper) {
-          case "inBigMode":
-            PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
-            break;
-          case "always":
-            PH.minify(true, "fullViewGrid");
-            break;
-          case "never":
-            PH.minify(false, "fullViewGrid");
-            break;
-        }
-      }
-    }
-    const cancelIDContext = {};
-    function collapsePanelEvent(target, id) {
-      if (id) {
-        abortMouseleavePanelEvent(id);
-      }
-      const timeoutId = window.setTimeout(() => target.classList.add("p-collapse"), 100);
-      if (id) {
-        cancelIDContext[id] = timeoutId;
-      }
-    }
-    function abortMouseleavePanelEvent(id) {
-      (id ? [id] : [...Object.keys(cancelIDContext)]).forEach((k) => {
-        window.clearTimeout(cancelIDContext[k]);
-        delete cancelIDContext[k];
-      });
-    }
-    let restoreMinify = false;
-    function togglePanelEvent(id, collapse) {
-      let element = q(`#${id}-panel`);
-      if (!element)
-        return;
-      if (collapse === false) {
-        element.classList.remove("p-collapse");
-        return;
-      }
-      if (collapse === true) {
-        collapsePanelEvent(element, id);
-        if (BIFM.visible) {
-          BIFM.frame.focus();
-        } else {
-          HTML.fullViewGrid.focus();
-        }
-        return;
-      }
-      if (!element.classList.toggle("p-collapse")) {
-        ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
-        if (!conf.autoCollapsePanel) {
-          PH.minify(false, "fullViewGrid");
-          restoreMinify = true;
-        }
-      } else {
-        if (restoreMinify) {
-          PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
-          restoreMinify = false;
-        }
-      }
-    }
-    let bodyOverflow = document.body.style.overflow;
-    function showFullViewGrid() {
-      PH.minify(true, "fullViewGrid");
-      HTML.root.classList.remove("ehvp-root-collapse");
-      HTML.fullViewGrid.focus();
-      document.body.style.overflow = "hidden";
-    }
-    function hiddenFullViewGridEvent(event) {
-      if (event.target === HTML.fullViewGrid || event.target.classList.contains("img-node")) {
-        main(false);
-      }
-    }
-    function hiddenFullViewGrid() {
-      BIFM.hidden();
-      PH.minify(false, "fullViewGrid");
-      HTML.root.classList.add("ehvp-root-collapse");
-      HTML.fullViewGrid.blur();
-      document.body.style.overflow = bodyOverflow;
-    }
-    function scrollEvent() {
-      if (HTML.root.classList.contains("ehvp-root-collapse"))
-        return;
-      FVGM.renderCurrView();
-      FVGM.tryExtend();
-    }
-    function scrollImage(oriented, key) {
-      if (BIFM.isReachedBoundary(oriented)) {
-        const isSpace = key === "Space" || key === "Shift+Space";
-        if (!isSpace && conf.stickyMouse !== "disable" && BIFM.tryPreventStep())
-          return false;
-        BIFM.onWheel(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }), !isSpace);
-        return true;
-      }
-      return false;
-    }
-    let scrolling = false;
-    function initKeyboardEvent() {
-      const onbigImageFrame = {
-        "exit-big-image-mode": new KeyboardDesc(
-          ["Escape", "Enter"],
-          () => BIFM.hidden()
-        ),
-        "step-image-prev": new KeyboardDesc(
-          ["ArrowLeft"],
-          () => BIFM.stepNext(conf.reversePages ? "next" : "prev")
-        ),
-        "step-image-next": new KeyboardDesc(
-          ["ArrowRight"],
-          () => BIFM.stepNext(conf.reversePages ? "prev" : "next")
-        ),
-        "step-to-first-image": new KeyboardDesc(
-          ["Home"],
-          () => BIFM.stepNext("next", -1)
-        ),
-        "step-to-last-image": new KeyboardDesc(
-          ["End"],
-          () => BIFM.stepNext("prev", -1)
-        ),
-        "scale-image-increase": new KeyboardDesc(
-          ["="],
-          () => BIFM.scaleBigImages(1, 5)
-        ),
-        "scale-image-decrease": new KeyboardDesc(
-          ["-"],
-          () => BIFM.scaleBigImages(-1, 5)
-        ),
-        "scroll-image-up": new KeyboardDesc(
-          ["PageUp", "ArrowUp", "Shift+Space"],
-          (event) => {
-            const key = parseKey(event);
-            if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
-              if (scrolling)
-                return;
-              scrolling = true;
-              BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
-              BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 2), behavior: "smooth" });
-            }
-            if (scrollImage("prev", key)) {
-              event.preventDefault();
-              scrolling = false;
-            }
-          },
-          true
-        ),
-        "scroll-image-down": new KeyboardDesc(
-          ["PageDown", "ArrowDown", "Space"],
-          (event) => {
-            const key = parseKey(event);
-            if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
-              if (scrolling)
-                return;
-              scrolling = true;
-              BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
-              BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 2, behavior: "smooth" });
-            }
-            if (scrollImage("next", key)) {
-              event.preventDefault();
-              scrolling = false;
-            }
-          },
-          true
-        )
-      };
-      const onFullViewGrid = {
-        "open-big-image-mode": new KeyboardDesc(
-          ["Enter"],
-          () => {
-            let start = IFQ.currIndex;
-            if (numberRecord && numberRecord.length > 0) {
-              start = Number(numberRecord.join("")) - 1;
-              numberRecord = null;
-              if (isNaN(start))
-                return;
-              start = Math.max(0, Math.min(start, IFQ.length - 1));
-            }
-            IFQ[start].node.canvasElement?.dispatchEvent(new MouseEvent("click"));
-          }
-        ),
-        "pause-auto-load-temporarily": new KeyboardDesc(
-          ["p"],
-          () => {
-            IL.autoLoad = !IL.autoLoad;
-            if (IL.autoLoad) {
-              IL.abort(IFQ.currIndex);
-            }
-          }
-        ),
-        "exit-full-view-grid": new KeyboardDesc(
-          ["Escape"],
-          () => main(false)
-        ),
-        "columns-increase": new KeyboardDesc(
-          ["="],
-          () => modNumberConfigEvent("colCount", "add")
-        ),
-        "columns-decrease": new KeyboardDesc(
-          ["-"],
-          () => modNumberConfigEvent("colCount", "minus")
-        ),
-        "back-chapters-selection": new KeyboardDesc(
-          ["b"],
-          () => PF.backChaptersSelection()
-        )
-      };
-      const inMain = {
-        "open-full-view-grid": new KeyboardDesc(["Enter"], (_) => {
-          const activeElement = document.activeElement;
-          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement)
-            return;
-          main(true);
-        }, true)
-      };
-      return { inBigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain };
-    }
-    const keyboardEvents = initKeyboardEvent();
-    let numberRecord = null;
-    function bigImageFrameKeyBoardEvent(event) {
-      if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
-        return;
-      const key = parseKey(event);
-      const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
-        const override = conf.keyboards.inBigImageMode[id];
-        if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
-          desc.cb(event);
-          return !desc.noPreventDefault;
-        }
-        return false;
-      });
-      if (triggered) {
-        event.preventDefault();
-      }
-    }
-    function fullViewGridKeyBoardEvent(event) {
-      if (HTML.root.classList.contains("ehvp-root-collapse"))
-        return;
-      const key = parseKey(event);
-      const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
-        const override = conf.keyboards.inFullViewGrid[id];
-        if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
-          desc.cb(event);
-          return !desc.noPreventDefault;
-        }
-        return false;
-      });
-      if (triggered) {
-        event.preventDefault();
-      } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
-        numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
-        event.preventDefault();
-      }
-    }
-    function keyboardEvent(event) {
-      if (!HTML.root.classList.contains("ehvp-root-collapse"))
-        return;
-      if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
-        return;
-      const key = parseKey(event);
-      const triggered = Object.entries(keyboardEvents.inMain).some(([id, desc]) => {
-        const override = conf.keyboards.inMain[id];
-        if (override !== void 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
-          desc.cb(event);
-          return !desc.noPreventDefault;
-        }
-        return false;
-      });
-      if (triggered) {
-        event.preventDefault();
-      }
-    }
-    function showGuideEvent() {
-      const oldGuide = document.getElementById("ehvp-guide");
-      if (oldGuide) {
-        oldGuide.remove();
-      }
-      const guideElement = document.createElement("div");
-      guideElement.setAttribute("id", "ehvp-guide");
-      guideElement.innerHTML = `<div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>`;
-      guideElement.classList.add("ehvp-full-panel");
-      guideElement.setAttribute("style", `align-items: center; color: black; text-align: left;`);
-      guideElement.addEventListener("click", () => guideElement.remove());
-      if (HTML.root.classList.contains("ehvp-root-collapse")) {
-        document.body.after(guideElement);
-      } else {
-        HTML.root.appendChild(guideElement);
-      }
-    }
-    function showKeyboardCustomEvent() {
-      createKeyboardCustomPanel(keyboardEvents, HTML.root);
-    }
-    function showExcludeURLEvent() {
-      createExcludeURLPanel(HTML.root);
-    }
-    const signal = { first: true };
-    function main(extend) {
-      if (HTML.pageHelper) {
-        if (extend && !HTML.pageHelper.classList.contains("p-helper-extend")) {
-          HTML.pageHelper.classList.add("p-helper-extend");
-          showFullViewGrid();
-          if (signal.first) {
-            signal.first = false;
-            PF.init();
-          }
-        } else {
-          HTML.pageHelper.classList.remove("p-helper-extend");
-          ["config", "downloader"].forEach((id) => togglePanelEvent(id, true));
-          hiddenFullViewGrid();
-        }
-      }
-    }
-    return {
-      main,
-      modNumberConfigEvent,
-      modBooleanConfigEvent,
-      modSelectConfigEvent,
-      modPageHelperPostion,
-      togglePanelEvent,
-      showFullViewGrid,
-      hiddenFullViewGridEvent,
-      hiddenFullViewGrid,
-      scrollEvent,
-      fullViewGridKeyBoardEvent,
-      bigImageFrameKeyBoardEvent,
-      keyboardEvent,
-      showGuideEvent,
-      collapsePanelEvent,
-      abortMouseleavePanelEvent,
-      showKeyboardCustomEvent,
-      showExcludeURLEvent
-    };
-  }
-
-  class FullViewGridManager {
-    root;
-    // renderRangeRecord: [number, number] = [0, 0];
-    queue = [];
-    done = false;
-    chapterIndex = 0;
-    constructor(HTML, BIFM) {
-      this.root = HTML.fullViewGrid;
-      EBUS.subscribe("pf-on-appended", (_total, nodes, done) => {
-        this.append(nodes);
-        this.done = done || false;
-        setTimeout(() => this.renderCurrView(), 200);
-      });
-      EBUS.subscribe("pf-change-chapter", (index) => {
-        this.chapterIndex = Math.max(0, index);
-        this.root.innerHTML = "";
-        this.queue = [];
-        this.done = false;
-      });
-      EBUS.subscribe("ifq-do", (_, imf) => {
-        if (!BIFM.visible)
-          return;
-        if (imf.chapterIndex !== this.chapterIndex)
-          return;
-        if (!imf.node.root)
-          return;
-        let scrollTo = imf.node.root.offsetTop - window.screen.availHeight / 3;
-        scrollTo = scrollTo <= 0 ? 0 : scrollTo >= this.root.scrollHeight ? this.root.scrollHeight : scrollTo;
-        if (this.root.scrollTo.toString().includes("[native code]")) {
-          this.root.scrollTo({ top: scrollTo, behavior: "smooth" });
-        } else {
-          this.root.scrollTop = scrollTo;
-        }
-      });
-    }
-    append(nodes) {
-      if (nodes.length > 0) {
-        const list = nodes.map((n) => {
-          return {
-            node: n,
-            element: n.create()
-          };
-        });
-        this.queue.push(...list);
-        this.root.append(...list.map((l) => l.element));
-      }
-    }
-    tryExtend() {
-      if (this.done)
-        return;
-      const nodes = Array.from(this.root.childNodes);
-      if (nodes.length === 0)
-        return;
-      const lastImgNode = nodes[nodes.length - 1];
-      const viewButtom = this.root.scrollTop + this.root.clientHeight;
-      if (viewButtom + this.root.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
-        return;
-      }
-      EBUS.emit("pf-try-extend");
-    }
-    /**
-     *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
-     */
-    renderCurrView() {
-      const [scrollTop, clientHeight] = [this.root.scrollTop, this.root.clientHeight];
-      const [start, end] = this.findOutsideRoundView(scrollTop, clientHeight);
-      this.queue.slice(start, end + 1 + conf.colCount).forEach((e) => e.node.render());
-    }
-    findOutsideRoundView(currTop, clientHeight) {
-      const viewButtom = currTop + clientHeight;
-      let outsideTop = 0;
-      let outsideBottom = 0;
-      for (let i = 0; i < this.queue.length; i += conf.colCount) {
-        const element = this.queue[i].element;
-        if (outsideBottom === 0) {
-          if (element.offsetTop + 2 >= currTop) {
-            outsideBottom = i + 1;
-          } else {
-            outsideTop = i;
-          }
-        } else {
-          outsideBottom = i;
-          if (element.offsetTop + element.offsetHeight > viewButtom) {
-            break;
-          }
-        }
-      }
-      return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
-    }
-  }
-
-  function dragElement(element, dragHub, callback) {
-    (dragHub ?? element).addEventListener("mousedown", (event) => {
-      event.preventDefault();
-      const wh = window.innerHeight;
-      const ww = window.innerWidth;
-      const mouseMove = (event2) => {
-        event2.preventDefault();
-        const mouseX = event2.clientX;
-        const mouseY = event2.clientY;
-        if (mouseY <= wh / 2) {
-          element.style.top = Math.max(mouseY, 5) + "px";
-          element.style.bottom = "unset";
-        } else {
-          element.style.bottom = Math.max(wh - mouseY - element.clientHeight, 5) + "px";
-          element.style.top = "unset";
-        }
-        if (mouseX <= ww / 2) {
-          element.style.left = Math.max(mouseX, 5) + "px";
-          element.style.right = "unset";
-        } else {
-          element.style.right = Math.max(ww - mouseX - element.clientWidth, 5) + "px";
-          element.style.left = "unset";
-        }
-        console.log("drag element: offset top: ", element.style.top, "offset left: ", element.style.left, "offset bottom: ", element.style.bottom, "offset right: ", element.style.right);
-      };
-      document.addEventListener("mousemove", mouseMove);
-      document.addEventListener("mouseup", () => {
-        document.removeEventListener("mousemove", mouseMove);
-        callback?.(element.offsetTop, element.offsetLeft);
-      }, { once: true });
-    });
-  }
-
-  function loadStyleSheel() {
+  function toggleAnimationStyle(disable) {
+    removeAnimationStyleSheel();
+    if (disable)
+      return;
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
     const style = document.createElement("style");
-    const animation = `
+    style.id = "ehvp-style-animation";
+    const css = `
 .ehvp-root {
   transition: height 0.3s linear;
 }
@@ -4460,6 +3926,19 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 }
 `;
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+  function removeAnimationStyleSheel() {
+    const style = document.getElementById("ehvp-style-animation");
+    if (style) {
+      document.head.removeChild(style);
+    }
+  }
+  function loadStyleSheel() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+    const style = document.createElement("style");
+    style.id = "ehvp-style";
     const css = `
 .ehvp-root {
   width: 100vw;
@@ -4475,7 +3954,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .ehvp-root-collapse {
   height: 0;
 }
-${conf.disableCssAnimation ? "" : animation}
 .full-view-grid {
   width: 100vw;
   height: 100vh;
@@ -5235,6 +4713,546 @@ html {
     return style;
   }
 
+  class KeyboardDesc {
+    defaultKeys;
+    cb;
+    noPreventDefault = false;
+    constructor(defaultKeys, cb, noPreventDefault) {
+      this.defaultKeys = defaultKeys;
+      this.cb = cb;
+      this.noPreventDefault = noPreventDefault || false;
+    }
+  }
+  function initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH) {
+    function modPageHelperPostion() {
+      const style = HTML.pageHelper.style;
+      conf.pageHelperAbTop = style.top;
+      conf.pageHelperAbLeft = style.left;
+      conf.pageHelperAbBottom = style.bottom;
+      conf.pageHelperAbRight = style.right;
+      saveConf(conf);
+    }
+    function modNumberConfigEvent(key, data) {
+      const range = {
+        colCount: [1, 12],
+        threads: [1, 10],
+        downloadThreads: [1, 10],
+        timeout: [8, 40],
+        autoPageInterval: [500, 9e4],
+        preventScrollPageTime: [0, 9e4]
+      };
+      let mod = key === "autoPageInterval" ? 100 : 1;
+      mod = key === "preventScrollPageTime" ? 10 : mod;
+      if (data === "add") {
+        if (conf[key] < range[key][1]) {
+          conf[key] += mod;
+        }
+      } else if (data === "minus") {
+        if (conf[key] > range[key][0]) {
+          conf[key] -= mod;
+        }
+      }
+      const inputElement = q(`#${key}Input`);
+      if (inputElement) {
+        inputElement.value = conf[key].toString();
+      }
+      if (key === "colCount") {
+        const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules || []);
+        for (const cssRule of cssRules) {
+          if (cssRule instanceof CSSStyleRule) {
+            if (cssRule.selectorText === ".full-view-grid") {
+              cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
+              break;
+            }
+          }
+        }
+      }
+      saveConf(conf);
+    }
+    function modBooleanConfigEvent(key) {
+      const inputElement = q(`#${key}Checkbox`);
+      conf[key] = inputElement?.checked || false;
+      saveConf(conf);
+      if (key === "autoLoad") {
+        IL.autoLoad = conf.autoLoad;
+        if (IL.autoLoad) {
+          IL.abort(IFQ.currIndex);
+        }
+      }
+      if (key === "disableCssAnimation")
+        toggleAnimationStyle(conf.disableCssAnimation);
+    }
+    function modSelectConfigEvent(key) {
+      const inputElement = q(`#${key}Select`);
+      const value = inputElement?.value;
+      if (value) {
+        conf[key] = value;
+        saveConf(conf);
+      }
+      if (key === "readMode") {
+        BIFM.resetScaleBigImages();
+        if (conf.readMode === "singlePage", BIFM.currMediaNode) {
+          const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
+          const index = parseInt(BIFM.currMediaNode.getAttribute("data-index") || "0");
+          BIFM.initElement(queue[index]);
+        }
+      }
+      if (key === "minifyPageHelper") {
+        switch (conf.minifyPageHelper) {
+          case "inBigMode":
+            PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+            break;
+          case "always":
+            PH.minify(true, "fullViewGrid");
+            break;
+          case "never":
+            PH.minify(false, "fullViewGrid");
+            break;
+        }
+      }
+    }
+    const cancelIDContext = {};
+    function collapsePanelEvent(target, id) {
+      if (id) {
+        abortMouseleavePanelEvent(id);
+      }
+      const timeoutId = window.setTimeout(() => target.classList.add("p-collapse"), 100);
+      if (id) {
+        cancelIDContext[id] = timeoutId;
+      }
+    }
+    function abortMouseleavePanelEvent(id) {
+      (id ? [id] : [...Object.keys(cancelIDContext)]).forEach((k) => {
+        window.clearTimeout(cancelIDContext[k]);
+        delete cancelIDContext[k];
+      });
+    }
+    let restoreMinify = false;
+    function togglePanelEvent(id, collapse) {
+      let element = q(`#${id}-panel`);
+      if (!element)
+        return;
+      if (collapse === false) {
+        element.classList.remove("p-collapse");
+        return;
+      }
+      if (collapse === true) {
+        collapsePanelEvent(element, id);
+        if (BIFM.visible) {
+          BIFM.frame.focus();
+        } else {
+          HTML.fullViewGrid.focus();
+        }
+        return;
+      }
+      if (!element.classList.toggle("p-collapse")) {
+        ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
+        if (!conf.autoCollapsePanel) {
+          PH.minify(false, "fullViewGrid");
+          restoreMinify = true;
+        }
+      } else {
+        if (restoreMinify) {
+          PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+          restoreMinify = false;
+        }
+      }
+    }
+    let bodyOverflow = document.body.style.overflow;
+    function showFullViewGrid() {
+      PH.minify(true, "fullViewGrid");
+      HTML.root.classList.remove("ehvp-root-collapse");
+      HTML.fullViewGrid.focus();
+      document.body.style.overflow = "hidden";
+    }
+    function hiddenFullViewGridEvent(event) {
+      if (event.target === HTML.fullViewGrid || event.target.classList.contains("img-node")) {
+        main(false);
+      }
+    }
+    function hiddenFullViewGrid() {
+      BIFM.hidden();
+      PH.minify(false, "fullViewGrid");
+      HTML.root.classList.add("ehvp-root-collapse");
+      HTML.fullViewGrid.blur();
+      document.body.style.overflow = bodyOverflow;
+    }
+    function scrollEvent() {
+      if (HTML.root.classList.contains("ehvp-root-collapse"))
+        return;
+      FVGM.renderCurrView();
+      FVGM.tryExtend();
+    }
+    function scrollImage(oriented, key) {
+      if (BIFM.isReachedBoundary(oriented)) {
+        const isSpace = key === "Space" || key === "Shift+Space";
+        if (!isSpace && conf.stickyMouse !== "disable" && BIFM.tryPreventStep())
+          return false;
+        BIFM.onWheel(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }), !isSpace);
+        return true;
+      }
+      return false;
+    }
+    let scrolling = false;
+    function initKeyboardEvent() {
+      const onbigImageFrame = {
+        "exit-big-image-mode": new KeyboardDesc(
+          ["Escape", "Enter"],
+          () => BIFM.hidden()
+        ),
+        "step-image-prev": new KeyboardDesc(
+          ["ArrowLeft"],
+          () => BIFM.stepNext(conf.reversePages ? "next" : "prev")
+        ),
+        "step-image-next": new KeyboardDesc(
+          ["ArrowRight"],
+          () => BIFM.stepNext(conf.reversePages ? "prev" : "next")
+        ),
+        "step-to-first-image": new KeyboardDesc(
+          ["Home"],
+          () => BIFM.stepNext("next", -1)
+        ),
+        "step-to-last-image": new KeyboardDesc(
+          ["End"],
+          () => BIFM.stepNext("prev", -1)
+        ),
+        "scale-image-increase": new KeyboardDesc(
+          ["="],
+          () => BIFM.scaleBigImages(1, 5)
+        ),
+        "scale-image-decrease": new KeyboardDesc(
+          ["-"],
+          () => BIFM.scaleBigImages(-1, 5)
+        ),
+        "scroll-image-up": new KeyboardDesc(
+          ["PageUp", "ArrowUp", "Shift+Space"],
+          (event) => {
+            const key = parseKey(event);
+            if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
+              if (scrolling)
+                return;
+              scrolling = true;
+              BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
+              BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 2), behavior: "smooth" });
+            }
+            if (scrollImage("prev", key)) {
+              event.preventDefault();
+              scrolling = false;
+            }
+          },
+          true
+        ),
+        "scroll-image-down": new KeyboardDesc(
+          ["PageDown", "ArrowDown", "Space"],
+          (event) => {
+            const key = parseKey(event);
+            if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
+              if (scrolling)
+                return;
+              scrolling = true;
+              BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
+              BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 2, behavior: "smooth" });
+            }
+            if (scrollImage("next", key)) {
+              event.preventDefault();
+              scrolling = false;
+            }
+          },
+          true
+        )
+      };
+      const onFullViewGrid = {
+        "open-big-image-mode": new KeyboardDesc(
+          ["Enter"],
+          () => {
+            let start = IFQ.currIndex;
+            if (numberRecord && numberRecord.length > 0) {
+              start = Number(numberRecord.join("")) - 1;
+              numberRecord = null;
+              if (isNaN(start))
+                return;
+              start = Math.max(0, Math.min(start, IFQ.length - 1));
+            }
+            IFQ[start].node.canvasElement?.dispatchEvent(new MouseEvent("click"));
+          }
+        ),
+        "pause-auto-load-temporarily": new KeyboardDesc(
+          ["p"],
+          () => {
+            IL.autoLoad = !IL.autoLoad;
+            if (IL.autoLoad) {
+              IL.abort(IFQ.currIndex);
+            }
+          }
+        ),
+        "exit-full-view-grid": new KeyboardDesc(
+          ["Escape"],
+          () => main(false)
+        ),
+        "columns-increase": new KeyboardDesc(
+          ["="],
+          () => modNumberConfigEvent("colCount", "add")
+        ),
+        "columns-decrease": new KeyboardDesc(
+          ["-"],
+          () => modNumberConfigEvent("colCount", "minus")
+        ),
+        "back-chapters-selection": new KeyboardDesc(
+          ["b"],
+          () => PF.backChaptersSelection()
+        )
+      };
+      const inMain = {
+        "open-full-view-grid": new KeyboardDesc(["Enter"], (_) => {
+          const activeElement = document.activeElement;
+          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement)
+            return;
+          main(true);
+        }, true)
+      };
+      return { inBigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain };
+    }
+    const keyboardEvents = initKeyboardEvent();
+    let numberRecord = null;
+    function bigImageFrameKeyBoardEvent(event) {
+      if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
+        return;
+      const key = parseKey(event);
+      const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
+        const override = conf.keyboards.inBigImageMode[id];
+        if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+          desc.cb(event);
+          return !desc.noPreventDefault;
+        }
+        return false;
+      });
+      if (triggered) {
+        event.preventDefault();
+      }
+    }
+    function fullViewGridKeyBoardEvent(event) {
+      if (HTML.root.classList.contains("ehvp-root-collapse"))
+        return;
+      const key = parseKey(event);
+      const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
+        const override = conf.keyboards.inFullViewGrid[id];
+        if (override !== void 0 && override.length > 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+          desc.cb(event);
+          return !desc.noPreventDefault;
+        }
+        return false;
+      });
+      if (triggered) {
+        event.preventDefault();
+      } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+        numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
+        event.preventDefault();
+      }
+    }
+    function keyboardEvent(event) {
+      if (!HTML.root.classList.contains("ehvp-root-collapse"))
+        return;
+      if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
+        return;
+      const key = parseKey(event);
+      const triggered = Object.entries(keyboardEvents.inMain).some(([id, desc]) => {
+        const override = conf.keyboards.inMain[id];
+        if (override !== void 0 ? override.includes(key) : desc.defaultKeys.includes(key)) {
+          desc.cb(event);
+          return !desc.noPreventDefault;
+        }
+        return false;
+      });
+      if (triggered) {
+        event.preventDefault();
+      }
+    }
+    function showGuideEvent() {
+      const oldGuide = document.getElementById("ehvp-guide");
+      if (oldGuide) {
+        oldGuide.remove();
+      }
+      const guideElement = document.createElement("div");
+      guideElement.setAttribute("id", "ehvp-guide");
+      guideElement.innerHTML = `<div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>`;
+      guideElement.classList.add("ehvp-full-panel");
+      guideElement.setAttribute("style", `align-items: center; color: black; text-align: left;`);
+      guideElement.addEventListener("click", () => guideElement.remove());
+      if (HTML.root.classList.contains("ehvp-root-collapse")) {
+        document.body.after(guideElement);
+      } else {
+        HTML.root.appendChild(guideElement);
+      }
+    }
+    function showKeyboardCustomEvent() {
+      createKeyboardCustomPanel(keyboardEvents, HTML.root);
+    }
+    function showExcludeURLEvent() {
+      createExcludeURLPanel(HTML.root);
+    }
+    const signal = { first: true };
+    function main(extend) {
+      if (HTML.pageHelper) {
+        if (extend && !HTML.pageHelper.classList.contains("p-helper-extend")) {
+          HTML.pageHelper.classList.add("p-helper-extend");
+          showFullViewGrid();
+          if (signal.first) {
+            signal.first = false;
+            PF.init();
+          }
+        } else {
+          HTML.pageHelper.classList.remove("p-helper-extend");
+          ["config", "downloader"].forEach((id) => togglePanelEvent(id, true));
+          hiddenFullViewGrid();
+        }
+      }
+    }
+    return {
+      main,
+      modNumberConfigEvent,
+      modBooleanConfigEvent,
+      modSelectConfigEvent,
+      modPageHelperPostion,
+      togglePanelEvent,
+      showFullViewGrid,
+      hiddenFullViewGridEvent,
+      hiddenFullViewGrid,
+      scrollEvent,
+      fullViewGridKeyBoardEvent,
+      bigImageFrameKeyBoardEvent,
+      keyboardEvent,
+      showGuideEvent,
+      collapsePanelEvent,
+      abortMouseleavePanelEvent,
+      showKeyboardCustomEvent,
+      showExcludeURLEvent
+    };
+  }
+
+  class FullViewGridManager {
+    root;
+    // renderRangeRecord: [number, number] = [0, 0];
+    queue = [];
+    done = false;
+    chapterIndex = 0;
+    constructor(HTML, BIFM) {
+      this.root = HTML.fullViewGrid;
+      EBUS.subscribe("pf-on-appended", (_total, nodes, done) => {
+        this.append(nodes);
+        this.done = done || false;
+        setTimeout(() => this.renderCurrView(), 200);
+      });
+      EBUS.subscribe("pf-change-chapter", (index) => {
+        this.chapterIndex = Math.max(0, index);
+        this.root.innerHTML = "";
+        this.queue = [];
+        this.done = false;
+      });
+      EBUS.subscribe("ifq-do", (_, imf) => {
+        if (!BIFM.visible)
+          return;
+        if (imf.chapterIndex !== this.chapterIndex)
+          return;
+        if (!imf.node.root)
+          return;
+        let scrollTo = imf.node.root.offsetTop - window.screen.availHeight / 3;
+        scrollTo = scrollTo <= 0 ? 0 : scrollTo >= this.root.scrollHeight ? this.root.scrollHeight : scrollTo;
+        if (this.root.scrollTo.toString().includes("[native code]")) {
+          this.root.scrollTo({ top: scrollTo, behavior: "smooth" });
+        } else {
+          this.root.scrollTop = scrollTo;
+        }
+      });
+    }
+    append(nodes) {
+      if (nodes.length > 0) {
+        const list = nodes.map((n) => {
+          return {
+            node: n,
+            element: n.create()
+          };
+        });
+        this.queue.push(...list);
+        this.root.append(...list.map((l) => l.element));
+      }
+    }
+    tryExtend() {
+      if (this.done)
+        return;
+      const nodes = Array.from(this.root.childNodes);
+      if (nodes.length === 0)
+        return;
+      const lastImgNode = nodes[nodes.length - 1];
+      const viewButtom = this.root.scrollTop + this.root.clientHeight;
+      if (viewButtom + this.root.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
+        return;
+      }
+      EBUS.emit("pf-try-extend");
+    }
+    /**
+     *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
+     */
+    renderCurrView() {
+      const [scrollTop, clientHeight] = [this.root.scrollTop, this.root.clientHeight];
+      const [start, end] = this.findOutsideRoundView(scrollTop, clientHeight);
+      this.queue.slice(start, end + 1 + conf.colCount).forEach((e) => e.node.render());
+    }
+    findOutsideRoundView(currTop, clientHeight) {
+      const viewButtom = currTop + clientHeight;
+      let outsideTop = 0;
+      let outsideBottom = 0;
+      for (let i = 0; i < this.queue.length; i += conf.colCount) {
+        const element = this.queue[i].element;
+        if (outsideBottom === 0) {
+          if (element.offsetTop + 2 >= currTop) {
+            outsideBottom = i + 1;
+          } else {
+            outsideTop = i;
+          }
+        } else {
+          outsideBottom = i;
+          if (element.offsetTop + element.offsetHeight > viewButtom) {
+            break;
+          }
+        }
+      }
+      return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
+    }
+  }
+
+  function dragElement(element, dragHub, callback) {
+    (dragHub ?? element).addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      const wh = window.innerHeight;
+      const ww = window.innerWidth;
+      const mouseMove = (event2) => {
+        event2.preventDefault();
+        const mouseX = event2.clientX;
+        const mouseY = event2.clientY;
+        if (mouseY <= wh / 2) {
+          element.style.top = Math.max(mouseY, 5) + "px";
+          element.style.bottom = "unset";
+        } else {
+          element.style.bottom = Math.max(wh - mouseY - element.clientHeight, 5) + "px";
+          element.style.top = "unset";
+        }
+        if (mouseX <= ww / 2) {
+          element.style.left = Math.max(mouseX, 5) + "px";
+          element.style.right = "unset";
+        } else {
+          element.style.right = Math.max(ww - mouseX - element.clientWidth, 5) + "px";
+          element.style.left = "unset";
+        }
+        console.log("drag element: offset top: ", element.style.top, "offset left: ", element.style.left, "offset bottom: ", element.style.bottom, "offset right: ", element.style.right);
+      };
+      document.addEventListener("mousemove", mouseMove);
+      document.addEventListener("mouseup", () => {
+        document.removeEventListener("mousemove", mouseMove);
+        callback?.(element.offsetTop, element.offsetLeft);
+      }, { once: true });
+    });
+  }
+
   function createHTML() {
     const fullViewGrid = document.createElement("div");
     fullViewGrid.classList.add("ehvp-root");
@@ -5328,9 +5346,7 @@ html {
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
                 <label class="p-label">
-                    <span>${i18n.disableCssAnimation.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.disableCssAnimationTooltip.get()}</span></span>:
-                    </span>
+                    <span>${i18n.disableCssAnimation.get()} :</span>
                     <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
@@ -5465,6 +5481,9 @@ html {
 `;
     fullViewGrid.innerHTML = HTML_STRINGS;
     const styleSheel = loadStyleSheel();
+    if (!conf.disableCssAnimation) {
+      toggleAnimationStyle(conf.disableCssAnimation);
+    }
     return {
       root: fullViewGrid,
       fullViewGrid: q("#ehvp-nodes-container", fullViewGrid),

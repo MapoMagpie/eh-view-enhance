@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.4
+// @version            4.4.5
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us
@@ -93,8 +93,8 @@
       muted: false,
       volume: 50,
       disableCssAnimation: true,
-      mcInSites: ["18comic"],
-      keepSmallThumbnail: true
+      mcInSites: ["18comic"]
+      // keepSmallThumbnail: true,
     };
   }
   const VERSION = "4.4.0";
@@ -156,7 +156,15 @@
     storage.setItem(CONFIG_KEY, JSON.stringify(c));
   }
   const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation", "keepSmallThumbnail"];
+  const ConfigBooleanKeys = [
+    "fetchOriginal",
+    "autoLoad",
+    "reversePages",
+    "autoPlay",
+    "autoCollapsePanel",
+    "disableCssAnimation"
+    /*"keepSmallThumbnail" */
+  ];
   const ConfigSelectKeys = ["readMode", "stickyMouse", "minifyPageHelper"];
   const conf = getConf();
 
@@ -343,7 +351,7 @@
               [this.data, this.contentType] = ret;
               this.data = await this.matcher.processData(this.data, this.contentType, this.originURL);
               this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
-              this.node.onloaded(this.blobUrl, this.contentType, this.data.byteLength);
+              this.node.onloaded(this.blobUrl, this.contentType);
               if (this.rendered === 2) {
                 this.node.render();
               }
@@ -1530,7 +1538,11 @@ ${chapters.map((c, i) => `<div><label>
   const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
   const DEFAULT_NODE_TEMPLATE = document.createElement("div");
   DEFAULT_NODE_TEMPLATE.classList.add("img-node");
-  DEFAULT_NODE_TEMPLATE.innerHTML = `<a><img decoding="async" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></a>`;
+  DEFAULT_NODE_TEMPLATE.innerHTML = `
+<a>
+  <img decoding="async" loading="eager" title="untitle.jpg" style="display: none" src="" />
+  <canvas id="sample-canvas" width="100%" height="100%"></canvas>
+</a>`;
   const OVERLAY_TIP = document.createElement("div");
   OVERLAY_TIP.classList.add("overlay-tip");
   OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
@@ -1541,10 +1553,12 @@ ${chapters.map((c, i) => `<div><label>
     title;
     onclick;
     imgElement;
+    canvasElement;
+    canvasCtx;
+    canvasSized = false;
     delaySRC;
     blobUrl;
     mimeType;
-    size;
     downloadBar;
     rendered = false;
     constructor(src, href, title, delaySRC) {
@@ -1559,56 +1573,48 @@ ${chapters.map((c, i) => `<div><label>
       anchor.href = this.href;
       anchor.target = "_blank";
       this.imgElement = anchor.firstElementChild;
+      this.canvasElement = anchor.lastElementChild;
       this.imgElement.setAttribute("title", this.title);
+      this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
+      this.canvasCtx = this.canvasElement.getContext("2d");
       if (this.onclick) {
-        this.imgElement.addEventListener("click", (event) => {
+        this.canvasElement.addEventListener("click", (event) => {
           event.preventDefault();
           this.onclick(event);
         });
       }
-      this.imgElement.addEventListener("mouseover", () => {
-        if (!conf.keepSmallThumbnail)
+      this.imgElement.onload = () => {
+        if (!this.imgElement?.src)
           return;
-        if (!this.blobUrl)
-          return;
-        if (this.mimeType?.startsWith("video"))
-          return;
-        if (this.imgElement.src === this.blobUrl)
-          return;
-        this.imgElement.src = this.blobUrl;
-      });
-      this.imgElement.addEventListener("mouseout", () => {
-        if (!conf.keepSmallThumbnail)
-          return;
-        if (this.imgElement.src === this.src)
-          return;
-        this.imgElement.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
-      });
+        if (!this.canvasSized) {
+          this.canvasElement.width = this.root.offsetWidth;
+          this.canvasElement.height = Math.floor(this.root.offsetWidth * this.imgElement.naturalHeight / this.imgElement.naturalWidth);
+          this.canvasSized = true;
+        }
+        this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
+        this.imgElement.src = "";
+      };
       return this.root;
     }
     render() {
       if (!this.imgElement)
         return;
       this.rendered = true;
-      let justThumbnail = conf.keepSmallThumbnail || !this.blobUrl;
-      if (this.mimeType === "image/gif") {
-        const tip = OVERLAY_TIP.cloneNode(true);
-        tip.firstChild.textContent = "GIF";
-        this.root?.appendChild(tip);
-        justThumbnail = this.size != void 0 && this.size > 10 * 1024 * 1024;
-      }
-      if (this.mimeType?.startsWith("video")) {
+      let justThumbnail = !this.blobUrl;
+      if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
         const tip = OVERLAY_TIP.cloneNode(true);
         tip.firstChild.textContent = this.mimeType.split("/")[1].toUpperCase();
         this.root?.appendChild(tip);
         justThumbnail = true;
       }
-      const delaySRC = this.delaySRC;
-      this.delaySRC = void 0;
-      if (delaySRC)
-        delaySRC.then((src) => (this.src = src) && this.render());
       if (justThumbnail) {
-        this.imgElement.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
+        const delaySRC = this.delaySRC;
+        this.delaySRC = void 0;
+        if (delaySRC) {
+          delaySRC.then((src) => (this.src = src) && this.render());
+        } else {
+          this.imgElement.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
+        }
         return;
       }
       this.imgElement.src = this.blobUrl || this.src || DEFAULT_THUMBNAIL;
@@ -1618,10 +1624,9 @@ ${chapters.map((c, i) => `<div><label>
         return;
       this.imgElement.src = this.src;
     }
-    onloaded(blobUrl, mimeType, size) {
+    onloaded(blobUrl, mimeType) {
       this.blobUrl = blobUrl;
       this.mimeType = mimeType;
-      this.size = size;
     }
     progress(state) {
       if (!this.root)
@@ -1674,7 +1679,7 @@ ${chapters.map((c, i) => `<div><label>
       if (ele === this.root?.firstElementChild) {
         return true;
       }
-      if (ele === this.imgElement) {
+      if (ele === this.canvasElement || ele === this.imgElement) {
         return true;
       }
       return false;
@@ -4114,7 +4119,7 @@ duration 0.04`).join("\n");
                 return;
               start = Math.max(0, Math.min(start, IFQ.length - 1));
             }
-            IFQ[start].node.imgElement?.dispatchEvent(new MouseEvent("click"));
+            IFQ[start].node.canvasElement?.dispatchEvent(new MouseEvent("click"));
           }
         ),
         "pause-auto-load-temporarily": new KeyboardDesc(
@@ -4501,7 +4506,7 @@ ${conf.disableCssAnimation ? "" : animation}
 .full-view-grid .img-node {
   position: relative;
 }
-.full-view-grid .img-node img {
+.full-view-grid .img-node canvas {
   position: relative;
   width: 100%;
   height: auto;
@@ -4530,13 +4535,13 @@ ${conf.disableCssAnimation ? "" : animation}
   box-sizing: border-box;
   line-height: 1.3rem;
 }
-.img-fetched img {
+.img-fetched canvas {
   border: 3px solid #90ffae !important;
 }
-.img-fetch-failed img {
+.img-fetch-failed canvas {
   border: 3px solid red !important;
 }
-.img-fetching img {
+.img-fetching canvas {
   border: 3px solid #00000000 !important;
 }
 .img-fetching a::after {
@@ -5312,14 +5317,6 @@ html {
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.disableCssAnimationTooltip.get()}</span></span>:
                     </span>
                     <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.keepSmallThumbnail.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.keepSmallThumbnailTooltip.get()}</span></span>:
-                    </span>
-                    <input id="keepSmallThumbnailCheckbox" ${conf.keepSmallThumbnail ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">

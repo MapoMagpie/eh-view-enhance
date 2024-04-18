@@ -11,9 +11,16 @@ import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
 export type Elements = ReturnType<typeof createHTML>;
 
+// <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+//     <label class="p-label">
+//         <span>${i18n.keepSmallThumbnail.get()}
+//            <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.keepSmallThumbnailTooltip.get()}</span></span>:
+//         </span>
+//         <input id="keepSmallThumbnailCheckbox" ${conf.keepSmallThumbnail ? "checked" : ""} type="checkbox" />
+//     </label>
+// </div>
 export function createHTML() {
   const fullViewGrid = document.createElement("div");
-  // fullViewGrid.setAttribute("tabindex", "0");
   fullViewGrid.classList.add("ehvp-root");
   fullViewGrid.classList.add("ehvp-root-collapse");
   document.body.after(fullViewGrid);
@@ -109,14 +116,6 @@ export function createHTML() {
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.disableCssAnimationTooltip.get()}</span></span>:
                     </span>
                     <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.keepSmallThumbnail.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.keepSmallThumbnailTooltip.get()}</span></span>:
-                    </span>
-                    <input id="keepSmallThumbnailCheckbox" ${conf.keepSmallThumbnail ? "checked" : ""} type="checkbox" />
                 </label>
             </div>
             <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">

@@ -1,4 +1,3 @@
-import { conf } from "./config";
 import { DownloadState } from "./img-fetcher";
 import { Chapter } from "./page-fetcher";
 
@@ -6,7 +5,11 @@ const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAA
 
 const DEFAULT_NODE_TEMPLATE = document.createElement("div");
 DEFAULT_NODE_TEMPLATE.classList.add("img-node");
-DEFAULT_NODE_TEMPLATE.innerHTML = `<a><img decoding="async" loading="lazy" title="untitle.jpg" src="${DEFAULT_THUMBNAIL}" /></a>`;
+DEFAULT_NODE_TEMPLATE.innerHTML = `
+<a>
+  <img decoding="async" loading="eager" title="untitle.jpg" style="display: none" src="" />
+  <canvas id="sample-canvas" width="100%" height="100%"></canvas>
+</a>`;
 
 const OVERLAY_TIP = document.createElement("div");
 OVERLAY_TIP.classList.add("overlay-tip");
@@ -24,10 +27,12 @@ export default class ImageNode {
   title: string;
   onclick?: (event: MouseEvent) => void;
   imgElement?: HTMLImageElement;
+  canvasElement?: HTMLCanvasElement;
+  canvasCtx?: CanvasRenderingContext2D;
+  canvasSized: boolean = false;
   delaySRC?: Promise<string>;
   private blobUrl?: string;
   private mimeType?: string;
-  private size?: number;
   private downloadBar?: HTMLElement;
   private rendered: boolean = false;
   constructor(src: string, href: string, title: string, delaySRC?: Promise<string>) {
@@ -43,52 +48,60 @@ export default class ImageNode {
     anchor.href = this.href;
     anchor.target = "_blank";
     this.imgElement = anchor.firstElementChild as HTMLImageElement;
+    this.canvasElement = anchor.lastElementChild as HTMLCanvasElement;
     this.imgElement.setAttribute("title", this.title);
+    this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
+    this.canvasCtx = this.canvasElement.getContext("2d")!;
     if (this.onclick) {
-      this.imgElement.addEventListener("click", (event) => {
+      this.canvasElement.addEventListener("click", (event) => {
         event.preventDefault();
         this.onclick!(event);
       });
     }
-    this.imgElement.addEventListener("mouseover", () => {
-      if (!conf.keepSmallThumbnail) return;
-      if (!this.blobUrl) return;
-      if (this.mimeType?.startsWith("video")) return;
-      if (this.imgElement!.src === this.blobUrl) return;
-      this.imgElement!.src = this.blobUrl;
-    });
-    this.imgElement.addEventListener("mouseout", () => {
-      if (!conf.keepSmallThumbnail) return;
-      if (this.imgElement!.src === this.src) return;
-      this.imgElement!.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
-    })
+    this.imgElement.onload = () => {
+      // console.log("image loaded, draw to canvas, width:", this.imgElement!.naturalWidth, "height:", this.imgElement!.naturalHeight);
+      if (!this.imgElement?.src) return;
+      if (!this.canvasSized) {
+        this.canvasElement!.width = this.root!.offsetWidth;
+        this.canvasElement!.height = Math.floor(this.root!.offsetWidth * this.imgElement!.naturalHeight / this.imgElement!.naturalWidth);
+        this.canvasSized = true;
+      }
+      this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height);
+      this.imgElement!.src = "";
+    }
+    // this.imgElement.addEventListener("mouseover", () => {
+    //   if (!conf.keepSmallThumbnail) return;
+    //   if (!this.blobUrl) return;
+    //   if (this.mimeType?.startsWith("video")) return;
+    //   if (this.imgElement!.src === this.blobUrl) return;
+    //   this.imgElement!.src = this.blobUrl;
+    // });
+    // this.imgElement.addEventListener("mouseout", () => {
+    //   if (!conf.keepSmallThumbnail) return;
+    //   if (this.imgElement!.src === this.src) return;
+    //   this.imgElement!.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
+    // })
     return this.root;
   }
 
   render() {
     if (!this.imgElement) return;
     this.rendered = true;
-    let justThumbnail = conf.keepSmallThumbnail || !this.blobUrl;
-    if (this.mimeType === "image/gif") {
-      const tip = OVERLAY_TIP.cloneNode(true);
-      tip.firstChild!.textContent = "GIF";
-      this.root?.appendChild(tip);
-      // if gif size over 20MB, then don't render it
-      justThumbnail = this.size != undefined && this.size > 10 * 1024 * 1024;
-    }
-    if (this.mimeType?.startsWith("video")) {
+    let justThumbnail = !this.blobUrl;
+    if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
       const tip = OVERLAY_TIP.cloneNode(true);
       tip.firstChild!.textContent = this.mimeType.split("/")[1].toUpperCase();
       this.root?.appendChild(tip);
       justThumbnail = true;
     }
-
-    const delaySRC = this.delaySRC;
-    this.delaySRC = undefined;
-    if (delaySRC) delaySRC.then(src => (this.src = src) && this.render());
-
     if (justThumbnail) {
-      this.imgElement.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
+      const delaySRC = this.delaySRC;
+      this.delaySRC = undefined;
+      if (delaySRC) {
+        delaySRC.then(src => (this.src = src) && this.render());
+      } else { // normally set src
+        this.imgElement.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
+      }
       return;
     }
     this.imgElement.src = this.blobUrl || this.src || DEFAULT_THUMBNAIL;
@@ -99,10 +112,9 @@ export default class ImageNode {
     this.imgElement.src = this.src;
   }
 
-  onloaded(blobUrl: string, mimeType: string, size: number) {
+  onloaded(blobUrl: string, mimeType: string) {
     this.blobUrl = blobUrl;
     this.mimeType = mimeType;
-    this.size = size;
   }
 
   progress(state: DownloadState) {
@@ -157,14 +169,12 @@ export default class ImageNode {
     if (ele === this.root?.firstElementChild) {
       return true;
     }
-    if (ele === this.imgElement) {
+    if (ele === this.canvasElement || ele === this.imgElement) {
       return true;
     }
     return false;
   }
-
 }
-
 
 export class ChapterNode implements VisualNode {
   chapter: Chapter;

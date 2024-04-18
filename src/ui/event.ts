@@ -296,7 +296,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
             if (isNaN(start)) return;
             start = Math.max(0, Math.min(start, IFQ.length - 1));
           }
-          IFQ[start].node.imgElement?.dispatchEvent(new MouseEvent("click"));
+          IFQ[start].node.canvasElement?.dispatchEvent(new MouseEvent("click"));
         }
       ),
       "pause-auto-load-temporarily": new KeyboardDesc(

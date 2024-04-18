@@ -114,7 +114,7 @@ export class IMGFetcher implements VisualNode {
             [this.data, this.contentType] = ret;
             this.data = await this.matcher.processData(this.data, this.contentType, this.originURL!);
             this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
-            this.node.onloaded(this.blobUrl, this.contentType, this.data.byteLength);
+            this.node.onloaded(this.blobUrl, this.contentType);
             if (this.rendered === 2) {
               this.node.render();
             }

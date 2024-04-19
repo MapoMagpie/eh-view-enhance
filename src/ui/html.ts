@@ -341,8 +341,14 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
 
   // Shortcut
   document.addEventListener("keydown", (event) => events.keyboardEvent(event));
-  HTML.fullViewGrid.addEventListener("keydown", (event) => events.fullViewGridKeyBoardEvent(event));
-  HTML.bigImageFrame.addEventListener("keydown", (event) => events.bigImageFrameKeyBoardEvent(event));
+  HTML.fullViewGrid.addEventListener("keydown", (event) => {
+    event.stopPropagation();
+    events.fullViewGridKeyBoardEvent(event)
+  });
+  HTML.bigImageFrame.addEventListener("keydown", (event) => {
+    event.stopPropagation();
+    events.bigImageFrameKeyBoardEvent(event);
+  });
   // 箭头导航
   HTML.imgLandLeft.addEventListener("click", (event) => {
     BIFM.stepNext(conf.reversePages ? "next" : "prev");

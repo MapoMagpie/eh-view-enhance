@@ -59,13 +59,20 @@ export default class ImageNode {
       });
     }
     this.imgElement.onload = () => {
-      // console.log("image loaded, draw to canvas, width:", this.imgElement!.naturalWidth, "height:", this.imgElement!.naturalHeight);
       if (!this.imgElement?.src) return;
+      if (this.imgElement.src === DEFAULT_THUMBNAIL) return;
+      const newRatio = this.imgElement!.naturalHeight / this.imgElement!.naturalWidth;
+      const oldRatio = this.canvasElement!.height / this.canvasElement!.width;
+      if (this.canvasSized) {
+        // if newRatio is less than (or more than) the oldRatio by 20%, we don't need to resize
+        this.canvasSized = Math.abs(newRatio - oldRatio) < 1.2;
+      }
       if (!this.canvasSized) {
         this.canvasElement!.width = this.root!.offsetWidth;
-        this.canvasElement!.height = Math.floor(this.root!.offsetWidth * this.imgElement!.naturalHeight / this.imgElement!.naturalWidth);
-        this.canvasSized = this.imgElement.src !== DEFAULT_THUMBNAIL;
+        this.canvasElement!.height = Math.floor(this.root!.offsetWidth * newRatio);
+        this.canvasSized = true;
       }
+      // TODO: maybe limit the ratio of the image, if it's too large
       this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height);
       this.imgElement!.src = "";
     }

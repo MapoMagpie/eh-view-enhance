@@ -28,6 +28,9 @@ export class EventManager {
       this.events.set(id, [cb]);
     }
   }
+  reset() {
+    this.events = new Map();
+  }
 }
 
 

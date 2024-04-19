@@ -424,7 +424,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
   }
 
   const signal = { first: true };
-  // 入口
+  // 入口Entry
   function main(extend: boolean) {
     if (HTML.pageHelper) {
       if (extend && !HTML.pageHelper.classList.contains("p-helper-extend")) {

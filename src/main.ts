@@ -12,8 +12,9 @@ import { createHTML, addEventListeners } from "./ui/html";
 import { PageHelper } from "./ui/page-helper";
 import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
 import revertMonkeyPatch from "./utils/revert-monkey-patch";
+import { sleep } from "./utils/sleep";
 
-type DestoryFunc = () => void;
+type DestoryFunc = () => Promise<void>;
 
 function main(MATCHER: Matcher): DestoryFunc {
   const HTML = createHTML();
@@ -51,13 +52,15 @@ function main(MATCHER: Matcher): DestoryFunc {
     conf["first"] = false;
     saveConf(conf);
   }
-
+  // the real entry at ./ui/event/main
   return () => {
     console.log("destory eh-view-enhance");
     HTML.root.remove();
     PF.abort();
     IL.abort();
     IFQ.length = 0;
+    EBUS.reset();
+    return sleep(500);
   }
 }
 
@@ -84,12 +87,16 @@ function main(MATCHER: Matcher): DestoryFunc {
   });
 })();
 
-let destoryFunc: () => void;
+let destoryFunc: DestoryFunc | undefined;
 window.addEventListener("locationchange", () => {
-  destoryFunc?.();
-  const matcher = adaptMatcher(window.location.href);
-  if (matcher !== null) {
-    destoryFunc = main(matcher);
+  let newStart = () => {
+    const matcher = adaptMatcher(window.location.href);
+    matcher && (destoryFunc = main(matcher));
+  }
+  if (destoryFunc) {
+    destoryFunc().then(newStart);
+  } else {
+    newStart();
   }
 });
 

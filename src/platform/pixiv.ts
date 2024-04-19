@@ -106,7 +106,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return this.meta;
   }
 
-  public async fetchOriginMeta(url: string): Promise<OriginMeta> {
+  async fetchOriginMeta(url: string): Promise<OriginMeta> {
     const matches = url.match(PID_EXTRACT);
     if (!matches || matches.length < 2) {
       return { url };
@@ -149,7 +149,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
-  public async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
     const pidList = JSON.parse(source as string) as string[];
     // async function but no await, it will fetch tags in background
@@ -185,7 +185,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return list;
   }
 
-  public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     // find author eg. https://www.pixiv.net/en/users/xxx
     let u = document.querySelector<HTMLAnchorElement>("a[data-gtm-value][href*='/users/']")?.href || document.querySelector<HTMLAnchorElement>("a.user-details-icon[href*='/users/']")?.href || window.location.href;
     const author = /users\/(\d+)/.exec(u)?.[1];
@@ -225,14 +225,12 @@ async function fetchUrls(urls: string[], concurrency: number): Promise<string[]>
   while (i < urls.length) {
     const batch = urls.slice(i, i + concurrency);
     const batchPromises = batch.map((url, index) =>
-
       window.fetch(url).then((resp) => {
         if (resp.ok) {
           return resp.text();
         }
         throw new Error(`Failed to fetch ${url}: ${resp.status} ${resp.statusText}`);
       }).then(raw => results[index + i] = raw)
-
     );
 
     await Promise.all(batchPromises);

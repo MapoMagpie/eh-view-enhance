@@ -201,6 +201,9 @@
         this.events.set(id, [cb]);
       }
     }
+    reset() {
+      this.events = /* @__PURE__ */ new Map();
+    }
   }
   const EBUS = new EventManager();
 
@@ -1586,10 +1589,17 @@ ${chapters.map((c, i) => `<div><label>
       this.imgElement.onload = () => {
         if (!this.imgElement?.src)
           return;
+        if (this.imgElement.src === DEFAULT_THUMBNAIL)
+          return;
+        const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
+        const oldRatio = this.canvasElement.height / this.canvasElement.width;
+        if (this.canvasSized) {
+          this.canvasSized = Math.abs(newRatio - oldRatio) < 1.2;
+        }
         if (!this.canvasSized) {
           this.canvasElement.width = this.root.offsetWidth;
-          this.canvasElement.height = Math.floor(this.root.offsetWidth * this.imgElement.naturalHeight / this.imgElement.naturalWidth);
-          this.canvasSized = this.imgElement.src !== DEFAULT_THUMBNAIL;
+          this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
+          this.canvasSized = true;
         }
         this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
         this.imgElement.src = "";
@@ -2568,7 +2578,7 @@ ${chapters.map((c, i) => `<div><label>
       return url;
     }
   }
-  const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/gms;
+  const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/s;
   const GG_B_REGEX = /b:\s'(\d*\/)'/;
   class HitomiMather extends BaseMatcher {
     gg;
@@ -6539,6 +6549,8 @@ html {
       PF.abort();
       IL.abort();
       IFQ.length = 0;
+      EBUS.reset();
+      return sleep(500);
     };
   }
   (() => {
@@ -6562,10 +6574,14 @@ html {
   })();
   let destoryFunc;
   window.addEventListener("locationchange", () => {
-    destoryFunc?.();
-    const matcher2 = adaptMatcher(window.location.href);
-    if (matcher2 !== null) {
-      destoryFunc = main(matcher2);
+    let newStart = () => {
+      const matcher2 = adaptMatcher(window.location.href);
+      matcher2 && (destoryFunc = main(matcher2));
+    };
+    if (destoryFunc) {
+      destoryFunc().then(newStart);
+    } else {
+      newStart();
     }
   });
   const matcher = adaptMatcher(window.location.href);

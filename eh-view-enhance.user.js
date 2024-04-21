@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.7
+// @version            4.4.8
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us
@@ -27,6 +27,7 @@
 // @match              https://danbooru.donmai.us/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
+// @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
 // @connect            exhentai.org
 // @connect            e-hentai.org
@@ -48,7 +49,7 @@
 // @grant              GM_xmlhttpRequest
 // ==/UserScript==
 
-(function (fileSaver, JSZip, Hammer) {
+(function (fileSaver, pica, JSZip, Hammer) {
   'use strict';
 
   var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
@@ -1538,13 +1539,19 @@ ${chapters.map((c, i) => `<div><label>
     }
   }
 
+  const PICA = new pica({ features: ["js", "wasm"] });
+  const PICA_OPTION = { filter: "box" };
+  async function resizing(from, to) {
+    return PICA.resize(from, to, PICA_OPTION).then();
+  }
+
   const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
   const DEFAULT_NODE_TEMPLATE = document.createElement("div");
   DEFAULT_NODE_TEMPLATE.classList.add("img-node");
   DEFAULT_NODE_TEMPLATE.innerHTML = `
 <a>
-  <img decoding="async" loading="eager" title="untitle.jpg" style="display: none" src="" />
-  <canvas id="sample-canvas" width="100%" height="100%"></canvas>
+  <img decoding="async" loading="eager" title="untitle.jpg" src="" style="display: none;" />
+  <canvas id="sample-canvas" width="1" height="1"></canvas>
 </a>`;
   const OVERLAY_TIP = document.createElement("div");
   OVERLAY_TIP.classList.add("overlay-tip");
@@ -1580,31 +1587,38 @@ ${chapters.map((c, i) => `<div><label>
       this.imgElement.setAttribute("title", this.title);
       this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
       this.canvasCtx = this.canvasElement.getContext("2d");
+      this.canvasCtx.fillStyle = "#aaa";
+      this.canvasCtx.fillRect(0, 0, 1, 1);
       if (this.onclick) {
-        this.canvasElement.addEventListener("click", (event) => {
+        anchor.addEventListener("click", (event) => {
           event.preventDefault();
           this.onclick(event);
         });
       }
-      this.imgElement.onload = () => {
-        if (!this.imgElement?.src)
-          return;
-        if (this.imgElement.src === DEFAULT_THUMBNAIL)
-          return;
-        const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
-        const oldRatio = this.canvasElement.height / this.canvasElement.width;
-        if (this.canvasSized) {
-          this.canvasSized = Math.abs(newRatio - oldRatio) < 1.2;
-        }
-        if (!this.canvasSized) {
-          this.canvasElement.width = this.root.offsetWidth;
-          this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
-          this.canvasSized = true;
-        }
+      this.imgElement.onload = () => this.resize();
+      return this.root;
+    }
+    resize() {
+      if (!this.root || !this.imgElement || !this.canvasElement)
+        return;
+      if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL)
+        return;
+      const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
+      const oldRatio = this.canvasElement.height / this.canvasElement.width;
+      if (this.canvasSized) {
+        this.canvasSized = Math.abs(newRatio - oldRatio) < 1.2;
+      }
+      if (!this.canvasSized) {
+        this.canvasElement.width = this.root.offsetWidth;
+        this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
+        this.canvasSized = true;
+      }
+      if (this.imgElement.src === this.src) {
         this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
         this.imgElement.src = "";
-      };
-      return this.root;
+      } else {
+        resizing(this.imgElement, this.canvasElement).then(() => this.imgElement.src = "").catch(() => this.imgElement.src = this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height) || "");
+      }
     }
     render() {
       if (!this.imgElement)
@@ -1632,7 +1646,8 @@ ${chapters.map((c, i) => `<div><label>
     unrender() {
       if (!this.rendered || !this.imgElement)
         return;
-      this.imgElement.src = this.src;
+      this.imgElement.src = "";
+      this.canvasSized = false;
     }
     onloaded(blobUrl, mimeType) {
       this.blobUrl = blobUrl;
@@ -1709,6 +1724,8 @@ ${chapters.map((c, i) => `<div><label>
         const img = anchor.firstElementChild;
         img.src = this.chapter.thumbimg;
         img.title = this.chapter.title.toString();
+        img.style.display = "block";
+        img.nextElementSibling?.remove();
       }
       const description = document.createElement("div");
       description.classList.add("ehvp-chapter-description");
@@ -4009,7 +4026,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .full-view-grid .img-node {
   position: relative;
 }
-.full-view-grid .img-node canvas {
+.img-node canvas, .img-node img {
   position: relative;
   width: 100%;
   height: auto;
@@ -4038,13 +4055,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   box-sizing: border-box;
   line-height: 1.3rem;
 }
-.img-fetched canvas {
+.img-fetched img, .img-fetched canvas {
   border: 3px solid #90ffae !important;
 }
-.img-fetch-failed canvas {
+.img-fetch-failed img, .img-fetch-failed canvas {
   border: 3px solid red !important;
 }
-.img-fetching canvas {
+.img-fetching img, .img-fetching canvas {
   border: 3px solid #00000000 !important;
 }
 .img-fetching a::after {
@@ -6589,4 +6606,4 @@ html {
     destoryFunc = main(matcher);
   }
 
-})(saveAs, JSZip, Hammer);
+})(saveAs, pica, JSZip, Hammer);

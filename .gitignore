@@ -11,7 +11,6 @@ node_modules
 dist
 *.local
 *.lock
-*lock.json
 
 # Editor directories and files
 .vscode/*

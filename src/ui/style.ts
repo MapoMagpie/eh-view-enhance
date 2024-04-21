@@ -124,7 +124,7 @@ export function loadStyleSheel() {
 .full-view-grid .img-node {
   position: relative;
 }
-.full-view-grid .img-node canvas {
+.img-node canvas, .img-node img {
   position: relative;
   width: 100%;
   height: auto;
@@ -153,13 +153,13 @@ export function loadStyleSheel() {
   box-sizing: border-box;
   line-height: 1.3rem;
 }
-.img-fetched canvas {
+.img-fetched img, .img-fetched canvas {
   border: 3px solid #90ffae !important;
 }
-.img-fetch-failed canvas {
+.img-fetch-failed img, .img-fetch-failed canvas {
   border: 3px solid red !important;
 }
-.img-fetching canvas {
+.img-fetching img, .img-fetching canvas {
   border: 3px solid #00000000 !important;
 }
 .img-fetching a::after {

@@ -1,5 +1,6 @@
 import { DownloadState } from "./img-fetcher";
 import { Chapter } from "./page-fetcher";
+import { resizing } from "./utils/image-resizing";
 
 const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
 
@@ -7,8 +8,8 @@ const DEFAULT_NODE_TEMPLATE = document.createElement("div");
 DEFAULT_NODE_TEMPLATE.classList.add("img-node");
 DEFAULT_NODE_TEMPLATE.innerHTML = `
 <a>
-  <img decoding="async" loading="eager" title="untitle.jpg" style="display: none" src="" />
-  <canvas id="sample-canvas" width="100%" height="100%"></canvas>
+  <img decoding="async" loading="eager" title="untitle.jpg" src="" style="display: none;" />
+  <canvas id="sample-canvas" width="1" height="1"></canvas>
 </a>`;
 
 const OVERLAY_TIP = document.createElement("div");
@@ -52,31 +53,42 @@ export default class ImageNode {
     this.imgElement.setAttribute("title", this.title);
     this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
     this.canvasCtx = this.canvasElement.getContext("2d")!;
+    this.canvasCtx!.fillStyle = "#aaa";
+    this.canvasCtx!.fillRect(0, 0, 1, 1);
     if (this.onclick) {
-      this.canvasElement.addEventListener("click", (event) => {
+      anchor.addEventListener("click", (event) => {
         event.preventDefault();
         this.onclick!(event);
       });
     }
-    this.imgElement.onload = () => {
-      if (!this.imgElement?.src) return;
-      if (this.imgElement.src === DEFAULT_THUMBNAIL) return;
-      const newRatio = this.imgElement!.naturalHeight / this.imgElement!.naturalWidth;
-      const oldRatio = this.canvasElement!.height / this.canvasElement!.width;
-      if (this.canvasSized) {
-        // if newRatio is less than (or more than) the oldRatio by 20%, we don't need to resize
-        this.canvasSized = Math.abs(newRatio - oldRatio) < 1.2;
-      }
-      if (!this.canvasSized) {
-        this.canvasElement!.width = this.root!.offsetWidth;
-        this.canvasElement!.height = Math.floor(this.root!.offsetWidth * newRatio);
-        this.canvasSized = true;
-      }
-      // TODO: maybe limit the ratio of the image, if it's too large
-      this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height);
-      this.imgElement!.src = "";
-    }
+    this.imgElement.onload = () => this.resize();
     return this.root;
+  }
+
+  resize() {
+    if (!this.root || !this.imgElement || !this.canvasElement) return;
+    if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL) return;
+    const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
+    const oldRatio = this.canvasElement.height / this.canvasElement.width;
+    if (this.canvasSized) {
+      // if newRatio is less than (or more than) the oldRatio by 20%, we don't need to resize
+      this.canvasSized = Math.abs(newRatio - oldRatio) < 1.2;
+    }
+    // TODO: maybe limit the ratio of the image, if it's too large
+    if (!this.canvasSized) {
+      this.canvasElement.width = this.root.offsetWidth;
+      this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
+      this.canvasSized = true;
+    }
+    if (this.imgElement.src === this.src) {
+      // https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image
+      this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
+      this.imgElement!.src = "";
+    } else {
+      resizing(this.imgElement, this.canvasElement)
+        .then(() => this.imgElement!.src = "")
+        .catch(() => this.imgElement!.src = this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height) || "");
+    }
   }
 
   render() {
@@ -104,7 +116,8 @@ export default class ImageNode {
 
   unrender() {
     if (!this.rendered || !this.imgElement) return;
-    this.imgElement.src = this.src;
+    this.imgElement.src = "";
+    this.canvasSized = false;
   }
 
   onloaded(blobUrl: string, mimeType: string) {
@@ -186,6 +199,8 @@ export class ChapterNode implements VisualNode {
       const img = anchor.firstElementChild as HTMLImageElement;
       img.src = this.chapter.thumbimg;
       img.title = this.chapter.title.toString();
+      img.style.display = "block";
+      img.nextElementSibling?.remove();
     }
     // create title element
     const description = document.createElement("div");

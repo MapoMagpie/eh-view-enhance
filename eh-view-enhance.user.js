@@ -6412,7 +6412,11 @@ html {
       const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
       if (!rule)
         return;
-      rule.styleMap.clear();
+      rule.style.minHeight = "";
+      rule.style.maxWidth = "";
+      rule.style.height = "";
+      rule.style.width = "";
+      rule.style.margin = "";
       if (conf.readMode === "pagination") {
         rule.style.minHeight = "100vh";
         rule.style.height = "100vh";

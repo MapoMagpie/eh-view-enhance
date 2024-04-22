@@ -560,7 +560,12 @@ export class BigImageFrameManager {
   resetScaleBigImages() {
     const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
     if (!rule) return;
-    rule.styleMap.clear();
+    // set rule style all to ""
+    rule.style.minHeight = "";
+    rule.style.maxWidth = "";
+    rule.style.height = "";
+    rule.style.width = "";
+    rule.style.margin = "";
     if (conf.readMode === "pagination") {
       rule.style.minHeight = "100vh";
       rule.style.height = "100vh";

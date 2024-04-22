@@ -2557,7 +2557,6 @@ ${chapters.map((c, i) => `<div><label>
 
   class HitomiGG {
     base = "a";
-    ext = "webp";
     b;
     m;
     constructor(b, m) {
@@ -2593,8 +2592,8 @@ ${chapters.map((c, i) => `<div><label>
       let url = "https://a.hitomi.la/webpsmalltn/" + hash + ".webp";
       return url.replace(/\/\/..?\.hitomi\.la\//, "//" + this.subdomain_from_url(url, "tn") + ".hitomi.la/");
     }
-    originURL(hash) {
-      let url = "https://a.hitomi.la/" + this.ext + "/" + this.b + this.s(hash) + "/" + hash + "." + this.ext;
+    originURL(hash, ext) {
+      let url = "https://a.hitomi.la/" + ext + "/" + this.b + this.s(hash) + "/" + hash + "." + ext;
       url = url.replace(/\/\/..?\.hitomi\.la\//, "//" + this.subdomain_from_url(url, this.base) + ".hitomi.la/");
       return url;
     }
@@ -2652,23 +2651,25 @@ ${chapters.map((c, i) => `<div><label>
       yield doc;
     }
     async parseImgNodes(_page, chapterID) {
-      if (!this.infoRecord[chapterID]) {
+      if (!this.infoRecord[chapterID])
         throw new Error("warn: hitomi gallery info is null!");
-      }
       const files = this.infoRecord[chapterID].files;
       const list = [];
       for (let i = 0; i < files.length; i++) {
+        const ext = files[i].hasavif ? "avif" : "webp";
+        let title = files[i].name.replace(/\.\w+$/, "");
         const node = new ImageNode(
           this.gg.thumbURL(files[i].hash),
-          files[i].hash,
-          files[i].name
+          files[i].hash + "." + ext,
+          title + "." + ext
         );
         list.push(node);
       }
       return list;
     }
-    async fetchOriginMeta(hash, _) {
-      const url = this.gg.originURL(hash);
+    async fetchOriginMeta(hashDotExt) {
+      const [hash, ext] = hashDotExt.split(".");
+      const url = this.gg.originURL(hash, ext);
       return { url };
     }
     setGalleryMeta(info, galleryID, chapter) {

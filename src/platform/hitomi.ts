@@ -7,7 +7,6 @@ import { BaseMatcher, OriginMeta } from "./platform";
 
 class HitomiGG {
   base: string = "a"
-  ext: string = "webp"
   b: string
   m: Function;
   constructor(b: string, m: string) {
@@ -45,8 +44,8 @@ class HitomiGG {
     return url.replace(/\/\/..?\.hitomi\.la\//, '//' + this.subdomain_from_url(url, 'tn') + '.hitomi.la/');
   }
 
-  originURL(hash: string): string {
-    let url = 'https://a.hitomi.la/' + this.ext + '/' + this.b + this.s(hash) + '/' + hash + '.' + this.ext;
+  originURL(hash: string, ext: string): string {
+    let url = 'https://a.hitomi.la/' + ext + '/' + this.b + this.s(hash) + '/' + hash + '.' + ext;
     url = url.replace(/\/\/..?\.hitomi\.la\//, '//' + this.subdomain_from_url(url, this.base) + '.hitomi.la/');
     return url;
   }
@@ -130,26 +129,26 @@ export class HitomiMather extends BaseMatcher {
   }
 
   async parseImgNodes(_page: PagesSource, chapterID: number): Promise<ImageNode[]> {
-    if (!this.infoRecord[chapterID]) {
-      throw new Error("warn: hitomi gallery info is null!")
-    }
+    if (!this.infoRecord[chapterID]) throw new Error("warn: hitomi gallery info is null!")
+
     const files = this.infoRecord[chapterID].files;
-    // const sceneIndexes = this.infoRecord[chapterID].scene_indexes;
-    // let nextSceneIndex = 0;
     const list: ImageNode[] = [];
     for (let i = 0; i < files.length; i++) {
+      const ext = files[i].hasavif ? "avif" : "webp";
+      let title = files[i].name.replace(/\.\w+$/, "");
       const node = new ImageNode(
         this.gg!.thumbURL(files[i].hash),
-        files[i].hash,
-        files[i].name,
+        files[i].hash + "." + ext,
+        title + "." + ext,
       );
       list.push(node);
     }
     return list;
   }
 
-  async fetchOriginMeta(hash: string, _: boolean): Promise<OriginMeta> {
-    const url = this.gg!.originURL(hash);
+  async fetchOriginMeta(hashDotExt: string): Promise<OriginMeta> {
+    const [hash, ext] = hashDotExt.split(".");
+    const url = this.gg!.originURL(hash, ext);
     return { url };
   }
 

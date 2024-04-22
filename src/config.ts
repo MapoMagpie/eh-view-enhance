@@ -8,7 +8,7 @@ export type Config = {
   /** 每行显示的数量 */
   colCount: number,
   /** 滚动换页 */
-  readMode: "singlePage" | "consecutively",
+  readMode: "pagination" | "continuous",
   /** 是否启用空闲加载器 */
   autoLoad: boolean,
   /** 是否获取最佳质量的图片 */
@@ -72,8 +72,8 @@ export type Config = {
   disableCssAnimation: boolean,
   /** the feature of `multiple chapters` is enabled in a site */
   mcInSites: string[],
-  /** keep the small thumbnail in full view grid, do not change src to original, it will improve the performance */
-  // keepSmallThumbnail: boolean
+  /**  */
+  paginationIMGCount: number,
 };
 
 function defaultConf(): Config {
@@ -82,7 +82,7 @@ function defaultConf(): Config {
   return {
     backgroundImage: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAfElEQVR42mP8z/CfCgIwDEgwAIAL0Fq3MDD5iQcn0/BgDpDAn0/AvywA4kUEZ7gUkXBoAM5gUQUaJ6eClOyBjALcAAAAASUVORK5CYII=`,
     colCount: colCount,
-    readMode: "singlePage",
+    readMode: "pagination",
     autoLoad: true,
     fetchOriginal: false,
     restartIdleLoader: 2000,
@@ -113,7 +113,7 @@ function defaultConf(): Config {
     volume: 50,
     disableCssAnimation: true,
     mcInSites: ["18comic"],
-    // keepSmallThumbnail: true,
+    paginationIMGCount: 1,
   };
 }
 
@@ -176,7 +176,11 @@ function confHealthCheck(cf: Config): Config {
         changed = true;
       }
     }
-  })
+  });
+  if (!["pagination", "continuous"].includes(cf.readMode)) {
+    cf.readMode = "pagination";
+    changed = true;
+  }
   if (changed) {
     saveConf(cf);
   }
@@ -188,8 +192,8 @@ export function saveConf(c: Config) {
 }
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime";
 export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation"; /*| "keepSmallThumbnail" */;
-export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation", /*"keepSmallThumbnail" */];
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation";
+export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation"];
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper";
 export const ConfigSelectKeys: (keyof Config)[] = ["readMode", "stickyMouse", "minifyPageHelper"];
 export const conf = getConf();

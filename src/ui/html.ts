@@ -11,14 +11,6 @@ import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
 export type Elements = ReturnType<typeof createHTML>;
 
-// <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-//     <label class="p-label">
-//         <span>${i18n.keepSmallThumbnail.get()}
-//            <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.keepSmallThumbnailTooltip.get()}</span></span>:
-//         </span>
-//         <input id="keepSmallThumbnailCheckbox" ${conf.keepSmallThumbnail ? "checked" : ""} type="checkbox" />
-//     </label>
-// </div>
 export function createHTML() {
   const fullViewGrid = document.createElement("div");
   fullViewGrid.classList.add("ehvp-root");
@@ -29,7 +21,7 @@ export function createHTML() {
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
 <div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
-<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="7">
+<div id="big-img-frame" class="big-img-frame big-img-frame-collapse${conf.readMode === "pagination" ? " bifm-flex" : ""}" tabindex="7">
    <a id="img-land-left" class="img-land-left"></a>
    <a id="img-land-right" class="img-land-right"></a>
 </div>
@@ -130,8 +122,8 @@ export function createHTML() {
                        <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
                     </span>
                     <select id="readModeSelect">
-                       <option value="singlePage" ${conf.readMode == "singlePage" ? "selected" : ""}>Single Page</option>
-                       <option value="consecutively" ${conf.readMode == "consecutively" ? "selected" : ""}>Consecutively</option>
+                       <option value="pagination" ${conf.readMode == "pagination" ? "selected" : ""}>Pagination</option>
+                       <option value="continuous" ${conf.readMode == "continuous" ? "selected" : ""}>Continuous</option>
                     </select>
                 </label>
             </div>

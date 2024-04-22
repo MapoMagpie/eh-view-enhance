@@ -63,14 +63,15 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     //如果最后放入的数量为0,说明已经没有可以继续执行的图片获取器,可能意味着后面所有的图片都已经加载完毕,也可能意味着中间出现了什么错误
     if (!this.pushInExecutableQueue(oriented)) return;
 
-    /* 300毫秒的延迟，在这300毫秒的时间里，可执行队列executableQueue可能随时都会变更，100毫秒过后，只执行最新的可执行队列executableQueue中的图片请求器
+    /* 300毫秒的延迟，在这300毫秒的时间里，可执行队列executableQueue可能随时都会变更，300毫秒过后，只执行最新的可执行队列executableQueue中的图片请求器
             在对大图元素使用滚轮事件的时候，由于速度非常快，大量的IMGFetcher图片请求器被添加到executableQueue队列中，如果调用这些图片请求器请求大图，可能会被认为是爬虫脚本
-            因此会有一个时间上的延迟，在这段时间里，executableQueue中的IMGFetcher图片请求器会不断更替，300毫秒结束后，只调用最新的executableQueue中的IMGFetcher图片请求器。
-        */
-    this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
-      this[this.currIndex].start(this.currIndex)
-        .then(() => this.executableQueue.forEach((imgFetcherIndex) => this[imgFetcherIndex].start(imgFetcherIndex)));
-    }, 300);
+            因此会有一个时间上的延迟，在这段时间里，executableQueue中的IMGFetcher图片请求器会不断更替，300毫秒结束后，只调用最新的executableQueue中的IMGFetcher图片请求器。 */
+    this.debouncer.addEvent("IFQ-EXECUTABLE", () =>
+      // console.log("IFQ-EXECUTABLE", this.executableQueue);
+      Promise.all(this.executableQueue.splice(0, conf.paginationIMGCount).map(imfIndex => this[imfIndex].start(imfIndex)))
+        .then(() => this.executableQueue.forEach(imfIndex => this[imfIndex].start(imfIndex)))
+      ,
+      300);
   }
 
   //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
@@ -86,13 +87,6 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     }
     EBUS.emit("ifq-on-finished-report", index, this);
   }
-
-  // stepImageEvent(chapterIndex: number, oriented: Oriented) {
-  //   let start = oriented === "next" ? this.currIndex + 1 : this.currIndex - 1;
-  //   if (chapterIndex === this.chapterIndex) {
-  //     this.do(start, oriented);
-  //   }
-  // }
 
   //如果开始的索引小于0,则修正索引为0,如果开始的索引超过队列的长度,则修正索引为队列的最后一位
   fixIndex(start: number) {
@@ -110,7 +104,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   pushInExecutableQueue(oriented: Oriented) {
     //把要执行获取器先放置到队列中，延迟执行
     this.executableQueue = [];
-    for (let count = 0, index = this.currIndex; this.pushExecQueueSlave(index, oriented, count); oriented === "next" ? ++index : --index) {
+    for (let count = 0, index = this.currIndex; this.checkOutbounds(index, oriented, count); oriented === "next" ? ++index : --index) {
       if (this[index].stage === FetchState.DONE) continue;
       this.executableQueue.push(index);
       count++;
@@ -119,8 +113,13 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   }
 
   // 如果索引已到达边界且添加数量在配置最大同时获取数量的范围内
-  pushExecQueueSlave(index: number, oriented: Oriented, count: number) {
-    return ((oriented === "next" && index < this.length) || (oriented === "prev" && index > -1)) && count < conf.threads;
+  checkOutbounds(index: number, oriented: Oriented, count: number) {
+    let ret = false;
+    if (oriented === "next") ret = index < this.length;
+    if (oriented === "prev") ret = index > -1;
+    if (!ret) return false;
+    if (count < conf.threads + conf.paginationIMGCount - 1) return true;
+    return false;
   }
 
   findImgIndex(ele: HTMLElement): number {

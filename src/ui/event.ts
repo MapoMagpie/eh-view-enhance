@@ -4,6 +4,7 @@ import { IdleLoader } from "../idle-loader";
 import { PageFetcher } from "../page-fetcher";
 import { i18n } from "../utils/i18n";
 import parseKey from "../utils/keyboard";
+import queryCSSRules from "../utils/query-cssrules";
 import q from "../utils/query-element";
 import createExcludeURLPanel from "./exclude-urls";
 import { FullViewGridManager } from "./full-view-grid-manager";
@@ -71,14 +72,9 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       inputElement.value = conf[key].toString();
     }
     if (key === "colCount") {
-      const cssRules = Array.from(HTML.styleSheel.sheet?.cssRules || []);
-      for (const cssRule of cssRules) {
-        if (cssRule instanceof CSSStyleRule) {
-          if (cssRule.selectorText === ".full-view-grid") {
-            cssRule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
-            break;
-          }
-        }
+      const rule = queryCSSRules(HTML.styleSheel, ".full-view-grid");
+      if (rule) {
+        rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
       }
     }
     saveConf(conf);
@@ -95,6 +91,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         IL.abort(IFQ.currIndex);
       }
     }
+    if (key === "reversePages") {
+      const rule = queryCSSRules(HTML.styleSheel, ".bifm-flex");
+      if (rule) {
+        rule.style.flexDirection = conf.reversePages ? "row-reverse" : "row";
+      }
+    }
     if (key === "disableCssAnimation") toggleAnimationStyle(conf.disableCssAnimation);
   }
 
@@ -108,10 +110,15 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     }
     if (key === "readMode") {
       BIFM.resetScaleBigImages();
-      if (conf.readMode === "singlePage" && BIFM.currMediaNode) {
-        const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
-        const index = parseInt(BIFM.currMediaNode.getAttribute("d-index") || "0");
-        BIFM.initElement(queue[index]);
+      if (conf.readMode === "pagination") {
+        BIFM.frame.classList.add("bifm-flex")
+        if (BIFM.visible) {
+          const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
+          const index = parseInt(BIFM.elements.curr[0]?.getAttribute("d-index") || "0");
+          BIFM.initElements(queue[index]);
+        }
+      } else {
+        BIFM.frame.classList.remove("bifm-flex");
       }
     }
     if (key === "minifyPageHelper") {

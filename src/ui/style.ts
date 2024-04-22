@@ -204,11 +204,16 @@ export function loadStyleSheel() {
   z-index: 2001;
   background-color: #000000d6;
 }
-.bifm-img {
+.big-img-frame > img {
   object-fit: contain;
   display: block;
-  margin: 0 auto;
 }
+.bifm-flex {
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: ${conf.reversePages ? "row-reverse" : "row"};
+}
+.bifm-img { }
 .p-helper {
   position: fixed;
   display: flex !important;

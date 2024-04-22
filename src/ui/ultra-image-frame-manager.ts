@@ -10,14 +10,17 @@ import { VideoControl } from "./video-control";
 import onMouse from "../utils/progress-bar";
 import EBUS from "../event-bus";
 import { Chapter } from "../page-fetcher";
+import queryCSSRules from "../utils/query-cssrules";
+
+type MediaElement = HTMLImageElement | HTMLVideoElement;
 
 export class BigImageFrameManager {
   frame: HTMLElement;
   lockInit: boolean;
-  currMediaNode?: HTMLImageElement | HTMLVideoElement;
-  lastMouseY?: number;
-  recordedDistance!: number;
-  reachBottom!: boolean; // for sticky mouse, if reach bottom, when mouse move up util reach top, will step next image page
+  lastMouse?: { x: number, y: number }
+  fragment: DocumentFragment;
+  // image decode will take a while, so cache it to fragment
+  elements: { next: MediaElement[], curr: MediaElement[], prev: MediaElement[] } = { next: [], curr: [], prev: [] };
   imgScaleBar: HTMLElement;
   debouncer: Debouncer;
   throttler: Debouncer;
@@ -34,6 +37,7 @@ export class BigImageFrameManager {
   constructor(HTML: Elements, getChapter: (index: number) => Chapter) {
     this.html = HTML;
     this.frame = HTML.bigImageFrame;
+    this.fragment = new DocumentFragment();
     this.imgScaleBar = HTML.imgScaleBar;
     this.debouncer = new Debouncer();
     this.throttler = new Debouncer("throttle");
@@ -49,16 +53,15 @@ export class BigImageFrameManager {
     EBUS.subscribe("imf-on-finished", (index, success, imf) => {
       if (imf.chapterIndex !== this.chapterIndex) return;
       if (!this.visible || !success) return;
-      const img = this.getMediaNodes().find((img) => index === parseInt(img.getAttribute("d-index")!));
-      if (!img) return;
+      const elements = [...this.elements.curr, ...this.elements.prev, ...this.elements.next, ...this.getMediaNodes()];
+      const ret = elements.map((e, i) => ({ img: e, eleIndex: i })).find((o) => index === parseIndex(o.img));
+      if (!ret) return;
+      let { img, eleIndex } = ret;
       // if is video, then replace img with video
       if (imf.contentType?.startsWith("video")) {
-        // evLog("BIFM: newMediaNode: newMediaNode");
         const vid = this.newMediaNode(index, imf) as HTMLVideoElement;
         img.replaceWith(vid);
-        if (img === this.currMediaNode) {
-          this.currMediaNode = vid;
-        }
+        elements[eleIndex] = vid;
         img.remove();
         return
       }
@@ -78,7 +81,7 @@ export class BigImageFrameManager {
     });
     this.hammer.on("swipe", (ev) => {
       ev.preventDefault();
-      if (conf.readMode === "singlePage") {
+      if (conf.readMode === "pagination") {
         switch (ev.direction) {
           case Hammer.DIRECTION_LEFT:
             this.stepNext(conf.reversePages ? "prev" : "next");
@@ -98,9 +101,7 @@ export class BigImageFrameManager {
   }
 
   resetStickyMouse() {
-    this.reachBottom = false;
-    this.recordedDistance = 0;
-    this.lastMouseY = undefined;
+    this.lastMouse = undefined;
   }
 
   flushImgScaleBar() {
@@ -116,10 +117,8 @@ export class BigImageFrameManager {
     const debouncer = new Debouncer("throttle");
     this.frame.addEventListener("mousemove", event => {
       debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
-        if (this.lastMouseY && conf.imgScale > 0) {
-          this.stickyMouse(event, this.lastMouseY);
-        }
-        this.lastMouseY = event.clientY;
+        if (this.lastMouse) this.stickyMouse(event, this.lastMouse);
+        this.lastMouse = { x: event.clientX, y: event.clientY };
       }, 5);
     });
   }
@@ -132,27 +131,6 @@ export class BigImageFrameManager {
     onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
   }
 
-  // Deprecated
-  // createNextLand(x: number, y: number) {
-  //   this.frame.querySelector<HTMLElement>("#nextLand")?.remove();
-  //   const nextLand = document.createElement("div");
-  //   nextLand.setAttribute("id", "nextLand");
-  //   const svg_bg = `<svg version="1.1" width="150" height="40" viewBox="0 0 256 256" xml:space="preserve" id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"><defs id="defs1" /><path style="color:#000000;display:inline;mix-blend-mode:normal;fill:#86e690;fill-opacity:0.942853;fill-rule:evenodd;stroke:#000000;stroke-width:2.56;stroke-linejoin:bevel;stroke-miterlimit:10;stroke-dasharray:61.44, 2.56;stroke-dashoffset:0.768;stroke-opacity:0.319655" d="M -0.07467348,3.2775653 -160.12951,3.3501385 127.96339,156.87088 415.93447,3.2743495 255.93798,3.2807133 128.00058,48.081351 Z" id="path15" /></svg>`;
-  //   let yFix = this.frame.clientHeight / 9;
-  //   if (conf.stickyMouse === "reverse") {
-  //     yFix = -yFix
-  //   }
-  //   nextLand.setAttribute("style",
-  //     `position: fixed; width: 150px; height: 40px; top: ${y + yFix}px; left: ${x - 75}px; z-index: 1006;`);
-  //   nextLand.innerHTML = svg_bg;
-  //   nextLand.addEventListener("mouseover", () => {
-  //     nextLand.remove();
-  //     this.stepNext("next");
-  //   });
-  //   this.frame.appendChild(nextLand);
-  //   window.setTimeout(() => nextLand.remove(), 1500)
-  // }
-
   hidden(event?: MouseEvent) {
     if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
     this.visible = false;
@@ -160,7 +138,7 @@ export class BigImageFrameManager {
     this.html.fullViewGrid.focus();
     this.frameScrollAbort?.abort();
     this.frame.classList.add("big-img-frame-collapse");
-    this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.removeMediaNode(), 200);
+    this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.resetElements(), 200);
   }
 
   show(imf: IMGFetcher) {
@@ -169,17 +147,14 @@ export class BigImageFrameManager {
     this.frame.focus();
     this.frameScrollAbort = new AbortController();
     this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
-    this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => {
-      if (imf.chapterIndex !== this.chapterIndex) return;
-      this.setNow(imf);
-    }, 100);
+    this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => (imf.chapterIndex === this.chapterIndex) && this.setNow(imf), 100);
     EBUS.emit("bifm-on-show");
   }
 
   setNow(imf: IMGFetcher, oriented?: Oriented) {
     if (this.visible) {
       this.resetStickyMouse();
-      this.initElement(imf, oriented);
+      this.initElements(imf, oriented);
     } else {
       const queue = this.getChapter(this.chapterIndex).queue;
       const index = queue.indexOf(imf);
@@ -188,49 +163,92 @@ export class BigImageFrameManager {
     }
   }
 
-  initElement(imf: IMGFetcher, oriented?: Oriented) {
-    // remove frame's img children
-    this.removeMediaNode();
+  initElements(imf: IMGFetcher, oriented: Oriented = "next") {
     this.resetPreventStep();
-    // evLog("BIFM: init: newMediaNode");
     const queue = this.getChapter(this.chapterIndex).queue;
     const index = queue.indexOf(imf);
     if (index === -1) return;
-    this.currMediaNode = this.newMediaNode(index, imf);
-    EBUS.emit("ifq-do", index, imf, oriented || "next");
-    this.frame.appendChild(this.currMediaNode);
-
-    if (conf.readMode === "consecutively") {
-      this.hammer?.get("swipe").set({ enable: false });
+    if (conf.readMode === "continuous") {
+      this.resetElements();
+      this.elements.curr[0] = this.newMediaNode(index, imf);
+      this.frame.appendChild(this.elements.curr[0]);
       this.tryExtend();
+      this.hammer?.get("swipe").set({ enable: false });
     } else {
+      this.balanceElements(index, queue, oriented);
+      this.placeElements();
+      this.checkFrameOverflow();
       this.hammer?.get("swipe").set({ enable: true });
     }
-    this.currMediaNode.scrollIntoView();
+    EBUS.emit("ifq-do", index, imf, oriented);
+    this.elements.curr[0]?.scrollIntoView();
+  }
+
+  placeElements() {
+    this.removeMediaNode();// remove element from root;
+    this.elements.curr.forEach(element => this.frame.appendChild(element));
+    this.elements.prev.forEach(element => this.fragment.appendChild(element));
+    this.elements.next.forEach(element => this.fragment.appendChild(element));
+  }
+
+  balanceElements(index: number, queue: IMGFetcher[], oriented: Oriented) {
+    const indices: { prev: number[], curr: number[], next: number[] } = { prev: [], curr: [], next: [] }
+    for (let i = 0; i < conf.paginationIMGCount; i++) {
+      const prevIndex = i + index - conf.paginationIMGCount;
+      const currIndex = i + index;
+      const nextIndex = i + index + conf.paginationIMGCount;
+      if (prevIndex > -1) indices.prev.push(prevIndex);
+      if (currIndex > -1 && currIndex < queue.length) indices.curr.push(currIndex);
+      if (nextIndex < queue.length) indices.next.push(nextIndex);
+    }
+    console.log("balanceElements", indices);
+    if (oriented === "next") {
+      this.elements.prev = this.elements.curr;
+      this.elements.curr = this.elements.next;
+      this.elements.next = [];
+    } else {
+      this.elements.next = this.elements.curr;
+      this.elements.curr = this.elements.prev;
+      this.elements.prev = [];
+    }
+    Object.entries(indices).forEach(([k, indexRange]) => {
+      const elements = this.elements[k as "prev" | "curr" | "next"];
+      if (elements.length > indexRange.length) {
+        elements.splice(indexRange.length, elements.length - indexRange.length).forEach(ele => ele.remove());
+      }
+      for (let j = 0; j < indexRange.length; j++) {
+        if (indexRange[j] === parseIndex(elements[j])) continue;
+        if (elements[j]) elements[j].remove();
+        elements[j] = this.newMediaNode(indexRange[j], queue[indexRange[j]]);
+      }
+    });
+  }
+
+  resetElements() {
+    this.elements = { prev: [], curr: [], next: [] };
+    this.fragment.childNodes.forEach(child => child.remove());
+    this.removeMediaNode();
   }
 
   removeMediaNode() {
-    this.currMediaNode = undefined;
     this.vidController?.detach();
     this.vidController?.hidden();
-    for (const child of Array.from(this.frame.children)) {
-      if (child.nodeName.toLowerCase() === "img" || child.nodeName.toLowerCase() === "video") {
-        if (child instanceof HTMLVideoElement) {
-          child.pause();
-          child.removeAttribute("src");
-          child.load();
-        }
-        child.remove();
+    this.getMediaNodes().forEach(ele => {
+      if (ele instanceof HTMLVideoElement) {
+        ele.pause();
+        ele.removeAttribute("src");
+        ele.load();
       }
-    }
+      ele.remove();
+    });
   }
 
-  getMediaNodes(): HTMLElement[] {
-    const list = Array.from(this.frame.querySelectorAll<HTMLElement>("img, video"));
+  getMediaNodes(): MediaElement[] {
+    const list = Array.from(this.frame.querySelectorAll<MediaElement>("img, video"));
     // check list is ordered by d-index
     let last = 0;
     for (const ele of list) {
-      const index = parseInt(ele.getAttribute("d-index")!);
+      const index = parseIndex(ele);
       if (index < last) {
         throw new Error("BIFM: getMediaNodes: list is not ordered by d-index");
       }
@@ -240,13 +258,13 @@ export class BigImageFrameManager {
   }
 
   stepNext(oriented: Oriented, current?: number) {
-    let index = current !== undefined ? current : this.currMediaNode ? parseInt(this.currMediaNode.getAttribute("d-index")!) : undefined;
+    let index = current !== undefined ? current : this.elements.curr[0] ? parseInt(this.elements.curr[0].getAttribute("d-index")!) : undefined;
     if (index === undefined || isNaN(index)) return;
     const queue = this.getChapter(this.chapterIndex)?.queue;
     if (!queue || queue.length === 0) return;
-    index = oriented === "next" ? index + 1 : index - 1;
-    // current is -1 and oriented is prev, means step to last
-    if (index < -1) index = queue.length - 1;
+    index = oriented === "next" ? index + conf.paginationIMGCount : index - conf.paginationIMGCount;
+    // current === -1 and oriented === "prev", this called by kayboard event "step-to-last-image", so reset index to last
+    if (index < -conf.paginationIMGCount) index = queue.length - 1;
     if (!queue[index]) return
     this.setNow(queue[index], oriented);
   }
@@ -261,7 +279,7 @@ export class BigImageFrameManager {
       return;
     }
     // consecutively will proceed by onScroll
-    if (conf.readMode === "consecutively") return;
+    if (conf.readMode === "continuous") return;
 
     const oriented: Oriented = event.deltaY > 0 ? "next" : "prev";
 
@@ -276,7 +294,7 @@ export class BigImageFrameManager {
   }
 
   onScroll() {
-    if (conf.readMode === "consecutively") {
+    if (conf.readMode === "continuous") {
       this.consecutive();
     }
   }
@@ -328,34 +346,34 @@ export class BigImageFrameManager {
     this.throttler.addEvent("SCROLL", () => {
       // delay to reduce the image element in big image frame;
       this.debouncer.addEvent("REDUCE", () => {
-        const distance = this.getRealOffsetTop(this.currMediaNode!) - this.frame.scrollTop;
+        const distance = this.getRealOffsetTop(this.elements.curr[0]!) - this.frame.scrollTop;
         if (this.tryReduce()) {
-          this.restoreScrollTop(this.currMediaNode!, distance);
+          this.restoreScrollTop(this.elements.curr[0]!, distance);
         }
       }, 500);
       let mediaNodes = this.getMediaNodes();
       let index = this.findMediaNodeIndexOnCenter(mediaNodes);
       const centerNode = mediaNodes[index];
 
-      if (this.currMediaNode != centerNode) {
-        const oldIndex = parseInt(this.currMediaNode?.getAttribute("d-index")!);
-        const newIndex = parseInt(centerNode.getAttribute("d-index")!);
+      if (this.elements.curr[0] !== centerNode) {
+        const oldIndex = parseIndex(this.elements.curr[0]);
+        const newIndex = parseIndex(centerNode);
         const oriented = oldIndex < newIndex ? "next" : "prev";
         const queue = this.getChapter(this.chapterIndex).queue;
-        if (queue.length === 0) return;
+        if (queue.length === 0 || newIndex < 0 || newIndex > queue.length - 1) return;
         const imf = queue[newIndex];
         EBUS.emit("ifq-do", newIndex, imf, oriented);
         // play new current video
-        if (this.currMediaNode instanceof HTMLVideoElement) {
-          this.currMediaNode.pause();
+        if (this.elements.curr[0] instanceof HTMLVideoElement) {
+          this.elements.curr[0].pause();
         }
         this.tryPlayVideo(centerNode);
       }
-      this.currMediaNode = centerNode as HTMLImageElement | HTMLVideoElement;
-      const distance = this.getRealOffsetTop(this.currMediaNode) - this.frame.scrollTop;
+      this.elements.curr[0] = centerNode;
+      const distance = this.getRealOffsetTop(this.elements.curr[0]) - this.frame.scrollTop;
       // try extend imgNodes
       if (this.tryExtend() > 0) {
-        this.restoreScrollTop(this.currMediaNode, distance);
+        this.restoreScrollTop(this.elements.curr[0], distance);
       }
     }, 60)
   }
@@ -364,20 +382,7 @@ export class BigImageFrameManager {
     this.frame.scrollTop = this.getRealOffsetTop(imgNode) - distance;
   }
 
-  /**
-   * Usually, when the central image occupies the full height of the screen, 
-   * it is simple to obtain the offsetTop of that image element. 
-   * However, when encountering images with aspect ratios that exceed the screen's aspect ratio, 
-   * it is necessary to rely on natureWidth and natureHeight to obtain the actual offsetTop.
-   */
   getRealOffsetTop(imgNode: HTMLElement) {
-    // const naturalRatio = imgNode.naturalWidth / imgNode.naturalHeight;
-    // const clientRatio = imgNode.clientWidth / imgNode.clientHeight;
-    // if (naturalRatio > clientRatio) {
-    //   const clientHeight = Math.round(imgNode.naturalHeight * (imgNode.clientWidth / imgNode.naturalWidth));
-    //   // console.log(`clientHeigh should be: ${clientHeight}`);
-    //   return (imgNode.clientHeight - clientHeight) / 2 + imgNode.offsetTop;
-    // }
     return imgNode.offsetTop;
   }
 
@@ -463,7 +468,7 @@ export class BigImageFrameManager {
     return extendedNode;
   }
 
-  newMediaNode(index: number, imf: IMGFetcher): HTMLImageElement | HTMLVideoElement {
+  newMediaNode(index: number, imf: IMGFetcher): MediaElement {
     if (!imf) throw new Error("BIFM: newMediaNode: img fetcher is null");
     if (imf.contentType?.startsWith("video")) {
       const vid = document.createElement("video");
@@ -471,7 +476,7 @@ export class BigImageFrameManager {
       vid.classList.add("bifm-vid");
       vid.setAttribute("d-index", index.toString());
       vid.onloadeddata = () => {
-        if (this.visible && vid === this.currMediaNode) {
+        if (this.visible && vid === this.elements.curr[0]) {
           this.tryPlayVideo(vid);
         }
       };
@@ -510,62 +515,61 @@ export class BigImageFrameManager {
    * @param _percent: directly set width percent
    */
   scaleBigImages(fix: number, rate: number, _percent?: number): number {
-    let percent = 0;
-    const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
-    for (const cssRule of cssRules) {
-      if (cssRule instanceof CSSStyleRule) {
-        if (cssRule.selectorText === ".bifm-img") {
-          // if is default scale, then set height to unset, and compute current width percent
-          if (!conf.imgScale) conf.imgScale = 0; // fix imgScale if it is null
-          if (conf.imgScale == 0 && (_percent || this.currMediaNode)) {
-            // compute current width percent
-            percent = _percent ?? Math.round(this.currMediaNode!.offsetWidth / this.frame.offsetWidth * 100);
-            if (conf.readMode === "consecutively") {
-              cssRule.style.minHeight = "";
-            } else {
-              cssRule.style.minHeight = "100vh";
-            }
-            cssRule.style.maxWidth = "";
-            cssRule.style.height = "";
-          } else {
-            percent = _percent ?? conf.imgScale;
-          }
-          percent = Math.max(percent + rate * fix, 10);
-          percent = Math.min(percent, 100);
-          cssRule.style.width = `${percent}vw`;
-          break;
-        }
+    const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
+    if (!rule) return 0;
+
+    let percent = _percent || parseInt(conf.readMode === "pagination" ? rule.style.height : rule.style.width);
+    if (isNaN(percent)) percent = 100;
+    percent = percent + rate * fix;
+    switch (conf.readMode) {
+      case "pagination":
+        percent = Math.max(percent, 100);
+        percent = Math.min(percent, 300);
+        rule.style.height = `${percent}vh`;
+        break;
+      case "continuous":
+        percent = Math.max(percent, 20);
+        percent = Math.min(percent, 100);
+        rule.style.width = `${percent}vw`;
+        break;
+    }
+    if (conf.readMode === "pagination") {
+      this.checkFrameOverflow();
+      if (percent === 100) {
+        this.resetScaleBigImages();
+        return 100;
       }
     }
-    if (conf.readMode === "singlePage" && this.currMediaNode && this.currMediaNode.offsetHeight <= this.frame.offsetHeight) {
-      this.resetScaleBigImages();
-    } else {
-      conf.imgScale = percent;
-    }
+    conf.imgScale = percent;
     saveConf(conf);
     this.flushImgScaleBar();
     return percent;
   }
 
-  resetScaleBigImages() {
-    const cssRules = Array.from(this.html.styleSheel.sheet?.cssRules ?? []);
-    for (const cssRule of cssRules) {
-      if (cssRule instanceof CSSStyleRule) {
-        if (cssRule.selectorText === ".bifm-img") {
-          cssRule.style.maxWidth = "100vw";
-          if (conf.readMode === "singlePage") {
-            cssRule.style.minHeight = "100vh";
-            cssRule.style.height = "100vh";
-            cssRule.style.width = "";
-          } else {
-            cssRule.style.minHeight = "";
-            cssRule.style.height = "";
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-            cssRule.style.width = isMobile ? "100vw" : "80vw";
-          }
-          break;
-        }
+  checkFrameOverflow() {
+    const flexRule = queryCSSRules(this.html.styleSheel, ".bifm-flex");
+    if (flexRule) {
+      if (this.frame.offsetWidth < this.frame.scrollWidth) {
+        flexRule.style.justifyContent = "flex-start";
+      } else {
+        flexRule.style.justifyContent = "center";
       }
+    }
+  }
+
+  resetScaleBigImages() {
+    const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
+    if (!rule) return;
+    rule.styleMap.clear();
+    if (conf.readMode === "pagination") {
+      rule.style.minHeight = "100vh";
+      rule.style.height = "100vh";
+      rule.style.margin = "0";
+    } else {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+      rule.style.maxWidth = "100vw";
+      rule.style.width = isMobile ? "100vw" : "80vw";
+      rule.style.margin = "0 auto";
     }
     conf.imgScale = 0;
     saveConf(conf);
@@ -573,40 +577,36 @@ export class BigImageFrameManager {
   }
 
   initImgScaleStyle() {
+    this.resetScaleBigImages();
     if (conf.imgScale && conf.imgScale > 0) {
       const imgScale = conf.imgScale;
       conf.imgScale = 0;
       this.scaleBigImages(1, 0, imgScale);
-    } else {
-      this.resetScaleBigImages();
     }
   }
 
-  // return [stepImage, distance]
-  stickyMouse(event: MouseEvent, lastMouseY: number): [boolean, number] {
-    let [stepImage, distance] = [false, 0];
-    if (conf.readMode === "singlePage" && conf.stickyMouse !== "disable") {
-      distance = event.clientY - lastMouseY;
-      distance = conf.stickyMouse === "enable" ? -distance : distance;
-      const rate = (this.frame.scrollHeight - this.frame.offsetHeight) / (this.frame.offsetHeight / 4) * 3;
-      let scrollTop = this.frame.scrollTop + distance * rate;
-      if (distance > 0) {
-        this.recordedDistance += distance;
-        if (scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight) {
-          scrollTop = this.frame.scrollHeight - this.frame.offsetHeight;
-          // At least (screenHeight / 9)px of movement is required to confirm reaching the bottom.
-          this.reachBottom = this.recordedDistance >= (this.frame.clientHeight / 9);
-        }
-      } else if (distance < 0) {
-        if (scrollTop <= 0) {
-          scrollTop = 0;
-          stepImage = this.reachBottom;
-          this.reachBottom = false;
-        }
-      }
-      this.frame.scrollTo({ top: scrollTop, behavior: "auto" });
+  stickyMouse(event: MouseEvent, lastMouse: { x: number, y: number }) {
+    if (conf.readMode !== "pagination" || conf.stickyMouse === "disable") return;
+
+    let [distanceY, distanceX] = [event.clientY - lastMouse.y, event.clientX - lastMouse.x];
+    if (conf.stickyMouse === "enable") [distanceY, distanceX] = [-distanceY, -distanceX];
+
+    const overflowY = this.frame.scrollHeight - this.frame.offsetHeight;
+    if (overflowY > 0) {
+      const rateY = overflowY / (this.frame.offsetHeight / 4) * 3;
+      let scrollTop = this.frame.scrollTop + distanceY * rateY;
+      scrollTop = Math.max(scrollTop, 0);
+      scrollTop = Math.min(scrollTop, overflowY);
+      this.frame.scrollTop = scrollTop;
     }
-    return [stepImage, distance];
+    const overflowX = this.frame.scrollWidth - this.frame.offsetWidth;
+    if (overflowX > 0) {
+      const rateX = overflowX / (this.frame.offsetWidth / 4) * 3;
+      let scrollLeft = this.frame.scrollLeft + distanceX * rateX;
+      scrollLeft = Math.max(scrollLeft, 0);
+      scrollLeft = Math.min(scrollLeft, overflowX);
+      this.frame.scrollLeft = scrollLeft;
+    }
   }
 
   findMediaNodeIndexOnCenter(imgNodes: HTMLElement[]): number {
@@ -664,7 +664,7 @@ class AutoPage {
     if (this.bifm.frame.classList.contains("big-img-frame-collapse")) {
       const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
       if (queue.length === 0) return;
-      const index = parseInt(this.bifm.currMediaNode?.getAttribute("d-index") || "0");
+      const index = Math.max(parseIndex(this.bifm.elements.curr[0]), 0);
       this.bifm.show(queue[index]);
     }
     const progress = q("#auto-page-progress", this.button);
@@ -684,15 +684,15 @@ class AutoPage {
         break;
       }
 
-      if (!this.bifm.currMediaNode) break;
-      const index = parseInt(this.bifm.currMediaNode.getAttribute("d-index")!);
+      if (this.bifm.elements.curr.length === 0) break;
+      const index = parseInt(this.bifm.elements.curr[0]?.getAttribute("d-index")!);
       const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
-      if (index >= queue.length) break;
+      if (index < 0 || index >= queue.length) break;
 
       const deltaY = this.bifm.frame.offsetHeight / 2;
       if (this.bifm.isReachedBoundary("next")) {
         this.bifm.onWheel(new WheelEvent("wheel", { deltaY }), false, true);
-        if (conf.readMode === "singlePage") continue;
+        if (conf.readMode === "pagination") continue;
       }
       b.scrollBy({ top: deltaY, behavior: "smooth" });
     }
@@ -706,5 +706,12 @@ class AutoPage {
     this.lockVer += 1;
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePlay.get();
   }
+}
+
+function parseIndex(ele: HTMLElement): number {
+  if (!ele) return -1;
+  const d = ele.getAttribute("d-index") || "";
+  const i = parseInt(d);
+  return isNaN(i) ? -1 : i;
 }
 

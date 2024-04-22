@@ -138,7 +138,7 @@ export class HitomiMather extends BaseMatcher {
       let title = files[i].name.replace(/\.\w+$/, "");
       const node = new ImageNode(
         this.gg!.thumbURL(files[i].hash),
-        files[i].hash + "." + ext,
+        this.gg!.originURL(files[i].hash, ext),
         title + "." + ext,
       );
       list.push(node);
@@ -146,9 +146,7 @@ export class HitomiMather extends BaseMatcher {
     return list;
   }
 
-  async fetchOriginMeta(hashDotExt: string): Promise<OriginMeta> {
-    const [hash, ext] = hashDotExt.split(".");
-    const url = this.gg!.originURL(hash, ext);
+  async fetchOriginMeta(url: string): Promise<OriginMeta> {
     return { url };
   }
 

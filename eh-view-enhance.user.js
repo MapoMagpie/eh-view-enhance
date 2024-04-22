@@ -2660,16 +2660,14 @@ ${chapters.map((c, i) => `<div><label>
         let title = files[i].name.replace(/\.\w+$/, "");
         const node = new ImageNode(
           this.gg.thumbURL(files[i].hash),
-          files[i].hash + "." + ext,
+          this.gg.originURL(files[i].hash, ext),
           title + "." + ext
         );
         list.push(node);
       }
       return list;
     }
-    async fetchOriginMeta(hashDotExt) {
-      const [hash, ext] = hashDotExt.split(".");
-      const url = this.gg.originURL(hash, ext);
+    async fetchOriginMeta(url) {
       return { url };
     }
     setGalleryMeta(info, galleryID, chapter) {

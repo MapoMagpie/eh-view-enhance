@@ -201,6 +201,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
         q(`#${item.key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(item.key as ConfigNumberType, 'minus'));
         q(`#${item.key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(item.key as ConfigNumberType, 'add'));
         q(`#${item.key}Input`, HTML.root).addEventListener("wheel", (event: WheelEvent) => {
+          event.preventDefault();
           if (event.deltaY < 0) {
             events.modNumberConfigEvent(item.key as ConfigNumberType, 'add');
           } else if (event.deltaY > 0) {

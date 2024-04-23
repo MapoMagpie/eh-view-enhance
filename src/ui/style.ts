@@ -402,6 +402,11 @@ export function loadStyleSheel() {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   align-content: start;
+  overflow-y: scroll;
+  scrollbar-width: none;
+}
+.p-config::-webkit-scrollbar {
+  display: none;
 }
 .p-helper .p-config label {
   display: flex;

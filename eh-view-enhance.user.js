@@ -166,16 +166,16 @@
     { key: "colCount", typ: "number" },
     { key: "threads", typ: "number" },
     { key: "downloadThreads", typ: "number" },
-    { key: "timeout", typ: "number" },
-    { key: "autoPageInterval", typ: "number" },
-    { key: "preventScrollPageTime", typ: "number" },
     { key: "paginationIMGCount", typ: "number" },
+    { key: "timeout", typ: "number" },
+    { key: "preventScrollPageTime", typ: "number" },
+    { key: "autoPageInterval", typ: "number" },
     { key: "fetchOriginal", typ: "boolean", range: [1, 5] },
     { key: "autoLoad", typ: "boolean", range: [5, 10] },
     { key: "reversePages", typ: "boolean", range: [1, 5] },
     { key: "autoPlay", typ: "boolean", range: [5, 10] },
-    { key: "disableCssAnimation", typ: "boolean", range: [1, 5] },
-    { key: "autoCollapsePanel", typ: "boolean", range: [5, 10] },
+    { key: "disableCssAnimation", typ: "boolean", range: [1, 10] },
+    { key: "autoCollapsePanel", typ: "boolean", range: [1, 10] },
     {
       key: "readMode",
       typ: "select",
@@ -4373,6 +4373,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   align-content: start;
+  overflow-y: scroll;
+  scrollbar-width: none;
+}
+.p-config::-webkit-scrollbar {
+  display: none;
 }
 .p-helper .p-config label {
   display: flex;
@@ -5550,6 +5555,7 @@ html {
           q(`#${item.key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(item.key, "minus"));
           q(`#${item.key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(item.key, "add"));
           q(`#${item.key}Input`, HTML.root).addEventListener("wheel", (event) => {
+            event.preventDefault();
             if (event.deltaY < 0) {
               events.modNumberConfigEvent(item.key, "add");
             } else if (event.deltaY > 0) {

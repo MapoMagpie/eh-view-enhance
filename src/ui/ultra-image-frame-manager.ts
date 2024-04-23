@@ -53,17 +53,24 @@ export class BigImageFrameManager {
     EBUS.subscribe("imf-on-finished", (index, success, imf) => {
       if (imf.chapterIndex !== this.chapterIndex) return;
       if (!this.visible || !success) return;
-      const elements = [...this.elements.curr, ...this.elements.prev, ...this.elements.next, ...this.getMediaNodes()];
-      const ret = elements.map((e, i) => ({ img: e, eleIndex: i })).find((o) => index === parseIndex(o.img));
+      const elements = [
+        ...this.elements.curr.map((e, i) => ({ img: e, eleIndex: i, key: "curr" })),
+        ...this.elements.prev.map((e, i) => ({ img: e, eleIndex: i, key: "prev" })),
+        ...this.elements.next.map((e, i) => ({ img: e, eleIndex: i, key: "next" })),
+        ...this.getMediaNodes().map((e, i) => ({ img: e, eleIndex: i, key: "" }))
+      ];
+      const ret = elements.find((o) => index === parseIndex(o.img));
       if (!ret) return;
-      let { img, eleIndex } = ret;
+      let { img, eleIndex, key } = ret;
       // if is video, then replace img with video
       if (imf.contentType?.startsWith("video")) {
         const vid = this.newMediaNode(index, imf) as HTMLVideoElement;
+        if (["curr", "prev", "next"].includes(key)) {
+          this.elements[key as "curr" | "prev" | "next"][eleIndex] = vid;
+        }
         img.replaceWith(vid);
-        elements[eleIndex] = vid;
         img.remove();
-        return
+        return;
       }
       img.setAttribute("src", imf.blobUrl!);
     });
@@ -189,6 +196,10 @@ export class BigImageFrameManager {
     this.elements.curr.forEach(element => this.frame.appendChild(element));
     this.elements.prev.forEach(element => this.fragment.appendChild(element));
     this.elements.next.forEach(element => this.fragment.appendChild(element));
+    const vid = this.elements.curr[0];
+    if (vid && vid instanceof HTMLVideoElement) {
+      if (vid.paused) this.tryPlayVideo(vid);
+    }
   }
 
   balanceElements(index: number, queue: IMGFetcher[], oriented: Oriented) {
@@ -236,8 +247,6 @@ export class BigImageFrameManager {
     this.getMediaNodes().forEach(ele => {
       if (ele instanceof HTMLVideoElement) {
         ele.pause();
-        ele.removeAttribute("src");
-        ele.load();
       }
       ele.remove();
     });

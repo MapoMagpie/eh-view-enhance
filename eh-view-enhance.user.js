@@ -4220,7 +4220,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   z-index: 2001;
   background-color: #000000d6;
 }
-.big-img-frame > img {
+.big-img-frame > img, .big-img-frame > video {
   object-fit: contain;
   display: block;
 }
@@ -5946,15 +5946,22 @@ html {
           return;
         if (!this.visible || !success)
           return;
-        const elements = [...this.elements.curr, ...this.elements.prev, ...this.elements.next, ...this.getMediaNodes()];
-        const ret = elements.map((e, i) => ({ img: e, eleIndex: i })).find((o) => index === parseIndex(o.img));
+        const elements = [
+          ...this.elements.curr.map((e, i) => ({ img: e, eleIndex: i, key: "curr" })),
+          ...this.elements.prev.map((e, i) => ({ img: e, eleIndex: i, key: "prev" })),
+          ...this.elements.next.map((e, i) => ({ img: e, eleIndex: i, key: "next" })),
+          ...this.getMediaNodes().map((e, i) => ({ img: e, eleIndex: i, key: "" }))
+        ];
+        const ret = elements.find((o) => index === parseIndex(o.img));
         if (!ret)
           return;
-        let { img, eleIndex } = ret;
+        let { img, eleIndex, key } = ret;
         if (imf.contentType?.startsWith("video")) {
           const vid = this.newMediaNode(index, imf);
+          if (["curr", "prev", "next"].includes(key)) {
+            this.elements[key][eleIndex] = vid;
+          }
           img.replaceWith(vid);
-          elements[eleIndex] = vid;
           img.remove();
           return;
         }
@@ -6073,6 +6080,11 @@ html {
       this.elements.curr.forEach((element) => this.frame.appendChild(element));
       this.elements.prev.forEach((element) => this.fragment.appendChild(element));
       this.elements.next.forEach((element) => this.fragment.appendChild(element));
+      const vid = this.elements.curr[0];
+      if (vid && vid instanceof HTMLVideoElement) {
+        if (vid.paused)
+          this.tryPlayVideo(vid);
+      }
     }
     balanceElements(index, queue, oriented) {
       const indices = { prev: [], curr: [], next: [] };
@@ -6122,8 +6134,6 @@ html {
       this.getMediaNodes().forEach((ele) => {
         if (ele instanceof HTMLVideoElement) {
           ele.pause();
-          ele.removeAttribute("src");
-          ele.load();
         }
         ele.remove();
       });

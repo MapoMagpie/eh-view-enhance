@@ -204,7 +204,7 @@ export function loadStyleSheel() {
   z-index: 2001;
   background-color: #000000d6;
 }
-.big-img-frame > img {
+.big-img-frame > img, .big-img-frame > video {
   object-fit: contain;
   display: block;
 }

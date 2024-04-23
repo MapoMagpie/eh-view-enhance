@@ -6388,6 +6388,7 @@ html {
       }
       if (conf.readMode === "pagination") {
         this.checkFrameOverflow();
+        rule.style.minWidth = percent > 100 ? "" : "100vw";
         if (percent === 100) {
           this.resetScaleBigImages();
           return 100;
@@ -6412,15 +6413,14 @@ html {
       const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
       if (!rule)
         return;
-      rule.style.minHeight = "";
       rule.style.maxWidth = "";
       rule.style.height = "";
       rule.style.width = "";
       rule.style.margin = "";
       if (conf.readMode === "pagination") {
-        rule.style.minHeight = "100vh";
         rule.style.height = "100vh";
         rule.style.margin = "0";
+        rule.style.minWidth = "100vw";
       } else {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
         rule.style.maxWidth = "100vw";
@@ -6457,8 +6457,13 @@ html {
       if (overflowX > 0) {
         const rateX = overflowX / (this.frame.offsetWidth / 4) * 3;
         let scrollLeft = this.frame.scrollLeft + distanceX * rateX;
-        scrollLeft = Math.max(scrollLeft, 0);
-        scrollLeft = Math.min(scrollLeft, overflowX);
+        if (conf.reversePages) {
+          scrollLeft = Math.min(scrollLeft, 0);
+          scrollLeft = Math.max(scrollLeft, -overflowX);
+        } else {
+          scrollLeft = Math.max(scrollLeft, 0);
+          scrollLeft = Math.min(scrollLeft, overflowX);
+        }
         this.frame.scrollLeft = scrollLeft;
       }
     }

@@ -55,6 +55,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       timeout: [8, 40],
       autoPageInterval: [500, 90000],
       preventScrollPageTime: [0, 90000],
+      paginationIMGCount: [1, 5],
     };
     let mod = key === "autoPageInterval" ? 100 : 1;
     mod = key === "preventScrollPageTime" ? 10 : mod;

@@ -95,7 +95,8 @@
       volume: 50,
       disableCssAnimation: true,
       mcInSites: ["18comic"],
-      paginationIMGCount: 1
+      paginationIMGCount: 1,
+      hitomiFormat: "auto"
     };
   }
   const VERSION = "4.4.0";
@@ -160,10 +161,59 @@
   function saveConf(c) {
     storage.setItem(CONFIG_KEY, JSON.stringify(c));
   }
-  const ConfigNumberKeys = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
-  const ConfigBooleanKeys = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation"];
-  const ConfigSelectKeys = ["readMode", "stickyMouse", "minifyPageHelper"];
   const conf = getConf();
+  const ConfigItems = [
+    { key: "colCount", typ: "number" },
+    { key: "threads", typ: "number" },
+    { key: "downloadThreads", typ: "number" },
+    { key: "timeout", typ: "number" },
+    { key: "autoPageInterval", typ: "number" },
+    { key: "preventScrollPageTime", typ: "number" },
+    { key: "paginationIMGCount", typ: "number" },
+    { key: "fetchOriginal", typ: "boolean", range: [1, 5] },
+    { key: "autoLoad", typ: "boolean", range: [5, 10] },
+    { key: "reversePages", typ: "boolean", range: [1, 5] },
+    { key: "autoPlay", typ: "boolean", range: [5, 10] },
+    { key: "disableCssAnimation", typ: "boolean", range: [1, 5] },
+    { key: "autoCollapsePanel", typ: "boolean", range: [5, 10] },
+    {
+      key: "readMode",
+      typ: "select",
+      options: [
+        { value: "pagination", display: "Pagination" },
+        { value: "continuous", display: "Continuous" }
+      ]
+    },
+    {
+      key: "stickyMouse",
+      typ: "select",
+      options: [
+        { value: "enable", display: "Enable" },
+        { value: "reverse", display: "Reverse" },
+        { value: "disable", display: "Disable" }
+      ]
+    },
+    {
+      key: "minifyPageHelper",
+      typ: "select",
+      options: [
+        { value: "always", display: "Always" },
+        { value: "inBigMode", display: "InBigMode" },
+        { value: "never", display: "Never" }
+      ]
+    },
+    {
+      key: "hitomiFormat",
+      typ: "select",
+      options: [
+        { value: "auto", display: "Auto" },
+        { value: "avif", display: "Avif" },
+        { value: "webp", display: "Webp" },
+        { value: "jxl", display: "Jxl" }
+      ],
+      displayInSite: /hitomi.la\//
+    }
+  ];
 
   function evLog(level, msg, ...info) {
     if (level === "debug" && !conf.debug)
@@ -498,20 +548,20 @@
     preventScrollPageTime: new I18nValue("Flip Page Time", "滚动翻页时间"),
     preventScrollPageTimeTooltip: new I18nValue("In Read Mode:Single Page, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "在单页阅读模式下，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
     collapse: new I18nValue("FOLD", "收起"),
-    columns: new I18nValue("Columns", "每行数量"),
+    colCount: new I18nValue("Columns", "每行数量"),
     readMode: new I18nValue("Read Mode", "阅读模式"),
     autoPageInterval: new I18nValue("Auto Page Interval", "自动翻页间隔"),
     autoPageIntervalTooltip: new I18nValue("Use the mouse wheel on Input box to adjust the interval time.", "在输入框上使用鼠标滚轮快速修改间隔时间"),
     readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
-    maxPreloadThreads: new I18nValue("PreloadThreads", "最大同时加载"),
-    maxPreloadThreadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
-    maxDownloadThreads: new I18nValue("DownloadThreads", "最大同时下载"),
-    maxDownloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
+    threads: new I18nValue("PreloadThreads", "最大同时加载"),
+    threadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
+    downloadThreads: new I18nValue("DownloadThreads", "最大同时下载"),
+    downloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
     timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
-    bestQuality: new I18nValue("Raw Image", "最佳质量"),
+    fetchOriginal: new I18nValue("Raw Image", "最佳质量"),
     autoLoad: new I18nValue("Auto Load", "自动加载"),
     autoLoadTooltip: new I18nValue("", "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。"),
-    bestQualityTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
+    fetchOriginalTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
     forceDownload: new I18nValue("Take Loaded", "强制下载已加载的"),
     downloadStart: new I18nValue("Start Download", "开始下载"),
     downloading: new I18nValue("Downloading...", "下载中..."),
@@ -524,12 +574,14 @@
     autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
     disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
     disableCssAnimationTooltip: new I18nValue("Valid after refreshing the page", "刷新页面后生效"),
-    keepSmallThumbnail: new I18nValue("Small Thumbnail", "小缩略图"),
-    keepSmallThumbnailTooltip: new I18nValue("Keep the thumbnails in the grid as small as possible to improve page performance. Only display clearer images when the mouse hovers over them.", "使网格中缩略图保持为小尺寸，用于提升页面性能。只有在鼠标悬停时才显示更加清晰的图片。"),
     stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
     stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
     minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
     minifyPageHelperTooltip: new I18nValue("Minify Control Bar", "最小化控制栏"),
+    paginationIMGCount: new I18nValue("Images Per Page", "每页图片数量"),
+    paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "在翻页阅读模式下，每页展示的图片数量"),
+    hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
+    hitomiFormatTooltip: new I18nValue("In Hitomi mode, fetch images by format, if Auto then try Avif > Jxl > Webp", "在Hitomi中，获取源图的格式，如果是Auto，则优先获取Avif > Jxl > Webp"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
     showHelp: new I18nValue("Help", "帮助"),
@@ -4181,7 +4233,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     width: 7rem !important;
   }
   .ehvp-root input, .ehvp-root select {
-    width: 2rem;
+    width: 3rem;
     height: 1.5rem;
   }
   .p-helper .p-config {
@@ -4233,7 +4285,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     width: 25cqw !important;
   }
   .ehvp-root input, .ehvp-root select {
-    width: 9cqw;
+    width: 10cqw;
     height: 6cqw;
     font-size: 3cqw;
   }
@@ -4309,7 +4361,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .p-helper .p-config {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(9, 1fr);
   align-content: start;
 }
 .p-helper .p-config label {
@@ -4778,7 +4830,8 @@ html {
         downloadThreads: [1, 10],
         timeout: [8, 40],
         autoPageInterval: [500, 9e4],
-        preventScrollPageTime: [0, 9e4]
+        preventScrollPageTime: [0, 9e4],
+        paginationIMGCount: [1, 5]
       };
       let mod = key === "autoPageInterval" ? 100 : 1;
       mod = key === "preventScrollPageTime" ? 10 : mod;
@@ -5298,11 +5351,48 @@ html {
     });
   }
 
+  function createOption(item) {
+    const i18nKey = item.i18nKey || item.key;
+    const i18nValue = i18n[i18nKey];
+    const i18nValueTooltip = i18n[`${i18nKey}Tooltip`];
+    if (!i18nValue) {
+      throw new Error(`i18n key ${i18nKey} not found`);
+    }
+    let display = true;
+    if (item.displayInSite) {
+      display = item.displayInSite.test(location.href);
+    }
+    let input = "";
+    switch (item.typ) {
+      case "boolean":
+        input = `<input id="${item.key}Checkbox" ${conf[item.key] ? "checked" : ""} type="checkbox" />`;
+        break;
+      case "number":
+        input = `<span>
+                  <button id="${item.key}MinusBTN" class="p-btn" type="button">-</button>
+                  <input id="${item.key}Input" value="${conf[item.key]}" disabled type="text" />
+                  <button id="${item.key}AddBTN" class="p-btn" type="button">+</button></span>`;
+        break;
+      case "select":
+        if (!item.options) {
+          throw new Error(`options for ${item.key} not found`);
+        }
+        const optionsStr = item.options.map((o) => `<option value="${o.value}" ${conf[item.key] == o.value ? "selected" : ""}>${o.display}</option>`).join("");
+        input = `<select id="${item.key}Select">${optionsStr}</select>`;
+        break;
+    }
+    const [start, end] = item.range ? item.range : [1, 10];
+    return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}">
+            <label class="p-label">
+              <span>${i18nValue.get()} ${i18nValueTooltip ? `<span class="p-tooltip">?<span class="p-tooltiptext">${i18nValueTooltip.get()}</span></span>` : ""}:</span>
+              ${input}</label></div>`;
+  }
   function createHTML() {
     const fullViewGrid = document.createElement("div");
     fullViewGrid.classList.add("ehvp-root");
     fullViewGrid.classList.add("ehvp-root-collapse");
     document.body.after(fullViewGrid);
+    const configItemStr = ConfigItems.map(createOption).join("");
     const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
@@ -5315,164 +5405,20 @@ html {
 <div id="p-helper" class="p-helper">
     <div style="position: relative">
         <div id="config-panel" class="p-panel p-config p-collapse">
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.columns.get()}:</span>
-                    <span>
-                        <button id="colCountMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="colCountInput" value="${conf.colCount}" disabled type="text" />
-                        <button id="colCountAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.maxPreloadThreads.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
-                    </span>
-                    <span>
-                        <button id="threadsMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="threadsInput" value="${conf.threads}" disabled type="text" />
-                        <button id="threadsAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.maxDownloadThreads.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
-                    </span>
-                    <span>
-                        <button id="downloadThreadsMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" />
-                        <button id="downloadThreadsAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.timeout.get()}:</span>
-                    <span>
-                        <button id="timeoutMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="timeoutInput" value="${conf.timeout}" disabled type="text" />
-                        <button id="timeoutAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.bestQuality.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
-                    </span>
-                    <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.autoLoad.get()} :</span>
-                    <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.reversePages.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
-                    </span>
-                    <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.autoPlay.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
-                    </span>
-                    <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.disableCssAnimation.get()} :</span>
-                    <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.autoCollapsePanel.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelTooltip.get()}</span></span>:
-                    </span>
-                    <input id="autoCollapsePanelCheckbox" ${conf.autoCollapsePanel ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.readMode.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
-                    </span>
-                    <select id="readModeSelect">
-                       <option value="pagination" ${conf.readMode == "pagination" ? "selected" : ""}>Pagination</option>
-                       <option value="continuous" ${conf.readMode == "continuous" ? "selected" : ""}>Continuous</option>
-                    </select>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.stickyMouse.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
-                    </span>
-                    <select id="stickyMouseSelect">
-                       <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
-                       <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
-                       <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
-                    </select>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.minifyPageHelper.get()} :</span>
-                    <select id="minifyPageHelperSelect">
-                       <option value="always" ${conf.minifyPageHelper == "always" ? "selected" : ""}>Always</option>
-                       <option value="inBigMode" ${conf.minifyPageHelper == "inBigMode" ? "selected" : ""}>Big Mode</option>
-                       <option value="never" ${conf.minifyPageHelper == "never" ? "selected" : ""}>Never</option>
-                    </select>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.autoPageInterval.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPageIntervalTooltip.get()}</span></span>:
-                    </span>
-                    <span>
-                        <button id="autoPageIntervalMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="autoPageIntervalInput" value="${conf.autoPageInterval}" disabled type="text" style="width: 4rem; line-height: 1rem;" />
-                        <button id="autoPageIntervalAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.preventScrollPageTime.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.preventScrollPageTimeTooltip.get()}</span></span>:
-                    </span>
-                    <span>
-                        <button id="preventScrollPageTimeMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="preventScrollPageTimeInput" value="${conf.preventScrollPageTime}" disabled type="text" style="width: 4rem; line-height: 1rem;" />
-                        <button id="preventScrollPageTimeAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+            ${configItemStr}
+            <div style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.dragToMove.get()}:</span>
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                 </label>
             </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px; text-align: left;">
+            <div style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px; text-align: left;">
                  <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
                  <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
                  <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
                  <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
             </div>
-            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>
                 <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
                 <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
@@ -5584,23 +5530,27 @@ html {
     HTML.downloaderPanel.addEventListener("blur", () => collapsePanel("downloader"));
     HTML.pageHelper.addEventListener("mouseover", () => events.abortMouseleavePanelEvent());
     HTML.pageHelper.addEventListener("mouseleave", () => ["config", "downloader"].forEach((k) => collapsePanel(k)));
-    for (const key of ConfigNumberKeys) {
-      q(`#${key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key, "minus"));
-      q(`#${key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key, "add"));
-      q(`#${key}Input`, HTML.root).addEventListener("wheel", (event) => {
-        if (event.deltaY < 0) {
-          events.modNumberConfigEvent(key, "add");
-        } else if (event.deltaY > 0) {
-          events.modNumberConfigEvent(key, "minus");
-        }
-      });
-    }
-    for (const key of ConfigBooleanKeys) {
-      q(`#${key}Checkbox`, HTML.root).addEventListener("click", () => events.modBooleanConfigEvent(key));
-    }
-    for (const key of ConfigSelectKeys) {
-      q(`#${key}Select`, HTML.root).addEventListener("change", () => events.modSelectConfigEvent(key));
-    }
+    ConfigItems.forEach((item) => {
+      switch (item.typ) {
+        case "number":
+          q(`#${item.key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(item.key, "minus"));
+          q(`#${item.key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(item.key, "add"));
+          q(`#${item.key}Input`, HTML.root).addEventListener("wheel", (event) => {
+            if (event.deltaY < 0) {
+              events.modNumberConfigEvent(item.key, "add");
+            } else if (event.deltaY > 0) {
+              events.modNumberConfigEvent(item.key, "minus");
+            }
+          });
+          break;
+        case "boolean":
+          q(`#${item.key}Checkbox`, HTML.root).addEventListener("click", () => events.modBooleanConfigEvent(item.key));
+          break;
+        case "select":
+          q(`#${item.key}Select`, HTML.root).addEventListener("change", () => events.modSelectConfigEvent(item.key));
+          break;
+      }
+    });
     HTML.collapseBTN.addEventListener("click", () => events.main(false));
     HTML.gate.addEventListener("click", () => events.main(true));
     const debouncer = new Debouncer();

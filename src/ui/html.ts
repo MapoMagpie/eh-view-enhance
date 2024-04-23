@@ -1,13 +1,50 @@
-import { ConfigBooleanKeys, ConfigBooleanType, ConfigNumberKeys, ConfigNumberType, ConfigSelectKeys, ConfigSelectType, conf } from "../config";
+import { ConfigBooleanType, ConfigItem, ConfigItems, ConfigNumberType, ConfigSelectType, conf } from "../config";
 import { Downloader } from "../download/downloader";
 import { Debouncer } from "../utils/debouncer";
 import { dragElement } from "../utils/drag-element";
-import { i18n } from "../utils/i18n";
+import { I18nValue, i18n } from "../utils/i18n";
 import q from "../utils/query-element";
 import { Events } from "./event";
 import { toggleAnimationStyle, loadStyleSheel } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
+function createOption(item: ConfigItem) {
+  const i18nKey = item.i18nKey || item.key;
+  const i18nValue = (i18n as any)[i18nKey] as I18nValue;
+  const i18nValueTooltip = (i18n as any)[`${i18nKey}Tooltip`] as I18nValue;
+  if (!i18nValue) {
+    throw new Error(`i18n key ${i18nKey} not found`);
+  }
+  let display = true;
+  if (item.displayInSite) {
+    display = item.displayInSite.test(location.href);
+  }
+
+  let input = "";
+  switch (item.typ) {
+    case "boolean":
+      input = `<input id="${item.key}Checkbox" ${conf[item.key as ConfigBooleanType] ? "checked" : ""} type="checkbox" />`;
+      break;
+    case "number":
+      input = `<span>
+                  <button id="${item.key}MinusBTN" class="p-btn" type="button">-</button>
+                  <input id="${item.key}Input" value="${conf[item.key as ConfigNumberType]}" disabled type="text" />
+                  <button id="${item.key}AddBTN" class="p-btn" type="button">+</button></span>`;
+      break;
+    case "select":
+      if (!item.options) {
+        throw new Error(`options for ${item.key} not found`);
+      }
+      const optionsStr = item.options.map(o => `<option value="${o.value}" ${conf[item.key as ConfigSelectType] == o.value ? "selected" : ""}>${o.display}</option>`).join("");
+      input = `<select id="${item.key}Select">${optionsStr}</select>`;
+      break;
+  }
+  const [start, end] = item.range ? item.range : [1, 10];
+  return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}">
+            <label class="p-label">
+              <span>${i18nValue.get()} ${i18nValueTooltip ? `<span class="p-tooltip">?<span class="p-tooltiptext">${i18nValueTooltip.get()}</span></span>` : ""}:</span>
+              ${input}</label></div>`;
+}
 
 export type Elements = ReturnType<typeof createHTML>;
 
@@ -16,6 +53,7 @@ export function createHTML() {
   fullViewGrid.classList.add("ehvp-root");
   fullViewGrid.classList.add("ehvp-root-collapse");
   document.body.after(fullViewGrid);
+  const configItemStr = ConfigItems.map(createOption).join("");
   const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
@@ -28,164 +66,20 @@ export function createHTML() {
 <div id="p-helper" class="p-helper">
     <div style="position: relative">
         <div id="config-panel" class="p-panel p-config p-collapse">
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.columns.get()}:</span>
-                    <span>
-                        <button id="colCountMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="colCountInput" value="${conf.colCount}" disabled type="text" />
-                        <button id="colCountAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.maxPreloadThreads.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.maxPreloadThreadsTooltip.get()}</span></span>:
-                    </span>
-                    <span>
-                        <button id="threadsMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="threadsInput" value="${conf.threads}" disabled type="text" />
-                        <button id="threadsAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.maxDownloadThreads.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.maxDownloadThreadsTooltip.get()}</span></span>:
-                    </span>
-                    <span>
-                        <button id="downloadThreadsMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="downloadThreadsInput" value="${conf.downloadThreads}" disabled type="text" />
-                        <button id="downloadThreadsAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.timeout.get()}:</span>
-                    <span>
-                        <button id="timeoutMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="timeoutInput" value="${conf.timeout}" disabled type="text" />
-                        <button id="timeoutAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.bestQuality.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.bestQualityTooltip.get()}</span></span>:
-                    </span>
-                    <input id="fetchOriginalCheckbox" ${conf.fetchOriginal ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.autoLoad.get()} :</span>
-                    <input id="autoLoadCheckbox" ${conf.autoLoad ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 4; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.reversePages.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.reversePagesTooltip.get()}</span></span>:
-                    </span>
-                    <input id="reversePagesCheckbox" ${conf.reversePages ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 4; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.autoPlay.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPlayTooltip.get()}</span></span>:
-                    </span>
-                    <input id="autoPlayCheckbox" ${conf.autoPlay ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.disableCssAnimation.get()} :</span>
-                    <input id="disableCssAnimationCheckbox" ${conf.disableCssAnimation ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.autoCollapsePanel.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoCollapsePanelTooltip.get()}</span></span>:
-                    </span>
-                    <input id="autoCollapsePanelCheckbox" ${conf.autoCollapsePanel ? "checked" : ""} type="checkbox" />
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.readMode.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.readModeTooltip.get()}</span></span>:
-                    </span>
-                    <select id="readModeSelect">
-                       <option value="pagination" ${conf.readMode == "pagination" ? "selected" : ""}>Pagination</option>
-                       <option value="continuous" ${conf.readMode == "continuous" ? "selected" : ""}>Continuous</option>
-                    </select>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.stickyMouse.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.stickyMouseTooltip.get()}</span></span>:
-                    </span>
-                    <select id="stickyMouseSelect">
-                       <option value="enable" ${conf.stickyMouse == "enable" ? "selected" : ""}>Enable</option>
-                       <option value="reverse" ${conf.stickyMouse == "reverse" ? "selected" : ""}>Reverse</option>
-                       <option value="disable" ${conf.stickyMouse == "disable" ? "selected" : ""}>Disable</option>
-                    </select>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.minifyPageHelper.get()} :</span>
-                    <select id="minifyPageHelperSelect">
-                       <option value="always" ${conf.minifyPageHelper == "always" ? "selected" : ""}>Always</option>
-                       <option value="inBigMode" ${conf.minifyPageHelper == "inBigMode" ? "selected" : ""}>Big Mode</option>
-                       <option value="never" ${conf.minifyPageHelper == "never" ? "selected" : ""}>Never</option>
-                    </select>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.autoPageInterval.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.autoPageIntervalTooltip.get()}</span></span>:
-                    </span>
-                    <span>
-                        <button id="autoPageIntervalMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="autoPageIntervalInput" value="${conf.autoPageInterval}" disabled type="text" style="width: 4rem; line-height: 1rem;" />
-                        <button id="autoPageIntervalAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.preventScrollPageTime.get()}
-                       <span class="p-tooltip">?<span class="p-tooltiptext">${i18n.preventScrollPageTimeTooltip.get()}</span></span>:
-                    </span>
-                    <span>
-                        <button id="preventScrollPageTimeMinusBTN" class="p-btn" type="button">-</button>
-                        <input id="preventScrollPageTimeInput" value="${conf.preventScrollPageTime}" disabled type="text" style="width: 4rem; line-height: 1rem;" />
-                        <button id="preventScrollPageTimeAddBTN" class="p-btn" type="button">+</button>
-                    </span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+            ${configItemStr}
+            <div style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.dragToMove.get()}:</span>
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                 </label>
             </div>
-            <div style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px; text-align: left;">
+            <div style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px; text-align: left;">
                  <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
                  <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
                  <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
                  <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
             </div>
-            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 7; padding-left: 5px;">
+            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>
                 <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
                 <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
@@ -301,24 +195,27 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.pageHelper.addEventListener("mouseleave", () => ["config", "downloader"].forEach(k => collapsePanel(k as "config" | "downloader")));
 
   // modify config event
-  for (const key of ConfigNumberKeys) {
-    q(`#${key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'minus'));
-    q(`#${key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(key as ConfigNumberType, 'add'));
-    q(`#${key}Input`, HTML.root).addEventListener("wheel", (event: WheelEvent) => {
-      if (event.deltaY < 0) {
-        events.modNumberConfigEvent(key as ConfigNumberType, 'add');
-      } else if (event.deltaY > 0) {
-        events.modNumberConfigEvent(key as ConfigNumberType, 'minus');
-      }
-    });
-  }
-  for (const key of ConfigBooleanKeys) {
-    q(`#${key}Checkbox`, HTML.root).addEventListener("click", () => events.modBooleanConfigEvent(key as ConfigBooleanType));
-  }
-  for (const key of ConfigSelectKeys) {
-    q(`#${key}Select`, HTML.root).addEventListener("change", () => events.modSelectConfigEvent(key as ConfigSelectType));
-  }
-
+  ConfigItems.forEach(item => {
+    switch (item.typ) {
+      case "number":
+        q(`#${item.key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(item.key as ConfigNumberType, 'minus'));
+        q(`#${item.key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(item.key as ConfigNumberType, 'add'));
+        q(`#${item.key}Input`, HTML.root).addEventListener("wheel", (event: WheelEvent) => {
+          if (event.deltaY < 0) {
+            events.modNumberConfigEvent(item.key as ConfigNumberType, 'add');
+          } else if (event.deltaY > 0) {
+            events.modNumberConfigEvent(item.key as ConfigNumberType, 'minus');
+          }
+        });
+        break;
+      case "boolean":
+        q(`#${item.key}Checkbox`, HTML.root).addEventListener("click", () => events.modBooleanConfigEvent(item.key as ConfigBooleanType));
+        break;
+      case "select":
+        q(`#${item.key}Select`, HTML.root).addEventListener("change", () => events.modSelectConfigEvent(item.key as ConfigSelectType));
+        break;
+    }
+  });
   // entry 入口
   HTML.collapseBTN.addEventListener("click", () => events.main(false));
   HTML.gate.addEventListener("click", () => events.main(true));

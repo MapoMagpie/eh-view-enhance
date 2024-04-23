@@ -74,6 +74,7 @@ export type Config = {
   mcInSites: string[],
   /**  */
   paginationIMGCount: number,
+  hitomiFormat: "auto" | "jxl" | "avif" | "webp",
 };
 
 function defaultConf(): Config {
@@ -114,6 +115,7 @@ function defaultConf(): Config {
     disableCssAnimation: true,
     mcInSites: ["18comic"],
     paginationIMGCount: 1,
+    hitomiFormat: "auto",
   };
 }
 
@@ -190,10 +192,66 @@ function confHealthCheck(cf: Config): Config {
 export function saveConf(c: Config) {
   storage.setItem(CONFIG_KEY, JSON.stringify(c));
 }
-export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime";
-export const ConfigNumberKeys: (keyof Config)[] = ["colCount", "threads", "downloadThreads", "timeout", "autoPageInterval", "preventScrollPageTime"];
+
+export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime" | "paginationIMGCount";
 export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation";
-export const ConfigBooleanKeys: (keyof Config)[] = ["fetchOriginal", "autoLoad", "reversePages", "autoPlay", "autoCollapsePanel", "disableCssAnimation"];
-export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper";
-export const ConfigSelectKeys: (keyof Config)[] = ["readMode", "stickyMouse", "minifyPageHelper"];
+export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat";
 export const conf = getConf();
+
+type OptionValue = {
+  value: string;
+  display: string;
+}
+
+export type ConfigItem = {
+  key: ConfigNumberType | ConfigBooleanType | ConfigSelectType;
+  typ: "boolean" | "number" | "select";
+  i18nKey?: string;
+  options?: OptionValue[];
+  range?: [number, number];
+  displayInSite?: RegExp;
+}
+
+export const ConfigItems: ConfigItem[] = [
+  { key: "colCount", typ: "number" },
+  { key: "threads", typ: "number" },
+  { key: "downloadThreads", typ: "number" },
+  { key: "timeout", typ: "number" },
+  { key: "autoPageInterval", typ: "number" },
+  { key: "preventScrollPageTime", typ: "number" },
+  { key: "paginationIMGCount", typ: "number" },
+  { key: "fetchOriginal", typ: "boolean", range: [1, 5] },
+  { key: "autoLoad", typ: "boolean", range: [5, 10] },
+  { key: "reversePages", typ: "boolean", range: [1, 5] },
+  { key: "autoPlay", typ: "boolean", range: [5, 10] },
+  { key: "disableCssAnimation", typ: "boolean", range: [1, 5] },
+  { key: "autoCollapsePanel", typ: "boolean", range: [5, 10] },
+  {
+    key: "readMode", typ: "select", options: [
+      { value: "pagination", display: "Pagination" },
+      { value: "continuous", display: "Continuous" },
+    ]
+  },
+  {
+    key: "stickyMouse", typ: "select", options: [
+      { value: "enable", display: "Enable" },
+      { value: "reverse", display: "Reverse" },
+      { value: "disable", display: "Disable" },
+    ]
+  },
+  {
+    key: "minifyPageHelper", typ: "select", options: [
+      { value: "always", display: "Always" },
+      { value: "inBigMode", display: "InBigMode" },
+      { value: "never", display: "Never" },
+    ]
+  },
+  {
+    key: "hitomiFormat", typ: "select", options: [
+      { value: "auto", display: "Auto" },
+      { value: "avif", display: "Avif" },
+      { value: "webp", display: "Webp" },
+      { value: "jxl", display: "Jxl" },
+    ], displayInSite: /hitomi.la\//
+  },
+];

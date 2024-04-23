@@ -2,7 +2,7 @@ import { KeyboardInBigImageModeId, KeyboardInFullViewGridId, KeyboardInMainId } 
 
 const lang = navigator.language;
 const i18nIndex = lang.startsWith("zh") ? 1 : 0;
-class I18nValue extends Array<string> {
+export class I18nValue extends Array<string> {
   constructor(...value: string[]) {
     super(...value);
   }
@@ -51,20 +51,20 @@ export const i18n = {
   preventScrollPageTime: new I18nValue("Flip Page Time", "滚动翻页时间"),
   preventScrollPageTimeTooltip: new I18nValue("In Read Mode:Single Page, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "在单页阅读模式下，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
   collapse: new I18nValue("FOLD", "收起"),
-  columns: new I18nValue("Columns", "每行数量"),
+  colCount: new I18nValue("Columns", "每行数量"),
   readMode: new I18nValue("Read Mode", "阅读模式"),
   autoPageInterval: new I18nValue("Auto Page Interval", "自动翻页间隔"),
   autoPageIntervalTooltip: new I18nValue("Use the mouse wheel on Input box to adjust the interval time.", "在输入框上使用鼠标滚轮快速修改间隔时间"),
   readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
-  maxPreloadThreads: new I18nValue("PreloadThreads", "最大同时加载"),
-  maxPreloadThreadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
-  maxDownloadThreads: new I18nValue("DownloadThreads", "最大同时下载"),
-  maxDownloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
+  threads: new I18nValue("PreloadThreads", "最大同时加载"),
+  threadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
+  downloadThreads: new I18nValue("DownloadThreads", "最大同时下载"),
+  downloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
   timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
-  bestQuality: new I18nValue("Raw Image", "最佳质量"),
+  fetchOriginal: new I18nValue("Raw Image", "最佳质量"),
   autoLoad: new I18nValue("Auto Load", "自动加载"),
   autoLoadTooltip: new I18nValue("", "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。"),
-  bestQualityTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
+  fetchOriginalTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
   forceDownload: new I18nValue("Take Loaded", "强制下载已加载的"),
   downloadStart: new I18nValue("Start Download", "开始下载"),
   downloading: new I18nValue("Downloading...", "下载中..."),
@@ -77,12 +77,14 @@ export const i18n = {
   autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
   disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
   disableCssAnimationTooltip: new I18nValue("Valid after refreshing the page", "刷新页面后生效"),
-  keepSmallThumbnail: new I18nValue("Small Thumbnail", "小缩略图"),
-  keepSmallThumbnailTooltip: new I18nValue("Keep the thumbnails in the grid as small as possible to improve page performance. Only display clearer images when the mouse hovers over them.", "使网格中缩略图保持为小尺寸，用于提升页面性能。只有在鼠标悬停时才显示更加清晰的图片。"),
   stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
   stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
   minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
   minifyPageHelperTooltip: new I18nValue("Minify Control Bar", "最小化控制栏"),
+  paginationIMGCount: new I18nValue("Images Per Page", "每页图片数量"),
+  paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "在翻页阅读模式下，每页展示的图片数量"),
+  hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
+  hitomiFormatTooltip: new I18nValue("In Hitomi mode, fetch images by format, if Auto then try Avif > Jxl > Webp", "在Hitomi中，获取源图的格式，如果是Auto，则优先获取Avif > Jxl > Webp"),
   dragToMove: new I18nValue("Drag to Move", "拖动移动"),
   originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
   showHelp: new I18nValue("Help", "帮助"),

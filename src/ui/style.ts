@@ -272,7 +272,7 @@ export function loadStyleSheel() {
     width: 7rem !important;
   }
   .ehvp-root input, .ehvp-root select {
-    width: 2rem;
+    width: 3rem;
     height: 1.5rem;
   }
   .p-helper .p-config {
@@ -324,7 +324,7 @@ export function loadStyleSheel() {
     width: 25cqw !important;
   }
   .ehvp-root input, .ehvp-root select {
-    width: 9cqw;
+    width: 10cqw;
     height: 6cqw;
     font-size: 3cqw;
   }
@@ -400,7 +400,7 @@ export function loadStyleSheel() {
 }
 .p-helper .p-config {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(9, 1fr);
   align-content: start;
 }
 .p-helper .p-config label {

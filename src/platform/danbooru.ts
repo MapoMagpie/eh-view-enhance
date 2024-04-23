@@ -265,3 +265,44 @@ export class YandereMatcher extends BaseMatcher {
     return meta;
   }
 }
+
+export class GelBooruMatcher extends DanbooruMatcher {
+  site(): string {
+    return "gelbooru";
+  }
+  workURL(): RegExp {
+    return /gelbooru.com\/index.php\?page=post&s=list/;
+  }
+  nextPage(doc: Document): string | null {
+    return doc.querySelector<HTMLAnchorElement>("#paginator a[alt=next]")?.href || null;
+  }
+  queryList(doc: Document): HTMLElement[] {
+    return Array.from(doc.querySelectorAll(".thumbnail-container > article.thumbnail-preview:not(.blacklisted-image) > a"));
+  }
+  toImgNode(ele: HTMLElement): [ImageNode | null, string] {
+    const img = ele.querySelector<HTMLImageElement>("img");
+    if (!img) {
+      evLog("error", "warn: cannot find img element", img);
+      return [null, ""];
+    }
+    const href = ele.getAttribute("href");
+    if (!href) {
+      evLog("error", "warn: cannot find href", ele);
+      return [null, ""];
+    }
+    return [new ImageNode(img.src, href, `${ele.id}.jpg`), img.getAttribute("alt") || ""];
+  }
+  getOriginalURL(doc: Document): string | null {
+    return doc.querySelector("head > meta[property='og:image']")?.getAttribute("content") || null;
+  }
+  getNormalURL(doc: Document): string | null {
+    const img = doc.querySelector<HTMLImageElement>("#image");
+    if (img?.src) return img.src;
+    const vidSources = Array.from(doc.querySelectorAll<HTMLSourceElement>("#gelcomVideoPlayer > source"));
+    if (vidSources.length === 0) return null;
+    return vidSources.find(s => s.type.endsWith("mp4"))?.src || vidSources[0].src;
+  }
+  extractIDFromHref(href: string): string | undefined {
+    return href.match(/id=(\d+)/)?.[1];
+  }
+}

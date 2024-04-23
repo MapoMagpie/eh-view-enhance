@@ -44,13 +44,14 @@ export default defineConfig(({ command }) => {
             'https://rule34.xxx/*',
             'https://imhentai.xxx/*',
             'https://danbooru.donmai.us/*',
+            'https://gelbooru.com/*',
           ],
           name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
           license: 'MIT',
           author: 'MapoMagpie',
           description: {
-            "": "Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us",
-            "zh-CN": "漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us"
+            "": "Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com",
+            "zh-CN": "漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com"
           },
           connect: [
             'exhentai.org',
@@ -68,6 +69,7 @@ export default defineConfig(({ command }) => {
             'rule34.xxx',
             'imhentai.xxx',
             'donmai.us',
+            'gelbooru.com',
           ],
           // resource: {
           //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"

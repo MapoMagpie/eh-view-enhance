@@ -1,6 +1,6 @@
 import { conf, saveConf } from "../config";
 import { Comic18Matcher } from "./18comic";
-import { DanbooruDonmaiMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
+import { DanbooruDonmaiMatcher, GelBooruMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
 import { EHMatcher } from "./ehentai";
 import { HitomiMather } from "./hitomi";
 import { IMHentaiMatcher } from "./im-hentai";
@@ -21,6 +21,7 @@ export const matchers: Matcher[] = [
   new DanbooruDonmaiMatcher(),
   new Rule34Matcher(),
   new YandereMatcher(),
+  new GelBooruMatcher(),
   new IMHentaiMatcher(),
 ];
 

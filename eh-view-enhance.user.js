@@ -4,8 +4,8 @@
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
 // @version            4.4.9
 // @author             MapoMagpie
-// @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us
-// @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us
+// @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
+// @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
 // @license            MIT
 // @icon               https://exhentai.org/favicon.ico
 // @supportURL         https://github.com/MapoMagpie/eh-view-enhance/issues
@@ -25,6 +25,7 @@
 // @match              https://rule34.xxx/*
 // @match              https://imhentai.xxx/*
 // @match              https://danbooru.donmai.us/*
+// @match              https://gelbooru.com/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
@@ -44,6 +45,7 @@
 // @connect            rule34.xxx
 // @connect            imhentai.xxx
 // @connect            donmai.us
+// @connect            gelbooru.com
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -170,12 +172,12 @@
     { key: "timeout", typ: "number" },
     { key: "preventScrollPageTime", typ: "number" },
     { key: "autoPageInterval", typ: "number" },
-    { key: "fetchOriginal", typ: "boolean", range: [1, 5] },
-    { key: "autoLoad", typ: "boolean", range: [5, 10] },
-    { key: "reversePages", typ: "boolean", range: [1, 5] },
-    { key: "autoPlay", typ: "boolean", range: [5, 10] },
-    { key: "disableCssAnimation", typ: "boolean", range: [1, 10] },
-    { key: "autoCollapsePanel", typ: "boolean", range: [1, 10] },
+    { key: "fetchOriginal", typ: "boolean", gridColumnRange: [1, 6] },
+    { key: "autoLoad", typ: "boolean", gridColumnRange: [6, 11] },
+    { key: "reversePages", typ: "boolean", gridColumnRange: [1, 6] },
+    { key: "autoPlay", typ: "boolean", gridColumnRange: [6, 11] },
+    { key: "disableCssAnimation", typ: "boolean", gridColumnRange: [1, 11] },
+    { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
     {
       key: "readMode",
       typ: "select",
@@ -2350,6 +2352,48 @@ ${chapters.map((c, i) => `<div><label>
       return meta;
     }
   }
+  class GelBooruMatcher extends DanbooruMatcher {
+    site() {
+      return "gelbooru";
+    }
+    workURL() {
+      return /gelbooru.com\/index.php\?page=post&s=list/;
+    }
+    nextPage(doc) {
+      return doc.querySelector("#paginator a[alt=next]")?.href || null;
+    }
+    queryList(doc) {
+      return Array.from(doc.querySelectorAll(".thumbnail-container > article.thumbnail-preview:not(.blacklisted-image) > a"));
+    }
+    toImgNode(ele) {
+      const img = ele.querySelector("img");
+      if (!img) {
+        evLog("error", "warn: cannot find img element", img);
+        return [null, ""];
+      }
+      const href = ele.getAttribute("href");
+      if (!href) {
+        evLog("error", "warn: cannot find href", ele);
+        return [null, ""];
+      }
+      return [new ImageNode(img.src, href, `${ele.id}.jpg`), img.getAttribute("alt") || ""];
+    }
+    getOriginalURL(doc) {
+      return doc.querySelector("head > meta[property='og:image']")?.getAttribute("content") || null;
+    }
+    getNormalURL(doc) {
+      const img = doc.querySelector("#image");
+      if (img?.src)
+        return img.src;
+      const vidSources = Array.from(doc.querySelectorAll("#gelcomVideoPlayer > source"));
+      if (vidSources.length === 0)
+        return null;
+      return vidSources.find((s) => s.type.endsWith("mp4"))?.src || vidSources[0].src;
+    }
+    extractIDFromHref(href) {
+      return href.match(/id=(\d+)/)?.[1];
+    }
+  }
 
   function parseImagePositions(styles) {
     return styles.map((st) => {
@@ -3768,6 +3812,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     new DanbooruDonmaiMatcher(),
     new Rule34Matcher(),
     new YandereMatcher(),
+    new GelBooruMatcher(),
     new IMHentaiMatcher()
   ];
   function adaptMatcher(url) {
@@ -4371,7 +4416,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .p-helper .p-config {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+  grid-template-columns: repeat(10, 1fr);
   align-content: start;
   overflow-y: scroll;
   scrollbar-width: none;
@@ -5400,7 +5445,7 @@ html {
         input = `<select id="${item.key}Select">${optionsStr}</select>`;
         break;
     }
-    const [start, end] = item.range ? item.range : [1, 10];
+    const [start, end] = item.gridColumnRange ? item.gridColumnRange : [1, 11];
     return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}">
             <label class="p-label">
               <span>${i18nValue.get()} ${i18nValueTooltip ? `<span class="p-tooltip">?<span class="p-tooltiptext">${i18nValueTooltip.get()}</span></span>` : ""}:</span>
@@ -5431,13 +5476,13 @@ html {
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
                 </label>
             </div>
-            <div style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px; text-align: left;">
+            <div style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px; text-align: left;">
                  <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
                  <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
                  <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
                  <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
             </div>
-            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px;">
+            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px;">
                 <div><span>${i18n.imageScale.get()}:</span></div>
                 <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
                 <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>

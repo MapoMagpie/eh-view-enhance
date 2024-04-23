@@ -208,7 +208,7 @@ export type ConfigItem = {
   typ: "boolean" | "number" | "select";
   i18nKey?: string;
   options?: OptionValue[];
-  range?: [number, number];
+  gridColumnRange?: [number, number];
   displayInSite?: RegExp;
 }
 
@@ -220,12 +220,12 @@ export const ConfigItems: ConfigItem[] = [
   { key: "timeout", typ: "number" },
   { key: "preventScrollPageTime", typ: "number" },
   { key: "autoPageInterval", typ: "number" },
-  { key: "fetchOriginal", typ: "boolean", range: [1, 5] },
-  { key: "autoLoad", typ: "boolean", range: [5, 10] },
-  { key: "reversePages", typ: "boolean", range: [1, 5] },
-  { key: "autoPlay", typ: "boolean", range: [5, 10] },
-  { key: "disableCssAnimation", typ: "boolean", range: [1, 10] },
-  { key: "autoCollapsePanel", typ: "boolean", range: [1, 10] },
+  { key: "fetchOriginal", typ: "boolean", gridColumnRange: [1, 6] },
+  { key: "autoLoad", typ: "boolean", gridColumnRange: [6, 11] },
+  { key: "reversePages", typ: "boolean", gridColumnRange: [1, 6] },
+  { key: "autoPlay", typ: "boolean", gridColumnRange: [6, 11] },
+  { key: "disableCssAnimation", typ: "boolean", gridColumnRange: [1, 11] },
+  { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
   {
     key: "readMode", typ: "select", options: [
       { value: "pagination", display: "Pagination" },

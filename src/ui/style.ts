@@ -400,7 +400,7 @@ export function loadStyleSheel() {
 }
 .p-helper .p-config {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+  grid-template-columns: repeat(10, 1fr);
   align-content: start;
   overflow-y: scroll;
   scrollbar-width: none;

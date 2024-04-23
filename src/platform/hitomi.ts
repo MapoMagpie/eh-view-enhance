@@ -2,6 +2,7 @@ import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { Chapter, PagesSource } from "../page-fetcher";
+import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 
@@ -59,8 +60,8 @@ type GalleryInfo = {
     name: string,
     hasavif: 1 | 0,
     hasjxl: 1 | 0,
-    hash: string,
     haswebp: 1 | 0,
+    hash: string,
     height: number,
     width: number
   }[],
@@ -75,12 +76,18 @@ export class HitomiMather extends BaseMatcher {
   gg?: HitomiGG;
   meta: Record<number, GalleryMeta> = {};
   infoRecord: Record<number, GalleryInfo> = {};
+  formats: string[] = ["avif", "jxl", "webp"];
+  formatIndex: number = 0;
 
   workURL(): RegExp {
     return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
   }
 
   async fetchChapters(): Promise<Chapter[]> {
+    this.formatIndex = conf.hitomiFormat === "auto" ? 0 : this.formats.indexOf(conf.hitomiFormat);
+    if (this.formatIndex === -1) {
+      throw new Error("invalid hitomi format: " + conf.hitomiFormat);
+    }
     // fetch gg.js
     const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then(resp => resp.text());
     this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)![1], GG_M_REGEX.exec(ggRaw)![1]);
@@ -134,7 +141,11 @@ export class HitomiMather extends BaseMatcher {
     const files = this.infoRecord[chapterID].files;
     const list: ImageNode[] = [];
     for (let i = 0; i < files.length; i++) {
-      const ext = files[i].hasavif ? "avif" : "webp";
+      const ext = this.formats.slice(this.formatIndex).find(format => ((files[i] as any)["has" + format] === 1));
+      if (!ext) {
+        evLog("error", "no format found: ", files[i]);
+        continue;
+      }
       let title = files[i].name.replace(/\.\w+$/, "");
       const node = new ImageNode(
         this.gg!.thumbURL(files[i].hash),

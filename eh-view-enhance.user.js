@@ -581,7 +581,7 @@
     paginationIMGCount: new I18nValue("Images Per Page", "每页图片数量"),
     paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "在翻页阅读模式下，每页展示的图片数量"),
     hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
-    hitomiFormatTooltip: new I18nValue("In Hitomi mode, fetch images by format, if Auto then try Avif > Jxl > Webp", "在Hitomi中，获取源图的格式，如果是Auto，则优先获取Avif > Jxl > Webp"),
+    hitomiFormatTooltip: new I18nValue("In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh", "在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
     showHelp: new I18nValue("Help", "帮助"),
@@ -2656,10 +2656,16 @@ ${chapters.map((c, i) => `<div><label>
     gg;
     meta = {};
     infoRecord = {};
+    formats = ["avif", "jxl", "webp"];
+    formatIndex = 0;
     workURL() {
       return /hitomi.la\/(?!reader)\w+\/.*\d+\.html/;
     }
     async fetchChapters() {
+      this.formatIndex = conf.hitomiFormat === "auto" ? 0 : this.formats.indexOf(conf.hitomiFormat);
+      if (this.formatIndex === -1) {
+        throw new Error("invalid hitomi format: " + conf.hitomiFormat);
+      }
       const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then((resp) => resp.text());
       this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)[1], GG_M_REGEX.exec(ggRaw)[1]);
       const ret = [];
@@ -2708,7 +2714,11 @@ ${chapters.map((c, i) => `<div><label>
       const files = this.infoRecord[chapterID].files;
       const list = [];
       for (let i = 0; i < files.length; i++) {
-        const ext = files[i].hasavif ? "avif" : "webp";
+        const ext = this.formats.slice(this.formatIndex).find((format) => files[i]["has" + format] === 1);
+        if (!ext) {
+          evLog("error", "no format found: ", files[i]);
+          continue;
+        }
         let title = files[i].name.replace(/\.\w+$/, "");
         const node = new ImageNode(
           this.gg.thumbURL(files[i].hash),

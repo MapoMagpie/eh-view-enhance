@@ -84,7 +84,7 @@ export const i18n = {
   paginationIMGCount: new I18nValue("Images Per Page", "每页图片数量"),
   paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "在翻页阅读模式下，每页展示的图片数量"),
   hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
-  hitomiFormatTooltip: new I18nValue("In Hitomi mode, fetch images by format, if Auto then try Avif > Jxl > Webp", "在Hitomi中，获取源图的格式，如果是Auto，则优先获取Avif > Jxl > Webp"),
+  hitomiFormatTooltip: new I18nValue("In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh", "在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。"),
   dragToMove: new I18nValue("Drag to Move", "拖动移动"),
   originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
   showHelp: new I18nValue("Help", "帮助"),

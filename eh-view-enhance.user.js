@@ -4860,9 +4860,13 @@ html {
       }
       if (key === "colCount") {
         const rule = queryCSSRules(HTML.styleSheel, ".full-view-grid");
-        if (rule) {
+        if (rule)
           rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
-        }
+      }
+      if (key === "paginationIMGCount") {
+        const rule = queryCSSRules(HTML.styleSheel, ".bifm-img");
+        if (rule)
+          rule.style.minWidth = conf[key] > 1 ? "" : "100vw";
       }
       saveConf(conf);
     }
@@ -6373,14 +6377,18 @@ html {
       const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
       if (!rule)
         return;
+      rule.style.minWidth = "";
+      rule.style.minHeight = "";
       rule.style.maxWidth = "";
+      rule.style.maxHeight = "";
       rule.style.height = "";
       rule.style.width = "";
       rule.style.margin = "";
       if (conf.readMode === "pagination") {
         rule.style.height = "100vh";
         rule.style.margin = "0";
-        rule.style.minWidth = "100vw";
+        if (conf.paginationIMGCount === 1)
+          rule.style.minWidth = "100vw";
       } else {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
         rule.style.maxWidth = "100vw";

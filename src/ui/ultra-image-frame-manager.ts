@@ -562,14 +562,17 @@ export class BigImageFrameManager {
     const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
     if (!rule) return;
     // set rule style all to ""
+    rule.style.minWidth = "";
+    rule.style.minHeight = "";
     rule.style.maxWidth = "";
+    rule.style.maxHeight = "";
     rule.style.height = "";
     rule.style.width = "";
     rule.style.margin = "";
     if (conf.readMode === "pagination") {
       rule.style.height = "100vh";
       rule.style.margin = "0";
-      rule.style.minWidth = "100vw";
+      if (conf.paginationIMGCount === 1) rule.style.minWidth = "100vw";
     } else {
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
       rule.style.maxWidth = "100vw";

@@ -74,9 +74,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     }
     if (key === "colCount") {
       const rule = queryCSSRules(HTML.styleSheel, ".full-view-grid");
-      if (rule) {
-        rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
-      }
+      if (rule) rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
+    }
+    if (key === "paginationIMGCount") {
+      const rule = queryCSSRules(HTML.styleSheel, ".bifm-img");
+      if (rule) rule.style.minWidth = conf[key] > 1 ? "" : "100vw";
     }
     saveConf(conf);
   }

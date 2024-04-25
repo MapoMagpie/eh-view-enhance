@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.9
+// @version            4.4.10
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
@@ -589,8 +589,8 @@
     hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
     hitomiFormatTooltip: new I18nValue("In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh", "在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。"),
     autoOpen: new I18nValue("Auto Open", "自动展开"),
-    autoOpenTooltip: new I18nValue("Automatically open after the page is loaded", "当页面加载后，自动展开阅读视图。"),
-    autoLoadInBackground: new I18nValue("Background Load", "后台加载"),
+    autoOpenTooltip: new I18nValue("Automatically open after the gallery page is loaded", "进入画廊页面后，自动展开阅读视图。"),
+    autoLoadInBackground: new I18nValue("Keep Loading", "后台加载"),
     autoLoadInBackgroundTooltip: new I18nValue("Keep Auto-Loading after the tab loses focus", "当标签页失去焦点后保持自动加载。"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
@@ -5461,14 +5461,7 @@ html {
         break;
     }
     const [start, end] = item.gridColumnRange ? item.gridColumnRange : [1, 11];
-    return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}">
-            <label class="p-label">
-              <span>
-                <span>${i18nValue.get()}</span>
-                <span class="p-tooltip">${i18nValueTooltip ? "?" : ""}<span class="p-tooltiptext">${i18nValueTooltip?.get() || ""}</span></span>
-                <span>:</span>
-              </span>
-              ${input}</label></div>`;
+    return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}"><label class="p-label"><span><span>${i18nValue.get()}</span><span class="p-tooltip">${i18nValueTooltip ? "?" : ""}<span class="p-tooltiptext">${i18nValueTooltip?.get() || ""}</span></span><span>:</span></span>${input}</label></div>`;
   }
   function createHTML() {
     const fullViewGrid = document.createElement("div");

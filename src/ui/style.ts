@@ -538,17 +538,17 @@ export function loadStyleSheel() {
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
   width: 100%;
-  top: 0px;
   right: 0px;
   background-color: black;
   color: #fff;
-  text-align: center;
-  padding: 5px 0;
   border-radius: 6px;
   position: absolute;
   z-index: 1;
-  font-size: small;
+  font-size: medium;
   white-space: normal;
+  text-align: left;
+  padding: 0.3rem 1rem;
+  box-sizing: border-box;
 }
 .p-tooltip:hover .p-tooltiptext {
   visibility: visible;

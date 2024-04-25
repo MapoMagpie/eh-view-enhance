@@ -75,6 +75,10 @@ export type Config = {
   /**  */
   paginationIMGCount: number,
   hitomiFormat: "auto" | "jxl" | "avif" | "webp",
+  /** Automatically open after the page is loaded */
+  autoOpen: boolean,
+  /** Keep auto-loading after the tab loses focus */
+  autoLoadInBackground: boolean,
 };
 
 function defaultConf(): Config {
@@ -116,6 +120,8 @@ function defaultConf(): Config {
     mcInSites: ["18comic"],
     paginationIMGCount: 1,
     hitomiFormat: "auto",
+    autoOpen: false,
+    autoLoadInBackground: true,
   };
 }
 
@@ -194,7 +200,7 @@ export function saveConf(c: Config) {
 }
 
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime" | "paginationIMGCount";
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation";
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation" | "autoOpen" | "autoLoadInBackground";
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat";
 export const conf = getConf();
 
@@ -224,6 +230,8 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoLoad", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "reversePages", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoPlay", typ: "boolean", gridColumnRange: [6, 11] },
+  { key: "autoLoadInBackground", typ: "boolean", gridColumnRange: [1, 6] },
+  { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "disableCssAnimation", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
   {

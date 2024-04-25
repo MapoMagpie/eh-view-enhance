@@ -435,9 +435,9 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   const signal = { first: true };
   // 入口Entry
-  function main(extend: boolean) {
+  function main(expand: boolean) {
     if (HTML.pageHelper) {
-      if (extend && !HTML.pageHelper.classList.contains("p-helper-extend")) {
+      if (expand && !HTML.pageHelper.classList.contains("p-helper-extend")) {
         HTML.pageHelper.classList.add("p-helper-extend");
         showFullViewGrid();
         if (signal.first) {
@@ -452,7 +452,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     }
   }
   return {
-    main,
+    main: main,
 
     modNumberConfigEvent,
     modBooleanConfigEvent,

@@ -11,6 +11,7 @@ import { FullViewGridManager } from "./ui/full-view-grid-manager";
 import { createHTML, addEventListeners } from "./ui/html";
 import { PageHelper } from "./ui/page-helper";
 import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
+import { Debouncer } from "./utils/debouncer";
 import revertMonkeyPatch from "./utils/revert-monkey-patch";
 import { sleep } from "./utils/sleep";
 
@@ -53,13 +54,14 @@ function main(MATCHER: Matcher): DestoryFunc {
     saveConf(conf);
   }
   // the real entry at ./ui/event/main
+  if (conf.autoOpen) events.main(true)
   return () => {
     console.log("destory eh-view-enhance");
-    HTML.root.remove();
     PF.abort();
     IL.abort();
     IFQ.length = 0;
     EBUS.reset();
+    HTML.root.remove();
     return sleep(500);
   }
 }
@@ -88,16 +90,21 @@ function main(MATCHER: Matcher): DestoryFunc {
 })();
 
 let destoryFunc: DestoryFunc | undefined;
+const debouncer = new Debouncer();
 window.addEventListener("locationchange", () => {
-  let newStart = () => {
-    const matcher = adaptMatcher(window.location.href);
-    matcher && (destoryFunc = main(matcher));
-  }
-  if (destoryFunc) {
-    destoryFunc().then(newStart);
-  } else {
-    newStart();
-  }
+  debouncer.addEvent("LOCATION-CHANGE", () => {
+    const newStart = () => {
+      if (document.querySelector(".ehvp-root")) return;
+      const matcher = adaptMatcher(window.location.href);
+      matcher && (destoryFunc = main(matcher));
+    }
+    if (destoryFunc) {
+      console.log("locationchange");
+      destoryFunc().then(newStart);
+    } else {
+      newStart();
+    }
+  }, 10);
 });
 
 const matcher = adaptMatcher(window.location.href);

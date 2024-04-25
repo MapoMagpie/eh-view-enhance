@@ -98,7 +98,9 @@
       disableCssAnimation: true,
       mcInSites: ["18comic"],
       paginationIMGCount: 1,
-      hitomiFormat: "auto"
+      hitomiFormat: "auto",
+      autoOpen: false,
+      autoLoadInBackground: true
     };
   }
   const VERSION = "4.4.0";
@@ -176,6 +178,8 @@
     { key: "autoLoad", typ: "boolean", gridColumnRange: [6, 11] },
     { key: "reversePages", typ: "boolean", gridColumnRange: [1, 6] },
     { key: "autoPlay", typ: "boolean", gridColumnRange: [6, 11] },
+    { key: "autoLoadInBackground", typ: "boolean", gridColumnRange: [1, 6] },
+    { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
     { key: "disableCssAnimation", typ: "boolean", gridColumnRange: [1, 11] },
     { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
     {
@@ -584,6 +588,10 @@
     paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "在翻页阅读模式下，每页展示的图片数量"),
     hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
     hitomiFormatTooltip: new I18nValue("In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh", "在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。"),
+    autoOpen: new I18nValue("Auto Open", "自动展开"),
+    autoOpenTooltip: new I18nValue("Automatically open after the page is loaded", "当页面加载后，自动展开阅读视图。"),
+    autoLoadInBackground: new I18nValue("Keep Loading", "后台加载"),
+    autoLoadInBackgroundTooltip: new I18nValue("Keep Auto-Loading after the tab loses focus", "当标签页失去焦点后保持自动加载。"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
     showHelp: new I18nValue("Help", "帮助"),
@@ -4554,17 +4562,17 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
   width: 100%;
-  top: 0px;
   right: 0px;
   background-color: black;
   color: #fff;
-  text-align: center;
-  padding: 5px 0;
   border-radius: 6px;
   position: absolute;
   z-index: 1;
-  font-size: small;
+  font-size: medium;
   white-space: normal;
+  text-align: left;
+  padding: 0.3rem 1rem;
+  box-sizing: border-box;
 }
 .p-tooltip:hover .p-tooltiptext {
   visibility: visible;
@@ -5253,9 +5261,9 @@ html {
       createExcludeURLPanel(HTML.root);
     }
     const signal = { first: true };
-    function main(extend) {
+    function main(expand) {
       if (HTML.pageHelper) {
-        if (extend && !HTML.pageHelper.classList.contains("p-helper-extend")) {
+        if (expand && !HTML.pageHelper.classList.contains("p-helper-extend")) {
           HTML.pageHelper.classList.add("p-helper-extend");
           showFullViewGrid();
           if (signal.first) {
@@ -6636,13 +6644,15 @@ html {
       conf["first"] = false;
       saveConf(conf);
     }
+    if (conf.autoOpen)
+      events.main(true);
     return () => {
       console.log("destory eh-view-enhance");
-      HTML.root.remove();
       PF.abort();
       IL.abort();
       IFQ.length = 0;
       EBUS.reset();
+      HTML.root.remove();
       return sleep(500);
     };
   }
@@ -6666,16 +6676,22 @@ html {
     });
   })();
   let destoryFunc;
+  const debouncer = new Debouncer();
   window.addEventListener("locationchange", () => {
-    let newStart = () => {
-      const matcher2 = adaptMatcher(window.location.href);
-      matcher2 && (destoryFunc = main(matcher2));
-    };
-    if (destoryFunc) {
-      destoryFunc().then(newStart);
-    } else {
-      newStart();
-    }
+    debouncer.addEvent("LOCATION-CHANGE", () => {
+      const newStart = () => {
+        if (document.querySelector(".ehvp-root"))
+          return;
+        const matcher2 = adaptMatcher(window.location.href);
+        matcher2 && (destoryFunc = main(matcher2));
+      };
+      if (destoryFunc) {
+        console.log("locationchange");
+        destoryFunc().then(newStart);
+      } else {
+        newStart();
+      }
+    }, 10);
   });
   const matcher = adaptMatcher(window.location.href);
   if (matcher !== null) {

@@ -232,8 +232,12 @@ export function loadStyleSheel() {
   position: absolute;
   color: rgb(200, 222, 200);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
-  overflow: hidden;
+  overflow: auto scroll;
   padding: 3px;
+  scrollbar-width: none;
+}
+.p-panel::-webkit-scrollbar {
+  display: none;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
@@ -402,11 +406,6 @@ export function loadStyleSheel() {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   align-content: start;
-  overflow-y: scroll;
-  scrollbar-width: none;
-}
-.p-config::-webkit-scrollbar {
-  display: none;
 }
 .p-helper .p-config label {
   display: flex;
@@ -538,8 +537,9 @@ export function loadStyleSheel() {
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
   width: 100%;
-  right: 0px;
-  background-color: black;
+  left: 0px;
+  margin-top: 2rem;
+  background-color: #000000bf;
   color: #fff;
   border-radius: 6px;
   position: absolute;

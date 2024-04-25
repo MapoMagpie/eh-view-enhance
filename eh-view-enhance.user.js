@@ -590,7 +590,7 @@
     hitomiFormatTooltip: new I18nValue("In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh", "在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。"),
     autoOpen: new I18nValue("Auto Open", "自动展开"),
     autoOpenTooltip: new I18nValue("Automatically open after the page is loaded", "当页面加载后，自动展开阅读视图。"),
-    autoLoadInBackground: new I18nValue("Keep Loading", "后台加载"),
+    autoLoadInBackground: new I18nValue("Background Load", "后台加载"),
     autoLoadInBackgroundTooltip: new I18nValue("Keep Auto-Loading after the tab loses focus", "当标签页失去焦点后保持自动加载。"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
@@ -1525,12 +1525,21 @@ ${chapters.map((c, i) => `<div><label>
         });
       });
       EBUS.subscribe("pf-change-chapter", (index) => !this.queue.downloading?.() && this.abort(index > 0 ? 0 : void 0));
+      window.addEventListener("focus", () => {
+        if (conf.autoLoadInBackground)
+          return;
+        if (document.hidden)
+          return;
+        this.abort(0);
+      });
     }
     onFailed(cb) {
       this.onFailedCallback = cb;
     }
     start() {
       if (!this.autoLoad)
+        return;
+      if (document.hidden && !conf.autoLoadInBackground)
         return;
       if (this.processingIndexList.length === 0)
         return;
@@ -4256,8 +4265,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   position: absolute;
   color: rgb(200, 222, 200);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
-  overflow: hidden;
+  overflow: auto scroll;
   padding: 3px;
+  scrollbar-width: none;
+}
+.p-panel::-webkit-scrollbar {
+  display: none;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
@@ -4426,11 +4439,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   align-content: start;
-  overflow-y: scroll;
-  scrollbar-width: none;
-}
-.p-config::-webkit-scrollbar {
-  display: none;
 }
 .p-helper .p-config label {
   display: flex;
@@ -4562,8 +4570,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
   width: 100%;
-  right: 0px;
-  background-color: black;
+  left: 0px;
+  margin-top: 2rem;
+  background-color: #000000bf;
   color: #fff;
   border-radius: 6px;
   position: absolute;
@@ -4934,9 +4943,7 @@ html {
       saveConf(conf);
       if (key === "autoLoad") {
         IL.autoLoad = conf.autoLoad;
-        if (IL.autoLoad) {
-          IL.abort(IFQ.currIndex);
-        }
+        IL.abort(0);
       }
       if (key === "reversePages") {
         const rule = queryCSSRules(HTML.styleSheel, ".bifm-flex");
@@ -5456,7 +5463,11 @@ html {
     const [start, end] = item.gridColumnRange ? item.gridColumnRange : [1, 11];
     return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}">
             <label class="p-label">
-              <span>${i18nValue.get()} ${i18nValueTooltip ? `<span class="p-tooltip">?<span class="p-tooltiptext">${i18nValueTooltip.get()}</span></span>` : ""}:</span>
+              <span>
+                <span>${i18nValue.get()}</span>
+                <span class="p-tooltip">${i18nValueTooltip ? "?" : ""}<span class="p-tooltiptext">${i18nValueTooltip?.get() || ""}</span></span>
+                <span>:</span>
+              </span>
               ${input}</label></div>`;
   }
   function createHTML() {

@@ -90,9 +90,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     saveConf(conf);
     if (key === "autoLoad") {
       IL.autoLoad = conf.autoLoad;
-      if (IL.autoLoad) {
-        IL.abort(IFQ.currIndex);
-      }
+      IL.abort(0);
     }
     if (key === "reversePages") {
       const rule = queryCSSRules(HTML.styleSheel, ".bifm-flex");

@@ -33,6 +33,11 @@ export class IdleLoader {
     });
     // if not downloading, abort idle loader, if chapter index < 0, mean back to the chapters selection, then abort without restart
     EBUS.subscribe("pf-change-chapter", (index) => !this.queue.downloading?.() && this.abort(index > 0 ? 0 : undefined));
+    window.addEventListener("focus", () => {
+      if (conf.autoLoadInBackground) return;
+      if (document.hidden) return;
+      this.abort(0);
+    });
   }
 
   onFailed(cb: () => void) {
@@ -41,6 +46,7 @@ export class IdleLoader {
 
   start() {
     if (!this.autoLoad) return;
+    if (document.hidden && !conf.autoLoadInBackground) return;
     // processingIndexList.length === 0 means idle loader aborted
     if (this.processingIndexList.length === 0) return;
     if (this.queue.length === 0) return;
@@ -114,7 +120,6 @@ export class IdleLoader {
     // set empty to abort the old task
     this.processingIndexList = [];
     if (!this.autoLoad) return;
-    // evLog(`终止空闲自加载, 下次将从第${newIndex + 1}张开始加载`);
     // 中止空闲加载后，会在等待一段时间后再次重启空闲加载
     window.clearTimeout(this.restartId);
     if (newIndex !== undefined) {

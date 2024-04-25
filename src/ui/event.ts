@@ -90,7 +90,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     saveConf(conf);
     if (key === "autoLoad") {
       IL.autoLoad = conf.autoLoad;
-      IL.abort(0);
+      IL.abort(0, conf.restartIdleLoader / 3);
     }
     if (key === "reversePages") {
       const rule = queryCSSRules(HTML.styleSheel, ".bifm-flex");
@@ -314,7 +314,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         () => {
           IL.autoLoad = !IL.autoLoad;
           if (IL.autoLoad) {
-            IL.abort(IFQ.currIndex);
+            IL.abort(IFQ.currIndex, conf.restartIdleLoader / 3);
           }
         }
       ),

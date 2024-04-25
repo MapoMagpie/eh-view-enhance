@@ -2,6 +2,7 @@ import { conf } from "./config";
 import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { FetchState } from "./img-fetcher";
+import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
 
 export class IdleLoader {
@@ -12,16 +13,16 @@ export class IdleLoader {
   minWaitMS: number;
   onFailedCallback?: () => void;
   autoLoad: boolean = false;
+  debouncer: Debouncer;
   constructor(queue: IMGFetcherQueue) {
     //图片获取器队列
     this.queue = queue;
     //当前处理的索引列表
     this.processingIndexList = [0];
-    //中止后的用于重新启动的延迟器的id
-    this.restartId;
     this.maxWaitMS = 1000;
     this.minWaitMS = 300;
     this.autoLoad = conf.autoLoad;
+    this.debouncer = new Debouncer();
     EBUS.subscribe("ifq-on-do", (currIndex, _, downloading) => !downloading && this.abort(currIndex));
     EBUS.subscribe("imf-on-finished", (index) => {
       // this.processingIndexList not include index mean curr task dont go continue, it aborted
@@ -35,8 +36,11 @@ export class IdleLoader {
     EBUS.subscribe("pf-change-chapter", (index) => !this.queue.downloading?.() && this.abort(index > 0 ? 0 : undefined));
     window.addEventListener("focus", () => {
       if (conf.autoLoadInBackground) return;
-      if (document.hidden) return;
-      this.abort(0);
+      this.debouncer.addEvent("Idle-Load-on-focus", () => {
+        console.log("[ IdleLoader ] window focus, document.hidden:", document.hidden);
+        if (document.hidden) return;
+        this.abort(0, 10);
+      }, 100);
     });
   }
 
@@ -116,22 +120,20 @@ export class IdleLoader {
     });
   }
 
-  abort(newIndex?: number) {
+  abort(newIndex?: number, delayRestart?: number) {
     // set empty to abort the old task
     this.processingIndexList = [];
-    if (!this.autoLoad) return;
     // 中止空闲加载后，会在等待一段时间后再次重启空闲加载
-    window.clearTimeout(this.restartId);
-    if (newIndex !== undefined) {
-      this.restartId = window.setTimeout(() => {
-        // Double check if we are downloading
-        // In case we change to a Big image, and click Download button before conf.restartIdleLoader seconds
-        if (this.queue.downloading?.()) return;
-        this.processingIndexList = [newIndex];
-        this.checkProcessingIndex();
-        this.start();
-      }, conf.restartIdleLoader);
-    }
+    this.debouncer.addEvent("IDLE-LOAD-ABORT", () => {
+      if (!this.autoLoad) return;
+      if (newIndex === undefined) return;
+      // check if we are downloading
+      // In case we change to a Big image, and click Download button before conf.restartIdleLoader seconds
+      if (this.queue.downloading?.()) return;
+      this.processingIndexList = [newIndex];
+      this.checkProcessingIndex();
+      this.start();
+    }, delayRestart || conf.restartIdleLoader);
   }
 }
 

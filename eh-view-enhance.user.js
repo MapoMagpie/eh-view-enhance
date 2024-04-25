@@ -1508,13 +1508,14 @@ ${chapters.map((c, i) => `<div><label>
     minWaitMS;
     onFailedCallback;
     autoLoad = false;
+    debouncer;
     constructor(queue) {
       this.queue = queue;
       this.processingIndexList = [0];
-      this.restartId;
       this.maxWaitMS = 1e3;
       this.minWaitMS = 300;
       this.autoLoad = conf.autoLoad;
+      this.debouncer = new Debouncer();
       EBUS.subscribe("ifq-on-do", (currIndex, _, downloading) => !downloading && this.abort(currIndex));
       EBUS.subscribe("imf-on-finished", (index) => {
         if (!this.processingIndexList.includes(index))
@@ -1528,9 +1529,12 @@ ${chapters.map((c, i) => `<div><label>
       window.addEventListener("focus", () => {
         if (conf.autoLoadInBackground)
           return;
-        if (document.hidden)
-          return;
-        this.abort(0);
+        this.debouncer.addEvent("Idle-Load-on-focus", () => {
+          console.log("[ IdleLoader ] window focus, document.hidden:", document.hidden);
+          if (document.hidden)
+            return;
+          this.abort(0, 10);
+        }, 100);
       });
     }
     onFailed(cb) {
@@ -1597,20 +1601,19 @@ ${chapters.map((c, i) => `<div><label>
         window.setTimeout(() => resolve(true), time);
       });
     }
-    abort(newIndex) {
+    abort(newIndex, delayRestart) {
       this.processingIndexList = [];
-      if (!this.autoLoad)
-        return;
-      window.clearTimeout(this.restartId);
-      if (newIndex !== void 0) {
-        this.restartId = window.setTimeout(() => {
-          if (this.queue.downloading?.())
-            return;
-          this.processingIndexList = [newIndex];
-          this.checkProcessingIndex();
-          this.start();
-        }, conf.restartIdleLoader);
-      }
+      this.debouncer.addEvent("IDLE-LOAD-ABORT", () => {
+        if (!this.autoLoad)
+          return;
+        if (newIndex === void 0)
+          return;
+        if (this.queue.downloading?.())
+          return;
+        this.processingIndexList = [newIndex];
+        this.checkProcessingIndex();
+        this.start();
+      }, delayRestart || conf.restartIdleLoader);
     }
   }
 
@@ -4943,7 +4946,7 @@ html {
       saveConf(conf);
       if (key === "autoLoad") {
         IL.autoLoad = conf.autoLoad;
-        IL.abort(0);
+        IL.abort(0, conf.restartIdleLoader / 3);
       }
       if (key === "reversePages") {
         const rule = queryCSSRules(HTML.styleSheel, ".bifm-flex");
@@ -5158,7 +5161,7 @@ html {
           () => {
             IL.autoLoad = !IL.autoLoad;
             if (IL.autoLoad) {
-              IL.abort(IFQ.currIndex);
+              IL.abort(IFQ.currIndex, conf.restartIdleLoader / 3);
             }
           }
         ),

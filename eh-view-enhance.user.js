@@ -6248,6 +6248,8 @@ html {
     consecutive() {
       this.throttler.addEvent("SCROLL", () => {
         this.debouncer.addEvent("REDUCE", () => {
+          if (!this.elements.curr[0])
+            return;
           const distance2 = this.getRealOffsetTop(this.elements.curr[0]) - this.frame.scrollTop;
           if (this.tryReduce()) {
             this.restoreScrollTop(this.elements.curr[0], distance2);

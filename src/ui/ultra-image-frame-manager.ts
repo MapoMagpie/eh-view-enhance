@@ -355,9 +355,10 @@ export class BigImageFrameManager {
     this.throttler.addEvent("SCROLL", () => {
       // delay to reduce the image element in big image frame;
       this.debouncer.addEvent("REDUCE", () => {
-        const distance = this.getRealOffsetTop(this.elements.curr[0]!) - this.frame.scrollTop;
+        if (!this.elements.curr[0]) return;
+        const distance = this.getRealOffsetTop(this.elements.curr[0]) - this.frame.scrollTop;
         if (this.tryReduce()) {
-          this.restoreScrollTop(this.elements.curr[0]!, distance);
+          this.restoreScrollTop(this.elements.curr[0], distance);
         }
       }, 500);
       let mediaNodes = this.getMediaNodes();

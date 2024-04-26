@@ -5153,7 +5153,7 @@ html {
                 return;
               start = Math.max(0, Math.min(start, IFQ.length - 1));
             }
-            IFQ[start].node.canvasElement?.dispatchEvent(new MouseEvent("click"));
+            IFQ[start].node.root?.querySelector("a")?.dispatchEvent(new MouseEvent("click"));
           }
         ),
         "pause-auto-load-temporarily": new KeyboardDesc(
@@ -5639,12 +5639,12 @@ html {
     HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", parseInt(event.target.textContent ?? "") - 1));
     document.addEventListener("keydown", (event) => events.keyboardEvent(event));
     HTML.fullViewGrid.addEventListener("keydown", (event) => {
-      event.stopPropagation();
       events.fullViewGridKeyBoardEvent(event);
+      event.stopPropagation();
     });
     HTML.bigImageFrame.addEventListener("keydown", (event) => {
-      event.stopPropagation();
       events.bigImageFrameKeyBoardEvent(event);
+      event.stopPropagation();
     });
     HTML.imgLandLeft.addEventListener("click", (event) => {
       BIFM.stepNext(conf.reversePages ? "next" : "prev");

@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.10
+// @version            4.4.11
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
@@ -22,6 +22,7 @@
 // @match              https://rokuhentai.com/*
 // @match              https://18comic.org/*
 // @match              https://18comic.vip/*
+// @match              https://18-comicfreedom.xyz/*
 // @match              https://rule34.xxx/*
 // @match              https://imhentai.xxx/*
 // @match              https://danbooru.donmai.us/*
@@ -42,6 +43,7 @@
 // @connect            yande.re
 // @connect            18comic.org
 // @connect            18comic.vip
+// @connect            18-comicfreedom.xyz
 // @connect            rule34.xxx
 // @connect            imhentai.xxx
 // @connect            donmai.us
@@ -2120,7 +2122,7 @@ ${chapters.map((c, i) => `<div><label>
       );
     }
     workURL() {
-      return /18comic.(vip|org)\/album\/\d+/;
+      return /18-?comic(freedom)?.(vip|org|xyz)\/album\/\d+/;
     }
     galleryMeta(doc) {
       if (this.meta)

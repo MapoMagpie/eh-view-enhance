@@ -23,7 +23,7 @@ export default defineConfig(({ command }) => {
       monkey({
         entry: 'src/main.ts',
         userscript: {
-          version: '4.4.10',
+          version: '4.4.11',
           icon: 'https://exhentai.org/favicon.ico',
           namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
           supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',
@@ -41,6 +41,7 @@ export default defineConfig(({ command }) => {
             'https://rokuhentai.com/*',
             'https://18comic.org/*',
             'https://18comic.vip/*',
+            'https://18-comicfreedom.xyz/*',
             'https://rule34.xxx/*',
             'https://imhentai.xxx/*',
             'https://danbooru.donmai.us/*',
@@ -66,6 +67,7 @@ export default defineConfig(({ command }) => {
             'yande.re',
             '18comic.org',
             '18comic.vip',
+            '18-comicfreedom.xyz',
             'rule34.xxx',
             'imhentai.xxx',
             'donmai.us',

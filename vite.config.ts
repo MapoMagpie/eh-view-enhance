@@ -23,7 +23,7 @@ export default defineConfig(({ command }) => {
       monkey({
         entry: 'src/main.ts',
         userscript: {
-          version: '4.4.11',
+          version: '4.4.12',
           icon: 'https://exhentai.org/favicon.ico',
           namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
           supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',
@@ -82,22 +82,22 @@ export default defineConfig(({ command }) => {
             'GM_getValue',
             // 'GM_getResourceURL'
           ],
-          require: [
-            'https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js',
-            'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js',
-            'https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js',
-            'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js',
-          ],
+          // require: [
+          //   'https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js',
+          //   'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js',
+          //   'https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js',
+          //   'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js',
+          // ],
         },
         build: {
           fileName: 'eh-view-enhance.user.js',
           metaFileName: 'eh-view-enhance.meta.js',
-          externalGlobals: {
-            "jszip": "JSZip",
-            "file-saver": "saveAs",
-            "hammerjs": "Hammer",
-            "pica": "pica",
-          },
+          // externalGlobals: {
+          //   "jszip": "JSZip",
+          //   "file-saver": "saveAs",
+          //   "hammerjs": "Hammer",
+          //   "pica": "pica",
+          // },
           autoGrant: true,
           // externalResource: {
           //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"

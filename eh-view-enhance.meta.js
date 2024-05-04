@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.11
+// @version            4.4.12
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
@@ -27,10 +27,6 @@
 // @match              https://imhentai.xxx/*
 // @match              https://danbooru.donmai.us/*
 // @match              https://gelbooru.com/*
-// @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
-// @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
-// @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
-// @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
 // @connect            exhentai.org
 // @connect            e-hentai.org
 // @connect            hath.network

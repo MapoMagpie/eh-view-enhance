@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.11
+// @version            4.4.12
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
@@ -27,10 +27,6 @@
 // @match              https://imhentai.xxx/*
 // @match              https://danbooru.donmai.us/*
 // @match              https://gelbooru.com/*
-// @require            https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js
-// @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
-// @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
-// @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
 // @connect            exhentai.org
 // @connect            e-hentai.org
 // @connect            hath.network
@@ -53,7 +49,7 @@
 // @grant              GM_xmlhttpRequest
 // ==/UserScript==
 
-(function (fileSaver, pica, JSZip, Hammer) {
+(function () {
   'use strict';
 
   var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
@@ -894,6 +890,22 @@
     }
   }
 
+  var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
+  function getDefaultExportFromCjs (x) {
+  	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+  }
+
+  var FileSaver_min = {exports: {}};
+
+  (function (module, exports) {
+  	(function(a,b){b();})(commonjsGlobal,function(){function b(a,b){return "undefined"==typeof b?b={autoBom:!1}:"object"!=typeof b&&(console.warn("Deprecated: Expected third argument to be a object"),b={autoBom:!b}),b.autoBom&&/^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(a.type)?new Blob(["\uFEFF",a],{type:a.type}):a}function c(a,b,c){var d=new XMLHttpRequest;d.open("GET",a),d.responseType="blob",d.onload=function(){g(d.response,b,c);},d.onerror=function(){console.error("could not download file");},d.send();}function d(a){var b=new XMLHttpRequest;b.open("HEAD",a,!1);try{b.send();}catch(a){}return 200<=b.status&&299>=b.status}function e(a){try{a.dispatchEvent(new MouseEvent("click"));}catch(c){var b=document.createEvent("MouseEvents");b.initMouseEvent("click",!0,!0,window,0,0,0,80,20,!1,!1,!1,!1,0,null),a.dispatchEvent(b);}}var f="object"==typeof window&&window.window===window?window:"object"==typeof self&&self.self===self?self:"object"==typeof commonjsGlobal&&commonjsGlobal.global===commonjsGlobal?commonjsGlobal:void 0,a=f.navigator&&/Macintosh/.test(navigator.userAgent)&&/AppleWebKit/.test(navigator.userAgent)&&!/Safari/.test(navigator.userAgent),g=f.saveAs||("object"!=typeof window||window!==f?function(){}:"download"in HTMLAnchorElement.prototype&&!a?function(b,g,h){var i=f.URL||f.webkitURL,j=document.createElement("a");g=g||b.name||"download",j.download=g,j.rel="noopener","string"==typeof b?(j.href=b,j.origin===location.origin?e(j):d(j.href)?c(b,g,h):e(j,j.target="_blank")):(j.href=i.createObjectURL(b),setTimeout(function(){i.revokeObjectURL(j.href);},4E4),setTimeout(function(){e(j);},0));}:"msSaveOrOpenBlob"in navigator?function(f,g,h){if(g=g||f.name||"download","string"!=typeof f)navigator.msSaveOrOpenBlob(b(f,h),g);else if(d(f))c(f,g,h);else {var i=document.createElement("a");i.href=f,i.target="_blank",setTimeout(function(){e(i);});}}:function(b,d,e,g){if(g=g||open("","_blank"),g&&(g.document.title=g.document.body.innerText="downloading..."),"string"==typeof b)return c(b,d,e);var h="application/octet-stream"===b.type,i=/constructor/i.test(f.HTMLElement)||f.safari,j=/CriOS\/[\d]+/.test(navigator.userAgent);if((j||h&&i||a)&&"undefined"!=typeof FileReader){var k=new FileReader;k.onloadend=function(){var a=k.result;a=j?a:a.replace(/^data:[^;]*;/,"data:attachment/file;"),g?g.location.href=a:location=a,g=null;},k.readAsDataURL(b);}else {var l=f.URL||f.webkitURL,m=l.createObjectURL(b);g?g.location=m:location.href=m,g=null,setTimeout(function(){l.revokeObjectURL(m);},4E4);}});f.saveAs=g.saveAs=g,(module.exports=g);});
+
+  	
+  } (FileSaver_min));
+
+  var FileSaver_minExports = FileSaver_min.exports;
+
   class DownloaderCanvas {
     canvas;
     mousemoveState;
@@ -1352,7 +1364,7 @@ ${chapters.map((c, i) => `<div><label>
           while (readable = zip.nextReadableStream()) {
             const blob = await new Response(readable).blob();
             let ext = zip.currVolumeNo === zip.volumes - 1 ? "zip" : "z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
-            fileSaver.saveAs(blob, `${archiveName}.${ext}`);
+            FileSaver_minExports.saveAs(blob, `${archiveName}.${ext}`);
           }
         };
         await save();
@@ -1618,6 +1630,2469 @@ ${chapters.map((c, i) => `<div><label>
       }, delayRestart || conf.restartIdleLoader);
     }
   }
+
+  function commonjsRequire(path) {
+  	throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
+  }
+
+  var pica$1 = {exports: {}};
+
+  /*!
+
+  pica
+  https://github.com/nodeca/pica
+
+  */
+
+  (function (module, exports) {
+  	(function(f){{module.exports=f();}})(function(){return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof commonjsRequire&&commonjsRequire;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t);}return n[i].exports}for(var u="function"==typeof commonjsRequire&&commonjsRequire,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(_dereq_,module,exports){
+
+  	var Multimath = _dereq_('multimath');
+
+  	var mm_unsharp_mask = _dereq_('./mm_unsharp_mask');
+
+  	var mm_resize = _dereq_('./mm_resize');
+
+  	function MathLib(requested_features) {
+  	  var __requested_features = requested_features || [];
+
+  	  var features = {
+  	    js: __requested_features.indexOf('js') >= 0,
+  	    wasm: __requested_features.indexOf('wasm') >= 0
+  	  };
+  	  Multimath.call(this, features);
+  	  this.features = {
+  	    js: features.js,
+  	    wasm: features.wasm && this.has_wasm()
+  	  };
+  	  this.use(mm_unsharp_mask);
+  	  this.use(mm_resize);
+  	}
+
+  	MathLib.prototype = Object.create(Multimath.prototype);
+  	MathLib.prototype.constructor = MathLib;
+
+  	MathLib.prototype.resizeAndUnsharp = function resizeAndUnsharp(options, cache) {
+  	  var result = this.resize(options, cache);
+
+  	  if (options.unsharpAmount) {
+  	    this.unsharp_mask(result, options.toWidth, options.toHeight, options.unsharpAmount, options.unsharpRadius, options.unsharpThreshold);
+  	  }
+
+  	  return result;
+  	};
+
+  	module.exports = MathLib;
+
+  	},{"./mm_resize":4,"./mm_unsharp_mask":9,"multimath":19}],2:[function(_dereq_,module,exports){
+  	//var FIXED_FRAC_BITS = 14;
+
+  	function clampTo8(i) {
+  	  return i < 0 ? 0 : i > 255 ? 255 : i;
+  	}
+
+  	function clampNegative(i) {
+  	  return i >= 0 ? i : 0;
+  	} // Convolve image data in horizontal direction. Can be used for:
+  	//
+  	// 1. bitmap with premultiplied alpha
+  	// 2. bitmap without alpha (all values 255)
+  	//
+  	// Notes:
+  	//
+  	// - output is transposed
+  	// - output resolution is ~15 bits per channel(for better precision).
+  	//
+
+
+  	function convolveHor(src, dest, srcW, srcH, destW, filters) {
+  	  var r, g, b, a;
+  	  var filterPtr, filterShift, filterSize;
+  	  var srcPtr, srcY, destX, filterVal;
+  	  var srcOffset = 0,
+  	      destOffset = 0; // For each row
+
+  	  for (srcY = 0; srcY < srcH; srcY++) {
+  	    filterPtr = 0; // Apply precomputed filters to each destination row point
+
+  	    for (destX = 0; destX < destW; destX++) {
+  	      // Get the filter that determines the current output pixel.
+  	      filterShift = filters[filterPtr++];
+  	      filterSize = filters[filterPtr++];
+  	      srcPtr = srcOffset + filterShift * 4 | 0;
+  	      r = g = b = a = 0; // Apply the filter to the row to get the destination pixel r, g, b, a
+
+  	      for (; filterSize > 0; filterSize--) {
+  	        filterVal = filters[filterPtr++]; // Use reverse order to workaround deopts in old v8 (node v.10)
+  	        // Big thanks to @mraleph (Vyacheslav Egorov) for the tip.
+
+  	        a = a + filterVal * src[srcPtr + 3] | 0;
+  	        b = b + filterVal * src[srcPtr + 2] | 0;
+  	        g = g + filterVal * src[srcPtr + 1] | 0;
+  	        r = r + filterVal * src[srcPtr] | 0;
+  	        srcPtr = srcPtr + 4 | 0;
+  	      } // Store 15 bits between passes for better precision
+  	      // Instead of shift to 14 (FIXED_FRAC_BITS), shift to 7 only
+  	      //
+
+
+  	      dest[destOffset + 3] = clampNegative(a >> 7);
+  	      dest[destOffset + 2] = clampNegative(b >> 7);
+  	      dest[destOffset + 1] = clampNegative(g >> 7);
+  	      dest[destOffset] = clampNegative(r >> 7);
+  	      destOffset = destOffset + srcH * 4 | 0;
+  	    }
+
+  	    destOffset = (srcY + 1) * 4 | 0;
+  	    srcOffset = (srcY + 1) * srcW * 4 | 0;
+  	  }
+  	} // Supplementary method for `convolveHor()`
+  	//
+
+
+  	function convolveVert(src, dest, srcW, srcH, destW, filters) {
+  	  var r, g, b, a;
+  	  var filterPtr, filterShift, filterSize;
+  	  var srcPtr, srcY, destX, filterVal;
+  	  var srcOffset = 0,
+  	      destOffset = 0; // For each row
+
+  	  for (srcY = 0; srcY < srcH; srcY++) {
+  	    filterPtr = 0; // Apply precomputed filters to each destination row point
+
+  	    for (destX = 0; destX < destW; destX++) {
+  	      // Get the filter that determines the current output pixel.
+  	      filterShift = filters[filterPtr++];
+  	      filterSize = filters[filterPtr++];
+  	      srcPtr = srcOffset + filterShift * 4 | 0;
+  	      r = g = b = a = 0; // Apply the filter to the row to get the destination pixel r, g, b, a
+
+  	      for (; filterSize > 0; filterSize--) {
+  	        filterVal = filters[filterPtr++]; // Use reverse order to workaround deopts in old v8 (node v.10)
+  	        // Big thanks to @mraleph (Vyacheslav Egorov) for the tip.
+
+  	        a = a + filterVal * src[srcPtr + 3] | 0;
+  	        b = b + filterVal * src[srcPtr + 2] | 0;
+  	        g = g + filterVal * src[srcPtr + 1] | 0;
+  	        r = r + filterVal * src[srcPtr] | 0;
+  	        srcPtr = srcPtr + 4 | 0;
+  	      } // Sync with premultiplied version for exact result match
+
+
+  	      r >>= 7;
+  	      g >>= 7;
+  	      b >>= 7;
+  	      a >>= 7; // Bring this value back in range + round result.
+  	      //
+
+  	      dest[destOffset + 3] = clampTo8(a + (1 << 13) >> 14);
+  	      dest[destOffset + 2] = clampTo8(b + (1 << 13) >> 14);
+  	      dest[destOffset + 1] = clampTo8(g + (1 << 13) >> 14);
+  	      dest[destOffset] = clampTo8(r + (1 << 13) >> 14);
+  	      destOffset = destOffset + srcH * 4 | 0;
+  	    }
+
+  	    destOffset = (srcY + 1) * 4 | 0;
+  	    srcOffset = (srcY + 1) * srcW * 4 | 0;
+  	  }
+  	} // Premultiply & convolve image data in horizontal direction. Can be used for:
+  	//
+  	// - Any bitmap data, extracted with `.getImageData()` method (with
+  	//   non-premultiplied alpha)
+  	//
+  	// For images without alpha channel this method is slower than `convolveHor()`
+  	//
+
+
+  	function convolveHorWithPre(src, dest, srcW, srcH, destW, filters) {
+  	  var r, g, b, a, alpha;
+  	  var filterPtr, filterShift, filterSize;
+  	  var srcPtr, srcY, destX, filterVal;
+  	  var srcOffset = 0,
+  	      destOffset = 0; // For each row
+
+  	  for (srcY = 0; srcY < srcH; srcY++) {
+  	    filterPtr = 0; // Apply precomputed filters to each destination row point
+
+  	    for (destX = 0; destX < destW; destX++) {
+  	      // Get the filter that determines the current output pixel.
+  	      filterShift = filters[filterPtr++];
+  	      filterSize = filters[filterPtr++];
+  	      srcPtr = srcOffset + filterShift * 4 | 0;
+  	      r = g = b = a = 0; // Apply the filter to the row to get the destination pixel r, g, b, a
+
+  	      for (; filterSize > 0; filterSize--) {
+  	        filterVal = filters[filterPtr++]; // Use reverse order to workaround deopts in old v8 (node v.10)
+  	        // Big thanks to @mraleph (Vyacheslav Egorov) for the tip.
+
+  	        alpha = src[srcPtr + 3];
+  	        a = a + filterVal * alpha | 0;
+  	        b = b + filterVal * src[srcPtr + 2] * alpha | 0;
+  	        g = g + filterVal * src[srcPtr + 1] * alpha | 0;
+  	        r = r + filterVal * src[srcPtr] * alpha | 0;
+  	        srcPtr = srcPtr + 4 | 0;
+  	      } // Premultiply is (* alpha / 255).
+  	      // Postpone division for better performance
+
+
+  	      b = b / 255 | 0;
+  	      g = g / 255 | 0;
+  	      r = r / 255 | 0; // Store 15 bits between passes for better precision
+  	      // Instead of shift to 14 (FIXED_FRAC_BITS), shift to 7 only
+  	      //
+
+  	      dest[destOffset + 3] = clampNegative(a >> 7);
+  	      dest[destOffset + 2] = clampNegative(b >> 7);
+  	      dest[destOffset + 1] = clampNegative(g >> 7);
+  	      dest[destOffset] = clampNegative(r >> 7);
+  	      destOffset = destOffset + srcH * 4 | 0;
+  	    }
+
+  	    destOffset = (srcY + 1) * 4 | 0;
+  	    srcOffset = (srcY + 1) * srcW * 4 | 0;
+  	  }
+  	} // Supplementary method for `convolveHorWithPre()`
+  	//
+
+
+  	function convolveVertWithPre(src, dest, srcW, srcH, destW, filters) {
+  	  var r, g, b, a;
+  	  var filterPtr, filterShift, filterSize;
+  	  var srcPtr, srcY, destX, filterVal;
+  	  var srcOffset = 0,
+  	      destOffset = 0; // For each row
+
+  	  for (srcY = 0; srcY < srcH; srcY++) {
+  	    filterPtr = 0; // Apply precomputed filters to each destination row point
+
+  	    for (destX = 0; destX < destW; destX++) {
+  	      // Get the filter that determines the current output pixel.
+  	      filterShift = filters[filterPtr++];
+  	      filterSize = filters[filterPtr++];
+  	      srcPtr = srcOffset + filterShift * 4 | 0;
+  	      r = g = b = a = 0; // Apply the filter to the row to get the destination pixel r, g, b, a
+
+  	      for (; filterSize > 0; filterSize--) {
+  	        filterVal = filters[filterPtr++]; // Use reverse order to workaround deopts in old v8 (node v.10)
+  	        // Big thanks to @mraleph (Vyacheslav Egorov) for the tip.
+
+  	        a = a + filterVal * src[srcPtr + 3] | 0;
+  	        b = b + filterVal * src[srcPtr + 2] | 0;
+  	        g = g + filterVal * src[srcPtr + 1] | 0;
+  	        r = r + filterVal * src[srcPtr] | 0;
+  	        srcPtr = srcPtr + 4 | 0;
+  	      } // Downscale to leave room for un-premultiply
+
+
+  	      r >>= 7;
+  	      g >>= 7;
+  	      b >>= 7;
+  	      a >>= 7; // Un-premultiply
+
+  	      a = clampTo8(a + (1 << 13) >> 14);
+
+  	      if (a > 0) {
+  	        r = r * 255 / a | 0;
+  	        g = g * 255 / a | 0;
+  	        b = b * 255 / a | 0;
+  	      } // Bring this value back in range + round result.
+  	      // Shift value = FIXED_FRAC_BITS + 7
+  	      //
+
+
+  	      dest[destOffset + 3] = a;
+  	      dest[destOffset + 2] = clampTo8(b + (1 << 13) >> 14);
+  	      dest[destOffset + 1] = clampTo8(g + (1 << 13) >> 14);
+  	      dest[destOffset] = clampTo8(r + (1 << 13) >> 14);
+  	      destOffset = destOffset + srcH * 4 | 0;
+  	    }
+
+  	    destOffset = (srcY + 1) * 4 | 0;
+  	    srcOffset = (srcY + 1) * srcW * 4 | 0;
+  	  }
+  	}
+
+  	module.exports = {
+  	  convolveHor: convolveHor,
+  	  convolveVert: convolveVert,
+  	  convolveHorWithPre: convolveHorWithPre,
+  	  convolveVertWithPre: convolveVertWithPre
+  	};
+
+  	},{}],3:[function(_dereq_,module,exports){
+  	/* eslint-disable max-len */
+
+  	module.exports = 'AGFzbQEAAAAADAZkeWxpbmsAAAAAAAEYA2AGf39/f39/AGAAAGAIf39/f39/f38AAg8BA2VudgZtZW1vcnkCAAADBwYBAAAAAAIGBgF/AEEACweUAQgRX193YXNtX2NhbGxfY3RvcnMAAAtjb252b2x2ZUhvcgABDGNvbnZvbHZlVmVydAACEmNvbnZvbHZlSG9yV2l0aFByZQADE2NvbnZvbHZlVmVydFdpdGhQcmUABApjb252b2x2ZUhWAAUMX19kc29faGFuZGxlAwAYX193YXNtX2FwcGx5X2RhdGFfcmVsb2NzAAAKyA4GAwABC4wDARB/AkAgA0UNACAERQ0AIANBAnQhFQNAQQAhE0EAIQsDQCALQQJqIQcCfyALQQF0IAVqIgYuAQIiC0UEQEEAIQhBACEGQQAhCUEAIQogBwwBCyASIAYuAQBqIQhBACEJQQAhCiALIRRBACEOIAchBkEAIQ8DQCAFIAZBAXRqLgEAIhAgACAIQQJ0aigCACIRQRh2bCAPaiEPIBFB/wFxIBBsIAlqIQkgEUEQdkH/AXEgEGwgDmohDiARQQh2Qf8BcSAQbCAKaiEKIAhBAWohCCAGQQFqIQYgFEEBayIUDQALIAlBB3UhCCAKQQd1IQYgDkEHdSEJIA9BB3UhCiAHIAtqCyELIAEgDEEBdCIHaiAIQQAgCEEAShs7AQAgASAHQQJyaiAGQQAgBkEAShs7AQAgASAHQQRyaiAJQQAgCUEAShs7AQAgASAHQQZyaiAKQQAgCkEAShs7AQAgDCAVaiEMIBNBAWoiEyAERw0ACyANQQFqIg0gAmwhEiANQQJ0IQwgAyANRw0ACwsL2gMBD38CQCADRQ0AIARFDQAgAkECdCEUA0AgCyEMQQAhE0EAIQIDQCACQQJqIQYCfyACQQF0IAVqIgcuAQIiAkUEQEEAIQhBACEHQQAhCkEAIQkgBgwBCyAHLgEAQQJ0IBJqIQhBACEJIAIhCkEAIQ0gBiEHQQAhDkEAIQ8DQCAFIAdBAXRqLgEAIhAgACAIQQF0IhFqLwEAbCAJaiEJIAAgEUEGcmovAQAgEGwgDmohDiAAIBFBBHJqLwEAIBBsIA9qIQ8gACARQQJyai8BACAQbCANaiENIAhBBGohCCAHQQFqIQcgCkEBayIKDQALIAlBB3UhCCANQQd1IQcgDkEHdSEKIA9BB3UhCSACIAZqCyECIAEgDEECdGogB0GAQGtBDnUiBkH/ASAGQf8BSBsiBkEAIAZBAEobQQh0QYD+A3EgCUGAQGtBDnUiBkH/ASAGQf8BSBsiBkEAIAZBAEobQRB0QYCA/AdxIApBgEBrQQ51IgZB/wEgBkH/AUgbIgZBACAGQQBKG0EYdHJyIAhBgEBrQQ51IgZB/wEgBkH/AUgbIgZBACAGQQBKG3I2AgAgAyAMaiEMIBNBAWoiEyAERw0ACyAUIAtBAWoiC2whEiADIAtHDQALCwuSAwEQfwJAIANFDQAgBEUNACADQQJ0IRUDQEEAIRNBACEGA0AgBkECaiEIAn8gBkEBdCAFaiIGLgECIgdFBEBBACEJQQAhDEEAIQ1BACEOIAgMAQsgEiAGLgEAaiEJQQAhDkEAIQ1BACEMIAchFEEAIQ8gCCEGA0AgBSAGQQF0ai4BACAAIAlBAnRqKAIAIhBBGHZsIhEgD2ohDyARIBBBEHZB/wFxbCAMaiEMIBEgEEEIdkH/AXFsIA1qIQ0gESAQQf8BcWwgDmohDiAJQQFqIQkgBkEBaiEGIBRBAWsiFA0ACyAPQQd1IQkgByAIagshBiABIApBAXQiCGogDkH/AW1BB3UiB0EAIAdBAEobOwEAIAEgCEECcmogDUH/AW1BB3UiB0EAIAdBAEobOwEAIAEgCEEEcmogDEH/AW1BB3UiB0EAIAdBAEobOwEAIAEgCEEGcmogCUEAIAlBAEobOwEAIAogFWohCiATQQFqIhMgBEcNAAsgC0EBaiILIAJsIRIgC0ECdCEKIAMgC0cNAAsLC4IEAQ9/AkAgA0UNACAERQ0AIAJBAnQhFANAIAshDEEAIRJBACEHA0AgB0ECaiEKAn8gB0EBdCAFaiICLgECIhNFBEBBACEIQQAhCUEAIQYgCiEHQQAMAQsgAi4BAEECdCARaiEJQQAhByATIQJBACENIAohBkEAIQ5BACEPA0AgBSAGQQF0ai4BACIIIAAgCUEBdCIQai8BAGwgB2ohByAAIBBBBnJqLwEAIAhsIA5qIQ4gACAQQQRyai8BACAIbCAPaiEPIAAgEEECcmovAQAgCGwgDWohDSAJQQRqIQkgBkEBaiEGIAJBAWsiAg0ACyAHQQd1IQggDUEHdSEJIA9BB3UhBiAKIBNqIQcgDkEHdQtBgEBrQQ51IgJB/wEgAkH/AUgbIgJBACACQQBKGyIKQf8BcQRAIAlB/wFsIAJtIQkgCEH/AWwgAm0hCCAGQf8BbCACbSEGCyABIAxBAnRqIAlBgEBrQQ51IgJB/wEgAkH/AUgbIgJBACACQQBKG0EIdEGA/gNxIAZBgEBrQQ51IgJB/wEgAkH/AUgbIgJBACACQQBKG0EQdEGAgPwHcSAKQRh0ciAIQYBAa0EOdSICQf8BIAJB/wFIGyICQQAgAkEAShtycjYCACADIAxqIQwgEkEBaiISIARHDQALIBQgC0EBaiILbCERIAMgC0cNAAsLC0AAIAcEQEEAIAIgAyAEIAUgABADIAJBACAEIAUgBiABEAQPC0EAIAIgAyAEIAUgABABIAJBACAEIAUgBiABEAIL';
+
+  	},{}],4:[function(_dereq_,module,exports){
+
+  	module.exports = {
+  	  name: 'resize',
+  	  fn: _dereq_('./resize'),
+  	  wasm_fn: _dereq_('./resize_wasm'),
+  	  wasm_src: _dereq_('./convolve_wasm_base64')
+  	};
+
+  	},{"./convolve_wasm_base64":3,"./resize":5,"./resize_wasm":8}],5:[function(_dereq_,module,exports){
+
+  	var createFilters = _dereq_('./resize_filter_gen');
+
+  	var _require = _dereq_('./convolve'),
+  	    convolveHor = _require.convolveHor,
+  	    convolveVert = _require.convolveVert,
+  	    convolveHorWithPre = _require.convolveHorWithPre,
+  	    convolveVertWithPre = _require.convolveVertWithPre;
+
+  	function hasAlpha(src, width, height) {
+  	  var ptr = 3,
+  	      len = width * height * 4 | 0;
+
+  	  while (ptr < len) {
+  	    if (src[ptr] !== 255) return true;
+  	    ptr = ptr + 4 | 0;
+  	  }
+
+  	  return false;
+  	}
+
+  	function resetAlpha(dst, width, height) {
+  	  var ptr = 3,
+  	      len = width * height * 4 | 0;
+
+  	  while (ptr < len) {
+  	    dst[ptr] = 0xFF;
+  	    ptr = ptr + 4 | 0;
+  	  }
+  	}
+
+  	module.exports = function resize(options) {
+  	  var src = options.src;
+  	  var srcW = options.width;
+  	  var srcH = options.height;
+  	  var destW = options.toWidth;
+  	  var destH = options.toHeight;
+  	  var scaleX = options.scaleX || options.toWidth / options.width;
+  	  var scaleY = options.scaleY || options.toHeight / options.height;
+  	  var offsetX = options.offsetX || 0;
+  	  var offsetY = options.offsetY || 0;
+  	  var dest = options.dest || new Uint8Array(destW * destH * 4);
+  	  var filter = typeof options.filter === 'undefined' ? 'mks2013' : options.filter;
+  	  var filtersX = createFilters(filter, srcW, destW, scaleX, offsetX),
+  	      filtersY = createFilters(filter, srcH, destH, scaleY, offsetY);
+  	  var tmp = new Uint16Array(destW * srcH * 4); // Autodetect if alpha channel exists, and use appropriate method
+
+  	  if (hasAlpha(src, srcW, srcH)) {
+  	    convolveHorWithPre(src, tmp, srcW, srcH, destW, filtersX);
+  	    convolveVertWithPre(tmp, dest, srcH, destW, destH, filtersY);
+  	  } else {
+  	    convolveHor(src, tmp, srcW, srcH, destW, filtersX);
+  	    convolveVert(tmp, dest, srcH, destW, destH, filtersY);
+  	    resetAlpha(dest, destW, destH);
+  	  }
+
+  	  return dest;
+  	};
+
+  	},{"./convolve":2,"./resize_filter_gen":6}],6:[function(_dereq_,module,exports){
+
+  	var FILTER_INFO = _dereq_('./resize_filter_info'); // Precision of fixed FP values
+
+
+  	var FIXED_FRAC_BITS = 14;
+
+  	function toFixedPoint(num) {
+  	  return Math.round(num * ((1 << FIXED_FRAC_BITS) - 1));
+  	}
+
+  	module.exports = function resizeFilterGen(filter, srcSize, destSize, scale, offset) {
+  	  var filterFunction = FILTER_INFO.filter[filter].fn;
+  	  var scaleInverted = 1.0 / scale;
+  	  var scaleClamped = Math.min(1.0, scale); // For upscale
+  	  // Filter window (averaging interval), scaled to src image
+
+  	  var srcWindow = FILTER_INFO.filter[filter].win / scaleClamped;
+  	  var destPixel, srcPixel, srcFirst, srcLast, filterElementSize, floatFilter, fxpFilter, total, pxl, idx, floatVal, filterTotal, filterVal;
+  	  var leftNotEmpty, rightNotEmpty, filterShift, filterSize;
+  	  var maxFilterElementSize = Math.floor((srcWindow + 1) * 2);
+  	  var packedFilter = new Int16Array((maxFilterElementSize + 2) * destSize);
+  	  var packedFilterPtr = 0;
+  	  var slowCopy = !packedFilter.subarray || !packedFilter.set; // For each destination pixel calculate source range and built filter values
+
+  	  for (destPixel = 0; destPixel < destSize; destPixel++) {
+  	    // Scaling should be done relative to central pixel point
+  	    srcPixel = (destPixel + 0.5) * scaleInverted + offset;
+  	    srcFirst = Math.max(0, Math.floor(srcPixel - srcWindow));
+  	    srcLast = Math.min(srcSize - 1, Math.ceil(srcPixel + srcWindow));
+  	    filterElementSize = srcLast - srcFirst + 1;
+  	    floatFilter = new Float32Array(filterElementSize);
+  	    fxpFilter = new Int16Array(filterElementSize);
+  	    total = 0.0; // Fill filter values for calculated range
+
+  	    for (pxl = srcFirst, idx = 0; pxl <= srcLast; pxl++, idx++) {
+  	      floatVal = filterFunction((pxl + 0.5 - srcPixel) * scaleClamped);
+  	      total += floatVal;
+  	      floatFilter[idx] = floatVal;
+  	    } // Normalize filter, convert to fixed point and accumulate conversion error
+
+
+  	    filterTotal = 0;
+
+  	    for (idx = 0; idx < floatFilter.length; idx++) {
+  	      filterVal = floatFilter[idx] / total;
+  	      filterTotal += filterVal;
+  	      fxpFilter[idx] = toFixedPoint(filterVal);
+  	    } // Compensate normalization error, to minimize brightness drift
+
+
+  	    fxpFilter[destSize >> 1] += toFixedPoint(1.0 - filterTotal); //
+  	    // Now pack filter to useable form
+  	    //
+  	    // 1. Trim heading and tailing zero values, and compensate shitf/length
+  	    // 2. Put all to single array in this format:
+  	    //
+  	    //    [ pos shift, data length, value1, value2, value3, ... ]
+  	    //
+
+  	    leftNotEmpty = 0;
+
+  	    while (leftNotEmpty < fxpFilter.length && fxpFilter[leftNotEmpty] === 0) {
+  	      leftNotEmpty++;
+  	    }
+
+  	    if (leftNotEmpty < fxpFilter.length) {
+  	      rightNotEmpty = fxpFilter.length - 1;
+
+  	      while (rightNotEmpty > 0 && fxpFilter[rightNotEmpty] === 0) {
+  	        rightNotEmpty--;
+  	      }
+
+  	      filterShift = srcFirst + leftNotEmpty;
+  	      filterSize = rightNotEmpty - leftNotEmpty + 1;
+  	      packedFilter[packedFilterPtr++] = filterShift; // shift
+
+  	      packedFilter[packedFilterPtr++] = filterSize; // size
+
+  	      if (!slowCopy) {
+  	        packedFilter.set(fxpFilter.subarray(leftNotEmpty, rightNotEmpty + 1), packedFilterPtr);
+  	        packedFilterPtr += filterSize;
+  	      } else {
+  	        // fallback for old IE < 11, without subarray/set methods
+  	        for (idx = leftNotEmpty; idx <= rightNotEmpty; idx++) {
+  	          packedFilter[packedFilterPtr++] = fxpFilter[idx];
+  	        }
+  	      }
+  	    } else {
+  	      // zero data, write header only
+  	      packedFilter[packedFilterPtr++] = 0; // shift
+
+  	      packedFilter[packedFilterPtr++] = 0; // size
+  	    }
+  	  }
+
+  	  return packedFilter;
+  	};
+
+  	},{"./resize_filter_info":7}],7:[function(_dereq_,module,exports){
+
+  	var filter = {
+  	  // Nearest neibor
+  	  box: {
+  	    win: 0.5,
+  	    fn: function fn(x) {
+  	      if (x < 0) x = -x;
+  	      return x < 0.5 ? 1.0 : 0.0;
+  	    }
+  	  },
+  	  // // Hamming
+  	  hamming: {
+  	    win: 1.0,
+  	    fn: function fn(x) {
+  	      if (x < 0) x = -x;
+
+  	      if (x >= 1.0) {
+  	        return 0.0;
+  	      }
+
+  	      if (x < 1.19209290E-07) {
+  	        return 1.0;
+  	      }
+
+  	      var xpi = x * Math.PI;
+  	      return Math.sin(xpi) / xpi * (0.54 + 0.46 * Math.cos(xpi / 1.0));
+  	    }
+  	  },
+  	  // Lanczos, win = 2
+  	  lanczos2: {
+  	    win: 2.0,
+  	    fn: function fn(x) {
+  	      if (x < 0) x = -x;
+
+  	      if (x >= 2.0) {
+  	        return 0.0;
+  	      }
+
+  	      if (x < 1.19209290E-07) {
+  	        return 1.0;
+  	      }
+
+  	      var xpi = x * Math.PI;
+  	      return Math.sin(xpi) / xpi * Math.sin(xpi / 2.0) / (xpi / 2.0);
+  	    }
+  	  },
+  	  // Lanczos, win = 3
+  	  lanczos3: {
+  	    win: 3.0,
+  	    fn: function fn(x) {
+  	      if (x < 0) x = -x;
+
+  	      if (x >= 3.0) {
+  	        return 0.0;
+  	      }
+
+  	      if (x < 1.19209290E-07) {
+  	        return 1.0;
+  	      }
+
+  	      var xpi = x * Math.PI;
+  	      return Math.sin(xpi) / xpi * Math.sin(xpi / 3.0) / (xpi / 3.0);
+  	    }
+  	  },
+  	  // Magic Kernel Sharp 2013, win = 2.5
+  	  // http://johncostella.com/magic/
+  	  mks2013: {
+  	    win: 2.5,
+  	    fn: function fn(x) {
+  	      if (x < 0) x = -x;
+
+  	      if (x >= 2.5) {
+  	        return 0.0;
+  	      }
+
+  	      if (x >= 1.5) {
+  	        return -0.125 * (x - 2.5) * (x - 2.5);
+  	      }
+
+  	      if (x >= 0.5) {
+  	        return 0.25 * (4 * x * x - 11 * x + 7);
+  	      }
+
+  	      return 1.0625 - 1.75 * x * x;
+  	    }
+  	  }
+  	};
+  	module.exports = {
+  	  filter: filter,
+  	  // Legacy mapping
+  	  f2q: {
+  	    box: 0,
+  	    hamming: 1,
+  	    lanczos2: 2,
+  	    lanczos3: 3
+  	  },
+  	  q2f: ['box', 'hamming', 'lanczos2', 'lanczos3']
+  	};
+
+  	},{}],8:[function(_dereq_,module,exports){
+
+  	var createFilters = _dereq_('./resize_filter_gen');
+
+  	function hasAlpha(src, width, height) {
+  	  var ptr = 3,
+  	      len = width * height * 4 | 0;
+
+  	  while (ptr < len) {
+  	    if (src[ptr] !== 255) return true;
+  	    ptr = ptr + 4 | 0;
+  	  }
+
+  	  return false;
+  	}
+
+  	function resetAlpha(dst, width, height) {
+  	  var ptr = 3,
+  	      len = width * height * 4 | 0;
+
+  	  while (ptr < len) {
+  	    dst[ptr] = 0xFF;
+  	    ptr = ptr + 4 | 0;
+  	  }
+  	}
+
+  	function asUint8Array(src) {
+  	  return new Uint8Array(src.buffer, 0, src.byteLength);
+  	}
+
+  	var IS_LE = true; // should not crash everything on module load in old browsers
+
+  	try {
+  	  IS_LE = new Uint32Array(new Uint8Array([1, 0, 0, 0]).buffer)[0] === 1;
+  	} catch (__) {}
+
+  	function copyInt16asLE(src, target, target_offset) {
+  	  if (IS_LE) {
+  	    target.set(asUint8Array(src), target_offset);
+  	    return;
+  	  }
+
+  	  for (var ptr = target_offset, i = 0; i < src.length; i++) {
+  	    var data = src[i];
+  	    target[ptr++] = data & 0xFF;
+  	    target[ptr++] = data >> 8 & 0xFF;
+  	  }
+  	}
+
+  	module.exports = function resize_wasm(options) {
+  	  var src = options.src;
+  	  var srcW = options.width;
+  	  var srcH = options.height;
+  	  var destW = options.toWidth;
+  	  var destH = options.toHeight;
+  	  var scaleX = options.scaleX || options.toWidth / options.width;
+  	  var scaleY = options.scaleY || options.toHeight / options.height;
+  	  var offsetX = options.offsetX || 0.0;
+  	  var offsetY = options.offsetY || 0.0;
+  	  var dest = options.dest || new Uint8Array(destW * destH * 4);
+  	  var filter = typeof options.filter === 'undefined' ? 'mks2013' : options.filter;
+  	  var filtersX = createFilters(filter, srcW, destW, scaleX, offsetX),
+  	      filtersY = createFilters(filter, srcH, destH, scaleY, offsetY); // destination is 0 too.
+
+  	  var src_offset = 0;
+  	  var src_size = Math.max(src.byteLength, dest.byteLength); // buffer between convolve passes
+
+  	  var tmp_offset = this.__align(src_offset + src_size);
+
+  	  var tmp_size = srcH * destW * 4 * 2; // 2 bytes per channel
+
+  	  var filtersX_offset = this.__align(tmp_offset + tmp_size);
+
+  	  var filtersY_offset = this.__align(filtersX_offset + filtersX.byteLength);
+
+  	  var alloc_bytes = filtersY_offset + filtersY.byteLength;
+
+  	  var instance = this.__instance('resize', alloc_bytes); //
+  	  // Fill memory block with data to process
+  	  //
+
+
+  	  var mem = new Uint8Array(this.__memory.buffer);
+  	  var mem32 = new Uint32Array(this.__memory.buffer); // 32-bit copy is much faster in chrome
+
+  	  var src32 = new Uint32Array(src.buffer);
+  	  mem32.set(src32); // We should guarantee LE bytes order. Filters are not big, so
+  	  // speed difference is not significant vs direct .set()
+
+  	  copyInt16asLE(filtersX, mem, filtersX_offset);
+  	  copyInt16asLE(filtersY, mem, filtersY_offset); // Now call webassembly method
+  	  // emsdk does method names with '_'
+
+  	  var fn = instance.exports.convolveHV || instance.exports._convolveHV;
+
+  	  if (hasAlpha(src, srcW, srcH)) {
+  	    fn(filtersX_offset, filtersY_offset, tmp_offset, srcW, srcH, destW, destH, 1);
+  	  } else {
+  	    fn(filtersX_offset, filtersY_offset, tmp_offset, srcW, srcH, destW, destH, 0);
+  	    resetAlpha(dest, destW, destH);
+  	  } //
+  	  // Copy data back to typed array
+  	  //
+  	  // 32-bit copy is much faster in chrome
+
+
+  	  var dest32 = new Uint32Array(dest.buffer);
+  	  dest32.set(new Uint32Array(this.__memory.buffer, 0, destH * destW));
+  	  return dest;
+  	};
+
+  	},{"./resize_filter_gen":6}],9:[function(_dereq_,module,exports){
+
+  	module.exports = {
+  	  name: 'unsharp_mask',
+  	  fn: _dereq_('./unsharp_mask'),
+  	  wasm_fn: _dereq_('./unsharp_mask_wasm'),
+  	  wasm_src: _dereq_('./unsharp_mask_wasm_base64')
+  	};
+
+  	},{"./unsharp_mask":10,"./unsharp_mask_wasm":11,"./unsharp_mask_wasm_base64":12}],10:[function(_dereq_,module,exports){
+
+  	var glur_mono16 = _dereq_('glur/mono16');
+
+  	function hsv_v16(img, width, height) {
+  	  var size = width * height;
+  	  var out = new Uint16Array(size);
+  	  var r, g, b, max;
+
+  	  for (var i = 0; i < size; i++) {
+  	    r = img[4 * i];
+  	    g = img[4 * i + 1];
+  	    b = img[4 * i + 2];
+  	    max = r >= g && r >= b ? r : g >= b && g >= r ? g : b;
+  	    out[i] = max << 8;
+  	  }
+
+  	  return out;
+  	}
+
+  	module.exports = function unsharp(img, width, height, amount, radius, threshold) {
+  	  var v1, v2, vmul;
+  	  var diff, iTimes4;
+
+  	  if (amount === 0 || radius < 0.5) {
+  	    return;
+  	  }
+
+  	  if (radius > 2.0) {
+  	    radius = 2.0;
+  	  }
+
+  	  var brightness = hsv_v16(img, width, height);
+  	  var blured = new Uint16Array(brightness); // copy, because blur modify src
+
+  	  glur_mono16(blured, width, height, radius);
+  	  var amountFp = amount / 100 * 0x1000 + 0.5 | 0;
+  	  var thresholdFp = threshold << 8;
+  	  var size = width * height;
+  	  /* eslint-disable indent */
+
+  	  for (var i = 0; i < size; i++) {
+  	    v1 = brightness[i];
+  	    diff = v1 - blured[i];
+
+  	    if (Math.abs(diff) >= thresholdFp) {
+  	      // add unsharp mask to the brightness channel
+  	      v2 = v1 + (amountFp * diff + 0x800 >> 12); // Both v1 and v2 are within [0.0 .. 255.0] (0000-FF00) range, never going into
+  	      // [255.003 .. 255.996] (FF01-FFFF). This allows to round this value as (x+.5)|0
+  	      // later without overflowing.
+
+  	      v2 = v2 > 0xff00 ? 0xff00 : v2;
+  	      v2 = v2 < 0x0000 ? 0x0000 : v2; // Avoid division by 0. V=0 means rgb(0,0,0), unsharp with unsharpAmount>0 cannot
+  	      // change this value (because diff between colors gets inflated), so no need to verify correctness.
+
+  	      v1 = v1 !== 0 ? v1 : 1; // Multiplying V in HSV model by a constant is equivalent to multiplying each component
+  	      // in RGB by the same constant (same for HSL), see also:
+  	      // https://beesbuzz.biz/code/16-hsv-color-transforms
+
+  	      vmul = (v2 << 12) / v1 | 0; // Result will be in [0..255] range because:
+  	      //  - all numbers are positive
+  	      //  - r,g,b <= (v1/256)
+  	      //  - r,g,b,(v1/256),(v2/256) <= 255
+  	      // So highest this number can get is X*255/X+0.5=255.5 which is < 256 and rounds down.
+
+  	      iTimes4 = i * 4;
+  	      img[iTimes4] = img[iTimes4] * vmul + 0x800 >> 12; // R
+
+  	      img[iTimes4 + 1] = img[iTimes4 + 1] * vmul + 0x800 >> 12; // G
+
+  	      img[iTimes4 + 2] = img[iTimes4 + 2] * vmul + 0x800 >> 12; // B
+  	    }
+  	  }
+  	};
+
+  	},{"glur/mono16":18}],11:[function(_dereq_,module,exports){
+
+  	module.exports = function unsharp(img, width, height, amount, radius, threshold) {
+  	  if (amount === 0 || radius < 0.5) {
+  	    return;
+  	  }
+
+  	  if (radius > 2.0) {
+  	    radius = 2.0;
+  	  }
+
+  	  var pixels = width * height;
+  	  var img_bytes_cnt = pixels * 4;
+  	  var hsv_bytes_cnt = pixels * 2;
+  	  var blur_bytes_cnt = pixels * 2;
+  	  var blur_line_byte_cnt = Math.max(width, height) * 4; // float32 array
+
+  	  var blur_coeffs_byte_cnt = 8 * 4; // float32 array
+
+  	  var img_offset = 0;
+  	  var hsv_offset = img_bytes_cnt;
+  	  var blur_offset = hsv_offset + hsv_bytes_cnt;
+  	  var blur_tmp_offset = blur_offset + blur_bytes_cnt;
+  	  var blur_line_offset = blur_tmp_offset + blur_bytes_cnt;
+  	  var blur_coeffs_offset = blur_line_offset + blur_line_byte_cnt;
+
+  	  var instance = this.__instance('unsharp_mask', img_bytes_cnt + hsv_bytes_cnt + blur_bytes_cnt * 2 + blur_line_byte_cnt + blur_coeffs_byte_cnt, {
+  	    exp: Math.exp
+  	  }); // 32-bit copy is much faster in chrome
+
+
+  	  var img32 = new Uint32Array(img.buffer);
+  	  var mem32 = new Uint32Array(this.__memory.buffer);
+  	  mem32.set(img32); // HSL
+
+  	  var fn = instance.exports.hsv_v16 || instance.exports._hsv_v16;
+  	  fn(img_offset, hsv_offset, width, height); // BLUR
+
+  	  fn = instance.exports.blurMono16 || instance.exports._blurMono16;
+  	  fn(hsv_offset, blur_offset, blur_tmp_offset, blur_line_offset, blur_coeffs_offset, width, height, radius); // UNSHARP
+
+  	  fn = instance.exports.unsharp || instance.exports._unsharp;
+  	  fn(img_offset, img_offset, hsv_offset, blur_offset, width, height, amount, threshold); // 32-bit copy is much faster in chrome
+
+  	  img32.set(new Uint32Array(this.__memory.buffer, 0, pixels));
+  	};
+
+  	},{}],12:[function(_dereq_,module,exports){
+  	/* eslint-disable max-len */
+
+  	module.exports = 'AGFzbQEAAAAADAZkeWxpbmsAAAAAAAE0B2AAAGAEf39/fwBgBn9/f39/fwBgCH9/f39/f39/AGAIf39/f39/f30AYAJ9fwBgAXwBfAIZAgNlbnYDZXhwAAYDZW52Bm1lbW9yeQIAAAMHBgAFAgQBAwYGAX8AQQALB4oBCBFfX3dhc21fY2FsbF9jdG9ycwABFl9fYnVpbGRfZ2F1c3NpYW5fY29lZnMAAg5fX2dhdXNzMTZfbGluZQADCmJsdXJNb25vMTYABAdoc3ZfdjE2AAUHdW5zaGFycAAGDF9fZHNvX2hhbmRsZQMAGF9fd2FzbV9hcHBseV9kYXRhX3JlbG9jcwABCsUMBgMAAQvWAQEHfCABRNuGukOCGvs/IAC7oyICRAAAAAAAAADAohAAIgW2jDgCFCABIAKaEAAiAyADoCIGtjgCECABRAAAAAAAAPA/IAOhIgQgBKIgAyACIAKgokQAAAAAAADwP6AgBaGjIgS2OAIAIAEgBSAEmqIiB7Y4AgwgASADIAJEAAAAAAAA8D+gIASioiIItjgCCCABIAMgAkQAAAAAAADwv6AgBKKiIgK2OAIEIAEgByAIoCAFRAAAAAAAAPA/IAahoCIDo7Y4AhwgASAEIAKgIAOjtjgCGAuGBQMGfwl8An0gAyoCDCEVIAMqAgghFiADKgIUuyERIAMqAhC7IRACQCAEQQFrIghBAEgiCQRAIAIhByAAIQYMAQsgAiAALwEAuCIPIAMqAhi7oiIMIBGiIg0gDCAQoiAPIAMqAgS7IhOiIhQgAyoCALsiEiAPoqCgoCIOtjgCACACQQRqIQcgAEECaiEGIAhFDQAgCEEBIAhBAUgbIgpBf3MhCwJ/IAQgCmtBAXFFBEAgDiENIAgMAQsgAiANIA4gEKIgFCASIAAvAQK4Ig+ioKCgIg22OAIEIAJBCGohByAAQQRqIQYgDiEMIARBAmsLIQIgC0EAIARrRg0AA0AgByAMIBGiIA0gEKIgDyAToiASIAYvAQC4Ig6ioKCgIgy2OAIAIAcgDSARoiAMIBCiIA4gE6IgEiAGLwECuCIPoqCgoCINtjgCBCAHQQhqIQcgBkEEaiEGIAJBAkohACACQQJrIQIgAA0ACwsCQCAJDQAgASAFIAhsQQF0aiIAAn8gBkECay8BACICuCINIBW7IhKiIA0gFrsiE6KgIA0gAyoCHLuiIgwgEKKgIAwgEaKgIg8gB0EEayIHKgIAu6AiDkQAAAAAAADwQWMgDkQAAAAAAAAAAGZxBEAgDqsMAQtBAAs7AQAgCEUNACAGQQRrIQZBACAFa0EBdCEBA0ACfyANIBKiIAJB//8DcbgiDSAToqAgDyIOIBCioCAMIBGioCIPIAdBBGsiByoCALugIgxEAAAAAAAA8EFjIAxEAAAAAAAAAABmcQRAIAyrDAELQQALIQMgBi8BACECIAAgAWoiACADOwEAIAZBAmshBiAIQQFKIQMgDiEMIAhBAWshCCADDQALCwvRAgIBfwd8AkAgB0MAAAAAWw0AIARE24a6Q4Ia+z8gB0MAAAA/l7ujIglEAAAAAAAAAMCiEAAiDLaMOAIUIAQgCZoQACIKIAqgIg22OAIQIAREAAAAAAAA8D8gCqEiCyALoiAKIAkgCaCiRAAAAAAAAPA/oCAMoaMiC7Y4AgAgBCAMIAuaoiIOtjgCDCAEIAogCUQAAAAAAADwP6AgC6KiIg+2OAIIIAQgCiAJRAAAAAAAAPC/oCALoqIiCbY4AgQgBCAOIA+gIAxEAAAAAAAA8D8gDaGgIgqjtjgCHCAEIAsgCaAgCqO2OAIYIAYEQANAIAAgBSAIbEEBdGogAiAIQQF0aiADIAQgBSAGEAMgCEEBaiIIIAZHDQALCyAFRQ0AQQAhCANAIAIgBiAIbEEBdGogASAIQQF0aiADIAQgBiAFEAMgCEEBaiIIIAVHDQALCwtxAQN/IAIgA2wiBQRAA0AgASAAKAIAIgRBEHZB/wFxIgIgAiAEQQh2Qf8BcSIDIAMgBEH/AXEiBEkbIAIgA0sbIgYgBiAEIAIgBEsbIAMgBEsbQQh0OwEAIAFBAmohASAAQQRqIQAgBUEBayIFDQALCwuZAgIDfwF8IAQgBWwhBAJ/IAazQwAAgEWUQwAAyEKVu0QAAAAAAADgP6AiC5lEAAAAAAAA4EFjBEAgC6oMAQtBgICAgHgLIQUgBARAIAdBCHQhCUEAIQYDQCAJIAIgBkEBdCIHai8BACIBIAMgB2ovAQBrIgcgB0EfdSIIaiAIc00EQCAAIAZBAnQiCGoiCiAFIAdsQYAQakEMdSABaiIHQYD+AyAHQYD+A0gbIgdBACAHQQBKG0EMdCABQQEgARtuIgEgCi0AAGxBgBBqQQx2OgAAIAAgCEEBcmoiByABIActAABsQYAQakEMdjoAACAAIAhBAnJqIgcgASAHLQAAbEGAEGpBDHY6AAALIAZBAWoiBiAERw0ACwsL';
+
+  	},{}],13:[function(_dereq_,module,exports){
+
+  	var GC_INTERVAL = 100;
+
+  	function Pool(create, idle) {
+  	  this.create = create;
+  	  this.available = [];
+  	  this.acquired = {};
+  	  this.lastId = 1;
+  	  this.timeoutId = 0;
+  	  this.idle = idle || 2000;
+  	}
+
+  	Pool.prototype.acquire = function () {
+  	  var _this = this;
+
+  	  var resource;
+
+  	  if (this.available.length !== 0) {
+  	    resource = this.available.pop();
+  	  } else {
+  	    resource = this.create();
+  	    resource.id = this.lastId++;
+
+  	    resource.release = function () {
+  	      return _this.release(resource);
+  	    };
+  	  }
+
+  	  this.acquired[resource.id] = resource;
+  	  return resource;
+  	};
+
+  	Pool.prototype.release = function (resource) {
+  	  var _this2 = this;
+
+  	  delete this.acquired[resource.id];
+  	  resource.lastUsed = Date.now();
+  	  this.available.push(resource);
+
+  	  if (this.timeoutId === 0) {
+  	    this.timeoutId = setTimeout(function () {
+  	      return _this2.gc();
+  	    }, GC_INTERVAL);
+  	  }
+  	};
+
+  	Pool.prototype.gc = function () {
+  	  var _this3 = this;
+
+  	  var now = Date.now();
+  	  this.available = this.available.filter(function (resource) {
+  	    if (now - resource.lastUsed > _this3.idle) {
+  	      resource.destroy();
+  	      return false;
+  	    }
+
+  	    return true;
+  	  });
+
+  	  if (this.available.length !== 0) {
+  	    this.timeoutId = setTimeout(function () {
+  	      return _this3.gc();
+  	    }, GC_INTERVAL);
+  	  } else {
+  	    this.timeoutId = 0;
+  	  }
+  	};
+
+  	module.exports = Pool;
+
+  	},{}],14:[function(_dereq_,module,exports){
+  	// min size = 1 can consume large amount of memory
+
+  	var MIN_INNER_TILE_SIZE = 2;
+
+  	module.exports = function createStages(fromWidth, fromHeight, toWidth, toHeight, srcTileSize, destTileBorder) {
+  	  var scaleX = toWidth / fromWidth;
+  	  var scaleY = toHeight / fromHeight; // derived from createRegions equation:
+  	  // innerTileWidth = pixelFloor(srcTileSize * scaleX) - 2 * destTileBorder;
+
+  	  var minScale = (2 * destTileBorder + MIN_INNER_TILE_SIZE + 1) / srcTileSize; // refuse to scale image multiple times by less than twice each time,
+  	  // it could only happen because of invalid options
+
+  	  if (minScale > 0.5) return [[toWidth, toHeight]];
+  	  var stageCount = Math.ceil(Math.log(Math.min(scaleX, scaleY)) / Math.log(minScale)); // no additional resizes are necessary,
+  	  // stageCount can be zero or be negative when enlarging the image
+
+  	  if (stageCount <= 1) return [[toWidth, toHeight]];
+  	  var result = [];
+
+  	  for (var i = 0; i < stageCount; i++) {
+  	    var width = Math.round(Math.pow(Math.pow(fromWidth, stageCount - i - 1) * Math.pow(toWidth, i + 1), 1 / stageCount));
+  	    var height = Math.round(Math.pow(Math.pow(fromHeight, stageCount - i - 1) * Math.pow(toHeight, i + 1), 1 / stageCount));
+  	    result.push([width, height]);
+  	  }
+
+  	  return result;
+  	};
+
+  	},{}],15:[function(_dereq_,module,exports){
+  	/*
+  	 * pixelFloor and pixelCeil are modified versions of Math.floor and Math.ceil
+  	 * functions which take into account floating point arithmetic errors.
+  	 * Those errors can cause undesired increments/decrements of sizes and offsets:
+  	 * Math.ceil(36 / (36 / 500)) = 501
+  	 * pixelCeil(36 / (36 / 500)) = 500
+  	 */
+
+  	var PIXEL_EPSILON = 1e-5;
+
+  	function pixelFloor(x) {
+  	  var nearest = Math.round(x);
+
+  	  if (Math.abs(x - nearest) < PIXEL_EPSILON) {
+  	    return nearest;
+  	  }
+
+  	  return Math.floor(x);
+  	}
+
+  	function pixelCeil(x) {
+  	  var nearest = Math.round(x);
+
+  	  if (Math.abs(x - nearest) < PIXEL_EPSILON) {
+  	    return nearest;
+  	  }
+
+  	  return Math.ceil(x);
+  	}
+
+  	module.exports = function createRegions(options) {
+  	  var scaleX = options.toWidth / options.width;
+  	  var scaleY = options.toHeight / options.height;
+  	  var innerTileWidth = pixelFloor(options.srcTileSize * scaleX) - 2 * options.destTileBorder;
+  	  var innerTileHeight = pixelFloor(options.srcTileSize * scaleY) - 2 * options.destTileBorder; // prevent infinite loop, this should never happen
+
+  	  if (innerTileWidth < 1 || innerTileHeight < 1) {
+  	    throw new Error('Internal error in pica: target tile width/height is too small.');
+  	  }
+
+  	  var x, y;
+  	  var innerX, innerY, toTileWidth, toTileHeight;
+  	  var tiles = [];
+  	  var tile; // we go top-to-down instead of left-to-right to make image displayed from top to
+  	  // doesn in the browser
+
+  	  for (innerY = 0; innerY < options.toHeight; innerY += innerTileHeight) {
+  	    for (innerX = 0; innerX < options.toWidth; innerX += innerTileWidth) {
+  	      x = innerX - options.destTileBorder;
+
+  	      if (x < 0) {
+  	        x = 0;
+  	      }
+
+  	      toTileWidth = innerX + innerTileWidth + options.destTileBorder - x;
+
+  	      if (x + toTileWidth >= options.toWidth) {
+  	        toTileWidth = options.toWidth - x;
+  	      }
+
+  	      y = innerY - options.destTileBorder;
+
+  	      if (y < 0) {
+  	        y = 0;
+  	      }
+
+  	      toTileHeight = innerY + innerTileHeight + options.destTileBorder - y;
+
+  	      if (y + toTileHeight >= options.toHeight) {
+  	        toTileHeight = options.toHeight - y;
+  	      }
+
+  	      tile = {
+  	        toX: x,
+  	        toY: y,
+  	        toWidth: toTileWidth,
+  	        toHeight: toTileHeight,
+  	        toInnerX: innerX,
+  	        toInnerY: innerY,
+  	        toInnerWidth: innerTileWidth,
+  	        toInnerHeight: innerTileHeight,
+  	        offsetX: x / scaleX - pixelFloor(x / scaleX),
+  	        offsetY: y / scaleY - pixelFloor(y / scaleY),
+  	        scaleX: scaleX,
+  	        scaleY: scaleY,
+  	        x: pixelFloor(x / scaleX),
+  	        y: pixelFloor(y / scaleY),
+  	        width: pixelCeil(toTileWidth / scaleX),
+  	        height: pixelCeil(toTileHeight / scaleY)
+  	      };
+  	      tiles.push(tile);
+  	    }
+  	  }
+
+  	  return tiles;
+  	};
+
+  	},{}],16:[function(_dereq_,module,exports){
+
+  	function objClass(obj) {
+  	  return Object.prototype.toString.call(obj);
+  	}
+
+  	module.exports.isCanvas = function isCanvas(element) {
+  	  var cname = objClass(element);
+  	  return cname === '[object HTMLCanvasElement]'
+  	  /* browser */
+  	  || cname === '[object OffscreenCanvas]' || cname === '[object Canvas]'
+  	  /* node-canvas */
+  	  ;
+  	};
+
+  	module.exports.isImage = function isImage(element) {
+  	  return objClass(element) === '[object HTMLImageElement]';
+  	};
+
+  	module.exports.isImageBitmap = function isImageBitmap(element) {
+  	  return objClass(element) === '[object ImageBitmap]';
+  	};
+
+  	module.exports.limiter = function limiter(concurrency) {
+  	  var active = 0,
+  	      queue = [];
+
+  	  function roll() {
+  	    if (active < concurrency && queue.length) {
+  	      active++;
+  	      queue.shift()();
+  	    }
+  	  }
+
+  	  return function limit(fn) {
+  	    return new Promise(function (resolve, reject) {
+  	      queue.push(function () {
+  	        fn().then(function (result) {
+  	          resolve(result);
+  	          active--;
+  	          roll();
+  	        }, function (err) {
+  	          reject(err);
+  	          active--;
+  	          roll();
+  	        });
+  	      });
+  	      roll();
+  	    });
+  	  };
+  	};
+
+  	module.exports.cib_quality_name = function cib_quality_name(num) {
+  	  switch (num) {
+  	    case 0:
+  	      return 'pixelated';
+
+  	    case 1:
+  	      return 'low';
+
+  	    case 2:
+  	      return 'medium';
+  	  }
+
+  	  return 'high';
+  	};
+
+  	module.exports.cib_support = function cib_support(createCanvas) {
+  	  return Promise.resolve().then(function () {
+  	    if (typeof createImageBitmap === 'undefined') {
+  	      return false;
+  	    }
+
+  	    var c = createCanvas(100, 100);
+  	    return createImageBitmap(c, 0, 0, 100, 100, {
+  	      resizeWidth: 10,
+  	      resizeHeight: 10,
+  	      resizeQuality: 'high'
+  	    }).then(function (bitmap) {
+  	      var status = bitmap.width === 10; // Branch below is filtered on upper level. We do not call resize
+  	      // detection for basic ImageBitmap.
+  	      //
+  	      // https://developer.mozilla.org/en-US/docs/Web/API/ImageBitmap
+  	      // old Crome 51 has ImageBitmap without .close(). Then this code
+  	      // will throw and return 'false' as expected.
+  	      //
+
+  	      bitmap.close();
+  	      c = null;
+  	      return status;
+  	    });
+  	  })["catch"](function () {
+  	    return false;
+  	  });
+  	};
+
+  	module.exports.worker_offscreen_canvas_support = function worker_offscreen_canvas_support() {
+  	  return new Promise(function (resolve, reject) {
+  	    if (typeof OffscreenCanvas === 'undefined') {
+  	      // if OffscreenCanvas is present, we assume browser supports Worker and built-in Promise as well
+  	      resolve(false);
+  	      return;
+  	    }
+
+  	    function workerPayload(self) {
+  	      if (typeof createImageBitmap === 'undefined') {
+  	        self.postMessage(false);
+  	        return;
+  	      }
+
+  	      Promise.resolve().then(function () {
+  	        var canvas = new OffscreenCanvas(10, 10); // test that 2d context can be used in worker
+
+  	        var ctx = canvas.getContext('2d');
+  	        ctx.rect(0, 0, 1, 1); // test that cib can be used to return image bitmap from worker
+
+  	        return createImageBitmap(canvas, 0, 0, 1, 1);
+  	      }).then(function () {
+  	        return self.postMessage(true);
+  	      }, function () {
+  	        return self.postMessage(false);
+  	      });
+  	    }
+
+  	    var code = btoa("(".concat(workerPayload.toString(), ")(self);"));
+  	    var w = new Worker("data:text/javascript;base64,".concat(code));
+
+  	    w.onmessage = function (ev) {
+  	      return resolve(ev.data);
+  	    };
+
+  	    w.onerror = reject;
+  	  }).then(function (result) {
+  	    return result;
+  	  }, function () {
+  	    return false;
+  	  });
+  	}; // Check if canvas.getContext('2d').getImageData can be used,
+  	// FireFox randomizes the output of that function in `privacy.resistFingerprinting` mode
+
+
+  	module.exports.can_use_canvas = function can_use_canvas(createCanvas) {
+  	  var usable = false;
+
+  	  try {
+  	    var canvas = createCanvas(2, 1);
+  	    var ctx = canvas.getContext('2d');
+  	    var d = ctx.createImageData(2, 1);
+  	    d.data[0] = 12;
+  	    d.data[1] = 23;
+  	    d.data[2] = 34;
+  	    d.data[3] = 255;
+  	    d.data[4] = 45;
+  	    d.data[5] = 56;
+  	    d.data[6] = 67;
+  	    d.data[7] = 255;
+  	    ctx.putImageData(d, 0, 0);
+  	    d = null;
+  	    d = ctx.getImageData(0, 0, 2, 1);
+
+  	    if (d.data[0] === 12 && d.data[1] === 23 && d.data[2] === 34 && d.data[3] === 255 && d.data[4] === 45 && d.data[5] === 56 && d.data[6] === 67 && d.data[7] === 255) {
+  	      usable = true;
+  	    }
+  	  } catch (err) {}
+
+  	  return usable;
+  	}; // Check if createImageBitmap(img, sx, sy, sw, sh) signature works correctly
+  	// with JPEG images oriented with Exif;
+  	// https://bugs.chromium.org/p/chromium/issues/detail?id=1220671
+  	// TODO: remove after it's fixed in chrome for at least 2 releases
+
+
+  	module.exports.cib_can_use_region = function cib_can_use_region() {
+  	  return new Promise(function (resolve) {
+  	    // `Image` check required for use in `ServiceWorker`
+  	    if (typeof Image === 'undefined' || typeof createImageBitmap === 'undefined') {
+  	      resolve(false);
+  	      return;
+  	    }
+
+  	    var image = new Image();
+  	    image.src = 'data:image/jpeg;base64,' + '/9j/4QBiRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAYAAAEaAAUAAAABAAAASgEbAAUAA' + 'AABAAAAUgEoAAMAAAABAAIAAAITAAMAAAABAAEAAAAAAAAAAABIAAAAAQAAAEgAAAAB/9' + 'sAQwAEAwMEAwMEBAMEBQQEBQYKBwYGBgYNCQoICg8NEBAPDQ8OERMYFBESFxIODxUcFRc' + 'ZGRsbGxAUHR8dGh8YGhsa/9sAQwEEBQUGBQYMBwcMGhEPERoaGhoaGhoaGhoaGhoaGhoa' + 'GhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoa/8IAEQgAAQACAwERAAIRAQMRA' + 'f/EABQAAQAAAAAAAAAAAAAAAAAAAAf/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAA' + 'IQAxAAAAF/P//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAQUCf//EABQRAQAAAAA' + 'AAAAAAAAAAAAAAAD/2gAIAQMBAT8Bf//EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQIB' + 'AT8Bf//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEABj8Cf//EABQQAQAAAAAAAAAAA' + 'AAAAAAAAAD/2gAIAQEAAT8hf//aAAwDAQACAAMAAAAQH//EABQRAQAAAAAAAAAAAAAAAA' + 'AAAAD/2gAIAQMBAT8Qf//EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQIBAT8Qf//EABQ' + 'QAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAT8Qf//Z';
+
+  	    image.onload = function () {
+  	      createImageBitmap(image, 0, 0, image.width, image.height).then(function (bitmap) {
+  	        if (bitmap.width === image.width && bitmap.height === image.height) {
+  	          resolve(true);
+  	        } else {
+  	          resolve(false);
+  	        }
+  	      }, function () {
+  	        return resolve(false);
+  	      });
+  	    };
+
+  	    image.onerror = function () {
+  	      return resolve(false);
+  	    };
+  	  });
+  	};
+
+  	},{}],17:[function(_dereq_,module,exports){
+
+  	module.exports = function () {
+  	  var MathLib = _dereq_('./mathlib');
+
+  	  var mathLib;
+  	  /* eslint-disable no-undef */
+
+  	  onmessage = function onmessage(ev) {
+  	    var tileOpts = ev.data.opts;
+
+  	    if (!tileOpts.src && tileOpts.srcBitmap) {
+  	      var canvas = new OffscreenCanvas(tileOpts.width, tileOpts.height);
+  	      var ctx = canvas.getContext('2d');
+  	      ctx.drawImage(tileOpts.srcBitmap, 0, 0);
+  	      tileOpts.src = ctx.getImageData(0, 0, tileOpts.width, tileOpts.height).data;
+  	      canvas.width = canvas.height = 0;
+  	      canvas = null;
+  	      tileOpts.srcBitmap.close();
+  	      tileOpts.srcBitmap = null; // Temporary force out data to typed array, because Chrome have artefacts
+  	      // https://github.com/nodeca/pica/issues/223
+  	      // returnBitmap = true;
+  	    }
+
+  	    if (!mathLib) mathLib = new MathLib(ev.data.features); // Use multimath's sync auto-init. Avoid Promise use in old browsers,
+  	    // because polyfills are not propagated to webworker.
+
+  	    var data = mathLib.resizeAndUnsharp(tileOpts);
+
+  	    {
+  	      postMessage({
+  	        data: data
+  	      }, [data.buffer]);
+  	    }
+  	  };
+  	};
+
+  	},{"./mathlib":1}],18:[function(_dereq_,module,exports){
+  	// Calculate Gaussian blur of an image using IIR filter
+  	// The method is taken from Intel's white paper and code example attached to it:
+  	// https://software.intel.com/en-us/articles/iir-gaussian-blur-filter
+  	// -implementation-using-intel-advanced-vector-extensions
+
+  	var a0, a1, a2, a3, b1, b2, left_corner, right_corner;
+
+  	function gaussCoef(sigma) {
+  	  if (sigma < 0.5) {
+  	    sigma = 0.5;
+  	  }
+
+  	  var a = Math.exp(0.726 * 0.726) / sigma,
+  	      g1 = Math.exp(-a),
+  	      g2 = Math.exp(-2 * a),
+  	      k = (1 - g1) * (1 - g1) / (1 + 2 * a * g1 - g2);
+
+  	  a0 = k;
+  	  a1 = k * (a - 1) * g1;
+  	  a2 = k * (a + 1) * g1;
+  	  a3 = -k * g2;
+  	  b1 = 2 * g1;
+  	  b2 = -g2;
+  	  left_corner = (a0 + a1) / (1 - b1 - b2);
+  	  right_corner = (a2 + a3) / (1 - b1 - b2);
+
+  	  // Attempt to force type to FP32.
+  	  return new Float32Array([ a0, a1, a2, a3, b1, b2, left_corner, right_corner ]);
+  	}
+
+  	function convolveMono16(src, out, line, coeff, width, height) {
+  	  // takes src image and writes the blurred and transposed result into out
+
+  	  var prev_src, curr_src, curr_out, prev_out, prev_prev_out;
+  	  var src_index, out_index, line_index;
+  	  var i, j;
+  	  var coeff_a0, coeff_a1, coeff_b1, coeff_b2;
+
+  	  for (i = 0; i < height; i++) {
+  	    src_index = i * width;
+  	    out_index = i;
+  	    line_index = 0;
+
+  	    // left to right
+  	    prev_src = src[src_index];
+  	    prev_prev_out = prev_src * coeff[6];
+  	    prev_out = prev_prev_out;
+
+  	    coeff_a0 = coeff[0];
+  	    coeff_a1 = coeff[1];
+  	    coeff_b1 = coeff[4];
+  	    coeff_b2 = coeff[5];
+
+  	    for (j = 0; j < width; j++) {
+  	      curr_src = src[src_index];
+
+  	      curr_out = curr_src * coeff_a0 +
+  	                 prev_src * coeff_a1 +
+  	                 prev_out * coeff_b1 +
+  	                 prev_prev_out * coeff_b2;
+
+  	      prev_prev_out = prev_out;
+  	      prev_out = curr_out;
+  	      prev_src = curr_src;
+
+  	      line[line_index] = prev_out;
+  	      line_index++;
+  	      src_index++;
+  	    }
+
+  	    src_index--;
+  	    line_index--;
+  	    out_index += height * (width - 1);
+
+  	    // right to left
+  	    prev_src = src[src_index];
+  	    prev_prev_out = prev_src * coeff[7];
+  	    prev_out = prev_prev_out;
+  	    curr_src = prev_src;
+
+  	    coeff_a0 = coeff[2];
+  	    coeff_a1 = coeff[3];
+
+  	    for (j = width - 1; j >= 0; j--) {
+  	      curr_out = curr_src * coeff_a0 +
+  	                 prev_src * coeff_a1 +
+  	                 prev_out * coeff_b1 +
+  	                 prev_prev_out * coeff_b2;
+
+  	      prev_prev_out = prev_out;
+  	      prev_out = curr_out;
+
+  	      prev_src = curr_src;
+  	      curr_src = src[src_index];
+
+  	      out[out_index] = line[line_index] + prev_out;
+
+  	      src_index--;
+  	      line_index--;
+  	      out_index -= height;
+  	    }
+  	  }
+  	}
+
+
+  	function blurMono16(src, width, height, radius) {
+  	  // Quick exit on zero radius
+  	  if (!radius) { return; }
+
+  	  var out      = new Uint16Array(src.length),
+  	      tmp_line = new Float32Array(Math.max(width, height));
+
+  	  var coeff = gaussCoef(radius);
+
+  	  convolveMono16(src, out, tmp_line, coeff, width, height);
+  	  convolveMono16(out, src, tmp_line, coeff, height, width);
+  	}
+
+  	module.exports = blurMono16;
+
+  	},{}],19:[function(_dereq_,module,exports){
+
+
+  	var assign         = _dereq_('object-assign');
+  	var base64decode   = _dereq_('./lib/base64decode');
+  	var hasWebAssembly = _dereq_('./lib/wa_detect');
+
+
+  	var DEFAULT_OPTIONS = {
+  	  js: true,
+  	  wasm: true
+  	};
+
+
+  	function MultiMath(options) {
+  	  if (!(this instanceof MultiMath)) return new MultiMath(options);
+
+  	  var opts = assign({}, DEFAULT_OPTIONS, options || {});
+
+  	  this.options         = opts;
+
+  	  this.__cache         = {};
+
+  	  this.__init_promise  = null;
+  	  this.__modules       = opts.modules || {};
+  	  this.__memory        = null;
+  	  this.__wasm          = {};
+
+  	  this.__isLE = ((new Uint32Array((new Uint8Array([ 1, 0, 0, 0 ])).buffer))[0] === 1);
+
+  	  if (!this.options.js && !this.options.wasm) {
+  	    throw new Error('mathlib: at least "js" or "wasm" should be enabled');
+  	  }
+  	}
+
+
+  	MultiMath.prototype.has_wasm = hasWebAssembly;
+
+
+  	MultiMath.prototype.use = function (module) {
+  	  this.__modules[module.name] = module;
+
+  	  // Pin the best possible implementation
+  	  if (this.options.wasm && this.has_wasm() && module.wasm_fn) {
+  	    this[module.name] = module.wasm_fn;
+  	  } else {
+  	    this[module.name] = module.fn;
+  	  }
+
+  	  return this;
+  	};
+
+
+  	MultiMath.prototype.init = function () {
+  	  if (this.__init_promise) return this.__init_promise;
+
+  	  if (!this.options.js && this.options.wasm && !this.has_wasm()) {
+  	    return Promise.reject(new Error('mathlib: only "wasm" was enabled, but it\'s not supported'));
+  	  }
+
+  	  var self = this;
+
+  	  this.__init_promise = Promise.all(Object.keys(self.__modules).map(function (name) {
+  	    var module = self.__modules[name];
+
+  	    if (!self.options.wasm || !self.has_wasm() || !module.wasm_fn) return null;
+
+  	    // If already compiled - exit
+  	    if (self.__wasm[name]) return null;
+
+  	    // Compile wasm source
+  	    return WebAssembly.compile(self.__base64decode(module.wasm_src))
+  	      .then(function (m) { self.__wasm[name] = m; });
+  	  }))
+  	    .then(function () { return self; });
+
+  	  return this.__init_promise;
+  	};
+
+
+  	////////////////////////////////////////////////////////////////////////////////
+  	// Methods below are for internal use from plugins
+
+
+  	// Simple decode base64 to typed array. Useful to load embedded webassembly
+  	// code. You probably don't need to call this method directly.
+  	//
+  	MultiMath.prototype.__base64decode = base64decode;
+
+
+  	// Increase current memory to include specified number of bytes. Do nothing if
+  	// size is already ok. You probably don't need to call this method directly,
+  	// because it will be invoked from `.__instance()`.
+  	//
+  	MultiMath.prototype.__reallocate = function mem_grow_to(bytes) {
+  	  if (!this.__memory) {
+  	    this.__memory = new WebAssembly.Memory({
+  	      initial: Math.ceil(bytes / (64 * 1024))
+  	    });
+  	    return this.__memory;
+  	  }
+
+  	  var mem_size = this.__memory.buffer.byteLength;
+
+  	  if (mem_size < bytes) {
+  	    this.__memory.grow(Math.ceil((bytes - mem_size) / (64 * 1024)));
+  	  }
+
+  	  return this.__memory;
+  	};
+
+
+  	// Returns instantinated webassembly item by name, with specified memory size
+  	// and environment.
+  	// - use cache if available
+  	// - do sync module init, if async init was not called earlier
+  	// - allocate memory if not enougth
+  	// - can export functions to webassembly via "env_extra",
+  	//   for example, { exp: Math.exp }
+  	//
+  	MultiMath.prototype.__instance = function instance(name, memsize, env_extra) {
+  	  if (memsize) this.__reallocate(memsize);
+
+  	  // If .init() was not called, do sync compile
+  	  if (!this.__wasm[name]) {
+  	    var module = this.__modules[name];
+  	    this.__wasm[name] = new WebAssembly.Module(this.__base64decode(module.wasm_src));
+  	  }
+
+  	  if (!this.__cache[name]) {
+  	    var env_base = {
+  	      memoryBase: 0,
+  	      memory: this.__memory,
+  	      tableBase: 0,
+  	      table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' })
+  	    };
+
+  	    this.__cache[name] = new WebAssembly.Instance(this.__wasm[name], {
+  	      env: assign(env_base, env_extra || {})
+  	    });
+  	  }
+
+  	  return this.__cache[name];
+  	};
+
+
+  	// Helper to calculate memory aligh for pointers. Webassembly does not require
+  	// this, but you may wish to experiment. Default base = 8;
+  	//
+  	MultiMath.prototype.__align = function align(number, base) {
+  	  base = base || 8;
+  	  var reminder = number % base;
+  	  return number + (reminder ? base - reminder : 0);
+  	};
+
+
+  	module.exports = MultiMath;
+
+  	},{"./lib/base64decode":20,"./lib/wa_detect":21,"object-assign":22}],20:[function(_dereq_,module,exports){
+
+
+  	var BASE64_MAP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+
+  	module.exports = function base64decode(str) {
+  	  var input = str.replace(/[\r\n=]/g, ''), // remove CR/LF & padding to simplify scan
+  	      max   = input.length;
+
+  	  var out = new Uint8Array((max * 3) >> 2);
+
+  	  // Collect by 6*4 bits (3 bytes)
+
+  	  var bits = 0;
+  	  var ptr  = 0;
+
+  	  for (var idx = 0; idx < max; idx++) {
+  	    if ((idx % 4 === 0) && idx) {
+  	      out[ptr++] = (bits >> 16) & 0xFF;
+  	      out[ptr++] = (bits >> 8) & 0xFF;
+  	      out[ptr++] = bits & 0xFF;
+  	    }
+
+  	    bits = (bits << 6) | BASE64_MAP.indexOf(input.charAt(idx));
+  	  }
+
+  	  // Dump tail
+
+  	  var tailbits = (max % 4) * 6;
+
+  	  if (tailbits === 0) {
+  	    out[ptr++] = (bits >> 16) & 0xFF;
+  	    out[ptr++] = (bits >> 8) & 0xFF;
+  	    out[ptr++] = bits & 0xFF;
+  	  } else if (tailbits === 18) {
+  	    out[ptr++] = (bits >> 10) & 0xFF;
+  	    out[ptr++] = (bits >> 2) & 0xFF;
+  	  } else if (tailbits === 12) {
+  	    out[ptr++] = (bits >> 4) & 0xFF;
+  	  }
+
+  	  return out;
+  	};
+
+  	},{}],21:[function(_dereq_,module,exports){
+
+
+  	var wa;
+
+
+  	module.exports = function hasWebAssembly() {
+  	  // use cache if called before;
+  	  if (typeof wa !== 'undefined') return wa;
+
+  	  wa = false;
+
+  	  if (typeof WebAssembly === 'undefined') return wa;
+
+  	  // If WebAssenbly is disabled, code can throw on compile
+  	  try {
+  	    // https://github.com/brion/min-wasm-fail/blob/master/min-wasm-fail.in.js
+  	    // Additional check that WA internals are correct
+
+  	    /* eslint-disable comma-spacing, max-len */
+  	    var bin      = new Uint8Array([ 0,97,115,109,1,0,0,0,1,6,1,96,1,127,1,127,3,2,1,0,5,3,1,0,1,7,8,1,4,116,101,115,116,0,0,10,16,1,14,0,32,0,65,1,54,2,0,32,0,40,2,0,11 ]);
+  	    var module   = new WebAssembly.Module(bin);
+  	    var instance = new WebAssembly.Instance(module, {});
+
+  	    // test storing to and loading from a non-zero location via a parameter.
+  	    // Safari on iOS 11.2.5 returns 0 unexpectedly at non-zero locations
+  	    if (instance.exports.test(4) !== 0) wa = true;
+
+  	    return wa;
+  	  } catch (__) {}
+
+  	  return wa;
+  	};
+
+  	},{}],22:[function(_dereq_,module,exports){
+  	/* eslint-disable no-unused-vars */
+  	var getOwnPropertySymbols = Object.getOwnPropertySymbols;
+  	var hasOwnProperty = Object.prototype.hasOwnProperty;
+  	var propIsEnumerable = Object.prototype.propertyIsEnumerable;
+
+  	function toObject(val) {
+  		if (val === null || val === undefined) {
+  			throw new TypeError('Object.assign cannot be called with null or undefined');
+  		}
+
+  		return Object(val);
+  	}
+
+  	function shouldUseNative() {
+  		try {
+  			if (!Object.assign) {
+  				return false;
+  			}
+
+  			// Detect buggy property enumeration order in older V8 versions.
+
+  			// https://bugs.chromium.org/p/v8/issues/detail?id=4118
+  			var test1 = new String('abc');  // eslint-disable-line no-new-wrappers
+  			test1[5] = 'de';
+  			if (Object.getOwnPropertyNames(test1)[0] === '5') {
+  				return false;
+  			}
+
+  			// https://bugs.chromium.org/p/v8/issues/detail?id=3056
+  			var test2 = {};
+  			for (var i = 0; i < 10; i++) {
+  				test2['_' + String.fromCharCode(i)] = i;
+  			}
+  			var order2 = Object.getOwnPropertyNames(test2).map(function (n) {
+  				return test2[n];
+  			});
+  			if (order2.join('') !== '0123456789') {
+  				return false;
+  			}
+
+  			// https://bugs.chromium.org/p/v8/issues/detail?id=3056
+  			var test3 = {};
+  			'abcdefghijklmnopqrst'.split('').forEach(function (letter) {
+  				test3[letter] = letter;
+  			});
+  			if (Object.keys(Object.assign({}, test3)).join('') !==
+  					'abcdefghijklmnopqrst') {
+  				return false;
+  			}
+
+  			return true;
+  		} catch (err) {
+  			// We don't expect any of the above to throw, but better to be safe.
+  			return false;
+  		}
+  	}
+
+  	module.exports = shouldUseNative() ? Object.assign : function (target, source) {
+  		var from;
+  		var to = toObject(target);
+  		var symbols;
+
+  		for (var s = 1; s < arguments.length; s++) {
+  			from = Object(arguments[s]);
+
+  			for (var key in from) {
+  				if (hasOwnProperty.call(from, key)) {
+  					to[key] = from[key];
+  				}
+  			}
+
+  			if (getOwnPropertySymbols) {
+  				symbols = getOwnPropertySymbols(from);
+  				for (var i = 0; i < symbols.length; i++) {
+  					if (propIsEnumerable.call(from, symbols[i])) {
+  						to[symbols[i]] = from[symbols[i]];
+  					}
+  				}
+  			}
+  		}
+
+  		return to;
+  	};
+
+  	},{}],23:[function(_dereq_,module,exports){
+  	var bundleFn = arguments[3];
+  	var sources = arguments[4];
+  	var cache = arguments[5];
+
+  	var stringify = JSON.stringify;
+
+  	module.exports = function (fn, options) {
+  	    var wkey;
+  	    var cacheKeys = Object.keys(cache);
+
+  	    for (var i = 0, l = cacheKeys.length; i < l; i++) {
+  	        var key = cacheKeys[i];
+  	        var exp = cache[key].exports;
+  	        // Using babel as a transpiler to use esmodule, the export will always
+  	        // be an object with the default export as a property of it. To ensure
+  	        // the existing api and babel esmodule exports are both supported we
+  	        // check for both
+  	        if (exp === fn || exp && exp.default === fn) {
+  	            wkey = key;
+  	            break;
+  	        }
+  	    }
+
+  	    if (!wkey) {
+  	        wkey = Math.floor(Math.pow(16, 8) * Math.random()).toString(16);
+  	        var wcache = {};
+  	        for (var i = 0, l = cacheKeys.length; i < l; i++) {
+  	            var key = cacheKeys[i];
+  	            wcache[key] = key;
+  	        }
+  	        sources[wkey] = [
+  	            'function(require,module,exports){' + fn + '(self); }',
+  	            wcache
+  	        ];
+  	    }
+  	    var skey = Math.floor(Math.pow(16, 8) * Math.random()).toString(16);
+
+  	    var scache = {}; scache[wkey] = wkey;
+  	    sources[skey] = [
+  	        'function(require,module,exports){' +
+  	            // try to call default if defined to also support babel esmodule exports
+  	            'var f = require(' + stringify(wkey) + ');' +
+  	            '(f.default ? f.default : f)(self);' +
+  	        '}',
+  	        scache
+  	    ];
+
+  	    var workerSources = {};
+  	    resolveSources(skey);
+
+  	    function resolveSources(key) {
+  	        workerSources[key] = true;
+
+  	        for (var depPath in sources[key][1]) {
+  	            var depKey = sources[key][1][depPath];
+  	            if (!workerSources[depKey]) {
+  	                resolveSources(depKey);
+  	            }
+  	        }
+  	    }
+
+  	    var src = '(' + bundleFn + ')({'
+  	        + Object.keys(workerSources).map(function (key) {
+  	            return stringify(key) + ':['
+  	                + sources[key][0]
+  	                + ',' + stringify(sources[key][1]) + ']'
+  	            ;
+  	        }).join(',')
+  	        + '},{},[' + stringify(skey) + '])'
+  	    ;
+
+  	    var URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+
+  	    var blob = new Blob([src], { type: 'text/javascript' });
+  	    if (options && options.bare) { return blob; }
+  	    var workerUrl = URL.createObjectURL(blob);
+  	    var worker = new Worker(workerUrl);
+  	    worker.objectURL = workerUrl;
+  	    return worker;
+  	};
+
+  	},{}],"/index.js":[function(_dereq_,module,exports){
+
+  	function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+
+  	function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+  	function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+  	function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+  	function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+  	function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+  	var assign = _dereq_('object-assign');
+
+  	var webworkify = _dereq_('webworkify');
+
+  	var MathLib = _dereq_('./lib/mathlib');
+
+  	var Pool = _dereq_('./lib/pool');
+
+  	var utils = _dereq_('./lib/utils');
+
+  	var worker = _dereq_('./lib/worker');
+
+  	var createStages = _dereq_('./lib/stepper');
+
+  	var createRegions = _dereq_('./lib/tiler');
+
+  	var filter_info = _dereq_('./lib/mm_resize/resize_filter_info'); // Deduplicate pools & limiters with the same configs
+  	// when user creates multiple pica instances.
+
+
+  	var singletones = {};
+  	var NEED_SAFARI_FIX = false;
+
+  	try {
+  	  if (typeof navigator !== 'undefined' && navigator.userAgent) {
+  	    NEED_SAFARI_FIX = navigator.userAgent.indexOf('Safari') >= 0;
+  	  }
+  	} catch (e) {}
+
+  	var concurrency = 1;
+
+  	if (typeof navigator !== 'undefined') {
+  	  concurrency = Math.min(navigator.hardwareConcurrency || 1, 4);
+  	}
+
+  	var DEFAULT_PICA_OPTS = {
+  	  tile: 1024,
+  	  concurrency: concurrency,
+  	  features: ['js', 'wasm', 'ww'],
+  	  idle: 2000,
+  	  createCanvas: function createCanvas(width, height) {
+  	    var tmpCanvas = document.createElement('canvas');
+  	    tmpCanvas.width = width;
+  	    tmpCanvas.height = height;
+  	    return tmpCanvas;
+  	  }
+  	};
+  	var DEFAULT_RESIZE_OPTS = {
+  	  filter: 'mks2013',
+  	  unsharpAmount: 0,
+  	  unsharpRadius: 0.0,
+  	  unsharpThreshold: 0
+  	};
+  	var CAN_NEW_IMAGE_DATA = false;
+  	var CAN_CREATE_IMAGE_BITMAP = false;
+  	var CAN_USE_CANVAS_GET_IMAGE_DATA = false;
+  	var CAN_USE_OFFSCREEN_CANVAS = false;
+  	var CAN_USE_CIB_REGION_FOR_IMAGE = false;
+
+  	function workerFabric() {
+  	  return {
+  	    value: webworkify(worker),
+  	    destroy: function destroy() {
+  	      this.value.terminate();
+
+  	      if (typeof window !== 'undefined') {
+  	        var url = window.URL || window.webkitURL || window.mozURL || window.msURL;
+
+  	        if (url && url.revokeObjectURL && this.value.objectURL) {
+  	          url.revokeObjectURL(this.value.objectURL);
+  	        }
+  	      }
+  	    }
+  	  };
+  	} ////////////////////////////////////////////////////////////////////////////////
+  	// API methods
+
+
+  	function Pica(options) {
+  	  if (!(this instanceof Pica)) return new Pica(options);
+  	  this.options = assign({}, DEFAULT_PICA_OPTS, options || {});
+  	  var limiter_key = "lk_".concat(this.options.concurrency); // Share limiters to avoid multiple parallel workers when user creates
+  	  // multiple pica instances.
+
+  	  this.__limit = singletones[limiter_key] || utils.limiter(this.options.concurrency);
+  	  if (!singletones[limiter_key]) singletones[limiter_key] = this.__limit; // List of supported features, according to options & browser/node.js
+
+  	  this.features = {
+  	    js: false,
+  	    // pure JS implementation, can be disabled for testing
+  	    wasm: false,
+  	    // webassembly implementation for heavy functions
+  	    cib: false,
+  	    // resize via createImageBitmap (only FF at this moment)
+  	    ww: false // webworkers
+
+  	  };
+  	  this.__workersPool = null; // Store requested features for webworkers
+
+  	  this.__requested_features = [];
+  	  this.__mathlib = null;
+  	}
+
+  	Pica.prototype.init = function () {
+  	  var _this = this;
+
+  	  if (this.__initPromise) return this.__initPromise; // Test if we can create ImageData without canvas and memory copy
+
+  	  if (typeof ImageData !== 'undefined' && typeof Uint8ClampedArray !== 'undefined') {
+  	    try {
+  	      /* eslint-disable no-new */
+  	      new ImageData(new Uint8ClampedArray(400), 10, 10);
+  	      CAN_NEW_IMAGE_DATA = true;
+  	    } catch (__) {}
+  	  } // ImageBitmap can be effective in 2 places:
+  	  //
+  	  // 1. Threaded jpeg unpack (basic)
+  	  // 2. Built-in resize (blocked due problem in chrome, see issue #89)
+  	  //
+  	  // For basic use we also need ImageBitmap wo support .close() method,
+  	  // see https://developer.mozilla.org/ru/docs/Web/API/ImageBitmap
+
+
+  	  if (typeof ImageBitmap !== 'undefined') {
+  	    if (ImageBitmap.prototype && ImageBitmap.prototype.close) {
+  	      CAN_CREATE_IMAGE_BITMAP = true;
+  	    } else {
+  	      this.debug('ImageBitmap does not support .close(), disabled');
+  	    }
+  	  }
+
+  	  var features = this.options.features.slice();
+
+  	  if (features.indexOf('all') >= 0) {
+  	    features = ['cib', 'wasm', 'js', 'ww'];
+  	  }
+
+  	  this.__requested_features = features;
+  	  this.__mathlib = new MathLib(features); // Check WebWorker support if requested
+
+  	  if (features.indexOf('ww') >= 0) {
+  	    if (typeof window !== 'undefined' && 'Worker' in window) {
+  	      // IE <= 11 don't allow to create webworkers from string. We should check it.
+  	      // https://connect.microsoft.com/IE/feedback/details/801810/web-workers-from-blob-urls-in-ie-10-and-11
+  	      try {
+  	        var wkr = _dereq_('webworkify')(function () {});
+
+  	        wkr.terminate();
+  	        this.features.ww = true; // pool uniqueness depends on pool config + webworker config
+
+  	        var wpool_key = "wp_".concat(JSON.stringify(this.options));
+
+  	        if (singletones[wpool_key]) {
+  	          this.__workersPool = singletones[wpool_key];
+  	        } else {
+  	          this.__workersPool = new Pool(workerFabric, this.options.idle);
+  	          singletones[wpool_key] = this.__workersPool;
+  	        }
+  	      } catch (__) {}
+  	    }
+  	  }
+
+  	  var initMath = this.__mathlib.init().then(function (mathlib) {
+  	    // Copy detected features
+  	    assign(_this.features, mathlib.features);
+  	  });
+
+  	  var checkCibResize;
+
+  	  if (!CAN_CREATE_IMAGE_BITMAP) {
+  	    checkCibResize = Promise.resolve(false);
+  	  } else {
+  	    checkCibResize = utils.cib_support(this.options.createCanvas).then(function (status) {
+  	      if (_this.features.cib && features.indexOf('cib') < 0) {
+  	        _this.debug('createImageBitmap() resize supported, but disabled by config');
+
+  	        return;
+  	      }
+
+  	      if (features.indexOf('cib') >= 0) _this.features.cib = status;
+  	    });
+  	  }
+
+  	  CAN_USE_CANVAS_GET_IMAGE_DATA = utils.can_use_canvas(this.options.createCanvas);
+  	  var checkOffscreenCanvas;
+
+  	  if (CAN_CREATE_IMAGE_BITMAP && CAN_NEW_IMAGE_DATA && features.indexOf('ww') !== -1) {
+  	    checkOffscreenCanvas = utils.worker_offscreen_canvas_support();
+  	  } else {
+  	    checkOffscreenCanvas = Promise.resolve(false);
+  	  }
+
+  	  checkOffscreenCanvas = checkOffscreenCanvas.then(function (result) {
+  	    CAN_USE_OFFSCREEN_CANVAS = result;
+  	  }); // we use createImageBitmap to crop image data and pass it to workers,
+  	  // so need to check whether function works correctly;
+  	  // https://bugs.chromium.org/p/chromium/issues/detail?id=1220671
+
+  	  var checkCibRegion = utils.cib_can_use_region().then(function (result) {
+  	    CAN_USE_CIB_REGION_FOR_IMAGE = result;
+  	  }); // Init math lib. That's async because can load some
+
+  	  this.__initPromise = Promise.all([initMath, checkCibResize, checkOffscreenCanvas, checkCibRegion]).then(function () {
+  	    return _this;
+  	  });
+  	  return this.__initPromise;
+  	}; // Call resizer in webworker or locally, depending on config
+
+
+  	Pica.prototype.__invokeResize = function (tileOpts, opts) {
+  	  var _this2 = this;
+
+  	  // Share cache between calls:
+  	  //
+  	  // - wasm instance
+  	  // - wasm memory object
+  	  //
+  	  opts.__mathCache = opts.__mathCache || {};
+  	  return Promise.resolve().then(function () {
+  	    if (!_this2.features.ww) {
+  	      // not possible to have ImageBitmap here if user disabled WW
+  	      return {
+  	        data: _this2.__mathlib.resizeAndUnsharp(tileOpts, opts.__mathCache)
+  	      };
+  	    }
+
+  	    return new Promise(function (resolve, reject) {
+  	      var w = _this2.__workersPool.acquire();
+
+  	      if (opts.cancelToken) opts.cancelToken["catch"](function (err) {
+  	        return reject(err);
+  	      });
+
+  	      w.value.onmessage = function (ev) {
+  	        w.release();
+  	        if (ev.data.err) reject(ev.data.err);else resolve(ev.data);
+  	      };
+
+  	      var transfer = [];
+  	      if (tileOpts.src) transfer.push(tileOpts.src.buffer);
+  	      if (tileOpts.srcBitmap) transfer.push(tileOpts.srcBitmap);
+  	      w.value.postMessage({
+  	        opts: tileOpts,
+  	        features: _this2.__requested_features,
+  	        preload: {
+  	          wasm_nodule: _this2.__mathlib.__
+  	        }
+  	      }, transfer);
+  	    });
+  	  });
+  	}; // this function can return promise if createImageBitmap is used
+
+
+  	Pica.prototype.__extractTileData = function (tile, from, opts, stageEnv, extractTo) {
+  	  if (this.features.ww && CAN_USE_OFFSCREEN_CANVAS && ( // createImageBitmap doesn't work for images (Image, ImageBitmap) with Exif orientation in Chrome,
+  	  // can use canvas because canvas doesn't have orientation;
+  	  // see https://bugs.chromium.org/p/chromium/issues/detail?id=1220671
+  	  utils.isCanvas(from) || CAN_USE_CIB_REGION_FOR_IMAGE)) {
+  	    this.debug('Create tile for OffscreenCanvas');
+  	    return createImageBitmap(stageEnv.srcImageBitmap || from, tile.x, tile.y, tile.width, tile.height).then(function (bitmap) {
+  	      extractTo.srcBitmap = bitmap;
+  	      return extractTo;
+  	    });
+  	  } // Extract tile RGBA buffer, depending on input type
+
+
+  	  if (utils.isCanvas(from)) {
+  	    if (!stageEnv.srcCtx) stageEnv.srcCtx = from.getContext('2d'); // If input is Canvas - extract region data directly
+
+  	    this.debug('Get tile pixel data');
+  	    extractTo.src = stageEnv.srcCtx.getImageData(tile.x, tile.y, tile.width, tile.height).data;
+  	    return extractTo;
+  	  } // If input is Image or decoded to ImageBitmap,
+  	  // draw region to temporary canvas and extract data from it
+  	  //
+  	  // Note! Attempt to reuse this canvas causes significant slowdown in chrome
+  	  //
+
+
+  	  this.debug('Draw tile imageBitmap/image to temporary canvas');
+  	  var tmpCanvas = this.options.createCanvas(tile.width, tile.height);
+  	  var tmpCtx = tmpCanvas.getContext('2d');
+  	  tmpCtx.globalCompositeOperation = 'copy';
+  	  tmpCtx.drawImage(stageEnv.srcImageBitmap || from, tile.x, tile.y, tile.width, tile.height, 0, 0, tile.width, tile.height);
+  	  this.debug('Get tile pixel data');
+  	  extractTo.src = tmpCtx.getImageData(0, 0, tile.width, tile.height).data; // Safari 12 workaround
+  	  // https://github.com/nodeca/pica/issues/199
+
+  	  tmpCanvas.width = tmpCanvas.height = 0;
+  	  return extractTo;
+  	};
+
+  	Pica.prototype.__landTileData = function (tile, result, stageEnv) {
+  	  var toImageData;
+  	  this.debug('Convert raw rgba tile result to ImageData');
+
+  	  if (result.bitmap) {
+  	    stageEnv.toCtx.drawImage(result.bitmap, tile.toX, tile.toY);
+  	    return null;
+  	  }
+
+  	  if (CAN_NEW_IMAGE_DATA) {
+  	    // this branch is for modern browsers
+  	    // If `new ImageData()` & Uint8ClampedArray suported
+  	    toImageData = new ImageData(new Uint8ClampedArray(result.data), tile.toWidth, tile.toHeight);
+  	  } else {
+  	    // fallback for `node-canvas` and old browsers
+  	    // (IE11 has ImageData but does not support `new ImageData()`)
+  	    toImageData = stageEnv.toCtx.createImageData(tile.toWidth, tile.toHeight);
+
+  	    if (toImageData.data.set) {
+  	      toImageData.data.set(result.data);
+  	    } else {
+  	      // IE9 don't have `.set()`
+  	      for (var i = toImageData.data.length - 1; i >= 0; i--) {
+  	        toImageData.data[i] = result.data[i];
+  	      }
+  	    }
+  	  }
+
+  	  this.debug('Draw tile');
+
+  	  if (NEED_SAFARI_FIX) {
+  	    // Safari draws thin white stripes between tiles without this fix
+  	    stageEnv.toCtx.putImageData(toImageData, tile.toX, tile.toY, tile.toInnerX - tile.toX, tile.toInnerY - tile.toY, tile.toInnerWidth + 1e-5, tile.toInnerHeight + 1e-5);
+  	  } else {
+  	    stageEnv.toCtx.putImageData(toImageData, tile.toX, tile.toY, tile.toInnerX - tile.toX, tile.toInnerY - tile.toY, tile.toInnerWidth, tile.toInnerHeight);
+  	  }
+
+  	  return null;
+  	};
+
+  	Pica.prototype.__tileAndResize = function (from, to, opts) {
+  	  var _this3 = this;
+
+  	  var stageEnv = {
+  	    srcCtx: null,
+  	    srcImageBitmap: null,
+  	    isImageBitmapReused: false,
+  	    toCtx: null
+  	  };
+
+  	  var processTile = function processTile(tile) {
+  	    return _this3.__limit(function () {
+  	      if (opts.canceled) return opts.cancelToken;
+  	      var tileOpts = {
+  	        width: tile.width,
+  	        height: tile.height,
+  	        toWidth: tile.toWidth,
+  	        toHeight: tile.toHeight,
+  	        scaleX: tile.scaleX,
+  	        scaleY: tile.scaleY,
+  	        offsetX: tile.offsetX,
+  	        offsetY: tile.offsetY,
+  	        filter: opts.filter,
+  	        unsharpAmount: opts.unsharpAmount,
+  	        unsharpRadius: opts.unsharpRadius,
+  	        unsharpThreshold: opts.unsharpThreshold
+  	      };
+
+  	      _this3.debug('Invoke resize math');
+
+  	      return Promise.resolve(tileOpts).then(function (tileOpts) {
+  	        return _this3.__extractTileData(tile, from, opts, stageEnv, tileOpts);
+  	      }).then(function (tileOpts) {
+  	        _this3.debug('Invoke resize math');
+
+  	        return _this3.__invokeResize(tileOpts, opts);
+  	      }).then(function (result) {
+  	        if (opts.canceled) return opts.cancelToken;
+  	        stageEnv.srcImageData = null;
+  	        return _this3.__landTileData(tile, result, stageEnv);
+  	      });
+  	    });
+  	  }; // Need to normalize data source first. It can be canvas or image.
+  	  // If image - try to decode in background if possible
+
+
+  	  return Promise.resolve().then(function () {
+  	    stageEnv.toCtx = to.getContext('2d');
+  	    if (utils.isCanvas(from)) return null;
+
+  	    if (utils.isImageBitmap(from)) {
+  	      stageEnv.srcImageBitmap = from;
+  	      stageEnv.isImageBitmapReused = true;
+  	      return null;
+  	    }
+
+  	    if (utils.isImage(from)) {
+  	      // try do decode image in background for faster next operations;
+  	      // if we're using offscreen canvas, cib is called per tile, so not needed here
+  	      if (!CAN_CREATE_IMAGE_BITMAP) return null;
+
+  	      _this3.debug('Decode image via createImageBitmap');
+
+  	      return createImageBitmap(from).then(function (imageBitmap) {
+  	        stageEnv.srcImageBitmap = imageBitmap;
+  	      }) // Suppress error to use fallback, if method fails
+  	      // https://github.com/nodeca/pica/issues/190
+
+  	      /* eslint-disable no-unused-vars */
+  	      ["catch"](function (e) {
+  	        return null;
+  	      });
+  	    }
+
+  	    throw new Error('Pica: ".from" should be Image, Canvas or ImageBitmap');
+  	  }).then(function () {
+  	    if (opts.canceled) return opts.cancelToken;
+
+  	    _this3.debug('Calculate tiles'); //
+  	    // Here we are with "normalized" source,
+  	    // follow to tiling
+  	    //
+
+
+  	    var regions = createRegions({
+  	      width: opts.width,
+  	      height: opts.height,
+  	      srcTileSize: _this3.options.tile,
+  	      toWidth: opts.toWidth,
+  	      toHeight: opts.toHeight,
+  	      destTileBorder: opts.__destTileBorder
+  	    });
+  	    var jobs = regions.map(function (tile) {
+  	      return processTile(tile);
+  	    });
+
+  	    function cleanup(stageEnv) {
+  	      if (stageEnv.srcImageBitmap) {
+  	        if (!stageEnv.isImageBitmapReused) stageEnv.srcImageBitmap.close();
+  	        stageEnv.srcImageBitmap = null;
+  	      }
+  	    }
+
+  	    _this3.debug('Process tiles');
+
+  	    return Promise.all(jobs).then(function () {
+  	      _this3.debug('Finished!');
+
+  	      cleanup(stageEnv);
+  	      return to;
+  	    }, function (err) {
+  	      cleanup(stageEnv);
+  	      throw err;
+  	    });
+  	  });
+  	};
+
+  	Pica.prototype.__processStages = function (stages, from, to, opts) {
+  	  var _this4 = this;
+
+  	  if (opts.canceled) return opts.cancelToken;
+
+  	  var _stages$shift = stages.shift(),
+  	      _stages$shift2 = _slicedToArray(_stages$shift, 2),
+  	      toWidth = _stages$shift2[0],
+  	      toHeight = _stages$shift2[1];
+
+  	  var isLastStage = stages.length === 0; // Optimization for legacy filters -
+  	  // only use user-defined quality for the last stage,
+  	  // use simpler (Hamming) filter for the first stages where
+  	  // scale factor is large enough (more than 2-3)
+  	  //
+  	  // For advanced filters (mks2013 and custom) - skip optimization,
+  	  // because need to apply sharpening every time
+
+  	  var filter;
+  	  if (isLastStage || filter_info.q2f.indexOf(opts.filter) < 0) filter = opts.filter;else if (opts.filter === 'box') filter = 'box';else filter = 'hamming';
+  	  opts = assign({}, opts, {
+  	    toWidth: toWidth,
+  	    toHeight: toHeight,
+  	    filter: filter
+  	  });
+  	  var tmpCanvas;
+
+  	  if (!isLastStage) {
+  	    // create temporary canvas
+  	    tmpCanvas = this.options.createCanvas(toWidth, toHeight);
+  	  }
+
+  	  return this.__tileAndResize(from, isLastStage ? to : tmpCanvas, opts).then(function () {
+  	    if (isLastStage) return to;
+  	    opts.width = toWidth;
+  	    opts.height = toHeight;
+  	    return _this4.__processStages(stages, tmpCanvas, to, opts);
+  	  }).then(function (res) {
+  	    if (tmpCanvas) {
+  	      // Safari 12 workaround
+  	      // https://github.com/nodeca/pica/issues/199
+  	      tmpCanvas.width = tmpCanvas.height = 0;
+  	    }
+
+  	    return res;
+  	  });
+  	};
+
+  	Pica.prototype.__resizeViaCreateImageBitmap = function (from, to, opts) {
+  	  var _this5 = this;
+
+  	  var toCtx = to.getContext('2d');
+  	  this.debug('Resize via createImageBitmap()');
+  	  return createImageBitmap(from, {
+  	    resizeWidth: opts.toWidth,
+  	    resizeHeight: opts.toHeight,
+  	    resizeQuality: utils.cib_quality_name(filter_info.f2q[opts.filter])
+  	  }).then(function (imageBitmap) {
+  	    if (opts.canceled) return opts.cancelToken; // if no unsharp - draw directly to output canvas
+
+  	    if (!opts.unsharpAmount) {
+  	      toCtx.drawImage(imageBitmap, 0, 0);
+  	      imageBitmap.close();
+  	      toCtx = null;
+
+  	      _this5.debug('Finished!');
+
+  	      return to;
+  	    }
+
+  	    _this5.debug('Unsharp result');
+
+  	    var tmpCanvas = _this5.options.createCanvas(opts.toWidth, opts.toHeight);
+
+  	    var tmpCtx = tmpCanvas.getContext('2d');
+  	    tmpCtx.drawImage(imageBitmap, 0, 0);
+  	    imageBitmap.close();
+  	    var iData = tmpCtx.getImageData(0, 0, opts.toWidth, opts.toHeight);
+
+  	    _this5.__mathlib.unsharp_mask(iData.data, opts.toWidth, opts.toHeight, opts.unsharpAmount, opts.unsharpRadius, opts.unsharpThreshold);
+
+  	    toCtx.putImageData(iData, 0, 0); // Safari 12 workaround
+  	    // https://github.com/nodeca/pica/issues/199
+
+  	    tmpCanvas.width = tmpCanvas.height = 0;
+  	    iData = tmpCtx = tmpCanvas = toCtx = null;
+
+  	    _this5.debug('Finished!');
+
+  	    return to;
+  	  });
+  	};
+
+  	Pica.prototype.resize = function (from, to, options) {
+  	  var _this6 = this;
+
+  	  this.debug('Start resize...');
+  	  var opts = assign({}, DEFAULT_RESIZE_OPTS);
+
+  	  if (!isNaN(options)) {
+  	    opts = assign(opts, {
+  	      quality: options
+  	    });
+  	  } else if (options) {
+  	    opts = assign(opts, options);
+  	  }
+
+  	  opts.toWidth = to.width;
+  	  opts.toHeight = to.height;
+  	  opts.width = from.naturalWidth || from.width;
+  	  opts.height = from.naturalHeight || from.height; // Legacy `.quality` option
+
+  	  if (Object.prototype.hasOwnProperty.call(opts, 'quality')) {
+  	    if (opts.quality < 0 || opts.quality > 3) {
+  	      throw new Error("Pica: .quality should be [0..3], got ".concat(opts.quality));
+  	    }
+
+  	    opts.filter = filter_info.q2f[opts.quality];
+  	  } // Prevent stepper from infinite loop
+
+
+  	  if (to.width === 0 || to.height === 0) {
+  	    return Promise.reject(new Error("Invalid output size: ".concat(to.width, "x").concat(to.height)));
+  	  }
+
+  	  if (opts.unsharpRadius > 2) opts.unsharpRadius = 2;
+  	  opts.canceled = false;
+
+  	  if (opts.cancelToken) {
+  	    // Wrap cancelToken to avoid successive resolve & set flag
+  	    opts.cancelToken = opts.cancelToken.then(function (data) {
+  	      opts.canceled = true;
+  	      throw data;
+  	    }, function (err) {
+  	      opts.canceled = true;
+  	      throw err;
+  	    });
+  	  }
+
+  	  var DEST_TILE_BORDER = 3; // Max possible filter window size
+
+  	  opts.__destTileBorder = Math.ceil(Math.max(DEST_TILE_BORDER, 2.5 * opts.unsharpRadius | 0));
+  	  return this.init().then(function () {
+  	    if (opts.canceled) return opts.cancelToken; // if createImageBitmap supports resize, just do it and return
+
+  	    if (_this6.features.cib) {
+  	      if (filter_info.q2f.indexOf(opts.filter) >= 0) {
+  	        return _this6.__resizeViaCreateImageBitmap(from, to, opts);
+  	      }
+
+  	      _this6.debug('cib is enabled, but not supports provided filter, fallback to manual math');
+  	    }
+
+  	    if (!CAN_USE_CANVAS_GET_IMAGE_DATA) {
+  	      var err = new Error('Pica: cannot use getImageData on canvas, ' + "make sure fingerprinting protection isn't enabled");
+  	      err.code = 'ERR_GET_IMAGE_DATA';
+  	      throw err;
+  	    } //
+  	    // No easy way, let's resize manually via arrays
+  	    //
+
+
+  	    var stages = createStages(opts.width, opts.height, opts.toWidth, opts.toHeight, _this6.options.tile, opts.__destTileBorder);
+  	    return _this6.__processStages(stages, from, to, opts);
+  	  });
+  	}; // RGBA buffer resize
+  	//
+
+
+  	Pica.prototype.resizeBuffer = function (options) {
+  	  var _this7 = this;
+
+  	  var opts = assign({}, DEFAULT_RESIZE_OPTS, options); // Legacy `.quality` option
+
+  	  if (Object.prototype.hasOwnProperty.call(opts, 'quality')) {
+  	    if (opts.quality < 0 || opts.quality > 3) {
+  	      throw new Error("Pica: .quality should be [0..3], got ".concat(opts.quality));
+  	    }
+
+  	    opts.filter = filter_info.q2f[opts.quality];
+  	  }
+
+  	  return this.init().then(function () {
+  	    return _this7.__mathlib.resizeAndUnsharp(opts);
+  	  });
+  	};
+
+  	Pica.prototype.toBlob = function (canvas, mimeType, quality) {
+  	  mimeType = mimeType || 'image/png';
+  	  return new Promise(function (resolve) {
+  	    if (canvas.toBlob) {
+  	      canvas.toBlob(function (blob) {
+  	        return resolve(blob);
+  	      }, mimeType, quality);
+  	      return;
+  	    }
+
+  	    if (canvas.convertToBlob) {
+  	      resolve(canvas.convertToBlob({
+  	        type: mimeType,
+  	        quality: quality
+  	      }));
+  	      return;
+  	    } // Fallback for old browsers
+
+
+  	    var asString = atob(canvas.toDataURL(mimeType, quality).split(',')[1]);
+  	    var len = asString.length;
+  	    var asBuffer = new Uint8Array(len);
+
+  	    for (var i = 0; i < len; i++) {
+  	      asBuffer[i] = asString.charCodeAt(i);
+  	    }
+
+  	    resolve(new Blob([asBuffer], {
+  	      type: mimeType
+  	    }));
+  	  });
+  	};
+
+  	Pica.prototype.debug = function () {};
+
+  	module.exports = Pica;
+
+  	},{"./lib/mathlib":1,"./lib/mm_resize/resize_filter_info":7,"./lib/pool":13,"./lib/stepper":14,"./lib/tiler":15,"./lib/utils":16,"./lib/worker":17,"object-assign":22,"webworkify":23}]},{},[])("/index.js")
+  	}); 
+  } (pica$1));
+
+  var picaExports = pica$1.exports;
+  const pica = /*@__PURE__*/getDefaultExportFromCjs(picaExports);
 
   const PICA = new pica({ features: ["js", "wasm"] });
   const PICA_OPTION = { filter: "box" };
@@ -2967,6 +5442,27 @@ ${chapters.map((c, i) => `<div><label>
       yield document;
     }
   }
+
+  var jszip_min = {exports: {}};
+
+  /*!
+
+  JSZip v3.10.1 - A JavaScript class for generating and reading zip files
+  <http://stuartk.com/jszip>
+
+  (c) 2009-2016 Stuart Knightley <stuart [at] stuartk.com>
+  Dual licenced under the MIT license or GPLv3. See https://raw.github.com/Stuk/jszip/main/LICENSE.markdown.
+
+  JSZip uses the library pako released under the MIT license :
+  https://github.com/nodeca/pako/blob/main/LICENSE
+  */
+
+  (function (module, exports) {
+  	!function(e){module.exports=e();}(function(){return function s(a,o,h){function u(r,e){if(!o[r]){if(!a[r]){var t="function"==typeof commonjsRequire&&commonjsRequire;if(!e&&t)return t(r,!0);if(l)return l(r,!0);var n=new Error("Cannot find module '"+r+"'");throw n.code="MODULE_NOT_FOUND",n}var i=o[r]={exports:{}};a[r][0].call(i.exports,function(e){var t=a[r][1][e];return u(t||e)},i,i.exports,s,a,o,h);}return o[r].exports}for(var l="function"==typeof commonjsRequire&&commonjsRequire,e=0;e<h.length;e++)u(h[e]);return u}({1:[function(e,t,r){var d=e("./utils"),c=e("./support"),p="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";r.encode=function(e){for(var t,r,n,i,s,a,o,h=[],u=0,l=e.length,f=l,c="string"!==d.getTypeOf(e);u<e.length;)f=l-u,n=c?(t=e[u++],r=u<l?e[u++]:0,u<l?e[u++]:0):(t=e.charCodeAt(u++),r=u<l?e.charCodeAt(u++):0,u<l?e.charCodeAt(u++):0),i=t>>2,s=(3&t)<<4|r>>4,a=1<f?(15&r)<<2|n>>6:64,o=2<f?63&n:64,h.push(p.charAt(i)+p.charAt(s)+p.charAt(a)+p.charAt(o));return h.join("")},r.decode=function(e){var t,r,n,i,s,a,o=0,h=0,u="data:";if(e.substr(0,u.length)===u)throw new Error("Invalid base64 input, it looks like a data url.");var l,f=3*(e=e.replace(/[^A-Za-z0-9+/=]/g,"")).length/4;if(e.charAt(e.length-1)===p.charAt(64)&&f--,e.charAt(e.length-2)===p.charAt(64)&&f--,f%1!=0)throw new Error("Invalid base64 input, bad content length.");for(l=c.uint8array?new Uint8Array(0|f):new Array(0|f);o<e.length;)t=p.indexOf(e.charAt(o++))<<2|(i=p.indexOf(e.charAt(o++)))>>4,r=(15&i)<<4|(s=p.indexOf(e.charAt(o++)))>>2,n=(3&s)<<6|(a=p.indexOf(e.charAt(o++))),l[h++]=t,64!==s&&(l[h++]=r),64!==a&&(l[h++]=n);return l};},{"./support":30,"./utils":32}],2:[function(e,t,r){var n=e("./external"),i=e("./stream/DataWorker"),s=e("./stream/Crc32Probe"),a=e("./stream/DataLengthProbe");function o(e,t,r,n,i){this.compressedSize=e,this.uncompressedSize=t,this.crc32=r,this.compression=n,this.compressedContent=i;}o.prototype={getContentWorker:function(){var e=new i(n.Promise.resolve(this.compressedContent)).pipe(this.compression.uncompressWorker()).pipe(new a("data_length")),t=this;return e.on("end",function(){if(this.streamInfo.data_length!==t.uncompressedSize)throw new Error("Bug : uncompressed data size mismatch")}),e},getCompressedWorker:function(){return new i(n.Promise.resolve(this.compressedContent)).withStreamInfo("compressedSize",this.compressedSize).withStreamInfo("uncompressedSize",this.uncompressedSize).withStreamInfo("crc32",this.crc32).withStreamInfo("compression",this.compression)}},o.createWorkerFrom=function(e,t,r){return e.pipe(new s).pipe(new a("uncompressedSize")).pipe(t.compressWorker(r)).pipe(new a("compressedSize")).withStreamInfo("compression",t)},t.exports=o;},{"./external":6,"./stream/Crc32Probe":25,"./stream/DataLengthProbe":26,"./stream/DataWorker":27}],3:[function(e,t,r){var n=e("./stream/GenericWorker");r.STORE={magic:"\0\0",compressWorker:function(){return new n("STORE compression")},uncompressWorker:function(){return new n("STORE decompression")}},r.DEFLATE=e("./flate");},{"./flate":7,"./stream/GenericWorker":28}],4:[function(e,t,r){var n=e("./utils");var o=function(){for(var e,t=[],r=0;r<256;r++){e=r;for(var n=0;n<8;n++)e=1&e?3988292384^e>>>1:e>>>1;t[r]=e;}return t}();t.exports=function(e,t){return void 0!==e&&e.length?"string"!==n.getTypeOf(e)?function(e,t,r,n){var i=o,s=n+r;e^=-1;for(var a=n;a<s;a++)e=e>>>8^i[255&(e^t[a])];return -1^e}(0|t,e,e.length,0):function(e,t,r,n){var i=o,s=n+r;e^=-1;for(var a=n;a<s;a++)e=e>>>8^i[255&(e^t.charCodeAt(a))];return -1^e}(0|t,e,e.length,0):0};},{"./utils":32}],5:[function(e,t,r){r.base64=!1,r.binary=!1,r.dir=!1,r.createFolders=!0,r.date=null,r.compression=null,r.compressionOptions=null,r.comment=null,r.unixPermissions=null,r.dosPermissions=null;},{}],6:[function(e,t,r){var n=null;n="undefined"!=typeof Promise?Promise:e("lie"),t.exports={Promise:n};},{lie:37}],7:[function(e,t,r){var n="undefined"!=typeof Uint8Array&&"undefined"!=typeof Uint16Array&&"undefined"!=typeof Uint32Array,i=e("pako"),s=e("./utils"),a=e("./stream/GenericWorker"),o=n?"uint8array":"array";function h(e,t){a.call(this,"FlateWorker/"+e),this._pako=null,this._pakoAction=e,this._pakoOptions=t,this.meta={};}r.magic="\b\0",s.inherits(h,a),h.prototype.processChunk=function(e){this.meta=e.meta,null===this._pako&&this._createPako(),this._pako.push(s.transformTo(o,e.data),!1);},h.prototype.flush=function(){a.prototype.flush.call(this),null===this._pako&&this._createPako(),this._pako.push([],!0);},h.prototype.cleanUp=function(){a.prototype.cleanUp.call(this),this._pako=null;},h.prototype._createPako=function(){this._pako=new i[this._pakoAction]({raw:!0,level:this._pakoOptions.level||-1});var t=this;this._pako.onData=function(e){t.push({data:e,meta:t.meta});};},r.compressWorker=function(e){return new h("Deflate",e)},r.uncompressWorker=function(){return new h("Inflate",{})};},{"./stream/GenericWorker":28,"./utils":32,pako:38}],8:[function(e,t,r){function A(e,t){var r,n="";for(r=0;r<t;r++)n+=String.fromCharCode(255&e),e>>>=8;return n}function n(e,t,r,n,i,s){var a,o,h=e.file,u=e.compression,l=s!==O.utf8encode,f=I.transformTo("string",s(h.name)),c=I.transformTo("string",O.utf8encode(h.name)),d=h.comment,p=I.transformTo("string",s(d)),m=I.transformTo("string",O.utf8encode(d)),_=c.length!==h.name.length,g=m.length!==d.length,b="",v="",y="",w=h.dir,k=h.date,x={crc32:0,compressedSize:0,uncompressedSize:0};t&&!r||(x.crc32=e.crc32,x.compressedSize=e.compressedSize,x.uncompressedSize=e.uncompressedSize);var S=0;t&&(S|=8),l||!_&&!g||(S|=2048);var z=0,C=0;w&&(z|=16),"UNIX"===i?(C=798,z|=function(e,t){var r=e;return e||(r=t?16893:33204),(65535&r)<<16}(h.unixPermissions,w)):(C=20,z|=function(e){return 63&(e||0)}(h.dosPermissions)),a=k.getUTCHours(),a<<=6,a|=k.getUTCMinutes(),a<<=5,a|=k.getUTCSeconds()/2,o=k.getUTCFullYear()-1980,o<<=4,o|=k.getUTCMonth()+1,o<<=5,o|=k.getUTCDate(),_&&(v=A(1,1)+A(B(f),4)+c,b+="up"+A(v.length,2)+v),g&&(y=A(1,1)+A(B(p),4)+m,b+="uc"+A(y.length,2)+y);var E="";return E+="\n\0",E+=A(S,2),E+=u.magic,E+=A(a,2),E+=A(o,2),E+=A(x.crc32,4),E+=A(x.compressedSize,4),E+=A(x.uncompressedSize,4),E+=A(f.length,2),E+=A(b.length,2),{fileRecord:R.LOCAL_FILE_HEADER+E+f+b,dirRecord:R.CENTRAL_FILE_HEADER+A(C,2)+E+A(p.length,2)+"\0\0\0\0"+A(z,4)+A(n,4)+f+b+p}}var I=e("../utils"),i=e("../stream/GenericWorker"),O=e("../utf8"),B=e("../crc32"),R=e("../signature");function s(e,t,r,n){i.call(this,"ZipFileWorker"),this.bytesWritten=0,this.zipComment=t,this.zipPlatform=r,this.encodeFileName=n,this.streamFiles=e,this.accumulate=!1,this.contentBuffer=[],this.dirRecords=[],this.currentSourceOffset=0,this.entriesCount=0,this.currentFile=null,this._sources=[];}I.inherits(s,i),s.prototype.push=function(e){var t=e.meta.percent||0,r=this.entriesCount,n=this._sources.length;this.accumulate?this.contentBuffer.push(e):(this.bytesWritten+=e.data.length,i.prototype.push.call(this,{data:e.data,meta:{currentFile:this.currentFile,percent:r?(t+100*(r-n-1))/r:100}}));},s.prototype.openedSource=function(e){this.currentSourceOffset=this.bytesWritten,this.currentFile=e.file.name;var t=this.streamFiles&&!e.file.dir;if(t){var r=n(e,t,!1,this.currentSourceOffset,this.zipPlatform,this.encodeFileName);this.push({data:r.fileRecord,meta:{percent:0}});}else this.accumulate=!0;},s.prototype.closedSource=function(e){this.accumulate=!1;var t=this.streamFiles&&!e.file.dir,r=n(e,t,!0,this.currentSourceOffset,this.zipPlatform,this.encodeFileName);if(this.dirRecords.push(r.dirRecord),t)this.push({data:function(e){return R.DATA_DESCRIPTOR+A(e.crc32,4)+A(e.compressedSize,4)+A(e.uncompressedSize,4)}(e),meta:{percent:100}});else for(this.push({data:r.fileRecord,meta:{percent:0}});this.contentBuffer.length;)this.push(this.contentBuffer.shift());this.currentFile=null;},s.prototype.flush=function(){for(var e=this.bytesWritten,t=0;t<this.dirRecords.length;t++)this.push({data:this.dirRecords[t],meta:{percent:100}});var r=this.bytesWritten-e,n=function(e,t,r,n,i){var s=I.transformTo("string",i(n));return R.CENTRAL_DIRECTORY_END+"\0\0\0\0"+A(e,2)+A(e,2)+A(t,4)+A(r,4)+A(s.length,2)+s}(this.dirRecords.length,r,e,this.zipComment,this.encodeFileName);this.push({data:n,meta:{percent:100}});},s.prototype.prepareNextSource=function(){this.previous=this._sources.shift(),this.openedSource(this.previous.streamInfo),this.isPaused?this.previous.pause():this.previous.resume();},s.prototype.registerPrevious=function(e){this._sources.push(e);var t=this;return e.on("data",function(e){t.processChunk(e);}),e.on("end",function(){t.closedSource(t.previous.streamInfo),t._sources.length?t.prepareNextSource():t.end();}),e.on("error",function(e){t.error(e);}),this},s.prototype.resume=function(){return !!i.prototype.resume.call(this)&&(!this.previous&&this._sources.length?(this.prepareNextSource(),!0):this.previous||this._sources.length||this.generatedError?void 0:(this.end(),!0))},s.prototype.error=function(e){var t=this._sources;if(!i.prototype.error.call(this,e))return !1;for(var r=0;r<t.length;r++)try{t[r].error(e);}catch(e){}return !0},s.prototype.lock=function(){i.prototype.lock.call(this);for(var e=this._sources,t=0;t<e.length;t++)e[t].lock();},t.exports=s;},{"../crc32":4,"../signature":23,"../stream/GenericWorker":28,"../utf8":31,"../utils":32}],9:[function(e,t,r){var u=e("../compressions"),n=e("./ZipFileWorker");r.generateWorker=function(e,a,t){var o=new n(a.streamFiles,t,a.platform,a.encodeFileName),h=0;try{e.forEach(function(e,t){h++;var r=function(e,t){var r=e||t,n=u[r];if(!n)throw new Error(r+" is not a valid compression method !");return n}(t.options.compression,a.compression),n=t.options.compressionOptions||a.compressionOptions||{},i=t.dir,s=t.date;t._compressWorker(r,n).withStreamInfo("file",{name:e,dir:i,date:s,comment:t.comment||"",unixPermissions:t.unixPermissions,dosPermissions:t.dosPermissions}).pipe(o);}),o.entriesCount=h;}catch(e){o.error(e);}return o};},{"../compressions":3,"./ZipFileWorker":8}],10:[function(e,t,r){function n(){if(!(this instanceof n))return new n;if(arguments.length)throw new Error("The constructor with parameters has been removed in JSZip 3.0, please check the upgrade guide.");this.files=Object.create(null),this.comment=null,this.root="",this.clone=function(){var e=new n;for(var t in this)"function"!=typeof this[t]&&(e[t]=this[t]);return e};}(n.prototype=e("./object")).loadAsync=e("./load"),n.support=e("./support"),n.defaults=e("./defaults"),n.version="3.10.1",n.loadAsync=function(e,t){return (new n).loadAsync(e,t)},n.external=e("./external"),t.exports=n;},{"./defaults":5,"./external":6,"./load":11,"./object":15,"./support":30}],11:[function(e,t,r){var u=e("./utils"),i=e("./external"),n=e("./utf8"),s=e("./zipEntries"),a=e("./stream/Crc32Probe"),l=e("./nodejsUtils");function f(n){return new i.Promise(function(e,t){var r=n.decompressed.getContentWorker().pipe(new a);r.on("error",function(e){t(e);}).on("end",function(){r.streamInfo.crc32!==n.decompressed.crc32?t(new Error("Corrupted zip : CRC32 mismatch")):e();}).resume();})}t.exports=function(e,o){var h=this;return o=u.extend(o||{},{base64:!1,checkCRC32:!1,optimizedBinaryString:!1,createFolders:!1,decodeFileName:n.utf8decode}),l.isNode&&l.isStream(e)?i.Promise.reject(new Error("JSZip can't accept a stream when loading a zip file.")):u.prepareContent("the loaded zip file",e,!0,o.optimizedBinaryString,o.base64).then(function(e){var t=new s(o);return t.load(e),t}).then(function(e){var t=[i.Promise.resolve(e)],r=e.files;if(o.checkCRC32)for(var n=0;n<r.length;n++)t.push(f(r[n]));return i.Promise.all(t)}).then(function(e){for(var t=e.shift(),r=t.files,n=0;n<r.length;n++){var i=r[n],s=i.fileNameStr,a=u.resolve(i.fileNameStr);h.file(a,i.decompressed,{binary:!0,optimizedBinaryString:!0,date:i.date,dir:i.dir,comment:i.fileCommentStr.length?i.fileCommentStr:null,unixPermissions:i.unixPermissions,dosPermissions:i.dosPermissions,createFolders:o.createFolders}),i.dir||(h.file(a).unsafeOriginalName=s);}return t.zipComment.length&&(h.comment=t.zipComment),h})};},{"./external":6,"./nodejsUtils":14,"./stream/Crc32Probe":25,"./utf8":31,"./utils":32,"./zipEntries":33}],12:[function(e,t,r){var n=e("../utils"),i=e("../stream/GenericWorker");function s(e,t){i.call(this,"Nodejs stream input adapter for "+e),this._upstreamEnded=!1,this._bindStream(t);}n.inherits(s,i),s.prototype._bindStream=function(e){var t=this;(this._stream=e).pause(),e.on("data",function(e){t.push({data:e,meta:{percent:0}});}).on("error",function(e){t.isPaused?this.generatedError=e:t.error(e);}).on("end",function(){t.isPaused?t._upstreamEnded=!0:t.end();});},s.prototype.pause=function(){return !!i.prototype.pause.call(this)&&(this._stream.pause(),!0)},s.prototype.resume=function(){return !!i.prototype.resume.call(this)&&(this._upstreamEnded?this.end():this._stream.resume(),!0)},t.exports=s;},{"../stream/GenericWorker":28,"../utils":32}],13:[function(e,t,r){var i=e("readable-stream").Readable;function n(e,t,r){i.call(this,t),this._helper=e;var n=this;e.on("data",function(e,t){n.push(e)||n._helper.pause(),r&&r(t);}).on("error",function(e){n.emit("error",e);}).on("end",function(){n.push(null);});}e("../utils").inherits(n,i),n.prototype._read=function(){this._helper.resume();},t.exports=n;},{"../utils":32,"readable-stream":16}],14:[function(e,t,r){t.exports={isNode:"undefined"!=typeof Buffer,newBufferFrom:function(e,t){if(Buffer.from&&Buffer.from!==Uint8Array.from)return Buffer.from(e,t);if("number"==typeof e)throw new Error('The "data" argument must not be a number');return new Buffer(e,t)},allocBuffer:function(e){if(Buffer.alloc)return Buffer.alloc(e);var t=new Buffer(e);return t.fill(0),t},isBuffer:function(e){return Buffer.isBuffer(e)},isStream:function(e){return e&&"function"==typeof e.on&&"function"==typeof e.pause&&"function"==typeof e.resume}};},{}],15:[function(e,t,r){function s(e,t,r){var n,i=u.getTypeOf(t),s=u.extend(r||{},f);s.date=s.date||new Date,null!==s.compression&&(s.compression=s.compression.toUpperCase()),"string"==typeof s.unixPermissions&&(s.unixPermissions=parseInt(s.unixPermissions,8)),s.unixPermissions&&16384&s.unixPermissions&&(s.dir=!0),s.dosPermissions&&16&s.dosPermissions&&(s.dir=!0),s.dir&&(e=g(e)),s.createFolders&&(n=_(e))&&b.call(this,n,!0);var a="string"===i&&!1===s.binary&&!1===s.base64;r&&void 0!==r.binary||(s.binary=!a),(t instanceof c&&0===t.uncompressedSize||s.dir||!t||0===t.length)&&(s.base64=!1,s.binary=!0,t="",s.compression="STORE",i="string");var o=null;o=t instanceof c||t instanceof l?t:p.isNode&&p.isStream(t)?new m(e,t):u.prepareContent(e,t,s.binary,s.optimizedBinaryString,s.base64);var h=new d(e,o,s);this.files[e]=h;}var i=e("./utf8"),u=e("./utils"),l=e("./stream/GenericWorker"),a=e("./stream/StreamHelper"),f=e("./defaults"),c=e("./compressedObject"),d=e("./zipObject"),o=e("./generate"),p=e("./nodejsUtils"),m=e("./nodejs/NodejsStreamInputAdapter"),_=function(e){"/"===e.slice(-1)&&(e=e.substring(0,e.length-1));var t=e.lastIndexOf("/");return 0<t?e.substring(0,t):""},g=function(e){return "/"!==e.slice(-1)&&(e+="/"),e},b=function(e,t){return t=void 0!==t?t:f.createFolders,e=g(e),this.files[e]||s.call(this,e,null,{dir:!0,createFolders:t}),this.files[e]};function h(e){return "[object RegExp]"===Object.prototype.toString.call(e)}var n={load:function(){throw new Error("This method has been removed in JSZip 3.0, please check the upgrade guide.")},forEach:function(e){var t,r,n;for(t in this.files)n=this.files[t],(r=t.slice(this.root.length,t.length))&&t.slice(0,this.root.length)===this.root&&e(r,n);},filter:function(r){var n=[];return this.forEach(function(e,t){r(e,t)&&n.push(t);}),n},file:function(e,t,r){if(1!==arguments.length)return e=this.root+e,s.call(this,e,t,r),this;if(h(e)){var n=e;return this.filter(function(e,t){return !t.dir&&n.test(e)})}var i=this.files[this.root+e];return i&&!i.dir?i:null},folder:function(r){if(!r)return this;if(h(r))return this.filter(function(e,t){return t.dir&&r.test(e)});var e=this.root+r,t=b.call(this,e),n=this.clone();return n.root=t.name,n},remove:function(r){r=this.root+r;var e=this.files[r];if(e||("/"!==r.slice(-1)&&(r+="/"),e=this.files[r]),e&&!e.dir)delete this.files[r];else for(var t=this.filter(function(e,t){return t.name.slice(0,r.length)===r}),n=0;n<t.length;n++)delete this.files[t[n].name];return this},generate:function(){throw new Error("This method has been removed in JSZip 3.0, please check the upgrade guide.")},generateInternalStream:function(e){var t,r={};try{if((r=u.extend(e||{},{streamFiles:!1,compression:"STORE",compressionOptions:null,type:"",platform:"DOS",comment:null,mimeType:"application/zip",encodeFileName:i.utf8encode})).type=r.type.toLowerCase(),r.compression=r.compression.toUpperCase(),"binarystring"===r.type&&(r.type="string"),!r.type)throw new Error("No output type specified.");u.checkSupport(r.type),"darwin"!==r.platform&&"freebsd"!==r.platform&&"linux"!==r.platform&&"sunos"!==r.platform||(r.platform="UNIX"),"win32"===r.platform&&(r.platform="DOS");var n=r.comment||this.comment||"";t=o.generateWorker(this,r,n);}catch(e){(t=new l("error")).error(e);}return new a(t,r.type||"string",r.mimeType)},generateAsync:function(e,t){return this.generateInternalStream(e).accumulate(t)},generateNodeStream:function(e,t){return (e=e||{}).type||(e.type="nodebuffer"),this.generateInternalStream(e).toNodejsStream(t)}};t.exports=n;},{"./compressedObject":2,"./defaults":5,"./generate":9,"./nodejs/NodejsStreamInputAdapter":12,"./nodejsUtils":14,"./stream/GenericWorker":28,"./stream/StreamHelper":29,"./utf8":31,"./utils":32,"./zipObject":35}],16:[function(e,t,r){t.exports=e("stream");},{stream:void 0}],17:[function(e,t,r){var n=e("./DataReader");function i(e){n.call(this,e);for(var t=0;t<this.data.length;t++)e[t]=255&e[t];}e("../utils").inherits(i,n),i.prototype.byteAt=function(e){return this.data[this.zero+e]},i.prototype.lastIndexOfSignature=function(e){for(var t=e.charCodeAt(0),r=e.charCodeAt(1),n=e.charCodeAt(2),i=e.charCodeAt(3),s=this.length-4;0<=s;--s)if(this.data[s]===t&&this.data[s+1]===r&&this.data[s+2]===n&&this.data[s+3]===i)return s-this.zero;return -1},i.prototype.readAndCheckSignature=function(e){var t=e.charCodeAt(0),r=e.charCodeAt(1),n=e.charCodeAt(2),i=e.charCodeAt(3),s=this.readData(4);return t===s[0]&&r===s[1]&&n===s[2]&&i===s[3]},i.prototype.readData=function(e){if(this.checkOffset(e),0===e)return [];var t=this.data.slice(this.zero+this.index,this.zero+this.index+e);return this.index+=e,t},t.exports=i;},{"../utils":32,"./DataReader":18}],18:[function(e,t,r){var n=e("../utils");function i(e){this.data=e,this.length=e.length,this.index=0,this.zero=0;}i.prototype={checkOffset:function(e){this.checkIndex(this.index+e);},checkIndex:function(e){if(this.length<this.zero+e||e<0)throw new Error("End of data reached (data length = "+this.length+", asked index = "+e+"). Corrupted zip ?")},setIndex:function(e){this.checkIndex(e),this.index=e;},skip:function(e){this.setIndex(this.index+e);},byteAt:function(){},readInt:function(e){var t,r=0;for(this.checkOffset(e),t=this.index+e-1;t>=this.index;t--)r=(r<<8)+this.byteAt(t);return this.index+=e,r},readString:function(e){return n.transformTo("string",this.readData(e))},readData:function(){},lastIndexOfSignature:function(){},readAndCheckSignature:function(){},readDate:function(){var e=this.readInt(4);return new Date(Date.UTC(1980+(e>>25&127),(e>>21&15)-1,e>>16&31,e>>11&31,e>>5&63,(31&e)<<1))}},t.exports=i;},{"../utils":32}],19:[function(e,t,r){var n=e("./Uint8ArrayReader");function i(e){n.call(this,e);}e("../utils").inherits(i,n),i.prototype.readData=function(e){this.checkOffset(e);var t=this.data.slice(this.zero+this.index,this.zero+this.index+e);return this.index+=e,t},t.exports=i;},{"../utils":32,"./Uint8ArrayReader":21}],20:[function(e,t,r){var n=e("./DataReader");function i(e){n.call(this,e);}e("../utils").inherits(i,n),i.prototype.byteAt=function(e){return this.data.charCodeAt(this.zero+e)},i.prototype.lastIndexOfSignature=function(e){return this.data.lastIndexOf(e)-this.zero},i.prototype.readAndCheckSignature=function(e){return e===this.readData(4)},i.prototype.readData=function(e){this.checkOffset(e);var t=this.data.slice(this.zero+this.index,this.zero+this.index+e);return this.index+=e,t},t.exports=i;},{"../utils":32,"./DataReader":18}],21:[function(e,t,r){var n=e("./ArrayReader");function i(e){n.call(this,e);}e("../utils").inherits(i,n),i.prototype.readData=function(e){if(this.checkOffset(e),0===e)return new Uint8Array(0);var t=this.data.subarray(this.zero+this.index,this.zero+this.index+e);return this.index+=e,t},t.exports=i;},{"../utils":32,"./ArrayReader":17}],22:[function(e,t,r){var n=e("../utils"),i=e("../support"),s=e("./ArrayReader"),a=e("./StringReader"),o=e("./NodeBufferReader"),h=e("./Uint8ArrayReader");t.exports=function(e){var t=n.getTypeOf(e);return n.checkSupport(t),"string"!==t||i.uint8array?"nodebuffer"===t?new o(e):i.uint8array?new h(n.transformTo("uint8array",e)):new s(n.transformTo("array",e)):new a(e)};},{"../support":30,"../utils":32,"./ArrayReader":17,"./NodeBufferReader":19,"./StringReader":20,"./Uint8ArrayReader":21}],23:[function(e,t,r){r.LOCAL_FILE_HEADER="PK",r.CENTRAL_FILE_HEADER="PK",r.CENTRAL_DIRECTORY_END="PK",r.ZIP64_CENTRAL_DIRECTORY_LOCATOR="PK",r.ZIP64_CENTRAL_DIRECTORY_END="PK",r.DATA_DESCRIPTOR="PK\b";},{}],24:[function(e,t,r){var n=e("./GenericWorker"),i=e("../utils");function s(e){n.call(this,"ConvertWorker to "+e),this.destType=e;}i.inherits(s,n),s.prototype.processChunk=function(e){this.push({data:i.transformTo(this.destType,e.data),meta:e.meta});},t.exports=s;},{"../utils":32,"./GenericWorker":28}],25:[function(e,t,r){var n=e("./GenericWorker"),i=e("../crc32");function s(){n.call(this,"Crc32Probe"),this.withStreamInfo("crc32",0);}e("../utils").inherits(s,n),s.prototype.processChunk=function(e){this.streamInfo.crc32=i(e.data,this.streamInfo.crc32||0),this.push(e);},t.exports=s;},{"../crc32":4,"../utils":32,"./GenericWorker":28}],26:[function(e,t,r){var n=e("../utils"),i=e("./GenericWorker");function s(e){i.call(this,"DataLengthProbe for "+e),this.propName=e,this.withStreamInfo(e,0);}n.inherits(s,i),s.prototype.processChunk=function(e){if(e){var t=this.streamInfo[this.propName]||0;this.streamInfo[this.propName]=t+e.data.length;}i.prototype.processChunk.call(this,e);},t.exports=s;},{"../utils":32,"./GenericWorker":28}],27:[function(e,t,r){var n=e("../utils"),i=e("./GenericWorker");function s(e){i.call(this,"DataWorker");var t=this;this.dataIsReady=!1,this.index=0,this.max=0,this.data=null,this.type="",this._tickScheduled=!1,e.then(function(e){t.dataIsReady=!0,t.data=e,t.max=e&&e.length||0,t.type=n.getTypeOf(e),t.isPaused||t._tickAndRepeat();},function(e){t.error(e);});}n.inherits(s,i),s.prototype.cleanUp=function(){i.prototype.cleanUp.call(this),this.data=null;},s.prototype.resume=function(){return !!i.prototype.resume.call(this)&&(!this._tickScheduled&&this.dataIsReady&&(this._tickScheduled=!0,n.delay(this._tickAndRepeat,[],this)),!0)},s.prototype._tickAndRepeat=function(){this._tickScheduled=!1,this.isPaused||this.isFinished||(this._tick(),this.isFinished||(n.delay(this._tickAndRepeat,[],this),this._tickScheduled=!0));},s.prototype._tick=function(){if(this.isPaused||this.isFinished)return !1;var e=null,t=Math.min(this.max,this.index+16384);if(this.index>=this.max)return this.end();switch(this.type){case"string":e=this.data.substring(this.index,t);break;case"uint8array":e=this.data.subarray(this.index,t);break;case"array":case"nodebuffer":e=this.data.slice(this.index,t);}return this.index=t,this.push({data:e,meta:{percent:this.max?this.index/this.max*100:0}})},t.exports=s;},{"../utils":32,"./GenericWorker":28}],28:[function(e,t,r){function n(e){this.name=e||"default",this.streamInfo={},this.generatedError=null,this.extraStreamInfo={},this.isPaused=!0,this.isFinished=!1,this.isLocked=!1,this._listeners={data:[],end:[],error:[]},this.previous=null;}n.prototype={push:function(e){this.emit("data",e);},end:function(){if(this.isFinished)return !1;this.flush();try{this.emit("end"),this.cleanUp(),this.isFinished=!0;}catch(e){this.emit("error",e);}return !0},error:function(e){return !this.isFinished&&(this.isPaused?this.generatedError=e:(this.isFinished=!0,this.emit("error",e),this.previous&&this.previous.error(e),this.cleanUp()),!0)},on:function(e,t){return this._listeners[e].push(t),this},cleanUp:function(){this.streamInfo=this.generatedError=this.extraStreamInfo=null,this._listeners=[];},emit:function(e,t){if(this._listeners[e])for(var r=0;r<this._listeners[e].length;r++)this._listeners[e][r].call(this,t);},pipe:function(e){return e.registerPrevious(this)},registerPrevious:function(e){if(this.isLocked)throw new Error("The stream '"+this+"' has already been used.");this.streamInfo=e.streamInfo,this.mergeStreamInfo(),this.previous=e;var t=this;return e.on("data",function(e){t.processChunk(e);}),e.on("end",function(){t.end();}),e.on("error",function(e){t.error(e);}),this},pause:function(){return !this.isPaused&&!this.isFinished&&(this.isPaused=!0,this.previous&&this.previous.pause(),!0)},resume:function(){if(!this.isPaused||this.isFinished)return !1;var e=this.isPaused=!1;return this.generatedError&&(this.error(this.generatedError),e=!0),this.previous&&this.previous.resume(),!e},flush:function(){},processChunk:function(e){this.push(e);},withStreamInfo:function(e,t){return this.extraStreamInfo[e]=t,this.mergeStreamInfo(),this},mergeStreamInfo:function(){for(var e in this.extraStreamInfo)Object.prototype.hasOwnProperty.call(this.extraStreamInfo,e)&&(this.streamInfo[e]=this.extraStreamInfo[e]);},lock:function(){if(this.isLocked)throw new Error("The stream '"+this+"' has already been used.");this.isLocked=!0,this.previous&&this.previous.lock();},toString:function(){var e="Worker "+this.name;return this.previous?this.previous+" -> "+e:e}},t.exports=n;},{}],29:[function(e,t,r){var h=e("../utils"),i=e("./ConvertWorker"),s=e("./GenericWorker"),u=e("../base64"),n=e("../support"),a=e("../external"),o=null;if(n.nodestream)try{o=e("../nodejs/NodejsStreamOutputAdapter");}catch(e){}function l(e,o){return new a.Promise(function(t,r){var n=[],i=e._internalType,s=e._outputType,a=e._mimeType;e.on("data",function(e,t){n.push(e),o&&o(t);}).on("error",function(e){n=[],r(e);}).on("end",function(){try{var e=function(e,t,r){switch(e){case"blob":return h.newBlob(h.transformTo("arraybuffer",t),r);case"base64":return u.encode(t);default:return h.transformTo(e,t)}}(s,function(e,t){var r,n=0,i=null,s=0;for(r=0;r<t.length;r++)s+=t[r].length;switch(e){case"string":return t.join("");case"array":return Array.prototype.concat.apply([],t);case"uint8array":for(i=new Uint8Array(s),r=0;r<t.length;r++)i.set(t[r],n),n+=t[r].length;return i;case"nodebuffer":return Buffer.concat(t);default:throw new Error("concat : unsupported type '"+e+"'")}}(i,n),a);t(e);}catch(e){r(e);}n=[];}).resume();})}function f(e,t,r){var n=t;switch(t){case"blob":case"arraybuffer":n="uint8array";break;case"base64":n="string";}try{this._internalType=n,this._outputType=t,this._mimeType=r,h.checkSupport(n),this._worker=e.pipe(new i(n)),e.lock();}catch(e){this._worker=new s("error"),this._worker.error(e);}}f.prototype={accumulate:function(e){return l(this,e)},on:function(e,t){var r=this;return "data"===e?this._worker.on(e,function(e){t.call(r,e.data,e.meta);}):this._worker.on(e,function(){h.delay(t,arguments,r);}),this},resume:function(){return h.delay(this._worker.resume,[],this._worker),this},pause:function(){return this._worker.pause(),this},toNodejsStream:function(e){if(h.checkSupport("nodestream"),"nodebuffer"!==this._outputType)throw new Error(this._outputType+" is not supported by this method");return new o(this,{objectMode:"nodebuffer"!==this._outputType},e)}},t.exports=f;},{"../base64":1,"../external":6,"../nodejs/NodejsStreamOutputAdapter":13,"../support":30,"../utils":32,"./ConvertWorker":24,"./GenericWorker":28}],30:[function(e,t,r){if(r.base64=!0,r.array=!0,r.string=!0,r.arraybuffer="undefined"!=typeof ArrayBuffer&&"undefined"!=typeof Uint8Array,r.nodebuffer="undefined"!=typeof Buffer,r.uint8array="undefined"!=typeof Uint8Array,"undefined"==typeof ArrayBuffer)r.blob=!1;else {var n=new ArrayBuffer(0);try{r.blob=0===new Blob([n],{type:"application/zip"}).size;}catch(e){try{var i=new(self.BlobBuilder||self.WebKitBlobBuilder||self.MozBlobBuilder||self.MSBlobBuilder);i.append(n),r.blob=0===i.getBlob("application/zip").size;}catch(e){r.blob=!1;}}}try{r.nodestream=!!e("readable-stream").Readable;}catch(e){r.nodestream=!1;}},{"readable-stream":16}],31:[function(e,t,s){for(var o=e("./utils"),h=e("./support"),r=e("./nodejsUtils"),n=e("./stream/GenericWorker"),u=new Array(256),i=0;i<256;i++)u[i]=252<=i?6:248<=i?5:240<=i?4:224<=i?3:192<=i?2:1;u[254]=u[254]=1;function a(){n.call(this,"utf-8 decode"),this.leftOver=null;}function l(){n.call(this,"utf-8 encode");}s.utf8encode=function(e){return h.nodebuffer?r.newBufferFrom(e,"utf-8"):function(e){var t,r,n,i,s,a=e.length,o=0;for(i=0;i<a;i++)55296==(64512&(r=e.charCodeAt(i)))&&i+1<a&&56320==(64512&(n=e.charCodeAt(i+1)))&&(r=65536+(r-55296<<10)+(n-56320),i++),o+=r<128?1:r<2048?2:r<65536?3:4;for(t=h.uint8array?new Uint8Array(o):new Array(o),i=s=0;s<o;i++)55296==(64512&(r=e.charCodeAt(i)))&&i+1<a&&56320==(64512&(n=e.charCodeAt(i+1)))&&(r=65536+(r-55296<<10)+(n-56320),i++),r<128?t[s++]=r:(r<2048?t[s++]=192|r>>>6:(r<65536?t[s++]=224|r>>>12:(t[s++]=240|r>>>18,t[s++]=128|r>>>12&63),t[s++]=128|r>>>6&63),t[s++]=128|63&r);return t}(e)},s.utf8decode=function(e){return h.nodebuffer?o.transformTo("nodebuffer",e).toString("utf-8"):function(e){var t,r,n,i,s=e.length,a=new Array(2*s);for(t=r=0;t<s;)if((n=e[t++])<128)a[r++]=n;else if(4<(i=u[n]))a[r++]=65533,t+=i-1;else {for(n&=2===i?31:3===i?15:7;1<i&&t<s;)n=n<<6|63&e[t++],i--;1<i?a[r++]=65533:n<65536?a[r++]=n:(n-=65536,a[r++]=55296|n>>10&1023,a[r++]=56320|1023&n);}return a.length!==r&&(a.subarray?a=a.subarray(0,r):a.length=r),o.applyFromCharCode(a)}(e=o.transformTo(h.uint8array?"uint8array":"array",e))},o.inherits(a,n),a.prototype.processChunk=function(e){var t=o.transformTo(h.uint8array?"uint8array":"array",e.data);if(this.leftOver&&this.leftOver.length){if(h.uint8array){var r=t;(t=new Uint8Array(r.length+this.leftOver.length)).set(this.leftOver,0),t.set(r,this.leftOver.length);}else t=this.leftOver.concat(t);this.leftOver=null;}var n=function(e,t){var r;for((t=t||e.length)>e.length&&(t=e.length),r=t-1;0<=r&&128==(192&e[r]);)r--;return r<0?t:0===r?t:r+u[e[r]]>t?r:t}(t),i=t;n!==t.length&&(h.uint8array?(i=t.subarray(0,n),this.leftOver=t.subarray(n,t.length)):(i=t.slice(0,n),this.leftOver=t.slice(n,t.length))),this.push({data:s.utf8decode(i),meta:e.meta});},a.prototype.flush=function(){this.leftOver&&this.leftOver.length&&(this.push({data:s.utf8decode(this.leftOver),meta:{}}),this.leftOver=null);},s.Utf8DecodeWorker=a,o.inherits(l,n),l.prototype.processChunk=function(e){this.push({data:s.utf8encode(e.data),meta:e.meta});},s.Utf8EncodeWorker=l;},{"./nodejsUtils":14,"./stream/GenericWorker":28,"./support":30,"./utils":32}],32:[function(e,t,a){var o=e("./support"),h=e("./base64"),r=e("./nodejsUtils"),u=e("./external");function n(e){return e}function l(e,t){for(var r=0;r<e.length;++r)t[r]=255&e.charCodeAt(r);return t}e("setimmediate"),a.newBlob=function(t,r){a.checkSupport("blob");try{return new Blob([t],{type:r})}catch(e){try{var n=new(self.BlobBuilder||self.WebKitBlobBuilder||self.MozBlobBuilder||self.MSBlobBuilder);return n.append(t),n.getBlob(r)}catch(e){throw new Error("Bug : can't construct the Blob.")}}};var i={stringifyByChunk:function(e,t,r){var n=[],i=0,s=e.length;if(s<=r)return String.fromCharCode.apply(null,e);for(;i<s;)"array"===t||"nodebuffer"===t?n.push(String.fromCharCode.apply(null,e.slice(i,Math.min(i+r,s)))):n.push(String.fromCharCode.apply(null,e.subarray(i,Math.min(i+r,s)))),i+=r;return n.join("")},stringifyByChar:function(e){for(var t="",r=0;r<e.length;r++)t+=String.fromCharCode(e[r]);return t},applyCanBeUsed:{uint8array:function(){try{return o.uint8array&&1===String.fromCharCode.apply(null,new Uint8Array(1)).length}catch(e){return !1}}(),nodebuffer:function(){try{return o.nodebuffer&&1===String.fromCharCode.apply(null,r.allocBuffer(1)).length}catch(e){return !1}}()}};function s(e){var t=65536,r=a.getTypeOf(e),n=!0;if("uint8array"===r?n=i.applyCanBeUsed.uint8array:"nodebuffer"===r&&(n=i.applyCanBeUsed.nodebuffer),n)for(;1<t;)try{return i.stringifyByChunk(e,r,t)}catch(e){t=Math.floor(t/2);}return i.stringifyByChar(e)}function f(e,t){for(var r=0;r<e.length;r++)t[r]=e[r];return t}a.applyFromCharCode=s;var c={};c.string={string:n,array:function(e){return l(e,new Array(e.length))},arraybuffer:function(e){return c.string.uint8array(e).buffer},uint8array:function(e){return l(e,new Uint8Array(e.length))},nodebuffer:function(e){return l(e,r.allocBuffer(e.length))}},c.array={string:s,array:n,arraybuffer:function(e){return new Uint8Array(e).buffer},uint8array:function(e){return new Uint8Array(e)},nodebuffer:function(e){return r.newBufferFrom(e)}},c.arraybuffer={string:function(e){return s(new Uint8Array(e))},array:function(e){return f(new Uint8Array(e),new Array(e.byteLength))},arraybuffer:n,uint8array:function(e){return new Uint8Array(e)},nodebuffer:function(e){return r.newBufferFrom(new Uint8Array(e))}},c.uint8array={string:s,array:function(e){return f(e,new Array(e.length))},arraybuffer:function(e){return e.buffer},uint8array:n,nodebuffer:function(e){return r.newBufferFrom(e)}},c.nodebuffer={string:s,array:function(e){return f(e,new Array(e.length))},arraybuffer:function(e){return c.nodebuffer.uint8array(e).buffer},uint8array:function(e){return f(e,new Uint8Array(e.length))},nodebuffer:n},a.transformTo=function(e,t){if(t=t||"",!e)return t;a.checkSupport(e);var r=a.getTypeOf(t);return c[r][e](t)},a.resolve=function(e){for(var t=e.split("/"),r=[],n=0;n<t.length;n++){var i=t[n];"."===i||""===i&&0!==n&&n!==t.length-1||(".."===i?r.pop():r.push(i));}return r.join("/")},a.getTypeOf=function(e){return "string"==typeof e?"string":"[object Array]"===Object.prototype.toString.call(e)?"array":o.nodebuffer&&r.isBuffer(e)?"nodebuffer":o.uint8array&&e instanceof Uint8Array?"uint8array":o.arraybuffer&&e instanceof ArrayBuffer?"arraybuffer":void 0},a.checkSupport=function(e){if(!o[e.toLowerCase()])throw new Error(e+" is not supported by this platform")},a.MAX_VALUE_16BITS=65535,a.MAX_VALUE_32BITS=-1,a.pretty=function(e){var t,r,n="";for(r=0;r<(e||"").length;r++)n+="\\x"+((t=e.charCodeAt(r))<16?"0":"")+t.toString(16).toUpperCase();return n},a.delay=function(e,t,r){setImmediate(function(){e.apply(r||null,t||[]);});},a.inherits=function(e,t){function r(){}r.prototype=t.prototype,e.prototype=new r;},a.extend=function(){var e,t,r={};for(e=0;e<arguments.length;e++)for(t in arguments[e])Object.prototype.hasOwnProperty.call(arguments[e],t)&&void 0===r[t]&&(r[t]=arguments[e][t]);return r},a.prepareContent=function(r,e,n,i,s){return u.Promise.resolve(e).then(function(n){return o.blob&&(n instanceof Blob||-1!==["[object File]","[object Blob]"].indexOf(Object.prototype.toString.call(n)))&&"undefined"!=typeof FileReader?new u.Promise(function(t,r){var e=new FileReader;e.onload=function(e){t(e.target.result);},e.onerror=function(e){r(e.target.error);},e.readAsArrayBuffer(n);}):n}).then(function(e){var t=a.getTypeOf(e);return t?("arraybuffer"===t?e=a.transformTo("uint8array",e):"string"===t&&(s?e=h.decode(e):n&&!0!==i&&(e=function(e){return l(e,o.uint8array?new Uint8Array(e.length):new Array(e.length))}(e))),e):u.Promise.reject(new Error("Can't read the data of '"+r+"'. Is it in a supported JavaScript type (String, Blob, ArrayBuffer, etc) ?"))})};},{"./base64":1,"./external":6,"./nodejsUtils":14,"./support":30,setimmediate:54}],33:[function(e,t,r){var n=e("./reader/readerFor"),i=e("./utils"),s=e("./signature"),a=e("./zipEntry"),o=e("./support");function h(e){this.files=[],this.loadOptions=e;}h.prototype={checkSignature:function(e){if(!this.reader.readAndCheckSignature(e)){this.reader.index-=4;var t=this.reader.readString(4);throw new Error("Corrupted zip or bug: unexpected signature ("+i.pretty(t)+", expected "+i.pretty(e)+")")}},isSignature:function(e,t){var r=this.reader.index;this.reader.setIndex(e);var n=this.reader.readString(4)===t;return this.reader.setIndex(r),n},readBlockEndOfCentral:function(){this.diskNumber=this.reader.readInt(2),this.diskWithCentralDirStart=this.reader.readInt(2),this.centralDirRecordsOnThisDisk=this.reader.readInt(2),this.centralDirRecords=this.reader.readInt(2),this.centralDirSize=this.reader.readInt(4),this.centralDirOffset=this.reader.readInt(4),this.zipCommentLength=this.reader.readInt(2);var e=this.reader.readData(this.zipCommentLength),t=o.uint8array?"uint8array":"array",r=i.transformTo(t,e);this.zipComment=this.loadOptions.decodeFileName(r);},readBlockZip64EndOfCentral:function(){this.zip64EndOfCentralSize=this.reader.readInt(8),this.reader.skip(4),this.diskNumber=this.reader.readInt(4),this.diskWithCentralDirStart=this.reader.readInt(4),this.centralDirRecordsOnThisDisk=this.reader.readInt(8),this.centralDirRecords=this.reader.readInt(8),this.centralDirSize=this.reader.readInt(8),this.centralDirOffset=this.reader.readInt(8),this.zip64ExtensibleData={};for(var e,t,r,n=this.zip64EndOfCentralSize-44;0<n;)e=this.reader.readInt(2),t=this.reader.readInt(4),r=this.reader.readData(t),this.zip64ExtensibleData[e]={id:e,length:t,value:r};},readBlockZip64EndOfCentralLocator:function(){if(this.diskWithZip64CentralDirStart=this.reader.readInt(4),this.relativeOffsetEndOfZip64CentralDir=this.reader.readInt(8),this.disksCount=this.reader.readInt(4),1<this.disksCount)throw new Error("Multi-volumes zip are not supported")},readLocalFiles:function(){var e,t;for(e=0;e<this.files.length;e++)t=this.files[e],this.reader.setIndex(t.localHeaderOffset),this.checkSignature(s.LOCAL_FILE_HEADER),t.readLocalPart(this.reader),t.handleUTF8(),t.processAttributes();},readCentralDir:function(){var e;for(this.reader.setIndex(this.centralDirOffset);this.reader.readAndCheckSignature(s.CENTRAL_FILE_HEADER);)(e=new a({zip64:this.zip64},this.loadOptions)).readCentralPart(this.reader),this.files.push(e);if(this.centralDirRecords!==this.files.length&&0!==this.centralDirRecords&&0===this.files.length)throw new Error("Corrupted zip or bug: expected "+this.centralDirRecords+" records in central dir, got "+this.files.length)},readEndOfCentral:function(){var e=this.reader.lastIndexOfSignature(s.CENTRAL_DIRECTORY_END);if(e<0)throw !this.isSignature(0,s.LOCAL_FILE_HEADER)?new Error("Can't find end of central directory : is this a zip file ? If it is, see https://stuk.github.io/jszip/documentation/howto/read_zip.html"):new Error("Corrupted zip: can't find end of central directory");this.reader.setIndex(e);var t=e;if(this.checkSignature(s.CENTRAL_DIRECTORY_END),this.readBlockEndOfCentral(),this.diskNumber===i.MAX_VALUE_16BITS||this.diskWithCentralDirStart===i.MAX_VALUE_16BITS||this.centralDirRecordsOnThisDisk===i.MAX_VALUE_16BITS||this.centralDirRecords===i.MAX_VALUE_16BITS||this.centralDirSize===i.MAX_VALUE_32BITS||this.centralDirOffset===i.MAX_VALUE_32BITS){if(this.zip64=!0,(e=this.reader.lastIndexOfSignature(s.ZIP64_CENTRAL_DIRECTORY_LOCATOR))<0)throw new Error("Corrupted zip: can't find the ZIP64 end of central directory locator");if(this.reader.setIndex(e),this.checkSignature(s.ZIP64_CENTRAL_DIRECTORY_LOCATOR),this.readBlockZip64EndOfCentralLocator(),!this.isSignature(this.relativeOffsetEndOfZip64CentralDir,s.ZIP64_CENTRAL_DIRECTORY_END)&&(this.relativeOffsetEndOfZip64CentralDir=this.reader.lastIndexOfSignature(s.ZIP64_CENTRAL_DIRECTORY_END),this.relativeOffsetEndOfZip64CentralDir<0))throw new Error("Corrupted zip: can't find the ZIP64 end of central directory");this.reader.setIndex(this.relativeOffsetEndOfZip64CentralDir),this.checkSignature(s.ZIP64_CENTRAL_DIRECTORY_END),this.readBlockZip64EndOfCentral();}var r=this.centralDirOffset+this.centralDirSize;this.zip64&&(r+=20,r+=12+this.zip64EndOfCentralSize);var n=t-r;if(0<n)this.isSignature(t,s.CENTRAL_FILE_HEADER)||(this.reader.zero=n);else if(n<0)throw new Error("Corrupted zip: missing "+Math.abs(n)+" bytes.")},prepareReader:function(e){this.reader=n(e);},load:function(e){this.prepareReader(e),this.readEndOfCentral(),this.readCentralDir(),this.readLocalFiles();}},t.exports=h;},{"./reader/readerFor":22,"./signature":23,"./support":30,"./utils":32,"./zipEntry":34}],34:[function(e,t,r){var n=e("./reader/readerFor"),s=e("./utils"),i=e("./compressedObject"),a=e("./crc32"),o=e("./utf8"),h=e("./compressions"),u=e("./support");function l(e,t){this.options=e,this.loadOptions=t;}l.prototype={isEncrypted:function(){return 1==(1&this.bitFlag)},useUTF8:function(){return 2048==(2048&this.bitFlag)},readLocalPart:function(e){var t,r;if(e.skip(22),this.fileNameLength=e.readInt(2),r=e.readInt(2),this.fileName=e.readData(this.fileNameLength),e.skip(r),-1===this.compressedSize||-1===this.uncompressedSize)throw new Error("Bug or corrupted zip : didn't get enough information from the central directory (compressedSize === -1 || uncompressedSize === -1)");if(null===(t=function(e){for(var t in h)if(Object.prototype.hasOwnProperty.call(h,t)&&h[t].magic===e)return h[t];return null}(this.compressionMethod)))throw new Error("Corrupted zip : compression "+s.pretty(this.compressionMethod)+" unknown (inner file : "+s.transformTo("string",this.fileName)+")");this.decompressed=new i(this.compressedSize,this.uncompressedSize,this.crc32,t,e.readData(this.compressedSize));},readCentralPart:function(e){this.versionMadeBy=e.readInt(2),e.skip(2),this.bitFlag=e.readInt(2),this.compressionMethod=e.readString(2),this.date=e.readDate(),this.crc32=e.readInt(4),this.compressedSize=e.readInt(4),this.uncompressedSize=e.readInt(4);var t=e.readInt(2);if(this.extraFieldsLength=e.readInt(2),this.fileCommentLength=e.readInt(2),this.diskNumberStart=e.readInt(2),this.internalFileAttributes=e.readInt(2),this.externalFileAttributes=e.readInt(4),this.localHeaderOffset=e.readInt(4),this.isEncrypted())throw new Error("Encrypted zip are not supported");e.skip(t),this.readExtraFields(e),this.parseZIP64ExtraField(e),this.fileComment=e.readData(this.fileCommentLength);},processAttributes:function(){this.unixPermissions=null,this.dosPermissions=null;var e=this.versionMadeBy>>8;this.dir=!!(16&this.externalFileAttributes),0==e&&(this.dosPermissions=63&this.externalFileAttributes),3==e&&(this.unixPermissions=this.externalFileAttributes>>16&65535),this.dir||"/"!==this.fileNameStr.slice(-1)||(this.dir=!0);},parseZIP64ExtraField:function(){if(this.extraFields[1]){var e=n(this.extraFields[1].value);this.uncompressedSize===s.MAX_VALUE_32BITS&&(this.uncompressedSize=e.readInt(8)),this.compressedSize===s.MAX_VALUE_32BITS&&(this.compressedSize=e.readInt(8)),this.localHeaderOffset===s.MAX_VALUE_32BITS&&(this.localHeaderOffset=e.readInt(8)),this.diskNumberStart===s.MAX_VALUE_32BITS&&(this.diskNumberStart=e.readInt(4));}},readExtraFields:function(e){var t,r,n,i=e.index+this.extraFieldsLength;for(this.extraFields||(this.extraFields={});e.index+4<i;)t=e.readInt(2),r=e.readInt(2),n=e.readData(r),this.extraFields[t]={id:t,length:r,value:n};e.setIndex(i);},handleUTF8:function(){var e=u.uint8array?"uint8array":"array";if(this.useUTF8())this.fileNameStr=o.utf8decode(this.fileName),this.fileCommentStr=o.utf8decode(this.fileComment);else {var t=this.findExtraFieldUnicodePath();if(null!==t)this.fileNameStr=t;else {var r=s.transformTo(e,this.fileName);this.fileNameStr=this.loadOptions.decodeFileName(r);}var n=this.findExtraFieldUnicodeComment();if(null!==n)this.fileCommentStr=n;else {var i=s.transformTo(e,this.fileComment);this.fileCommentStr=this.loadOptions.decodeFileName(i);}}},findExtraFieldUnicodePath:function(){var e=this.extraFields[28789];if(e){var t=n(e.value);return 1!==t.readInt(1)?null:a(this.fileName)!==t.readInt(4)?null:o.utf8decode(t.readData(e.length-5))}return null},findExtraFieldUnicodeComment:function(){var e=this.extraFields[25461];if(e){var t=n(e.value);return 1!==t.readInt(1)?null:a(this.fileComment)!==t.readInt(4)?null:o.utf8decode(t.readData(e.length-5))}return null}},t.exports=l;},{"./compressedObject":2,"./compressions":3,"./crc32":4,"./reader/readerFor":22,"./support":30,"./utf8":31,"./utils":32}],35:[function(e,t,r){function n(e,t,r){this.name=e,this.dir=r.dir,this.date=r.date,this.comment=r.comment,this.unixPermissions=r.unixPermissions,this.dosPermissions=r.dosPermissions,this._data=t,this._dataBinary=r.binary,this.options={compression:r.compression,compressionOptions:r.compressionOptions};}var s=e("./stream/StreamHelper"),i=e("./stream/DataWorker"),a=e("./utf8"),o=e("./compressedObject"),h=e("./stream/GenericWorker");n.prototype={internalStream:function(e){var t=null,r="string";try{if(!e)throw new Error("No output type specified.");var n="string"===(r=e.toLowerCase())||"text"===r;"binarystring"!==r&&"text"!==r||(r="string"),t=this._decompressWorker();var i=!this._dataBinary;i&&!n&&(t=t.pipe(new a.Utf8EncodeWorker)),!i&&n&&(t=t.pipe(new a.Utf8DecodeWorker));}catch(e){(t=new h("error")).error(e);}return new s(t,r,"")},async:function(e,t){return this.internalStream(e).accumulate(t)},nodeStream:function(e,t){return this.internalStream(e||"nodebuffer").toNodejsStream(t)},_compressWorker:function(e,t){if(this._data instanceof o&&this._data.compression.magic===e.magic)return this._data.getCompressedWorker();var r=this._decompressWorker();return this._dataBinary||(r=r.pipe(new a.Utf8EncodeWorker)),o.createWorkerFrom(r,e,t)},_decompressWorker:function(){return this._data instanceof o?this._data.getContentWorker():this._data instanceof h?this._data:new i(this._data)}};for(var u=["asText","asBinary","asNodeBuffer","asUint8Array","asArrayBuffer"],l=function(){throw new Error("This method has been removed in JSZip 3.0, please check the upgrade guide.")},f=0;f<u.length;f++)n.prototype[u[f]]=l;t.exports=n;},{"./compressedObject":2,"./stream/DataWorker":27,"./stream/GenericWorker":28,"./stream/StreamHelper":29,"./utf8":31}],36:[function(e,l,t){(function(t){var r,n,e=t.MutationObserver||t.WebKitMutationObserver;if(e){var i=0,s=new e(u),a=t.document.createTextNode("");s.observe(a,{characterData:!0}),r=function(){a.data=i=++i%2;};}else if(t.setImmediate||void 0===t.MessageChannel)r="document"in t&&"onreadystatechange"in t.document.createElement("script")?function(){var e=t.document.createElement("script");e.onreadystatechange=function(){u(),e.onreadystatechange=null,e.parentNode.removeChild(e),e=null;},t.document.documentElement.appendChild(e);}:function(){setTimeout(u,0);};else {var o=new t.MessageChannel;o.port1.onmessage=u,r=function(){o.port2.postMessage(0);};}var h=[];function u(){var e,t;n=!0;for(var r=h.length;r;){for(t=h,h=[],e=-1;++e<r;)t[e]();r=h.length;}n=!1;}l.exports=function(e){1!==h.push(e)||n||r();};}).call(this,"undefined"!=typeof commonjsGlobal?commonjsGlobal:"undefined"!=typeof self?self:"undefined"!=typeof window?window:{});},{}],37:[function(e,t,r){var i=e("immediate");function u(){}var l={},s=["REJECTED"],a=["FULFILLED"],n=["PENDING"];function o(e){if("function"!=typeof e)throw new TypeError("resolver must be a function");this.state=n,this.queue=[],this.outcome=void 0,e!==u&&d(this,e);}function h(e,t,r){this.promise=e,"function"==typeof t&&(this.onFulfilled=t,this.callFulfilled=this.otherCallFulfilled),"function"==typeof r&&(this.onRejected=r,this.callRejected=this.otherCallRejected);}function f(t,r,n){i(function(){var e;try{e=r(n);}catch(e){return l.reject(t,e)}e===t?l.reject(t,new TypeError("Cannot resolve promise with itself")):l.resolve(t,e);});}function c(e){var t=e&&e.then;if(e&&("object"==typeof e||"function"==typeof e)&&"function"==typeof t)return function(){t.apply(e,arguments);}}function d(t,e){var r=!1;function n(e){r||(r=!0,l.reject(t,e));}function i(e){r||(r=!0,l.resolve(t,e));}var s=p(function(){e(i,n);});"error"===s.status&&n(s.value);}function p(e,t){var r={};try{r.value=e(t),r.status="success";}catch(e){r.status="error",r.value=e;}return r}(t.exports=o).prototype.finally=function(t){if("function"!=typeof t)return this;var r=this.constructor;return this.then(function(e){return r.resolve(t()).then(function(){return e})},function(e){return r.resolve(t()).then(function(){throw e})})},o.prototype.catch=function(e){return this.then(null,e)},o.prototype.then=function(e,t){if("function"!=typeof e&&this.state===a||"function"!=typeof t&&this.state===s)return this;var r=new this.constructor(u);this.state!==n?f(r,this.state===a?e:t,this.outcome):this.queue.push(new h(r,e,t));return r},h.prototype.callFulfilled=function(e){l.resolve(this.promise,e);},h.prototype.otherCallFulfilled=function(e){f(this.promise,this.onFulfilled,e);},h.prototype.callRejected=function(e){l.reject(this.promise,e);},h.prototype.otherCallRejected=function(e){f(this.promise,this.onRejected,e);},l.resolve=function(e,t){var r=p(c,t);if("error"===r.status)return l.reject(e,r.value);var n=r.value;if(n)d(e,n);else {e.state=a,e.outcome=t;for(var i=-1,s=e.queue.length;++i<s;)e.queue[i].callFulfilled(t);}return e},l.reject=function(e,t){e.state=s,e.outcome=t;for(var r=-1,n=e.queue.length;++r<n;)e.queue[r].callRejected(t);return e},o.resolve=function(e){if(e instanceof this)return e;return l.resolve(new this(u),e)},o.reject=function(e){var t=new this(u);return l.reject(t,e)},o.all=function(e){var r=this;if("[object Array]"!==Object.prototype.toString.call(e))return this.reject(new TypeError("must be an array"));var n=e.length,i=!1;if(!n)return this.resolve([]);var s=new Array(n),a=0,t=-1,o=new this(u);for(;++t<n;)h(e[t],t);return o;function h(e,t){r.resolve(e).then(function(e){s[t]=e,++a!==n||i||(i=!0,l.resolve(o,s));},function(e){i||(i=!0,l.reject(o,e));});}},o.race=function(e){var t=this;if("[object Array]"!==Object.prototype.toString.call(e))return this.reject(new TypeError("must be an array"));var r=e.length,n=!1;if(!r)return this.resolve([]);var i=-1,s=new this(u);for(;++i<r;)a=e[i],t.resolve(a).then(function(e){n||(n=!0,l.resolve(s,e));},function(e){n||(n=!0,l.reject(s,e));});var a;return s};},{immediate:36}],38:[function(e,t,r){var n={};(0, e("./lib/utils/common").assign)(n,e("./lib/deflate"),e("./lib/inflate"),e("./lib/zlib/constants")),t.exports=n;},{"./lib/deflate":39,"./lib/inflate":40,"./lib/utils/common":41,"./lib/zlib/constants":44}],39:[function(e,t,r){var a=e("./zlib/deflate"),o=e("./utils/common"),h=e("./utils/strings"),i=e("./zlib/messages"),s=e("./zlib/zstream"),u=Object.prototype.toString,l=0,f=-1,c=0,d=8;function p(e){if(!(this instanceof p))return new p(e);this.options=o.assign({level:f,method:d,chunkSize:16384,windowBits:15,memLevel:8,strategy:c,to:""},e||{});var t=this.options;t.raw&&0<t.windowBits?t.windowBits=-t.windowBits:t.gzip&&0<t.windowBits&&t.windowBits<16&&(t.windowBits+=16),this.err=0,this.msg="",this.ended=!1,this.chunks=[],this.strm=new s,this.strm.avail_out=0;var r=a.deflateInit2(this.strm,t.level,t.method,t.windowBits,t.memLevel,t.strategy);if(r!==l)throw new Error(i[r]);if(t.header&&a.deflateSetHeader(this.strm,t.header),t.dictionary){var n;if(n="string"==typeof t.dictionary?h.string2buf(t.dictionary):"[object ArrayBuffer]"===u.call(t.dictionary)?new Uint8Array(t.dictionary):t.dictionary,(r=a.deflateSetDictionary(this.strm,n))!==l)throw new Error(i[r]);this._dict_set=!0;}}function n(e,t){var r=new p(t);if(r.push(e,!0),r.err)throw r.msg||i[r.err];return r.result}p.prototype.push=function(e,t){var r,n,i=this.strm,s=this.options.chunkSize;if(this.ended)return !1;n=t===~~t?t:!0===t?4:0,"string"==typeof e?i.input=h.string2buf(e):"[object ArrayBuffer]"===u.call(e)?i.input=new Uint8Array(e):i.input=e,i.next_in=0,i.avail_in=i.input.length;do{if(0===i.avail_out&&(i.output=new o.Buf8(s),i.next_out=0,i.avail_out=s),1!==(r=a.deflate(i,n))&&r!==l)return this.onEnd(r),!(this.ended=!0);0!==i.avail_out&&(0!==i.avail_in||4!==n&&2!==n)||("string"===this.options.to?this.onData(h.buf2binstring(o.shrinkBuf(i.output,i.next_out))):this.onData(o.shrinkBuf(i.output,i.next_out)));}while((0<i.avail_in||0===i.avail_out)&&1!==r);return 4===n?(r=a.deflateEnd(this.strm),this.onEnd(r),this.ended=!0,r===l):2!==n||(this.onEnd(l),!(i.avail_out=0))},p.prototype.onData=function(e){this.chunks.push(e);},p.prototype.onEnd=function(e){e===l&&("string"===this.options.to?this.result=this.chunks.join(""):this.result=o.flattenChunks(this.chunks)),this.chunks=[],this.err=e,this.msg=this.strm.msg;},r.Deflate=p,r.deflate=n,r.deflateRaw=function(e,t){return (t=t||{}).raw=!0,n(e,t)},r.gzip=function(e,t){return (t=t||{}).gzip=!0,n(e,t)};},{"./utils/common":41,"./utils/strings":42,"./zlib/deflate":46,"./zlib/messages":51,"./zlib/zstream":53}],40:[function(e,t,r){var c=e("./zlib/inflate"),d=e("./utils/common"),p=e("./utils/strings"),m=e("./zlib/constants"),n=e("./zlib/messages"),i=e("./zlib/zstream"),s=e("./zlib/gzheader"),_=Object.prototype.toString;function a(e){if(!(this instanceof a))return new a(e);this.options=d.assign({chunkSize:16384,windowBits:0,to:""},e||{});var t=this.options;t.raw&&0<=t.windowBits&&t.windowBits<16&&(t.windowBits=-t.windowBits,0===t.windowBits&&(t.windowBits=-15)),!(0<=t.windowBits&&t.windowBits<16)||e&&e.windowBits||(t.windowBits+=32),15<t.windowBits&&t.windowBits<48&&0==(15&t.windowBits)&&(t.windowBits|=15),this.err=0,this.msg="",this.ended=!1,this.chunks=[],this.strm=new i,this.strm.avail_out=0;var r=c.inflateInit2(this.strm,t.windowBits);if(r!==m.Z_OK)throw new Error(n[r]);this.header=new s,c.inflateGetHeader(this.strm,this.header);}function o(e,t){var r=new a(t);if(r.push(e,!0),r.err)throw r.msg||n[r.err];return r.result}a.prototype.push=function(e,t){var r,n,i,s,a,o,h=this.strm,u=this.options.chunkSize,l=this.options.dictionary,f=!1;if(this.ended)return !1;n=t===~~t?t:!0===t?m.Z_FINISH:m.Z_NO_FLUSH,"string"==typeof e?h.input=p.binstring2buf(e):"[object ArrayBuffer]"===_.call(e)?h.input=new Uint8Array(e):h.input=e,h.next_in=0,h.avail_in=h.input.length;do{if(0===h.avail_out&&(h.output=new d.Buf8(u),h.next_out=0,h.avail_out=u),(r=c.inflate(h,m.Z_NO_FLUSH))===m.Z_NEED_DICT&&l&&(o="string"==typeof l?p.string2buf(l):"[object ArrayBuffer]"===_.call(l)?new Uint8Array(l):l,r=c.inflateSetDictionary(this.strm,o)),r===m.Z_BUF_ERROR&&!0===f&&(r=m.Z_OK,f=!1),r!==m.Z_STREAM_END&&r!==m.Z_OK)return this.onEnd(r),!(this.ended=!0);h.next_out&&(0!==h.avail_out&&r!==m.Z_STREAM_END&&(0!==h.avail_in||n!==m.Z_FINISH&&n!==m.Z_SYNC_FLUSH)||("string"===this.options.to?(i=p.utf8border(h.output,h.next_out),s=h.next_out-i,a=p.buf2string(h.output,i),h.next_out=s,h.avail_out=u-s,s&&d.arraySet(h.output,h.output,i,s,0),this.onData(a)):this.onData(d.shrinkBuf(h.output,h.next_out)))),0===h.avail_in&&0===h.avail_out&&(f=!0);}while((0<h.avail_in||0===h.avail_out)&&r!==m.Z_STREAM_END);return r===m.Z_STREAM_END&&(n=m.Z_FINISH),n===m.Z_FINISH?(r=c.inflateEnd(this.strm),this.onEnd(r),this.ended=!0,r===m.Z_OK):n!==m.Z_SYNC_FLUSH||(this.onEnd(m.Z_OK),!(h.avail_out=0))},a.prototype.onData=function(e){this.chunks.push(e);},a.prototype.onEnd=function(e){e===m.Z_OK&&("string"===this.options.to?this.result=this.chunks.join(""):this.result=d.flattenChunks(this.chunks)),this.chunks=[],this.err=e,this.msg=this.strm.msg;},r.Inflate=a,r.inflate=o,r.inflateRaw=function(e,t){return (t=t||{}).raw=!0,o(e,t)},r.ungzip=o;},{"./utils/common":41,"./utils/strings":42,"./zlib/constants":44,"./zlib/gzheader":47,"./zlib/inflate":49,"./zlib/messages":51,"./zlib/zstream":53}],41:[function(e,t,r){var n="undefined"!=typeof Uint8Array&&"undefined"!=typeof Uint16Array&&"undefined"!=typeof Int32Array;r.assign=function(e){for(var t=Array.prototype.slice.call(arguments,1);t.length;){var r=t.shift();if(r){if("object"!=typeof r)throw new TypeError(r+"must be non-object");for(var n in r)r.hasOwnProperty(n)&&(e[n]=r[n]);}}return e},r.shrinkBuf=function(e,t){return e.length===t?e:e.subarray?e.subarray(0,t):(e.length=t,e)};var i={arraySet:function(e,t,r,n,i){if(t.subarray&&e.subarray)e.set(t.subarray(r,r+n),i);else for(var s=0;s<n;s++)e[i+s]=t[r+s];},flattenChunks:function(e){var t,r,n,i,s,a;for(t=n=0,r=e.length;t<r;t++)n+=e[t].length;for(a=new Uint8Array(n),t=i=0,r=e.length;t<r;t++)s=e[t],a.set(s,i),i+=s.length;return a}},s={arraySet:function(e,t,r,n,i){for(var s=0;s<n;s++)e[i+s]=t[r+s];},flattenChunks:function(e){return [].concat.apply([],e)}};r.setTyped=function(e){e?(r.Buf8=Uint8Array,r.Buf16=Uint16Array,r.Buf32=Int32Array,r.assign(r,i)):(r.Buf8=Array,r.Buf16=Array,r.Buf32=Array,r.assign(r,s));},r.setTyped(n);},{}],42:[function(e,t,r){var h=e("./common"),i=!0,s=!0;try{String.fromCharCode.apply(null,[0]);}catch(e){i=!1;}try{String.fromCharCode.apply(null,new Uint8Array(1));}catch(e){s=!1;}for(var u=new h.Buf8(256),n=0;n<256;n++)u[n]=252<=n?6:248<=n?5:240<=n?4:224<=n?3:192<=n?2:1;function l(e,t){if(t<65537&&(e.subarray&&s||!e.subarray&&i))return String.fromCharCode.apply(null,h.shrinkBuf(e,t));for(var r="",n=0;n<t;n++)r+=String.fromCharCode(e[n]);return r}u[254]=u[254]=1,r.string2buf=function(e){var t,r,n,i,s,a=e.length,o=0;for(i=0;i<a;i++)55296==(64512&(r=e.charCodeAt(i)))&&i+1<a&&56320==(64512&(n=e.charCodeAt(i+1)))&&(r=65536+(r-55296<<10)+(n-56320),i++),o+=r<128?1:r<2048?2:r<65536?3:4;for(t=new h.Buf8(o),i=s=0;s<o;i++)55296==(64512&(r=e.charCodeAt(i)))&&i+1<a&&56320==(64512&(n=e.charCodeAt(i+1)))&&(r=65536+(r-55296<<10)+(n-56320),i++),r<128?t[s++]=r:(r<2048?t[s++]=192|r>>>6:(r<65536?t[s++]=224|r>>>12:(t[s++]=240|r>>>18,t[s++]=128|r>>>12&63),t[s++]=128|r>>>6&63),t[s++]=128|63&r);return t},r.buf2binstring=function(e){return l(e,e.length)},r.binstring2buf=function(e){for(var t=new h.Buf8(e.length),r=0,n=t.length;r<n;r++)t[r]=e.charCodeAt(r);return t},r.buf2string=function(e,t){var r,n,i,s,a=t||e.length,o=new Array(2*a);for(r=n=0;r<a;)if((i=e[r++])<128)o[n++]=i;else if(4<(s=u[i]))o[n++]=65533,r+=s-1;else {for(i&=2===s?31:3===s?15:7;1<s&&r<a;)i=i<<6|63&e[r++],s--;1<s?o[n++]=65533:i<65536?o[n++]=i:(i-=65536,o[n++]=55296|i>>10&1023,o[n++]=56320|1023&i);}return l(o,n)},r.utf8border=function(e,t){var r;for((t=t||e.length)>e.length&&(t=e.length),r=t-1;0<=r&&128==(192&e[r]);)r--;return r<0?t:0===r?t:r+u[e[r]]>t?r:t};},{"./common":41}],43:[function(e,t,r){t.exports=function(e,t,r,n){for(var i=65535&e|0,s=e>>>16&65535|0,a=0;0!==r;){for(r-=a=2e3<r?2e3:r;s=s+(i=i+t[n++]|0)|0,--a;);i%=65521,s%=65521;}return i|s<<16|0};},{}],44:[function(e,t,r){t.exports={Z_NO_FLUSH:0,Z_PARTIAL_FLUSH:1,Z_SYNC_FLUSH:2,Z_FULL_FLUSH:3,Z_FINISH:4,Z_BLOCK:5,Z_TREES:6,Z_OK:0,Z_STREAM_END:1,Z_NEED_DICT:2,Z_ERRNO:-1,Z_STREAM_ERROR:-2,Z_DATA_ERROR:-3,Z_BUF_ERROR:-5,Z_NO_COMPRESSION:0,Z_BEST_SPEED:1,Z_BEST_COMPRESSION:9,Z_DEFAULT_COMPRESSION:-1,Z_FILTERED:1,Z_HUFFMAN_ONLY:2,Z_RLE:3,Z_FIXED:4,Z_DEFAULT_STRATEGY:0,Z_BINARY:0,Z_TEXT:1,Z_UNKNOWN:2,Z_DEFLATED:8};},{}],45:[function(e,t,r){var o=function(){for(var e,t=[],r=0;r<256;r++){e=r;for(var n=0;n<8;n++)e=1&e?3988292384^e>>>1:e>>>1;t[r]=e;}return t}();t.exports=function(e,t,r,n){var i=o,s=n+r;e^=-1;for(var a=n;a<s;a++)e=e>>>8^i[255&(e^t[a])];return -1^e};},{}],46:[function(e,t,r){var h,c=e("../utils/common"),u=e("./trees"),d=e("./adler32"),p=e("./crc32"),n=e("./messages"),l=0,f=4,m=0,_=-2,g=-1,b=4,i=2,v=8,y=9,s=286,a=30,o=19,w=2*s+1,k=15,x=3,S=258,z=S+x+1,C=42,E=113,A=1,I=2,O=3,B=4;function R(e,t){return e.msg=n[t],t}function T(e){return (e<<1)-(4<e?9:0)}function D(e){for(var t=e.length;0<=--t;)e[t]=0;}function F(e){var t=e.state,r=t.pending;r>e.avail_out&&(r=e.avail_out),0!==r&&(c.arraySet(e.output,t.pending_buf,t.pending_out,r,e.next_out),e.next_out+=r,t.pending_out+=r,e.total_out+=r,e.avail_out-=r,t.pending-=r,0===t.pending&&(t.pending_out=0));}function N(e,t){u._tr_flush_block(e,0<=e.block_start?e.block_start:-1,e.strstart-e.block_start,t),e.block_start=e.strstart,F(e.strm);}function U(e,t){e.pending_buf[e.pending++]=t;}function P(e,t){e.pending_buf[e.pending++]=t>>>8&255,e.pending_buf[e.pending++]=255&t;}function L(e,t){var r,n,i=e.max_chain_length,s=e.strstart,a=e.prev_length,o=e.nice_match,h=e.strstart>e.w_size-z?e.strstart-(e.w_size-z):0,u=e.window,l=e.w_mask,f=e.prev,c=e.strstart+S,d=u[s+a-1],p=u[s+a];e.prev_length>=e.good_match&&(i>>=2),o>e.lookahead&&(o=e.lookahead);do{if(u[(r=t)+a]===p&&u[r+a-1]===d&&u[r]===u[s]&&u[++r]===u[s+1]){s+=2,r++;do{}while(u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&s<c);if(n=S-(c-s),s=c-S,a<n){if(e.match_start=t,o<=(a=n))break;d=u[s+a-1],p=u[s+a];}}}while((t=f[t&l])>h&&0!=--i);return a<=e.lookahead?a:e.lookahead}function j(e){var t,r,n,i,s,a,o,h,u,l,f=e.w_size;do{if(i=e.window_size-e.lookahead-e.strstart,e.strstart>=f+(f-z)){for(c.arraySet(e.window,e.window,f,f,0),e.match_start-=f,e.strstart-=f,e.block_start-=f,t=r=e.hash_size;n=e.head[--t],e.head[t]=f<=n?n-f:0,--r;);for(t=r=f;n=e.prev[--t],e.prev[t]=f<=n?n-f:0,--r;);i+=f;}if(0===e.strm.avail_in)break;if(a=e.strm,o=e.window,h=e.strstart+e.lookahead,u=i,l=void 0,l=a.avail_in,u<l&&(l=u),r=0===l?0:(a.avail_in-=l,c.arraySet(o,a.input,a.next_in,l,h),1===a.state.wrap?a.adler=d(a.adler,o,l,h):2===a.state.wrap&&(a.adler=p(a.adler,o,l,h)),a.next_in+=l,a.total_in+=l,l),e.lookahead+=r,e.lookahead+e.insert>=x)for(s=e.strstart-e.insert,e.ins_h=e.window[s],e.ins_h=(e.ins_h<<e.hash_shift^e.window[s+1])&e.hash_mask;e.insert&&(e.ins_h=(e.ins_h<<e.hash_shift^e.window[s+x-1])&e.hash_mask,e.prev[s&e.w_mask]=e.head[e.ins_h],e.head[e.ins_h]=s,s++,e.insert--,!(e.lookahead+e.insert<x)););}while(e.lookahead<z&&0!==e.strm.avail_in)}function Z(e,t){for(var r,n;;){if(e.lookahead<z){if(j(e),e.lookahead<z&&t===l)return A;if(0===e.lookahead)break}if(r=0,e.lookahead>=x&&(e.ins_h=(e.ins_h<<e.hash_shift^e.window[e.strstart+x-1])&e.hash_mask,r=e.prev[e.strstart&e.w_mask]=e.head[e.ins_h],e.head[e.ins_h]=e.strstart),0!==r&&e.strstart-r<=e.w_size-z&&(e.match_length=L(e,r)),e.match_length>=x)if(n=u._tr_tally(e,e.strstart-e.match_start,e.match_length-x),e.lookahead-=e.match_length,e.match_length<=e.max_lazy_match&&e.lookahead>=x){for(e.match_length--;e.strstart++,e.ins_h=(e.ins_h<<e.hash_shift^e.window[e.strstart+x-1])&e.hash_mask,r=e.prev[e.strstart&e.w_mask]=e.head[e.ins_h],e.head[e.ins_h]=e.strstart,0!=--e.match_length;);e.strstart++;}else e.strstart+=e.match_length,e.match_length=0,e.ins_h=e.window[e.strstart],e.ins_h=(e.ins_h<<e.hash_shift^e.window[e.strstart+1])&e.hash_mask;else n=u._tr_tally(e,0,e.window[e.strstart]),e.lookahead--,e.strstart++;if(n&&(N(e,!1),0===e.strm.avail_out))return A}return e.insert=e.strstart<x-1?e.strstart:x-1,t===f?(N(e,!0),0===e.strm.avail_out?O:B):e.last_lit&&(N(e,!1),0===e.strm.avail_out)?A:I}function W(e,t){for(var r,n,i;;){if(e.lookahead<z){if(j(e),e.lookahead<z&&t===l)return A;if(0===e.lookahead)break}if(r=0,e.lookahead>=x&&(e.ins_h=(e.ins_h<<e.hash_shift^e.window[e.strstart+x-1])&e.hash_mask,r=e.prev[e.strstart&e.w_mask]=e.head[e.ins_h],e.head[e.ins_h]=e.strstart),e.prev_length=e.match_length,e.prev_match=e.match_start,e.match_length=x-1,0!==r&&e.prev_length<e.max_lazy_match&&e.strstart-r<=e.w_size-z&&(e.match_length=L(e,r),e.match_length<=5&&(1===e.strategy||e.match_length===x&&4096<e.strstart-e.match_start)&&(e.match_length=x-1)),e.prev_length>=x&&e.match_length<=e.prev_length){for(i=e.strstart+e.lookahead-x,n=u._tr_tally(e,e.strstart-1-e.prev_match,e.prev_length-x),e.lookahead-=e.prev_length-1,e.prev_length-=2;++e.strstart<=i&&(e.ins_h=(e.ins_h<<e.hash_shift^e.window[e.strstart+x-1])&e.hash_mask,r=e.prev[e.strstart&e.w_mask]=e.head[e.ins_h],e.head[e.ins_h]=e.strstart),0!=--e.prev_length;);if(e.match_available=0,e.match_length=x-1,e.strstart++,n&&(N(e,!1),0===e.strm.avail_out))return A}else if(e.match_available){if((n=u._tr_tally(e,0,e.window[e.strstart-1]))&&N(e,!1),e.strstart++,e.lookahead--,0===e.strm.avail_out)return A}else e.match_available=1,e.strstart++,e.lookahead--;}return e.match_available&&(n=u._tr_tally(e,0,e.window[e.strstart-1]),e.match_available=0),e.insert=e.strstart<x-1?e.strstart:x-1,t===f?(N(e,!0),0===e.strm.avail_out?O:B):e.last_lit&&(N(e,!1),0===e.strm.avail_out)?A:I}function M(e,t,r,n,i){this.good_length=e,this.max_lazy=t,this.nice_length=r,this.max_chain=n,this.func=i;}function H(){this.strm=null,this.status=0,this.pending_buf=null,this.pending_buf_size=0,this.pending_out=0,this.pending=0,this.wrap=0,this.gzhead=null,this.gzindex=0,this.method=v,this.last_flush=-1,this.w_size=0,this.w_bits=0,this.w_mask=0,this.window=null,this.window_size=0,this.prev=null,this.head=null,this.ins_h=0,this.hash_size=0,this.hash_bits=0,this.hash_mask=0,this.hash_shift=0,this.block_start=0,this.match_length=0,this.prev_match=0,this.match_available=0,this.strstart=0,this.match_start=0,this.lookahead=0,this.prev_length=0,this.max_chain_length=0,this.max_lazy_match=0,this.level=0,this.strategy=0,this.good_match=0,this.nice_match=0,this.dyn_ltree=new c.Buf16(2*w),this.dyn_dtree=new c.Buf16(2*(2*a+1)),this.bl_tree=new c.Buf16(2*(2*o+1)),D(this.dyn_ltree),D(this.dyn_dtree),D(this.bl_tree),this.l_desc=null,this.d_desc=null,this.bl_desc=null,this.bl_count=new c.Buf16(k+1),this.heap=new c.Buf16(2*s+1),D(this.heap),this.heap_len=0,this.heap_max=0,this.depth=new c.Buf16(2*s+1),D(this.depth),this.l_buf=0,this.lit_bufsize=0,this.last_lit=0,this.d_buf=0,this.opt_len=0,this.static_len=0,this.matches=0,this.insert=0,this.bi_buf=0,this.bi_valid=0;}function G(e){var t;return e&&e.state?(e.total_in=e.total_out=0,e.data_type=i,(t=e.state).pending=0,t.pending_out=0,t.wrap<0&&(t.wrap=-t.wrap),t.status=t.wrap?C:E,e.adler=2===t.wrap?0:1,t.last_flush=l,u._tr_init(t),m):R(e,_)}function K(e){var t=G(e);return t===m&&function(e){e.window_size=2*e.w_size,D(e.head),e.max_lazy_match=h[e.level].max_lazy,e.good_match=h[e.level].good_length,e.nice_match=h[e.level].nice_length,e.max_chain_length=h[e.level].max_chain,e.strstart=0,e.block_start=0,e.lookahead=0,e.insert=0,e.match_length=e.prev_length=x-1,e.match_available=0,e.ins_h=0;}(e.state),t}function Y(e,t,r,n,i,s){if(!e)return _;var a=1;if(t===g&&(t=6),n<0?(a=0,n=-n):15<n&&(a=2,n-=16),i<1||y<i||r!==v||n<8||15<n||t<0||9<t||s<0||b<s)return R(e,_);8===n&&(n=9);var o=new H;return (e.state=o).strm=e,o.wrap=a,o.gzhead=null,o.w_bits=n,o.w_size=1<<o.w_bits,o.w_mask=o.w_size-1,o.hash_bits=i+7,o.hash_size=1<<o.hash_bits,o.hash_mask=o.hash_size-1,o.hash_shift=~~((o.hash_bits+x-1)/x),o.window=new c.Buf8(2*o.w_size),o.head=new c.Buf16(o.hash_size),o.prev=new c.Buf16(o.w_size),o.lit_bufsize=1<<i+6,o.pending_buf_size=4*o.lit_bufsize,o.pending_buf=new c.Buf8(o.pending_buf_size),o.d_buf=1*o.lit_bufsize,o.l_buf=3*o.lit_bufsize,o.level=t,o.strategy=s,o.method=r,K(e)}h=[new M(0,0,0,0,function(e,t){var r=65535;for(r>e.pending_buf_size-5&&(r=e.pending_buf_size-5);;){if(e.lookahead<=1){if(j(e),0===e.lookahead&&t===l)return A;if(0===e.lookahead)break}e.strstart+=e.lookahead,e.lookahead=0;var n=e.block_start+r;if((0===e.strstart||e.strstart>=n)&&(e.lookahead=e.strstart-n,e.strstart=n,N(e,!1),0===e.strm.avail_out))return A;if(e.strstart-e.block_start>=e.w_size-z&&(N(e,!1),0===e.strm.avail_out))return A}return e.insert=0,t===f?(N(e,!0),0===e.strm.avail_out?O:B):(e.strstart>e.block_start&&(N(e,!1),e.strm.avail_out),A)}),new M(4,4,8,4,Z),new M(4,5,16,8,Z),new M(4,6,32,32,Z),new M(4,4,16,16,W),new M(8,16,32,32,W),new M(8,16,128,128,W),new M(8,32,128,256,W),new M(32,128,258,1024,W),new M(32,258,258,4096,W)],r.deflateInit=function(e,t){return Y(e,t,v,15,8,0)},r.deflateInit2=Y,r.deflateReset=K,r.deflateResetKeep=G,r.deflateSetHeader=function(e,t){return e&&e.state?2!==e.state.wrap?_:(e.state.gzhead=t,m):_},r.deflate=function(e,t){var r,n,i,s;if(!e||!e.state||5<t||t<0)return e?R(e,_):_;if(n=e.state,!e.output||!e.input&&0!==e.avail_in||666===n.status&&t!==f)return R(e,0===e.avail_out?-5:_);if(n.strm=e,r=n.last_flush,n.last_flush=t,n.status===C)if(2===n.wrap)e.adler=0,U(n,31),U(n,139),U(n,8),n.gzhead?(U(n,(n.gzhead.text?1:0)+(n.gzhead.hcrc?2:0)+(n.gzhead.extra?4:0)+(n.gzhead.name?8:0)+(n.gzhead.comment?16:0)),U(n,255&n.gzhead.time),U(n,n.gzhead.time>>8&255),U(n,n.gzhead.time>>16&255),U(n,n.gzhead.time>>24&255),U(n,9===n.level?2:2<=n.strategy||n.level<2?4:0),U(n,255&n.gzhead.os),n.gzhead.extra&&n.gzhead.extra.length&&(U(n,255&n.gzhead.extra.length),U(n,n.gzhead.extra.length>>8&255)),n.gzhead.hcrc&&(e.adler=p(e.adler,n.pending_buf,n.pending,0)),n.gzindex=0,n.status=69):(U(n,0),U(n,0),U(n,0),U(n,0),U(n,0),U(n,9===n.level?2:2<=n.strategy||n.level<2?4:0),U(n,3),n.status=E);else {var a=v+(n.w_bits-8<<4)<<8;a|=(2<=n.strategy||n.level<2?0:n.level<6?1:6===n.level?2:3)<<6,0!==n.strstart&&(a|=32),a+=31-a%31,n.status=E,P(n,a),0!==n.strstart&&(P(n,e.adler>>>16),P(n,65535&e.adler)),e.adler=1;}if(69===n.status)if(n.gzhead.extra){for(i=n.pending;n.gzindex<(65535&n.gzhead.extra.length)&&(n.pending!==n.pending_buf_size||(n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),F(e),i=n.pending,n.pending!==n.pending_buf_size));)U(n,255&n.gzhead.extra[n.gzindex]),n.gzindex++;n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),n.gzindex===n.gzhead.extra.length&&(n.gzindex=0,n.status=73);}else n.status=73;if(73===n.status)if(n.gzhead.name){i=n.pending;do{if(n.pending===n.pending_buf_size&&(n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),F(e),i=n.pending,n.pending===n.pending_buf_size)){s=1;break}s=n.gzindex<n.gzhead.name.length?255&n.gzhead.name.charCodeAt(n.gzindex++):0,U(n,s);}while(0!==s);n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),0===s&&(n.gzindex=0,n.status=91);}else n.status=91;if(91===n.status)if(n.gzhead.comment){i=n.pending;do{if(n.pending===n.pending_buf_size&&(n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),F(e),i=n.pending,n.pending===n.pending_buf_size)){s=1;break}s=n.gzindex<n.gzhead.comment.length?255&n.gzhead.comment.charCodeAt(n.gzindex++):0,U(n,s);}while(0!==s);n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),0===s&&(n.status=103);}else n.status=103;if(103===n.status&&(n.gzhead.hcrc?(n.pending+2>n.pending_buf_size&&F(e),n.pending+2<=n.pending_buf_size&&(U(n,255&e.adler),U(n,e.adler>>8&255),e.adler=0,n.status=E)):n.status=E),0!==n.pending){if(F(e),0===e.avail_out)return n.last_flush=-1,m}else if(0===e.avail_in&&T(t)<=T(r)&&t!==f)return R(e,-5);if(666===n.status&&0!==e.avail_in)return R(e,-5);if(0!==e.avail_in||0!==n.lookahead||t!==l&&666!==n.status){var o=2===n.strategy?function(e,t){for(var r;;){if(0===e.lookahead&&(j(e),0===e.lookahead)){if(t===l)return A;break}if(e.match_length=0,r=u._tr_tally(e,0,e.window[e.strstart]),e.lookahead--,e.strstart++,r&&(N(e,!1),0===e.strm.avail_out))return A}return e.insert=0,t===f?(N(e,!0),0===e.strm.avail_out?O:B):e.last_lit&&(N(e,!1),0===e.strm.avail_out)?A:I}(n,t):3===n.strategy?function(e,t){for(var r,n,i,s,a=e.window;;){if(e.lookahead<=S){if(j(e),e.lookahead<=S&&t===l)return A;if(0===e.lookahead)break}if(e.match_length=0,e.lookahead>=x&&0<e.strstart&&(n=a[i=e.strstart-1])===a[++i]&&n===a[++i]&&n===a[++i]){s=e.strstart+S;do{}while(n===a[++i]&&n===a[++i]&&n===a[++i]&&n===a[++i]&&n===a[++i]&&n===a[++i]&&n===a[++i]&&n===a[++i]&&i<s);e.match_length=S-(s-i),e.match_length>e.lookahead&&(e.match_length=e.lookahead);}if(e.match_length>=x?(r=u._tr_tally(e,1,e.match_length-x),e.lookahead-=e.match_length,e.strstart+=e.match_length,e.match_length=0):(r=u._tr_tally(e,0,e.window[e.strstart]),e.lookahead--,e.strstart++),r&&(N(e,!1),0===e.strm.avail_out))return A}return e.insert=0,t===f?(N(e,!0),0===e.strm.avail_out?O:B):e.last_lit&&(N(e,!1),0===e.strm.avail_out)?A:I}(n,t):h[n.level].func(n,t);if(o!==O&&o!==B||(n.status=666),o===A||o===O)return 0===e.avail_out&&(n.last_flush=-1),m;if(o===I&&(1===t?u._tr_align(n):5!==t&&(u._tr_stored_block(n,0,0,!1),3===t&&(D(n.head),0===n.lookahead&&(n.strstart=0,n.block_start=0,n.insert=0))),F(e),0===e.avail_out))return n.last_flush=-1,m}return t!==f?m:n.wrap<=0?1:(2===n.wrap?(U(n,255&e.adler),U(n,e.adler>>8&255),U(n,e.adler>>16&255),U(n,e.adler>>24&255),U(n,255&e.total_in),U(n,e.total_in>>8&255),U(n,e.total_in>>16&255),U(n,e.total_in>>24&255)):(P(n,e.adler>>>16),P(n,65535&e.adler)),F(e),0<n.wrap&&(n.wrap=-n.wrap),0!==n.pending?m:1)},r.deflateEnd=function(e){var t;return e&&e.state?(t=e.state.status)!==C&&69!==t&&73!==t&&91!==t&&103!==t&&t!==E&&666!==t?R(e,_):(e.state=null,t===E?R(e,-3):m):_},r.deflateSetDictionary=function(e,t){var r,n,i,s,a,o,h,u,l=t.length;if(!e||!e.state)return _;if(2===(s=(r=e.state).wrap)||1===s&&r.status!==C||r.lookahead)return _;for(1===s&&(e.adler=d(e.adler,t,l,0)),r.wrap=0,l>=r.w_size&&(0===s&&(D(r.head),r.strstart=0,r.block_start=0,r.insert=0),u=new c.Buf8(r.w_size),c.arraySet(u,t,l-r.w_size,r.w_size,0),t=u,l=r.w_size),a=e.avail_in,o=e.next_in,h=e.input,e.avail_in=l,e.next_in=0,e.input=t,j(r);r.lookahead>=x;){for(n=r.strstart,i=r.lookahead-(x-1);r.ins_h=(r.ins_h<<r.hash_shift^r.window[n+x-1])&r.hash_mask,r.prev[n&r.w_mask]=r.head[r.ins_h],r.head[r.ins_h]=n,n++,--i;);r.strstart=n,r.lookahead=x-1,j(r);}return r.strstart+=r.lookahead,r.block_start=r.strstart,r.insert=r.lookahead,r.lookahead=0,r.match_length=r.prev_length=x-1,r.match_available=0,e.next_in=o,e.input=h,e.avail_in=a,r.wrap=s,m},r.deflateInfo="pako deflate (from Nodeca project)";},{"../utils/common":41,"./adler32":43,"./crc32":45,"./messages":51,"./trees":52}],47:[function(e,t,r){t.exports=function(){this.text=0,this.time=0,this.xflags=0,this.os=0,this.extra=null,this.extra_len=0,this.name="",this.comment="",this.hcrc=0,this.done=!1;};},{}],48:[function(e,t,r){t.exports=function(e,t){var r,n,i,s,a,o,h,u,l,f,c,d,p,m,_,g,b,v,y,w,k,x,S,z,C;r=e.state,n=e.next_in,z=e.input,i=n+(e.avail_in-5),s=e.next_out,C=e.output,a=s-(t-e.avail_out),o=s+(e.avail_out-257),h=r.dmax,u=r.wsize,l=r.whave,f=r.wnext,c=r.window,d=r.hold,p=r.bits,m=r.lencode,_=r.distcode,g=(1<<r.lenbits)-1,b=(1<<r.distbits)-1;e:do{p<15&&(d+=z[n++]<<p,p+=8,d+=z[n++]<<p,p+=8),v=m[d&g];t:for(;;){if(d>>>=y=v>>>24,p-=y,0===(y=v>>>16&255))C[s++]=65535&v;else {if(!(16&y)){if(0==(64&y)){v=m[(65535&v)+(d&(1<<y)-1)];continue t}if(32&y){r.mode=12;break e}e.msg="invalid literal/length code",r.mode=30;break e}w=65535&v,(y&=15)&&(p<y&&(d+=z[n++]<<p,p+=8),w+=d&(1<<y)-1,d>>>=y,p-=y),p<15&&(d+=z[n++]<<p,p+=8,d+=z[n++]<<p,p+=8),v=_[d&b];r:for(;;){if(d>>>=y=v>>>24,p-=y,!(16&(y=v>>>16&255))){if(0==(64&y)){v=_[(65535&v)+(d&(1<<y)-1)];continue r}e.msg="invalid distance code",r.mode=30;break e}if(k=65535&v,p<(y&=15)&&(d+=z[n++]<<p,(p+=8)<y&&(d+=z[n++]<<p,p+=8)),h<(k+=d&(1<<y)-1)){e.msg="invalid distance too far back",r.mode=30;break e}if(d>>>=y,p-=y,(y=s-a)<k){if(l<(y=k-y)&&r.sane){e.msg="invalid distance too far back",r.mode=30;break e}if(S=c,(x=0)===f){if(x+=u-y,y<w){for(w-=y;C[s++]=c[x++],--y;);x=s-k,S=C;}}else if(f<y){if(x+=u+f-y,(y-=f)<w){for(w-=y;C[s++]=c[x++],--y;);if(x=0,f<w){for(w-=y=f;C[s++]=c[x++],--y;);x=s-k,S=C;}}}else if(x+=f-y,y<w){for(w-=y;C[s++]=c[x++],--y;);x=s-k,S=C;}for(;2<w;)C[s++]=S[x++],C[s++]=S[x++],C[s++]=S[x++],w-=3;w&&(C[s++]=S[x++],1<w&&(C[s++]=S[x++]));}else {for(x=s-k;C[s++]=C[x++],C[s++]=C[x++],C[s++]=C[x++],2<(w-=3););w&&(C[s++]=C[x++],1<w&&(C[s++]=C[x++]));}break}}break}}while(n<i&&s<o);n-=w=p>>3,d&=(1<<(p-=w<<3))-1,e.next_in=n,e.next_out=s,e.avail_in=n<i?i-n+5:5-(n-i),e.avail_out=s<o?o-s+257:257-(s-o),r.hold=d,r.bits=p;};},{}],49:[function(e,t,r){var I=e("../utils/common"),O=e("./adler32"),B=e("./crc32"),R=e("./inffast"),T=e("./inftrees"),D=1,F=2,N=0,U=-2,P=1,n=852,i=592;function L(e){return (e>>>24&255)+(e>>>8&65280)+((65280&e)<<8)+((255&e)<<24)}function s(){this.mode=0,this.last=!1,this.wrap=0,this.havedict=!1,this.flags=0,this.dmax=0,this.check=0,this.total=0,this.head=null,this.wbits=0,this.wsize=0,this.whave=0,this.wnext=0,this.window=null,this.hold=0,this.bits=0,this.length=0,this.offset=0,this.extra=0,this.lencode=null,this.distcode=null,this.lenbits=0,this.distbits=0,this.ncode=0,this.nlen=0,this.ndist=0,this.have=0,this.next=null,this.lens=new I.Buf16(320),this.work=new I.Buf16(288),this.lendyn=null,this.distdyn=null,this.sane=0,this.back=0,this.was=0;}function a(e){var t;return e&&e.state?(t=e.state,e.total_in=e.total_out=t.total=0,e.msg="",t.wrap&&(e.adler=1&t.wrap),t.mode=P,t.last=0,t.havedict=0,t.dmax=32768,t.head=null,t.hold=0,t.bits=0,t.lencode=t.lendyn=new I.Buf32(n),t.distcode=t.distdyn=new I.Buf32(i),t.sane=1,t.back=-1,N):U}function o(e){var t;return e&&e.state?((t=e.state).wsize=0,t.whave=0,t.wnext=0,a(e)):U}function h(e,t){var r,n;return e&&e.state?(n=e.state,t<0?(r=0,t=-t):(r=1+(t>>4),t<48&&(t&=15)),t&&(t<8||15<t)?U:(null!==n.window&&n.wbits!==t&&(n.window=null),n.wrap=r,n.wbits=t,o(e))):U}function u(e,t){var r,n;return e?(n=new s,(e.state=n).window=null,(r=h(e,t))!==N&&(e.state=null),r):U}var l,f,c=!0;function j(e){if(c){var t;for(l=new I.Buf32(512),f=new I.Buf32(32),t=0;t<144;)e.lens[t++]=8;for(;t<256;)e.lens[t++]=9;for(;t<280;)e.lens[t++]=7;for(;t<288;)e.lens[t++]=8;for(T(D,e.lens,0,288,l,0,e.work,{bits:9}),t=0;t<32;)e.lens[t++]=5;T(F,e.lens,0,32,f,0,e.work,{bits:5}),c=!1;}e.lencode=l,e.lenbits=9,e.distcode=f,e.distbits=5;}function Z(e,t,r,n){var i,s=e.state;return null===s.window&&(s.wsize=1<<s.wbits,s.wnext=0,s.whave=0,s.window=new I.Buf8(s.wsize)),n>=s.wsize?(I.arraySet(s.window,t,r-s.wsize,s.wsize,0),s.wnext=0,s.whave=s.wsize):(n<(i=s.wsize-s.wnext)&&(i=n),I.arraySet(s.window,t,r-n,i,s.wnext),(n-=i)?(I.arraySet(s.window,t,r-n,n,0),s.wnext=n,s.whave=s.wsize):(s.wnext+=i,s.wnext===s.wsize&&(s.wnext=0),s.whave<s.wsize&&(s.whave+=i))),0}r.inflateReset=o,r.inflateReset2=h,r.inflateResetKeep=a,r.inflateInit=function(e){return u(e,15)},r.inflateInit2=u,r.inflate=function(e,t){var r,n,i,s,a,o,h,u,l,f,c,d,p,m,_,g,b,v,y,w,k,x,S,z,C=0,E=new I.Buf8(4),A=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];if(!e||!e.state||!e.output||!e.input&&0!==e.avail_in)return U;12===(r=e.state).mode&&(r.mode=13),a=e.next_out,i=e.output,h=e.avail_out,s=e.next_in,n=e.input,o=e.avail_in,u=r.hold,l=r.bits,f=o,c=h,x=N;e:for(;;)switch(r.mode){case P:if(0===r.wrap){r.mode=13;break}for(;l<16;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}if(2&r.wrap&&35615===u){E[r.check=0]=255&u,E[1]=u>>>8&255,r.check=B(r.check,E,2,0),l=u=0,r.mode=2;break}if(r.flags=0,r.head&&(r.head.done=!1),!(1&r.wrap)||(((255&u)<<8)+(u>>8))%31){e.msg="incorrect header check",r.mode=30;break}if(8!=(15&u)){e.msg="unknown compression method",r.mode=30;break}if(l-=4,k=8+(15&(u>>>=4)),0===r.wbits)r.wbits=k;else if(k>r.wbits){e.msg="invalid window size",r.mode=30;break}r.dmax=1<<k,e.adler=r.check=1,r.mode=512&u?10:12,l=u=0;break;case 2:for(;l<16;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}if(r.flags=u,8!=(255&r.flags)){e.msg="unknown compression method",r.mode=30;break}if(57344&r.flags){e.msg="unknown header flags set",r.mode=30;break}r.head&&(r.head.text=u>>8&1),512&r.flags&&(E[0]=255&u,E[1]=u>>>8&255,r.check=B(r.check,E,2,0)),l=u=0,r.mode=3;case 3:for(;l<32;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}r.head&&(r.head.time=u),512&r.flags&&(E[0]=255&u,E[1]=u>>>8&255,E[2]=u>>>16&255,E[3]=u>>>24&255,r.check=B(r.check,E,4,0)),l=u=0,r.mode=4;case 4:for(;l<16;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}r.head&&(r.head.xflags=255&u,r.head.os=u>>8),512&r.flags&&(E[0]=255&u,E[1]=u>>>8&255,r.check=B(r.check,E,2,0)),l=u=0,r.mode=5;case 5:if(1024&r.flags){for(;l<16;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}r.length=u,r.head&&(r.head.extra_len=u),512&r.flags&&(E[0]=255&u,E[1]=u>>>8&255,r.check=B(r.check,E,2,0)),l=u=0;}else r.head&&(r.head.extra=null);r.mode=6;case 6:if(1024&r.flags&&(o<(d=r.length)&&(d=o),d&&(r.head&&(k=r.head.extra_len-r.length,r.head.extra||(r.head.extra=new Array(r.head.extra_len)),I.arraySet(r.head.extra,n,s,d,k)),512&r.flags&&(r.check=B(r.check,n,d,s)),o-=d,s+=d,r.length-=d),r.length))break e;r.length=0,r.mode=7;case 7:if(2048&r.flags){if(0===o)break e;for(d=0;k=n[s+d++],r.head&&k&&r.length<65536&&(r.head.name+=String.fromCharCode(k)),k&&d<o;);if(512&r.flags&&(r.check=B(r.check,n,d,s)),o-=d,s+=d,k)break e}else r.head&&(r.head.name=null);r.length=0,r.mode=8;case 8:if(4096&r.flags){if(0===o)break e;for(d=0;k=n[s+d++],r.head&&k&&r.length<65536&&(r.head.comment+=String.fromCharCode(k)),k&&d<o;);if(512&r.flags&&(r.check=B(r.check,n,d,s)),o-=d,s+=d,k)break e}else r.head&&(r.head.comment=null);r.mode=9;case 9:if(512&r.flags){for(;l<16;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}if(u!==(65535&r.check)){e.msg="header crc mismatch",r.mode=30;break}l=u=0;}r.head&&(r.head.hcrc=r.flags>>9&1,r.head.done=!0),e.adler=r.check=0,r.mode=12;break;case 10:for(;l<32;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}e.adler=r.check=L(u),l=u=0,r.mode=11;case 11:if(0===r.havedict)return e.next_out=a,e.avail_out=h,e.next_in=s,e.avail_in=o,r.hold=u,r.bits=l,2;e.adler=r.check=1,r.mode=12;case 12:if(5===t||6===t)break e;case 13:if(r.last){u>>>=7&l,l-=7&l,r.mode=27;break}for(;l<3;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}switch(r.last=1&u,l-=1,3&(u>>>=1)){case 0:r.mode=14;break;case 1:if(j(r),r.mode=20,6!==t)break;u>>>=2,l-=2;break e;case 2:r.mode=17;break;case 3:e.msg="invalid block type",r.mode=30;}u>>>=2,l-=2;break;case 14:for(u>>>=7&l,l-=7&l;l<32;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}if((65535&u)!=(u>>>16^65535)){e.msg="invalid stored block lengths",r.mode=30;break}if(r.length=65535&u,l=u=0,r.mode=15,6===t)break e;case 15:r.mode=16;case 16:if(d=r.length){if(o<d&&(d=o),h<d&&(d=h),0===d)break e;I.arraySet(i,n,s,d,a),o-=d,s+=d,h-=d,a+=d,r.length-=d;break}r.mode=12;break;case 17:for(;l<14;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}if(r.nlen=257+(31&u),u>>>=5,l-=5,r.ndist=1+(31&u),u>>>=5,l-=5,r.ncode=4+(15&u),u>>>=4,l-=4,286<r.nlen||30<r.ndist){e.msg="too many length or distance symbols",r.mode=30;break}r.have=0,r.mode=18;case 18:for(;r.have<r.ncode;){for(;l<3;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}r.lens[A[r.have++]]=7&u,u>>>=3,l-=3;}for(;r.have<19;)r.lens[A[r.have++]]=0;if(r.lencode=r.lendyn,r.lenbits=7,S={bits:r.lenbits},x=T(0,r.lens,0,19,r.lencode,0,r.work,S),r.lenbits=S.bits,x){e.msg="invalid code lengths set",r.mode=30;break}r.have=0,r.mode=19;case 19:for(;r.have<r.nlen+r.ndist;){for(;g=(C=r.lencode[u&(1<<r.lenbits)-1])>>>16&255,b=65535&C,!((_=C>>>24)<=l);){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}if(b<16)u>>>=_,l-=_,r.lens[r.have++]=b;else {if(16===b){for(z=_+2;l<z;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}if(u>>>=_,l-=_,0===r.have){e.msg="invalid bit length repeat",r.mode=30;break}k=r.lens[r.have-1],d=3+(3&u),u>>>=2,l-=2;}else if(17===b){for(z=_+3;l<z;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}l-=_,k=0,d=3+(7&(u>>>=_)),u>>>=3,l-=3;}else {for(z=_+7;l<z;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}l-=_,k=0,d=11+(127&(u>>>=_)),u>>>=7,l-=7;}if(r.have+d>r.nlen+r.ndist){e.msg="invalid bit length repeat",r.mode=30;break}for(;d--;)r.lens[r.have++]=k;}}if(30===r.mode)break;if(0===r.lens[256]){e.msg="invalid code -- missing end-of-block",r.mode=30;break}if(r.lenbits=9,S={bits:r.lenbits},x=T(D,r.lens,0,r.nlen,r.lencode,0,r.work,S),r.lenbits=S.bits,x){e.msg="invalid literal/lengths set",r.mode=30;break}if(r.distbits=6,r.distcode=r.distdyn,S={bits:r.distbits},x=T(F,r.lens,r.nlen,r.ndist,r.distcode,0,r.work,S),r.distbits=S.bits,x){e.msg="invalid distances set",r.mode=30;break}if(r.mode=20,6===t)break e;case 20:r.mode=21;case 21:if(6<=o&&258<=h){e.next_out=a,e.avail_out=h,e.next_in=s,e.avail_in=o,r.hold=u,r.bits=l,R(e,c),a=e.next_out,i=e.output,h=e.avail_out,s=e.next_in,n=e.input,o=e.avail_in,u=r.hold,l=r.bits,12===r.mode&&(r.back=-1);break}for(r.back=0;g=(C=r.lencode[u&(1<<r.lenbits)-1])>>>16&255,b=65535&C,!((_=C>>>24)<=l);){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}if(g&&0==(240&g)){for(v=_,y=g,w=b;g=(C=r.lencode[w+((u&(1<<v+y)-1)>>v)])>>>16&255,b=65535&C,!(v+(_=C>>>24)<=l);){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}u>>>=v,l-=v,r.back+=v;}if(u>>>=_,l-=_,r.back+=_,r.length=b,0===g){r.mode=26;break}if(32&g){r.back=-1,r.mode=12;break}if(64&g){e.msg="invalid literal/length code",r.mode=30;break}r.extra=15&g,r.mode=22;case 22:if(r.extra){for(z=r.extra;l<z;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}r.length+=u&(1<<r.extra)-1,u>>>=r.extra,l-=r.extra,r.back+=r.extra;}r.was=r.length,r.mode=23;case 23:for(;g=(C=r.distcode[u&(1<<r.distbits)-1])>>>16&255,b=65535&C,!((_=C>>>24)<=l);){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}if(0==(240&g)){for(v=_,y=g,w=b;g=(C=r.distcode[w+((u&(1<<v+y)-1)>>v)])>>>16&255,b=65535&C,!(v+(_=C>>>24)<=l);){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}u>>>=v,l-=v,r.back+=v;}if(u>>>=_,l-=_,r.back+=_,64&g){e.msg="invalid distance code",r.mode=30;break}r.offset=b,r.extra=15&g,r.mode=24;case 24:if(r.extra){for(z=r.extra;l<z;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}r.offset+=u&(1<<r.extra)-1,u>>>=r.extra,l-=r.extra,r.back+=r.extra;}if(r.offset>r.dmax){e.msg="invalid distance too far back",r.mode=30;break}r.mode=25;case 25:if(0===h)break e;if(d=c-h,r.offset>d){if((d=r.offset-d)>r.whave&&r.sane){e.msg="invalid distance too far back",r.mode=30;break}p=d>r.wnext?(d-=r.wnext,r.wsize-d):r.wnext-d,d>r.length&&(d=r.length),m=r.window;}else m=i,p=a-r.offset,d=r.length;for(h<d&&(d=h),h-=d,r.length-=d;i[a++]=m[p++],--d;);0===r.length&&(r.mode=21);break;case 26:if(0===h)break e;i[a++]=r.length,h--,r.mode=21;break;case 27:if(r.wrap){for(;l<32;){if(0===o)break e;o--,u|=n[s++]<<l,l+=8;}if(c-=h,e.total_out+=c,r.total+=c,c&&(e.adler=r.check=r.flags?B(r.check,i,c,a-c):O(r.check,i,c,a-c)),c=h,(r.flags?u:L(u))!==r.check){e.msg="incorrect data check",r.mode=30;break}l=u=0;}r.mode=28;case 28:if(r.wrap&&r.flags){for(;l<32;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8;}if(u!==(4294967295&r.total)){e.msg="incorrect length check",r.mode=30;break}l=u=0;}r.mode=29;case 29:x=1;break e;case 30:x=-3;break e;case 31:return -4;case 32:default:return U}return e.next_out=a,e.avail_out=h,e.next_in=s,e.avail_in=o,r.hold=u,r.bits=l,(r.wsize||c!==e.avail_out&&r.mode<30&&(r.mode<27||4!==t))&&Z(e,e.output,e.next_out,c-e.avail_out)?(r.mode=31,-4):(f-=e.avail_in,c-=e.avail_out,e.total_in+=f,e.total_out+=c,r.total+=c,r.wrap&&c&&(e.adler=r.check=r.flags?B(r.check,i,c,e.next_out-c):O(r.check,i,c,e.next_out-c)),e.data_type=r.bits+(r.last?64:0)+(12===r.mode?128:0)+(20===r.mode||15===r.mode?256:0),(0==f&&0===c||4===t)&&x===N&&(x=-5),x)},r.inflateEnd=function(e){if(!e||!e.state)return U;var t=e.state;return t.window&&(t.window=null),e.state=null,N},r.inflateGetHeader=function(e,t){var r;return e&&e.state?0==(2&(r=e.state).wrap)?U:((r.head=t).done=!1,N):U},r.inflateSetDictionary=function(e,t){var r,n=t.length;return e&&e.state?0!==(r=e.state).wrap&&11!==r.mode?U:11===r.mode&&O(1,t,n,0)!==r.check?-3:Z(e,t,n,n)?(r.mode=31,-4):(r.havedict=1,N):U},r.inflateInfo="pako inflate (from Nodeca project)";},{"../utils/common":41,"./adler32":43,"./crc32":45,"./inffast":48,"./inftrees":50}],50:[function(e,t,r){var D=e("../utils/common"),F=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,0,0],N=[16,16,16,16,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,20,20,20,20,21,21,21,21,16,72,78],U=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577,0,0],P=[16,16,16,16,17,17,18,18,19,19,20,20,21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,29,29,64,64];t.exports=function(e,t,r,n,i,s,a,o){var h,u,l,f,c,d,p,m,_,g=o.bits,b=0,v=0,y=0,w=0,k=0,x=0,S=0,z=0,C=0,E=0,A=null,I=0,O=new D.Buf16(16),B=new D.Buf16(16),R=null,T=0;for(b=0;b<=15;b++)O[b]=0;for(v=0;v<n;v++)O[t[r+v]]++;for(k=g,w=15;1<=w&&0===O[w];w--);if(w<k&&(k=w),0===w)return i[s++]=20971520,i[s++]=20971520,o.bits=1,0;for(y=1;y<w&&0===O[y];y++);for(k<y&&(k=y),b=z=1;b<=15;b++)if(z<<=1,(z-=O[b])<0)return -1;if(0<z&&(0===e||1!==w))return -1;for(B[1]=0,b=1;b<15;b++)B[b+1]=B[b]+O[b];for(v=0;v<n;v++)0!==t[r+v]&&(a[B[t[r+v]]++]=v);if(d=0===e?(A=R=a,19):1===e?(A=F,I-=257,R=N,T-=257,256):(A=U,R=P,-1),b=y,c=s,S=v=E=0,l=-1,f=(C=1<<(x=k))-1,1===e&&852<C||2===e&&592<C)return 1;for(;;){for(p=b-S,_=a[v]<d?(m=0,a[v]):a[v]>d?(m=R[T+a[v]],A[I+a[v]]):(m=96,0),h=1<<b-S,y=u=1<<x;i[c+(E>>S)+(u-=h)]=p<<24|m<<16|_|0,0!==u;);for(h=1<<b-1;E&h;)h>>=1;if(0!==h?(E&=h-1,E+=h):E=0,v++,0==--O[b]){if(b===w)break;b=t[r+a[v]];}if(k<b&&(E&f)!==l){for(0===S&&(S=k),c+=y,z=1<<(x=b-S);x+S<w&&!((z-=O[x+S])<=0);)x++,z<<=1;if(C+=1<<x,1===e&&852<C||2===e&&592<C)return 1;i[l=E&f]=k<<24|x<<16|c-s|0;}}return 0!==E&&(i[c+E]=b-S<<24|64<<16|0),o.bits=k,0};},{"../utils/common":41}],51:[function(e,t,r){t.exports={2:"need dictionary",1:"stream end",0:"","-1":"file error","-2":"stream error","-3":"data error","-4":"insufficient memory","-5":"buffer error","-6":"incompatible version"};},{}],52:[function(e,t,r){var i=e("../utils/common"),o=0,h=1;function n(e){for(var t=e.length;0<=--t;)e[t]=0;}var s=0,a=29,u=256,l=u+1+a,f=30,c=19,_=2*l+1,g=15,d=16,p=7,m=256,b=16,v=17,y=18,w=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0],k=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13],x=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7],S=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15],z=new Array(2*(l+2));n(z);var C=new Array(2*f);n(C);var E=new Array(512);n(E);var A=new Array(256);n(A);var I=new Array(a);n(I);var O,B,R,T=new Array(f);function D(e,t,r,n,i){this.static_tree=e,this.extra_bits=t,this.extra_base=r,this.elems=n,this.max_length=i,this.has_stree=e&&e.length;}function F(e,t){this.dyn_tree=e,this.max_code=0,this.stat_desc=t;}function N(e){return e<256?E[e]:E[256+(e>>>7)]}function U(e,t){e.pending_buf[e.pending++]=255&t,e.pending_buf[e.pending++]=t>>>8&255;}function P(e,t,r){e.bi_valid>d-r?(e.bi_buf|=t<<e.bi_valid&65535,U(e,e.bi_buf),e.bi_buf=t>>d-e.bi_valid,e.bi_valid+=r-d):(e.bi_buf|=t<<e.bi_valid&65535,e.bi_valid+=r);}function L(e,t,r){P(e,r[2*t],r[2*t+1]);}function j(e,t){for(var r=0;r|=1&e,e>>>=1,r<<=1,0<--t;);return r>>>1}function Z(e,t,r){var n,i,s=new Array(g+1),a=0;for(n=1;n<=g;n++)s[n]=a=a+r[n-1]<<1;for(i=0;i<=t;i++){var o=e[2*i+1];0!==o&&(e[2*i]=j(s[o]++,o));}}function W(e){var t;for(t=0;t<l;t++)e.dyn_ltree[2*t]=0;for(t=0;t<f;t++)e.dyn_dtree[2*t]=0;for(t=0;t<c;t++)e.bl_tree[2*t]=0;e.dyn_ltree[2*m]=1,e.opt_len=e.static_len=0,e.last_lit=e.matches=0;}function M(e){8<e.bi_valid?U(e,e.bi_buf):0<e.bi_valid&&(e.pending_buf[e.pending++]=e.bi_buf),e.bi_buf=0,e.bi_valid=0;}function H(e,t,r,n){var i=2*t,s=2*r;return e[i]<e[s]||e[i]===e[s]&&n[t]<=n[r]}function G(e,t,r){for(var n=e.heap[r],i=r<<1;i<=e.heap_len&&(i<e.heap_len&&H(t,e.heap[i+1],e.heap[i],e.depth)&&i++,!H(t,n,e.heap[i],e.depth));)e.heap[r]=e.heap[i],r=i,i<<=1;e.heap[r]=n;}function K(e,t,r){var n,i,s,a,o=0;if(0!==e.last_lit)for(;n=e.pending_buf[e.d_buf+2*o]<<8|e.pending_buf[e.d_buf+2*o+1],i=e.pending_buf[e.l_buf+o],o++,0===n?L(e,i,t):(L(e,(s=A[i])+u+1,t),0!==(a=w[s])&&P(e,i-=I[s],a),L(e,s=N(--n),r),0!==(a=k[s])&&P(e,n-=T[s],a)),o<e.last_lit;);L(e,m,t);}function Y(e,t){var r,n,i,s=t.dyn_tree,a=t.stat_desc.static_tree,o=t.stat_desc.has_stree,h=t.stat_desc.elems,u=-1;for(e.heap_len=0,e.heap_max=_,r=0;r<h;r++)0!==s[2*r]?(e.heap[++e.heap_len]=u=r,e.depth[r]=0):s[2*r+1]=0;for(;e.heap_len<2;)s[2*(i=e.heap[++e.heap_len]=u<2?++u:0)]=1,e.depth[i]=0,e.opt_len--,o&&(e.static_len-=a[2*i+1]);for(t.max_code=u,r=e.heap_len>>1;1<=r;r--)G(e,s,r);for(i=h;r=e.heap[1],e.heap[1]=e.heap[e.heap_len--],G(e,s,1),n=e.heap[1],e.heap[--e.heap_max]=r,e.heap[--e.heap_max]=n,s[2*i]=s[2*r]+s[2*n],e.depth[i]=(e.depth[r]>=e.depth[n]?e.depth[r]:e.depth[n])+1,s[2*r+1]=s[2*n+1]=i,e.heap[1]=i++,G(e,s,1),2<=e.heap_len;);e.heap[--e.heap_max]=e.heap[1],function(e,t){var r,n,i,s,a,o,h=t.dyn_tree,u=t.max_code,l=t.stat_desc.static_tree,f=t.stat_desc.has_stree,c=t.stat_desc.extra_bits,d=t.stat_desc.extra_base,p=t.stat_desc.max_length,m=0;for(s=0;s<=g;s++)e.bl_count[s]=0;for(h[2*e.heap[e.heap_max]+1]=0,r=e.heap_max+1;r<_;r++)p<(s=h[2*h[2*(n=e.heap[r])+1]+1]+1)&&(s=p,m++),h[2*n+1]=s,u<n||(e.bl_count[s]++,a=0,d<=n&&(a=c[n-d]),o=h[2*n],e.opt_len+=o*(s+a),f&&(e.static_len+=o*(l[2*n+1]+a)));if(0!==m){do{for(s=p-1;0===e.bl_count[s];)s--;e.bl_count[s]--,e.bl_count[s+1]+=2,e.bl_count[p]--,m-=2;}while(0<m);for(s=p;0!==s;s--)for(n=e.bl_count[s];0!==n;)u<(i=e.heap[--r])||(h[2*i+1]!==s&&(e.opt_len+=(s-h[2*i+1])*h[2*i],h[2*i+1]=s),n--);}}(e,t),Z(s,u,e.bl_count);}function X(e,t,r){var n,i,s=-1,a=t[1],o=0,h=7,u=4;for(0===a&&(h=138,u=3),t[2*(r+1)+1]=65535,n=0;n<=r;n++)i=a,a=t[2*(n+1)+1],++o<h&&i===a||(o<u?e.bl_tree[2*i]+=o:0!==i?(i!==s&&e.bl_tree[2*i]++,e.bl_tree[2*b]++):o<=10?e.bl_tree[2*v]++:e.bl_tree[2*y]++,s=i,u=(o=0)===a?(h=138,3):i===a?(h=6,3):(h=7,4));}function V(e,t,r){var n,i,s=-1,a=t[1],o=0,h=7,u=4;for(0===a&&(h=138,u=3),n=0;n<=r;n++)if(i=a,a=t[2*(n+1)+1],!(++o<h&&i===a)){if(o<u)for(;L(e,i,e.bl_tree),0!=--o;);else 0!==i?(i!==s&&(L(e,i,e.bl_tree),o--),L(e,b,e.bl_tree),P(e,o-3,2)):o<=10?(L(e,v,e.bl_tree),P(e,o-3,3)):(L(e,y,e.bl_tree),P(e,o-11,7));s=i,u=(o=0)===a?(h=138,3):i===a?(h=6,3):(h=7,4);}}n(T);var q=!1;function J(e,t,r,n){P(e,(s<<1)+(n?1:0),3),function(e,t,r,n){M(e),n&&(U(e,r),U(e,~r)),i.arraySet(e.pending_buf,e.window,t,r,e.pending),e.pending+=r;}(e,t,r,!0);}r._tr_init=function(e){q||(function(){var e,t,r,n,i,s=new Array(g+1);for(n=r=0;n<a-1;n++)for(I[n]=r,e=0;e<1<<w[n];e++)A[r++]=n;for(A[r-1]=n,n=i=0;n<16;n++)for(T[n]=i,e=0;e<1<<k[n];e++)E[i++]=n;for(i>>=7;n<f;n++)for(T[n]=i<<7,e=0;e<1<<k[n]-7;e++)E[256+i++]=n;for(t=0;t<=g;t++)s[t]=0;for(e=0;e<=143;)z[2*e+1]=8,e++,s[8]++;for(;e<=255;)z[2*e+1]=9,e++,s[9]++;for(;e<=279;)z[2*e+1]=7,e++,s[7]++;for(;e<=287;)z[2*e+1]=8,e++,s[8]++;for(Z(z,l+1,s),e=0;e<f;e++)C[2*e+1]=5,C[2*e]=j(e,5);O=new D(z,w,u+1,l,g),B=new D(C,k,0,f,g),R=new D(new Array(0),x,0,c,p);}(),q=!0),e.l_desc=new F(e.dyn_ltree,O),e.d_desc=new F(e.dyn_dtree,B),e.bl_desc=new F(e.bl_tree,R),e.bi_buf=0,e.bi_valid=0,W(e);},r._tr_stored_block=J,r._tr_flush_block=function(e,t,r,n){var i,s,a=0;0<e.level?(2===e.strm.data_type&&(e.strm.data_type=function(e){var t,r=4093624447;for(t=0;t<=31;t++,r>>>=1)if(1&r&&0!==e.dyn_ltree[2*t])return o;if(0!==e.dyn_ltree[18]||0!==e.dyn_ltree[20]||0!==e.dyn_ltree[26])return h;for(t=32;t<u;t++)if(0!==e.dyn_ltree[2*t])return h;return o}(e)),Y(e,e.l_desc),Y(e,e.d_desc),a=function(e){var t;for(X(e,e.dyn_ltree,e.l_desc.max_code),X(e,e.dyn_dtree,e.d_desc.max_code),Y(e,e.bl_desc),t=c-1;3<=t&&0===e.bl_tree[2*S[t]+1];t--);return e.opt_len+=3*(t+1)+5+5+4,t}(e),i=e.opt_len+3+7>>>3,(s=e.static_len+3+7>>>3)<=i&&(i=s)):i=s=r+5,r+4<=i&&-1!==t?J(e,t,r,n):4===e.strategy||s===i?(P(e,2+(n?1:0),3),K(e,z,C)):(P(e,4+(n?1:0),3),function(e,t,r,n){var i;for(P(e,t-257,5),P(e,r-1,5),P(e,n-4,4),i=0;i<n;i++)P(e,e.bl_tree[2*S[i]+1],3);V(e,e.dyn_ltree,t-1),V(e,e.dyn_dtree,r-1);}(e,e.l_desc.max_code+1,e.d_desc.max_code+1,a+1),K(e,e.dyn_ltree,e.dyn_dtree)),W(e),n&&M(e);},r._tr_tally=function(e,t,r){return e.pending_buf[e.d_buf+2*e.last_lit]=t>>>8&255,e.pending_buf[e.d_buf+2*e.last_lit+1]=255&t,e.pending_buf[e.l_buf+e.last_lit]=255&r,e.last_lit++,0===t?e.dyn_ltree[2*r]++:(e.matches++,t--,e.dyn_ltree[2*(A[r]+u+1)]++,e.dyn_dtree[2*N(t)]++),e.last_lit===e.lit_bufsize-1},r._tr_align=function(e){P(e,2,3),L(e,m,z),function(e){16===e.bi_valid?(U(e,e.bi_buf),e.bi_buf=0,e.bi_valid=0):8<=e.bi_valid&&(e.pending_buf[e.pending++]=255&e.bi_buf,e.bi_buf>>=8,e.bi_valid-=8);}(e);};},{"../utils/common":41}],53:[function(e,t,r){t.exports=function(){this.input=null,this.next_in=0,this.avail_in=0,this.total_in=0,this.output=null,this.next_out=0,this.avail_out=0,this.total_out=0,this.msg="",this.state=null,this.data_type=2,this.adler=0;};},{}],54:[function(e,t,r){(function(e){!function(r,n){if(!r.setImmediate){var i,s,t,a,o=1,h={},u=!1,l=r.document,e=Object.getPrototypeOf&&Object.getPrototypeOf(r);e=e&&e.setTimeout?e:r,i="[object process]"==={}.toString.call(r.process)?function(e){process.nextTick(function(){c(e);});}:function(){if(r.postMessage&&!r.importScripts){var e=!0,t=r.onmessage;return r.onmessage=function(){e=!1;},r.postMessage("","*"),r.onmessage=t,e}}()?(a="setImmediate$"+Math.random()+"$",r.addEventListener?r.addEventListener("message",d,!1):r.attachEvent("onmessage",d),function(e){r.postMessage(a+e,"*");}):r.MessageChannel?((t=new MessageChannel).port1.onmessage=function(e){c(e.data);},function(e){t.port2.postMessage(e);}):l&&"onreadystatechange"in l.createElement("script")?(s=l.documentElement,function(e){var t=l.createElement("script");t.onreadystatechange=function(){c(e),t.onreadystatechange=null,s.removeChild(t),t=null;},s.appendChild(t);}):function(e){setTimeout(c,0,e);},e.setImmediate=function(e){"function"!=typeof e&&(e=new Function(""+e));for(var t=new Array(arguments.length-1),r=0;r<t.length;r++)t[r]=arguments[r+1];var n={callback:e,args:t};return h[o]=n,i(o),o++},e.clearImmediate=f;}function f(e){delete h[e];}function c(e){if(u)setTimeout(c,0,e);else {var t=h[e];if(t){u=!0;try{!function(e){var t=e.callback,r=e.args;switch(r.length){case 0:t();break;case 1:t(r[0]);break;case 2:t(r[0],r[1]);break;case 3:t(r[0],r[1],r[2]);break;default:t.apply(n,r);}}(t);}finally{f(e),u=!1;}}}}function d(e){e.source===r&&"string"==typeof e.data&&0===e.data.indexOf(a)&&c(+e.data.slice(a.length));}}("undefined"==typeof self?void 0===e?this:e:self);}).call(this,"undefined"!=typeof commonjsGlobal?commonjsGlobal:"undefined"!=typeof self?self:"undefined"!=typeof window?window:{});},{}]},{},[10])(10)}); 
+  } (jszip_min));
+
+  var jszip_minExports = jszip_min.exports;
+  const JSZip = /*@__PURE__*/getDefaultExportFromCjs(jszip_minExports);
 
   const class_worker_raw = "/// <reference no-default-lib=\"true\" />\n/// <reference lib=\"esnext\" />\n/// <reference lib=\"webworker\" />\nconst MIME_TYPE_JAVASCRIPT = \"text/javascript\";\nconst MIME_TYPE_WASM = \"application/wasm\";\nconst CORE_VERSION = \"0.12.6\";\nconst CORE_URL = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd/ffmpeg-core.js`;\nvar FFMessageType;\n(function(FFMessageType) {\n  FFMessageType[\"LOAD\"] = \"LOAD\";\n  FFMessageType[\"EXEC\"] = \"EXEC\";\n  FFMessageType[\"WRITE_FILE\"] = \"WRITE_FILE\";\n  FFMessageType[\"READ_FILE\"] = \"READ_FILE\";\n  FFMessageType[\"DELETE_FILE\"] = \"DELETE_FILE\";\n  FFMessageType[\"RENAME\"] = \"RENAME\";\n  FFMessageType[\"CREATE_DIR\"] = \"CREATE_DIR\";\n  FFMessageType[\"LIST_DIR\"] = \"LIST_DIR\";\n  FFMessageType[\"DELETE_DIR\"] = \"DELETE_DIR\";\n  FFMessageType[\"ERROR\"] = \"ERROR\";\n  FFMessageType[\"DOWNLOAD\"] = \"DOWNLOAD\";\n  FFMessageType[\"PROGRESS\"] = \"PROGRESS\";\n  FFMessageType[\"LOG\"] = \"LOG\";\n  FFMessageType[\"MOUNT\"] = \"MOUNT\";\n  FFMessageType[\"UNMOUNT\"] = \"UNMOUNT\";\n})(FFMessageType || (FFMessageType = {}));\n\n\nconst ERROR_UNKNOWN_MESSAGE_TYPE = new Error(\"unknown message type\");\nconst ERROR_NOT_LOADED = new Error(\"ffmpeg is not loaded, call `await ffmpeg.load()` first\");\nconst ERROR_TERMINATED = new Error(\"called FFmpeg.terminate()\");\nconst ERROR_IMPORT_FAILURE = new Error(\"failed to import ffmpeg-core.js\");\n\nlet ffmpeg;\nconst load = async ({ coreURL: _coreURL, wasmURL: _wasmURL, workerURL: _workerURL, }) => {\n  const first = !ffmpeg;\n  try {\n    if (!_coreURL)\n      _coreURL = CORE_URL;\n    // when web worker type is `classic`.\n    importScripts(_coreURL);\n  }\n  catch {\n    if (!_coreURL)\n      _coreURL = CORE_URL.replace('/umd/', '/esm/');\n    // when web worker type is `module`.\n    self.createFFmpegCore = (await import(\n        /* webpackIgnore: true */ /* @vite-ignore */ _coreURL)).default;\n    if (!self.createFFmpegCore) {\n      throw ERROR_IMPORT_FAILURE;\n    }\n  }\n  const coreURL = _coreURL;\n  const wasmURL = _wasmURL ? _wasmURL : _coreURL.replace(/.js$/g, \".wasm\");\n  const workerURL = _workerURL\n    ? _workerURL\n    : _coreURL.replace(/.js$/g, \".worker.js\");\n  ffmpeg = await self.createFFmpegCore({\n    // Fix `Overload resolution failed.` when using multi-threaded ffmpeg-core.\n    // Encoded wasmURL and workerURL in the URL as a hack to fix locateFile issue.\n    mainScriptUrlOrBlob: `${coreURL}#${btoa(JSON.stringify({ wasmURL, workerURL }))}`,\n  });\n  ffmpeg.setLogger((data) => self.postMessage({ type: FFMessageType.LOG, data }));\n  ffmpeg.setProgress((data) => self.postMessage({\n    type: FFMessageType.PROGRESS,\n    data,\n  }));\n  return first;\n};\nconst exec = ({ args, timeout = -1 }) => {\n  ffmpeg.setTimeout(timeout);\n  ffmpeg.exec(...args);\n  const ret = ffmpeg.ret;\n  ffmpeg.reset();\n  return ret;\n};\nconst writeFile = ({ path, data }) => {\n  ffmpeg.FS.writeFile(path, data);\n  return true;\n};\nconst readFile = ({ path, encoding }) => ffmpeg.FS.readFile(path, { encoding });\n// TODO: check if deletion works.\nconst deleteFile = ({ path }) => {\n  ffmpeg.FS.unlink(path);\n  return true;\n};\nconst rename = ({ oldPath, newPath }) => {\n  ffmpeg.FS.rename(oldPath, newPath);\n  return true;\n};\n// TODO: check if creation works.\nconst createDir = ({ path }) => {\n  ffmpeg.FS.mkdir(path);\n  return true;\n};\nconst listDir = ({ path }) => {\n  const names = ffmpeg.FS.readdir(path);\n  const nodes = [];\n  for (const name of names) {\n    const stat = ffmpeg.FS.stat(`${path}/${name}`);\n    const isDir = ffmpeg.FS.isDir(stat.mode);\n    nodes.push({ name, isDir });\n  }\n  return nodes;\n};\n// TODO: check if deletion works.\nconst deleteDir = ({ path }) => {\n  ffmpeg.FS.rmdir(path);\n  return true;\n};\nconst mount = ({ fsType, options, mountPoint }) => {\n  const str = fsType;\n  const fs = ffmpeg.FS.filesystems[str];\n  if (!fs)\n    return false;\n  ffmpeg.FS.mount(fs, options, mountPoint);\n  return true;\n};\nconst unmount = ({ mountPoint }) => {\n  ffmpeg.FS.unmount(mountPoint);\n  return true;\n};\nself.onmessage = async ({ data: { id, type, data: _data }, }) => {\n  const trans = [];\n  let data;\n  try {\n    if (type !== FFMessageType.LOAD && !ffmpeg)\n      throw ERROR_NOT_LOADED; // eslint-disable-line\n    switch (type) {\n      case FFMessageType.LOAD:\n        data = await load(_data);\n        break;\n      case FFMessageType.EXEC:\n        data = exec(_data);\n        break;\n      case FFMessageType.WRITE_FILE:\n        data = writeFile(_data);\n        break;\n      case FFMessageType.READ_FILE:\n        data = readFile(_data);\n        break;\n      case FFMessageType.DELETE_FILE:\n        data = deleteFile(_data);\n        break;\n      case FFMessageType.RENAME:\n        data = rename(_data);\n        break;\n      case FFMessageType.CREATE_DIR:\n        data = createDir(_data);\n        break;\n      case FFMessageType.LIST_DIR:\n        data = listDir(_data);\n        break;\n      case FFMessageType.DELETE_DIR:\n        data = deleteDir(_data);\n        break;\n      case FFMessageType.MOUNT:\n        data = mount(_data);\n        break;\n      case FFMessageType.UNMOUNT:\n        data = unmount(_data);\n        break;\n      default:\n        throw ERROR_UNKNOWN_MESSAGE_TYPE;\n    }\n  }\n  catch (e) {\n    self.postMessage({\n      id,\n      type: FFMessageType.ERROR,\n      data: e.toString(),\n    });\n    return;\n  }\n  if (data instanceof Uint8Array) {\n    trans.push(data.buffer);\n  }\n  self.postMessage({ id, type, data }, trans);\n};\n\n";
 
@@ -5758,6 +8254,2657 @@ html {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  var hammer = {exports: {}};
+
+  /*! Hammer.JS - v2.0.7 - 2016-04-22
+   * http://hammerjs.github.io/
+   *
+   * Copyright (c) 2016 Jorik Tangelder;
+   * Licensed under the MIT license */
+
+  (function (module) {
+  	(function(window, document, exportName, undefined$1) {
+
+  	var VENDOR_PREFIXES = ['', 'webkit', 'Moz', 'MS', 'ms', 'o'];
+  	var TEST_ELEMENT = document.createElement('div');
+
+  	var TYPE_FUNCTION = 'function';
+
+  	var round = Math.round;
+  	var abs = Math.abs;
+  	var now = Date.now;
+
+  	/**
+  	 * set a timeout with a given scope
+  	 * @param {Function} fn
+  	 * @param {Number} timeout
+  	 * @param {Object} context
+  	 * @returns {number}
+  	 */
+  	function setTimeoutContext(fn, timeout, context) {
+  	    return setTimeout(bindFn(fn, context), timeout);
+  	}
+
+  	/**
+  	 * if the argument is an array, we want to execute the fn on each entry
+  	 * if it aint an array we don't want to do a thing.
+  	 * this is used by all the methods that accept a single and array argument.
+  	 * @param {*|Array} arg
+  	 * @param {String} fn
+  	 * @param {Object} [context]
+  	 * @returns {Boolean}
+  	 */
+  	function invokeArrayArg(arg, fn, context) {
+  	    if (Array.isArray(arg)) {
+  	        each(arg, context[fn], context);
+  	        return true;
+  	    }
+  	    return false;
+  	}
+
+  	/**
+  	 * walk objects and arrays
+  	 * @param {Object} obj
+  	 * @param {Function} iterator
+  	 * @param {Object} context
+  	 */
+  	function each(obj, iterator, context) {
+  	    var i;
+
+  	    if (!obj) {
+  	        return;
+  	    }
+
+  	    if (obj.forEach) {
+  	        obj.forEach(iterator, context);
+  	    } else if (obj.length !== undefined$1) {
+  	        i = 0;
+  	        while (i < obj.length) {
+  	            iterator.call(context, obj[i], i, obj);
+  	            i++;
+  	        }
+  	    } else {
+  	        for (i in obj) {
+  	            obj.hasOwnProperty(i) && iterator.call(context, obj[i], i, obj);
+  	        }
+  	    }
+  	}
+
+  	/**
+  	 * wrap a method with a deprecation warning and stack trace
+  	 * @param {Function} method
+  	 * @param {String} name
+  	 * @param {String} message
+  	 * @returns {Function} A new function wrapping the supplied method.
+  	 */
+  	function deprecate(method, name, message) {
+  	    var deprecationMessage = 'DEPRECATED METHOD: ' + name + '\n' + message + ' AT \n';
+  	    return function() {
+  	        var e = new Error('get-stack-trace');
+  	        var stack = e && e.stack ? e.stack.replace(/^[^\(]+?[\n$]/gm, '')
+  	            .replace(/^\s+at\s+/gm, '')
+  	            .replace(/^Object.<anonymous>\s*\(/gm, '{anonymous}()@') : 'Unknown Stack Trace';
+
+  	        var log = window.console && (window.console.warn || window.console.log);
+  	        if (log) {
+  	            log.call(window.console, deprecationMessage, stack);
+  	        }
+  	        return method.apply(this, arguments);
+  	    };
+  	}
+
+  	/**
+  	 * extend object.
+  	 * means that properties in dest will be overwritten by the ones in src.
+  	 * @param {Object} target
+  	 * @param {...Object} objects_to_assign
+  	 * @returns {Object} target
+  	 */
+  	var assign;
+  	if (typeof Object.assign !== 'function') {
+  	    assign = function assign(target) {
+  	        if (target === undefined$1 || target === null) {
+  	            throw new TypeError('Cannot convert undefined or null to object');
+  	        }
+
+  	        var output = Object(target);
+  	        for (var index = 1; index < arguments.length; index++) {
+  	            var source = arguments[index];
+  	            if (source !== undefined$1 && source !== null) {
+  	                for (var nextKey in source) {
+  	                    if (source.hasOwnProperty(nextKey)) {
+  	                        output[nextKey] = source[nextKey];
+  	                    }
+  	                }
+  	            }
+  	        }
+  	        return output;
+  	    };
+  	} else {
+  	    assign = Object.assign;
+  	}
+
+  	/**
+  	 * extend object.
+  	 * means that properties in dest will be overwritten by the ones in src.
+  	 * @param {Object} dest
+  	 * @param {Object} src
+  	 * @param {Boolean} [merge=false]
+  	 * @returns {Object} dest
+  	 */
+  	var extend = deprecate(function extend(dest, src, merge) {
+  	    var keys = Object.keys(src);
+  	    var i = 0;
+  	    while (i < keys.length) {
+  	        if (!merge || (merge && dest[keys[i]] === undefined$1)) {
+  	            dest[keys[i]] = src[keys[i]];
+  	        }
+  	        i++;
+  	    }
+  	    return dest;
+  	}, 'extend', 'Use `assign`.');
+
+  	/**
+  	 * merge the values from src in the dest.
+  	 * means that properties that exist in dest will not be overwritten by src
+  	 * @param {Object} dest
+  	 * @param {Object} src
+  	 * @returns {Object} dest
+  	 */
+  	var merge = deprecate(function merge(dest, src) {
+  	    return extend(dest, src, true);
+  	}, 'merge', 'Use `assign`.');
+
+  	/**
+  	 * simple class inheritance
+  	 * @param {Function} child
+  	 * @param {Function} base
+  	 * @param {Object} [properties]
+  	 */
+  	function inherit(child, base, properties) {
+  	    var baseP = base.prototype,
+  	        childP;
+
+  	    childP = child.prototype = Object.create(baseP);
+  	    childP.constructor = child;
+  	    childP._super = baseP;
+
+  	    if (properties) {
+  	        assign(childP, properties);
+  	    }
+  	}
+
+  	/**
+  	 * simple function bind
+  	 * @param {Function} fn
+  	 * @param {Object} context
+  	 * @returns {Function}
+  	 */
+  	function bindFn(fn, context) {
+  	    return function boundFn() {
+  	        return fn.apply(context, arguments);
+  	    };
+  	}
+
+  	/**
+  	 * let a boolean value also be a function that must return a boolean
+  	 * this first item in args will be used as the context
+  	 * @param {Boolean|Function} val
+  	 * @param {Array} [args]
+  	 * @returns {Boolean}
+  	 */
+  	function boolOrFn(val, args) {
+  	    if (typeof val == TYPE_FUNCTION) {
+  	        return val.apply(args ? args[0] || undefined$1 : undefined$1, args);
+  	    }
+  	    return val;
+  	}
+
+  	/**
+  	 * use the val2 when val1 is undefined
+  	 * @param {*} val1
+  	 * @param {*} val2
+  	 * @returns {*}
+  	 */
+  	function ifUndefined(val1, val2) {
+  	    return (val1 === undefined$1) ? val2 : val1;
+  	}
+
+  	/**
+  	 * addEventListener with multiple events at once
+  	 * @param {EventTarget} target
+  	 * @param {String} types
+  	 * @param {Function} handler
+  	 */
+  	function addEventListeners(target, types, handler) {
+  	    each(splitStr(types), function(type) {
+  	        target.addEventListener(type, handler, false);
+  	    });
+  	}
+
+  	/**
+  	 * removeEventListener with multiple events at once
+  	 * @param {EventTarget} target
+  	 * @param {String} types
+  	 * @param {Function} handler
+  	 */
+  	function removeEventListeners(target, types, handler) {
+  	    each(splitStr(types), function(type) {
+  	        target.removeEventListener(type, handler, false);
+  	    });
+  	}
+
+  	/**
+  	 * find if a node is in the given parent
+  	 * @method hasParent
+  	 * @param {HTMLElement} node
+  	 * @param {HTMLElement} parent
+  	 * @return {Boolean} found
+  	 */
+  	function hasParent(node, parent) {
+  	    while (node) {
+  	        if (node == parent) {
+  	            return true;
+  	        }
+  	        node = node.parentNode;
+  	    }
+  	    return false;
+  	}
+
+  	/**
+  	 * small indexOf wrapper
+  	 * @param {String} str
+  	 * @param {String} find
+  	 * @returns {Boolean} found
+  	 */
+  	function inStr(str, find) {
+  	    return str.indexOf(find) > -1;
+  	}
+
+  	/**
+  	 * split string on whitespace
+  	 * @param {String} str
+  	 * @returns {Array} words
+  	 */
+  	function splitStr(str) {
+  	    return str.trim().split(/\s+/g);
+  	}
+
+  	/**
+  	 * find if a array contains the object using indexOf or a simple polyFill
+  	 * @param {Array} src
+  	 * @param {String} find
+  	 * @param {String} [findByKey]
+  	 * @return {Boolean|Number} false when not found, or the index
+  	 */
+  	function inArray(src, find, findByKey) {
+  	    if (src.indexOf && !findByKey) {
+  	        return src.indexOf(find);
+  	    } else {
+  	        var i = 0;
+  	        while (i < src.length) {
+  	            if ((findByKey && src[i][findByKey] == find) || (!findByKey && src[i] === find)) {
+  	                return i;
+  	            }
+  	            i++;
+  	        }
+  	        return -1;
+  	    }
+  	}
+
+  	/**
+  	 * convert array-like objects to real arrays
+  	 * @param {Object} obj
+  	 * @returns {Array}
+  	 */
+  	function toArray(obj) {
+  	    return Array.prototype.slice.call(obj, 0);
+  	}
+
+  	/**
+  	 * unique array with objects based on a key (like 'id') or just by the array's value
+  	 * @param {Array} src [{id:1},{id:2},{id:1}]
+  	 * @param {String} [key]
+  	 * @param {Boolean} [sort=False]
+  	 * @returns {Array} [{id:1},{id:2}]
+  	 */
+  	function uniqueArray(src, key, sort) {
+  	    var results = [];
+  	    var values = [];
+  	    var i = 0;
+
+  	    while (i < src.length) {
+  	        var val = key ? src[i][key] : src[i];
+  	        if (inArray(values, val) < 0) {
+  	            results.push(src[i]);
+  	        }
+  	        values[i] = val;
+  	        i++;
+  	    }
+
+  	    if (sort) {
+  	        if (!key) {
+  	            results = results.sort();
+  	        } else {
+  	            results = results.sort(function sortUniqueArray(a, b) {
+  	                return a[key] > b[key];
+  	            });
+  	        }
+  	    }
+
+  	    return results;
+  	}
+
+  	/**
+  	 * get the prefixed property
+  	 * @param {Object} obj
+  	 * @param {String} property
+  	 * @returns {String|Undefined} prefixed
+  	 */
+  	function prefixed(obj, property) {
+  	    var prefix, prop;
+  	    var camelProp = property[0].toUpperCase() + property.slice(1);
+
+  	    var i = 0;
+  	    while (i < VENDOR_PREFIXES.length) {
+  	        prefix = VENDOR_PREFIXES[i];
+  	        prop = (prefix) ? prefix + camelProp : property;
+
+  	        if (prop in obj) {
+  	            return prop;
+  	        }
+  	        i++;
+  	    }
+  	    return undefined$1;
+  	}
+
+  	/**
+  	 * get a unique id
+  	 * @returns {number} uniqueId
+  	 */
+  	var _uniqueId = 1;
+  	function uniqueId() {
+  	    return _uniqueId++;
+  	}
+
+  	/**
+  	 * get the window object of an element
+  	 * @param {HTMLElement} element
+  	 * @returns {DocumentView|Window}
+  	 */
+  	function getWindowForElement(element) {
+  	    var doc = element.ownerDocument || element;
+  	    return (doc.defaultView || doc.parentWindow || window);
+  	}
+
+  	var MOBILE_REGEX = /mobile|tablet|ip(ad|hone|od)|android/i;
+
+  	var SUPPORT_TOUCH = ('ontouchstart' in window);
+  	var SUPPORT_POINTER_EVENTS = prefixed(window, 'PointerEvent') !== undefined$1;
+  	var SUPPORT_ONLY_TOUCH = SUPPORT_TOUCH && MOBILE_REGEX.test(navigator.userAgent);
+
+  	var INPUT_TYPE_TOUCH = 'touch';
+  	var INPUT_TYPE_PEN = 'pen';
+  	var INPUT_TYPE_MOUSE = 'mouse';
+  	var INPUT_TYPE_KINECT = 'kinect';
+
+  	var COMPUTE_INTERVAL = 25;
+
+  	var INPUT_START = 1;
+  	var INPUT_MOVE = 2;
+  	var INPUT_END = 4;
+  	var INPUT_CANCEL = 8;
+
+  	var DIRECTION_NONE = 1;
+  	var DIRECTION_LEFT = 2;
+  	var DIRECTION_RIGHT = 4;
+  	var DIRECTION_UP = 8;
+  	var DIRECTION_DOWN = 16;
+
+  	var DIRECTION_HORIZONTAL = DIRECTION_LEFT | DIRECTION_RIGHT;
+  	var DIRECTION_VERTICAL = DIRECTION_UP | DIRECTION_DOWN;
+  	var DIRECTION_ALL = DIRECTION_HORIZONTAL | DIRECTION_VERTICAL;
+
+  	var PROPS_XY = ['x', 'y'];
+  	var PROPS_CLIENT_XY = ['clientX', 'clientY'];
+
+  	/**
+  	 * create new input type manager
+  	 * @param {Manager} manager
+  	 * @param {Function} callback
+  	 * @returns {Input}
+  	 * @constructor
+  	 */
+  	function Input(manager, callback) {
+  	    var self = this;
+  	    this.manager = manager;
+  	    this.callback = callback;
+  	    this.element = manager.element;
+  	    this.target = manager.options.inputTarget;
+
+  	    // smaller wrapper around the handler, for the scope and the enabled state of the manager,
+  	    // so when disabled the input events are completely bypassed.
+  	    this.domHandler = function(ev) {
+  	        if (boolOrFn(manager.options.enable, [manager])) {
+  	            self.handler(ev);
+  	        }
+  	    };
+
+  	    this.init();
+
+  	}
+
+  	Input.prototype = {
+  	    /**
+  	     * should handle the inputEvent data and trigger the callback
+  	     * @virtual
+  	     */
+  	    handler: function() { },
+
+  	    /**
+  	     * bind the events
+  	     */
+  	    init: function() {
+  	        this.evEl && addEventListeners(this.element, this.evEl, this.domHandler);
+  	        this.evTarget && addEventListeners(this.target, this.evTarget, this.domHandler);
+  	        this.evWin && addEventListeners(getWindowForElement(this.element), this.evWin, this.domHandler);
+  	    },
+
+  	    /**
+  	     * unbind the events
+  	     */
+  	    destroy: function() {
+  	        this.evEl && removeEventListeners(this.element, this.evEl, this.domHandler);
+  	        this.evTarget && removeEventListeners(this.target, this.evTarget, this.domHandler);
+  	        this.evWin && removeEventListeners(getWindowForElement(this.element), this.evWin, this.domHandler);
+  	    }
+  	};
+
+  	/**
+  	 * create new input type manager
+  	 * called by the Manager constructor
+  	 * @param {Hammer} manager
+  	 * @returns {Input}
+  	 */
+  	function createInputInstance(manager) {
+  	    var Type;
+  	    var inputClass = manager.options.inputClass;
+
+  	    if (inputClass) {
+  	        Type = inputClass;
+  	    } else if (SUPPORT_POINTER_EVENTS) {
+  	        Type = PointerEventInput;
+  	    } else if (SUPPORT_ONLY_TOUCH) {
+  	        Type = TouchInput;
+  	    } else if (!SUPPORT_TOUCH) {
+  	        Type = MouseInput;
+  	    } else {
+  	        Type = TouchMouseInput;
+  	    }
+  	    return new (Type)(manager, inputHandler);
+  	}
+
+  	/**
+  	 * handle input events
+  	 * @param {Manager} manager
+  	 * @param {String} eventType
+  	 * @param {Object} input
+  	 */
+  	function inputHandler(manager, eventType, input) {
+  	    var pointersLen = input.pointers.length;
+  	    var changedPointersLen = input.changedPointers.length;
+  	    var isFirst = (eventType & INPUT_START && (pointersLen - changedPointersLen === 0));
+  	    var isFinal = (eventType & (INPUT_END | INPUT_CANCEL) && (pointersLen - changedPointersLen === 0));
+
+  	    input.isFirst = !!isFirst;
+  	    input.isFinal = !!isFinal;
+
+  	    if (isFirst) {
+  	        manager.session = {};
+  	    }
+
+  	    // source event is the normalized value of the domEvents
+  	    // like 'touchstart, mouseup, pointerdown'
+  	    input.eventType = eventType;
+
+  	    // compute scale, rotation etc
+  	    computeInputData(manager, input);
+
+  	    // emit secret event
+  	    manager.emit('hammer.input', input);
+
+  	    manager.recognize(input);
+  	    manager.session.prevInput = input;
+  	}
+
+  	/**
+  	 * extend the data with some usable properties like scale, rotate, velocity etc
+  	 * @param {Object} manager
+  	 * @param {Object} input
+  	 */
+  	function computeInputData(manager, input) {
+  	    var session = manager.session;
+  	    var pointers = input.pointers;
+  	    var pointersLength = pointers.length;
+
+  	    // store the first input to calculate the distance and direction
+  	    if (!session.firstInput) {
+  	        session.firstInput = simpleCloneInputData(input);
+  	    }
+
+  	    // to compute scale and rotation we need to store the multiple touches
+  	    if (pointersLength > 1 && !session.firstMultiple) {
+  	        session.firstMultiple = simpleCloneInputData(input);
+  	    } else if (pointersLength === 1) {
+  	        session.firstMultiple = false;
+  	    }
+
+  	    var firstInput = session.firstInput;
+  	    var firstMultiple = session.firstMultiple;
+  	    var offsetCenter = firstMultiple ? firstMultiple.center : firstInput.center;
+
+  	    var center = input.center = getCenter(pointers);
+  	    input.timeStamp = now();
+  	    input.deltaTime = input.timeStamp - firstInput.timeStamp;
+
+  	    input.angle = getAngle(offsetCenter, center);
+  	    input.distance = getDistance(offsetCenter, center);
+
+  	    computeDeltaXY(session, input);
+  	    input.offsetDirection = getDirection(input.deltaX, input.deltaY);
+
+  	    var overallVelocity = getVelocity(input.deltaTime, input.deltaX, input.deltaY);
+  	    input.overallVelocityX = overallVelocity.x;
+  	    input.overallVelocityY = overallVelocity.y;
+  	    input.overallVelocity = (abs(overallVelocity.x) > abs(overallVelocity.y)) ? overallVelocity.x : overallVelocity.y;
+
+  	    input.scale = firstMultiple ? getScale(firstMultiple.pointers, pointers) : 1;
+  	    input.rotation = firstMultiple ? getRotation(firstMultiple.pointers, pointers) : 0;
+
+  	    input.maxPointers = !session.prevInput ? input.pointers.length : ((input.pointers.length >
+  	        session.prevInput.maxPointers) ? input.pointers.length : session.prevInput.maxPointers);
+
+  	    computeIntervalInputData(session, input);
+
+  	    // find the correct target
+  	    var target = manager.element;
+  	    if (hasParent(input.srcEvent.target, target)) {
+  	        target = input.srcEvent.target;
+  	    }
+  	    input.target = target;
+  	}
+
+  	function computeDeltaXY(session, input) {
+  	    var center = input.center;
+  	    var offset = session.offsetDelta || {};
+  	    var prevDelta = session.prevDelta || {};
+  	    var prevInput = session.prevInput || {};
+
+  	    if (input.eventType === INPUT_START || prevInput.eventType === INPUT_END) {
+  	        prevDelta = session.prevDelta = {
+  	            x: prevInput.deltaX || 0,
+  	            y: prevInput.deltaY || 0
+  	        };
+
+  	        offset = session.offsetDelta = {
+  	            x: center.x,
+  	            y: center.y
+  	        };
+  	    }
+
+  	    input.deltaX = prevDelta.x + (center.x - offset.x);
+  	    input.deltaY = prevDelta.y + (center.y - offset.y);
+  	}
+
+  	/**
+  	 * velocity is calculated every x ms
+  	 * @param {Object} session
+  	 * @param {Object} input
+  	 */
+  	function computeIntervalInputData(session, input) {
+  	    var last = session.lastInterval || input,
+  	        deltaTime = input.timeStamp - last.timeStamp,
+  	        velocity, velocityX, velocityY, direction;
+
+  	    if (input.eventType != INPUT_CANCEL && (deltaTime > COMPUTE_INTERVAL || last.velocity === undefined$1)) {
+  	        var deltaX = input.deltaX - last.deltaX;
+  	        var deltaY = input.deltaY - last.deltaY;
+
+  	        var v = getVelocity(deltaTime, deltaX, deltaY);
+  	        velocityX = v.x;
+  	        velocityY = v.y;
+  	        velocity = (abs(v.x) > abs(v.y)) ? v.x : v.y;
+  	        direction = getDirection(deltaX, deltaY);
+
+  	        session.lastInterval = input;
+  	    } else {
+  	        // use latest velocity info if it doesn't overtake a minimum period
+  	        velocity = last.velocity;
+  	        velocityX = last.velocityX;
+  	        velocityY = last.velocityY;
+  	        direction = last.direction;
+  	    }
+
+  	    input.velocity = velocity;
+  	    input.velocityX = velocityX;
+  	    input.velocityY = velocityY;
+  	    input.direction = direction;
+  	}
+
+  	/**
+  	 * create a simple clone from the input used for storage of firstInput and firstMultiple
+  	 * @param {Object} input
+  	 * @returns {Object} clonedInputData
+  	 */
+  	function simpleCloneInputData(input) {
+  	    // make a simple copy of the pointers because we will get a reference if we don't
+  	    // we only need clientXY for the calculations
+  	    var pointers = [];
+  	    var i = 0;
+  	    while (i < input.pointers.length) {
+  	        pointers[i] = {
+  	            clientX: round(input.pointers[i].clientX),
+  	            clientY: round(input.pointers[i].clientY)
+  	        };
+  	        i++;
+  	    }
+
+  	    return {
+  	        timeStamp: now(),
+  	        pointers: pointers,
+  	        center: getCenter(pointers),
+  	        deltaX: input.deltaX,
+  	        deltaY: input.deltaY
+  	    };
+  	}
+
+  	/**
+  	 * get the center of all the pointers
+  	 * @param {Array} pointers
+  	 * @return {Object} center contains `x` and `y` properties
+  	 */
+  	function getCenter(pointers) {
+  	    var pointersLength = pointers.length;
+
+  	    // no need to loop when only one touch
+  	    if (pointersLength === 1) {
+  	        return {
+  	            x: round(pointers[0].clientX),
+  	            y: round(pointers[0].clientY)
+  	        };
+  	    }
+
+  	    var x = 0, y = 0, i = 0;
+  	    while (i < pointersLength) {
+  	        x += pointers[i].clientX;
+  	        y += pointers[i].clientY;
+  	        i++;
+  	    }
+
+  	    return {
+  	        x: round(x / pointersLength),
+  	        y: round(y / pointersLength)
+  	    };
+  	}
+
+  	/**
+  	 * calculate the velocity between two points. unit is in px per ms.
+  	 * @param {Number} deltaTime
+  	 * @param {Number} x
+  	 * @param {Number} y
+  	 * @return {Object} velocity `x` and `y`
+  	 */
+  	function getVelocity(deltaTime, x, y) {
+  	    return {
+  	        x: x / deltaTime || 0,
+  	        y: y / deltaTime || 0
+  	    };
+  	}
+
+  	/**
+  	 * get the direction between two points
+  	 * @param {Number} x
+  	 * @param {Number} y
+  	 * @return {Number} direction
+  	 */
+  	function getDirection(x, y) {
+  	    if (x === y) {
+  	        return DIRECTION_NONE;
+  	    }
+
+  	    if (abs(x) >= abs(y)) {
+  	        return x < 0 ? DIRECTION_LEFT : DIRECTION_RIGHT;
+  	    }
+  	    return y < 0 ? DIRECTION_UP : DIRECTION_DOWN;
+  	}
+
+  	/**
+  	 * calculate the absolute distance between two points
+  	 * @param {Object} p1 {x, y}
+  	 * @param {Object} p2 {x, y}
+  	 * @param {Array} [props] containing x and y keys
+  	 * @return {Number} distance
+  	 */
+  	function getDistance(p1, p2, props) {
+  	    if (!props) {
+  	        props = PROPS_XY;
+  	    }
+  	    var x = p2[props[0]] - p1[props[0]],
+  	        y = p2[props[1]] - p1[props[1]];
+
+  	    return Math.sqrt((x * x) + (y * y));
+  	}
+
+  	/**
+  	 * calculate the angle between two coordinates
+  	 * @param {Object} p1
+  	 * @param {Object} p2
+  	 * @param {Array} [props] containing x and y keys
+  	 * @return {Number} angle
+  	 */
+  	function getAngle(p1, p2, props) {
+  	    if (!props) {
+  	        props = PROPS_XY;
+  	    }
+  	    var x = p2[props[0]] - p1[props[0]],
+  	        y = p2[props[1]] - p1[props[1]];
+  	    return Math.atan2(y, x) * 180 / Math.PI;
+  	}
+
+  	/**
+  	 * calculate the rotation degrees between two pointersets
+  	 * @param {Array} start array of pointers
+  	 * @param {Array} end array of pointers
+  	 * @return {Number} rotation
+  	 */
+  	function getRotation(start, end) {
+  	    return getAngle(end[1], end[0], PROPS_CLIENT_XY) + getAngle(start[1], start[0], PROPS_CLIENT_XY);
+  	}
+
+  	/**
+  	 * calculate the scale factor between two pointersets
+  	 * no scale is 1, and goes down to 0 when pinched together, and bigger when pinched out
+  	 * @param {Array} start array of pointers
+  	 * @param {Array} end array of pointers
+  	 * @return {Number} scale
+  	 */
+  	function getScale(start, end) {
+  	    return getDistance(end[0], end[1], PROPS_CLIENT_XY) / getDistance(start[0], start[1], PROPS_CLIENT_XY);
+  	}
+
+  	var MOUSE_INPUT_MAP = {
+  	    mousedown: INPUT_START,
+  	    mousemove: INPUT_MOVE,
+  	    mouseup: INPUT_END
+  	};
+
+  	var MOUSE_ELEMENT_EVENTS = 'mousedown';
+  	var MOUSE_WINDOW_EVENTS = 'mousemove mouseup';
+
+  	/**
+  	 * Mouse events input
+  	 * @constructor
+  	 * @extends Input
+  	 */
+  	function MouseInput() {
+  	    this.evEl = MOUSE_ELEMENT_EVENTS;
+  	    this.evWin = MOUSE_WINDOW_EVENTS;
+
+  	    this.pressed = false; // mousedown state
+
+  	    Input.apply(this, arguments);
+  	}
+
+  	inherit(MouseInput, Input, {
+  	    /**
+  	     * handle mouse events
+  	     * @param {Object} ev
+  	     */
+  	    handler: function MEhandler(ev) {
+  	        var eventType = MOUSE_INPUT_MAP[ev.type];
+
+  	        // on start we want to have the left mouse button down
+  	        if (eventType & INPUT_START && ev.button === 0) {
+  	            this.pressed = true;
+  	        }
+
+  	        if (eventType & INPUT_MOVE && ev.which !== 1) {
+  	            eventType = INPUT_END;
+  	        }
+
+  	        // mouse must be down
+  	        if (!this.pressed) {
+  	            return;
+  	        }
+
+  	        if (eventType & INPUT_END) {
+  	            this.pressed = false;
+  	        }
+
+  	        this.callback(this.manager, eventType, {
+  	            pointers: [ev],
+  	            changedPointers: [ev],
+  	            pointerType: INPUT_TYPE_MOUSE,
+  	            srcEvent: ev
+  	        });
+  	    }
+  	});
+
+  	var POINTER_INPUT_MAP = {
+  	    pointerdown: INPUT_START,
+  	    pointermove: INPUT_MOVE,
+  	    pointerup: INPUT_END,
+  	    pointercancel: INPUT_CANCEL,
+  	    pointerout: INPUT_CANCEL
+  	};
+
+  	// in IE10 the pointer types is defined as an enum
+  	var IE10_POINTER_TYPE_ENUM = {
+  	    2: INPUT_TYPE_TOUCH,
+  	    3: INPUT_TYPE_PEN,
+  	    4: INPUT_TYPE_MOUSE,
+  	    5: INPUT_TYPE_KINECT // see https://twitter.com/jacobrossi/status/480596438489890816
+  	};
+
+  	var POINTER_ELEMENT_EVENTS = 'pointerdown';
+  	var POINTER_WINDOW_EVENTS = 'pointermove pointerup pointercancel';
+
+  	// IE10 has prefixed support, and case-sensitive
+  	if (window.MSPointerEvent && !window.PointerEvent) {
+  	    POINTER_ELEMENT_EVENTS = 'MSPointerDown';
+  	    POINTER_WINDOW_EVENTS = 'MSPointerMove MSPointerUp MSPointerCancel';
+  	}
+
+  	/**
+  	 * Pointer events input
+  	 * @constructor
+  	 * @extends Input
+  	 */
+  	function PointerEventInput() {
+  	    this.evEl = POINTER_ELEMENT_EVENTS;
+  	    this.evWin = POINTER_WINDOW_EVENTS;
+
+  	    Input.apply(this, arguments);
+
+  	    this.store = (this.manager.session.pointerEvents = []);
+  	}
+
+  	inherit(PointerEventInput, Input, {
+  	    /**
+  	     * handle mouse events
+  	     * @param {Object} ev
+  	     */
+  	    handler: function PEhandler(ev) {
+  	        var store = this.store;
+  	        var removePointer = false;
+
+  	        var eventTypeNormalized = ev.type.toLowerCase().replace('ms', '');
+  	        var eventType = POINTER_INPUT_MAP[eventTypeNormalized];
+  	        var pointerType = IE10_POINTER_TYPE_ENUM[ev.pointerType] || ev.pointerType;
+
+  	        var isTouch = (pointerType == INPUT_TYPE_TOUCH);
+
+  	        // get index of the event in the store
+  	        var storeIndex = inArray(store, ev.pointerId, 'pointerId');
+
+  	        // start and mouse must be down
+  	        if (eventType & INPUT_START && (ev.button === 0 || isTouch)) {
+  	            if (storeIndex < 0) {
+  	                store.push(ev);
+  	                storeIndex = store.length - 1;
+  	            }
+  	        } else if (eventType & (INPUT_END | INPUT_CANCEL)) {
+  	            removePointer = true;
+  	        }
+
+  	        // it not found, so the pointer hasn't been down (so it's probably a hover)
+  	        if (storeIndex < 0) {
+  	            return;
+  	        }
+
+  	        // update the event in the store
+  	        store[storeIndex] = ev;
+
+  	        this.callback(this.manager, eventType, {
+  	            pointers: store,
+  	            changedPointers: [ev],
+  	            pointerType: pointerType,
+  	            srcEvent: ev
+  	        });
+
+  	        if (removePointer) {
+  	            // remove from the store
+  	            store.splice(storeIndex, 1);
+  	        }
+  	    }
+  	});
+
+  	var SINGLE_TOUCH_INPUT_MAP = {
+  	    touchstart: INPUT_START,
+  	    touchmove: INPUT_MOVE,
+  	    touchend: INPUT_END,
+  	    touchcancel: INPUT_CANCEL
+  	};
+
+  	var SINGLE_TOUCH_TARGET_EVENTS = 'touchstart';
+  	var SINGLE_TOUCH_WINDOW_EVENTS = 'touchstart touchmove touchend touchcancel';
+
+  	/**
+  	 * Touch events input
+  	 * @constructor
+  	 * @extends Input
+  	 */
+  	function SingleTouchInput() {
+  	    this.evTarget = SINGLE_TOUCH_TARGET_EVENTS;
+  	    this.evWin = SINGLE_TOUCH_WINDOW_EVENTS;
+  	    this.started = false;
+
+  	    Input.apply(this, arguments);
+  	}
+
+  	inherit(SingleTouchInput, Input, {
+  	    handler: function TEhandler(ev) {
+  	        var type = SINGLE_TOUCH_INPUT_MAP[ev.type];
+
+  	        // should we handle the touch events?
+  	        if (type === INPUT_START) {
+  	            this.started = true;
+  	        }
+
+  	        if (!this.started) {
+  	            return;
+  	        }
+
+  	        var touches = normalizeSingleTouches.call(this, ev, type);
+
+  	        // when done, reset the started state
+  	        if (type & (INPUT_END | INPUT_CANCEL) && touches[0].length - touches[1].length === 0) {
+  	            this.started = false;
+  	        }
+
+  	        this.callback(this.manager, type, {
+  	            pointers: touches[0],
+  	            changedPointers: touches[1],
+  	            pointerType: INPUT_TYPE_TOUCH,
+  	            srcEvent: ev
+  	        });
+  	    }
+  	});
+
+  	/**
+  	 * @this {TouchInput}
+  	 * @param {Object} ev
+  	 * @param {Number} type flag
+  	 * @returns {undefined|Array} [all, changed]
+  	 */
+  	function normalizeSingleTouches(ev, type) {
+  	    var all = toArray(ev.touches);
+  	    var changed = toArray(ev.changedTouches);
+
+  	    if (type & (INPUT_END | INPUT_CANCEL)) {
+  	        all = uniqueArray(all.concat(changed), 'identifier', true);
+  	    }
+
+  	    return [all, changed];
+  	}
+
+  	var TOUCH_INPUT_MAP = {
+  	    touchstart: INPUT_START,
+  	    touchmove: INPUT_MOVE,
+  	    touchend: INPUT_END,
+  	    touchcancel: INPUT_CANCEL
+  	};
+
+  	var TOUCH_TARGET_EVENTS = 'touchstart touchmove touchend touchcancel';
+
+  	/**
+  	 * Multi-user touch events input
+  	 * @constructor
+  	 * @extends Input
+  	 */
+  	function TouchInput() {
+  	    this.evTarget = TOUCH_TARGET_EVENTS;
+  	    this.targetIds = {};
+
+  	    Input.apply(this, arguments);
+  	}
+
+  	inherit(TouchInput, Input, {
+  	    handler: function MTEhandler(ev) {
+  	        var type = TOUCH_INPUT_MAP[ev.type];
+  	        var touches = getTouches.call(this, ev, type);
+  	        if (!touches) {
+  	            return;
+  	        }
+
+  	        this.callback(this.manager, type, {
+  	            pointers: touches[0],
+  	            changedPointers: touches[1],
+  	            pointerType: INPUT_TYPE_TOUCH,
+  	            srcEvent: ev
+  	        });
+  	    }
+  	});
+
+  	/**
+  	 * @this {TouchInput}
+  	 * @param {Object} ev
+  	 * @param {Number} type flag
+  	 * @returns {undefined|Array} [all, changed]
+  	 */
+  	function getTouches(ev, type) {
+  	    var allTouches = toArray(ev.touches);
+  	    var targetIds = this.targetIds;
+
+  	    // when there is only one touch, the process can be simplified
+  	    if (type & (INPUT_START | INPUT_MOVE) && allTouches.length === 1) {
+  	        targetIds[allTouches[0].identifier] = true;
+  	        return [allTouches, allTouches];
+  	    }
+
+  	    var i,
+  	        targetTouches,
+  	        changedTouches = toArray(ev.changedTouches),
+  	        changedTargetTouches = [],
+  	        target = this.target;
+
+  	    // get target touches from touches
+  	    targetTouches = allTouches.filter(function(touch) {
+  	        return hasParent(touch.target, target);
+  	    });
+
+  	    // collect touches
+  	    if (type === INPUT_START) {
+  	        i = 0;
+  	        while (i < targetTouches.length) {
+  	            targetIds[targetTouches[i].identifier] = true;
+  	            i++;
+  	        }
+  	    }
+
+  	    // filter changed touches to only contain touches that exist in the collected target ids
+  	    i = 0;
+  	    while (i < changedTouches.length) {
+  	        if (targetIds[changedTouches[i].identifier]) {
+  	            changedTargetTouches.push(changedTouches[i]);
+  	        }
+
+  	        // cleanup removed touches
+  	        if (type & (INPUT_END | INPUT_CANCEL)) {
+  	            delete targetIds[changedTouches[i].identifier];
+  	        }
+  	        i++;
+  	    }
+
+  	    if (!changedTargetTouches.length) {
+  	        return;
+  	    }
+
+  	    return [
+  	        // merge targetTouches with changedTargetTouches so it contains ALL touches, including 'end' and 'cancel'
+  	        uniqueArray(targetTouches.concat(changedTargetTouches), 'identifier', true),
+  	        changedTargetTouches
+  	    ];
+  	}
+
+  	/**
+  	 * Combined touch and mouse input
+  	 *
+  	 * Touch has a higher priority then mouse, and while touching no mouse events are allowed.
+  	 * This because touch devices also emit mouse events while doing a touch.
+  	 *
+  	 * @constructor
+  	 * @extends Input
+  	 */
+
+  	var DEDUP_TIMEOUT = 2500;
+  	var DEDUP_DISTANCE = 25;
+
+  	function TouchMouseInput() {
+  	    Input.apply(this, arguments);
+
+  	    var handler = bindFn(this.handler, this);
+  	    this.touch = new TouchInput(this.manager, handler);
+  	    this.mouse = new MouseInput(this.manager, handler);
+
+  	    this.primaryTouch = null;
+  	    this.lastTouches = [];
+  	}
+
+  	inherit(TouchMouseInput, Input, {
+  	    /**
+  	     * handle mouse and touch events
+  	     * @param {Hammer} manager
+  	     * @param {String} inputEvent
+  	     * @param {Object} inputData
+  	     */
+  	    handler: function TMEhandler(manager, inputEvent, inputData) {
+  	        var isTouch = (inputData.pointerType == INPUT_TYPE_TOUCH),
+  	            isMouse = (inputData.pointerType == INPUT_TYPE_MOUSE);
+
+  	        if (isMouse && inputData.sourceCapabilities && inputData.sourceCapabilities.firesTouchEvents) {
+  	            return;
+  	        }
+
+  	        // when we're in a touch event, record touches to  de-dupe synthetic mouse event
+  	        if (isTouch) {
+  	            recordTouches.call(this, inputEvent, inputData);
+  	        } else if (isMouse && isSyntheticEvent.call(this, inputData)) {
+  	            return;
+  	        }
+
+  	        this.callback(manager, inputEvent, inputData);
+  	    },
+
+  	    /**
+  	     * remove the event listeners
+  	     */
+  	    destroy: function destroy() {
+  	        this.touch.destroy();
+  	        this.mouse.destroy();
+  	    }
+  	});
+
+  	function recordTouches(eventType, eventData) {
+  	    if (eventType & INPUT_START) {
+  	        this.primaryTouch = eventData.changedPointers[0].identifier;
+  	        setLastTouch.call(this, eventData);
+  	    } else if (eventType & (INPUT_END | INPUT_CANCEL)) {
+  	        setLastTouch.call(this, eventData);
+  	    }
+  	}
+
+  	function setLastTouch(eventData) {
+  	    var touch = eventData.changedPointers[0];
+
+  	    if (touch.identifier === this.primaryTouch) {
+  	        var lastTouch = {x: touch.clientX, y: touch.clientY};
+  	        this.lastTouches.push(lastTouch);
+  	        var lts = this.lastTouches;
+  	        var removeLastTouch = function() {
+  	            var i = lts.indexOf(lastTouch);
+  	            if (i > -1) {
+  	                lts.splice(i, 1);
+  	            }
+  	        };
+  	        setTimeout(removeLastTouch, DEDUP_TIMEOUT);
+  	    }
+  	}
+
+  	function isSyntheticEvent(eventData) {
+  	    var x = eventData.srcEvent.clientX, y = eventData.srcEvent.clientY;
+  	    for (var i = 0; i < this.lastTouches.length; i++) {
+  	        var t = this.lastTouches[i];
+  	        var dx = Math.abs(x - t.x), dy = Math.abs(y - t.y);
+  	        if (dx <= DEDUP_DISTANCE && dy <= DEDUP_DISTANCE) {
+  	            return true;
+  	        }
+  	    }
+  	    return false;
+  	}
+
+  	var PREFIXED_TOUCH_ACTION = prefixed(TEST_ELEMENT.style, 'touchAction');
+  	var NATIVE_TOUCH_ACTION = PREFIXED_TOUCH_ACTION !== undefined$1;
+
+  	// magical touchAction value
+  	var TOUCH_ACTION_COMPUTE = 'compute';
+  	var TOUCH_ACTION_AUTO = 'auto';
+  	var TOUCH_ACTION_MANIPULATION = 'manipulation'; // not implemented
+  	var TOUCH_ACTION_NONE = 'none';
+  	var TOUCH_ACTION_PAN_X = 'pan-x';
+  	var TOUCH_ACTION_PAN_Y = 'pan-y';
+  	var TOUCH_ACTION_MAP = getTouchActionProps();
+
+  	/**
+  	 * Touch Action
+  	 * sets the touchAction property or uses the js alternative
+  	 * @param {Manager} manager
+  	 * @param {String} value
+  	 * @constructor
+  	 */
+  	function TouchAction(manager, value) {
+  	    this.manager = manager;
+  	    this.set(value);
+  	}
+
+  	TouchAction.prototype = {
+  	    /**
+  	     * set the touchAction value on the element or enable the polyfill
+  	     * @param {String} value
+  	     */
+  	    set: function(value) {
+  	        // find out the touch-action by the event handlers
+  	        if (value == TOUCH_ACTION_COMPUTE) {
+  	            value = this.compute();
+  	        }
+
+  	        if (NATIVE_TOUCH_ACTION && this.manager.element.style && TOUCH_ACTION_MAP[value]) {
+  	            this.manager.element.style[PREFIXED_TOUCH_ACTION] = value;
+  	        }
+  	        this.actions = value.toLowerCase().trim();
+  	    },
+
+  	    /**
+  	     * just re-set the touchAction value
+  	     */
+  	    update: function() {
+  	        this.set(this.manager.options.touchAction);
+  	    },
+
+  	    /**
+  	     * compute the value for the touchAction property based on the recognizer's settings
+  	     * @returns {String} value
+  	     */
+  	    compute: function() {
+  	        var actions = [];
+  	        each(this.manager.recognizers, function(recognizer) {
+  	            if (boolOrFn(recognizer.options.enable, [recognizer])) {
+  	                actions = actions.concat(recognizer.getTouchAction());
+  	            }
+  	        });
+  	        return cleanTouchActions(actions.join(' '));
+  	    },
+
+  	    /**
+  	     * this method is called on each input cycle and provides the preventing of the browser behavior
+  	     * @param {Object} input
+  	     */
+  	    preventDefaults: function(input) {
+  	        var srcEvent = input.srcEvent;
+  	        var direction = input.offsetDirection;
+
+  	        // if the touch action did prevented once this session
+  	        if (this.manager.session.prevented) {
+  	            srcEvent.preventDefault();
+  	            return;
+  	        }
+
+  	        var actions = this.actions;
+  	        var hasNone = inStr(actions, TOUCH_ACTION_NONE) && !TOUCH_ACTION_MAP[TOUCH_ACTION_NONE];
+  	        var hasPanY = inStr(actions, TOUCH_ACTION_PAN_Y) && !TOUCH_ACTION_MAP[TOUCH_ACTION_PAN_Y];
+  	        var hasPanX = inStr(actions, TOUCH_ACTION_PAN_X) && !TOUCH_ACTION_MAP[TOUCH_ACTION_PAN_X];
+
+  	        if (hasNone) {
+  	            //do not prevent defaults if this is a tap gesture
+
+  	            var isTapPointer = input.pointers.length === 1;
+  	            var isTapMovement = input.distance < 2;
+  	            var isTapTouchTime = input.deltaTime < 250;
+
+  	            if (isTapPointer && isTapMovement && isTapTouchTime) {
+  	                return;
+  	            }
+  	        }
+
+  	        if (hasPanX && hasPanY) {
+  	            // `pan-x pan-y` means browser handles all scrolling/panning, do not prevent
+  	            return;
+  	        }
+
+  	        if (hasNone ||
+  	            (hasPanY && direction & DIRECTION_HORIZONTAL) ||
+  	            (hasPanX && direction & DIRECTION_VERTICAL)) {
+  	            return this.preventSrc(srcEvent);
+  	        }
+  	    },
+
+  	    /**
+  	     * call preventDefault to prevent the browser's default behavior (scrolling in most cases)
+  	     * @param {Object} srcEvent
+  	     */
+  	    preventSrc: function(srcEvent) {
+  	        this.manager.session.prevented = true;
+  	        srcEvent.preventDefault();
+  	    }
+  	};
+
+  	/**
+  	 * when the touchActions are collected they are not a valid value, so we need to clean things up. *
+  	 * @param {String} actions
+  	 * @returns {*}
+  	 */
+  	function cleanTouchActions(actions) {
+  	    // none
+  	    if (inStr(actions, TOUCH_ACTION_NONE)) {
+  	        return TOUCH_ACTION_NONE;
+  	    }
+
+  	    var hasPanX = inStr(actions, TOUCH_ACTION_PAN_X);
+  	    var hasPanY = inStr(actions, TOUCH_ACTION_PAN_Y);
+
+  	    // if both pan-x and pan-y are set (different recognizers
+  	    // for different directions, e.g. horizontal pan but vertical swipe?)
+  	    // we need none (as otherwise with pan-x pan-y combined none of these
+  	    // recognizers will work, since the browser would handle all panning
+  	    if (hasPanX && hasPanY) {
+  	        return TOUCH_ACTION_NONE;
+  	    }
+
+  	    // pan-x OR pan-y
+  	    if (hasPanX || hasPanY) {
+  	        return hasPanX ? TOUCH_ACTION_PAN_X : TOUCH_ACTION_PAN_Y;
+  	    }
+
+  	    // manipulation
+  	    if (inStr(actions, TOUCH_ACTION_MANIPULATION)) {
+  	        return TOUCH_ACTION_MANIPULATION;
+  	    }
+
+  	    return TOUCH_ACTION_AUTO;
+  	}
+
+  	function getTouchActionProps() {
+  	    if (!NATIVE_TOUCH_ACTION) {
+  	        return false;
+  	    }
+  	    var touchMap = {};
+  	    var cssSupports = window.CSS && window.CSS.supports;
+  	    ['auto', 'manipulation', 'pan-y', 'pan-x', 'pan-x pan-y', 'none'].forEach(function(val) {
+
+  	        // If css.supports is not supported but there is native touch-action assume it supports
+  	        // all values. This is the case for IE 10 and 11.
+  	        touchMap[val] = cssSupports ? window.CSS.supports('touch-action', val) : true;
+  	    });
+  	    return touchMap;
+  	}
+
+  	/**
+  	 * Recognizer flow explained; *
+  	 * All recognizers have the initial state of POSSIBLE when a input session starts.
+  	 * The definition of a input session is from the first input until the last input, with all it's movement in it. *
+  	 * Example session for mouse-input: mousedown -> mousemove -> mouseup
+  	 *
+  	 * On each recognizing cycle (see Manager.recognize) the .recognize() method is executed
+  	 * which determines with state it should be.
+  	 *
+  	 * If the recognizer has the state FAILED, CANCELLED or RECOGNIZED (equals ENDED), it is reset to
+  	 * POSSIBLE to give it another change on the next cycle.
+  	 *
+  	 *               Possible
+  	 *                  |
+  	 *            +-----+---------------+
+  	 *            |                     |
+  	 *      +-----+-----+               |
+  	 *      |           |               |
+  	 *   Failed      Cancelled          |
+  	 *                          +-------+------+
+  	 *                          |              |
+  	 *                      Recognized       Began
+  	 *                                         |
+  	 *                                      Changed
+  	 *                                         |
+  	 *                                  Ended/Recognized
+  	 */
+  	var STATE_POSSIBLE = 1;
+  	var STATE_BEGAN = 2;
+  	var STATE_CHANGED = 4;
+  	var STATE_ENDED = 8;
+  	var STATE_RECOGNIZED = STATE_ENDED;
+  	var STATE_CANCELLED = 16;
+  	var STATE_FAILED = 32;
+
+  	/**
+  	 * Recognizer
+  	 * Every recognizer needs to extend from this class.
+  	 * @constructor
+  	 * @param {Object} options
+  	 */
+  	function Recognizer(options) {
+  	    this.options = assign({}, this.defaults, options || {});
+
+  	    this.id = uniqueId();
+
+  	    this.manager = null;
+
+  	    // default is enable true
+  	    this.options.enable = ifUndefined(this.options.enable, true);
+
+  	    this.state = STATE_POSSIBLE;
+
+  	    this.simultaneous = {};
+  	    this.requireFail = [];
+  	}
+
+  	Recognizer.prototype = {
+  	    /**
+  	     * @virtual
+  	     * @type {Object}
+  	     */
+  	    defaults: {},
+
+  	    /**
+  	     * set options
+  	     * @param {Object} options
+  	     * @return {Recognizer}
+  	     */
+  	    set: function(options) {
+  	        assign(this.options, options);
+
+  	        // also update the touchAction, in case something changed about the directions/enabled state
+  	        this.manager && this.manager.touchAction.update();
+  	        return this;
+  	    },
+
+  	    /**
+  	     * recognize simultaneous with an other recognizer.
+  	     * @param {Recognizer} otherRecognizer
+  	     * @returns {Recognizer} this
+  	     */
+  	    recognizeWith: function(otherRecognizer) {
+  	        if (invokeArrayArg(otherRecognizer, 'recognizeWith', this)) {
+  	            return this;
+  	        }
+
+  	        var simultaneous = this.simultaneous;
+  	        otherRecognizer = getRecognizerByNameIfManager(otherRecognizer, this);
+  	        if (!simultaneous[otherRecognizer.id]) {
+  	            simultaneous[otherRecognizer.id] = otherRecognizer;
+  	            otherRecognizer.recognizeWith(this);
+  	        }
+  	        return this;
+  	    },
+
+  	    /**
+  	     * drop the simultaneous link. it doesnt remove the link on the other recognizer.
+  	     * @param {Recognizer} otherRecognizer
+  	     * @returns {Recognizer} this
+  	     */
+  	    dropRecognizeWith: function(otherRecognizer) {
+  	        if (invokeArrayArg(otherRecognizer, 'dropRecognizeWith', this)) {
+  	            return this;
+  	        }
+
+  	        otherRecognizer = getRecognizerByNameIfManager(otherRecognizer, this);
+  	        delete this.simultaneous[otherRecognizer.id];
+  	        return this;
+  	    },
+
+  	    /**
+  	     * recognizer can only run when an other is failing
+  	     * @param {Recognizer} otherRecognizer
+  	     * @returns {Recognizer} this
+  	     */
+  	    requireFailure: function(otherRecognizer) {
+  	        if (invokeArrayArg(otherRecognizer, 'requireFailure', this)) {
+  	            return this;
+  	        }
+
+  	        var requireFail = this.requireFail;
+  	        otherRecognizer = getRecognizerByNameIfManager(otherRecognizer, this);
+  	        if (inArray(requireFail, otherRecognizer) === -1) {
+  	            requireFail.push(otherRecognizer);
+  	            otherRecognizer.requireFailure(this);
+  	        }
+  	        return this;
+  	    },
+
+  	    /**
+  	     * drop the requireFailure link. it does not remove the link on the other recognizer.
+  	     * @param {Recognizer} otherRecognizer
+  	     * @returns {Recognizer} this
+  	     */
+  	    dropRequireFailure: function(otherRecognizer) {
+  	        if (invokeArrayArg(otherRecognizer, 'dropRequireFailure', this)) {
+  	            return this;
+  	        }
+
+  	        otherRecognizer = getRecognizerByNameIfManager(otherRecognizer, this);
+  	        var index = inArray(this.requireFail, otherRecognizer);
+  	        if (index > -1) {
+  	            this.requireFail.splice(index, 1);
+  	        }
+  	        return this;
+  	    },
+
+  	    /**
+  	     * has require failures boolean
+  	     * @returns {boolean}
+  	     */
+  	    hasRequireFailures: function() {
+  	        return this.requireFail.length > 0;
+  	    },
+
+  	    /**
+  	     * if the recognizer can recognize simultaneous with an other recognizer
+  	     * @param {Recognizer} otherRecognizer
+  	     * @returns {Boolean}
+  	     */
+  	    canRecognizeWith: function(otherRecognizer) {
+  	        return !!this.simultaneous[otherRecognizer.id];
+  	    },
+
+  	    /**
+  	     * You should use `tryEmit` instead of `emit` directly to check
+  	     * that all the needed recognizers has failed before emitting.
+  	     * @param {Object} input
+  	     */
+  	    emit: function(input) {
+  	        var self = this;
+  	        var state = this.state;
+
+  	        function emit(event) {
+  	            self.manager.emit(event, input);
+  	        }
+
+  	        // 'panstart' and 'panmove'
+  	        if (state < STATE_ENDED) {
+  	            emit(self.options.event + stateStr(state));
+  	        }
+
+  	        emit(self.options.event); // simple 'eventName' events
+
+  	        if (input.additionalEvent) { // additional event(panleft, panright, pinchin, pinchout...)
+  	            emit(input.additionalEvent);
+  	        }
+
+  	        // panend and pancancel
+  	        if (state >= STATE_ENDED) {
+  	            emit(self.options.event + stateStr(state));
+  	        }
+  	    },
+
+  	    /**
+  	     * Check that all the require failure recognizers has failed,
+  	     * if true, it emits a gesture event,
+  	     * otherwise, setup the state to FAILED.
+  	     * @param {Object} input
+  	     */
+  	    tryEmit: function(input) {
+  	        if (this.canEmit()) {
+  	            return this.emit(input);
+  	        }
+  	        // it's failing anyway
+  	        this.state = STATE_FAILED;
+  	    },
+
+  	    /**
+  	     * can we emit?
+  	     * @returns {boolean}
+  	     */
+  	    canEmit: function() {
+  	        var i = 0;
+  	        while (i < this.requireFail.length) {
+  	            if (!(this.requireFail[i].state & (STATE_FAILED | STATE_POSSIBLE))) {
+  	                return false;
+  	            }
+  	            i++;
+  	        }
+  	        return true;
+  	    },
+
+  	    /**
+  	     * update the recognizer
+  	     * @param {Object} inputData
+  	     */
+  	    recognize: function(inputData) {
+  	        // make a new copy of the inputData
+  	        // so we can change the inputData without messing up the other recognizers
+  	        var inputDataClone = assign({}, inputData);
+
+  	        // is is enabled and allow recognizing?
+  	        if (!boolOrFn(this.options.enable, [this, inputDataClone])) {
+  	            this.reset();
+  	            this.state = STATE_FAILED;
+  	            return;
+  	        }
+
+  	        // reset when we've reached the end
+  	        if (this.state & (STATE_RECOGNIZED | STATE_CANCELLED | STATE_FAILED)) {
+  	            this.state = STATE_POSSIBLE;
+  	        }
+
+  	        this.state = this.process(inputDataClone);
+
+  	        // the recognizer has recognized a gesture
+  	        // so trigger an event
+  	        if (this.state & (STATE_BEGAN | STATE_CHANGED | STATE_ENDED | STATE_CANCELLED)) {
+  	            this.tryEmit(inputDataClone);
+  	        }
+  	    },
+
+  	    /**
+  	     * return the state of the recognizer
+  	     * the actual recognizing happens in this method
+  	     * @virtual
+  	     * @param {Object} inputData
+  	     * @returns {Const} STATE
+  	     */
+  	    process: function(inputData) { }, // jshint ignore:line
+
+  	    /**
+  	     * return the preferred touch-action
+  	     * @virtual
+  	     * @returns {Array}
+  	     */
+  	    getTouchAction: function() { },
+
+  	    /**
+  	     * called when the gesture isn't allowed to recognize
+  	     * like when another is being recognized or it is disabled
+  	     * @virtual
+  	     */
+  	    reset: function() { }
+  	};
+
+  	/**
+  	 * get a usable string, used as event postfix
+  	 * @param {Const} state
+  	 * @returns {String} state
+  	 */
+  	function stateStr(state) {
+  	    if (state & STATE_CANCELLED) {
+  	        return 'cancel';
+  	    } else if (state & STATE_ENDED) {
+  	        return 'end';
+  	    } else if (state & STATE_CHANGED) {
+  	        return 'move';
+  	    } else if (state & STATE_BEGAN) {
+  	        return 'start';
+  	    }
+  	    return '';
+  	}
+
+  	/**
+  	 * direction cons to string
+  	 * @param {Const} direction
+  	 * @returns {String}
+  	 */
+  	function directionStr(direction) {
+  	    if (direction == DIRECTION_DOWN) {
+  	        return 'down';
+  	    } else if (direction == DIRECTION_UP) {
+  	        return 'up';
+  	    } else if (direction == DIRECTION_LEFT) {
+  	        return 'left';
+  	    } else if (direction == DIRECTION_RIGHT) {
+  	        return 'right';
+  	    }
+  	    return '';
+  	}
+
+  	/**
+  	 * get a recognizer by name if it is bound to a manager
+  	 * @param {Recognizer|String} otherRecognizer
+  	 * @param {Recognizer} recognizer
+  	 * @returns {Recognizer}
+  	 */
+  	function getRecognizerByNameIfManager(otherRecognizer, recognizer) {
+  	    var manager = recognizer.manager;
+  	    if (manager) {
+  	        return manager.get(otherRecognizer);
+  	    }
+  	    return otherRecognizer;
+  	}
+
+  	/**
+  	 * This recognizer is just used as a base for the simple attribute recognizers.
+  	 * @constructor
+  	 * @extends Recognizer
+  	 */
+  	function AttrRecognizer() {
+  	    Recognizer.apply(this, arguments);
+  	}
+
+  	inherit(AttrRecognizer, Recognizer, {
+  	    /**
+  	     * @namespace
+  	     * @memberof AttrRecognizer
+  	     */
+  	    defaults: {
+  	        /**
+  	         * @type {Number}
+  	         * @default 1
+  	         */
+  	        pointers: 1
+  	    },
+
+  	    /**
+  	     * Used to check if it the recognizer receives valid input, like input.distance > 10.
+  	     * @memberof AttrRecognizer
+  	     * @param {Object} input
+  	     * @returns {Boolean} recognized
+  	     */
+  	    attrTest: function(input) {
+  	        var optionPointers = this.options.pointers;
+  	        return optionPointers === 0 || input.pointers.length === optionPointers;
+  	    },
+
+  	    /**
+  	     * Process the input and return the state for the recognizer
+  	     * @memberof AttrRecognizer
+  	     * @param {Object} input
+  	     * @returns {*} State
+  	     */
+  	    process: function(input) {
+  	        var state = this.state;
+  	        var eventType = input.eventType;
+
+  	        var isRecognized = state & (STATE_BEGAN | STATE_CHANGED);
+  	        var isValid = this.attrTest(input);
+
+  	        // on cancel input and we've recognized before, return STATE_CANCELLED
+  	        if (isRecognized && (eventType & INPUT_CANCEL || !isValid)) {
+  	            return state | STATE_CANCELLED;
+  	        } else if (isRecognized || isValid) {
+  	            if (eventType & INPUT_END) {
+  	                return state | STATE_ENDED;
+  	            } else if (!(state & STATE_BEGAN)) {
+  	                return STATE_BEGAN;
+  	            }
+  	            return state | STATE_CHANGED;
+  	        }
+  	        return STATE_FAILED;
+  	    }
+  	});
+
+  	/**
+  	 * Pan
+  	 * Recognized when the pointer is down and moved in the allowed direction.
+  	 * @constructor
+  	 * @extends AttrRecognizer
+  	 */
+  	function PanRecognizer() {
+  	    AttrRecognizer.apply(this, arguments);
+
+  	    this.pX = null;
+  	    this.pY = null;
+  	}
+
+  	inherit(PanRecognizer, AttrRecognizer, {
+  	    /**
+  	     * @namespace
+  	     * @memberof PanRecognizer
+  	     */
+  	    defaults: {
+  	        event: 'pan',
+  	        threshold: 10,
+  	        pointers: 1,
+  	        direction: DIRECTION_ALL
+  	    },
+
+  	    getTouchAction: function() {
+  	        var direction = this.options.direction;
+  	        var actions = [];
+  	        if (direction & DIRECTION_HORIZONTAL) {
+  	            actions.push(TOUCH_ACTION_PAN_Y);
+  	        }
+  	        if (direction & DIRECTION_VERTICAL) {
+  	            actions.push(TOUCH_ACTION_PAN_X);
+  	        }
+  	        return actions;
+  	    },
+
+  	    directionTest: function(input) {
+  	        var options = this.options;
+  	        var hasMoved = true;
+  	        var distance = input.distance;
+  	        var direction = input.direction;
+  	        var x = input.deltaX;
+  	        var y = input.deltaY;
+
+  	        // lock to axis?
+  	        if (!(direction & options.direction)) {
+  	            if (options.direction & DIRECTION_HORIZONTAL) {
+  	                direction = (x === 0) ? DIRECTION_NONE : (x < 0) ? DIRECTION_LEFT : DIRECTION_RIGHT;
+  	                hasMoved = x != this.pX;
+  	                distance = Math.abs(input.deltaX);
+  	            } else {
+  	                direction = (y === 0) ? DIRECTION_NONE : (y < 0) ? DIRECTION_UP : DIRECTION_DOWN;
+  	                hasMoved = y != this.pY;
+  	                distance = Math.abs(input.deltaY);
+  	            }
+  	        }
+  	        input.direction = direction;
+  	        return hasMoved && distance > options.threshold && direction & options.direction;
+  	    },
+
+  	    attrTest: function(input) {
+  	        return AttrRecognizer.prototype.attrTest.call(this, input) &&
+  	            (this.state & STATE_BEGAN || (!(this.state & STATE_BEGAN) && this.directionTest(input)));
+  	    },
+
+  	    emit: function(input) {
+
+  	        this.pX = input.deltaX;
+  	        this.pY = input.deltaY;
+
+  	        var direction = directionStr(input.direction);
+
+  	        if (direction) {
+  	            input.additionalEvent = this.options.event + direction;
+  	        }
+  	        this._super.emit.call(this, input);
+  	    }
+  	});
+
+  	/**
+  	 * Pinch
+  	 * Recognized when two or more pointers are moving toward (zoom-in) or away from each other (zoom-out).
+  	 * @constructor
+  	 * @extends AttrRecognizer
+  	 */
+  	function PinchRecognizer() {
+  	    AttrRecognizer.apply(this, arguments);
+  	}
+
+  	inherit(PinchRecognizer, AttrRecognizer, {
+  	    /**
+  	     * @namespace
+  	     * @memberof PinchRecognizer
+  	     */
+  	    defaults: {
+  	        event: 'pinch',
+  	        threshold: 0,
+  	        pointers: 2
+  	    },
+
+  	    getTouchAction: function() {
+  	        return [TOUCH_ACTION_NONE];
+  	    },
+
+  	    attrTest: function(input) {
+  	        return this._super.attrTest.call(this, input) &&
+  	            (Math.abs(input.scale - 1) > this.options.threshold || this.state & STATE_BEGAN);
+  	    },
+
+  	    emit: function(input) {
+  	        if (input.scale !== 1) {
+  	            var inOut = input.scale < 1 ? 'in' : 'out';
+  	            input.additionalEvent = this.options.event + inOut;
+  	        }
+  	        this._super.emit.call(this, input);
+  	    }
+  	});
+
+  	/**
+  	 * Press
+  	 * Recognized when the pointer is down for x ms without any movement.
+  	 * @constructor
+  	 * @extends Recognizer
+  	 */
+  	function PressRecognizer() {
+  	    Recognizer.apply(this, arguments);
+
+  	    this._timer = null;
+  	    this._input = null;
+  	}
+
+  	inherit(PressRecognizer, Recognizer, {
+  	    /**
+  	     * @namespace
+  	     * @memberof PressRecognizer
+  	     */
+  	    defaults: {
+  	        event: 'press',
+  	        pointers: 1,
+  	        time: 251, // minimal time of the pointer to be pressed
+  	        threshold: 9 // a minimal movement is ok, but keep it low
+  	    },
+
+  	    getTouchAction: function() {
+  	        return [TOUCH_ACTION_AUTO];
+  	    },
+
+  	    process: function(input) {
+  	        var options = this.options;
+  	        var validPointers = input.pointers.length === options.pointers;
+  	        var validMovement = input.distance < options.threshold;
+  	        var validTime = input.deltaTime > options.time;
+
+  	        this._input = input;
+
+  	        // we only allow little movement
+  	        // and we've reached an end event, so a tap is possible
+  	        if (!validMovement || !validPointers || (input.eventType & (INPUT_END | INPUT_CANCEL) && !validTime)) {
+  	            this.reset();
+  	        } else if (input.eventType & INPUT_START) {
+  	            this.reset();
+  	            this._timer = setTimeoutContext(function() {
+  	                this.state = STATE_RECOGNIZED;
+  	                this.tryEmit();
+  	            }, options.time, this);
+  	        } else if (input.eventType & INPUT_END) {
+  	            return STATE_RECOGNIZED;
+  	        }
+  	        return STATE_FAILED;
+  	    },
+
+  	    reset: function() {
+  	        clearTimeout(this._timer);
+  	    },
+
+  	    emit: function(input) {
+  	        if (this.state !== STATE_RECOGNIZED) {
+  	            return;
+  	        }
+
+  	        if (input && (input.eventType & INPUT_END)) {
+  	            this.manager.emit(this.options.event + 'up', input);
+  	        } else {
+  	            this._input.timeStamp = now();
+  	            this.manager.emit(this.options.event, this._input);
+  	        }
+  	    }
+  	});
+
+  	/**
+  	 * Rotate
+  	 * Recognized when two or more pointer are moving in a circular motion.
+  	 * @constructor
+  	 * @extends AttrRecognizer
+  	 */
+  	function RotateRecognizer() {
+  	    AttrRecognizer.apply(this, arguments);
+  	}
+
+  	inherit(RotateRecognizer, AttrRecognizer, {
+  	    /**
+  	     * @namespace
+  	     * @memberof RotateRecognizer
+  	     */
+  	    defaults: {
+  	        event: 'rotate',
+  	        threshold: 0,
+  	        pointers: 2
+  	    },
+
+  	    getTouchAction: function() {
+  	        return [TOUCH_ACTION_NONE];
+  	    },
+
+  	    attrTest: function(input) {
+  	        return this._super.attrTest.call(this, input) &&
+  	            (Math.abs(input.rotation) > this.options.threshold || this.state & STATE_BEGAN);
+  	    }
+  	});
+
+  	/**
+  	 * Swipe
+  	 * Recognized when the pointer is moving fast (velocity), with enough distance in the allowed direction.
+  	 * @constructor
+  	 * @extends AttrRecognizer
+  	 */
+  	function SwipeRecognizer() {
+  	    AttrRecognizer.apply(this, arguments);
+  	}
+
+  	inherit(SwipeRecognizer, AttrRecognizer, {
+  	    /**
+  	     * @namespace
+  	     * @memberof SwipeRecognizer
+  	     */
+  	    defaults: {
+  	        event: 'swipe',
+  	        threshold: 10,
+  	        velocity: 0.3,
+  	        direction: DIRECTION_HORIZONTAL | DIRECTION_VERTICAL,
+  	        pointers: 1
+  	    },
+
+  	    getTouchAction: function() {
+  	        return PanRecognizer.prototype.getTouchAction.call(this);
+  	    },
+
+  	    attrTest: function(input) {
+  	        var direction = this.options.direction;
+  	        var velocity;
+
+  	        if (direction & (DIRECTION_HORIZONTAL | DIRECTION_VERTICAL)) {
+  	            velocity = input.overallVelocity;
+  	        } else if (direction & DIRECTION_HORIZONTAL) {
+  	            velocity = input.overallVelocityX;
+  	        } else if (direction & DIRECTION_VERTICAL) {
+  	            velocity = input.overallVelocityY;
+  	        }
+
+  	        return this._super.attrTest.call(this, input) &&
+  	            direction & input.offsetDirection &&
+  	            input.distance > this.options.threshold &&
+  	            input.maxPointers == this.options.pointers &&
+  	            abs(velocity) > this.options.velocity && input.eventType & INPUT_END;
+  	    },
+
+  	    emit: function(input) {
+  	        var direction = directionStr(input.offsetDirection);
+  	        if (direction) {
+  	            this.manager.emit(this.options.event + direction, input);
+  	        }
+
+  	        this.manager.emit(this.options.event, input);
+  	    }
+  	});
+
+  	/**
+  	 * A tap is ecognized when the pointer is doing a small tap/click. Multiple taps are recognized if they occur
+  	 * between the given interval and position. The delay option can be used to recognize multi-taps without firing
+  	 * a single tap.
+  	 *
+  	 * The eventData from the emitted event contains the property `tapCount`, which contains the amount of
+  	 * multi-taps being recognized.
+  	 * @constructor
+  	 * @extends Recognizer
+  	 */
+  	function TapRecognizer() {
+  	    Recognizer.apply(this, arguments);
+
+  	    // previous time and center,
+  	    // used for tap counting
+  	    this.pTime = false;
+  	    this.pCenter = false;
+
+  	    this._timer = null;
+  	    this._input = null;
+  	    this.count = 0;
+  	}
+
+  	inherit(TapRecognizer, Recognizer, {
+  	    /**
+  	     * @namespace
+  	     * @memberof PinchRecognizer
+  	     */
+  	    defaults: {
+  	        event: 'tap',
+  	        pointers: 1,
+  	        taps: 1,
+  	        interval: 300, // max time between the multi-tap taps
+  	        time: 250, // max time of the pointer to be down (like finger on the screen)
+  	        threshold: 9, // a minimal movement is ok, but keep it low
+  	        posThreshold: 10 // a multi-tap can be a bit off the initial position
+  	    },
+
+  	    getTouchAction: function() {
+  	        return [TOUCH_ACTION_MANIPULATION];
+  	    },
+
+  	    process: function(input) {
+  	        var options = this.options;
+
+  	        var validPointers = input.pointers.length === options.pointers;
+  	        var validMovement = input.distance < options.threshold;
+  	        var validTouchTime = input.deltaTime < options.time;
+
+  	        this.reset();
+
+  	        if ((input.eventType & INPUT_START) && (this.count === 0)) {
+  	            return this.failTimeout();
+  	        }
+
+  	        // we only allow little movement
+  	        // and we've reached an end event, so a tap is possible
+  	        if (validMovement && validTouchTime && validPointers) {
+  	            if (input.eventType != INPUT_END) {
+  	                return this.failTimeout();
+  	            }
+
+  	            var validInterval = this.pTime ? (input.timeStamp - this.pTime < options.interval) : true;
+  	            var validMultiTap = !this.pCenter || getDistance(this.pCenter, input.center) < options.posThreshold;
+
+  	            this.pTime = input.timeStamp;
+  	            this.pCenter = input.center;
+
+  	            if (!validMultiTap || !validInterval) {
+  	                this.count = 1;
+  	            } else {
+  	                this.count += 1;
+  	            }
+
+  	            this._input = input;
+
+  	            // if tap count matches we have recognized it,
+  	            // else it has began recognizing...
+  	            var tapCount = this.count % options.taps;
+  	            if (tapCount === 0) {
+  	                // no failing requirements, immediately trigger the tap event
+  	                // or wait as long as the multitap interval to trigger
+  	                if (!this.hasRequireFailures()) {
+  	                    return STATE_RECOGNIZED;
+  	                } else {
+  	                    this._timer = setTimeoutContext(function() {
+  	                        this.state = STATE_RECOGNIZED;
+  	                        this.tryEmit();
+  	                    }, options.interval, this);
+  	                    return STATE_BEGAN;
+  	                }
+  	            }
+  	        }
+  	        return STATE_FAILED;
+  	    },
+
+  	    failTimeout: function() {
+  	        this._timer = setTimeoutContext(function() {
+  	            this.state = STATE_FAILED;
+  	        }, this.options.interval, this);
+  	        return STATE_FAILED;
+  	    },
+
+  	    reset: function() {
+  	        clearTimeout(this._timer);
+  	    },
+
+  	    emit: function() {
+  	        if (this.state == STATE_RECOGNIZED) {
+  	            this._input.tapCount = this.count;
+  	            this.manager.emit(this.options.event, this._input);
+  	        }
+  	    }
+  	});
+
+  	/**
+  	 * Simple way to create a manager with a default set of recognizers.
+  	 * @param {HTMLElement} element
+  	 * @param {Object} [options]
+  	 * @constructor
+  	 */
+  	function Hammer(element, options) {
+  	    options = options || {};
+  	    options.recognizers = ifUndefined(options.recognizers, Hammer.defaults.preset);
+  	    return new Manager(element, options);
+  	}
+
+  	/**
+  	 * @const {string}
+  	 */
+  	Hammer.VERSION = '2.0.7';
+
+  	/**
+  	 * default settings
+  	 * @namespace
+  	 */
+  	Hammer.defaults = {
+  	    /**
+  	     * set if DOM events are being triggered.
+  	     * But this is slower and unused by simple implementations, so disabled by default.
+  	     * @type {Boolean}
+  	     * @default false
+  	     */
+  	    domEvents: false,
+
+  	    /**
+  	     * The value for the touchAction property/fallback.
+  	     * When set to `compute` it will magically set the correct value based on the added recognizers.
+  	     * @type {String}
+  	     * @default compute
+  	     */
+  	    touchAction: TOUCH_ACTION_COMPUTE,
+
+  	    /**
+  	     * @type {Boolean}
+  	     * @default true
+  	     */
+  	    enable: true,
+
+  	    /**
+  	     * EXPERIMENTAL FEATURE -- can be removed/changed
+  	     * Change the parent input target element.
+  	     * If Null, then it is being set the to main element.
+  	     * @type {Null|EventTarget}
+  	     * @default null
+  	     */
+  	    inputTarget: null,
+
+  	    /**
+  	     * force an input class
+  	     * @type {Null|Function}
+  	     * @default null
+  	     */
+  	    inputClass: null,
+
+  	    /**
+  	     * Default recognizer setup when calling `Hammer()`
+  	     * When creating a new Manager these will be skipped.
+  	     * @type {Array}
+  	     */
+  	    preset: [
+  	        // RecognizerClass, options, [recognizeWith, ...], [requireFailure, ...]
+  	        [RotateRecognizer, {enable: false}],
+  	        [PinchRecognizer, {enable: false}, ['rotate']],
+  	        [SwipeRecognizer, {direction: DIRECTION_HORIZONTAL}],
+  	        [PanRecognizer, {direction: DIRECTION_HORIZONTAL}, ['swipe']],
+  	        [TapRecognizer],
+  	        [TapRecognizer, {event: 'doubletap', taps: 2}, ['tap']],
+  	        [PressRecognizer]
+  	    ],
+
+  	    /**
+  	     * Some CSS properties can be used to improve the working of Hammer.
+  	     * Add them to this method and they will be set when creating a new Manager.
+  	     * @namespace
+  	     */
+  	    cssProps: {
+  	        /**
+  	         * Disables text selection to improve the dragging gesture. Mainly for desktop browsers.
+  	         * @type {String}
+  	         * @default 'none'
+  	         */
+  	        userSelect: 'none',
+
+  	        /**
+  	         * Disable the Windows Phone grippers when pressing an element.
+  	         * @type {String}
+  	         * @default 'none'
+  	         */
+  	        touchSelect: 'none',
+
+  	        /**
+  	         * Disables the default callout shown when you touch and hold a touch target.
+  	         * On iOS, when you touch and hold a touch target such as a link, Safari displays
+  	         * a callout containing information about the link. This property allows you to disable that callout.
+  	         * @type {String}
+  	         * @default 'none'
+  	         */
+  	        touchCallout: 'none',
+
+  	        /**
+  	         * Specifies whether zooming is enabled. Used by IE10>
+  	         * @type {String}
+  	         * @default 'none'
+  	         */
+  	        contentZooming: 'none',
+
+  	        /**
+  	         * Specifies that an entire element should be draggable instead of its contents. Mainly for desktop browsers.
+  	         * @type {String}
+  	         * @default 'none'
+  	         */
+  	        userDrag: 'none',
+
+  	        /**
+  	         * Overrides the highlight color shown when the user taps a link or a JavaScript
+  	         * clickable element in iOS. This property obeys the alpha value, if specified.
+  	         * @type {String}
+  	         * @default 'rgba(0,0,0,0)'
+  	         */
+  	        tapHighlightColor: 'rgba(0,0,0,0)'
+  	    }
+  	};
+
+  	var STOP = 1;
+  	var FORCED_STOP = 2;
+
+  	/**
+  	 * Manager
+  	 * @param {HTMLElement} element
+  	 * @param {Object} [options]
+  	 * @constructor
+  	 */
+  	function Manager(element, options) {
+  	    this.options = assign({}, Hammer.defaults, options || {});
+
+  	    this.options.inputTarget = this.options.inputTarget || element;
+
+  	    this.handlers = {};
+  	    this.session = {};
+  	    this.recognizers = [];
+  	    this.oldCssProps = {};
+
+  	    this.element = element;
+  	    this.input = createInputInstance(this);
+  	    this.touchAction = new TouchAction(this, this.options.touchAction);
+
+  	    toggleCssProps(this, true);
+
+  	    each(this.options.recognizers, function(item) {
+  	        var recognizer = this.add(new (item[0])(item[1]));
+  	        item[2] && recognizer.recognizeWith(item[2]);
+  	        item[3] && recognizer.requireFailure(item[3]);
+  	    }, this);
+  	}
+
+  	Manager.prototype = {
+  	    /**
+  	     * set options
+  	     * @param {Object} options
+  	     * @returns {Manager}
+  	     */
+  	    set: function(options) {
+  	        assign(this.options, options);
+
+  	        // Options that need a little more setup
+  	        if (options.touchAction) {
+  	            this.touchAction.update();
+  	        }
+  	        if (options.inputTarget) {
+  	            // Clean up existing event listeners and reinitialize
+  	            this.input.destroy();
+  	            this.input.target = options.inputTarget;
+  	            this.input.init();
+  	        }
+  	        return this;
+  	    },
+
+  	    /**
+  	     * stop recognizing for this session.
+  	     * This session will be discarded, when a new [input]start event is fired.
+  	     * When forced, the recognizer cycle is stopped immediately.
+  	     * @param {Boolean} [force]
+  	     */
+  	    stop: function(force) {
+  	        this.session.stopped = force ? FORCED_STOP : STOP;
+  	    },
+
+  	    /**
+  	     * run the recognizers!
+  	     * called by the inputHandler function on every movement of the pointers (touches)
+  	     * it walks through all the recognizers and tries to detect the gesture that is being made
+  	     * @param {Object} inputData
+  	     */
+  	    recognize: function(inputData) {
+  	        var session = this.session;
+  	        if (session.stopped) {
+  	            return;
+  	        }
+
+  	        // run the touch-action polyfill
+  	        this.touchAction.preventDefaults(inputData);
+
+  	        var recognizer;
+  	        var recognizers = this.recognizers;
+
+  	        // this holds the recognizer that is being recognized.
+  	        // so the recognizer's state needs to be BEGAN, CHANGED, ENDED or RECOGNIZED
+  	        // if no recognizer is detecting a thing, it is set to `null`
+  	        var curRecognizer = session.curRecognizer;
+
+  	        // reset when the last recognizer is recognized
+  	        // or when we're in a new session
+  	        if (!curRecognizer || (curRecognizer && curRecognizer.state & STATE_RECOGNIZED)) {
+  	            curRecognizer = session.curRecognizer = null;
+  	        }
+
+  	        var i = 0;
+  	        while (i < recognizers.length) {
+  	            recognizer = recognizers[i];
+
+  	            // find out if we are allowed try to recognize the input for this one.
+  	            // 1.   allow if the session is NOT forced stopped (see the .stop() method)
+  	            // 2.   allow if we still haven't recognized a gesture in this session, or the this recognizer is the one
+  	            //      that is being recognized.
+  	            // 3.   allow if the recognizer is allowed to run simultaneous with the current recognized recognizer.
+  	            //      this can be setup with the `recognizeWith()` method on the recognizer.
+  	            if (session.stopped !== FORCED_STOP && ( // 1
+  	                    !curRecognizer || recognizer == curRecognizer || // 2
+  	                    recognizer.canRecognizeWith(curRecognizer))) { // 3
+  	                recognizer.recognize(inputData);
+  	            } else {
+  	                recognizer.reset();
+  	            }
+
+  	            // if the recognizer has been recognizing the input as a valid gesture, we want to store this one as the
+  	            // current active recognizer. but only if we don't already have an active recognizer
+  	            if (!curRecognizer && recognizer.state & (STATE_BEGAN | STATE_CHANGED | STATE_ENDED)) {
+  	                curRecognizer = session.curRecognizer = recognizer;
+  	            }
+  	            i++;
+  	        }
+  	    },
+
+  	    /**
+  	     * get a recognizer by its event name.
+  	     * @param {Recognizer|String} recognizer
+  	     * @returns {Recognizer|Null}
+  	     */
+  	    get: function(recognizer) {
+  	        if (recognizer instanceof Recognizer) {
+  	            return recognizer;
+  	        }
+
+  	        var recognizers = this.recognizers;
+  	        for (var i = 0; i < recognizers.length; i++) {
+  	            if (recognizers[i].options.event == recognizer) {
+  	                return recognizers[i];
+  	            }
+  	        }
+  	        return null;
+  	    },
+
+  	    /**
+  	     * add a recognizer to the manager
+  	     * existing recognizers with the same event name will be removed
+  	     * @param {Recognizer} recognizer
+  	     * @returns {Recognizer|Manager}
+  	     */
+  	    add: function(recognizer) {
+  	        if (invokeArrayArg(recognizer, 'add', this)) {
+  	            return this;
+  	        }
+
+  	        // remove existing
+  	        var existing = this.get(recognizer.options.event);
+  	        if (existing) {
+  	            this.remove(existing);
+  	        }
+
+  	        this.recognizers.push(recognizer);
+  	        recognizer.manager = this;
+
+  	        this.touchAction.update();
+  	        return recognizer;
+  	    },
+
+  	    /**
+  	     * remove a recognizer by name or instance
+  	     * @param {Recognizer|String} recognizer
+  	     * @returns {Manager}
+  	     */
+  	    remove: function(recognizer) {
+  	        if (invokeArrayArg(recognizer, 'remove', this)) {
+  	            return this;
+  	        }
+
+  	        recognizer = this.get(recognizer);
+
+  	        // let's make sure this recognizer exists
+  	        if (recognizer) {
+  	            var recognizers = this.recognizers;
+  	            var index = inArray(recognizers, recognizer);
+
+  	            if (index !== -1) {
+  	                recognizers.splice(index, 1);
+  	                this.touchAction.update();
+  	            }
+  	        }
+
+  	        return this;
+  	    },
+
+  	    /**
+  	     * bind event
+  	     * @param {String} events
+  	     * @param {Function} handler
+  	     * @returns {EventEmitter} this
+  	     */
+  	    on: function(events, handler) {
+  	        if (events === undefined$1) {
+  	            return;
+  	        }
+  	        if (handler === undefined$1) {
+  	            return;
+  	        }
+
+  	        var handlers = this.handlers;
+  	        each(splitStr(events), function(event) {
+  	            handlers[event] = handlers[event] || [];
+  	            handlers[event].push(handler);
+  	        });
+  	        return this;
+  	    },
+
+  	    /**
+  	     * unbind event, leave emit blank to remove all handlers
+  	     * @param {String} events
+  	     * @param {Function} [handler]
+  	     * @returns {EventEmitter} this
+  	     */
+  	    off: function(events, handler) {
+  	        if (events === undefined$1) {
+  	            return;
+  	        }
+
+  	        var handlers = this.handlers;
+  	        each(splitStr(events), function(event) {
+  	            if (!handler) {
+  	                delete handlers[event];
+  	            } else {
+  	                handlers[event] && handlers[event].splice(inArray(handlers[event], handler), 1);
+  	            }
+  	        });
+  	        return this;
+  	    },
+
+  	    /**
+  	     * emit event to the listeners
+  	     * @param {String} event
+  	     * @param {Object} data
+  	     */
+  	    emit: function(event, data) {
+  	        // we also want to trigger dom events
+  	        if (this.options.domEvents) {
+  	            triggerDomEvent(event, data);
+  	        }
+
+  	        // no handlers, so skip it all
+  	        var handlers = this.handlers[event] && this.handlers[event].slice();
+  	        if (!handlers || !handlers.length) {
+  	            return;
+  	        }
+
+  	        data.type = event;
+  	        data.preventDefault = function() {
+  	            data.srcEvent.preventDefault();
+  	        };
+
+  	        var i = 0;
+  	        while (i < handlers.length) {
+  	            handlers[i](data);
+  	            i++;
+  	        }
+  	    },
+
+  	    /**
+  	     * destroy the manager and unbinds all events
+  	     * it doesn't unbind dom events, that is the user own responsibility
+  	     */
+  	    destroy: function() {
+  	        this.element && toggleCssProps(this, false);
+
+  	        this.handlers = {};
+  	        this.session = {};
+  	        this.input.destroy();
+  	        this.element = null;
+  	    }
+  	};
+
+  	/**
+  	 * add/remove the css properties as defined in manager.options.cssProps
+  	 * @param {Manager} manager
+  	 * @param {Boolean} add
+  	 */
+  	function toggleCssProps(manager, add) {
+  	    var element = manager.element;
+  	    if (!element.style) {
+  	        return;
+  	    }
+  	    var prop;
+  	    each(manager.options.cssProps, function(value, name) {
+  	        prop = prefixed(element.style, name);
+  	        if (add) {
+  	            manager.oldCssProps[prop] = element.style[prop];
+  	            element.style[prop] = value;
+  	        } else {
+  	            element.style[prop] = manager.oldCssProps[prop] || '';
+  	        }
+  	    });
+  	    if (!add) {
+  	        manager.oldCssProps = {};
+  	    }
+  	}
+
+  	/**
+  	 * trigger dom event
+  	 * @param {String} event
+  	 * @param {Object} data
+  	 */
+  	function triggerDomEvent(event, data) {
+  	    var gestureEvent = document.createEvent('Event');
+  	    gestureEvent.initEvent(event, true, true);
+  	    gestureEvent.gesture = data;
+  	    data.target.dispatchEvent(gestureEvent);
+  	}
+
+  	assign(Hammer, {
+  	    INPUT_START: INPUT_START,
+  	    INPUT_MOVE: INPUT_MOVE,
+  	    INPUT_END: INPUT_END,
+  	    INPUT_CANCEL: INPUT_CANCEL,
+
+  	    STATE_POSSIBLE: STATE_POSSIBLE,
+  	    STATE_BEGAN: STATE_BEGAN,
+  	    STATE_CHANGED: STATE_CHANGED,
+  	    STATE_ENDED: STATE_ENDED,
+  	    STATE_RECOGNIZED: STATE_RECOGNIZED,
+  	    STATE_CANCELLED: STATE_CANCELLED,
+  	    STATE_FAILED: STATE_FAILED,
+
+  	    DIRECTION_NONE: DIRECTION_NONE,
+  	    DIRECTION_LEFT: DIRECTION_LEFT,
+  	    DIRECTION_RIGHT: DIRECTION_RIGHT,
+  	    DIRECTION_UP: DIRECTION_UP,
+  	    DIRECTION_DOWN: DIRECTION_DOWN,
+  	    DIRECTION_HORIZONTAL: DIRECTION_HORIZONTAL,
+  	    DIRECTION_VERTICAL: DIRECTION_VERTICAL,
+  	    DIRECTION_ALL: DIRECTION_ALL,
+
+  	    Manager: Manager,
+  	    Input: Input,
+  	    TouchAction: TouchAction,
+
+  	    TouchInput: TouchInput,
+  	    MouseInput: MouseInput,
+  	    PointerEventInput: PointerEventInput,
+  	    TouchMouseInput: TouchMouseInput,
+  	    SingleTouchInput: SingleTouchInput,
+
+  	    Recognizer: Recognizer,
+  	    AttrRecognizer: AttrRecognizer,
+  	    Tap: TapRecognizer,
+  	    Pan: PanRecognizer,
+  	    Swipe: SwipeRecognizer,
+  	    Pinch: PinchRecognizer,
+  	    Rotate: RotateRecognizer,
+  	    Press: PressRecognizer,
+
+  	    on: addEventListeners,
+  	    off: removeEventListeners,
+  	    each: each,
+  	    merge: merge,
+  	    extend: extend,
+  	    assign: assign,
+  	    inherit: inherit,
+  	    bindFn: bindFn,
+  	    prefixed: prefixed
+  	});
+
+  	// this prevents errors when Hammer is loaded in the presence of an AMD
+  	//  style loader but by script tag, not by the loader.
+  	var freeGlobal = (typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : {})); // jshint ignore:line
+  	freeGlobal.Hammer = Hammer;
+
+  	if (typeof undefined$1 === 'function' && undefined$1.amd) {
+  	    undefined$1(function() {
+  	        return Hammer;
+  	    });
+  	} else if (module.exports) {
+  	    module.exports = Hammer;
+  	} else {
+  	    window[exportName] = Hammer;
+  	}
+
+  	})(window, document, 'Hammer'); 
+  } (hammer));
+
+  var hammerExports = hammer.exports;
+  const Hammer = /*@__PURE__*/getDefaultExportFromCjs(hammerExports);
+
   function onMouse(ele, callback, signal) {
     ele.addEventListener("mousedown", (event) => {
       const { left } = ele.getBoundingClientRect();
@@ -6709,4 +11856,4 @@ html {
     destoryFunc = main(matcher);
   }
 
-})(saveAs, pica, JSZip, Hammer);
+})();

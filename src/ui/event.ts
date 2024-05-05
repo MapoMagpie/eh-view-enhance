@@ -234,7 +234,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   let scrolling = false;
   function initKeyboardEvent(): KeyboardEvents {
-    const onbigImageFrame: Record<KeyboardInBigImageModeId, KeyboardDesc> = {
+    const inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc> = {
       "exit-big-image-mode": new KeyboardDesc(
         ["Escape", "Enter"],
         () => BIFM.hidden()
@@ -296,7 +296,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         }, true
       ),
     };
-    const onFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc> = {
+    const inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc> = {
       "open-big-image-mode": new KeyboardDesc(
         ["Enter"], () => {
           let start = IFQ.currIndex;
@@ -306,7 +306,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
             if (isNaN(start)) return;
             start = Math.max(0, Math.min(start, IFQ.length - 1));
           }
-          IFQ[start].node.root?.querySelector("a")?.dispatchEvent(new MouseEvent("click"));
+          IFQ[start].node.root?.querySelector<HTMLAnchorElement>("a")?.dispatchEvent(new MouseEvent("click", { bubbles: false, cancelable: true }));
         }
       ),
       "pause-auto-load-temporarily": new KeyboardDesc(
@@ -343,7 +343,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         main(true);
       }, true),
     };
-    return { inBigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain: inMain }
+    return { inBigImageMode, inFullViewGrid, inMain }
   }
   const keyboardEvents = initKeyboardEvent();
 

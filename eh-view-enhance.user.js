@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.13
+// @version            4.4.14
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
@@ -7573,7 +7573,7 @@ html {
     }
     let scrolling = false;
     function initKeyboardEvent() {
-      const onbigImageFrame = {
+      const inBigImageMode = {
         "exit-big-image-mode": new KeyboardDesc(
           ["Escape", "Enter"],
           () => BIFM.hidden()
@@ -7639,7 +7639,7 @@ html {
           true
         )
       };
-      const onFullViewGrid = {
+      const inFullViewGrid = {
         "open-big-image-mode": new KeyboardDesc(
           ["Enter"],
           () => {
@@ -7651,7 +7651,7 @@ html {
                 return;
               start = Math.max(0, Math.min(start, IFQ.length - 1));
             }
-            IFQ[start].node.root?.querySelector("a")?.dispatchEvent(new MouseEvent("click"));
+            IFQ[start].node.root?.querySelector("a")?.dispatchEvent(new MouseEvent("click", { bubbles: false, cancelable: true }));
           }
         ),
         "pause-auto-load-temporarily": new KeyboardDesc(
@@ -7688,7 +7688,7 @@ html {
           main(true);
         }, true)
       };
-      return { inBigImageMode: onbigImageFrame, inFullViewGrid: onFullViewGrid, inMain };
+      return { inBigImageMode, inFullViewGrid, inMain };
     }
     const keyboardEvents = initKeyboardEvent();
     let numberRecord = null;

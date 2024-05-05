@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.12
+// @version            4.4.13
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
@@ -7463,7 +7463,7 @@ html {
         saveConf(conf);
       }
       if (key === "readMode") {
-        BIFM.resetScaleBigImages();
+        BIFM.resetScaleBigImages(true);
         if (conf.readMode === "pagination") {
           BIFM.frame.classList.add("bifm-flex");
           if (BIFM.visible) {
@@ -11183,7 +11183,7 @@ html {
     initImgScaleBar() {
       q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
       q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
-      q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages());
+      q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages(true));
       const progress = q("#img-scale-progress", this.imgScaleBar);
       onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
     }
@@ -11581,7 +11581,7 @@ html {
         this.checkFrameOverflow();
         rule.style.minWidth = percent > 100 ? "" : "100vw";
         if (percent === 100) {
-          this.resetScaleBigImages();
+          this.resetScaleBigImages(true);
           return 100;
         }
       }
@@ -11600,7 +11600,7 @@ html {
         }
       }
     }
-    resetScaleBigImages() {
+    resetScaleBigImages(syncConf) {
       const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
       if (!rule)
         return;
@@ -11622,16 +11622,16 @@ html {
         rule.style.width = isMobile ? "100vw" : "80vw";
         rule.style.margin = "0 auto";
       }
-      conf.imgScale = 0;
-      saveConf(conf);
+      if (syncConf) {
+        conf.imgScale = 0;
+        saveConf(conf);
+      }
       this.flushImgScaleBar();
     }
     initImgScaleStyle() {
-      this.resetScaleBigImages();
+      this.resetScaleBigImages(false);
       if (conf.imgScale && conf.imgScale > 0) {
-        const imgScale = conf.imgScale;
-        conf.imgScale = 0;
-        this.scaleBigImages(1, 0, imgScale);
+        this.scaleBigImages(1, 0, conf.imgScale);
       }
     }
     stickyMouse(event, lastMouse) {

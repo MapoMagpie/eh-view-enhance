@@ -133,7 +133,7 @@ export class BigImageFrameManager {
   initImgScaleBar() {
     q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
     q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
-    q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages());
+    q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages(true));
     const progress = q<HTMLProgressElement>("#img-scale-progress", this.imgScaleBar);
     onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
   }
@@ -547,7 +547,7 @@ export class BigImageFrameManager {
       this.checkFrameOverflow();
       rule.style.minWidth = percent > 100 ? "" : "100vw";
       if (percent === 100) {
-        this.resetScaleBigImages();
+        this.resetScaleBigImages(true);
         return 100;
       }
     }
@@ -568,10 +568,9 @@ export class BigImageFrameManager {
     }
   }
 
-  resetScaleBigImages() {
+  resetScaleBigImages(syncConf: boolean) {
     const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
     if (!rule) return;
-    // set rule style all to ""
     rule.style.minWidth = "";
     rule.style.minHeight = "";
     rule.style.maxWidth = "";
@@ -589,17 +588,17 @@ export class BigImageFrameManager {
       rule.style.width = isMobile ? "100vw" : "80vw";
       rule.style.margin = "0 auto";
     }
-    conf.imgScale = 0;
-    saveConf(conf);
+    if (syncConf) {
+      conf.imgScale = 0;
+      saveConf(conf);
+    }
     this.flushImgScaleBar();
   }
 
   initImgScaleStyle() {
-    this.resetScaleBigImages();
+    this.resetScaleBigImages(false);
     if (conf.imgScale && conf.imgScale > 0) {
-      const imgScale = conf.imgScale;
-      conf.imgScale = 0;
-      this.scaleBigImages(1, 0, imgScale);
+      this.scaleBigImages(1, 0, conf.imgScale);
     }
   }
 

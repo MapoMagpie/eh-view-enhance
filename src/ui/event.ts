@@ -110,7 +110,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       saveConf(conf);
     }
     if (key === "readMode") {
-      BIFM.resetScaleBigImages();
+      BIFM.resetScaleBigImages(true);
       if (conf.readMode === "pagination") {
         BIFM.frame.classList.add("bifm-flex")
         if (BIFM.visible) {

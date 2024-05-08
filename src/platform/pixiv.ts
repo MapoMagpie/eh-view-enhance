@@ -1,4 +1,3 @@
-import JSZip from "jszip";
 import { GalleryMeta } from "../download/gallery-meta";
 import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta } from "./platform";
@@ -6,6 +5,7 @@ import { FFmpegConvertor } from "../utils/ffmpeg";
 import ImageNode from "../img-node";
 import { conf } from "../config";
 import { PagesSource } from "../page-fetcher";
+import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js";
 
 type Page = {
   urls: {
@@ -42,7 +42,7 @@ type UgoiraMeta = {
 }
 
 const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
-export class Pixiv extends BaseMatcher {
+export class PixivMatcher extends BaseMatcher {
 
   authorID: string | undefined;
   meta: GalleryMeta;
@@ -62,26 +62,22 @@ export class Pixiv extends BaseMatcher {
   async processData(data: Uint8Array, contentType: string, url: string): Promise<[Uint8Array, string]> {
     const meta = this.ugoiraMetas[url];
     if (!meta) return [data, contentType];
-    const zip = await new JSZip().loadAsync(data);
+    const zipReader = new ZipReader(new Uint8ArrayReader(data));
     const start = performance.now();
     if (!this.convertor) this.convertor = await new FFmpegConvertor().init();
     const initConvertorEnd = performance.now();
-    const files = await Promise.all(
-      meta.body.frames.map(async (f) => {
-        try {
-          const img = await zip.file(f.file)!.async("uint8array");
-          return { name: f.file, data: img };
-        } catch (error) {
-          evLog("error", "unpack ugoira file error: ", error);
-          throw error;
-        }
-      })
-    );
+    const promises = await zipReader.getEntries()
+      .then(
+        entries =>
+          entries.map(e => e.getData?.(new Uint8ArrayWriter())
+            .then(data => ({ name: e.filename, data }))
+          )
+      );
+    const files = await Promise.all(promises).then((entries => entries.filter(f => f && f.data.length > 0).map(f => f!)));
     const unpackUgoira = performance.now();
     if (files.length !== meta.body.frames.length) {
       throw new Error("unpack ugoira file error: file count not equal to meta");
     }
-    // record cost time
     const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
     const convertEnd = performance.now();
     evLog("debug", `convert ugoira to ${conf.convertTo}

@@ -23,7 +23,7 @@ export default defineConfig(({ command }) => {
       monkey({
         entry: 'src/main.ts',
         userscript: {
-          version: '4.4.14',
+          version: '4.4.15',
           icon: 'https://exhentai.org/favicon.ico',
           namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
           supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',
@@ -83,10 +83,10 @@ export default defineConfig(({ command }) => {
             // 'GM_getResourceURL'
           ],
           // require: [
-          //   'https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js',
-          //   'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js',
-          //   'https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js',
-          //   'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js',
+          // 'https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js',
+          // 'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js',
+          // 'https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js',
+          // 'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js',
           // ],
         },
         build: {

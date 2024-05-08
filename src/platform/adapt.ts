@@ -5,7 +5,7 @@ import { EHMatcher } from "./ehentai";
 import { HitomiMather } from "./hitomi";
 import { IMHentaiMatcher } from "./im-hentai";
 import { NHMatcher } from "./nhentai";
-import { Pixiv } from "./pixiv";
+import { PixivMatcher } from "./pixiv";
 import { Matcher } from "./platform";
 import { RokuHentaiMatcher } from "./rokuhentai";
 import { SteamMatcher } from "./steam";
@@ -14,7 +14,7 @@ export const matchers: Matcher[] = [
   new EHMatcher(),
   new NHMatcher(),
   new HitomiMather(),
-  new Pixiv(),
+  new PixivMatcher(),
   new SteamMatcher(),
   new RokuHentaiMatcher(),
   new Comic18Matcher(),

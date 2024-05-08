@@ -19,9 +19,9 @@
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.6",
     "@ffmpeg/util": "^0.12.1",
+    "@zip.js/zip.js": "^2.7.44",
     "file-saver": "^2.0.5",
     "hammerjs": "^2.0.8",
-    "jszip": "^3.10.1",
     "pica": "^9.0.1"
   }
 }

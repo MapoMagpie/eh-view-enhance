@@ -6,6 +6,7 @@ import { i18n } from "../utils/i18n";
 import parseKey from "../utils/keyboard";
 import queryCSSRules from "../utils/query-cssrules";
 import q from "../utils/query-element";
+import relocateElement from "../utils/relocate-element";
 import createExcludeURLPanel from "./exclude-urls";
 import { FullViewGridManager } from "./full-view-grid-manager";
 import { Elements } from "./html";
@@ -125,13 +126,13 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     if (key === "minifyPageHelper") {
       switch (conf.minifyPageHelper) {
         case "inBigMode":
-          PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+          PH.minify(BIFM.visible ? "bigImageFrame" : "fullViewGrid");
           break;
         case "always":
-          PH.minify(true, "fullViewGrid");
+          PH.minify("bigImageFrame");
           break;
         case "never":
-          PH.minify(false, "fullViewGrid");
+          PH.minify("hover");
           break;
       }
     }
@@ -156,42 +157,32 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     });
   }
 
-  let restoreMinify = false;
-  function togglePanelEvent(id: string, collapse?: boolean) {
+  function togglePanelEvent(id: string, collapse?: boolean, target?: HTMLElement) {
     let element = q(`#${id}-panel`);
     if (!element) return;
-    if (collapse === false) {
-      element.classList.remove("p-collapse");
-      return;
-    }
-    if (collapse === true) {
-      collapsePanelEvent(element, id);
-      if (BIFM.visible) {
-        BIFM.frame.focus();
-      } else {
-        HTML.fullViewGrid.focus();
-      }
-      return;
-    }
 
-    if (!element.classList.toggle("p-collapse")) { // not collapsed
-      ["config", "downloader"].filter(k => k !== id).forEach(k => togglePanelEvent(k, true));
-      if (!conf.autoCollapsePanel) {
-        PH.minify(false, "fullViewGrid");
-        restoreMinify = true;
-      }
-    } else { // collapsed
-      if (restoreMinify) {
-        PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
-        restoreMinify = false;
+    // collapse not specified, toggle
+    if (collapse === undefined) {
+      togglePanelEvent(id, !element.classList.contains("p-collapse"), target);
+      return;
+    }
+    if (collapse) {
+      collapsePanelEvent(element, id);
+    } else {
+      // close other panel
+      ["config", "downloader"].filter(k => k !== id).forEach(id => togglePanelEvent(id, true));
+      element.classList.remove("p-collapse");
+      if (target) {
+        relocateElement(element, target, HTML.root);
       }
     }
+    // PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
   }
 
   let bodyOverflow = document.body.style.overflow;
   function showFullViewGrid() {
     // HTML.fullViewGrid.scroll(0, 0); //否则加载会触发滚动事件
-    PH.minify(true, "fullViewGrid");
+    PH.minify("fullViewGrid");
     HTML.root.classList.remove("ehvp-root-collapse");
     HTML.fullViewGrid.focus();
     document.body.style.overflow = "hidden";
@@ -205,7 +196,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   function hiddenFullViewGrid() {
     BIFM.hidden();
-    PH.minify(false, "fullViewGrid");
+    PH.minify("exit");
     HTML.root.classList.add("ehvp-root-collapse");
     HTML.fullViewGrid.blur();
     document.body.style.overflow = bodyOverflow;
@@ -435,15 +426,13 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
   // 入口Entry
   function main(expand: boolean) {
     if (HTML.pageHelper) {
-      if (expand && !HTML.pageHelper.classList.contains("p-helper-extend")) {
-        HTML.pageHelper.classList.add("p-helper-extend");
+      if (expand) {
         showFullViewGrid();
         if (signal.first) {
           signal.first = false;
           PF.init();
         }
       } else {
-        HTML.pageHelper.classList.remove("p-helper-extend");
         ["config", "downloader"].forEach(id => togglePanelEvent(id, true));
         hiddenFullViewGrid();
       }

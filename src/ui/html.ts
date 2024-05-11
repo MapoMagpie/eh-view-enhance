@@ -5,6 +5,7 @@ import { dragElement } from "../utils/drag-element";
 import { I18nValue, i18n } from "../utils/i18n";
 import q from "../utils/query-element";
 import { Events } from "./event";
+import { PageHelper } from "./page-helper";
 import { toggleAnimationStyle, loadStyleSheel } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
@@ -45,6 +46,14 @@ function createOption(item: ConfigItem) {
 
 export type Elements = ReturnType<typeof createHTML>;
 
+// <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px;">
+//     <div><span>${i18n.imageScale.get()}:</span></div>
+//     <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
+//     <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
+//     <div id="img-scale-progress" class="scale-progress"><div id="img-scale-progress-inner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
+//     <div id="img-increase-btn" class="scale-btn"><span>+</span></div>
+//     <div id="img-scale-reset-btn" class="scale-btn" style="width: auto;"><span>RESET</span></div>
+// </div>
 export function createHTML() {
   const fullViewGrid = document.createElement("div");
   fullViewGrid.classList.add("ehvp-root");
@@ -61,7 +70,7 @@ export function createHTML() {
    <a id="img-land-right" class="img-land-right"></a>
 </div>
 <div id="p-helper" class="p-helper">
-    <div style="position: relative">
+    <div>
         <div id="config-panel" class="p-panel p-config p-collapse">
             ${configItemStr}
             <div style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px;">
@@ -75,14 +84,6 @@ export function createHTML() {
                  <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
                  <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
                  <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
-            </div>
-            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px;">
-                <div><span>${i18n.imageScale.get()}:</span></div>
-                <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
-                <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
-                <div id="img-scale-progress" class="scale-progress"><div id="img-scale-progress-inner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
-                <div id="img-increase-btn" class="scale-btn"><span>+</span></div>
-                <div id="img-scale-reset-btn" class="scale-btn" style="width: auto;"><span>RESET</span></div>
             </div>
         </div>
         <div id="downloader-panel" class="p-panel p-downloader p-collapse">
@@ -105,26 +106,21 @@ export function createHTML() {
             </div>
         </div>
     </div>
-    <div id="ehvp-gate-icon">
-        <span>&lessdot;</span><span id="ehvp-gate-book">📖</span>
-    </div>
-    <div id="b-main" class="b-main b-collapse">
-        <div id="config-panel-btn" class="clickable">${i18n.config.get()}</div>
-        <div id="downloader-panel-btn" class="clickable">${i18n.download.get()}</div>
-        <div class="b-m-page">
-            <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span><span id="p-slash-2">/</span><span>FIN:</span><span id="p-finished">0</span>
+    <div id="b-main" class="b-main">
+        <div id="entry-btn" class="b-main-item clickable">OPEN</div>
+        <div id="page-status" class="b-main-item" hidden>
+            <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span>
         </div>
-        <div id="auto-page-btn" class="clickable" style="padding: 0rem 1rem; position: relative; border: 1px solid #777;">
+        <div id="fin-status" class="b-main-item" hidden>
+            <span>FIN:</span><span id="p-finished">0</span>
+        </div>
+        <div id="auto-page-btn" class="b-main-item clickable" hidden style="position: relative;" data-status="paused">
            <span>${i18n.autoPagePlay.get()}</span>
            <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
         </div>
-        <div id="collapse-btn" class="clickable">${i18n.collapse.get()}</div>
-    </div>
-    <div id="ehvp-bar-gtdot">
-        <span>&gtdot;</span>
-    </div>
-    <div id="ehvp-p-extra" class="b-extra">
-        <div id="backChaptersSelection" class="clickable" hidden="">${i18n.backChapters.get()}</div>
+        <div id="config-panel-btn" class="b-main-item clickable" hidden>${i18n.config.get()}</div>
+        <div id="downloader-panel-btn" class="b-main-item clickable" hidden>${i18n.download.get()}</div>
+        <div id="chapters-btn" class="b-main-item clickable" hidden>${i18n.backChapters.get()}</div>
     </div>
 </div>
 `;
@@ -137,20 +133,13 @@ export function createHTML() {
   return {
     root: fullViewGrid,
     fullViewGrid: q("#ehvp-nodes-container", fullViewGrid),
-    // root element
     bigImageFrame: q("#big-img-frame", fullViewGrid),
-    // page helper
     pageHelper: q("#p-helper", fullViewGrid),
-    // config button in pageHelper
     configPanelBTN: q("#config-panel-btn", fullViewGrid),
-    // config panel mouse leave event
     configPanel: q("#config-panel", fullViewGrid),
-    // download button in pageHelper
     downloaderPanelBTN: q("#downloader-panel-btn", fullViewGrid),
-    // download panel mouse leave event
     downloaderPanel: q("#downloader-panel", fullViewGrid),
-    collapseBTN: q("#collapse-btn", fullViewGrid),
-    gate: q("#ehvp-gate-icon", fullViewGrid),
+    entryBTN: q("#entry-btn", fullViewGrid),
     currPageElement: q("#p-curr-page", fullViewGrid),
     totalPageElement: q("#p-total", fullViewGrid),
     finishedElement: q("#p-finished", fullViewGrid),
@@ -159,7 +148,6 @@ export function createHTML() {
     showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
     imgLandLeft: q("#img-land-left", fullViewGrid),
     imgLandRight: q("#img-land-right", fullViewGrid),
-    imgScaleBar: q("#img-scale-bar", fullViewGrid),
     autoPageBTN: q("#auto-page-btn", fullViewGrid),
     pageLoading: q("#page-loading", fullViewGrid),
     downloaderCanvas: q<HTMLCanvasElement>("#downloader-canvas", fullViewGrid),
@@ -174,10 +162,10 @@ export function createHTML() {
   };
 }
 
-export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, DL: Downloader) {
-  HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
+export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, DL: Downloader, PH: PageHelper) {
+  HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config", undefined, HTML.configPanelBTN));
   HTML.downloaderPanelBTN.addEventListener("click", () => {
-    events.togglePanelEvent("downloader");
+    events.togglePanelEvent("downloader", undefined, HTML.downloaderPanelBTN);
     DL.check();
   });
   function collapsePanel(key: "config" | "downloader") {
@@ -188,8 +176,17 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.configPanel.addEventListener("blur", () => collapsePanel("config"));
   HTML.downloaderPanel.addEventListener("mouseleave", () => collapsePanel("downloader"));
   HTML.downloaderPanel.addEventListener("blur", () => collapsePanel("downloader"));
-  HTML.pageHelper.addEventListener("mouseover", () => events.abortMouseleavePanelEvent());
-  HTML.pageHelper.addEventListener("mouseleave", () => ["config", "downloader"].forEach(k => collapsePanel(k as "config" | "downloader")));
+  let hovering = false;
+  HTML.pageHelper.addEventListener("mouseover", () => {
+    hovering = true;
+    events.abortMouseleavePanelEvent();
+    PH.minify("hover");
+  });
+  HTML.pageHelper.addEventListener("mouseleave", () => {
+    hovering = false;
+    ["config", "downloader"].forEach(k => collapsePanel(k as "config" | "downloader"));
+    setTimeout(() => !hovering && PH.minify(PH.lastMinify), 700);
+  });
 
   // modify config event
   ConfigItems.forEach(item => {
@@ -215,8 +212,12 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     }
   });
   // entry 入口
-  HTML.collapseBTN.addEventListener("click", () => events.main(false));
-  HTML.gate.addEventListener("click", () => events.main(true));
+  HTML.entryBTN.addEventListener("click", () => {
+    let state = HTML.entryBTN.getAttribute("data-state") || "close";
+    state = state === "open" ? "close" : "open";
+    HTML.entryBTN.setAttribute("data-state", state);
+    events.main(state === "open");
+  });
 
   const debouncer = new Debouncer();
 

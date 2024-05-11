@@ -19,24 +19,14 @@ export function toggleAnimationStyle(disable: boolean) {
 .p-helper {
   transition: min-width 0.4s linear;
 }
-.p-helper .p-panel {
+.p-panel {
   transition: width 0.4s ease 0s, height 0.4s ease 0s;
 }
 .p-collapse {
   transition: height 0.4s;
 }
-.p-helper .b-main {
-  transition: flex-grow 0.6s ease, max-width 0.4s ease;
-}
-.p-helper-extend .b-main {
-  transition: flex-grow 0.6s ease, max-width 0.4s ease;
-}
 .big-img-frame-collapse {
   transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
-}
-.p-minify:not(:hover),
-.p-minify:not(:hover) .lightgreen {
-  transition: color 0.5s ease-in-out, background-color 0.3s ease-in-out;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
@@ -216,35 +206,26 @@ export function loadStyleSheel() {
 .bifm-img { }
 .p-helper {
   position: fixed;
-  display: flex !important;
-  justify-content: space-between;
-  background-color: #4a4a4ae6;
   z-index: 2011 !important;
   box-sizing: border-box;
-  font-weight: bold;
-  color: #fff;
-  min-width: 0px;
 }
-.p-helper .p-panel {
+.p-panel {
   z-index: 2012 !important;
-  background-color: rgba(38, 20, 25, 0.8);
+  background-color: #333343aa;
   box-sizing: border-box;
-  position: absolute;
-  color: rgb(200, 222, 200);
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
+  position: fixed;
+  color: white;
   overflow: auto scroll;
   padding: 3px;
   scrollbar-width: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
 }
 .p-panel::-webkit-scrollbar {
   display: none;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper.p-helper-extend {
-    min-width: 24rem;
-    font-size: 1rem;
-    line-height: 1.2rem;
-  }
   .p-helper {
     top: ${conf.pageHelperAbTop};
     left: ${conf.pageHelperAbLeft};
@@ -253,20 +234,17 @@ export function loadStyleSheel() {
     font-size: 1rem;
     line-height: 1.2rem;
   }
-  .p-helper .p-panel {
+  .p-panel {
     width: 24rem;
     height: 32rem;
     ${conf.pageHelperAbBottom === "unset" ? "top: 100%" : "bottom: 100%"}
   }
-  .p-helper .p-btn {
+  .p-btn {
     height: 1.5rem;
     width: 1.5rem;
     border: 1px solid #000000;
     border-radius: 4px;
     line-height: initial;
-  }
-  .p-helper-extend .b-main {
-    max-width: 24rem !important;
   }
   .ehvp-root input[type="checkbox"] {
     width: 1rem;
@@ -279,7 +257,7 @@ export function loadStyleSheel() {
     width: 3rem;
     height: 1.5rem;
   }
-  .p-helper .p-config {
+  .p-config {
     line-height: 1.85rem;
   }
   #imgScaleResetBTN {
@@ -295,30 +273,22 @@ export function loadStyleSheel() {
   }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper.p-helper-extend {
-    min-width: 100vw;
-    font-size: 4.2cqw;
-    line-height: 5cqw;
-  }
   .p-helper {
     bottom: 0px;
     left: 0px;
     font-size: 8cqw;
     line-height: 8.1cqw;
   }
-  .p-helper .p-panel {
+  .p-panel {
     width: 100vw;
     height: 80vh;
     bottom: 5.7cqw;
   }
-  .p-helper .p-btn {
+  .p-btn {
     height: 6cqw;
     width: 6cqw;
     border: 0.4cqw solid #000000;
     border-radius: 1cqw;
-  }
-  .p-helper-extend .b-main {
-    max-width: 100vw !important;
   }
   .ehvp-root input[type="checkbox"] {
     width: 4cqw;
@@ -332,7 +302,7 @@ export function loadStyleSheel() {
     height: 6cqw;
     font-size: 3cqw;
   }
-  .p-helper .p-config {
+  .p-config {
     line-height: 8.2cqw;
   }
   #imgScaleResetBTN {
@@ -348,10 +318,7 @@ export function loadStyleSheel() {
     bottom: 101%;
   }
 }
-.p-helper:hover {
-  background-color: #3a3a3ae6;
-}
-.p-helper .clickable {
+.clickable {
   text-decoration-line: underline;
   z-index: 2111;
   user-select: none;
@@ -361,62 +328,41 @@ export function loadStyleSheel() {
 .clickable:hover {
   color: #90ea90 !important;
 }
-.p-helper .p-img-scale {
-  display: flex;
-}
-.p-img-scale .scale-btn {
-  width: 2rem;
-  text-align: center;
-  user-select: none;
-}
-.p-img-scale .scale-btn:hover {
-  color: white;
-  background-color: rgb(255, 200, 200);
-}
-.p-img-scale .scale-status {
-  width: 40px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-align: center;
-}
-.p-img-scale .scale-progress {
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-}
-.scale-progress .scale-progress-inner {
-  height: 50%;
-  background-color: #ffffffa0;
-}
 .p-collapse {
   height: 0px !important;
   padding: 0px !important;
 }
-.p-helper .b-main {
-  max-width: 0px;
-  overflow: hidden !important;
+.b-main {
   display: flex;
-  justify-content: space-between;
-  white-space: nowrap !important;
+  ${conf.pageHelperAbLeft === "unset" ? "flex-direction: row-reverse;" : ""}
 }
-.p-helper-extend .b-main {
-  flex-grow: 1;
+.b-main-item {
+  box-sizing: border-box;
+  border: 1px dotted green;
+  border-radius: 4px;
+  background: #334;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 0rem 0.3rem;
+  margin: 0rem 0.2rem;
+  line-height: 1.2rem;
 }
-.p-helper .p-config {
+.p-config {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   align-content: start;
 }
-.p-helper .p-config label {
+.p-config label {
   display: flex;
   justify-content: space-between;
   padding-right: 10px;
   margin-bottom: unset;
 }
-.p-helper .p-config input {
+.p-config input {
   cursor: ns-resize;
 }
-.p-helper .p-downloader {
+.p-downloader {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -435,39 +381,12 @@ export function loadStyleSheel() {
   text-align: right;
   width: 100%;
 }
-.p-helper .p-btn {
+.p-btn {
   color: rgb(255, 255, 255);
   cursor: pointer;
   font-weight: 900;
   background: rgb(81, 81, 81);
   vertical-align: middle;
-}
-.p-helper-fetching {
-  border: none !important;
-  box-sizing: border-box;
-}
-.p-helper-fetching::after {
-	content: '';
-	position: absolute;
-	z-index: -1;
-  top: 0%;
-  left: 0%;
-	width: 2%;
-	height: 100%;
-	background-color: #ff0000;
-	animation: img-loading-page 1s linear infinite;
-}
-@keyframes img-loading-page {
-	15% {
-    background-color: #fff303;
-	}
-	50% {
-    background-color: #ff0000;
-    left: 98%;
-	}
-	85% {
-    background-color: #fff303;
-	}
 }
 @keyframes main-progress {
   from {
@@ -508,13 +427,6 @@ export function loadStyleSheel() {
   z-index: 2004;
   top: 25%;
 }
-.img-land-top, .img-land-bottom {
-  width: 50%;
-  height: 10%;
-  left: 25%;
-  position: fixed;
-  z-index: 2005;
-}
 .img-land-left {
   left: 0;
   cursor: url("https://exhentai.org/img/p.png"), auto;
@@ -522,14 +434,6 @@ export function loadStyleSheel() {
 .img-land-right {
   right: 0;
   cursor: url("https://exhentai.org/img/n.png"), auto;
-}
-.img-land-top {
-  top: 0;
-  cursor: url("https://exhentai.org/img/p.png"), auto;
-}
-.img-land-bottom {
-  bottom: 0;
-  cursor: url("https://exhentai.org/img/b.png"), auto;
 }
 .p-tooltip {
   border-bottom: 1px dotted black;
@@ -612,26 +516,6 @@ export function loadStyleSheel() {
   font-weight: bold;
 }
 .lightgreen { color: #90ea90; }
-.p-minify:not(:hover),
-.p-minify:not(:hover) .lightgreen {
-  color: #00000000 !important;
-  background-color: #00000000 !important;
-}
-.p-minify:not(:hover) .b-main .b-m-page {
-  order: ${conf.pageHelperAbLeft !== "unset" ? -2 : 1};
-}
-.p-minify:not(:hover) #p-curr-page,
-.p-minify:not(:hover) #p-total,
-.p-minify:not(:hover) #p-slash-1 {
-  color: #fff !important;
-  background-color: #333333aa !important;
-}
-.p-minify:not(:hover) #p-curr-page {
-  color: #ffc005 !important;
-}
-.p-minify:not(:hover) #auto-page-btn {
-  border: 1px solid #00000000 !important;
-}
 .ehvp-full-panel {
   position: fixed;
   width: 100vw;
@@ -647,13 +531,13 @@ export function loadStyleSheel() {
 .ehvp-custom-panel {
   min-width: 50rem;
   min-height: 50vh;
-  background-color: rgba(38, 20, 25, 0.8);
+  background-color: #333343aa;
   border: 1px solid #000000;
   overflow: auto;
   display: flex;
   flex-direction: column;
   text-align: start;
-  color: rgb(200, 222, 200);
+  color: white;
 }
 .ehvp-custom-panel-title {
   font-size: 2.1rem;
@@ -788,9 +672,6 @@ html {
   color: white;
   font-weight: bold;
 }
-.p-helper-extend #ehvp-gate-book {
-  display: none !important;
-}
 .b-extra {
   position: absolute;
   background-color: #4a4a4ae6;
@@ -802,9 +683,6 @@ html {
 }
 .b-extra:hover {
   background-color: #3a3a3ae6;
-}
-.p-helper-extend:not(.p-minify) .b-extra {
-  display: flex;
 }
 .download-middle {
   width: 100%;

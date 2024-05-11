@@ -32,7 +32,7 @@ function main(MATCHER: Matcher): DestoryFunc {
   const FVGM: FullViewGridManager = new FullViewGridManager(HTML, BIFM);
 
   const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
-  addEventListeners(events, HTML, BIFM, DL);
+  addEventListeners(events, HTML, BIFM, DL, PH);
 
   EBUS.subscribe("downloader-canvas-on-click", (index) => {
     IFQ.currIndex = index;

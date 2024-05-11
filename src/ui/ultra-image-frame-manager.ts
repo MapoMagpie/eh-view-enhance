@@ -7,7 +7,6 @@ import Hammer from "hammerjs";
 import { Elements } from "./html";
 import q from "../utils/query-element";
 import { VideoControl } from "./video-control";
-import onMouse from "../utils/progress-bar";
 import EBUS from "../event-bus";
 import { Chapter } from "../page-fetcher";
 import queryCSSRules from "../utils/query-cssrules";
@@ -21,7 +20,6 @@ export class BigImageFrameManager {
   fragment: DocumentFragment;
   // image decode will take a while, so cache it to fragment
   elements: { next: MediaElement[], curr: MediaElement[], prev: MediaElement[] } = { next: [], curr: [], prev: [] };
-  imgScaleBar: HTMLElement;
   debouncer: Debouncer;
   throttler: Debouncer;
   callbackOnWheel?: (event: WheelEvent) => void;
@@ -38,14 +36,12 @@ export class BigImageFrameManager {
     this.html = HTML;
     this.frame = HTML.bigImageFrame;
     this.fragment = new DocumentFragment();
-    this.imgScaleBar = HTML.imgScaleBar;
     this.debouncer = new Debouncer();
     this.throttler = new Debouncer("throttle");
     this.lockInit = false;
     this.getChapter = getChapter;
     this.resetStickyMouse();
     this.initFrame();
-    this.initImgScaleBar();
     this.initImgScaleStyle();
     this.initHammer();
     EBUS.subscribe("pf-change-chapter", index => this.chapterIndex = Math.max(0, index));
@@ -111,10 +107,10 @@ export class BigImageFrameManager {
     this.lastMouse = undefined;
   }
 
-  flushImgScaleBar() {
-    q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
-    q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
-  }
+  // flushImgScaleBar() {
+  //   q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
+  //   q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
+  // }
 
   initFrame() {
     this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
@@ -130,13 +126,13 @@ export class BigImageFrameManager {
     });
   }
 
-  initImgScaleBar() {
-    q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
-    q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
-    q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages(true));
-    const progress = q<HTMLProgressElement>("#img-scale-progress", this.imgScaleBar);
-    onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
-  }
+  // initImgScaleBar() {
+  //   q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
+  //   q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
+  //   q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages(true));
+  //   const progress = q<HTMLProgressElement>("#img-scale-progress", this.imgScaleBar);
+  //   onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
+  // }
 
   hidden(event?: MouseEvent) {
     if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
@@ -553,7 +549,7 @@ export class BigImageFrameManager {
     }
     conf.imgScale = percent;
     saveConf(conf);
-    this.flushImgScaleBar();
+    // this.flushImgScaleBar();
     return percent;
   }
 
@@ -592,7 +588,7 @@ export class BigImageFrameManager {
       conf.imgScale = 0;
       saveConf(conf);
     }
-    this.flushImgScaleBar();
+    // this.flushImgScaleBar();
   }
 
   initImgScaleStyle() {
@@ -681,6 +677,7 @@ class AutoPage {
 
   async start(lockVer: number) {
     this.status = "running";
+    this.button.setAttribute("data-status", "playing");
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
     const b = this.bifm.frame;
     if (this.bifm.frame.classList.contains("big-img-frame-collapse")) {
@@ -723,6 +720,7 @@ class AutoPage {
 
   stop() {
     this.status = "stop";
+    this.button.setAttribute("data-status", "paused");
     const progress = q("#auto-page-progress", this.button);
     progress.style.animation = ``;
     this.lockVer += 1;

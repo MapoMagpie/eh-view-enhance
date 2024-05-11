@@ -35,7 +35,7 @@ export class PageFetcher {
   constructor(queue: IMGFetcherQueue, matcher: Matcher) {
     this.queue = queue;
     this.matcher = matcher;
-    this.chaptersSelectionElement = q("#backChaptersSelection");
+    this.chaptersSelectionElement = q("#chapters-btn");
     this.chaptersSelectionElement.addEventListener("click", () => this.backChaptersSelection());
     const debouncer = new Debouncer();
     EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index, !this.queue.downloading?.()), 5));

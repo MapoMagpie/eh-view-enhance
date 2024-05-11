@@ -8,6 +8,7 @@ import { Elements } from "./html";
 export class PageHelper {
   html: Elements;
   chapterIndex: number = 0;
+  lastMinify: "bigImageFrame" | "fullViewGrid" | "exit" = "exit";
   constructor(html: Elements, getChapter: (index: number) => Chapter) {
     this.html = html;
     EBUS.subscribe("pf-change-chapter", (index) => {
@@ -20,8 +21,8 @@ export class PageHelper {
       })();
       this.setPageState({ finished: finished.toString(), total: total.toString(), current: "1" });
     });
-    EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
-    EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));
+    EBUS.subscribe("bifm-on-show", () => this.minify("bigImageFrame"));
+    EBUS.subscribe("bifm-on-hidden", () => this.minify("fullViewGrid"));
     EBUS.subscribe("ifq-do", (index, imf) => {
       if (imf.chapterIndex !== this.chapterIndex) return;
       const queue = getChapter(this.chapterIndex)?.queue;
@@ -70,26 +71,60 @@ export class PageHelper {
     }
   }
 
-  minify(ok: boolean, level: "fullViewGrid" | "bigImageFrame") {
+  // ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn"]
+  minify(status: "fullViewGrid" | "bigImageFrame" | "exit" | "hover") {
+    const items = Array.from(this.html.pageHelper.querySelectorAll<HTMLElement>(".b-main > .b-main-item"));
+    let pick: string[] = [];
+    if (status !== "hover") this.lastMinify = status;
     switch (conf.minifyPageHelper) {
-      case "inBigMode":
-        if (level === "fullViewGrid") {
-          return;
+      case "always":
+        if (status !== "hover") {
+          status = "bigImageFrame";
         }
         break;
-      case "always":
-        if (level === "bigImageFrame") {
-          return;
-        }
+      case "inBigMode":
         break;
       case "never":
-        this.html.pageHelper.classList.remove("p-minify");
-        return;
+        status = "hover";
+        break;
     }
-    if (ok) {
-      this.html.pageHelper.classList.add("p-minify");
-    } else {
-      this.html.pageHelper.classList.remove("p-minify");
+    switch (status) {
+      case "fullViewGrid":
+        pick = ["auto-page-btn", "page-status", "fin-status", "config-panel-btn", "downloader-panel-btn"];
+        // "chapters-btn",
+        break;
+      case "bigImageFrame":
+        pick = ["page-status"];
+        if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
+          pick.push("auto-page-btn");
+        }
+        break;
+      case "exit":
+        pick = ["entry-btn"];
+        break;
+      case "hover": // pick all
+        if (this.lastMinify === "exit") {
+          return;
+        }
+        pick = ["entry-btn", "auto-page-btn", "page-status", "fin-status", "config-panel-btn", "downloader-panel-btn"];
+        // "chapters-btn", 
+        break;
     }
+    items.forEach(item => item.hidden = pick.indexOf(item.id) === -1);
+    this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = status === "exit" ? "OPEN" : "EXIT";
+    // switch (conf.minifyPageHelper) {
+    //   case "inBigMode":
+    //     if (status === "fullViewGrid") {
+    //       return;
+    //     }
+    //     break;
+    //   case "always":
+    //     if (status === "bigImageFrame") {
+    //       return;
+    //     }
+    //     break;
+    //   case "never":
+    //     return;
+    // }
   }
 }

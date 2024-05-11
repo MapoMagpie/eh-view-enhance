@@ -1847,7 +1847,7 @@ ${chapters.map((c, i) => `<div><label>
     constructor(queue, matcher) {
       this.queue = queue;
       this.matcher = matcher;
-      this.chaptersSelectionElement = q("#backChaptersSelection");
+      this.chaptersSelectionElement = q("#chapters-btn");
       this.chaptersSelectionElement.addEventListener("click", () => this.backChaptersSelection());
       const debouncer = new Debouncer();
       EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index, !this.queue.downloading?.()), 5));
@@ -3870,6 +3870,19 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return Array.from(root.sheet?.cssRules || []).find((rule) => rule.selectorText === selector);
   }
 
+  function relocateElement(element, anchor, root) {
+    const rect = anchor.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - element.offsetWidth / 2;
+    left = Math.min(left, root.offsetWidth - element.offsetWidth - 10);
+    left = Math.max(left, 10);
+    element.style.left = left + "px";
+    let top = rect.top - element.offsetHeight;
+    if (top < 10) {
+      top = rect.bottom;
+    }
+    element.style.top = top + "px";
+  }
+
   function createExcludeURLPanel(root) {
     const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
     const HTML_STR = `
@@ -4054,24 +4067,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .p-helper {
   transition: min-width 0.4s linear;
 }
-.p-helper .p-panel {
+.p-panel {
   transition: width 0.4s ease 0s, height 0.4s ease 0s;
 }
 .p-collapse {
   transition: height 0.4s;
 }
-.p-helper .b-main {
-  transition: flex-grow 0.6s ease, max-width 0.4s ease;
-}
-.p-helper-extend .b-main {
-  transition: flex-grow 0.6s ease, max-width 0.4s ease;
-}
 .big-img-frame-collapse {
   transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
-}
-.p-minify:not(:hover),
-.p-minify:not(:hover) .lightgreen {
-  transition: color 0.5s ease-in-out, background-color 0.3s ease-in-out;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper.p-helper-extend {
@@ -4249,35 +4252,26 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .bifm-img { }
 .p-helper {
   position: fixed;
-  display: flex !important;
-  justify-content: space-between;
-  background-color: #4a4a4ae6;
   z-index: 2011 !important;
   box-sizing: border-box;
-  font-weight: bold;
-  color: #fff;
-  min-width: 0px;
 }
-.p-helper .p-panel {
+.p-panel {
   z-index: 2012 !important;
-  background-color: rgba(38, 20, 25, 0.8);
+  background-color: #333343aa;
   box-sizing: border-box;
-  position: absolute;
-  color: rgb(200, 222, 200);
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.2);
+  position: fixed;
+  color: white;
   overflow: auto scroll;
   padding: 3px;
   scrollbar-width: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
 }
 .p-panel::-webkit-scrollbar {
   display: none;
 }
 @media (min-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper.p-helper-extend {
-    min-width: 24rem;
-    font-size: 1rem;
-    line-height: 1.2rem;
-  }
   .p-helper {
     top: ${conf.pageHelperAbTop};
     left: ${conf.pageHelperAbLeft};
@@ -4286,20 +4280,17 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     font-size: 1rem;
     line-height: 1.2rem;
   }
-  .p-helper .p-panel {
+  .p-panel {
     width: 24rem;
     height: 32rem;
     ${conf.pageHelperAbBottom === "unset" ? "top: 100%" : "bottom: 100%"}
   }
-  .p-helper .p-btn {
+  .p-btn {
     height: 1.5rem;
     width: 1.5rem;
     border: 1px solid #000000;
     border-radius: 4px;
     line-height: initial;
-  }
-  .p-helper-extend .b-main {
-    max-width: 24rem !important;
   }
   .ehvp-root input[type="checkbox"] {
     width: 1rem;
@@ -4312,7 +4303,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     width: 3rem;
     height: 1.5rem;
   }
-  .p-helper .p-config {
+  .p-config {
     line-height: 1.85rem;
   }
   #imgScaleResetBTN {
@@ -4328,30 +4319,22 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper.p-helper-extend {
-    min-width: 100vw;
-    font-size: 4.2cqw;
-    line-height: 5cqw;
-  }
   .p-helper {
     bottom: 0px;
     left: 0px;
     font-size: 8cqw;
     line-height: 8.1cqw;
   }
-  .p-helper .p-panel {
+  .p-panel {
     width: 100vw;
     height: 80vh;
     bottom: 5.7cqw;
   }
-  .p-helper .p-btn {
+  .p-btn {
     height: 6cqw;
     width: 6cqw;
     border: 0.4cqw solid #000000;
     border-radius: 1cqw;
-  }
-  .p-helper-extend .b-main {
-    max-width: 100vw !important;
   }
   .ehvp-root input[type="checkbox"] {
     width: 4cqw;
@@ -4365,7 +4348,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     height: 6cqw;
     font-size: 3cqw;
   }
-  .p-helper .p-config {
+  .p-config {
     line-height: 8.2cqw;
   }
   #imgScaleResetBTN {
@@ -4381,10 +4364,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     bottom: 101%;
   }
 }
-.p-helper:hover {
-  background-color: #3a3a3ae6;
-}
-.p-helper .clickable {
+.clickable {
   text-decoration-line: underline;
   z-index: 2111;
   user-select: none;
@@ -4394,62 +4374,41 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .clickable:hover {
   color: #90ea90 !important;
 }
-.p-helper .p-img-scale {
-  display: flex;
-}
-.p-img-scale .scale-btn {
-  width: 2rem;
-  text-align: center;
-  user-select: none;
-}
-.p-img-scale .scale-btn:hover {
-  color: white;
-  background-color: rgb(255, 200, 200);
-}
-.p-img-scale .scale-status {
-  width: 40px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-align: center;
-}
-.p-img-scale .scale-progress {
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-}
-.scale-progress .scale-progress-inner {
-  height: 50%;
-  background-color: #ffffffa0;
-}
 .p-collapse {
   height: 0px !important;
   padding: 0px !important;
 }
-.p-helper .b-main {
-  max-width: 0px;
-  overflow: hidden !important;
+.b-main {
   display: flex;
-  justify-content: space-between;
-  white-space: nowrap !important;
+  ${conf.pageHelperAbLeft === "unset" ? "flex-direction: row-reverse;" : ""}
 }
-.p-helper-extend .b-main {
-  flex-grow: 1;
+.b-main-item {
+  box-sizing: border-box;
+  border: 1px dotted green;
+  border-radius: 4px;
+  background: #334;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 0rem 0.3rem;
+  margin: 0rem 0.2rem;
+  line-height: 1.2rem;
 }
-.p-helper .p-config {
+.p-config {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   align-content: start;
 }
-.p-helper .p-config label {
+.p-config label {
   display: flex;
   justify-content: space-between;
   padding-right: 10px;
   margin-bottom: unset;
 }
-.p-helper .p-config input {
+.p-config input {
   cursor: ns-resize;
 }
-.p-helper .p-downloader {
+.p-downloader {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -4468,39 +4427,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   text-align: right;
   width: 100%;
 }
-.p-helper .p-btn {
+.p-btn {
   color: rgb(255, 255, 255);
   cursor: pointer;
   font-weight: 900;
   background: rgb(81, 81, 81);
   vertical-align: middle;
-}
-.p-helper-fetching {
-  border: none !important;
-  box-sizing: border-box;
-}
-.p-helper-fetching::after {
-	content: '';
-	position: absolute;
-	z-index: -1;
-  top: 0%;
-  left: 0%;
-	width: 2%;
-	height: 100%;
-	background-color: #ff0000;
-	animation: img-loading-page 1s linear infinite;
-}
-@keyframes img-loading-page {
-	15% {
-    background-color: #fff303;
-	}
-	50% {
-    background-color: #ff0000;
-    left: 98%;
-	}
-	85% {
-    background-color: #fff303;
-	}
 }
 @keyframes main-progress {
   from {
@@ -4541,13 +4473,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   z-index: 2004;
   top: 25%;
 }
-.img-land-top, .img-land-bottom {
-  width: 50%;
-  height: 10%;
-  left: 25%;
-  position: fixed;
-  z-index: 2005;
-}
 .img-land-left {
   left: 0;
   cursor: url("https://exhentai.org/img/p.png"), auto;
@@ -4555,14 +4480,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .img-land-right {
   right: 0;
   cursor: url("https://exhentai.org/img/n.png"), auto;
-}
-.img-land-top {
-  top: 0;
-  cursor: url("https://exhentai.org/img/p.png"), auto;
-}
-.img-land-bottom {
-  bottom: 0;
-  cursor: url("https://exhentai.org/img/b.png"), auto;
 }
 .p-tooltip {
   border-bottom: 1px dotted black;
@@ -4645,26 +4562,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   font-weight: bold;
 }
 .lightgreen { color: #90ea90; }
-.p-minify:not(:hover),
-.p-minify:not(:hover) .lightgreen {
-  color: #00000000 !important;
-  background-color: #00000000 !important;
-}
-.p-minify:not(:hover) .b-main .b-m-page {
-  order: ${conf.pageHelperAbLeft !== "unset" ? -2 : 1};
-}
-.p-minify:not(:hover) #p-curr-page,
-.p-minify:not(:hover) #p-total,
-.p-minify:not(:hover) #p-slash-1 {
-  color: #fff !important;
-  background-color: #333333aa !important;
-}
-.p-minify:not(:hover) #p-curr-page {
-  color: #ffc005 !important;
-}
-.p-minify:not(:hover) #auto-page-btn {
-  border: 1px solid #00000000 !important;
-}
 .ehvp-full-panel {
   position: fixed;
   width: 100vw;
@@ -4680,13 +4577,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .ehvp-custom-panel {
   min-width: 50rem;
   min-height: 50vh;
-  background-color: rgba(38, 20, 25, 0.8);
+  background-color: #333343aa;
   border: 1px solid #000000;
   overflow: auto;
   display: flex;
   flex-direction: column;
   text-align: start;
-  color: rgb(200, 222, 200);
+  color: white;
 }
 .ehvp-custom-panel-title {
   font-size: 2.1rem;
@@ -4821,9 +4718,6 @@ html {
   color: white;
   font-weight: bold;
 }
-.p-helper-extend #ehvp-gate-book {
-  display: none !important;
-}
 .b-extra {
   position: absolute;
   background-color: #4a4a4ae6;
@@ -4835,9 +4729,6 @@ html {
 }
 .b-extra:hover {
   background-color: #3a3a3ae6;
-}
-.p-helper-extend:not(.p-minify) .b-extra {
-  display: flex;
 }
 .download-middle {
   width: 100%;
@@ -4977,13 +4868,13 @@ html {
       if (key === "minifyPageHelper") {
         switch (conf.minifyPageHelper) {
           case "inBigMode":
-            PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
+            PH.minify(BIFM.visible ? "bigImageFrame" : "fullViewGrid");
             break;
           case "always":
-            PH.minify(true, "fullViewGrid");
+            PH.minify("bigImageFrame");
             break;
           case "never":
-            PH.minify(false, "fullViewGrid");
+            PH.minify("hover");
             break;
         }
       }
@@ -5004,40 +4895,27 @@ html {
         delete cancelIDContext[k];
       });
     }
-    let restoreMinify = false;
-    function togglePanelEvent(id, collapse) {
+    function togglePanelEvent(id, collapse, target) {
       let element = q(`#${id}-panel`);
       if (!element)
         return;
-      if (collapse === false) {
-        element.classList.remove("p-collapse");
+      if (collapse === void 0) {
+        togglePanelEvent(id, !element.classList.contains("p-collapse"), target);
         return;
       }
-      if (collapse === true) {
+      if (collapse) {
         collapsePanelEvent(element, id);
-        if (BIFM.visible) {
-          BIFM.frame.focus();
-        } else {
-          HTML.fullViewGrid.focus();
-        }
-        return;
-      }
-      if (!element.classList.toggle("p-collapse")) {
-        ["config", "downloader"].filter((k) => k !== id).forEach((k) => togglePanelEvent(k, true));
-        if (!conf.autoCollapsePanel) {
-          PH.minify(false, "fullViewGrid");
-          restoreMinify = true;
-        }
       } else {
-        if (restoreMinify) {
-          PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
-          restoreMinify = false;
+        ["config", "downloader"].filter((k) => k !== id).forEach((id2) => togglePanelEvent(id2, true));
+        element.classList.remove("p-collapse");
+        if (target) {
+          relocateElement(element, target, HTML.root);
         }
       }
     }
     let bodyOverflow = document.body.style.overflow;
     function showFullViewGrid() {
-      PH.minify(true, "fullViewGrid");
+      PH.minify("fullViewGrid");
       HTML.root.classList.remove("ehvp-root-collapse");
       HTML.fullViewGrid.focus();
       document.body.style.overflow = "hidden";
@@ -5049,7 +4927,7 @@ html {
     }
     function hiddenFullViewGrid() {
       BIFM.hidden();
-      PH.minify(false, "fullViewGrid");
+      PH.minify("exit");
       HTML.root.classList.add("ehvp-root-collapse");
       HTML.fullViewGrid.blur();
       document.body.style.overflow = bodyOverflow;
@@ -5270,15 +5148,13 @@ html {
     const signal = { first: true };
     function main(expand) {
       if (HTML.pageHelper) {
-        if (expand && !HTML.pageHelper.classList.contains("p-helper-extend")) {
-          HTML.pageHelper.classList.add("p-helper-extend");
+        if (expand) {
           showFullViewGrid();
           if (signal.first) {
             signal.first = false;
             PF.init();
           }
         } else {
-          HTML.pageHelper.classList.remove("p-helper-extend");
           ["config", "downloader"].forEach((id) => togglePanelEvent(id, true));
           hiddenFullViewGrid();
         }
@@ -5479,7 +5355,7 @@ html {
    <a id="img-land-right" class="img-land-right"></a>
 </div>
 <div id="p-helper" class="p-helper">
-    <div style="position: relative">
+    <div>
         <div id="config-panel" class="p-panel p-config p-collapse">
             ${configItemStr}
             <div style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px;">
@@ -5493,14 +5369,6 @@ html {
                  <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
                  <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
                  <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
-            </div>
-            <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px;">
-                <div><span>${i18n.imageScale.get()}:</span></div>
-                <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
-                <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
-                <div id="img-scale-progress" class="scale-progress"><div id="img-scale-progress-inner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
-                <div id="img-increase-btn" class="scale-btn"><span>+</span></div>
-                <div id="img-scale-reset-btn" class="scale-btn" style="width: auto;"><span>RESET</span></div>
             </div>
         </div>
         <div id="downloader-panel" class="p-panel p-downloader p-collapse">
@@ -5523,26 +5391,21 @@ html {
             </div>
         </div>
     </div>
-    <div id="ehvp-gate-icon">
-        <span>&lessdot;</span><span id="ehvp-gate-book">📖</span>
-    </div>
-    <div id="b-main" class="b-main b-collapse">
-        <div id="config-panel-btn" class="clickable">${i18n.config.get()}</div>
-        <div id="downloader-panel-btn" class="clickable">${i18n.download.get()}</div>
-        <div class="b-m-page">
-            <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span><span id="p-slash-2">/</span><span>FIN:</span><span id="p-finished">0</span>
+    <div id="b-main" class="b-main">
+        <div id="entry-btn" class="b-main-item clickable">OPEN</div>
+        <div id="page-status" class="b-main-item" hidden>
+            <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span>
         </div>
-        <div id="auto-page-btn" class="clickable" style="padding: 0rem 1rem; position: relative; border: 1px solid #777;">
+        <div id="fin-status" class="b-main-item" hidden>
+            <span>FIN:</span><span id="p-finished">0</span>
+        </div>
+        <div id="auto-page-btn" class="b-main-item clickable" hidden style="position: relative;" data-status="paused">
            <span>${i18n.autoPagePlay.get()}</span>
            <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
         </div>
-        <div id="collapse-btn" class="clickable">${i18n.collapse.get()}</div>
-    </div>
-    <div id="ehvp-bar-gtdot">
-        <span>&gtdot;</span>
-    </div>
-    <div id="ehvp-p-extra" class="b-extra">
-        <div id="backChaptersSelection" class="clickable" hidden="">${i18n.backChapters.get()}</div>
+        <div id="config-panel-btn" class="b-main-item clickable" hidden>${i18n.config.get()}</div>
+        <div id="downloader-panel-btn" class="b-main-item clickable" hidden>${i18n.download.get()}</div>
+        <div id="chapters-btn" class="b-main-item clickable" hidden>${i18n.backChapters.get()}</div>
     </div>
 </div>
 `;
@@ -5554,20 +5417,13 @@ html {
     return {
       root: fullViewGrid,
       fullViewGrid: q("#ehvp-nodes-container", fullViewGrid),
-      // root element
       bigImageFrame: q("#big-img-frame", fullViewGrid),
-      // page helper
       pageHelper: q("#p-helper", fullViewGrid),
-      // config button in pageHelper
       configPanelBTN: q("#config-panel-btn", fullViewGrid),
-      // config panel mouse leave event
       configPanel: q("#config-panel", fullViewGrid),
-      // download button in pageHelper
       downloaderPanelBTN: q("#downloader-panel-btn", fullViewGrid),
-      // download panel mouse leave event
       downloaderPanel: q("#downloader-panel", fullViewGrid),
-      collapseBTN: q("#collapse-btn", fullViewGrid),
-      gate: q("#ehvp-gate-icon", fullViewGrid),
+      entryBTN: q("#entry-btn", fullViewGrid),
       currPageElement: q("#p-curr-page", fullViewGrid),
       totalPageElement: q("#p-total", fullViewGrid),
       finishedElement: q("#p-finished", fullViewGrid),
@@ -5576,7 +5432,6 @@ html {
       showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
       imgLandLeft: q("#img-land-left", fullViewGrid),
       imgLandRight: q("#img-land-right", fullViewGrid),
-      imgScaleBar: q("#img-scale-bar", fullViewGrid),
       autoPageBTN: q("#auto-page-btn", fullViewGrid),
       pageLoading: q("#page-loading", fullViewGrid),
       downloaderCanvas: q("#downloader-canvas", fullViewGrid),
@@ -5590,10 +5445,10 @@ html {
       styleSheel
     };
   }
-  function addEventListeners(events, HTML, BIFM, DL) {
-    HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config"));
+  function addEventListeners(events, HTML, BIFM, DL, PH) {
+    HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config", void 0, HTML.configPanelBTN));
     HTML.downloaderPanelBTN.addEventListener("click", () => {
-      events.togglePanelEvent("downloader");
+      events.togglePanelEvent("downloader", void 0, HTML.downloaderPanelBTN);
       DL.check();
     });
     function collapsePanel(key) {
@@ -5604,8 +5459,17 @@ html {
     HTML.configPanel.addEventListener("blur", () => collapsePanel("config"));
     HTML.downloaderPanel.addEventListener("mouseleave", () => collapsePanel("downloader"));
     HTML.downloaderPanel.addEventListener("blur", () => collapsePanel("downloader"));
-    HTML.pageHelper.addEventListener("mouseover", () => events.abortMouseleavePanelEvent());
-    HTML.pageHelper.addEventListener("mouseleave", () => ["config", "downloader"].forEach((k) => collapsePanel(k)));
+    let hovering = false;
+    HTML.pageHelper.addEventListener("mouseover", () => {
+      hovering = true;
+      events.abortMouseleavePanelEvent();
+      PH.minify("hover");
+    });
+    HTML.pageHelper.addEventListener("mouseleave", () => {
+      hovering = false;
+      ["config", "downloader"].forEach((k) => collapsePanel(k));
+      setTimeout(() => !hovering && PH.minify(PH.lastMinify), 700);
+    });
     ConfigItems.forEach((item) => {
       switch (item.typ) {
         case "number":
@@ -5628,8 +5492,12 @@ html {
           break;
       }
     });
-    HTML.collapseBTN.addEventListener("click", () => events.main(false));
-    HTML.gate.addEventListener("click", () => events.main(true));
+    HTML.entryBTN.addEventListener("click", () => {
+      let state = HTML.entryBTN.getAttribute("data-state") || "close";
+      state = state === "open" ? "close" : "open";
+      HTML.entryBTN.setAttribute("data-state", state);
+      events.main(state === "open");
+    });
     const debouncer = new Debouncer();
     HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
     HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
@@ -5660,6 +5528,7 @@ html {
   class PageHelper {
     html;
     chapterIndex = 0;
+    lastMinify = "exit";
     constructor(html, getChapter) {
       this.html = html;
       EBUS.subscribe("pf-change-chapter", (index) => {
@@ -5673,8 +5542,8 @@ html {
         })();
         this.setPageState({ finished: finished.toString(), total: total.toString(), current: "1" });
       });
-      EBUS.subscribe("bifm-on-show", () => this.minify(true, "bigImageFrame"));
-      EBUS.subscribe("bifm-on-hidden", () => this.minify(false, "bigImageFrame"));
+      EBUS.subscribe("bifm-on-show", () => this.minify("bigImageFrame"));
+      EBUS.subscribe("bifm-on-hidden", () => this.minify("fullViewGrid"));
       EBUS.subscribe("ifq-do", (index, imf) => {
         if (imf.chapterIndex !== this.chapterIndex)
           return;
@@ -5725,27 +5594,46 @@ html {
         this.html.finishedElement.textContent = finished;
       }
     }
-    minify(ok, level) {
+    // ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn"]
+    minify(status) {
+      const items = Array.from(this.html.pageHelper.querySelectorAll(".b-main > .b-main-item"));
+      let pick = [];
+      if (status !== "hover")
+        this.lastMinify = status;
       switch (conf.minifyPageHelper) {
-        case "inBigMode":
-          if (level === "fullViewGrid") {
-            return;
+        case "always":
+          if (status !== "hover") {
+            status = "bigImageFrame";
           }
           break;
-        case "always":
-          if (level === "bigImageFrame") {
-            return;
-          }
+        case "inBigMode":
           break;
         case "never":
-          this.html.pageHelper.classList.remove("p-minify");
-          return;
+          status = "hover";
+          break;
       }
-      if (ok) {
-        this.html.pageHelper.classList.add("p-minify");
-      } else {
-        this.html.pageHelper.classList.remove("p-minify");
+      switch (status) {
+        case "fullViewGrid":
+          pick = ["auto-page-btn", "page-status", "fin-status", "config-panel-btn", "downloader-panel-btn"];
+          break;
+        case "bigImageFrame":
+          pick = ["page-status"];
+          if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
+            pick.push("auto-page-btn");
+          }
+          break;
+        case "exit":
+          pick = ["entry-btn"];
+          break;
+        case "hover":
+          if (this.lastMinify === "exit") {
+            return;
+          }
+          pick = ["entry-btn", "auto-page-btn", "page-status", "fin-status", "config-panel-btn", "downloader-panel-btn"];
+          break;
       }
+      items.forEach((item) => item.hidden = pick.indexOf(item.id) === -1);
+      this.html.pageHelper.querySelector("#entry-btn").textContent = status === "exit" ? "OPEN" : "EXIT";
     }
   }
 
@@ -5925,7 +5813,6 @@ html {
     fragment;
     // image decode will take a while, so cache it to fragment
     elements = { next: [], curr: [], prev: [] };
-    imgScaleBar;
     debouncer;
     throttler;
     callbackOnWheel;
@@ -5941,14 +5828,12 @@ html {
       this.html = HTML;
       this.frame = HTML.bigImageFrame;
       this.fragment = new DocumentFragment();
-      this.imgScaleBar = HTML.imgScaleBar;
       this.debouncer = new Debouncer();
       this.throttler = new Debouncer("throttle");
       this.lockInit = false;
       this.getChapter = getChapter;
       this.resetStickyMouse();
       this.initFrame();
-      this.initImgScaleBar();
       this.initImgScaleStyle();
       this.initHammer();
       EBUS.subscribe("pf-change-chapter", (index) => this.chapterIndex = Math.max(0, index));
@@ -6011,10 +5896,10 @@ html {
     resetStickyMouse() {
       this.lastMouse = void 0;
     }
-    flushImgScaleBar() {
-      q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
-      q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
-    }
+    // flushImgScaleBar() {
+    //   q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
+    //   q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
+    // }
     initFrame() {
       this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
       this.frame.addEventListener("click", (event) => this.hidden(event));
@@ -6028,13 +5913,13 @@ html {
         }, 5);
       });
     }
-    initImgScaleBar() {
-      q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
-      q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
-      q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages(true));
-      const progress = q("#img-scale-progress", this.imgScaleBar);
-      onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
-    }
+    // initImgScaleBar() {
+    //   q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
+    //   q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
+    //   q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages(true));
+    //   const progress = q<HTMLProgressElement>("#img-scale-progress", this.imgScaleBar);
+    //   onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
+    // }
     hidden(event) {
       if (event && event.target && event.target.tagName === "SPAN")
         return;
@@ -6435,7 +6320,6 @@ html {
       }
       conf.imgScale = percent;
       saveConf(conf);
-      this.flushImgScaleBar();
       return percent;
     }
     checkFrameOverflow() {
@@ -6474,7 +6358,6 @@ html {
         conf.imgScale = 0;
         saveConf(conf);
       }
-      this.flushImgScaleBar();
     }
     initImgScaleStyle() {
       this.resetScaleBigImages(false);
@@ -6555,6 +6438,7 @@ html {
     }
     async start(lockVer) {
       this.status = "running";
+      this.button.setAttribute("data-status", "playing");
       this.button.firstElementChild.innerText = i18n.autoPagePause.get();
       const b = this.bifm.frame;
       if (this.bifm.frame.classList.contains("big-img-frame-collapse")) {
@@ -6598,6 +6482,7 @@ html {
     }
     stop() {
       this.status = "stop";
+      this.button.setAttribute("data-status", "paused");
       const progress = q("#auto-page-progress", this.button);
       progress.style.animation = ``;
       this.lockVer += 1;
@@ -6632,7 +6517,7 @@ html {
     const BIFM = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
     const FVGM = new FullViewGridManager(HTML, BIFM);
     const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
-    addEventListeners(events, HTML, BIFM, DL);
+    addEventListeners(events, HTML, BIFM, DL, PH);
     EBUS.subscribe("downloader-canvas-on-click", (index) => {
       IFQ.currIndex = index;
       if (IFQ.chapterIndex !== BIFM.chapterIndex)

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import monkey from 'vite-plugin-monkey';
+import monkey, { cdn } from 'vite-plugin-monkey';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
@@ -73,35 +73,22 @@ export default defineConfig(({ command }) => {
             'donmai.us',
             'gelbooru.com',
           ],
-          // resource: {
-          //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"
-          // },
           grant: [
             'GM_xmlhttpRequest',
             'GM_setValue',
             'GM_getValue',
-            // 'GM_getResourceURL'
           ],
-          // require: [
-          // 'https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js',
-          // 'https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js',
-          // 'https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js',
-          // 'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js',
-          // ],
         },
         build: {
           fileName: 'eh-view-enhance.user.js',
           metaFileName: 'eh-view-enhance.meta.js',
-          // externalGlobals: {
-          //   "jszip": "JSZip",
-          //   "file-saver": "saveAs",
-          //   "hammerjs": "Hammer",
-          //   "pica": "pica",
-          // },
+          externalGlobals: {
+            "@zip.js/zip.js": cdn.jsdelivr("zip", "dist/zip-full.min.js"),
+            "file-saver": cdn.jsdelivr("saveAs", "dist/FileSaver.min.js"),
+            "hammerjs": cdn.jsdelivr("Hammer", "hammer.min.js"),
+            "pica": cdn.jsdelivr("pica", "dist/pica.min.js"),
+          },
           autoGrant: true,
-          // externalResource: {
-          //   "ffmpeg-core.wasm": "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm"
-          // }
         },
         server: { mountGmApi: false },
       }),

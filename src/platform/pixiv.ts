@@ -5,7 +5,7 @@ import { FFmpegConvertor } from "../utils/ffmpeg";
 import ImageNode from "../img-node";
 import { conf } from "../config";
 import { PagesSource } from "../page-fetcher";
-import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js";
+import zip from "@zip.js/zip.js";
 
 type Page = {
   urls: {
@@ -62,14 +62,14 @@ export class PixivMatcher extends BaseMatcher {
   async processData(data: Uint8Array, contentType: string, url: string): Promise<[Uint8Array, string]> {
     const meta = this.ugoiraMetas[url];
     if (!meta) return [data, contentType];
-    const zipReader = new ZipReader(new Uint8ArrayReader(data));
+    const zipReader = new zip.ZipReader(new zip.Uint8ArrayReader(data));
     const start = performance.now();
     if (!this.convertor) this.convertor = await new FFmpegConvertor().init();
     const initConvertorEnd = performance.now();
     const promises = await zipReader.getEntries()
       .then(
         entries =>
-          entries.map(e => e.getData?.(new Uint8ArrayWriter())
+          entries.map(e => e.getData?.(new zip.Uint8ArrayWriter())
             .then(data => ({ name: e.filename, data }))
           )
       );

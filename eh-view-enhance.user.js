@@ -290,7 +290,7 @@
     return _GM_xmlhttpRequest({
       method: "GET",
       url,
-      timeout: timeout || 0,
+      timeout: timeout || 6e5,
       responseType: respType,
       nocache: false,
       revalidate: false,
@@ -303,6 +303,7 @@
         // "Accept-Encoding": "gzip, deflate, br",
         // "Connection": "keep-alive",
         "Referer": window.location.href,
+        "X-Alt-Referer": window.location.href,
         // "Sec-Fetch-Dest": "image",
         // "Sec-Fetch-Mode": "no-cors",
         // "Sec-Fetch-Site": "cross-site",
@@ -5451,7 +5452,14 @@ html {
         <div id="pagination-adjust-bar" class="b-main-item" hidden>
             <span><span id="paginationStepPrev" class="b-main-btn clickable" type="button">&lt;</span><span id="paginationMinusBTN" class="b-main-btn clickable" type="button">-</span><span id="paginationInput" class="b-main-input">${conf.paginationIMGCount}</span><span id="paginationAddBTN" class="b-main-btn clickable" type="button">+</span><span id="paginationStepNext" class="b-main-btn clickable" type="button">&gt;</span></span>
         </div>
-        <div id="scale-bar" class="b-main-item clickable" hidden>SCALE</div>
+        <div id="scale-bar" class="b-main-item" hidden>
+            <span>
+<span>SCALE</span>
+<span id="scaleMinusBTN" class="b-main-btn clickable" type="button">-</span>
+<span id="scaleInput" class="b-main-input">${conf.imgScale}</span>
+<span id="scaleAddBTN" class="b-main-btn clickable" type="button">+</span>
+</span>
+        </div>
     </div>
 </div>
 `;

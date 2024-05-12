@@ -1879,6 +1879,7 @@ ${chapters.map((c, i) => `<div><label>
       });
       if (this.chapters.length === 1) {
         this.beforeInit?.();
+        EBUS.emit("pf-change-chapter", 0);
         this.changeChapter(0, true).finally(() => this.afterInit?.());
       }
       if (this.chapters.length > 1) {
@@ -4395,6 +4396,26 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   line-height: 1.2rem;
   position: relative;
 }
+.b-main-option {
+  padding: 0rem 0.2rem;
+}
+.b-main-option-selected {
+  color: black;
+  background: #ffffffa0;
+  border-radius: 6px;
+}
+.b-main-btn {
+  display: inline-block;
+  width: 1rem;
+}
+.b-main-input {
+  color: black;
+  background: #ffffffa0;
+  border-radius: 6px;
+  display: inline-block;
+  text-align: center;
+  width: 1.5rem;
+}
 .p-config {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
@@ -4827,6 +4848,8 @@ html {
         const rule = queryCSSRules(HTML.styleSheel, ".bifm-img");
         if (rule)
           rule.style.minWidth = conf[key] > 1 ? "" : "100vw";
+        q("#paginationInput", HTML.paginationAdjustBar).textContent = conf.paginationIMGCount.toString();
+        BIFM.setNow(IFQ[IFQ.currIndex], "next");
       }
       saveConf(conf);
     }
@@ -4847,6 +4870,30 @@ html {
       if (key === "disableCssAnimation")
         toggleAnimationStyle(conf.disableCssAnimation);
     }
+    function changeReadModeEvent(value) {
+      if (value) {
+        conf.readMode = value;
+        saveConf(conf);
+      }
+      BIFM.resetScaleBigImages(true);
+      if (conf.readMode === "pagination") {
+        BIFM.frame.classList.add("bifm-flex");
+        if (BIFM.visible) {
+          const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
+          const index = parseInt(BIFM.elements.curr[0]?.getAttribute("d-index") || "0");
+          BIFM.initElements(queue[index]);
+        }
+      } else {
+        BIFM.frame.classList.remove("bifm-flex");
+      }
+      Array.from(HTML.readModeSelect.querySelectorAll(".b-main-option")).forEach((element) => {
+        if (element.getAttribute("data-value") === conf.readMode) {
+          element.classList.add("b-main-option-selected");
+        } else {
+          element.classList.remove("b-main-option-selected");
+        }
+      });
+    }
     function modSelectConfigEvent(key) {
       const inputElement = q(`#${key}Select`);
       const value = inputElement?.value;
@@ -4855,17 +4902,7 @@ html {
         saveConf(conf);
       }
       if (key === "readMode") {
-        BIFM.resetScaleBigImages(true);
-        if (conf.readMode === "pagination") {
-          BIFM.frame.classList.add("bifm-flex");
-          if (BIFM.visible) {
-            const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
-            const index = parseInt(BIFM.elements.curr[0]?.getAttribute("d-index") || "0");
-            BIFM.initElements(queue[index]);
-          }
-        } else {
-          BIFM.frame.classList.remove("bifm-flex");
-        }
+        changeReadModeEvent();
       }
       if (key === "minifyPageHelper") {
         switch (conf.minifyPageHelper) {
@@ -4966,11 +5003,11 @@ html {
         ),
         "step-to-first-image": new KeyboardDesc(
           ["Home"],
-          () => BIFM.stepNext("next", -1)
+          () => BIFM.stepNext("next", 0, -1)
         ),
         "step-to-last-image": new KeyboardDesc(
           ["End"],
-          () => BIFM.stepNext("prev", -1)
+          () => BIFM.stepNext("prev", 0, -1)
         ),
         "scale-image-increase": new KeyboardDesc(
           ["="],
@@ -5179,7 +5216,8 @@ html {
       collapsePanelEvent,
       abortMouseleavePanelEvent,
       showKeyboardCustomEvent,
-      showExcludeURLEvent
+      showExcludeURLEvent,
+      changeReadModeEvent
     };
   }
 
@@ -5393,7 +5431,7 @@ html {
         </div>
     </div>
     <div id="b-main" class="b-main">
-        <div id="entry-btn" class="b-main-item clickable">OPEN</div>
+        <div id="entry-btn" class="b-main-item clickable">READ</div>
         <div id="page-status" class="b-main-item" hidden>
             <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span>
         </div>
@@ -5407,6 +5445,13 @@ html {
         <div id="config-panel-btn" class="b-main-item clickable" hidden>${i18n.config.get()}</div>
         <div id="downloader-panel-btn" class="b-main-item clickable" hidden>${i18n.download.get()}</div>
         <div id="chapters-btn" class="b-main-item clickable" hidden>${i18n.backChapters.get()}</div>
+        <div id="read-mode-bar" class="b-main-item" hidden>
+            <div id="read-mode-select"><span class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">PAGE</span><span class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">CONT</span></div>
+        </div>
+        <div id="pagination-adjust-bar" class="b-main-item" hidden>
+            <span><span id="paginationStepPrev" class="b-main-btn clickable" type="button">&lt;</span><span id="paginationMinusBTN" class="b-main-btn clickable" type="button">-</span><span id="paginationInput" class="b-main-input">${conf.paginationIMGCount}</span><span id="paginationAddBTN" class="b-main-btn clickable" type="button">+</span><span id="paginationStepNext" class="b-main-btn clickable" type="button">&gt;</span></span>
+        </div>
+        <div id="scale-bar" class="b-main-item clickable" hidden>SCALE</div>
     </div>
 </div>
 `;
@@ -5443,6 +5488,8 @@ html {
       downloadNotice: q("#download-notice", fullViewGrid),
       downloadBTNForce: q("#download-force", fullViewGrid),
       downloadBTNStart: q("#download-start", fullViewGrid),
+      readModeSelect: q("#read-mode-select", fullViewGrid),
+      paginationAdjustBar: q("#pagination-adjust-bar", fullViewGrid),
       styleSheel
     };
   }
@@ -5502,7 +5549,7 @@ html {
     const debouncer = new Debouncer();
     HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
     HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
-    HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", parseInt(event.target.textContent ?? "") - 1));
+    HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", -1));
     document.addEventListener("keydown", (event) => events.keyboardEvent(event));
     HTML.fullViewGrid.addEventListener("keydown", (event) => {
       events.fullViewGridKeyBoardEvent(event);
@@ -5524,6 +5571,18 @@ html {
     HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
     HTML.showExcludeURLElement.addEventListener("click", events.showExcludeURLEvent);
     dragElement(HTML.pageHelper, q("#dragHub", HTML.pageHelper), events.modPageHelperPostion);
+    HTML.readModeSelect.addEventListener("click", (event) => {
+      const value = event.target.getAttribute("data-value");
+      if (value) {
+        events.changeReadModeEvent(value);
+        PH.minify(PH.lastStage);
+      }
+    });
+    q("#paginationStepPrev", HTML.pageHelper).addEventListener("click", () => BIFM.stepNext(conf.reversePages ? "next" : "prev", -1));
+    q("#paginationStepNext", HTML.pageHelper).addEventListener("click", () => BIFM.stepNext(conf.reversePages ? "prev" : "next", -1));
+    q("#paginationMinusBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "minus"));
+    q("#paginationAddBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "add"));
+    q("#paginationInput", HTML.pageHelper).addEventListener("wheel", (event) => events.modNumberConfigEvent("paginationIMGCount", event.deltaY < 0 ? "add" : "minus"));
   }
 
   class PageHelper {
@@ -5608,13 +5667,18 @@ html {
         this.html.finishedElement.textContent = finished;
       }
     }
-    // ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn"]
+    // ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn", "scale-bar", "read-mode-bar", "pagination-adjust-bar"]
     minify(stage, hover = false) {
       const items = Array.from(this.html.pageHelper.querySelectorAll(".b-main > .b-main-item"));
       let pick = [];
       this.lastStage = stage;
-      if (stage !== "exit" && conf.minifyPageHelper === "always") {
-        stage = "bigImageFrame";
+      if (stage !== "exit") {
+        if (conf.minifyPageHelper === "always") {
+          stage = "bigImageFrame";
+        }
+        if (conf.minifyPageHelper === "never") {
+          hover = true;
+        }
       }
       switch (stage) {
         case "fullViewGrid":
@@ -5628,7 +5692,11 @@ html {
           break;
         case "bigImageFrame":
           if (hover) {
-            pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn"];
+            pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn", "read-mode-bar"];
+            if (conf.readMode === "pagination") {
+              pick.push("pagination-adjust-bar");
+            }
+            pick.push("scale-bar");
           } else {
             pick = ["page-status"];
             if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
@@ -5646,7 +5714,7 @@ html {
         item.style.opacity = index === -1 ? "0" : "1";
         item.hidden = !hover && stage === "exit" && index === -1;
       }
-      this.html.pageHelper.querySelector("#entry-btn").textContent = stage === "exit" ? "OPEN" : "EXIT";
+      this.html.pageHelper.querySelector("#entry-btn").textContent = stage === "exit" ? "READ" : "EXIT";
     }
   }
 
@@ -6060,7 +6128,7 @@ html {
       }
       return list;
     }
-    stepNext(oriented, current) {
+    stepNext(oriented, fixStep = 0, current) {
       let index = current !== void 0 ? current : this.elements.curr[0] ? parseInt(this.elements.curr[0].getAttribute("d-index")) : void 0;
       if (index === void 0 || isNaN(index))
         return;
@@ -6068,6 +6136,7 @@ html {
       if (!queue || queue.length === 0)
         return;
       index = oriented === "next" ? index + conf.paginationIMGCount : index - conf.paginationIMGCount;
+      index += fixStep;
       if (index < -conf.paginationIMGCount)
         index = queue.length - 1;
       if (!queue[index])

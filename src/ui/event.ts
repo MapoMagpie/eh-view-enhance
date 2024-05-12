@@ -80,6 +80,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     if (key === "paginationIMGCount") {
       const rule = queryCSSRules(HTML.styleSheel, ".bifm-img");
       if (rule) rule.style.minWidth = conf[key] > 1 ? "" : "100vw";
+      q("#paginationInput", HTML.paginationAdjustBar).textContent = conf.paginationIMGCount.toString();
+      BIFM.setNow(IFQ[IFQ.currIndex], "next");
     }
     saveConf(conf);
   }
@@ -102,6 +104,31 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     if (key === "disableCssAnimation") toggleAnimationStyle(conf.disableCssAnimation);
   }
 
+  function changeReadModeEvent(value?: string) {
+    if (value) {
+      conf.readMode = value as any;
+      saveConf(conf);
+    }
+    BIFM.resetScaleBigImages(true);
+    if (conf.readMode === "pagination") {
+      BIFM.frame.classList.add("bifm-flex")
+      if (BIFM.visible) {
+        const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
+        const index = parseInt(BIFM.elements.curr[0]?.getAttribute("d-index") || "0");
+        BIFM.initElements(queue[index]);
+      }
+    } else {
+      BIFM.frame.classList.remove("bifm-flex");
+    }
+    Array.from(HTML.readModeSelect.querySelectorAll(".b-main-option")).forEach((element) => {
+      if (element.getAttribute("data-value") === conf.readMode) {
+        element.classList.add("b-main-option-selected");
+      } else {
+        element.classList.remove("b-main-option-selected");
+      }
+    });
+  }
+
   // modify config
   function modSelectConfigEvent(key: ConfigSelectType) {
     const inputElement = q<HTMLSelectElement>(`#${key}Select`);
@@ -111,17 +138,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       saveConf(conf);
     }
     if (key === "readMode") {
-      BIFM.resetScaleBigImages(true);
-      if (conf.readMode === "pagination") {
-        BIFM.frame.classList.add("bifm-flex")
-        if (BIFM.visible) {
-          const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
-          const index = parseInt(BIFM.elements.curr[0]?.getAttribute("d-index") || "0");
-          BIFM.initElements(queue[index]);
-        }
-      } else {
-        BIFM.frame.classList.remove("bifm-flex");
-      }
+      changeReadModeEvent();
     }
     if (key === "minifyPageHelper") {
       switch (conf.minifyPageHelper) {
@@ -239,11 +256,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       ),
       "step-to-first-image": new KeyboardDesc(
         ["Home"],
-        () => BIFM.stepNext("next", -1)
+        () => BIFM.stepNext("next", 0, -1)
       ),
       "step-to-last-image": new KeyboardDesc(
         ["End"],
-        () => BIFM.stepNext("prev", -1)
+        () => BIFM.stepNext("prev", 0, -1)
       ),
       "scale-image-increase": new KeyboardDesc(
         ["="],
@@ -459,5 +476,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     abortMouseleavePanelEvent,
     showKeyboardCustomEvent,
     showExcludeURLEvent,
+
+    changeReadModeEvent,
   }
 }

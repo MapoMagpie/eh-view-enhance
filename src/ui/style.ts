@@ -349,6 +349,26 @@ export function loadStyleSheel() {
   line-height: 1.2rem;
   position: relative;
 }
+.b-main-option {
+  padding: 0rem 0.2rem;
+}
+.b-main-option-selected {
+  color: black;
+  background: #ffffffa0;
+  border-radius: 6px;
+}
+.b-main-btn {
+  display: inline-block;
+  width: 1rem;
+}
+.b-main-input {
+  color: black;
+  background: #ffffffa0;
+  border-radius: 6px;
+  display: inline-block;
+  text-align: center;
+  width: 1.5rem;
+}
 .p-config {
   display: grid;
   grid-template-columns: repeat(10, 1fr);

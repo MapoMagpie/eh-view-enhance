@@ -262,12 +262,13 @@ export class BigImageFrameManager {
     return list;
   }
 
-  stepNext(oriented: Oriented, current?: number) {
+  stepNext(oriented: Oriented, fixStep: number = 0, current?: number) {
     let index = current !== undefined ? current : this.elements.curr[0] ? parseInt(this.elements.curr[0].getAttribute("d-index")!) : undefined;
     if (index === undefined || isNaN(index)) return;
     const queue = this.getChapter(this.chapterIndex)?.queue;
     if (!queue || queue.length === 0) return;
     index = oriented === "next" ? index + conf.paginationIMGCount : index - conf.paginationIMGCount;
+    index += fixStep;
     // current === -1 and oriented === "prev", this called by kayboard event "step-to-last-image", so reset index to last
     if (index < -conf.paginationIMGCount) index = queue.length - 1;
     if (!queue[index]) return

@@ -71,6 +71,7 @@ export class PageFetcher {
 
     if (this.chapters.length === 1) {
       this.beforeInit?.();
+      EBUS.emit("pf-change-chapter", 0);
       this.changeChapter(0, true).finally(() => this.afterInit?.());
     }
     if (this.chapters.length > 1) {

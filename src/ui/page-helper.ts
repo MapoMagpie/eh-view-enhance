@@ -84,13 +84,18 @@ export class PageHelper {
     }
   }
 
-  // ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn"]
+  // ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn", "scale-bar", "read-mode-bar", "pagination-adjust-bar"]
   minify(stage: "fullViewGrid" | "bigImageFrame" | "exit", hover: boolean = false) {
     const items = Array.from(this.html.pageHelper.querySelectorAll<HTMLElement>(".b-main > .b-main-item"));
     let pick: string[] = [];
     this.lastStage = stage;
-    if (stage !== "exit" && conf.minifyPageHelper === "always") {
-      stage = "bigImageFrame";
+    if (stage !== "exit") {
+      if (conf.minifyPageHelper === "always") {
+        stage = "bigImageFrame";
+      }
+      if (conf.minifyPageHelper === "never") {
+        hover = true;
+      }
     }
     switch (stage) {
       case "fullViewGrid":
@@ -104,7 +109,11 @@ export class PageHelper {
         break;
       case "bigImageFrame":
         if (hover) {
-          pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn"];
+          pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn", "read-mode-bar"];
+          if (conf.readMode === "pagination") {
+            pick.push("pagination-adjust-bar");
+          }
+          pick.push("scale-bar");
         } else {
           pick = ["page-status"];
           if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
@@ -122,6 +131,6 @@ export class PageHelper {
       item.style.opacity = index === -1 ? "0" : "1";
       item.hidden = !hover && stage === "exit" && index === -1;
     }
-    this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = stage === "exit" ? "OPEN" : "EXIT";
+    this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = stage === "exit" ? "READ" : "EXIT";
   }
 }

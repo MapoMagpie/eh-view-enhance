@@ -107,7 +107,7 @@ export function createHTML() {
         </div>
     </div>
     <div id="b-main" class="b-main">
-        <div id="entry-btn" class="b-main-item clickable">OPEN</div>
+        <div id="entry-btn" class="b-main-item clickable">READ</div>
         <div id="page-status" class="b-main-item" hidden>
             <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span>
         </div>
@@ -121,6 +121,13 @@ export function createHTML() {
         <div id="config-panel-btn" class="b-main-item clickable" hidden>${i18n.config.get()}</div>
         <div id="downloader-panel-btn" class="b-main-item clickable" hidden>${i18n.download.get()}</div>
         <div id="chapters-btn" class="b-main-item clickable" hidden>${i18n.backChapters.get()}</div>
+        <div id="read-mode-bar" class="b-main-item" hidden>
+            <div id="read-mode-select"><span class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">PAGE</span><span class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">CONT</span></div>
+        </div>
+        <div id="pagination-adjust-bar" class="b-main-item" hidden>
+            <span><span id="paginationStepPrev" class="b-main-btn clickable" type="button">&lt;</span><span id="paginationMinusBTN" class="b-main-btn clickable" type="button">-</span><span id="paginationInput" class="b-main-input">${conf.paginationIMGCount}</span><span id="paginationAddBTN" class="b-main-btn clickable" type="button">+</span><span id="paginationStepNext" class="b-main-btn clickable" type="button">&gt;</span></span>
+        </div>
+        <div id="scale-bar" class="b-main-item clickable" hidden>SCALE</div>
     </div>
 </div>
 `;
@@ -158,6 +165,8 @@ export function createHTML() {
     downloadNotice: q("#download-notice", fullViewGrid),
     downloadBTNForce: q<HTMLAnchorElement>("#download-force", fullViewGrid),
     downloadBTNStart: q<HTMLAnchorElement>("#download-start", fullViewGrid),
+    readModeSelect: q<HTMLDivElement>("#read-mode-select", fullViewGrid),
+    paginationAdjustBar: q<HTMLDivElement>("#pagination-adjust-bar", fullViewGrid),
     styleSheel,
   };
 }
@@ -225,7 +234,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
   HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
 
-  HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", parseInt((event.target as HTMLElement).textContent ?? "") - 1));
+  HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", -1));
 
   // Shortcut
   document.addEventListener("keydown", (event) => events.keyboardEvent(event));
@@ -252,4 +261,17 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.showExcludeURLElement.addEventListener("click", events.showExcludeURLEvent);
 
   dragElement(HTML.pageHelper, q("#dragHub", HTML.pageHelper), events.modPageHelperPostion);
+
+  HTML.readModeSelect.addEventListener("click", (event) => {
+    const value = (event.target as HTMLElement).getAttribute("data-value");
+    if (value) {
+      events.changeReadModeEvent(value);
+      PH.minify(PH.lastStage);
+    }
+  });
+  q("#paginationStepPrev", HTML.pageHelper).addEventListener("click", () => BIFM.stepNext(conf.reversePages ? "next" : "prev", -1));
+  q("#paginationStepNext", HTML.pageHelper).addEventListener("click", () => BIFM.stepNext(conf.reversePages ? "prev" : "next", -1));
+  q("#paginationMinusBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "minus"));
+  q("#paginationAddBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "add"));
+  q("#paginationInput", HTML.pageHelper).addEventListener("wheel", (event) => events.modNumberConfigEvent("paginationIMGCount", event.deltaY < 0 ? "add" : "minus"));
 }

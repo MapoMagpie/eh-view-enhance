@@ -125,14 +125,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     }
     if (key === "minifyPageHelper") {
       switch (conf.minifyPageHelper) {
-        case "inBigMode":
-          PH.minify(BIFM.visible ? "bigImageFrame" : "fullViewGrid");
-          break;
         case "always":
           PH.minify("bigImageFrame");
           break;
+        case "inBigMode":
         case "never":
-          PH.minify("hover");
+          PH.minify(BIFM.visible ? "bigImageFrame" : "fullViewGrid");
           break;
       }
     }
@@ -197,6 +195,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
   function hiddenFullViewGrid() {
     BIFM.hidden();
     PH.minify("exit");
+    HTML.entryBTN.setAttribute("data-stage", "exit");
     HTML.root.classList.add("ehvp-root-collapse");
     HTML.fullViewGrid.blur();
     document.body.style.overflow = bodyOverflow;

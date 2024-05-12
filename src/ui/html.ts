@@ -114,7 +114,7 @@ export function createHTML() {
         <div id="fin-status" class="b-main-item" hidden>
             <span>FIN:</span><span id="p-finished">0</span>
         </div>
-        <div id="auto-page-btn" class="b-main-item clickable" hidden style="position: relative;" data-status="paused">
+        <div id="auto-page-btn" class="b-main-item clickable" hidden data-status="paused">
            <span>${i18n.autoPagePlay.get()}</span>
            <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
         </div>
@@ -180,12 +180,12 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.pageHelper.addEventListener("mouseover", () => {
     hovering = true;
     events.abortMouseleavePanelEvent();
-    PH.minify("hover");
+    PH.minify(PH.lastStage, true);
   });
   HTML.pageHelper.addEventListener("mouseleave", () => {
     hovering = false;
     ["config", "downloader"].forEach(k => collapsePanel(k as "config" | "downloader"));
-    setTimeout(() => !hovering && PH.minify(PH.lastMinify), 700);
+    setTimeout(() => !hovering && PH.minify(PH.lastStage, false), 700);
   });
 
   // modify config event
@@ -213,10 +213,10 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   });
   // entry 入口
   HTML.entryBTN.addEventListener("click", () => {
-    let state = HTML.entryBTN.getAttribute("data-state") || "close";
-    state = state === "open" ? "close" : "open";
-    HTML.entryBTN.setAttribute("data-state", state);
-    events.main(state === "open");
+    let stage = HTML.entryBTN.getAttribute("data-stage") || "exit";
+    stage = stage === "open" ? "exit" : "open";
+    HTML.entryBTN.setAttribute("data-stage", stage);
+    events.main(stage === "open");
   });
 
   const debouncer = new Debouncer();

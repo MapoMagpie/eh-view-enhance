@@ -4386,13 +4386,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   box-sizing: border-box;
   border: 1px dotted green;
   border-radius: 4px;
-  background: #334;
+  background: #333343aa;
   color: white;
   font-size: 1rem;
   font-weight: bold;
   padding: 0rem 0.3rem;
   margin: 0rem 0.2rem;
   line-height: 1.2rem;
+  position: relative;
 }
 .p-config {
   display: grid;
@@ -4488,7 +4489,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   visibility: hidden;
   width: 100%;
   left: 0px;
-  margin-top: 2rem;
+  margin-top: 1.2rem;
   background-color: #000000bf;
   color: #fff;
   border-radius: 6px;
@@ -4499,6 +4500,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   text-align: left;
   padding: 0.3rem 1rem;
   box-sizing: border-box;
+  display: inner-block;
 }
 .p-tooltip:hover .p-tooltiptext {
   visibility: visible;
@@ -4867,14 +4869,12 @@ html {
       }
       if (key === "minifyPageHelper") {
         switch (conf.minifyPageHelper) {
-          case "inBigMode":
-            PH.minify(BIFM.visible ? "bigImageFrame" : "fullViewGrid");
-            break;
           case "always":
             PH.minify("bigImageFrame");
             break;
+          case "inBigMode":
           case "never":
-            PH.minify("hover");
+            PH.minify(BIFM.visible ? "bigImageFrame" : "fullViewGrid");
             break;
         }
       }
@@ -4928,6 +4928,7 @@ html {
     function hiddenFullViewGrid() {
       BIFM.hidden();
       PH.minify("exit");
+      HTML.entryBTN.setAttribute("data-stage", "exit");
       HTML.root.classList.add("ehvp-root-collapse");
       HTML.fullViewGrid.blur();
       document.body.style.overflow = bodyOverflow;
@@ -5399,7 +5400,7 @@ html {
         <div id="fin-status" class="b-main-item" hidden>
             <span>FIN:</span><span id="p-finished">0</span>
         </div>
-        <div id="auto-page-btn" class="b-main-item clickable" hidden style="position: relative;" data-status="paused">
+        <div id="auto-page-btn" class="b-main-item clickable" hidden data-status="paused">
            <span>${i18n.autoPagePlay.get()}</span>
            <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
         </div>
@@ -5463,12 +5464,12 @@ html {
     HTML.pageHelper.addEventListener("mouseover", () => {
       hovering = true;
       events.abortMouseleavePanelEvent();
-      PH.minify("hover");
+      PH.minify(PH.lastStage, true);
     });
     HTML.pageHelper.addEventListener("mouseleave", () => {
       hovering = false;
       ["config", "downloader"].forEach((k) => collapsePanel(k));
-      setTimeout(() => !hovering && PH.minify(PH.lastMinify), 700);
+      setTimeout(() => !hovering && PH.minify(PH.lastStage, false), 700);
     });
     ConfigItems.forEach((item) => {
       switch (item.typ) {
@@ -5493,10 +5494,10 @@ html {
       }
     });
     HTML.entryBTN.addEventListener("click", () => {
-      let state = HTML.entryBTN.getAttribute("data-state") || "close";
-      state = state === "open" ? "close" : "open";
-      HTML.entryBTN.setAttribute("data-state", state);
-      events.main(state === "open");
+      let stage = HTML.entryBTN.getAttribute("data-stage") || "exit";
+      stage = stage === "open" ? "exit" : "open";
+      HTML.entryBTN.setAttribute("data-stage", stage);
+      events.main(stage === "open");
     });
     const debouncer = new Debouncer();
     HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
@@ -5528,7 +5529,7 @@ html {
   class PageHelper {
     html;
     chapterIndex = 0;
-    lastMinify = "exit";
+    lastStage = "exit";
     constructor(html, getChapter) {
       this.html = html;
       EBUS.subscribe("pf-change-chapter", (index) => {
@@ -5595,45 +5596,42 @@ html {
       }
     }
     // ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn"]
-    minify(status) {
+    minify(stage, hover = false) {
       const items = Array.from(this.html.pageHelper.querySelectorAll(".b-main > .b-main-item"));
       let pick = [];
-      if (status !== "hover")
-        this.lastMinify = status;
-      switch (conf.minifyPageHelper) {
-        case "always":
-          if (status !== "hover") {
-            status = "bigImageFrame";
+      this.lastStage = stage;
+      if (stage !== "exit" && conf.minifyPageHelper === "always") {
+        stage = "bigImageFrame";
+      }
+      switch (stage) {
+        case "fullViewGrid":
+          if (hover) {
+            pick = ["entry-btn", "page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
+          } else {
+            pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
           }
           break;
-        case "inBigMode":
-          break;
-        case "never":
-          status = "hover";
-          break;
-      }
-      switch (status) {
-        case "fullViewGrid":
-          pick = ["auto-page-btn", "page-status", "fin-status", "config-panel-btn", "downloader-panel-btn"];
-          break;
         case "bigImageFrame":
-          pick = ["page-status"];
-          if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
-            pick.push("auto-page-btn");
+          if (hover) {
+            pick = ["entry-btn", "page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
+          } else {
+            pick = ["page-status"];
+            if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
+              pick.push("auto-page-btn");
+            }
           }
           break;
         case "exit":
           pick = ["entry-btn"];
           break;
-        case "hover":
-          if (this.lastMinify === "exit") {
-            return;
-          }
-          pick = ["entry-btn", "auto-page-btn", "page-status", "fin-status", "config-panel-btn", "downloader-panel-btn"];
-          break;
       }
-      items.forEach((item) => item.hidden = pick.indexOf(item.id) === -1);
-      this.html.pageHelper.querySelector("#entry-btn").textContent = status === "exit" ? "OPEN" : "EXIT";
+      for (const item of items) {
+        const index = pick.indexOf(item.id);
+        item.style.order = index === -1 ? "99" : index.toString();
+        item.style.opacity = index === -1 ? "0" : "1";
+        item.hidden = !hover && stage === "exit" && index === -1;
+      }
+      this.html.pageHelper.querySelector("#entry-btn").textContent = stage === "exit" ? "OPEN" : "EXIT";
     }
   }
 

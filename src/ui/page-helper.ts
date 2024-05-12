@@ -8,7 +8,7 @@ import { Elements } from "./html";
 export class PageHelper {
   html: Elements;
   chapterIndex: number = 0;
-  lastMinify: "bigImageFrame" | "fullViewGrid" | "exit" = "exit";
+  lastStage: "bigImageFrame" | "fullViewGrid" | "exit" = "exit";
   constructor(html: Elements, getChapter: (index: number) => Chapter) {
     this.html = html;
     EBUS.subscribe("pf-change-chapter", (index) => {
@@ -72,59 +72,42 @@ export class PageHelper {
   }
 
   // ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn"]
-  minify(status: "fullViewGrid" | "bigImageFrame" | "exit" | "hover") {
+  minify(stage: "fullViewGrid" | "bigImageFrame" | "exit", hover: boolean = false) {
     const items = Array.from(this.html.pageHelper.querySelectorAll<HTMLElement>(".b-main > .b-main-item"));
     let pick: string[] = [];
-    if (status !== "hover") this.lastMinify = status;
-    switch (conf.minifyPageHelper) {
-      case "always":
-        if (status !== "hover") {
-          status = "bigImageFrame";
+    this.lastStage = stage;
+    if (stage !== "exit" && conf.minifyPageHelper === "always") {
+      stage = "bigImageFrame";
+    }
+    switch (stage) {
+      case "fullViewGrid":
+        // "chapters-btn",
+        if (hover) {
+          pick = ["entry-btn", "page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
+        } else {
+          pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
         }
         break;
-      case "inBigMode":
-        break;
-      case "never":
-        status = "hover";
-        break;
-    }
-    switch (status) {
-      case "fullViewGrid":
-        pick = ["auto-page-btn", "page-status", "fin-status", "config-panel-btn", "downloader-panel-btn"];
-        // "chapters-btn",
-        break;
       case "bigImageFrame":
-        pick = ["page-status"];
-        if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
-          pick.push("auto-page-btn");
+        if (hover) {
+          pick = ["entry-btn", "page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
+        } else {
+          pick = ["page-status"];
+          if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
+            pick.push("auto-page-btn");
+          }
         }
         break;
       case "exit":
         pick = ["entry-btn"];
         break;
-      case "hover": // pick all
-        if (this.lastMinify === "exit") {
-          return;
-        }
-        pick = ["entry-btn", "auto-page-btn", "page-status", "fin-status", "config-panel-btn", "downloader-panel-btn"];
-        // "chapters-btn", 
-        break;
     }
-    items.forEach(item => item.hidden = pick.indexOf(item.id) === -1);
-    this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = status === "exit" ? "OPEN" : "EXIT";
-    // switch (conf.minifyPageHelper) {
-    //   case "inBigMode":
-    //     if (status === "fullViewGrid") {
-    //       return;
-    //     }
-    //     break;
-    //   case "always":
-    //     if (status === "bigImageFrame") {
-    //       return;
-    //     }
-    //     break;
-    //   case "never":
-    //     return;
-    // }
+    for (const item of items) {
+      const index = pick.indexOf(item.id);
+      item.style.order = index === -1 ? "99" : index.toString();
+      item.style.opacity = index === -1 ? "0" : "1";
+      item.hidden = !hover && stage === "exit" && index === -1;
+    }
+    this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = stage === "exit" ? "OPEN" : "EXIT";
   }
 }

@@ -340,13 +340,14 @@ export function loadStyleSheel() {
   box-sizing: border-box;
   border: 1px dotted green;
   border-radius: 4px;
-  background: #334;
+  background: #333343aa;
   color: white;
   font-size: 1rem;
   font-weight: bold;
   padding: 0rem 0.3rem;
   margin: 0rem 0.2rem;
   line-height: 1.2rem;
+  position: relative;
 }
 .p-config {
   display: grid;
@@ -442,7 +443,7 @@ export function loadStyleSheel() {
   visibility: hidden;
   width: 100%;
   left: 0px;
-  margin-top: 2rem;
+  margin-top: 1.2rem;
   background-color: #000000bf;
   color: #fff;
   border-radius: 6px;
@@ -453,6 +454,7 @@ export function loadStyleSheel() {
   text-align: left;
   padding: 0.3rem 1rem;
   box-sizing: border-box;
+  display: inner-block;
 }
 .p-tooltip:hover .p-tooltiptext {
   visibility: visible;

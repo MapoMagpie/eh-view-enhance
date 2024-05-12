@@ -16,7 +16,7 @@ export function xhrWapper<T extends RespType>(url: string, respType: T, cb: Even
   return GM_xmlhttpRequest<unknown, T>({
     method: "GET",
     url,
-    timeout: timeout || 0,
+    timeout: timeout || 600000,
     responseType: respType,
     nocache: false,
     revalidate: false,
@@ -29,6 +29,7 @@ export function xhrWapper<T extends RespType>(url: string, respType: T, cb: Even
       // "Accept-Encoding": "gzip, deflate, br",
       // "Connection": "keep-alive",
       "Referer": window.location.href,
+      "X-Alt-Referer": window.location.href,
       // "Sec-Fetch-Dest": "image",
       // "Sec-Fetch-Mode": "no-cors",
       // "Sec-Fetch-Site": "cross-site",

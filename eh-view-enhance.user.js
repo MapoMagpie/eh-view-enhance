@@ -5528,27 +5528,36 @@ html {
 
   class PageHelper {
     html;
-    chapterIndex = 0;
+    chapterIndex = -1;
+    lastPageNumber = 0;
     lastStage = "exit";
-    constructor(html, getChapter) {
+    chapters;
+    constructor(html, chapters) {
       this.html = html;
+      this.chapters = chapters;
       EBUS.subscribe("pf-change-chapter", (index) => {
+        let current = 0;
+        if (index === -1) {
+          this.lastPageNumber = this.chapterIndex;
+          current = this.lastPageNumber;
+        }
         this.chapterIndex = index;
         const [total, finished] = (() => {
-          const queue = getChapter(index)?.queue;
+          const queue = this.chapters()[index]?.queue;
           if (!queue)
             return [0, 0];
           const finished2 = queue.filter((imf) => imf.stage === FetchState.DONE).length;
-          return [finished2, queue.length];
+          return [queue.length, finished2];
         })();
-        this.setPageState({ finished: finished.toString(), total: total.toString(), current: "1" });
+        this.setPageState({ finished: finished.toString(), total: total.toString(), current: (current + 1).toString() });
+        this.minify(this.lastStage);
       });
       EBUS.subscribe("bifm-on-show", () => this.minify("bigImageFrame"));
       EBUS.subscribe("bifm-on-hidden", () => this.minify("fullViewGrid"));
       EBUS.subscribe("ifq-do", (index, imf) => {
         if (imf.chapterIndex !== this.chapterIndex)
           return;
-        const queue = getChapter(this.chapterIndex)?.queue;
+        const queue = this.chapters()[this.chapterIndex]?.queue;
         if (!queue)
           return;
         this.setPageState({ current: (index + 1).toString() });
@@ -5571,10 +5580,14 @@ html {
       html.currPageElement.addEventListener("click", (event) => {
         const ele = event.target;
         const index = parseInt(ele.textContent || "1") - 1;
-        const queue = getChapter(this.chapterIndex)?.queue;
-        if (!queue || !queue[index])
-          return;
-        EBUS.emit("imf-on-click", queue[index]);
+        if (this.chapterIndex === -1) {
+          this.chapters()[this.lastPageNumber]?.onclick?.(this.lastPageNumber);
+        } else {
+          const queue = this.chapters()[this.chapterIndex]?.queue;
+          if (!queue || !queue[index])
+            return;
+          EBUS.emit("imf-on-click", queue[index]);
+        }
       });
     }
     setFetchState(state) {
@@ -5605,15 +5618,17 @@ html {
       }
       switch (stage) {
         case "fullViewGrid":
+          pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
+          if (this.chapters().length > 1 && this.chapterIndex > -1) {
+            pick.push("chapters-btn");
+          }
           if (hover) {
-            pick = ["entry-btn", "page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
-          } else {
-            pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
+            pick.push("entry-btn");
           }
           break;
         case "bigImageFrame":
           if (hover) {
-            pick = ["entry-btn", "page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
+            pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn"];
           } else {
             pick = ["page-status"];
             if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
@@ -6511,7 +6526,7 @@ html {
     const IL = new IdleLoader(IFQ);
     const PF = new PageFetcher(IFQ, MATCHER);
     const DL = new Downloader(HTML, IFQ, IL, PF, MATCHER);
-    const PH = new PageHelper(HTML, (index) => PF.chapters[index]);
+    const PH = new PageHelper(HTML, () => PF.chapters);
     const BIFM = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
     const FVGM = new FullViewGridManager(HTML, BIFM);
     const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);

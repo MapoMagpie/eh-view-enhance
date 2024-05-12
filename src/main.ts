@@ -27,7 +27,7 @@ function main(MATCHER: Matcher): DestoryFunc {
   const DL: Downloader = new Downloader(HTML, IFQ, IL, PF, MATCHER);
 
   // UI Manager
-  const PH: PageHelper = new PageHelper(HTML, (index) => PF.chapters[index]);
+  const PH: PageHelper = new PageHelper(HTML, () => PF.chapters);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
   const FVGM: FullViewGridManager = new FullViewGridManager(HTML, BIFM);
 

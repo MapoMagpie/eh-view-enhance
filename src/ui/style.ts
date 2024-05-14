@@ -55,10 +55,15 @@ export function loadStyleSheel() {
   const style = document.createElement('style');
   style.id = "ehvp-style";
   const css = `
+:root {
+  --ehvp-background-color: #333343bb;
+  --ehvp-border: 1px solid #2f7b10;
+  --ehvp-font-color: #fff;
+}
 .ehvp-root {
   width: 100vw;
   height: 100vh;
-  background-color: rgb(0, 0, 0);
+  background-color: #000;
   position: fixed;
   top: 0px;
   left: 0px;
@@ -334,14 +339,15 @@ export function loadStyleSheel() {
 }
 .b-main {
   display: flex;
+  user-select: none;
   ${conf.pageHelperAbLeft === "unset" ? "flex-direction: row-reverse;" : ""}
 }
 .b-main-item {
   box-sizing: border-box;
-  border: 1px dotted green;
+  border: var(--ehvp-border);
   border-radius: 4px;
-  background: #333343aa;
-  color: white;
+  background-color: var(--ehvp-background-color);
+  color: var(--ehvp-font-color);
   font-size: 1rem;
   font-weight: bold;
   padding: 0rem 0.3rem;
@@ -354,7 +360,7 @@ export function loadStyleSheel() {
 }
 .b-main-option-selected {
   color: black;
-  background: #ffffffa0;
+  background-color: #ffffffa0;
   border-radius: 6px;
 }
 .b-main-btn {
@@ -363,11 +369,12 @@ export function loadStyleSheel() {
 }
 .b-main-input {
   color: black;
-  background: #ffffffa0;
+  background-color: #ffffffa0;
   border-radius: 6px;
   display: inline-block;
   text-align: center;
   width: 1.5rem;
+  cursor: touch;
 }
 .p-config {
   display: grid;
@@ -403,10 +410,10 @@ export function loadStyleSheel() {
   width: 100%;
 }
 .p-btn {
-  color: rgb(255, 255, 255);
+  color: var(--ehvp-font-color);
   cursor: pointer;
   font-weight: 900;
-  background: rgb(81, 81, 81);
+  background-color: rgb(81, 81, 81);
   vertical-align: middle;
 }
 @keyframes main-progress {
@@ -465,7 +472,7 @@ export function loadStyleSheel() {
   left: 0px;
   margin-top: 1.2rem;
   background-color: #000000bf;
-  color: #fff;
+  color: var(--ehvp-font-color);
   border-radius: 6px;
   position: absolute;
   z-index: 1;
@@ -487,7 +494,7 @@ export function loadStyleSheel() {
   background-color: #333333a6;
 }
 .page-loading-text {
-  color: #ffffff;
+  color: var(--ehvp-font-color);
   font-size: 6rem;
 }
 @keyframes rotate {
@@ -520,7 +527,7 @@ export function loadStyleSheel() {
 	top: 6px;
 	width: calc(100% - 16px);
 	height: calc(100% - 16px);
-	background: #333;
+	background-color: #333;
 }
 .overlay-tip {
   position: absolute;
@@ -530,7 +537,7 @@ export function loadStyleSheel() {
   height: 1rem;
   border-radius: 10%;
   border: 1px solid #333;
-  color: white;
+  color: var(--ehvp-font-color);
   background-color: #959595d1;
   line-height: 1rem;
   font-size: 1rem;
@@ -559,7 +566,7 @@ export function loadStyleSheel() {
   display: flex;
   flex-direction: column;
   text-align: start;
-  color: white;
+  color: var(--ehvp-font-color);
 }
 .ehvp-custom-panel-title {
   font-size: 2.1rem;

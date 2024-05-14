@@ -107,11 +107,6 @@ export class BigImageFrameManager {
     this.lastMouse = undefined;
   }
 
-  // flushImgScaleBar() {
-  //   q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
-  //   q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
-  // }
-
   initFrame() {
     this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
     // this.frame.addEventListener("scroll", (event) => this.onScroll(event)); // move to show()
@@ -125,14 +120,6 @@ export class BigImageFrameManager {
       }, 5);
     });
   }
-
-  // initImgScaleBar() {
-  //   q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
-  //   q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
-  //   q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages(true));
-  //   const progress = q<HTMLProgressElement>("#img-scale-progress", this.imgScaleBar);
-  //   onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
-  // }
 
   hidden(event?: MouseEvent) {
     if (event && event.target && (event.target as HTMLElement).tagName === "SPAN") return;
@@ -313,7 +300,7 @@ export class BigImageFrameManager {
 
   // prevent scroll to next page while mouse scrolling;
   tryPreventStep(): boolean {
-    if (!conf.imgScale || conf.imgScale === 0 || conf.preventScrollPageTime === 0) {
+    if (!conf.imgScale || conf.imgScale === 100 || conf.preventScrollPageTime === 0) {
       return false;
     }
     if (this.preventStep.fin) {
@@ -543,14 +530,11 @@ export class BigImageFrameManager {
     if (conf.readMode === "pagination") {
       this.checkFrameOverflow();
       rule.style.minWidth = percent > 100 ? "" : "100vw";
-      if (percent === 100) {
-        this.resetScaleBigImages(true);
-        return 100;
-      }
+      if (percent === 100) this.resetScaleBigImages(false);
     }
     conf.imgScale = percent;
     saveConf(conf);
-    // this.flushImgScaleBar();
+    q("#scaleInput", this.html.pageHelper).textContent = `${conf.imgScale}`;
     return percent;
   }
 
@@ -586,10 +570,10 @@ export class BigImageFrameManager {
       rule.style.margin = "0 auto";
     }
     if (syncConf) {
-      conf.imgScale = 0;
+      conf.imgScale = conf.readMode === "pagination" ? 100 : 80;
       saveConf(conf);
+      q("#scaleInput", this.html.pageHelper).textContent = `${conf.imgScale}`;
     }
-    // this.flushImgScaleBar();
   }
 
   initImgScaleStyle() {

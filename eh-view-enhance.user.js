@@ -53,10 +53,29 @@
 // @grant              GM_xmlhttpRequest
 // ==/UserScript==
 
-(function (fileSaver, pica, zip, Hammer) {
+(function (fileSaver, pica, zip_js, Hammer) {
   'use strict';
 
   var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
+  function _interopNamespaceDefault(e) {
+    const n = Object.create(null, { [Symbol.toStringTag]: { value: 'Module' } });
+    if (e) {
+      for (const k in e) {
+        if (k !== 'default') {
+          const d = Object.getOwnPropertyDescriptor(e, k);
+          Object.defineProperty(n, k, d.get ? d : {
+            enumerable: true,
+            get: () => e[k]
+          });
+        }
+      }
+    }
+    n.default = e;
+    return Object.freeze(n);
+  }
+
+  const zip_js__namespace = /*#__PURE__*/_interopNamespaceDefault(zip_js);
+
   // src/native/alias.ts
   var _GM_getValue = /* @__PURE__ */ (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
   var _GM_setValue = /* @__PURE__ */ (() => typeof GM_setValue != "undefined" ? GM_setValue : void 0)();
@@ -83,7 +102,7 @@
       pageHelperAbLeft: "20px",
       pageHelperAbBottom: "20px",
       pageHelperAbRight: "unset",
-      imgScale: 0,
+      imgScale: 100,
       stickyMouse: "disable",
       autoPageInterval: 5e3,
       autoPlay: false,
@@ -3495,14 +3514,14 @@ duration 0.04`).join("\n");
       const meta = this.ugoiraMetas[url];
       if (!meta)
         return [data, contentType];
-      const zipReader = new zip.ZipReader(new zip.Uint8ArrayReader(data));
+      const zipReader = new zip_js__namespace.ZipReader(new zip_js__namespace.Uint8ArrayReader(data));
       const start = performance.now();
       if (!this.convertor)
         this.convertor = await new FFmpegConvertor().init();
       const initConvertorEnd = performance.now();
       const promises = await zipReader.getEntries().then(
         (entries) => entries.map(
-          (e) => e.getData?.(new zip.Uint8ArrayWriter()).then((data2) => ({ name: e.filename, data: data2 }))
+          (e) => e.getData?.(new zip_js__namespace.Uint8ArrayWriter()).then((data2) => ({ name: e.filename, data: data2 }))
         )
       );
       const files = await Promise.all(promises).then((entries) => entries.filter((f) => f && f.data.length > 0).map((f) => f));
@@ -4382,6 +4401,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .b-main {
   display: flex;
+  user-select: none;
   ${conf.pageHelperAbLeft === "unset" ? "flex-direction: row-reverse;" : ""}
 }
 .b-main-item {
@@ -4416,6 +4436,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   display: inline-block;
   text-align: center;
   width: 1.5rem;
+  cursor: touch;
 }
 .p-config {
   display: grid;
@@ -5345,6 +5366,49 @@ html {
       }, { once: true });
     });
   }
+  function dragElementWithLine(event, element, callback) {
+    if (event.buttons !== 1)
+      return;
+    document.querySelector("#drag-element-with-line")?.remove();
+    const canvas = document.createElement("canvas");
+    canvas.id = "drag-element-with-line";
+    canvas.style.position = "fixed";
+    canvas.style.zIndex = "100000";
+    canvas.style.top = "0px";
+    canvas.style.left = "0px";
+    canvas.style.width = "100vw";
+    canvas.style.height = "100vh";
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const height = Math.floor(element.getBoundingClientRect().height / 2.2);
+    const [startX, startY] = [event.clientX, event.clientY];
+    const ctx = canvas.getContext("2d", { alpha: true });
+    const abort = new AbortController();
+    canvas.addEventListener("mouseup", () => {
+      document.body.removeChild(canvas);
+      abort.abort();
+    }, { once: true });
+    canvas.addEventListener("mousemove", (evt) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(evt.clientX, evt.clientY);
+      ctx.strokeStyle = "#ffffffa0";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(evt.clientX, evt.clientY, height, 0, 2 * Math.PI);
+      ctx.fillStyle = "#ffffffa0";
+      ctx.fill();
+      callback(toMouseMoveData(startX, startY, evt.clientX, evt.clientY));
+    }, { signal: abort.signal });
+  }
+  function toMouseMoveData(startX, startY, endX, endY) {
+    const distance = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+    const direction = 1 << (startY > endY ? 3 : 2) | 1 << (startX > endX ? 1 : 0);
+    return { start: { x: startX, y: startY }, end: { x: endX, y: endY }, distance, direction };
+  }
 
   function createOption(item) {
     const i18nKey = item.i18nKey || item.key;
@@ -5398,7 +5462,7 @@ html {
     <div>
         <div id="config-panel" class="p-panel p-config p-collapse">
             ${configItemStr}
-            <div style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px;">
+            <div style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.dragToMove.get()}:</span>
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
@@ -5450,15 +5514,21 @@ html {
             <div id="read-mode-select"><span class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">PAGE</span><span class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">CONT</span></div>
         </div>
         <div id="pagination-adjust-bar" class="b-main-item" hidden>
-            <span><span id="paginationStepPrev" class="b-main-btn clickable" type="button">&lt;</span><span id="paginationMinusBTN" class="b-main-btn clickable" type="button">-</span><span id="paginationInput" class="b-main-input">${conf.paginationIMGCount}</span><span id="paginationAddBTN" class="b-main-btn clickable" type="button">+</span><span id="paginationStepNext" class="b-main-btn clickable" type="button">&gt;</span></span>
+            <span>
+              <span id="paginationStepPrev" class="b-main-btn clickable" type="button">&lt;</span>
+              <span id="paginationMinusBTN" class="b-main-btn clickable" type="button">-</span>
+              <span id="paginationInput" class="b-main-input">${conf.paginationIMGCount}</span>
+              <span id="paginationAddBTN" class="b-main-btn clickable" type="button">+</span>
+              <span id="paginationStepNext" class="b-main-btn clickable" type="button">&gt;</span>
+            </span>
         </div>
         <div id="scale-bar" class="b-main-item" hidden>
             <span>
-<span>SCALE</span>
-<span id="scaleMinusBTN" class="b-main-btn clickable" type="button">-</span>
-<span id="scaleInput" class="b-main-input">${conf.imgScale}</span>
-<span id="scaleAddBTN" class="b-main-btn clickable" type="button">+</span>
-</span>
+              <span>SCALE</span>
+              <span id="scaleMinusBTN" class="b-main-btn clickable" type="button">-</span>
+              <span id="scaleInput" class="b-main-input" style="width: 3rem">${conf.imgScale}</span>
+              <span id="scaleAddBTN" class="b-main-btn clickable" type="button">+</span>
+            </span>
         </div>
     </div>
 </div>
@@ -5591,6 +5661,16 @@ html {
     q("#paginationMinusBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "minus"));
     q("#paginationAddBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "add"));
     q("#paginationInput", HTML.pageHelper).addEventListener("wheel", (event) => events.modNumberConfigEvent("paginationIMGCount", event.deltaY < 0 ? "add" : "minus"));
+    q("#scaleInput", HTML.pageHelper).addEventListener("mousedown", (event) => {
+      const element = event.target;
+      let scale = conf.imgScale || conf.readMode === "pagination" ? 80 : 100;
+      dragElementWithLine(event, element, (data) => {
+        scale = scale + data.distance * 0.05 * ((data.direction & 3) === 1 ? 1 : -1);
+        scale = Math.floor(scale);
+        BIFM.scaleBigImages(1, 0, scale);
+        element.textContent = conf.imgScale.toString();
+      });
+    });
   }
 
   class PageHelper {
@@ -6387,7 +6467,7 @@ html {
       let percent = _percent || parseInt(conf.readMode === "pagination" ? rule.style.height : rule.style.width);
       if (isNaN(percent))
         percent = 100;
-      percent = percent + rate * fix;
+      percent = (percent + rate) * fix;
       switch (conf.readMode) {
         case "pagination":
           percent = Math.max(percent, 100);
@@ -6445,7 +6525,7 @@ html {
         rule.style.margin = "0 auto";
       }
       if (syncConf) {
-        conf.imgScale = 0;
+        conf.imgScale = conf.readMode === "pagination" ? 100 : 80;
         saveConf(conf);
       }
     }

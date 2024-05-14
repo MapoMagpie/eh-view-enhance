@@ -3,6 +3,7 @@ import EBUS from "../event-bus";
 import { FetchState } from "../img-fetcher";
 import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
+import icons from "../utils/icons";
 import { Elements } from "./html";
 
 export class PageHelper {
@@ -131,6 +132,6 @@ export class PageHelper {
       item.style.opacity = index === -1 ? "0" : "1";
       item.hidden = !hover && stage === "exit" && index === -1;
     }
-    this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = stage === "exit" ? "READ" : "EXIT";
+    this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = stage === "exit" ? icons.bookIcon : "EXIT";
   }
 }

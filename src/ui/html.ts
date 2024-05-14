@@ -1,13 +1,14 @@
 import { ConfigBooleanType, ConfigItem, ConfigItems, ConfigNumberType, ConfigSelectType, conf } from "../config";
 import { Downloader } from "../download/downloader";
 import { Debouncer } from "../utils/debouncer";
-import { dragElement } from "../utils/drag-element";
+import { dragElement, dragElementWithLine } from "../utils/drag-element";
 import { I18nValue, i18n } from "../utils/i18n";
 import q from "../utils/query-element";
 import { Events } from "./event";
 import { PageHelper } from "./page-helper";
 import { toggleAnimationStyle, loadStyleSheel } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
+import icons from "../utils/icons";
 
 function createOption(item: ConfigItem) {
   const i18nKey = item.i18nKey || item.key;
@@ -46,14 +47,6 @@ function createOption(item: ConfigItem) {
 
 export type Elements = ReturnType<typeof createHTML>;
 
-// <div id="img-scale-bar" class="p-img-scale" style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px;">
-//     <div><span>${i18n.imageScale.get()}:</span></div>
-//     <div class="scale-status"><span id="img-scale-status">${conf.imgScale}%</span></div>
-//     <div id="img-decrease-btn" class="scale-btn"><span>-</span></div>
-//     <div id="img-scale-progress" class="scale-progress"><div id="img-scale-progress-inner" class="scale-progress-inner" style="width: ${conf.imgScale}%"></div></div>
-//     <div id="img-increase-btn" class="scale-btn"><span>+</span></div>
-//     <div id="img-scale-reset-btn" class="scale-btn" style="width: auto;"><span>RESET</span></div>
-// </div>
 export function createHTML() {
   const fullViewGrid = document.createElement("div");
   fullViewGrid.classList.add("ehvp-root");
@@ -73,7 +66,7 @@ export function createHTML() {
     <div>
         <div id="config-panel" class="p-panel p-config p-collapse">
             ${configItemStr}
-            <div style="grid-column-start: 1; grid-column-end: 10; padding-left: 5px;">
+            <div style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.dragToMove.get()}:</span>
                     <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
@@ -107,7 +100,7 @@ export function createHTML() {
         </div>
     </div>
     <div id="b-main" class="b-main">
-        <div id="entry-btn" class="b-main-item clickable">READ</div>
+        <div id="entry-btn" class="b-main-item clickable">${icons.bookIcon}</div>
         <div id="page-status" class="b-main-item" hidden>
             <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span>
         </div>
@@ -125,15 +118,21 @@ export function createHTML() {
             <div id="read-mode-select"><span class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">PAGE</span><span class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">CONT</span></div>
         </div>
         <div id="pagination-adjust-bar" class="b-main-item" hidden>
-            <span><span id="paginationStepPrev" class="b-main-btn clickable" type="button">&lt;</span><span id="paginationMinusBTN" class="b-main-btn clickable" type="button">-</span><span id="paginationInput" class="b-main-input">${conf.paginationIMGCount}</span><span id="paginationAddBTN" class="b-main-btn clickable" type="button">+</span><span id="paginationStepNext" class="b-main-btn clickable" type="button">&gt;</span></span>
+            <span>
+              <span id="paginationStepPrev" class="b-main-btn clickable" type="button">&lt;</span>
+              <span id="paginationMinusBTN" class="b-main-btn clickable" type="button">-</span>
+              <span id="paginationInput" class="b-main-input">${conf.paginationIMGCount}</span>
+              <span id="paginationAddBTN" class="b-main-btn clickable" type="button">+</span>
+              <span id="paginationStepNext" class="b-main-btn clickable" type="button">&gt;</span>
+            </span>
         </div>
         <div id="scale-bar" class="b-main-item" hidden>
             <span>
-<span>SCALE</span>
-<span id="scaleMinusBTN" class="b-main-btn clickable" type="button">-</span>
-<span id="scaleInput" class="b-main-input">${conf.imgScale}</span>
-<span id="scaleAddBTN" class="b-main-btn clickable" type="button">+</span>
-</span>
+              <span>${icons.zoomIcon}</span>
+              <span id="scaleMinusBTN" class="b-main-btn clickable" type="button">-</span>
+              <span id="scaleInput" class="b-main-input" style="width: 3rem">${conf.imgScale}</span>
+              <span id="scaleAddBTN" class="b-main-btn clickable" type="button">+</span>
+            </span>
         </div>
     </div>
 </div>
@@ -281,4 +280,17 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   q("#paginationMinusBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "minus"));
   q("#paginationAddBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "add"));
   q("#paginationInput", HTML.pageHelper).addEventListener("wheel", (event) => events.modNumberConfigEvent("paginationIMGCount", event.deltaY < 0 ? "add" : "minus"));
+
+  q("#scaleInput", HTML.pageHelper).addEventListener("mousedown", (event) => {
+    const element = event.target as HTMLElement;
+    const scale = conf.imgScale || (conf.readMode === "pagination" ? 100 : 80);
+    dragElementWithLine(event, element, { y: true }, (data) => {
+      const fix = (data.direction & 3) === 1 ? 1 : -1; // 4bit: UDLR,  data.direction & 3 means remove UD
+      BIFM.scaleBigImages(1, 0, Math.floor(scale + data.distance * 0.6 * fix));
+      element.textContent = conf.imgScale.toString();
+    });
+  });
+  q("#scaleMinusBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(-1, 10));
+  q("#scaleAddBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(1, 10));
+  q("#scaleInput", HTML.pageHelper).addEventListener("wheel", (event) => BIFM.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5));
 }

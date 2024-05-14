@@ -102,7 +102,7 @@ function defaultConf(): Config {
     pageHelperAbLeft: "20px",
     pageHelperAbBottom: "20px",
     pageHelperAbRight: "unset",
-    imgScale: 0,
+    imgScale: 100,
     stickyMouse: "disable",
     autoPageInterval: 5000,
     autoPlay: false,

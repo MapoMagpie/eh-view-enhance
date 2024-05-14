@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.4.15
+// @version            4.5.0
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
@@ -4122,10 +4122,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const style = document.createElement("style");
     style.id = "ehvp-style";
     const css = `
+:root {
+  --ehvp-background-color: #333343bb;
+  --ehvp-border: 1px solid #2f7b10;
+  --ehvp-font-color: #fff;
+}
 .ehvp-root {
   width: 100vw;
   height: 100vh;
-  background-color: rgb(0, 0, 0);
+  background-color: #000;
   position: fixed;
   top: 0px;
   left: 0px;
@@ -4406,10 +4411,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .b-main-item {
   box-sizing: border-box;
-  border: 1px dotted green;
+  border: var(--ehvp-border);
   border-radius: 4px;
-  background: #333343aa;
-  color: white;
+  background-color: var(--ehvp-background-color);
+  color: var(--ehvp-font-color);
   font-size: 1rem;
   font-weight: bold;
   padding: 0rem 0.3rem;
@@ -4422,7 +4427,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .b-main-option-selected {
   color: black;
-  background: #ffffffa0;
+  background-color: #ffffffa0;
   border-radius: 6px;
 }
 .b-main-btn {
@@ -4431,7 +4436,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .b-main-input {
   color: black;
-  background: #ffffffa0;
+  background-color: #ffffffa0;
   border-radius: 6px;
   display: inline-block;
   text-align: center;
@@ -4472,10 +4477,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   width: 100%;
 }
 .p-btn {
-  color: rgb(255, 255, 255);
+  color: var(--ehvp-font-color);
   cursor: pointer;
   font-weight: 900;
-  background: rgb(81, 81, 81);
+  background-color: rgb(81, 81, 81);
   vertical-align: middle;
 }
 @keyframes main-progress {
@@ -4534,7 +4539,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   left: 0px;
   margin-top: 1.2rem;
   background-color: #000000bf;
-  color: #fff;
+  color: var(--ehvp-font-color);
   border-radius: 6px;
   position: absolute;
   z-index: 1;
@@ -4556,7 +4561,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   background-color: #333333a6;
 }
 .page-loading-text {
-  color: #ffffff;
+  color: var(--ehvp-font-color);
   font-size: 6rem;
 }
 @keyframes rotate {
@@ -4589,7 +4594,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 	top: 6px;
 	width: calc(100% - 16px);
 	height: calc(100% - 16px);
-	background: #333;
+	background-color: #333;
 }
 .overlay-tip {
   position: absolute;
@@ -4599,7 +4604,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   height: 1rem;
   border-radius: 10%;
   border: 1px solid #333;
-  color: white;
+  color: var(--ehvp-font-color);
   background-color: #959595d1;
   line-height: 1rem;
   font-size: 1rem;
@@ -4628,7 +4633,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   display: flex;
   flex-direction: column;
   text-align: start;
-  color: white;
+  color: var(--ehvp-font-color);
 }
 .ehvp-custom-panel-title {
   font-size: 2.1rem;
@@ -5366,7 +5371,7 @@ html {
       }, { once: true });
     });
   }
-  function dragElementWithLine(event, element, callback) {
+  function dragElementWithLine(event, element, lock, callback) {
     if (event.buttons !== 1)
       return;
     document.querySelector("#drag-element-with-line")?.remove();
@@ -5381,8 +5386,9 @@ html {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     document.body.appendChild(canvas);
-    const height = Math.floor(element.getBoundingClientRect().height / 2.2);
-    const [startX, startY] = [event.clientX, event.clientY];
+    const rect = element.getBoundingClientRect();
+    const height = Math.floor(rect.height / 2.2);
+    const [startX, startY] = [rect.left + rect.width / 2, rect.top + rect.height / 2];
     const ctx = canvas.getContext("2d", { alpha: true });
     const abort = new AbortController();
     canvas.addEventListener("mouseup", () => {
@@ -5390,18 +5396,22 @@ html {
       abort.abort();
     }, { once: true });
     canvas.addEventListener("mousemove", (evt) => {
+      let [endX, endY] = [
+        lock.x ? startX : evt.clientX,
+        lock.y ? startY : evt.clientY
+      ];
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.beginPath();
       ctx.moveTo(startX, startY);
-      ctx.lineTo(evt.clientX, evt.clientY);
+      ctx.lineTo(endX, endY);
       ctx.strokeStyle = "#ffffffa0";
       ctx.lineWidth = 4;
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(evt.clientX, evt.clientY, height, 0, 2 * Math.PI);
+      ctx.arc(endX, endY, height, 0, 2 * Math.PI);
       ctx.fillStyle = "#ffffffa0";
       ctx.fill();
-      callback(toMouseMoveData(startX, startY, evt.clientX, evt.clientY));
+      callback(toMouseMoveData(startX, startY, endX, endY));
     }, { signal: abort.signal });
   }
   function toMouseMoveData(startX, startY, endX, endY) {
@@ -5409,6 +5419,13 @@ html {
     const direction = 1 << (startY > endY ? 3 : 2) | 1 << (startX > endX ? 1 : 0);
     return { start: { x: startX, y: startY }, end: { x: endX, y: endY }, distance, direction };
   }
+
+  const bookIcon = `📖`;
+  const zoomIcon = `⇱⇲`;
+  const icons = {
+    bookIcon,
+    zoomIcon
+  };
 
   function createOption(item) {
     const i18nKey = item.i18nKey || item.key;
@@ -5496,7 +5513,7 @@ html {
         </div>
     </div>
     <div id="b-main" class="b-main">
-        <div id="entry-btn" class="b-main-item clickable">READ</div>
+        <div id="entry-btn" class="b-main-item clickable">${icons.bookIcon}</div>
         <div id="page-status" class="b-main-item" hidden>
             <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span>
         </div>
@@ -5524,7 +5541,7 @@ html {
         </div>
         <div id="scale-bar" class="b-main-item" hidden>
             <span>
-              <span>SCALE</span>
+              <span>${icons.zoomIcon}</span>
               <span id="scaleMinusBTN" class="b-main-btn clickable" type="button">-</span>
               <span id="scaleInput" class="b-main-input" style="width: 3rem">${conf.imgScale}</span>
               <span id="scaleAddBTN" class="b-main-btn clickable" type="button">+</span>
@@ -5663,14 +5680,16 @@ html {
     q("#paginationInput", HTML.pageHelper).addEventListener("wheel", (event) => events.modNumberConfigEvent("paginationIMGCount", event.deltaY < 0 ? "add" : "minus"));
     q("#scaleInput", HTML.pageHelper).addEventListener("mousedown", (event) => {
       const element = event.target;
-      let scale = conf.imgScale || conf.readMode === "pagination" ? 80 : 100;
-      dragElementWithLine(event, element, (data) => {
-        scale = scale + data.distance * 0.05 * ((data.direction & 3) === 1 ? 1 : -1);
-        scale = Math.floor(scale);
-        BIFM.scaleBigImages(1, 0, scale);
+      const scale = conf.imgScale || (conf.readMode === "pagination" ? 100 : 80);
+      dragElementWithLine(event, element, { y: true }, (data) => {
+        const fix = (data.direction & 3) === 1 ? 1 : -1;
+        BIFM.scaleBigImages(1, 0, Math.floor(scale + data.distance * 0.6 * fix));
         element.textContent = conf.imgScale.toString();
       });
     });
+    q("#scaleMinusBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(-1, 10));
+    q("#scaleAddBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(1, 10));
+    q("#scaleInput", HTML.pageHelper).addEventListener("wheel", (event) => BIFM.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5));
   }
 
   class PageHelper {
@@ -5802,7 +5821,7 @@ html {
         item.style.opacity = index === -1 ? "0" : "1";
         item.hidden = !hover && stage === "exit" && index === -1;
       }
-      this.html.pageHelper.querySelector("#entry-btn").textContent = stage === "exit" ? "READ" : "EXIT";
+      this.html.pageHelper.querySelector("#entry-btn").textContent = stage === "exit" ? icons.bookIcon : "EXIT";
     }
   }
 
@@ -6065,10 +6084,6 @@ html {
     resetStickyMouse() {
       this.lastMouse = void 0;
     }
-    // flushImgScaleBar() {
-    //   q("#img-scale-status", this.imgScaleBar).innerHTML = `${conf.imgScale}%`;
-    //   q("#img-scale-progress-inner", this.imgScaleBar).style.width = `${conf.imgScale}%`;
-    // }
     initFrame() {
       this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
       this.frame.addEventListener("click", (event) => this.hidden(event));
@@ -6082,13 +6097,6 @@ html {
         }, 5);
       });
     }
-    // initImgScaleBar() {
-    //   q("#img-increase-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(1, 5));
-    //   q("#img-decrease-btn", this.imgScaleBar).addEventListener("click", () => this.scaleBigImages(-1, 5));
-    //   q("#img-scale-reset-btn", this.imgScaleBar).addEventListener("click", () => this.resetScaleBigImages(true));
-    //   const progress = q<HTMLProgressElement>("#img-scale-progress", this.imgScaleBar);
-    //   onMouse(progress, (percent) => this.scaleBigImages(0, 0, percent));
-    // }
     hidden(event) {
       if (event && event.target && event.target.tagName === "SPAN")
         return;
@@ -6264,7 +6272,7 @@ html {
     }
     // prevent scroll to next page while mouse scrolling;
     tryPreventStep() {
-      if (!conf.imgScale || conf.imgScale === 0 || conf.preventScrollPageTime === 0) {
+      if (!conf.imgScale || conf.imgScale === 100 || conf.preventScrollPageTime === 0) {
         return false;
       }
       if (this.preventStep.fin) {
@@ -6467,7 +6475,7 @@ html {
       let percent = _percent || parseInt(conf.readMode === "pagination" ? rule.style.height : rule.style.width);
       if (isNaN(percent))
         percent = 100;
-      percent = (percent + rate) * fix;
+      percent = percent + rate * fix;
       switch (conf.readMode) {
         case "pagination":
           percent = Math.max(percent, 100);
@@ -6483,13 +6491,12 @@ html {
       if (conf.readMode === "pagination") {
         this.checkFrameOverflow();
         rule.style.minWidth = percent > 100 ? "" : "100vw";
-        if (percent === 100) {
-          this.resetScaleBigImages(true);
-          return 100;
-        }
+        if (percent === 100)
+          this.resetScaleBigImages(false);
       }
       conf.imgScale = percent;
       saveConf(conf);
+      q("#scaleInput", this.html.pageHelper).textContent = `${conf.imgScale}`;
       return percent;
     }
     checkFrameOverflow() {
@@ -6527,6 +6534,7 @@ html {
       if (syncConf) {
         conf.imgScale = conf.readMode === "pagination" ? 100 : 80;
         saveConf(conf);
+        q("#scaleInput", this.html.pageHelper).textContent = `${conf.imgScale}`;
       }
     }
     initImgScaleStyle() {

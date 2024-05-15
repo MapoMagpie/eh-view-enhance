@@ -3896,8 +3896,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   function relocateElement(element, anchor, vw, vh) {
     const rect = anchor.getBoundingClientRect();
     let left = rect.left + rect.width / 2 - element.offsetWidth / 2;
-    left = Math.min(left, vw - element.offsetWidth - 10);
-    left = Math.max(left, 10);
+    left = Math.min(left, vw - element.offsetWidth);
+    left = Math.max(left, 0);
     element.style.left = left + "px";
     if (rect.top > vh / 2) {
       element.style.bottom = vh - rect.top + "px";
@@ -4307,13 +4307,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     left: ${conf.pageHelperAbLeft};
     bottom: ${conf.pageHelperAbBottom};
     right: ${conf.pageHelperAbRight};
-    font-size: 1rem;
-    line-height: 1.2rem;
   }
   .p-panel {
     width: 24rem;
     height: 32rem;
-    ${conf.pageHelperAbBottom === "unset" ? "top: 100%" : "bottom: 100%"}
   }
   .p-btn {
     height: 1.5rem;
@@ -4321,6 +4318,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     border: 1px solid #000000;
     border-radius: 4px;
     line-height: initial;
+  }
+  .b-main {
+    flex-direction: ${conf.pageHelperAbLeft === "unset" ? "row-reverse" : "row"};
+  }
+  .b-main-item {
+    font-size: 1rem;
+    line-height: 1.2rem;
   }
   .ehvp-root input[type="checkbox"] {
     width: 1rem;
@@ -4336,35 +4340,38 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   .p-config {
     line-height: 1.85rem;
   }
-  #imgScaleResetBTN {
-    width: 4rem;
-  }
   .bifm-vid-ctl {
     bottom: 0.2rem;
     left: 30%;
     width: 40vw;
-  }
-  .b-extra {
-    ${conf.pageHelperAbLeft !== "unset" ? "left" : "right"}: 100%;
   }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .p-helper {
     bottom: 0px;
     left: 0px;
-    font-size: 8cqw;
-    line-height: 8.1cqw;
   }
   .p-panel {
     width: 100vw;
-    height: 80vh;
-    bottom: 5.7cqw;
+    height: 70vh;
   }
   .p-btn {
     height: 6cqw;
     width: 6cqw;
     border: 0.4cqw solid #000000;
     border-radius: 1cqw;
+  }
+  .b-main {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .b-main-item {
+    font-size: 5cqw;
+    line-height: 5.5cqw;
+  }
+  #entry-btn[data-stage="exit"] {
+    line-height: 7cqw;
+    font-size: 6.5cqw;
   }
   .ehvp-root input[type="checkbox"] {
     width: 4cqw;
@@ -4381,17 +4388,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   .p-config {
     line-height: 8.2cqw;
   }
-  #imgScaleResetBTN {
-    width: 14cqw;
-  }
   .bifm-vid-ctl {
     bottom: 5.2cqw;
     left: 0;
     width: 100vw;
-  }
-  .b-extra {
-    left: 0;
-    bottom: 101%;
   }
 }
 .clickable {
@@ -4411,7 +4411,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .b-main {
   display: flex;
   user-select: none;
-  ${conf.pageHelperAbLeft === "unset" ? "flex-direction: row-reverse;" : ""}
 }
 .b-main-item {
   box-sizing: border-box;
@@ -4419,11 +4418,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   border-radius: 4px;
   background-color: var(--ehvp-background-color);
   color: var(--ehvp-font-color);
-  font-size: 1rem;
   font-weight: bold;
   padding: 0rem 0.3rem;
   margin: 0rem 0.2rem;
-  line-height: 1.2rem;
   position: relative;
   white-space: nowrap;
 }
@@ -4772,18 +4769,6 @@ html {
 .bifm-vid-ctl-span {
   color: white;
   font-weight: bold;
-}
-.b-extra {
-  position: absolute;
-  background-color: #4a4a4ae6;
-  height: 100%;
-  display: none;
-}
-.b-extra .clickable {
-  margin: 0rem 0.1rem;
-}
-.b-extra:hover {
-  background-color: #3a3a3ae6;
 }
 .download-middle {
   width: 100%;

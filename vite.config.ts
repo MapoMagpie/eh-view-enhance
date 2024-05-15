@@ -19,6 +19,9 @@ export default defineConfig(({ command }) => {
       outDir,
       emptyOutDir,
     },
+    server: {
+      host: '0.0.0.0',
+    },
     plugins: [
       monkey({
         entry: 'src/main.ts',

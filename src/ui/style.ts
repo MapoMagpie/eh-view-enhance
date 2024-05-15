@@ -374,7 +374,7 @@ export function loadStyleSheel() {
   display: inline-block;
   text-align: center;
   width: 1.5rem;
-  cursor: touch;
+  cursor: move;
 }
 .p-config {
   display: grid;

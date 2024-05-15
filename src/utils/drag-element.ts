@@ -1,32 +1,46 @@
-export function dragElement(element: HTMLElement, dragHub?: HTMLElement, callback?: (offsetTop: number, offsetLeft: number) => void) {
+type Callbacks = {
+  onStart?: (clientX: number, clientY: number) => void,
+  onMoving?: (pos: AbsolutePosition) => void,
+  onFinish?: (pos: AbsolutePosition) => void,
+}
+
+export type AbsolutePosition = {
+  top?: number,
+  left?: number,
+  right?: number,
+  bottom?: number,
+  vw: number,
+  vh: number,
+}
+
+function toPositions(vw: number, vh: number, mouseX: number, mouseY: number): AbsolutePosition {
+  let pos: AbsolutePosition = { vw, vh };
+  if (mouseX <= vw / 2) {
+    pos.left = Math.max(mouseX, 5)
+  } else {
+    pos.right = Math.max(vw - mouseX, 5);
+  }
+  if (mouseY <= vh / 2) {
+    pos.top = Math.max(mouseY, 5);
+  } else {
+    pos.bottom = Math.max(vh - mouseY, 5);
+  }
+  return pos;
+}
+
+export function dragElement(element: HTMLElement, callbacks: Callbacks, dragHub?: HTMLElement,) {
   (dragHub ?? element).addEventListener("mousedown", (event) => {
     event.preventDefault();
     const wh = window.innerHeight;
     const ww = window.innerWidth;
-    const mouseMove = (event: MouseEvent) => {
-      event.preventDefault();
-      const mouseX = event.clientX;
-      const mouseY = event.clientY;
-      if (mouseY <= wh / 2) {
-        element.style.top = Math.max(mouseY, 5) + "px";
-        element.style.bottom = "unset";
-      } else {
-        element.style.bottom = Math.max(wh - mouseY - element.clientHeight, 5) + "px";
-        element.style.top = "unset";
-      }
-      if (mouseX <= ww / 2) {
-        element.style.left = Math.max(mouseX, 5) + "px";
-        element.style.right = "unset";
-      } else {
-        element.style.right = Math.max(ww - mouseX - element.clientWidth, 5) + "px";
-        element.style.left = "unset";
-      }
-      console.log("drag element: offset top: ", element.style.top, "offset left: ", element.style.left, "offset bottom: ", element.style.bottom, "offset right: ", element.style.right);
-    }
-    document.addEventListener("mousemove", mouseMove);
+    const abort = new AbortController();
+    callbacks.onStart?.(event.clientX, event.clientY);
+    document.addEventListener("mousemove", (event) => {
+      callbacks.onMoving?.(toPositions(ww, wh, event.clientX, event.clientY));
+    }, { signal: abort.signal });
     document.addEventListener("mouseup", () => {
-      document.removeEventListener("mousemove", mouseMove);
-      callback?.(element.offsetTop, element.offsetLeft);
+      abort.abort();
+      callbacks.onFinish?.(toPositions(ww, wh, event.clientX, event.clientY));
     }, { once: true });
   });
 }

@@ -37,16 +37,6 @@ export class KeyboardDesc {
 }
 
 export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: FullViewGridManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader, PH: PageHelper) {
-
-  function modPageHelperPostion() {
-    const style = HTML.pageHelper.style;
-    conf.pageHelperAbTop = style.top;
-    conf.pageHelperAbLeft = style.left;
-    conf.pageHelperAbBottom = style.bottom;
-    conf.pageHelperAbRight = style.right;
-    saveConf(conf);
-  }
-
   // modify config
   function modNumberConfigEvent(key: ConfigNumberType, data?: "add" | "minus") {
     const range = {
@@ -460,7 +450,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     modNumberConfigEvent,
     modBooleanConfigEvent,
     modSelectConfigEvent,
-    modPageHelperPostion,
 
     togglePanelEvent,
     showFullViewGrid,

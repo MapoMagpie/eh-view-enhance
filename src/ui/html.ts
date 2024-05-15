@@ -1,4 +1,4 @@
-import { ConfigBooleanType, ConfigItem, ConfigItems, ConfigNumberType, ConfigSelectType, conf } from "../config";
+import { ConfigBooleanType, ConfigItem, ConfigItems, ConfigNumberType, ConfigSelectType, conf, saveConf } from "../config";
 import { Downloader } from "../download/downloader";
 import { Debouncer } from "../utils/debouncer";
 import { dragElement, dragElementWithLine } from "../utils/drag-element";
@@ -9,6 +9,7 @@ import { PageHelper } from "./page-helper";
 import { toggleAnimationStyle, loadStyleSheel } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 import icons from "../utils/icons";
+import queryCSSRules from "../utils/query-cssrules";
 
 function createOption(item: ConfigItem) {
   const i18nKey = item.i18nKey || item.key;
@@ -266,7 +267,24 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
   HTML.showExcludeURLElement.addEventListener("click", events.showExcludeURLEvent);
 
-  dragElement(HTML.pageHelper, q("#dragHub", HTML.pageHelper), events.modPageHelperPostion);
+  dragElement(HTML.pageHelper, {
+    onFinish: () => {
+      conf.pageHelperAbTop = HTML.pageHelper.style.top;
+      conf.pageHelperAbLeft = HTML.pageHelper.style.left;
+      conf.pageHelperAbBottom = HTML.pageHelper.style.bottom;
+      conf.pageHelperAbRight = HTML.pageHelper.style.right;
+      saveConf(conf);
+    },
+    onMoving: (pos) => {
+      HTML.pageHelper.style.top = pos.top === undefined ? "unset" : `${pos.top}px`;
+      HTML.pageHelper.style.bottom = pos.bottom === undefined ? "unset" : `${pos.bottom}px`;
+      HTML.pageHelper.style.left = pos.left === undefined ? "unset" : `${pos.left}px`;
+      HTML.pageHelper.style.right = pos.right === undefined ? "unset" : `${pos.right}px`;
+      const rule = queryCSSRules(HTML.styleSheel, ".b-main");
+      if (rule) rule.style.flexDirection = pos.left === undefined ? "row-reverse" : "row";
+
+    }
+  }, q("#dragHub", HTML.pageHelper));
 
   HTML.readModeSelect.addEventListener("click", (event) => {
     const value = (event.target as HTMLElement).getAttribute("data-value");

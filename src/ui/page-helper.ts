@@ -39,17 +39,11 @@ export class PageHelper {
       const queue = this.chapters()[this.chapterIndex]?.queue;
       if (!queue) return;
       this.setPageState({ current: (index + 1).toString() });
-      if (imf.stage !== FetchState.DONE) {
-        this.setFetchState("fetching");
-      }
     });
     EBUS.subscribe("ifq-on-finished-report", (index, queue) => {
       if (queue.chapterIndex !== this.chapterIndex) return;
       this.setPageState({ finished: queue.finishedIndex.size.toString() });
       evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
-      if (queue[queue.currIndex].stage === FetchState.DONE) {
-        this.setFetchState("fetched");
-      }
     });
     EBUS.subscribe("pf-on-appended", (total, _ifs, done) => {
       this.setPageState({ total: `${total}${done ? "" : ".."}` });
@@ -66,13 +60,6 @@ export class PageHelper {
       }
     });
   }
-  private setFetchState(state: "fetching" | "fetched") {
-    if (state === "fetching") {
-      this.html.pageHelper.classList.add("p-helper-fetching");
-    } else {
-      this.html.pageHelper.classList.remove("p-helper-fetching");
-    }
-  }
 
   private setPageState({ total, current, finished }: { total?: string, current?: string, finished?: string }) {
     if (total !== undefined) {
@@ -86,52 +73,60 @@ export class PageHelper {
     }
   }
 
-  // ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn", "scale-bar", "read-mode-bar", "pagination-adjust-bar"]
+  // const arr = ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn", "scale-bar", "read-mode-bar", "pagination-adjust-bar"];
   minify(stage: "fullViewGrid" | "bigImageFrame" | "exit", hover: boolean = false) {
-    const items = Array.from(this.html.pageHelper.querySelectorAll<HTMLElement>(".b-main > .b-main-item"));
-    let pick: string[] = [];
     this.lastStage = stage;
-    if (stage !== "exit") {
-      if (conf.minifyPageHelper === "always") {
-        stage = "bigImageFrame";
-      }
-      if (conf.minifyPageHelper === "never") {
-        hover = true;
+    let level: [number, number] = [0, 0];
+    if (stage === "exit") {
+      level = [0, 0];
+    } else {
+      switch (stage) {
+        case "fullViewGrid":
+          if (conf.minifyPageHelper === "never" || conf.minifyPageHelper === "inBigMode") {
+            level = [1, 1];
+          } else {
+            level = hover ? [1, 1] : [3, 1];
+          }
+          break;
+        case "bigImageFrame":
+          if (conf.minifyPageHelper === "never") {
+            level = [2, 2];
+          } else {
+            level = hover ? [2, 2] : [3, 2];
+          }
+          break;
       }
     }
-    switch (stage) {
-      case "fullViewGrid":
-        pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
-        if (this.chapters().length > 1 && this.chapterIndex > -1) {
-          pick.push("chapters-btn");
-        }
-        if (hover) {
-          pick.push("entry-btn");
-        }
-        break;
-      case "bigImageFrame":
-        if (hover) {
-          pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn", "read-mode-bar"];
-          if (conf.readMode === "pagination") {
-            pick.push("pagination-adjust-bar");
-          }
-          pick.push("scale-bar");
-        } else {
-          pick = ["page-status"];
-          if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
-            pick.push("auto-page-btn");
-          }
-        }
-        break;
-      case "exit":
-        pick = ["entry-btn"];
-        break;
+    function getPick(lvl: number) {
+      switch (lvl) {
+        case 0:
+          // default
+          return ["entry-btn"];
+        case 1:
+          // hover in fullViewGrid
+          return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-btn", "entry-btn"];
+        case 2:
+          // hover in bigImageFrame
+          return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn", "read-mode-bar", "pagination-adjust-bar", "scale-bar"];
+        case 3:
+          // minify
+          return ["page-status", "auto-page-btn"];
+      }
+      return [];
     }
+    const filter = (id: string) => {
+      if (id === "chapters-btn") return this.chapters().length > 1;
+      if (id === "auto-page-btn" && level[0] === 3) return this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing";
+      return true;
+    }
+    const pick = getPick(level[0]).filter(filter);
+    const notHidden = getPick(level[1]).filter(filter);
+    const items = Array.from(this.html.pageHelper.querySelectorAll<HTMLElement>(".b-main > .b-main-item"));
     for (const item of items) {
       const index = pick.indexOf(item.id);
       item.style.order = index === -1 ? "99" : index.toString();
       item.style.opacity = index === -1 ? "0" : "1";
-      item.hidden = !hover && stage === "exit" && index === -1;
+      item.hidden = !notHidden.includes(item.id);
     }
     this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = stage === "exit" ? icons.bookIcon : i18n.collapse.get();
   }

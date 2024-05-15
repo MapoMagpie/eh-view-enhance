@@ -354,6 +354,7 @@ export function loadStyleSheel() {
   margin: 0rem 0.2rem;
   line-height: 1.2rem;
   position: relative;
+  white-space: nowrap;
 }
 .b-main-option {
   padding: 0rem 0.2rem;

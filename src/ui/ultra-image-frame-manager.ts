@@ -31,6 +31,8 @@ export class BigImageFrameManager {
   vidController?: VideoControl;
   chapterIndex: number = 0;
   getChapter: (index: number) => Chapter;
+  loadingHelper: HTMLElement;
+  currLoadingState: Map<number, number> = new Map();
 
   constructor(HTML: Elements, getChapter: (index: number) => Chapter) {
     this.html = HTML;
@@ -48,6 +50,7 @@ export class BigImageFrameManager {
     EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
     EBUS.subscribe("imf-on-finished", (index, success, imf) => {
       if (imf.chapterIndex !== this.chapterIndex) return;
+      this.currLoadingState.delete(index);
       if (!this.visible || !success) return;
       const elements = [
         ...this.elements.curr.map((e, i) => ({ img: e, eleIndex: i, key: "curr" })),
@@ -69,6 +72,26 @@ export class BigImageFrameManager {
         return;
       }
       img.setAttribute("src", imf.blobUrl!);
+      this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
+    });
+
+    this.loadingHelper = document.createElement("span");
+    this.loadingHelper.id = "bifm-loading-helper";
+    this.loadingHelper.style.position = "absolute";
+    this.loadingHelper.style.zIndex = "3000";
+    this.loadingHelper.style.display = "none";
+    this.loadingHelper.style.padding = "0px 3px";
+    this.loadingHelper.style.backgroundColor = "#ffffff70";
+    this.loadingHelper.style.left = "0px";
+    this.frame.append(this.loadingHelper);
+
+    EBUS.subscribe("imf-download-state-change", (imf) => {
+      if (imf.chapterIndex !== this.chapterIndex) return;
+      const element = this.elements.curr.find(e => e.getAttribute("d-random-id") === imf.randomID);
+      if (!element) return;
+      const index = parseIndex(element);
+      this.currLoadingState.set(index, Math.floor(imf.downloadState.loaded / imf.downloadState.total * 100));
+      this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
     });
 
     // enable auto page
@@ -137,6 +160,7 @@ export class BigImageFrameManager {
     this.frame.focus();
     this.frameScrollAbort = new AbortController();
     this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
+    // setNow
     this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => (imf.chapterIndex === this.chapterIndex) && this.setNow(imf), 100);
     EBUS.emit("bifm-on-show");
   }
@@ -151,6 +175,8 @@ export class BigImageFrameManager {
       if (index === -1) return;
       EBUS.emit("ifq-do", index, imf, oriented || "next");
     }
+    this.currLoadingState.clear();
+    this.flushLoadingHelper();
   }
 
   initElements(imf: IMGFetcher, oriented: Oriented = "next") {
@@ -195,7 +221,6 @@ export class BigImageFrameManager {
       if (currIndex > -1 && currIndex < queue.length) indices.curr.push(currIndex);
       if (nextIndex < queue.length) indices.next.push(nextIndex);
     }
-    console.log("balanceElements", indices);
     if (oriented === "next") {
       this.elements.prev = this.elements.curr;
       this.elements.curr = this.elements.next;
@@ -442,8 +467,8 @@ export class BigImageFrameManager {
 
   extendImgNode(mediaNode: HTMLElement, oriented: Oriented): HTMLImageElement | HTMLVideoElement | null {
     let extendedNode: HTMLImageElement | HTMLVideoElement | null;
-    const index = parseInt(mediaNode.getAttribute("d-index")!);
-    if (isNaN(index)) {
+    const index = parseIndex(mediaNode);
+    if (index === -1) {
       throw new Error("BIFM: extendImgNode: media node index is NaN");
     }
     const queue = this.getChapter(this.chapterIndex).queue;
@@ -469,6 +494,7 @@ export class BigImageFrameManager {
       vid.classList.add("bifm-img");
       vid.classList.add("bifm-vid");
       vid.setAttribute("d-index", index.toString());
+      vid.setAttribute("d-random-id", imf.randomID);
       vid.onloadeddata = () => {
         if (this.visible && vid === this.elements.curr[0]) {
           this.tryPlayVideo(vid);
@@ -483,6 +509,7 @@ export class BigImageFrameManager {
       img.classList.add("bifm-img");
       // img.addEventListener("click", () => this.hidden());
       img.setAttribute("d-index", index.toString());
+      img.setAttribute("d-random-id", imf.randomID);
       if (imf.stage === FetchState.DONE) {
         img.src = imf.blobUrl!;
       } else {
@@ -624,6 +651,18 @@ export class BigImageFrameManager {
     return 0;
   }
 
+  flushLoadingHelper() {
+    if (this.currLoadingState.size === 0) {
+      this.loadingHelper.style.display = "none";
+    } else {
+      if (this.loadingHelper.style.display === "none") {
+        this.loadingHelper.style.display = "inline-block";
+      }
+      const ret = Array.from(this.currLoadingState).map(([k, v]) => `[${k + 1}:${v}%]`);
+      if (conf.reversePages) ret.reverse();
+      this.loadingHelper.textContent = `Loading ${ret.join(",")}`;
+    }
+  }
 }
 
 // 自动翻页

@@ -42,6 +42,7 @@ export class IMGFetcher implements VisualNode {
   timeoutId?: number;
   matcher: Matcher;
   chapterIndex: number;
+  randomID: string;
 
   constructor(root: ImageNode, matcher: Matcher, chapterIndex: number) {
     this.node = root;
@@ -49,6 +50,7 @@ export class IMGFetcher implements VisualNode {
     this.downloadState = { total: 100, loaded: 0, readyState: 0, };
     this.matcher = matcher;
     this.chapterIndex = chapterIndex;
+    this.randomID = chapterIndex + Math.random().toString(16).slice(2) + this.node.href;
   }
 
   create(): HTMLElement {
@@ -59,7 +61,7 @@ export class IMGFetcher implements VisualNode {
   setDownloadState(newState: Partial<DownloadState>) {
     this.downloadState = { ...this.downloadState, ...newState };
     this.node.progress(this.downloadState);
-    EBUS.emit("imf-download-state-change");
+    EBUS.emit("imf-download-state-change", this);
   }
 
   async start(index: number) {

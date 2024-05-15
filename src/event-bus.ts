@@ -42,7 +42,7 @@ export interface Events {
   "pf-change-chapter": (index: number) => void;
   "imf-on-finished": (index: number, success: boolean, imf: IMGFetcher) => void;
   "imf-on-click": (imf: IMGFetcher) => void;
-  "imf-download-state-change": () => void;
+  "imf-download-state-change": (imf: IMGFetcher) => void;
   "ifq-do": (index: number, imf: IMGFetcher, oriented: Oriented) => void;
   "ifq-on-do": (index: number, queue: IMGFetcherQueue, downloading: boolean) => void;
   "ifq-on-finished-report": (index: number, queue: IMGFetcherQueue) => void;

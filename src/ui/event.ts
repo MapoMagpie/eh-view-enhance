@@ -176,9 +176,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     } else {
       // close other panel
       ["config", "downloader"].filter(k => k !== id).forEach(id => togglePanelEvent(id, true));
+      // extend
       element.classList.remove("p-collapse");
       if (target) {
-        relocateElement(element, target, HTML.root);
+        relocateElement(element, target, HTML.root.clientWidth, HTML.root.clientHeight);
       }
     }
     // PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");

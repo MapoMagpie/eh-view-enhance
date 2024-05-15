@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.0
+// @version            4.5.1
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
@@ -363,12 +363,14 @@
     timeoutId;
     matcher;
     chapterIndex;
+    randomID;
     constructor(root, matcher, chapterIndex) {
       this.node = root;
       this.node.onclick = () => EBUS.emit("imf-on-click", this);
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
       this.matcher = matcher;
       this.chapterIndex = chapterIndex;
+      this.randomID = chapterIndex + Math.random().toString(16).slice(2) + this.node.href;
     }
     create() {
       return this.node.create();
@@ -377,7 +379,7 @@
     setDownloadState(newState) {
       this.downloadState = { ...this.downloadState, ...newState };
       this.node.progress(this.downloadState);
-      EBUS.emit("imf-download-state-change");
+      EBUS.emit("imf-download-state-change", this);
     }
     async start(index) {
       if (this.lock)
@@ -3891,17 +3893,19 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return Array.from(root.sheet?.cssRules || []).find((rule) => rule.selectorText === selector);
   }
 
-  function relocateElement(element, anchor, root) {
+  function relocateElement(element, anchor, vw, vh) {
     const rect = anchor.getBoundingClientRect();
     let left = rect.left + rect.width / 2 - element.offsetWidth / 2;
-    left = Math.min(left, root.offsetWidth - element.offsetWidth - 10);
+    left = Math.min(left, vw - element.offsetWidth - 10);
     left = Math.max(left, 10);
     element.style.left = left + "px";
-    let top = rect.top - element.offsetHeight;
-    if (top < 10) {
-      top = rect.bottom;
+    if (rect.top > vh / 2) {
+      element.style.bottom = vh - rect.top + "px";
+      element.style.top = "unset";
+    } else {
+      element.style.top = rect.bottom + "px";
+      element.style.bottom = "unset";
     }
-    element.style.top = top + "px";
   }
 
   function createExcludeURLPanel(root) {
@@ -4421,6 +4425,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   margin: 0rem 0.2rem;
   line-height: 1.2rem;
   position: relative;
+  white-space: nowrap;
 }
 .b-main-option {
   padding: 0rem 0.2rem;
@@ -4441,7 +4446,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   display: inline-block;
   text-align: center;
   width: 1.5rem;
-  cursor: touch;
+  cursor: ns-resize;
 }
 .p-config {
   display: grid;
@@ -4833,14 +4838,6 @@ html {
     }
   }
   function initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH) {
-    function modPageHelperPostion() {
-      const style = HTML.pageHelper.style;
-      conf.pageHelperAbTop = style.top;
-      conf.pageHelperAbLeft = style.left;
-      conf.pageHelperAbBottom = style.bottom;
-      conf.pageHelperAbRight = style.right;
-      saveConf(conf);
-    }
     function modNumberConfigEvent(key, data) {
       const range = {
         colCount: [1, 12],
@@ -4973,7 +4970,7 @@ html {
         ["config", "downloader"].filter((k) => k !== id).forEach((id2) => togglePanelEvent(id2, true));
         element.classList.remove("p-collapse");
         if (target) {
-          relocateElement(element, target, HTML.root);
+          relocateElement(element, target, HTML.root.clientWidth, HTML.root.clientHeight);
         }
       }
     }
@@ -5230,7 +5227,6 @@ html {
       modNumberConfigEvent,
       modBooleanConfigEvent,
       modSelectConfigEvent,
-      modPageHelperPostion,
       togglePanelEvent,
       showFullViewGrid,
       hiddenFullViewGridEvent,
@@ -5339,35 +5335,33 @@ html {
     }
   }
 
-  function dragElement(element, dragHub, callback) {
+  function toPositions(vw, vh, mouseX, mouseY) {
+    let pos = { vw, vh };
+    if (mouseX <= vw / 2) {
+      pos.left = Math.max(mouseX, 5);
+    } else {
+      pos.right = Math.max(vw - mouseX, 5);
+    }
+    if (mouseY <= vh / 2) {
+      pos.top = Math.max(mouseY, 5);
+    } else {
+      pos.bottom = Math.max(vh - mouseY, 5);
+    }
+    return pos;
+  }
+  function dragElement(element, callbacks, dragHub) {
     (dragHub ?? element).addEventListener("mousedown", (event) => {
       event.preventDefault();
       const wh = window.innerHeight;
       const ww = window.innerWidth;
-      const mouseMove = (event2) => {
-        event2.preventDefault();
-        const mouseX = event2.clientX;
-        const mouseY = event2.clientY;
-        if (mouseY <= wh / 2) {
-          element.style.top = Math.max(mouseY, 5) + "px";
-          element.style.bottom = "unset";
-        } else {
-          element.style.bottom = Math.max(wh - mouseY - element.clientHeight, 5) + "px";
-          element.style.top = "unset";
-        }
-        if (mouseX <= ww / 2) {
-          element.style.left = Math.max(mouseX, 5) + "px";
-          element.style.right = "unset";
-        } else {
-          element.style.right = Math.max(ww - mouseX - element.clientWidth, 5) + "px";
-          element.style.left = "unset";
-        }
-        console.log("drag element: offset top: ", element.style.top, "offset left: ", element.style.left, "offset bottom: ", element.style.bottom, "offset right: ", element.style.right);
-      };
-      document.addEventListener("mousemove", mouseMove);
+      const abort = new AbortController();
+      callbacks.onStart?.(event.clientX, event.clientY);
+      document.addEventListener("mousemove", (event2) => {
+        callbacks.onMoving?.(toPositions(ww, wh, event2.clientX, event2.clientY));
+      }, { signal: abort.signal });
       document.addEventListener("mouseup", () => {
-        document.removeEventListener("mousemove", mouseMove);
-        callback?.(element.offsetTop, element.offsetLeft);
+        abort.abort();
+        callbacks.onFinish?.(toPositions(ww, wh, event.clientX, event.clientY));
       }, { once: true });
     });
   }
@@ -5543,7 +5537,7 @@ html {
             <span>
               <span>${icons.zoomIcon}</span>
               <span id="scaleMinusBTN" class="b-main-btn clickable" type="button">-</span>
-              <span id="scaleInput" class="b-main-input" style="width: 3rem">${conf.imgScale}</span>
+              <span id="scaleInput" class="b-main-input" style="width: 3rem; cursor: move;">${conf.imgScale}</span>
               <span id="scaleAddBTN" class="b-main-btn clickable" type="button">+</span>
             </span>
         </div>
@@ -5665,7 +5659,24 @@ html {
     HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
     HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
     HTML.showExcludeURLElement.addEventListener("click", events.showExcludeURLEvent);
-    dragElement(HTML.pageHelper, q("#dragHub", HTML.pageHelper), events.modPageHelperPostion);
+    dragElement(HTML.pageHelper, {
+      onFinish: () => {
+        conf.pageHelperAbTop = HTML.pageHelper.style.top;
+        conf.pageHelperAbLeft = HTML.pageHelper.style.left;
+        conf.pageHelperAbBottom = HTML.pageHelper.style.bottom;
+        conf.pageHelperAbRight = HTML.pageHelper.style.right;
+        saveConf(conf);
+      },
+      onMoving: (pos) => {
+        HTML.pageHelper.style.top = pos.top === void 0 ? "unset" : `${pos.top}px`;
+        HTML.pageHelper.style.bottom = pos.bottom === void 0 ? "unset" : `${pos.bottom}px`;
+        HTML.pageHelper.style.left = pos.left === void 0 ? "unset" : `${pos.left}px`;
+        HTML.pageHelper.style.right = pos.right === void 0 ? "unset" : `${pos.right}px`;
+        const rule = queryCSSRules(HTML.styleSheel, ".b-main");
+        if (rule)
+          rule.style.flexDirection = pos.left === void 0 ? "row-reverse" : "row";
+      }
+    }, q("#dragHub", HTML.pageHelper));
     HTML.readModeSelect.addEventListener("click", (event) => {
       const value = event.target.getAttribute("data-value");
       if (value) {
@@ -5727,18 +5738,12 @@ html {
         if (!queue)
           return;
         this.setPageState({ current: (index + 1).toString() });
-        if (imf.stage !== FetchState.DONE) {
-          this.setFetchState("fetching");
-        }
       });
       EBUS.subscribe("ifq-on-finished-report", (index, queue) => {
         if (queue.chapterIndex !== this.chapterIndex)
           return;
         this.setPageState({ finished: queue.finishedIndex.size.toString() });
         evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
-        if (queue[queue.currIndex].stage === FetchState.DONE) {
-          this.setFetchState("fetched");
-        }
       });
       EBUS.subscribe("pf-on-appended", (total, _ifs, done) => {
         this.setPageState({ total: `${total}${done ? "" : ".."}` });
@@ -5756,13 +5761,6 @@ html {
         }
       });
     }
-    setFetchState(state) {
-      if (state === "fetching") {
-        this.html.pageHelper.classList.add("p-helper-fetching");
-      } else {
-        this.html.pageHelper.classList.remove("p-helper-fetching");
-      }
-    }
     setPageState({ total, current, finished }) {
       if (total !== void 0) {
         this.html.totalPageElement.textContent = total;
@@ -5774,54 +5772,60 @@ html {
         this.html.finishedElement.textContent = finished;
       }
     }
-    // ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn", "scale-bar", "read-mode-bar", "pagination-adjust-bar"]
+    // const arr = ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn", "scale-bar", "read-mode-bar", "pagination-adjust-bar"];
     minify(stage, hover = false) {
-      const items = Array.from(this.html.pageHelper.querySelectorAll(".b-main > .b-main-item"));
-      let pick = [];
       this.lastStage = stage;
-      if (stage !== "exit") {
-        if (conf.minifyPageHelper === "always") {
-          stage = "bigImageFrame";
-        }
-        if (conf.minifyPageHelper === "never") {
-          hover = true;
+      let level = [0, 0];
+      if (stage === "exit") {
+        level = [0, 0];
+      } else {
+        switch (stage) {
+          case "fullViewGrid":
+            if (conf.minifyPageHelper === "never" || conf.minifyPageHelper === "inBigMode") {
+              level = [1, 1];
+            } else {
+              level = hover ? [1, 1] : [3, 1];
+            }
+            break;
+          case "bigImageFrame":
+            if (conf.minifyPageHelper === "never") {
+              level = [2, 2];
+            } else {
+              level = hover ? [2, 2] : [3, 2];
+            }
+            break;
         }
       }
-      switch (stage) {
-        case "fullViewGrid":
-          pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn"];
-          if (this.chapters().length > 1 && this.chapterIndex > -1) {
-            pick.push("chapters-btn");
-          }
-          if (hover) {
-            pick.push("entry-btn");
-          }
-          break;
-        case "bigImageFrame":
-          if (hover) {
-            pick = ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn", "read-mode-bar"];
-            if (conf.readMode === "pagination") {
-              pick.push("pagination-adjust-bar");
-            }
-            pick.push("scale-bar");
-          } else {
-            pick = ["page-status"];
-            if (this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing") {
-              pick.push("auto-page-btn");
-            }
-          }
-          break;
-        case "exit":
-          pick = ["entry-btn"];
-          break;
+      function getPick(lvl) {
+        switch (lvl) {
+          case 0:
+            return ["entry-btn"];
+          case 1:
+            return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-btn", "entry-btn"];
+          case 2:
+            return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn", "read-mode-bar", "pagination-adjust-bar", "scale-bar"];
+          case 3:
+            return ["page-status", "auto-page-btn"];
+        }
+        return [];
       }
+      const filter = (id) => {
+        if (id === "chapters-btn")
+          return this.chapters().length > 1;
+        if (id === "auto-page-btn" && level[0] === 3)
+          return this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing";
+        return true;
+      };
+      const pick = getPick(level[0]).filter(filter);
+      const notHidden = getPick(level[1]).filter(filter);
+      const items = Array.from(this.html.pageHelper.querySelectorAll(".b-main > .b-main-item"));
       for (const item of items) {
         const index = pick.indexOf(item.id);
         item.style.order = index === -1 ? "99" : index.toString();
         item.style.opacity = index === -1 ? "0" : "1";
-        item.hidden = !hover && stage === "exit" && index === -1;
+        item.hidden = !notHidden.includes(item.id);
       }
-      this.html.pageHelper.querySelector("#entry-btn").textContent = stage === "exit" ? icons.bookIcon : "EXIT";
+      this.html.pageHelper.querySelector("#entry-btn").textContent = stage === "exit" ? icons.bookIcon : i18n.collapse.get();
     }
   }
 
@@ -6012,6 +6016,8 @@ html {
     vidController;
     chapterIndex = 0;
     getChapter;
+    loadingHelper;
+    currLoadingState = /* @__PURE__ */ new Map();
     constructor(HTML, getChapter) {
       this.html = HTML;
       this.frame = HTML.bigImageFrame;
@@ -6029,6 +6035,7 @@ html {
       EBUS.subscribe("imf-on-finished", (index, success, imf) => {
         if (imf.chapterIndex !== this.chapterIndex)
           return;
+        this.currLoadingState.delete(index);
         if (!this.visible || !success)
           return;
         const elements = [
@@ -6051,6 +6058,26 @@ html {
           return;
         }
         img.setAttribute("src", imf.blobUrl);
+        this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
+      });
+      this.loadingHelper = document.createElement("span");
+      this.loadingHelper.id = "bifm-loading-helper";
+      this.loadingHelper.style.position = "absolute";
+      this.loadingHelper.style.zIndex = "3000";
+      this.loadingHelper.style.display = "none";
+      this.loadingHelper.style.padding = "0px 3px";
+      this.loadingHelper.style.backgroundColor = "#ffffff70";
+      this.loadingHelper.style.left = "0px";
+      this.frame.append(this.loadingHelper);
+      EBUS.subscribe("imf-download-state-change", (imf) => {
+        if (imf.chapterIndex !== this.chapterIndex)
+          return;
+        const element = this.elements.curr.find((e) => e.getAttribute("d-random-id") === imf.randomID);
+        if (!element)
+          return;
+        const index = parseIndex(element);
+        this.currLoadingState.set(index, Math.floor(imf.downloadState.loaded / imf.downloadState.total * 100));
+        this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
       });
       new AutoPage(this, HTML.autoPageBTN);
     }
@@ -6127,6 +6154,8 @@ html {
           return;
         EBUS.emit("ifq-do", index, imf, oriented || "next");
       }
+      this.currLoadingState.clear();
+      this.flushLoadingHelper();
     }
     initElements(imf, oriented = "next") {
       this.resetPreventStep();
@@ -6173,7 +6202,6 @@ html {
         if (nextIndex < queue.length)
           indices.next.push(nextIndex);
       }
-      console.log("balanceElements", indices);
       if (oriented === "next") {
         this.elements.prev = this.elements.curr;
         this.elements.curr = this.elements.next;
@@ -6405,8 +6433,8 @@ html {
     }
     extendImgNode(mediaNode, oriented) {
       let extendedNode;
-      const index = parseInt(mediaNode.getAttribute("d-index"));
-      if (isNaN(index)) {
+      const index = parseIndex(mediaNode);
+      if (index === -1) {
         throw new Error("BIFM: extendImgNode: media node index is NaN");
       }
       const queue = this.getChapter(this.chapterIndex).queue;
@@ -6433,6 +6461,7 @@ html {
         vid.classList.add("bifm-img");
         vid.classList.add("bifm-vid");
         vid.setAttribute("d-index", index.toString());
+        vid.setAttribute("d-random-id", imf.randomID);
         vid.onloadeddata = () => {
           if (this.visible && vid === this.elements.curr[0]) {
             this.tryPlayVideo(vid);
@@ -6445,6 +6474,7 @@ html {
         img.decoding = "sync";
         img.classList.add("bifm-img");
         img.setAttribute("d-index", index.toString());
+        img.setAttribute("d-random-id", imf.randomID);
         if (imf.stage === FetchState.DONE) {
           img.src = imf.blobUrl;
         } else {
@@ -6581,6 +6611,19 @@ html {
         }
       }
       return 0;
+    }
+    flushLoadingHelper() {
+      if (this.currLoadingState.size === 0) {
+        this.loadingHelper.style.display = "none";
+      } else {
+        if (this.loadingHelper.style.display === "none") {
+          this.loadingHelper.style.display = "inline-block";
+        }
+        const ret = Array.from(this.currLoadingState).map(([k, v]) => `[${k + 1}:${v}%]`);
+        if (conf.reversePages)
+          ret.reverse();
+        this.loadingHelper.textContent = `Loading ${ret.join(",")}`;
+      }
     }
   }
   class AutoPage {

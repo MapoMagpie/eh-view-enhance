@@ -81,7 +81,8 @@ export class BigImageFrameManager {
     this.loadingHelper.style.zIndex = "3000";
     this.loadingHelper.style.display = "none";
     this.loadingHelper.style.padding = "0px 3px";
-    this.loadingHelper.style.backgroundColor = "#ffffff70";
+    this.loadingHelper.style.backgroundColor = "#ffffff90";
+    this.loadingHelper.style.fontWeight = "bold";
     this.loadingHelper.style.left = "0px";
     this.frame.append(this.loadingHelper);
 
@@ -658,7 +659,7 @@ export class BigImageFrameManager {
       if (this.loadingHelper.style.display === "none") {
         this.loadingHelper.style.display = "inline-block";
       }
-      const ret = Array.from(this.currLoadingState).map(([k, v]) => `[${k + 1}:${v}%]`);
+      const ret = Array.from(this.currLoadingState).map(([k, v]) => `[P-${k + 1}: ${v}%]`);
       if (conf.reversePages) ret.reverse();
       this.loadingHelper.textContent = `Loading ${ret.join(",")}`;
     }

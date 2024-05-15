@@ -128,6 +128,6 @@ export class PageHelper {
       item.style.opacity = index === -1 ? "0" : "1";
       item.hidden = !notHidden.includes(item.id);
     }
-    this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = stage === "exit" ? icons.bookIcon : i18n.collapse.get();
+    this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = stage === "exit" ? icons.moonViewCeremony : i18n.collapse.get();
   }
 }

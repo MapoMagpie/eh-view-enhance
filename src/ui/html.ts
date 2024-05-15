@@ -101,7 +101,7 @@ export function createHTML() {
         </div>
     </div>
     <div id="b-main" class="b-main">
-        <div id="entry-btn" class="b-main-item clickable">${icons.bookIcon}</div>
+        <div id="entry-btn" class="b-main-item clickable">${icons.moonViewCeremony}</div>
         <div id="page-status" class="b-main-item" hidden>
             <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span>
         </div>

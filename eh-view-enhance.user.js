@@ -5415,9 +5415,15 @@ html {
   }
 
   const bookIcon = `📖`;
+  const moonViewCeremony = `⍇🎑⍈`;
+  const sixPointedStar = `🔯`;
+  const entryIcon = `⍇⍈`;
   const zoomIcon = `⇱⇲`;
   const icons = {
     bookIcon,
+    moonViewCeremony,
+    sixPointedStar,
+    entryIcon,
     zoomIcon
   };
 
@@ -5507,7 +5513,7 @@ html {
         </div>
     </div>
     <div id="b-main" class="b-main">
-        <div id="entry-btn" class="b-main-item clickable">${icons.bookIcon}</div>
+        <div id="entry-btn" class="b-main-item clickable">${icons.moonViewCeremony}</div>
         <div id="page-status" class="b-main-item" hidden>
             <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span>
         </div>
@@ -5825,7 +5831,7 @@ html {
         item.style.opacity = index === -1 ? "0" : "1";
         item.hidden = !notHidden.includes(item.id);
       }
-      this.html.pageHelper.querySelector("#entry-btn").textContent = stage === "exit" ? icons.bookIcon : i18n.collapse.get();
+      this.html.pageHelper.querySelector("#entry-btn").textContent = stage === "exit" ? icons.moonViewCeremony : i18n.collapse.get();
     }
   }
 
@@ -6066,7 +6072,8 @@ html {
       this.loadingHelper.style.zIndex = "3000";
       this.loadingHelper.style.display = "none";
       this.loadingHelper.style.padding = "0px 3px";
-      this.loadingHelper.style.backgroundColor = "#ffffff70";
+      this.loadingHelper.style.backgroundColor = "#ffffff90";
+      this.loadingHelper.style.fontWeight = "bold";
       this.loadingHelper.style.left = "0px";
       this.frame.append(this.loadingHelper);
       EBUS.subscribe("imf-download-state-change", (imf) => {
@@ -6619,7 +6626,7 @@ html {
         if (this.loadingHelper.style.display === "none") {
           this.loadingHelper.style.display = "inline-block";
         }
-        const ret = Array.from(this.currLoadingState).map(([k, v]) => `[${k + 1}:${v}%]`);
+        const ret = Array.from(this.currLoadingState).map(([k, v]) => `[P-${k + 1}: ${v}%]`);
         if (conf.reversePages)
           ret.reverse();
         this.loadingHelper.textContent = `Loading ${ret.join(",")}`;

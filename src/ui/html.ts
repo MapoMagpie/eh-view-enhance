@@ -131,7 +131,7 @@ export function createHTML() {
             <span>
               <span>${icons.zoomIcon}</span>
               <span id="scaleMinusBTN" class="b-main-btn clickable" type="button">-</span>
-              <span id="scaleInput" class="b-main-input" style="width: 3rem">${conf.imgScale}</span>
+              <span id="scaleInput" class="b-main-input" style="width: 3rem; cursor: move;">${conf.imgScale}</span>
               <span id="scaleAddBTN" class="b-main-btn clickable" type="button">+</span>
             </span>
         </div>

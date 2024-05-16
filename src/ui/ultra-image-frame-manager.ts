@@ -281,7 +281,9 @@ export class BigImageFrameManager {
     const queue = this.getChapter(this.chapterIndex)?.queue;
     if (!queue || queue.length === 0) return;
     index = oriented === "next" ? index + conf.paginationIMGCount : index - conf.paginationIMGCount;
-    index += fixStep;
+    if (conf.paginationIMGCount > 1) {
+      index += fixStep;
+    }
     // current === -1 and oriented === "prev", this called by kayboard event "step-to-last-image", so reset index to last
     if (index < -conf.paginationIMGCount) index = queue.length - 1;
     if (!queue[index]) return

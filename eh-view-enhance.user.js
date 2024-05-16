@@ -6404,7 +6404,9 @@ html {
       if (!queue || queue.length === 0)
         return;
       index = oriented === "next" ? index + conf.paginationIMGCount : index - conf.paginationIMGCount;
-      index += fixStep;
+      if (conf.paginationIMGCount > 1) {
+        index += fixStep;
+      }
       if (index < -conf.paginationIMGCount)
         index = queue.length - 1;
       if (!queue[index])

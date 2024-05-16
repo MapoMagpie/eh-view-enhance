@@ -17,32 +17,36 @@ type VideoInfo = {
     },
   ]
 }
+type Legacy = {
+  entities: {
+    media: [
+      {
+        id_str: string,
+        expanded_url: string,// href
+        media_url_https: string, //img base
+        type: "photo" | "video" | "animated_gif",
+        sizes: {
+          large: Size,
+          medium: Size,
+          small: Size,
+          thumb: Size,
+        },
+        video_info?: VideoInfo,
+      },
+    ],
+  },
+  possibly_sensitive: boolean,
+  possibly_sensitive_editable: boolean,
+}
 type Item = {
   item: {
     itemContent: {
       tweet_results: {
         result: {
-          legacy: {
-            entities: {
-              media: [
-                {
-                  id_str: string,
-                  expanded_url: string,// href
-                  media_url_https: string, //img base
-                  type: "photo" | "video" | "animated_gif",
-                  sizes: {
-                    large: Size,
-                    medium: Size,
-                    small: Size,
-                    thumb: Size,
-                  },
-                  video_info?: VideoInfo,
-                },
-              ],
-            },
-            possibly_sensitive: boolean,
-            possibly_sensitive_editable: boolean,
-          }
+          legacy?: Legacy,
+          tweet?: {
+            legacy: Legacy,
+          },
         }
       },
     }
@@ -130,11 +134,11 @@ export class TwitterMatcher extends BaseMatcher {
   async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     let cursor: string | undefined;
     while (true) {
-      const [mediaPage, newCursor] = await this.fetchUserMedia(cursor);
-      if (!newCursor) break;
-      cursor = newCursor;
+      const [mediaPage, nextCursor] = await this.fetchUserMedia(cursor);
+      cursor = nextCursor || "last";
       this.mediaPages.set(cursor, mediaPage);
       yield cursor;
+      if (!nextCursor) break;
     }
   }
 
@@ -143,7 +147,7 @@ export class TwitterMatcher extends BaseMatcher {
     if (!items) throw new Error("warn: cannot find items");
     const list: ImageNode[] = [];
     for (const item of items) {
-      const mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media;
+      const mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
       if (mediaList === undefined) {
         evLog("error", "Not found mediaList: ", item);
         continue;

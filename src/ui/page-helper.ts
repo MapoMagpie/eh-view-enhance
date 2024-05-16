@@ -45,7 +45,8 @@ export class PageHelper {
       this.setPageState({ finished: queue.finishedIndex.size.toString() });
       evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
     });
-    EBUS.subscribe("pf-on-appended", (total, _ifs, done) => {
+    EBUS.subscribe("pf-on-appended", (total, _ifs, chapterIndex: number, done) => {
+      if (chapterIndex !== this.chapterIndex) return;
       this.setPageState({ total: `${total}${done ? "" : ".."}` });
     });
     html.currPageElement.addEventListener("click", (event) => {

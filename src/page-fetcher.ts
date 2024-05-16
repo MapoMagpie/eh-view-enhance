@@ -25,7 +25,6 @@ export class PageFetcher {
   chapterIndex: number = 0;
   queue: IMGFetcherQueue;
   matcher: Matcher;
-  done: boolean = false;
   beforeInit?: () => void;
   afterInit?: () => void;
   private appendPageLock: boolean = false;
@@ -100,7 +99,7 @@ export class PageFetcher {
     if (!first.done) {
       await this.appendImages(first.value);
     }
-    this.appendPages(this.queue.length - 1);
+    this.appendPages(this.queue.length);
   }
 
   // append next page until the queue length is 60 more than finished
@@ -115,12 +114,11 @@ export class PageFetcher {
     if (this.appendPageLock) return false;
     try {
       this.appendPageLock = true;
-      if (this.done || this.abortb) return false;
       const chapter = this.chapters[this.chapterIndex];
+      if (chapter.done || this.abortb) return false;
       const next = await chapter.sourceIter!.next();
       if (next.done) {
         chapter.done = true;
-        // this chapter is done
         this.appendToView(this.queue.length, [], true);
         return false;
       } else {
@@ -128,7 +126,7 @@ export class PageFetcher {
         return true;
       }
     } catch (error) {
-      evLog("error", "Page Fetcher:appendNextPage error: ", error);
+      evLog("error", "PageFetcher:appendNextPage error: ", error);
       return false;
     } finally {
       this.appendPageLock = false;

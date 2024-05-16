@@ -242,6 +242,7 @@ export class Zip {
       return;
     }
     const zip = this;
+    // FIXME: sometimes in twitter, Permission denied to access property "autoAllocateChunkSize"
     return new ReadableStream<Uint8Array>({
       start(controller) {
         zip.setWriter(async (chunk) => controller.enqueue(chunk));

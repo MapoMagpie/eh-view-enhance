@@ -203,7 +203,7 @@ ${chapters.map((c, i) => `<div><label>
       for (const sel of this.selectedChapters) {
         if (!this.downloading) return;
         // the queue has been reset, IMGFetcherQueue.restore(chapter.queue)
-        await this.pageFetcher.changeChapter(sel.index, false);
+        await this.pageFetcher.changeChapter(sel.index);
         // reset img fetcher stage to url, if it's failed
         this.queue.forEach((imf) => {
           if (imf.stage === FetchState.FAILED) {

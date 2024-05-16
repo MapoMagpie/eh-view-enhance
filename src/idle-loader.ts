@@ -50,6 +50,7 @@ export class IdleLoader {
 
   start() {
     if (!this.autoLoad) return;
+    // FIXME: document.hidden abort idle loader, if downloading, after refocus, it will not resume
     if (document.hidden && !conf.autoLoadInBackground) return;
     // processingIndexList.length === 0 means idle loader aborted
     if (this.processingIndexList.length === 0) return;

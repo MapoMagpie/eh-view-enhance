@@ -16,7 +16,8 @@ export class FullViewGridManager {
   chapterIndex: number = 0;
   constructor(HTML: Elements, BIFM: BigImageFrameManager) {
     this.root = HTML.fullViewGrid;
-    EBUS.subscribe("pf-on-appended", (_total, nodes, done) => {
+    EBUS.subscribe("pf-on-appended", (_total, nodes, chapterIndex, done) => {
+      if (chapterIndex !== this.chapterIndex) return;
       this.append(nodes);
       this.done = done || false;
       setTimeout(() => this.renderCurrView(), 200);

@@ -38,7 +38,7 @@ export interface Events {
   "downloader-canvas-on-click": (index: number) => void;
   "bifm-on-show": () => void;
   "bifm-on-hidden": () => void;
-  "pf-on-appended": (total: number, nodes: VisualNode[], done?: boolean) => void;
+  "pf-on-appended": (total: number, nodes: VisualNode[], chapterIndex: number, done?: boolean) => void;
   "pf-change-chapter": (index: number) => void;
   "imf-on-finished": (index: number, success: boolean, imf: IMGFetcher) => void;
   "imf-on-click": (imf: IMGFetcher) => void;

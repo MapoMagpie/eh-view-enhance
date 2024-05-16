@@ -1280,7 +1280,7 @@ ${chapters.map((c, i) => `<div><label>
         for (const sel of this.selectedChapters) {
           if (!this.downloading)
             return;
-          await this.pageFetcher.changeChapter(sel.index, false);
+          await this.pageFetcher.changeChapter(sel.index);
           this.queue.forEach((imf) => {
             if (imf.stage === FetchState.FAILED) {
               imf.retry();
@@ -1874,11 +1874,11 @@ ${chapters.map((c, i) => `<div><label>
       this.chaptersSelectionElement = q("#chapters-btn");
       this.chaptersSelectionElement.addEventListener("click", () => this.backChaptersSelection());
       const debouncer = new Debouncer();
-      EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index, !this.queue.downloading?.()), 5));
-      EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(true), 5));
+      EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
+      EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
     }
     appendToView(total, nodes, done) {
-      EBUS.emit("pf-on-appended", total, nodes, done);
+      EBUS.emit("pf-on-appended", total, nodes, this.chapterIndex, done);
     }
     abort() {
       this.abortb = true;
@@ -1897,14 +1897,14 @@ ${chapters.map((c, i) => `<div><label>
           }
           if (!this.queue.downloading?.()) {
             this.beforeInit?.();
-            this.changeChapter(index, true).finally(() => this.afterInit?.());
+            this.changeChapter(index).finally(() => this.afterInit?.());
           }
         };
       });
       if (this.chapters.length === 1) {
         this.beforeInit?.();
         EBUS.emit("pf-change-chapter", 0);
-        this.changeChapter(0, true).finally(() => this.afterInit?.());
+        this.changeChapter(0).finally(() => this.afterInit?.());
       }
       if (this.chapters.length > 1) {
         this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
@@ -1916,7 +1916,7 @@ ${chapters.map((c, i) => `<div><label>
       this.chaptersSelectionElement.hidden = true;
     }
     /// start the chapter by index
-    async changeChapter(index, appendToView) {
+    async changeChapter(index) {
       this.chapterIndex = index;
       const chapter = this.chapters[this.chapterIndex];
       this.queue.restore(index, chapter.queue);
@@ -1926,20 +1926,20 @@ ${chapters.map((c, i) => `<div><label>
       }
       let first = await chapter.sourceIter.next();
       if (!first.done) {
-        await this.appendImages(first.value, appendToView);
+        await this.appendImages(first.value);
       }
-      this.appendPages(this.queue.length - 1, appendToView);
+      this.appendPages(this.queue.length - 1);
     }
     // append next page until the queue length is 60 more than finished
-    async appendPages(appendedCount, appendToView) {
+    async appendPages(appendedCount) {
       while (true) {
         if (appendedCount + 60 < this.queue.length)
           break;
-        if (!await this.appendNextPage(appendToView))
+        if (!await this.appendNextPage())
           break;
       }
     }
-    async appendNextPage(appendToView) {
+    async appendNextPage() {
       if (this.appendPageLock)
         return false;
       try {
@@ -1953,7 +1953,7 @@ ${chapters.map((c, i) => `<div><label>
           this.appendToView(this.queue.length, [], true);
           return false;
         } else {
-          await this.appendImages(next.value, appendToView);
+          await this.appendImages(next.value);
           return true;
         }
       } catch (error) {
@@ -1963,7 +1963,7 @@ ${chapters.map((c, i) => `<div><label>
         this.appendPageLock = false;
       }
     }
-    async appendImages(page, appendToView) {
+    async appendImages(page) {
       try {
         const nodes = await this.obtainImageNodeList(page);
         if (this.abortb)
@@ -1973,9 +1973,7 @@ ${chapters.map((c, i) => `<div><label>
         );
         this.queue.push(...IFs);
         this.chapters[this.chapterIndex].queue.push(...IFs);
-        if (appendToView) {
-          this.appendToView(this.queue.length, IFs);
-        }
+        this.appendToView(this.queue.length, IFs);
         return true;
       } catch (error) {
         evLog("error", `page fetcher append images error: `, error);
@@ -5389,7 +5387,9 @@ html {
     chapterIndex = 0;
     constructor(HTML, BIFM) {
       this.root = HTML.fullViewGrid;
-      EBUS.subscribe("pf-on-appended", (_total, nodes, done) => {
+      EBUS.subscribe("pf-on-appended", (_total, nodes, chapterIndex, done) => {
+        if (chapterIndex !== this.chapterIndex)
+          return;
         this.append(nodes);
         this.done = done || false;
         setTimeout(() => this.renderCurrView(), 200);

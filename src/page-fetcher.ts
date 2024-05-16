@@ -38,12 +38,13 @@ export class PageFetcher {
     this.chaptersSelectionElement = q("#chapters-btn");
     this.chaptersSelectionElement.addEventListener("click", () => this.backChaptersSelection());
     const debouncer = new Debouncer();
-    EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index, !this.queue.downloading?.()), 5));
-    EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(true), 5));
+    EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
+    // triggered when scrolling
+    EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
   }
 
   appendToView(total: number, nodes: VisualNode[], done?: boolean) {
-    EBUS.emit("pf-on-appended", total, nodes, done);
+    EBUS.emit("pf-on-appended", total, nodes, this.chapterIndex, done);
   }
 
   abort() {
@@ -64,7 +65,7 @@ export class PageFetcher {
         }
         if (!this.queue.downloading?.()) {
           this.beforeInit?.();
-          this.changeChapter(index, true).finally(() => this.afterInit?.());
+          this.changeChapter(index).finally(() => this.afterInit?.());
         }
       };
     });
@@ -72,7 +73,7 @@ export class PageFetcher {
     if (this.chapters.length === 1) {
       this.beforeInit?.();
       EBUS.emit("pf-change-chapter", 0);
-      this.changeChapter(0, true).finally(() => this.afterInit?.());
+      this.changeChapter(0).finally(() => this.afterInit?.());
     }
     if (this.chapters.length > 1) {
       this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
@@ -86,7 +87,7 @@ export class PageFetcher {
   }
 
   /// start the chapter by index
-  async changeChapter(index: number, appendToView: boolean) {
+  async changeChapter(index: number) {
     this.chapterIndex = index;
     const chapter = this.chapters[this.chapterIndex];
     this.queue.restore(index, chapter.queue);
@@ -97,20 +98,20 @@ export class PageFetcher {
     }
     let first = await chapter.sourceIter.next();
     if (!first.done) {
-      await this.appendImages(first.value, appendToView);
+      await this.appendImages(first.value);
     }
-    this.appendPages(this.queue.length - 1, appendToView);
+    this.appendPages(this.queue.length - 1);
   }
 
   // append next page until the queue length is 60 more than finished
-  private async appendPages(appendedCount: number, appendToView: boolean) {
+  private async appendPages(appendedCount: number) {
     while (true) {
       if (appendedCount + 60 < this.queue.length) break;
-      if (!await this.appendNextPage(appendToView)) break;
+      if (!await this.appendNextPage()) break;
     }
   }
 
-  async appendNextPage(appendToView: boolean): Promise<boolean> {
+  async appendNextPage(): Promise<boolean> {
     if (this.appendPageLock) return false;
     try {
       this.appendPageLock = true;
@@ -123,7 +124,7 @@ export class PageFetcher {
         this.appendToView(this.queue.length, [], true);
         return false;
       } else {
-        await this.appendImages(next.value, appendToView);
+        await this.appendImages(next.value);
         return true;
       }
     } catch (error) {
@@ -134,7 +135,7 @@ export class PageFetcher {
     }
   }
 
-  async appendImages(page: PagesSource, appendToView: boolean): Promise<boolean> {
+  async appendImages(page: PagesSource): Promise<boolean> {
     try {
       const nodes = await this.obtainImageNodeList(page);
       if (this.abortb) return false;
@@ -143,9 +144,7 @@ export class PageFetcher {
       );
       this.queue.push(...IFs);
       this.chapters[this.chapterIndex].queue.push(...IFs);
-      if (appendToView) {
-        this.appendToView(this.queue.length, IFs);
-      }
+      this.appendToView(this.queue.length, IFs);
       return true;
     } catch (error) {
       evLog("error", `page fetcher append images error: `, error);

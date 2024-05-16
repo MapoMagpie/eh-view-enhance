@@ -1,3 +1,4 @@
+import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
@@ -77,6 +78,8 @@ export class TwitterMatcher extends BaseMatcher {
   mediaPages: Map<string, Item[]> = new Map();
   largeSrcMap: Map<string, string> = new Map();
   uuid = uuid();
+  postCount: number = 0;
+  mediaCount: number = 0;
 
   private async fetchUserMedia(cursor?: string): Promise<[Item[], string | undefined]> {
     let userID = getUserID();
@@ -152,6 +155,7 @@ export class TwitterMatcher extends BaseMatcher {
         evLog("error", "Not found mediaList: ", item);
         continue;
       }
+      this.postCount++;
       for (let i = 0; i < mediaList.length; i++) {
         const media = mediaList[i];
         if (media.type !== "video" && media.type !== "photo" && media.type !== "animated_gif") {
@@ -164,7 +168,8 @@ export class TwitterMatcher extends BaseMatcher {
         let href = media.expanded_url.replace(/\/(photo|video)\/\d+/, "");
         href = `${href}/${media.type === "video" ? "video" : "photo"}/${i + 1}`
         let largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`
-        const node = new ImageNode(src, href, media.id_str + media.media_url_https.split("/").pop())
+        const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`
+        const node = new ImageNode(src, href, title);
         if (media.video_info) {
           let bitrate = 0;
           for (const variant of media.video_info.variants) {
@@ -172,11 +177,13 @@ export class TwitterMatcher extends BaseMatcher {
               bitrate = variant.bitrate;
               largeSrc = variant.url;
               node.mimeType = variant.content_type;
+              node.title = node.title.replace(/\.\w+$/, `.${variant.content_type.split("/")[1]}`);
             }
           }
         }
         this.largeSrcMap.set(href, largeSrc);
         list.push(node);
+        this.mediaCount++;
       }
     }
     return list;
@@ -190,6 +197,11 @@ export class TwitterMatcher extends BaseMatcher {
 
   workURL(): RegExp {
     return /twitter.com\/(?!home)\w+(\/media)?/
+  }
+
+  galleryMeta(doc: Document): GalleryMeta {
+    const userName = window.location.href.match(/twitter.com\/(\w+)\/?/)?.[1];
+    return new GalleryMeta(window.location.href, `twitter-${userName || doc.title}-${this.postCount}-${this.mediaCount}`);
   }
 
 }

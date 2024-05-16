@@ -3860,6 +3860,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     mediaPages = /* @__PURE__ */ new Map();
     largeSrcMap = /* @__PURE__ */ new Map();
     uuid = uuid();
+    postCount = 0;
+    mediaCount = 0;
     async fetchUserMedia(cursor) {
       let userID = getUserID();
       if (!userID)
@@ -3913,12 +3915,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     async *fetchPagesSource() {
       let cursor;
       while (true) {
-        const [mediaPage, newCursor] = await this.fetchUserMedia(cursor);
-        if (!newCursor)
-          break;
-        cursor = newCursor;
+        const [mediaPage, nextCursor] = await this.fetchUserMedia(cursor);
+        cursor = nextCursor || "last";
         this.mediaPages.set(cursor, mediaPage);
         yield cursor;
+        if (!nextCursor)
+          break;
       }
     }
     async parseImgNodes(cursor) {
@@ -3927,11 +3929,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         throw new Error("warn: cannot find items");
       const list = [];
       for (const item of items) {
-        const mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media;
+        const mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
         if (mediaList === void 0) {
           evLog("error", "Not found mediaList: ", item);
           continue;
         }
+        this.postCount++;
         for (let i = 0; i < mediaList.length; i++) {
           const media = mediaList[i];
           if (media.type !== "video" && media.type !== "photo" && media.type !== "animated_gif") {
@@ -3944,7 +3947,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           let href = media.expanded_url.replace(/\/(photo|video)\/\d+/, "");
           href = `${href}/${media.type === "video" ? "video" : "photo"}/${i + 1}`;
           let largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`;
-          const node = new ImageNode(src, href, media.id_str + media.media_url_https.split("/").pop());
+          const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`;
+          const node = new ImageNode(src, href, title);
           if (media.video_info) {
             let bitrate = 0;
             for (const variant of media.video_info.variants) {
@@ -3952,11 +3956,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
                 bitrate = variant.bitrate;
                 largeSrc = variant.url;
                 node.mimeType = variant.content_type;
+                node.title = node.title.replace(/\.\w+$/, `.${variant.content_type.split("/")[1]}`);
               }
             }
           }
           this.largeSrcMap.set(href, largeSrc);
           list.push(node);
+          this.mediaCount++;
         }
       }
       return list;
@@ -3968,6 +3974,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     workURL() {
       return /twitter.com\/(?!home)\w+(\/media)?/;
+    }
+    galleryMeta(doc) {
+      const userName = window.location.href.match(/twitter.com\/(\w+)\/?/)?.[1];
+      return new GalleryMeta(window.location.href, `twitter-${userName || doc.title}-${this.postCount}-${this.mediaCount}`);
     }
   }
   function getUserID() {

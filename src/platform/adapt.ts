@@ -9,6 +9,7 @@ import { PixivMatcher } from "./pixiv";
 import { Matcher } from "./platform";
 import { RokuHentaiMatcher } from "./rokuhentai";
 import { SteamMatcher } from "./steam";
+import { TwitterMatcher } from "./twitter";
 
 export const matchers: Matcher[] = [
   new EHMatcher(),
@@ -23,6 +24,7 @@ export const matchers: Matcher[] = [
   new YandereMatcher(),
   new GelBooruMatcher(),
   new IMHentaiMatcher(),
+  new TwitterMatcher(),
 ];
 
 export function adaptMatcher(url: string): Matcher | null {

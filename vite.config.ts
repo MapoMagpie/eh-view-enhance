@@ -49,6 +49,7 @@ export default defineConfig(({ command }) => {
             'https://imhentai.xxx/*',
             'https://danbooru.donmai.us/*',
             'https://gelbooru.com/*',
+            'https://twitter.com/*',
           ],
           name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
           license: 'MIT',
@@ -75,6 +76,7 @@ export default defineConfig(({ command }) => {
             'imhentai.xxx',
             'donmai.us',
             'gelbooru.com',
+            'twimg.com',
           ],
           grant: [
             'GM_xmlhttpRequest',

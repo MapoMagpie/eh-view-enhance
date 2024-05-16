@@ -33,7 +33,7 @@ export default class ImageNode {
   canvasSized: boolean = false;
   delaySRC?: Promise<string>;
   private blobUrl?: string;
-  private mimeType?: string;
+  mimeType?: string;
   private downloadBar?: HTMLElement;
   private rendered: boolean = false;
   constructor(src: string, href: string, title: string, delaySRC?: Promise<string>) {

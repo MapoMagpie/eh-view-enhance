@@ -126,6 +126,9 @@ export class PageFetcher {
         await this.appendImages(next.value, appendToView);
         return true;
       }
+    } catch (error) {
+      evLog("error", "Page Fetcher:appendNextPage error: ", error);
+      return false;
     } finally {
       this.appendPageLock = false;
     }

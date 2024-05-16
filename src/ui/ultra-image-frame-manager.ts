@@ -285,7 +285,11 @@ export class BigImageFrameManager {
       index += fixStep;
     }
     // current === -1 and oriented === "prev", this called by kayboard event "step-to-last-image", so reset index to last
-    if (index < -conf.paginationIMGCount) index = queue.length - 1;
+    if (index < -conf.paginationIMGCount) {
+      index = queue.length - 1;
+    } else {
+      index = Math.max(0, index);
+    }
     if (!queue[index]) return
     this.setNow(queue[index], oriented);
   }

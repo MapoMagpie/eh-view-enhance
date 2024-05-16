@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.2
+// @version            4.5.3
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
@@ -1862,7 +1862,6 @@ ${chapters.map((c, i) => `<div><label>
     chapterIndex = 0;
     queue;
     matcher;
-    done = false;
     beforeInit;
     afterInit;
     appendPageLock = false;
@@ -1928,7 +1927,7 @@ ${chapters.map((c, i) => `<div><label>
       if (!first.done) {
         await this.appendImages(first.value);
       }
-      this.appendPages(this.queue.length - 1);
+      this.appendPages(this.queue.length);
     }
     // append next page until the queue length is 60 more than finished
     async appendPages(appendedCount) {
@@ -1944,9 +1943,9 @@ ${chapters.map((c, i) => `<div><label>
         return false;
       try {
         this.appendPageLock = true;
-        if (this.done || this.abortb)
-          return false;
         const chapter = this.chapters[this.chapterIndex];
+        if (chapter.done || this.abortb)
+          return false;
         const next = await chapter.sourceIter.next();
         if (next.done) {
           chapter.done = true;
@@ -1957,7 +1956,7 @@ ${chapters.map((c, i) => `<div><label>
           return true;
         }
       } catch (error) {
-        evLog("error", "Page Fetcher:appendNextPage error: ", error);
+        evLog("error", "PageFetcher:appendNextPage error: ", error);
         return false;
       } finally {
         this.appendPageLock = false;
@@ -5781,7 +5780,7 @@ html {
     const debouncer = new Debouncer();
     HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
     HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
-    HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", -1));
+    HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", event.deltaY > 0 ? -1 : 1, parseInt(HTML.currPageElement.textContent) - 1));
     document.addEventListener("keydown", (event) => events.keyboardEvent(event));
     HTML.fullViewGrid.addEventListener("keydown", (event) => {
       events.fullViewGridKeyBoardEvent(event);
@@ -5827,8 +5826,8 @@ html {
         PH.minify(PH.lastStage);
       }
     });
-    q("#paginationStepPrev", HTML.pageHelper).addEventListener("click", () => BIFM.stepNext(conf.reversePages ? "next" : "prev", -1));
-    q("#paginationStepNext", HTML.pageHelper).addEventListener("click", () => BIFM.stepNext(conf.reversePages ? "prev" : "next", -1));
+    q("#paginationStepPrev", HTML.pageHelper).addEventListener("click", () => BIFM.stepNext(conf.reversePages ? "next" : "prev", conf.reversePages ? -1 : 1));
+    q("#paginationStepNext", HTML.pageHelper).addEventListener("click", () => BIFM.stepNext(conf.reversePages ? "prev" : "next", conf.reversePages ? 1 : -1));
     q("#paginationMinusBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "minus"));
     q("#paginationAddBTN", HTML.pageHelper).addEventListener("click", () => events.modNumberConfigEvent("paginationIMGCount", "add"));
     q("#paginationInput", HTML.pageHelper).addEventListener("wheel", (event) => events.modNumberConfigEvent("paginationIMGCount", event.deltaY < 0 ? "add" : "minus"));
@@ -5888,7 +5887,9 @@ html {
         this.setPageState({ finished: queue.finishedIndex.size.toString() });
         evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
       });
-      EBUS.subscribe("pf-on-appended", (total, _ifs, done) => {
+      EBUS.subscribe("pf-on-appended", (total, _ifs, chapterIndex, done) => {
+        if (chapterIndex !== this.chapterIndex)
+          return;
         this.setPageState({ total: `${total}${done ? "" : ".."}` });
       });
       html.currPageElement.addEventListener("click", (event) => {
@@ -6407,8 +6408,11 @@ html {
       if (conf.paginationIMGCount > 1) {
         index += fixStep;
       }
-      if (index < -conf.paginationIMGCount)
+      if (index < -conf.paginationIMGCount) {
         index = queue.length - 1;
+      } else {
+        index = Math.max(0, index);
+      }
       if (!queue[index])
         return;
       this.setNow(queue[index], oriented);

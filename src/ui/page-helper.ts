@@ -118,6 +118,7 @@ export class PageHelper {
     const filter = (id: string) => {
       if (id === "chapters-btn") return this.chapters().length > 1;
       if (id === "auto-page-btn" && level[0] === 3) return this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing";
+      if (id === "pagination-adjust-bar") return conf.readMode === "pagination";
       return true;
     }
     const pick = getPick(level[0]).filter(filter);

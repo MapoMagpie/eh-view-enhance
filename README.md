@@ -1,39 +1,65 @@
-# Cosmos Manga View
-> This is a script can reading manga, download gallery. Has a good thumbnail view for quick browsing of the whole gallery.
+# Cosmos Comic Viewer | [中文](./README_CN.md)
 
-[中文](https://github.com/MapoMagpie/eh-view-enhance/blob/master/README_CN.md)
+**This Userscript enables quick and convenient browsing of galleries or artists' homepage on [certain sites](#multi-site-support), with batch download support, focusing on browsing experience and low site load.**
 
-![preview](.assets/eh-view-enhance-showcase3.avif "预览")
+## Index
 
-## Features
+- [Features](#features)
+- [Multi-site Support](#multi-site-support)
+- [Installation](#installation)
+- [Operates](#operates)
+- [Feedback](#feedback)
 
-- Display all the thumbnails in the grid, quick browsing them.
-- `Download`，Save all origin images and gallery detail to local.
-- `Reading`，Here is two way 'single' and 'Consecutively' for Reading the origin image.
-- `Multi-site Support`，Now supported: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com
-- `Download by volume`，To bypass the object size limit of the browser.
-- `Pixiv ugoria convert to GIF`.
-- `Mobile page adaptation`，（Android browser that needs to support browser extensions，e.g:Firefox Nightly、Kiwi Browser).
+Preview (if you can't see the image, click [here](/.assets/preview.md)):
+![Preview](.assets/eh-view-enhance-showcase3.avif "Preview")
 
-## Installation
+## <a name="features">Features</a>
 
-- `Before`: Modern Browser(Firefox\Chrome\Edge...)
-- `Before`: [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
-- `Install from here` 1: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)，(need login)
-- `Install from here` 2: [Sleazyfork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)，(do not need login)
-- `Install from here` 2: direct [`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+- **`Seamless Browsing`**
+  - The script automatically loads all images in the gallery and presents them in a grid as thumbnails, allowing for quick browsing of the entire gallery while maintaining a low load on the site.
+- **`Big Image Viewing`**
+  - You can click on any thumbnail to start browsing from that point, with multiple viewing modes available: Pagination, Continuous.
+- **`Gallery Downloading`**
+  - Save all original images and gallery information for easy management later. Supports segmented downloading to bypass browser blob limits.
+- **`Keyboard Operation`**
+  - You can click the `keyboard` in the CONF panel to learn about and configure relevant keyboard operations.
+- **`Mobile Adaptation`**
+  - Requires a browser that supports script manager extensions, such as Firefox Android, Kiwi Browser.
 
-## Operates
+## <a name="multi-site-support">Multi-site Support</a>
+Currently supports:
+- [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](https://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
+- [pixiv.net](https://pixiv.net) (Artists's illustrations and manga, Ugoria to GIF)
+- [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (supports multi-chapter selection, note: no thumbnails)
+- [nhentai.net](https://nhentai.net)
+- [hitomi.la](https://hitomi.la)
+- [rule34.xxx](https://rule34.xxx)
+- [danbooru.donmai.us](https://danbooru.donmai.us)
+- [gelbooru.com](https://gelbooru.com)
+- [yande.re](https://yande.re)
+- [Steam Screenshots](https://steamcommunity.com/id/some/screenshots)
+- [Twitter User Media](https://twitter.com/NASA/media)
 
-1. If you are browsing E-Hentai, please click here to switch to Lager thumbnail mode for clearer thumbnails. (need login e-hentai)
-2. Click ⋖📖⋗ from left-bottom corner, entry reading.
-3. Just a monment, all thumbnail will exhibited in grid, click one of thumbnails into big image mode.
-4. Image Quality: For e-hentai，you can enable control-bar > CONF > Image Raw, which will directly download the uploaded original uncompressed images, but it will consume more quotas. Generally, the compressed files provided by E-Hentai are already clear enough.
-5. Keyboard: You can navigate entirely from the keyboard. For details, please refer to the Help in the configuration panel
-6. Download: You can click on the download button in the download panel to quickly load all the images. You can still continue browsing the images. Downloading and viewing large images are integrated, and you can click on Download Loaded in the download panel to save the images at any time.
+You can request support for a site here: [https://github.com/MapoMagpie/eh-view-enhance/issues](https://github.com/MapoMagpie/eh-view-enhance/issues)
 
-## Issues
+Or contribute: [Contribution Guide](https://github.com/MapoMagpie/eh-view-enhance/blob/master/CONTRIBUTING.md)
 
-> https://github.com/MapoMagpie/eh-view-enhance/issues
+## <a name="installation">Installation</a>
 
-If you like my script, please give me a `star`/
+1. **`Prerequisites`**: Modern browser (Firefox\Chrome\Edge...)
+1. **`Prerequisites`**: Installed extension [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
+1. **`Prerequisites`**: click here to check if you can access [jsdelivr.net](https://cdn.jsdelivr.net) to ensure the script runs properly.
+1. **`Installation Link 1`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), login required
+1. **`Installation Link 2`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), no login required
+1. **`Installation Link 3`**: Direct install [here](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+
+## <a name="operates">Operates</a>
+
+1. On the gallery or author homepage, click `⍇🎑⍈` at the bottom left to start browsing. You can drag this element to any position in the CONF panel.
+2. After a moment, the thumbnails will be displayed in a grid on the page. Click on any thumbnail to enter the big image viewing mode.
+
+## <a name="feedback">Feedback</a>
+
+> Please submit feedback at: https://github.com/MapoMagpie/eh-view-enhance/issues
+
+If you like this script, please give it a `star`.

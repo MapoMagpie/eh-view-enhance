@@ -3,8 +3,7 @@
 
 [中文](https://github.com/MapoMagpie/eh-view-enhance/blob/master/README_CN.md)
 
-![preview](.assets/preview.jpg "预览")
-![reading](.assets/big_image_reading.jpg "大图")
+![preview](.assets/eh-view-enhance-showcase3.avif "预览")
 
 ## Features
 

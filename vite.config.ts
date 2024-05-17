@@ -26,7 +26,7 @@ export default defineConfig(({ command }) => {
       monkey({
         entry: 'src/main.ts',
         userscript: {
-          version: '4.5.4',
+          version: '4.5.5',
           icon: 'https://exhentai.org/favicon.ico',
           namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
           supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',
@@ -50,6 +50,7 @@ export default defineConfig(({ command }) => {
             'https://danbooru.donmai.us/*',
             'https://gelbooru.com/*',
             'https://twitter.com/*',
+            'https://x.com/*',
           ],
           name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
           license: 'MIT',

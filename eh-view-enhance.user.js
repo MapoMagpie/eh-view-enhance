@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.5
+// @version            4.5.6
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com
@@ -124,7 +124,8 @@
       paginationIMGCount: 1,
       hitomiFormat: "auto",
       autoOpen: false,
-      autoLoadInBackground: true
+      autoLoadInBackground: true,
+      reverseMultipleImagesPost: true
     };
   }
   const VERSION = "4.4.0";
@@ -242,7 +243,8 @@
         { value: "jxl", display: "Jxl" }
       ],
       displayInSite: /hitomi.la\//
-    }
+    },
+    { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// }
   ];
 
   function evLog(level, msg, ...info) {
@@ -615,6 +617,8 @@
     paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "在翻页阅读模式下，每页展示的图片数量"),
     hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
     hitomiFormatTooltip: new I18nValue("In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh", "在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。"),
+    reverseMultipleImagesPost: new I18nValue("Descend Images In Post", "反转推文图片顺序"),
+    reverseMultipleImagesPostTooltip: new I18nValue("Reverse order for post with multiple images attatched", "反转推文图片顺序"),
     autoOpen: new I18nValue("Auto Open", "自动展开"),
     autoOpenTooltip: new I18nValue("Automatically open after the gallery page is loaded", "进入画廊页面后，自动展开阅读视图。"),
     autoLoadInBackground: new I18nValue("Keep Loading", "后台加载"),
@@ -3927,12 +3931,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         throw new Error("warn: cannot find items");
       const list = [];
       for (const item of items) {
-        const mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
+        let mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
         if (mediaList === void 0) {
           evLog("error", "Not found mediaList: ", item);
           continue;
         }
         this.postCount++;
+        if (conf.reverseMultipleImagesPost) {
+          mediaList.reverse();
+        }
         for (let i = 0; i < mediaList.length; i++) {
           const media = mediaList[i];
           if (media.type !== "video" && media.type !== "photo" && media.type !== "animated_gif") {

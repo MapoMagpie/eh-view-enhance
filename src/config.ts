@@ -79,6 +79,8 @@ export type Config = {
   autoOpen: boolean,
   /** Keep auto-loading after the tab loses focus */
   autoLoadInBackground: boolean,
+  /** reverse order for post with multiple images attatched */
+  reverseMultipleImagesPost: boolean,
 };
 
 function defaultConf(): Config {
@@ -122,6 +124,7 @@ function defaultConf(): Config {
     hitomiFormat: "auto",
     autoOpen: false,
     autoLoadInBackground: true,
+    reverseMultipleImagesPost: true,
   };
 }
 
@@ -200,7 +203,7 @@ export function saveConf(c: Config) {
 }
 
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime" | "paginationIMGCount";
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation" | "autoOpen" | "autoLoadInBackground";
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost";
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat";
 export const conf = getConf();
 
@@ -262,4 +265,5 @@ export const ConfigItems: ConfigItem[] = [
       { value: "jxl", display: "Jxl" },
     ], displayInSite: /hitomi.la\//
   },
+  { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
 ];

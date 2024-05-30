@@ -1,3 +1,4 @@
+import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { PagesSource } from "../page-fetcher";
@@ -150,12 +151,15 @@ export class TwitterMatcher extends BaseMatcher {
     if (!items) throw new Error("warn: cannot find items");
     const list: ImageNode[] = [];
     for (const item of items) {
-      const mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
+      let mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
       if (mediaList === undefined) {
         evLog("error", "Not found mediaList: ", item);
         continue;
       }
       this.postCount++;
+      if (conf.reverseMultipleImagesPost) {
+        mediaList.reverse();
+      }
       for (let i = 0; i < mediaList.length; i++) {
         const media = mediaList[i];
         if (media.type !== "video" && media.type !== "photo" && media.type !== "animated_gif") {

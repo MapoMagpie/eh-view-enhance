@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.6
+// @version            4.5.7
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com
@@ -6012,7 +6012,6 @@ html {
   const MUTED_ICON = `<svg width="1.4rem" height="1.4rem" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M16 9.50009L21 14.5001M21 9.50009L16 14.5001M4.6 9.00009H5.5012C6.05213 9.00009 6.32759 9.00009 6.58285 8.93141C6.80903 8.87056 7.02275 8.77046 7.21429 8.63566C7.43047 8.48353 7.60681 8.27191 7.95951 7.84868L10.5854 4.69758C11.0211 4.17476 11.2389 3.91335 11.4292 3.88614C11.594 3.86258 11.7597 3.92258 11.8712 4.04617C12 4.18889 12 4.52917 12 5.20973V18.7904C12 19.471 12 19.8113 11.8712 19.954C11.7597 20.0776 11.594 20.1376 11.4292 20.114C11.239 20.0868 11.0211 19.8254 10.5854 19.3026L7.95951 16.1515C7.60681 15.7283 7.43047 15.5166 7.21429 15.3645C7.02275 15.2297 6.80903 15.1296 6.58285 15.0688C6.32759 15.0001 6.05213 15.0001 5.5012 15.0001H4.6C4.03995 15.0001 3.75992 15.0001 3.54601 14.8911C3.35785 14.7952 3.20487 14.6422 3.10899 14.4541C3 14.2402 3 13.9601 3 13.4001V10.6001C3 10.04 3 9.76001 3.10899 9.54609C3.20487 9.35793 3.35785 9.20495 3.54601 9.10908C3.75992 9.00009 4.03995 9.00009 4.6 9.00009Z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   class VideoControl {
     ui;
-    context = /* @__PURE__ */ new Map();
     paused = false;
     abortController;
     constructor(root) {
@@ -6069,17 +6068,10 @@ html {
       this.ui.volumeProgress.firstElementChild.style.width = `${conf.volume || 30}%`;
     }
     attach(element) {
-      evLog("info", "attach video control");
       this.detach();
       this.show();
       this.abortController = new AbortController();
-      let state = this.context.get(element.src);
-      if (!state) {
-        state = { time: element.currentTime, duration: element.duration };
-        this.context.set(element.src, state);
-      } else {
-        element.currentTime = state.time;
-      }
+      const state = { time: element.currentTime, duration: element.duration };
       this.flushUI(state);
       element.addEventListener("timeupdate", (event) => {
         const ele = event.target;
@@ -6109,7 +6101,7 @@ html {
           } else {
             vid.play();
           }
-          this.flushUI(this.context.get(vid.src));
+          this.flushUI(state);
         }
       }, { signal: this.abortController.signal });
       this.ui.volumeBTN.addEventListener("click", () => {
@@ -6118,16 +6110,15 @@ html {
           conf.muted = !conf.muted;
           vid.muted = conf.muted;
           saveConf(conf);
-          this.flushUI(this.context.get(vid.src));
+          this.flushUI(state);
         }
       }, { signal: this.abortController.signal });
       onMouse(this.ui.progress, (percent) => {
         const vid = document.querySelector(`#${elementID}`);
         if (vid) {
           vid.currentTime = vid.duration * (percent / 100);
-          const state2 = this.context.get(vid.src);
-          state2.time = vid.currentTime;
-          this.flushUI(state2);
+          state.time = vid.currentTime;
+          this.flushUI(state);
         }
       }, this.abortController.signal);
       onMouse(this.ui.volumeProgress, (percent) => {
@@ -6136,7 +6127,7 @@ html {
           conf.volume = percent;
           saveConf(conf);
           vid.volume = conf.volume / 100;
-          this.flushUI(this.context.get(vid.src));
+          this.flushUI(state);
         }
       }, this.abortController.signal);
     }

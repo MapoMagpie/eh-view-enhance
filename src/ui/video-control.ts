@@ -26,7 +26,6 @@ type UI = {
 export class VideoControl {
 
   ui: UI;
-  context: Map<string, VideoState> = new Map();
   paused: boolean = false;
   abortController?: AbortController;
 
@@ -88,17 +87,11 @@ export class VideoControl {
   }
 
   public attach(element: HTMLVideoElement) {
-    evLog("info", "attach video control")
+    // evLog("info", "attach video control, src: ", element.src)
     this.detach();
     this.show();
     this.abortController = new AbortController();
-    let state = this.context.get(element.src);
-    if (!state) {
-      state = { time: element.currentTime, duration: element.duration };
-      this.context.set(element.src, state);
-    } else {
-      element.currentTime = state.time;
-    }
+    const state = { time: element.currentTime, duration: element.duration };
     this.flushUI(state);
     element.addEventListener("timeupdate", (event) => {
       const ele = event.target as HTMLVideoElement;
@@ -130,7 +123,7 @@ export class VideoControl {
         } else {
           vid.play();
         }
-        this.flushUI(this.context.get(vid.src));
+        this.flushUI(state);
       }
     }, { signal: this.abortController.signal });
     this.ui.volumeBTN.addEventListener("click", () => {
@@ -139,7 +132,7 @@ export class VideoControl {
         conf.muted = !conf.muted;
         vid.muted = conf.muted;
         saveConf(conf);
-        this.flushUI(this.context.get(vid.src));
+        this.flushUI(state);
       }
     }, { signal: this.abortController.signal });
 
@@ -147,7 +140,6 @@ export class VideoControl {
       const vid = document.querySelector<HTMLVideoElement>(`#${elementID}`);
       if (vid) {
         vid.currentTime = vid.duration * (percent / 100);
-        const state = this.context.get(vid.src)!;
         state.time = vid.currentTime;
         this.flushUI(state);
       }
@@ -159,7 +151,7 @@ export class VideoControl {
         conf.volume = percent;
         saveConf(conf);
         vid.volume = conf.volume / 100;
-        this.flushUI(this.context.get(vid.src));
+        this.flushUI(state);
       }
     }, this.abortController.signal);
   }

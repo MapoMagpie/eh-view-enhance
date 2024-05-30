@@ -597,7 +597,7 @@
     autoLoad: new I18nValue("Auto Load", "自动加载"),
     autoLoadTooltip: new I18nValue("", "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。"),
     fetchOriginalTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
-    forceDownload: new I18nValue("Take Loaded", "强制下载已加载的"),
+    forceDownload: new I18nValue("Take Loaded", "获取已下载的"),
     downloadStart: new I18nValue("Start Download", "开始下载"),
     downloading: new I18nValue("Downloading...", "下载中..."),
     downloadFailed: new I18nValue("Failed(Retry)", "下载失败(重试)"),

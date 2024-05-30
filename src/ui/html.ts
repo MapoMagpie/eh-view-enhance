@@ -70,7 +70,7 @@ export function createHTML() {
             <div style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px;">
                 <label class="p-label">
                     <span>${i18n.dragToMove.get()}:</span>
-                    <img id="dragHub" src="https://exhentai.org/img/xmpvf.png" style="cursor: move; width: 15px; object-fit: contain;" title="Drag This To Move The Bar">
+                    <span id="dragHub" style="font-size: 1.85rem;cursor: grab;">✠</span>
                 </label>
             </div>
             <div style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px; text-align: left;">

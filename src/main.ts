@@ -4,7 +4,7 @@ import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
 import { PageFetcher } from "./page-fetcher";
-import { adaptMatcher } from "./platform/adapt";
+import { adaptMatcher, enableAutoLoad as enableAutoOpen } from "./platform/adapt";
 import { Matcher } from "./platform/platform";
 import { initEvents } from "./ui/event";
 import { FullViewGridManager } from "./ui/full-view-grid-manager";
@@ -53,8 +53,9 @@ function main(MATCHER: Matcher): DestoryFunc {
     conf["first"] = false;
     saveConf(conf);
   }
+  const href = window.location.href;
   // the real entry at ./ui/event/main
-  if (conf.autoOpen) events.main(true)
+  if (conf.autoOpen && enableAutoOpen(href)) events.main(true)
   return () => {
     console.log("destory eh-view-enhance");
     PF.abort();

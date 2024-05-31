@@ -63,7 +63,9 @@ export type Config = {
     inFullViewGrid: { [key in KeyboardInFullViewGridId]?: string[] },
     inMain: { [key in KeyboardInMainId]?: string[] },
   },
-  excludeURLs: string[]
+  excludeURLs: string[],
+  /* 屏蔽自动展开的URL */
+  autoOpenExcludeURLs: string[],
   /** is video muted? */
   muted?: boolean,
   /** video volume, min 0, max 100 */
@@ -116,6 +118,7 @@ function defaultConf(): Config {
     minifyPageHelper: "inBigMode",
     keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
     excludeURLs: [],
+    autoOpenExcludeURLs: [],
     muted: false,
     volume: 50,
     disableCssAnimation: true,

@@ -426,7 +426,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
   }
 
   function showExcludeURLEvent() {
-    createExcludeURLPanel(HTML.root);
+    createExcludeURLPanel(HTML.root, conf.excludeURLs);
+  }
+
+  function showAutoOpenExcludeURLEvent() {
+    createExcludeURLPanel(HTML.root, conf.autoOpenExcludeURLs, true);
   }
 
   const signal = { first: true };
@@ -466,6 +470,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     abortMouseleavePanelEvent,
     showKeyboardCustomEvent,
     showExcludeURLEvent,
+    showAutoOpenExcludeURLEvent,
 
     changeReadModeEvent,
   }

@@ -77,6 +77,7 @@ export function createHTML() {
                  <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
                  <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
                  <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
+                 <a id="show-autoopen-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showAutoOpenExcludes.get()}</a>
                  <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
             </div>
         </div>
@@ -160,6 +161,7 @@ export function createHTML() {
     showGuideElement: q("#show-guide-element", fullViewGrid),
     showKeyboardCustomElement: q("#show-keyboard-custom-element", fullViewGrid),
     showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
+    showAutoOpenExcludeURLElement: q('#show-autoopen-exclude-url-element', fullViewGrid),
     imgLandLeft: q("#img-land-left", fullViewGrid),
     imgLandRight: q("#img-land-right", fullViewGrid),
     autoPageBTN: q("#auto-page-btn", fullViewGrid),
@@ -266,6 +268,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
   HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
   HTML.showExcludeURLElement.addEventListener("click", events.showExcludeURLEvent);
+  HTML.showAutoOpenExcludeURLElement.addEventListener("click", events.showAutoOpenExcludeURLEvent);
 
   dragElement(HTML.pageHelper, {
     onFinish: () => {

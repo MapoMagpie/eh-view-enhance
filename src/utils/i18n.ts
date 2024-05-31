@@ -96,6 +96,7 @@ export const i18n = {
   showHelp: new I18nValue("Help", "帮助"),
   showKeyboard: new I18nValue("Keyboard", "快捷键"),
   showExcludes: new I18nValue("Excludes", "站点排除"),
+  showAutoOpenExcludes: new I18nValue("AutoOpenExcludes", "自动打开排除"),
   letUsStar: new I18nValue("Let's Star", "点星"),
   help: new I18nValue(`
     <h1>GUIDE:</h1>

@@ -53,7 +53,7 @@ export function adaptMatcher(url: string): Matcher | null {
   return matchers.find(m => m.workURLs().find(r => r.test(url))) || null;
 }
 
-export function enableAutoLoad(url: string): boolean {
+export function enableAutoOpen(url: string): boolean {
   // this must execute after adaptMatcher
   if (conf.autoOpenExcludeURLs.length < matchers.length) {
     for (const regex of conf.autoOpenExcludeURLs) {

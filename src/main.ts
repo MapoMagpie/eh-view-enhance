@@ -4,7 +4,7 @@ import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
 import { PageFetcher } from "./page-fetcher";
-import { adaptMatcher, enableAutoLoad as enableAutoOpen } from "./platform/adapt";
+import { adaptMatcher, enableAutoOpen } from "./platform/adapt";
 import { Matcher } from "./platform/platform";
 import { initEvents } from "./ui/event";
 import { FullViewGridManager } from "./ui/full-view-grid-manager";

@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.7
+// @version            4.5.8
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com
@@ -117,6 +117,7 @@
       minifyPageHelper: "inBigMode",
       keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
       excludeURLs: [],
+      autoOpenExcludeURLs: [],
       muted: false,
       volume: 50,
       disableCssAnimation: true,
@@ -628,6 +629,7 @@
     showHelp: new I18nValue("Help", "帮助"),
     showKeyboard: new I18nValue("Keyboard", "快捷键"),
     showExcludes: new I18nValue("Excludes", "站点排除"),
+    showAutoOpenExcludes: new I18nValue("AutoOpenExcludes", "自动打开排除"),
     letUsStar: new I18nValue("Let's Star", "点星"),
     help: new I18nValue(`
     <h1>GUIDE:</h1>
@@ -4013,14 +4015,18 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     new TwitterMatcher()
   ];
   function adaptMatcher(url) {
-    const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
-    const newExcludeURLs = conf.excludeURLs.filter((source) => {
-      return workURLs.indexOf(source) > -1;
-    });
-    if (newExcludeURLs.length !== conf.excludeURLs.length) {
-      conf.excludeURLs = newExcludeURLs;
-      saveConf(conf);
-    }
+    const checkValid = (urls) => {
+      const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
+      const newExcludeURLs = urls.filter((source) => {
+        return workURLs.indexOf(source) > -1;
+      });
+      if (newExcludeURLs.length !== urls.length) {
+        urls = newExcludeURLs;
+        saveConf(conf);
+      }
+    };
+    checkValid(conf.excludeURLs);
+    checkValid(conf.autoOpenExcludeURLs);
     if (conf.excludeURLs.length < matchers.length) {
       for (const regex of conf.excludeURLs) {
         if (new RegExp(regex).test(url)) {
@@ -4029,6 +4035,16 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
     }
     return matchers.find((m) => m.workURLs().find((r) => r.test(url))) || null;
+  }
+  function enableAutoOpen(url) {
+    if (conf.autoOpenExcludeURLs.length < matchers.length) {
+      for (const regex of conf.autoOpenExcludeURLs) {
+        if (new RegExp(regex).test(url)) {
+          return false;
+        }
+      }
+    }
+    return conf.autoOpenExcludeURLs.find((excludeReg) => RegExp(excludeReg).test(url)) == void 0;
   }
 
   function parseKey(event) {
@@ -4065,18 +4081,18 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
-  function createExcludeURLPanel(root) {
+  function createExcludeURLPanel(root, urls, autoOpen = false) {
     const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
     const HTML_STR = `
 <div class="ehvp-custom-panel">
   <div class="ehvp-custom-panel-title">
-    <span>Exclude URL|Site</span>
+    <span>${autoOpen ? "Auto Open " : ""}Exclude URL|Site</span>
     <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
   </div>
     <div class="ehvp-custom-panel-content">
         <ul class="ehvp-custom-panel-list">
           ${workURLs.map((r, index) => `
-             <li data-index="${index}" class="ehvp-custom-panel-list-item ${conf.excludeURLs.indexOf(r) !== -1 ? "ehvp-custom-panel-list-item-disable" : ""}">
+             <li data-index="${index}" class="ehvp-custom-panel-list-item ${urls.indexOf(r) !== -1 ? "ehvp-custom-panel-list-item-disable" : ""}">
                <span>${r}</span>
              </li>
           `).join("")}
@@ -4098,13 +4114,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     list.forEach((li) => {
       const index = parseInt(li.getAttribute("data-index"));
       li.addEventListener("click", () => {
-        const i = conf.excludeURLs.indexOf(workURLs[index]);
+        const i = urls.indexOf(workURLs[index]);
         if (i === -1) {
           li.classList.add("ehvp-custom-panel-list-item-disable");
-          conf.excludeURLs.push(workURLs[index]);
+          urls.push(workURLs[index]);
         } else {
           li.classList.remove("ehvp-custom-panel-list-item-disable");
-          conf.excludeURLs.splice(i, 1);
+          urls.splice(i, 1);
         }
         saveConf(conf);
       });
@@ -5347,7 +5363,10 @@ html {
       createKeyboardCustomPanel(keyboardEvents, HTML.root);
     }
     function showExcludeURLEvent() {
-      createExcludeURLPanel(HTML.root);
+      createExcludeURLPanel(HTML.root, conf.excludeURLs);
+    }
+    function showAutoOpenExcludeURLEvent() {
+      createExcludeURLPanel(HTML.root, conf.autoOpenExcludeURLs, true);
     }
     const signal = { first: true };
     function main(expand) {
@@ -5382,6 +5401,7 @@ html {
       abortMouseleavePanelEvent,
       showKeyboardCustomEvent,
       showExcludeURLEvent,
+      showAutoOpenExcludeURLEvent,
       changeReadModeEvent
     };
   }
@@ -5633,6 +5653,7 @@ html {
                  <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
                  <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
                  <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
+                 <a id="show-autoopen-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showAutoOpenExcludes.get()}</a>
                  <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
             </div>
         </div>
@@ -5715,6 +5736,7 @@ html {
       showGuideElement: q("#show-guide-element", fullViewGrid),
       showKeyboardCustomElement: q("#show-keyboard-custom-element", fullViewGrid),
       showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
+      showAutoOpenExcludeURLElement: q("#show-autoopen-exclude-url-element", fullViewGrid),
       imgLandLeft: q("#img-land-left", fullViewGrid),
       imgLandRight: q("#img-land-right", fullViewGrid),
       autoPageBTN: q("#auto-page-btn", fullViewGrid),
@@ -5809,6 +5831,7 @@ html {
     HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
     HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
     HTML.showExcludeURLElement.addEventListener("click", events.showExcludeURLEvent);
+    HTML.showAutoOpenExcludeURLElement.addEventListener("click", events.showAutoOpenExcludeURLEvent);
     dragElement(HTML.pageHelper, {
       onFinish: () => {
         conf.pageHelperAbTop = HTML.pageHelper.style.top;
@@ -6907,7 +6930,8 @@ html {
       conf["first"] = false;
       saveConf(conf);
     }
-    if (conf.autoOpen)
+    const href = window.location.href;
+    if (conf.autoOpen && enableAutoOpen(href))
       events.main(true);
     return () => {
       console.log("destory eh-view-enhance");

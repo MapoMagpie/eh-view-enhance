@@ -1075,7 +1075,7 @@
           this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
           break;
         case FetchState.URL:
-          this.ctx.fillStyle = "rgba(200, 200, 200, 0.1)";
+          this.ctx.fillStyle = "rgba(200, 200, 200, 0.7)";
           break;
         case FetchState.DATA:
           const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;

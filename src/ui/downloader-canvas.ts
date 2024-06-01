@@ -185,14 +185,12 @@ export class DownloaderCanvas {
         this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
         break;
       case FetchState.URL:
-        this.ctx.fillStyle = "rgba(200, 200, 200, 0.7)";
+        this.ctx.fillStyle = "rgba(200, 200, 200, 0.6)";
         break;
       case FetchState.DATA:
         const percent =
           imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
-        this.ctx.fillStyle = `rgba(110, ${Math.ceil(
-          percent * 200
-        )}, 120, ${Math.max(percent, 0.1)})`;
+        this.ctx.fillStyle = `rgba(${200 + Math.ceil((110 - 200) * percent)}, ${200 + Math.ceil((200 - 200) * percent)}, ${200 + Math.ceil((120 - 200) * percent)}, ${0.6 + Math.ceil((1 - 0.6) * percent)})`;
         break;
       case FetchState.DONE:
         this.ctx.fillStyle = "rgb(110, 200, 120)";

@@ -17,7 +17,7 @@
 // @match              https://nhentai.net/*
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*
-// @match              https://www.pixiv.net/*
+// @match              https://*.pixiv.net/*
 // @match              https://yande.re/*
 // @match              https://rokuhentai.com/*
 // @match              https://18comic.org/*
@@ -29,8 +29,10 @@
 // @match              https://gelbooru.com/*
 // @match              https://twitter.com/*
 // @match              https://x.com/*
-// @match              https://www.wnacg.com/*
-// @match              https://www.hm*.lol/*
+// @match              https://*.wnacg.com/*
+// @match              https://*.hm19.lol/*
+// @match              https://*.hm18.lol/*
+// @match              https://*.hm17.lol/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -53,8 +55,8 @@
 // @connect            donmai.us
 // @connect            gelbooru.com
 // @connect            twimg.com
-// @connect            wnacg.com
-// @connect            hm*.lol
+// @connect            qy0.ru
+// @connect            wnimg.ru
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -1075,13 +1077,11 @@
           this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
           break;
         case FetchState.URL:
-          this.ctx.fillStyle = "rgba(200, 200, 200, 0.7)";
+          this.ctx.fillStyle = "rgba(200, 200, 200, 0.6)";
           break;
         case FetchState.DATA:
           const percent = imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
-          this.ctx.fillStyle = `rgba(110, ${Math.ceil(
-          percent * 200
-        )}, 120, ${Math.max(percent, 0.1)})`;
+          this.ctx.fillStyle = `rgba(${200 + Math.ceil((110 - 200) * percent)}, ${200 + Math.ceil((200 - 200) * percent)}, ${200 + Math.ceil((120 - 200) * percent)}, ${0.6 + Math.ceil((1 - 0.6) * percent)})`;
           break;
         case FetchState.DONE:
           this.ctx.fillStyle = "rgb(110, 200, 120)";

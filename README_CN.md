@@ -39,6 +39,7 @@
 - [yande.re](https://yande.re)
 - [steam截图](https://steamcommunity.com/id/some/screenshots)
 - [twitter用户媒体](https://twitter.com/NASA/media)
+- [wnacg.com](https://www.wnacg.com)
 
 你可以发起对某站点的支持请求：[https://github.com/MapoMagpie/eh-view-enhance/issues](https://github.com/MapoMagpie/eh-view-enhance/issues)
 
@@ -55,7 +56,7 @@
 
 ## <a name="operates">操作</a>
 
-1. 在画廊或作者主页的左下角，点击`⍇🎑⍈`即可开始浏览，你可以在配置面板中拖动该元素到任意位置。
+1. 在画廊或作者主页的左下角，点击`<🎑>`即可开始浏览，你可以在配置面板中拖动该元素到任意位置。
 1. 稍等片刻后，缩略图会全屏陈列在页面上，点击某一缩略图进入大图浏览模式。
 
 ## <a name="feedback">反馈</a>

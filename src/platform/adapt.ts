@@ -10,6 +10,7 @@ import { Matcher } from "./platform";
 import { RokuHentaiMatcher } from "./rokuhentai";
 import { SteamMatcher } from "./steam";
 import { TwitterMatcher } from "./twitter";
+import { WnacgMatcher } from "./wnacg";
 
 export const matchers: Matcher[] = [
   new EHMatcher(),
@@ -25,6 +26,7 @@ export const matchers: Matcher[] = [
   new GelBooruMatcher(),
   new IMHentaiMatcher(),
   new TwitterMatcher(),
+  new WnacgMatcher(),
 ];
 
 export function adaptMatcher(url: string): Matcher | null {

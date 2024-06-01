@@ -2,10 +2,10 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.8
+// @version            4.5.9
 // @author             MapoMagpie
-// @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com
-// @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com
+// @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
+// @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @license            MIT
 // @icon               https://exhentai.org/favicon.ico
 // @supportURL         https://github.com/MapoMagpie/eh-view-enhance/issues
@@ -29,6 +29,8 @@
 // @match              https://gelbooru.com/*
 // @match              https://twitter.com/*
 // @match              https://x.com/*
+// @match              https://www.wnacg.com/*
+// @match              https://www.hm*.lol/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -51,6 +53,8 @@
 // @connect            donmai.us
 // @connect            gelbooru.com
 // @connect            twimg.com
+// @connect            wnacg.com
+// @connect            hm*.lol
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -3999,6 +4003,75 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
+  class WnacgMatcher extends BaseMatcher {
+    meta;
+    baseURL;
+    async *fetchPagesSource() {
+      const id = this.extractIDFromHref(window.location.href);
+      if (!id) {
+        throw new Error("Cannot find gallery ID");
+      }
+      this.baseURL = `${window.location.origin}/photos-index-page-1-aid-${id}.html`;
+      let doc = await window.fetch(this.baseURL).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      this.meta = this.pasrseGalleryMeta(doc);
+      yield doc;
+      while (true) {
+        const next = doc.querySelector(".paginator > .next > a");
+        if (!next)
+          break;
+        const url = next.href;
+        doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+        yield doc;
+      }
+    }
+    async parseImgNodes(page) {
+      const doc = page;
+      const result = [];
+      const list = Array.from(doc.querySelectorAll(".grid > .gallary_wrap > .cc > li"));
+      for (const li of list) {
+        const anchor = li.querySelector(".pic_box > a");
+        if (!anchor)
+          continue;
+        const img = anchor.querySelector("img");
+        if (!img)
+          continue;
+        const title = li.querySelector(".title > .name")?.textContent || "unknown";
+        result.push(new ImageNode(img.src, anchor.href, title));
+      }
+      return result;
+    }
+    async fetchOriginMeta(href) {
+      const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      const img = doc.querySelector("#picarea");
+      if (!img)
+        throw new Error(`Cannot find #picarea from ${href}`);
+      const url = img.src;
+      const title = url.split("/").pop();
+      return { url, title };
+    }
+    workURL() {
+      return /(wnacg.com|hm\d{2}.lol)\/photos-index/;
+    }
+    galleryMeta(doc) {
+      return this.meta || super.galleryMeta(doc);
+    }
+    // https://www.hm19.lol/photos-index-page-1-aid-253297.html
+    extractIDFromHref(href) {
+      const match = href.match(/-(\d+).html$/);
+      if (!match)
+        return void 0;
+      return match[1];
+    }
+    pasrseGalleryMeta(doc) {
+      const title = doc.querySelector("#bodywrap > h2")?.textContent || "unknown";
+      const meta = new GalleryMeta(this.baseURL || window.location.href, title);
+      const tags = Array.from(doc.querySelectorAll(".asTB .tagshow")).map((ele) => ele.textContent).filter(Boolean);
+      const description = Array.from(doc.querySelector(".asTB > .asTBcell.uwconn > p")?.childNodes || []).map((e) => e.textContent).filter(Boolean);
+      meta.tags = { "tags": tags, "description": description };
+      return meta;
+    }
+  }
+
   const matchers = [
     new EHMatcher(),
     new NHMatcher(),
@@ -4012,7 +4085,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     new YandereMatcher(),
     new GelBooruMatcher(),
     new IMHentaiMatcher(),
-    new TwitterMatcher()
+    new TwitterMatcher(),
+    new WnacgMatcher()
   ];
   function adaptMatcher(url) {
     const checkValid = (urls) => {
@@ -5579,7 +5653,7 @@ html {
   }
 
   const bookIcon = `📖`;
-  const moonViewCeremony = `⍇🎑⍈`;
+  const moonViewCeremony = `<🎑>`;
   const sixPointedStar = `🔯`;
   const entryIcon = `⍇⍈`;
   const zoomIcon = `⇱⇲`;

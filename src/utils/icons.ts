@@ -1,5 +1,5 @@
 const bookIcon = `📖`;
-const moonViewCeremony = `⍇🎑⍈`;
+const moonViewCeremony = `<🎑>`;
 const sixPointedStar = `🔯`;
 const entryIcon = `⍇⍈`;
 const zoomIcon = `⇱⇲`;

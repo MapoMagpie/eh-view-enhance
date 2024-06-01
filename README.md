@@ -39,6 +39,7 @@ Currently supports:
 - [yande.re](https://yande.re)
 - [Steam Screenshots](https://steamcommunity.com/id/some/screenshots)
 - [Twitter User Media](https://twitter.com/NASA/media)
+- [wnacg.com](https://www.wnacg.com)
 
 You can request support for a site here: [https://github.com/MapoMagpie/eh-view-enhance/issues](https://github.com/MapoMagpie/eh-view-enhance/issues)
 
@@ -55,7 +56,7 @@ Or contribute: [Contribution Guide](https://github.com/MapoMagpie/eh-view-enhanc
 
 ## <a name="operates">Operates</a>
 
-1. On the gallery or author homepage, click `⍇🎑⍈` at the bottom left to start browsing. You can drag this element to any position in the CONF panel.
+1. On the gallery or author homepage, click `<🎑>` at the bottom left to start browsing. You can drag this element to any position in the CONF panel.
 2. After a moment, the thumbnails will be displayed in a grid on the page. Click on any thumbnail to enter the big image viewing mode.
 
 ## <a name="feedback">Feedback</a>

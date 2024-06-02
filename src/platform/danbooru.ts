@@ -184,7 +184,7 @@ const POST_INFO_REGEX = /Post\.register\((.*)\)/g;
 type YandereKonachanPostInfo = {
   id: number,
   md5: string,
-  file_ext: string,
+  file_ext?: string,
   file_url: string,
   preview_url: string,
   sample_url: string,
@@ -260,7 +260,7 @@ export class YandereMatcher extends BaseMatcher {
   galleryMeta(): GalleryMeta {
     const url = new URL(window.location.href);
     const tags = url.searchParams.get("tags")?.trim();
-    const meta = new GalleryMeta(window.location.href, `yande_${tags}_${this.count}`);
+    const meta = new GalleryMeta(window.location.href, `yande_${tags || "post"}_${this.count}`);
     (meta as any)["infos"] = this.infos;
     return meta;
   }
@@ -306,7 +306,8 @@ export class KonachanMatcher extends BaseMatcher {
         const info = JSON.parse(match[1]) as YandereKonachanPostInfo;
         this.infos[info.id.toString()] = info;
         this.count++;
-        ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${info.file_ext}`));
+        const ext = info.file_ext || info.file_url.split(".").pop();
+        ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${ext}`));
       } catch (error) {
         evLog("error", "parse post info failed", error);
         continue;

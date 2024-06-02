@@ -2464,7 +2464,8 @@ ${chapters.map((c, i) => `<div><label>
           const info = JSON.parse(match[1]);
           this.infos[info.id.toString()] = info;
           this.count++;
-          ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${info.file_ext}`));
+          const ext = info.file_ext || info.file_url.split(".").pop();
+          ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${ext}`));
         } catch (error) {
           evLog("error", "parse post info failed", error);
           continue;

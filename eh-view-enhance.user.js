@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.10
+// @version            4.5.11
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -19,6 +19,7 @@
 // @match              https://hitomi.la/*
 // @match              https://*.pixiv.net/*
 // @match              https://yande.re/*
+// @match              https://konachan.com/*
 // @match              https://rokuhentai.com/*
 // @match              https://18comic.org/*
 // @match              https://18comic.vip/*
@@ -47,6 +48,7 @@
 // @connect            i.pximg.net
 // @connect            ehgt.org
 // @connect            yande.re
+// @connect            konachan.com
 // @connect            18comic.org
 // @connect            18comic.vip
 // @connect            18-comicfreedom.xyz
@@ -2422,6 +2424,78 @@ ${chapters.map((c, i) => `<div><label>
       return meta;
     }
   }
+  class KonachanMatcher extends BaseMatcher {
+    infos = {};
+    count = 0;
+    workURL() {
+      return /konachan.com\/post(?!\/show\/.*)/;
+    }
+    async *fetchPagesSource() {
+      let doc = document;
+      yield doc;
+      let tryTimes = 0;
+      while (true) {
+        const url = doc.querySelector("#paginator a.next_page")?.href;
+        if (!url)
+          break;
+        try {
+          doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+        } catch (e) {
+          tryTimes++;
+          if (tryTimes > 3)
+            throw new Error(`fetch next page failed, ${e}`);
+          continue;
+        }
+        tryTimes = 0;
+        yield doc;
+      }
+    }
+    async parseImgNodes(source) {
+      const doc = source;
+      const raw = doc.querySelector("body > script + script")?.textContent;
+      if (!raw)
+        throw new Error("cannot find post list from script");
+      const matches = raw.matchAll(POST_INFO_REGEX);
+      const ret = [];
+      for (const match of matches) {
+        if (!match || match.length < 2)
+          continue;
+        try {
+          const info = JSON.parse(match[1]);
+          this.infos[info.id.toString()] = info;
+          this.count++;
+          ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${info.file_ext}`));
+        } catch (error) {
+          evLog("error", "parse post info failed", error);
+          continue;
+        }
+      }
+      return ret;
+    }
+    async fetchOriginMeta(href) {
+      let id = href.split("/").pop();
+      if (!id) {
+        throw new Error(`cannot find id from ${href}`);
+      }
+      let url;
+      if (conf.fetchOriginal) {
+        url = this.infos[id]?.file_url;
+      } else {
+        url = this.infos[id]?.sample_url;
+      }
+      if (!url) {
+        throw new Error(`cannot find url for id ${id}`);
+      }
+      return { url };
+    }
+    galleryMeta() {
+      const url = new URL(window.location.href);
+      const tags = url.searchParams.get("tags")?.trim();
+      const meta = new GalleryMeta(window.location.href, `konachan_${tags}_${this.count}`);
+      meta["infos"] = this.infos;
+      return meta;
+    }
+  }
   class GelBooruMatcher extends DanbooruMatcher {
     site() {
       return "gelbooru";
@@ -4106,6 +4180,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     new DanbooruDonmaiMatcher(),
     new Rule34Matcher(),
     new YandereMatcher(),
+    new KonachanMatcher(),
     new GelBooruMatcher(),
     new IMHentaiMatcher(),
     new TwitterMatcher(),
@@ -4134,13 +4209,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return matchers.find((m) => m.workURLs().find((r) => r.test(url))) || null;
   }
   function enableAutoOpen(url) {
-    if (conf.autoOpenExcludeURLs.length < matchers.length) {
-      for (const regex of conf.autoOpenExcludeURLs) {
-        if (new RegExp(regex).test(url)) {
-          return false;
-        }
-      }
-    }
     return conf.autoOpenExcludeURLs.find((excludeReg) => RegExp(excludeReg).test(url)) == void 0;
   }
 

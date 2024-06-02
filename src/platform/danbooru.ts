@@ -181,7 +181,7 @@ export class Rule34Matcher extends DanbooruMatcher {
 }
 
 const POST_INFO_REGEX = /Post\.register\((.*)\)/g;
-type YanderePostInfo = {
+type YandereKonachanPostInfo = {
   id: number,
   md5: string,
   file_ext: string,
@@ -192,7 +192,7 @@ type YanderePostInfo = {
 }
 export class YandereMatcher extends BaseMatcher {
 
-  infos: Record<string, YanderePostInfo> = {};
+  infos: Record<string, YandereKonachanPostInfo> = {};
   count: number = 0;
 
   workURL(): RegExp {
@@ -228,7 +228,7 @@ export class YandereMatcher extends BaseMatcher {
     for (const match of matches) {
       if (!match || match.length < 2) continue;
       try {
-        const info = JSON.parse(match[1]) as YanderePostInfo;
+        const info = JSON.parse(match[1]) as YandereKonachanPostInfo;
         this.infos[info.id.toString()] = info;
         this.count++;
         ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${info.file_ext}`));
@@ -261,6 +261,81 @@ export class YandereMatcher extends BaseMatcher {
     const url = new URL(window.location.href);
     const tags = url.searchParams.get("tags")?.trim();
     const meta = new GalleryMeta(window.location.href, `yande_${tags}_${this.count}`);
+    (meta as any)["infos"] = this.infos;
+    return meta;
+  }
+}
+
+export class KonachanMatcher extends BaseMatcher {
+
+  infos: Record<string, YandereKonachanPostInfo> = {};
+  count: number = 0;
+
+  workURL(): RegExp {
+    return /konachan.com\/post(?!\/show\/.*)/;
+  }
+
+  async *fetchPagesSource(): AsyncGenerator<PagesSource, any, unknown> {
+    let doc = document;
+    yield doc;
+    // find next page
+    let tryTimes = 0;
+    while (true) {
+      const url = doc.querySelector<HTMLAnchorElement>("#paginator a.next_page")?.href;
+      if (!url) break;
+      try {
+        doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      } catch (e) {
+        tryTimes++;
+        if (tryTimes > 3) throw new Error(`fetch next page failed, ${e}`);
+        continue;
+      }
+      tryTimes = 0;
+      yield doc;
+    }
+  }
+  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
+    const doc = source as Document;
+    const raw = doc.querySelector("body > script + script")?.textContent;
+    if (!raw) throw new Error("cannot find post list from script");
+    const matches = raw.matchAll(POST_INFO_REGEX);
+    const ret = [];
+    for (const match of matches) {
+      if (!match || match.length < 2) continue;
+      try {
+        const info = JSON.parse(match[1]) as YandereKonachanPostInfo;
+        this.infos[info.id.toString()] = info;
+        this.count++;
+        ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${info.file_ext}`));
+      } catch (error) {
+        evLog("error", "parse post info failed", error);
+        continue;
+      }
+    }
+    return ret;
+  }
+  async fetchOriginMeta(href: string): Promise<OriginMeta> {
+    let id = href.split("/").pop();
+    if (!id) {
+      throw new Error(`cannot find id from ${href}`);
+    }
+    let url: string | undefined;
+    if (conf.fetchOriginal) {
+      url = this.infos[id]?.file_url;
+    } else {
+      url = this.infos[id]?.sample_url;
+    }
+    if (!url) {
+      throw new Error(`cannot find url for id ${id}`);
+    }
+
+    return { url };
+  }
+
+  galleryMeta(): GalleryMeta {
+    const url = new URL(window.location.href);
+    const tags = url.searchParams.get("tags")?.trim();
+    const meta = new GalleryMeta(window.location.href, `konachan_${tags}_${this.count}`);
     (meta as any)["infos"] = this.infos;
     return meta;
   }

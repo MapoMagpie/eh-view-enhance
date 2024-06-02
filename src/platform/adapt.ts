@@ -1,6 +1,6 @@
 import { conf, saveConf } from "../config";
 import { Comic18Matcher } from "./18comic";
-import { DanbooruDonmaiMatcher, GelBooruMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
+import { DanbooruDonmaiMatcher, GelBooruMatcher, KonachanMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
 import { EHMatcher } from "./ehentai";
 import { HitomiMather } from "./hitomi";
 import { IMHentaiMatcher } from "./im-hentai";
@@ -23,6 +23,7 @@ export const matchers: Matcher[] = [
   new DanbooruDonmaiMatcher(),
   new Rule34Matcher(),
   new YandereMatcher(),
+  new KonachanMatcher(),
   new GelBooruMatcher(),
   new IMHentaiMatcher(),
   new TwitterMatcher(),
@@ -57,12 +58,6 @@ export function adaptMatcher(url: string): Matcher | null {
 
 export function enableAutoOpen(url: string): boolean {
   // this must execute after adaptMatcher
-  if (conf.autoOpenExcludeURLs.length < matchers.length) {
-    for (const regex of conf.autoOpenExcludeURLs) {
-      if (new RegExp(regex).test(url)) {
-        return false;
-      }
-    }
-  }
+  // if the url matches any in Exclude list, then do not enable
   return conf.autoOpenExcludeURLs.find(excludeReg => RegExp(excludeReg).test(url)) == undefined;
 }

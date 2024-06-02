@@ -23,13 +23,23 @@ const regulars = {
 }
 
 export class EHMatcher extends BaseMatcher {
-
+  meta?: GalleryMeta;
   // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
   workURL(): RegExp {
     return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
   }
 
+  title(doc: Document): string {
+    const meta = this.meta || this.galleryMeta(doc);
+    if (conf.ehentaiTitlePrefer === "japanese") {
+      return meta.originTitle || meta.title || "UNTITLE";
+    } else {
+      return meta.title || meta.originTitle || "UNTITLE";
+    }
+  }
+
   galleryMeta(doc: Document): GalleryMeta {
+    if (this.meta) return this.meta;
     const titleList = doc.querySelectorAll<HTMLElement>("#gd2 h1");
     let title: string | undefined;
     let originTitle: string | undefined;
@@ -39,8 +49,8 @@ export class EHMatcher extends BaseMatcher {
         originTitle = titleList[1].textContent || undefined;
       }
     }
-    const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
-    meta.originTitle = originTitle;
+    this.meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+    this.meta.originTitle = originTitle;
     const tagTrList = doc.querySelectorAll<HTMLElement>("#taglist tr");
     const tags: Record<string, string[]> = {};
     tagTrList.forEach((tr) => {
@@ -54,8 +64,8 @@ export class EHMatcher extends BaseMatcher {
         tags[cat.replace(":", "")] = list;
       }
     });
-    meta.tags = tags;
-    return meta;
+    this.meta.tags = tags;
+    return this.meta;
   }
 
   async fetchOriginMeta(href: string, retry: boolean): Promise<OriginMeta> {

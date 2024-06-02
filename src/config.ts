@@ -83,13 +83,15 @@ export type Config = {
   autoLoadInBackground: boolean,
   /** reverse order for post with multiple images attatched */
   reverseMultipleImagesPost: boolean,
+  /** Many galleries have both an English/Romanized title and a title in Japanese script. Which gallery name would you like as archive filename?  */
+  ehentaiTitlePrefer: "english" | "japanese",
 };
 
 function defaultConf(): Config {
   const screenWidth = window.screen.width;
   const colCount = screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : 5;
   return {
-    backgroundImage: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAfElEQVR42mP8z/CfCgIwDEgwAIAL0Fq3MDD5iQcn0/BgDpDAn0/AvywA4kUEZ7gUkXBoAM5gUQUaJ6eClOyBjALcAAAAASUVORK5CYII=`,
+    backgroundImage: `TBD`,
     colCount: colCount,
     readMode: "pagination",
     autoLoad: true,
@@ -128,6 +130,7 @@ function defaultConf(): Config {
     autoOpen: false,
     autoLoadInBackground: true,
     reverseMultipleImagesPost: true,
+    ehentaiTitlePrefer: "japanese",
   };
 }
 
@@ -207,7 +210,7 @@ export function saveConf(c: Config) {
 
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime" | "paginationIMGCount";
 export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost";
-export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat";
+export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer";
 export const conf = getConf();
 
 type OptionValue = {
@@ -260,6 +263,7 @@ export const ConfigItems: ConfigItem[] = [
       { value: "never", display: "Never" },
     ]
   },
+  { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
   {
     key: "hitomiFormat", typ: "select", options: [
       { value: "auto", display: "Auto" },
@@ -268,5 +272,11 @@ export const ConfigItems: ConfigItem[] = [
       { value: "jxl", display: "Jxl" },
     ], displayInSite: /hitomi.la\//
   },
-  { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
+  {
+    key: "ehentaiTitlePrefer", typ: "select", options: [
+      { value: "english", display: "English" },
+      { value: "japanese", display: "Japanese" },
+    ], displayInSite: /e[-x]hentai(.*)?.(org|onion)\//
+  },
 ];
+

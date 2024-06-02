@@ -85,6 +85,8 @@ export const i18n = {
   paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "在翻页阅读模式下，每页展示的图片数量"),
   hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
   hitomiFormatTooltip: new I18nValue("In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh", "在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。"),
+  ehentaiTitlePrefer: new I18nValue("EHentai Prefer Title", "EHentai标题语言"),
+  ehentaiTitlePreferTooltip: new I18nValue("Many galleries have both an English/Romanized title and a title in Japanese script. <br>Which one do you want to use as the archive filename?", "许多图库都同时拥有英文/罗马音标题和日文标题，<br>您希望下载时哪个作为文件名？"),
   reverseMultipleImagesPost: new I18nValue("Descending Images In Post", "反转推文图片顺序"),
   reverseMultipleImagesPostTooltip: new I18nValue("Reverse order for post with multiple images attatched", "反转推文图片顺序"),
   autoOpen: new I18nValue("Auto Open", "自动展开"),

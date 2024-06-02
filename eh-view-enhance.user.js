@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.9
+// @version            4.5.10
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -94,7 +94,7 @@
     const screenWidth = window.screen.width;
     const colCount = screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : 5;
     return {
-      backgroundImage: `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAfElEQVR42mP8z/CfCgIwDEgwAIAL0Fq3MDD5iQcn0/BgDpDAn0/AvywA4kUEZ7gUkXBoAM5gUQUaJ6eClOyBjALcAAAAASUVORK5CYII=`,
+      backgroundImage: `TBD`,
       colCount,
       readMode: "pagination",
       autoLoad: true,
@@ -132,7 +132,8 @@
       hitomiFormat: "auto",
       autoOpen: false,
       autoLoadInBackground: true,
-      reverseMultipleImagesPost: true
+      reverseMultipleImagesPost: true,
+      ehentaiTitlePrefer: "japanese"
     };
   }
   const VERSION = "4.4.0";
@@ -240,6 +241,7 @@
         { value: "never", display: "Never" }
       ]
     },
+    { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
     {
       key: "hitomiFormat",
       typ: "select",
@@ -251,7 +253,15 @@
       ],
       displayInSite: /hitomi.la\//
     },
-    { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// }
+    {
+      key: "ehentaiTitlePrefer",
+      typ: "select",
+      options: [
+        { value: "english", display: "English" },
+        { value: "japanese", display: "Japanese" }
+      ],
+      displayInSite: /e[-x]hentai(.*)?.(org|onion)\//
+    }
   ];
 
   function evLog(level, msg, ...info) {
@@ -624,6 +634,8 @@
     paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "在翻页阅读模式下，每页展示的图片数量"),
     hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
     hitomiFormatTooltip: new I18nValue("In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh", "在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。"),
+    ehentaiTitlePrefer: new I18nValue("EHentai Prefer Title", "EHentai标题语言"),
+    ehentaiTitlePreferTooltip: new I18nValue("Many galleries have both an English/Romanized title and a title in Japanese script. <br>Which one do you want to use as the archive filename?", "许多图库都同时拥有英文/罗马音标题和日文标题，<br>您希望下载时哪个作为文件名？"),
     reverseMultipleImagesPost: new I18nValue("Descending Images In Post", "反转推文图片顺序"),
     reverseMultipleImagesPostTooltip: new I18nValue("Reverse order for post with multiple images attatched", "反转推文图片顺序"),
     autoOpen: new I18nValue("Auto Open", "自动展开"),
@@ -2509,11 +2521,22 @@ ${chapters.map((c, i) => `<div><label>
     sprite: /url\((.*?)\)/
   };
   class EHMatcher extends BaseMatcher {
+    meta;
     // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
     workURL() {
       return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
     }
+    title(doc) {
+      const meta = this.meta || this.galleryMeta(doc);
+      if (conf.ehentaiTitlePrefer === "japanese") {
+        return meta.originTitle || meta.title || "UNTITLE";
+      } else {
+        return meta.title || meta.originTitle || "UNTITLE";
+      }
+    }
     galleryMeta(doc) {
+      if (this.meta)
+        return this.meta;
       const titleList = doc.querySelectorAll("#gd2 h1");
       let title;
       let originTitle;
@@ -2523,8 +2546,8 @@ ${chapters.map((c, i) => `<div><label>
           originTitle = titleList[1].textContent || void 0;
         }
       }
-      const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
-      meta.originTitle = originTitle;
+      this.meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+      this.meta.originTitle = originTitle;
       const tagTrList = doc.querySelectorAll("#taglist tr");
       const tags = {};
       tagTrList.forEach((tr) => {
@@ -2539,8 +2562,8 @@ ${chapters.map((c, i) => `<div><label>
           tags[cat.replace(":", "")] = list;
         }
       });
-      meta.tags = tags;
-      return meta;
+      this.meta.tags = tags;
+      return this.meta;
     }
     async fetchOriginMeta(href, retry) {
       return { url: await this.fetchImgURL(href, retry) };

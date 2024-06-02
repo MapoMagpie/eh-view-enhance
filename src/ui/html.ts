@@ -10,6 +10,7 @@ import { toggleAnimationStyle, loadStyleSheel } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 import icons from "../utils/icons";
 import queryCSSRules from "../utils/query-cssrules";
+import relocateElement from "../utils/relocate-element";
 
 function createOption(item: ConfigItem) {
   const i18nKey = item.i18nKey || item.key;
@@ -314,4 +315,15 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   q("#scaleMinusBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(-1, 10));
   q("#scaleAddBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(1, 10));
   q("#scaleInput", HTML.pageHelper).addEventListener("wheel", (event) => BIFM.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5));
+
+  // tooltip hovering
+  HTML.configPanel.querySelectorAll<HTMLElement>(".p-tooltip").forEach(element => {
+    const child = element.querySelector<HTMLElement>(".p-tooltiptext");
+    if (!child) return;
+    element.addEventListener("mouseenter", () => {
+      relocateElement(child, element, HTML.root.offsetWidth, HTML.root.offsetHeight);
+      child.style.visibility = "visible";
+    });
+    element.addEventListener("mouseleave", () => child.style.visibility = "hidden");
+  })
 }

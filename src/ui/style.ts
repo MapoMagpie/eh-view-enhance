@@ -466,23 +466,18 @@ export function loadStyleSheel() {
 }
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
-  width: 100%;
-  left: 0px;
-  margin-top: 1.2rem;
-  background-color: #000000bf;
+  max-width: 24rem;
+  background-color: #000000df;
   color: var(--ehvp-font-color);
   border-radius: 6px;
-  position: absolute;
+  position: fixed;
   z-index: 1;
   font-size: medium;
   white-space: normal;
   text-align: left;
   padding: 0.3rem 1rem;
   box-sizing: border-box;
-  display: inner-block;
-}
-.p-tooltip:hover .p-tooltiptext {
-  visibility: visible;
+  display: block;
 }
 .page-loading {
   width: 100vw;

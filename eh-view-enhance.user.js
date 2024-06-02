@@ -4807,23 +4807,18 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
-  width: 100%;
-  left: 0px;
-  margin-top: 1.2rem;
-  background-color: #000000bf;
+  max-width: 24rem;
+  background-color: #000000df;
   color: var(--ehvp-font-color);
   border-radius: 6px;
-  position: absolute;
+  position: fixed;
   z-index: 1;
   font-size: medium;
   white-space: normal;
   text-align: left;
   padding: 0.3rem 1rem;
   box-sizing: border-box;
-  display: inner-block;
-}
-.p-tooltip:hover .p-tooltiptext {
-  visibility: visible;
+  display: block;
 }
 .page-loading {
   width: 100vw;
@@ -5971,6 +5966,16 @@ html {
     q("#scaleMinusBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(-1, 10));
     q("#scaleAddBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(1, 10));
     q("#scaleInput", HTML.pageHelper).addEventListener("wheel", (event) => BIFM.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5));
+    HTML.configPanel.querySelectorAll(".p-tooltip").forEach((element) => {
+      const child = element.querySelector(".p-tooltiptext");
+      if (!child)
+        return;
+      element.addEventListener("mouseenter", () => {
+        relocateElement(child, element, HTML.root.offsetWidth, HTML.root.offsetHeight);
+        child.style.visibility = "visible";
+      });
+      element.addEventListener("mouseleave", () => child.style.visibility = "hidden");
+    });
   }
 
   class PageHelper {

@@ -73,7 +73,7 @@ export class IMGFetcher implements VisualNode {
       this.node.changeStyle("fetched");
       EBUS.emit("imf-on-finished", index, true, this);
     } catch (error) {
-      this.node.changeStyle("failed");
+      this.node.changeStyle("failed", (error as Error).toString());
       evLog("error", `IMG-FETCHER ERROR:`, error);
       this.stage = FetchState.FAILED;
       EBUS.emit("imf-on-finished", index, false, this);
@@ -91,13 +91,12 @@ export class IMGFetcher implements VisualNode {
   }
 
   async fetchImage(): Promise<void> {
-    this.tryTimes = 0;
-    while (this.tryTimes < 3) {
-      switch (this.stage) {
-        case FetchState.FAILED:
-        case FetchState.URL:
-          let meta = await this.fetchOriginMeta();
-          if (meta !== null) {
+    const fetchMachine: () => Promise<Error | null> = async () => {
+      try {
+        switch (this.stage) {
+          case FetchState.FAILED:
+          case FetchState.URL:
+            const meta = await this.fetchOriginMeta();
             this.originURL = meta.url;
             if (meta.title) {
               this.node.title = meta.title;
@@ -106,13 +105,9 @@ export class IMGFetcher implements VisualNode {
               }
             }
             this.stage = FetchState.DATA;
-          } else {
-            this.tryTimes++;
-          }
-          break;
-        case FetchState.DATA:
-          const ret = await this.fetchImageData();
-          if (ret !== null) {
+            return fetchMachine();
+          case FetchState.DATA:
+            const ret = await this.fetchImageData();
             [this.data, this.contentType] = ret;
             [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL!);
             this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
@@ -121,43 +116,38 @@ export class IMGFetcher implements VisualNode {
               this.node.render();
             }
             this.stage = FetchState.DONE;
-          } else {
-            this.stage = FetchState.URL;
-            this.tryTimes++;
-          }
-          break;
-        case FetchState.DONE:
-          return;
+          case FetchState.DONE:
+            return null;
+        }
+      } catch (error) {
+        return error as Error;
       }
     }
-    throw new Error(`Fetch image failed, reach max try times, current stage: ${this.stage}`);
+    this.tryTimes = 0;
+    let err: Error | null;
+    while (this.tryTimes < 3) {
+      err = await fetchMachine();
+      if (err === null) return;
+      this.tryTimes++;
+      evLog("error", `fetch image error, try times: ${this.tryTimes}, error:`, err);
+    }
+    throw err!;
   }
 
-  async fetchOriginMeta(): Promise<OriginMeta | null> {
+  async fetchOriginMeta(): Promise<OriginMeta> {
     try {
-      const meta = await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0, this.chapterIndex);
-      if (!meta) {
-        evLog("error", "Fetch URL failed, the URL is empty");
-        return null;
-      }
-      return meta;
+      return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0, this.chapterIndex);
     } catch (error) {
-      evLog("error", `Fetch URL error:`, error);
-      return null;
+      throw new Error(`fetch big image url error: ${error}`);
     }
   }
 
-  async fetchImageData(): Promise<[Uint8Array, string] | null> {
-    try {
-      const data = await this.fetchBigImage();
-      if (data == null) {
-        throw new Error(`Data is null, image url:${this.originURL}`);
-      }
-      return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
-    } catch (error) {
-      evLog("error", `Fetch image data error:`, error);
-      return null;
+  async fetchImageData(): Promise<[Uint8Array, string]> {
+    const data = await this.fetchBigImage();
+    if (data == null) {
+      throw new Error(`fetch image data is empty, image url:${this.originURL}`);
     }
+    return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
   }
 
   render() {
@@ -189,16 +179,16 @@ export class IMGFetcher implements VisualNode {
       let abort: () => void;
       const timeout = () => {
         debouncer.addEvent("XHR_TIMEOUT", () => {
-          reject("timeout");
+          reject(new Error("timeout"));
           abort();
         }, conf.timeout * 1000);
       };
       abort = xhrWapper(imgFetcher.originURL!, "blob", {
         onload: function(response) {
           let data = response.response;
-          if (data.type === "text/html") {
-            // TODO: check response type, e.g. status code
-            console.error("warn: fetch big image data type is not blob: ", data);
+          if (data.type.startsWith("text/html")) {
+            reject(new Error(`expect image data, fetched wrong type: ${data.type}`));
+            return;
           }
           try {
             imgFetcher.setDownloadState({ readyState: response.readyState });
@@ -208,7 +198,7 @@ export class IMGFetcher implements VisualNode {
           resolve(data);
         },
         onerror: function(response) {
-          reject(`error:${response.error}, response:${response.response}`);
+          reject(new Error(`response status:${response.status}, error:${response.error}, response:${response.response}`));
         },
         onprogress: function(response) {
           imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });

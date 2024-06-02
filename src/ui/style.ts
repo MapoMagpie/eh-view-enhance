@@ -134,19 +134,23 @@ export function loadStyleSheel() {
   line-height: 0;
   position: relative;
 }
-.ehvp-chapter-description {
+.ehvp-chapter-description, .img-node-error-hint {
   display: block;
   position: absolute;
-  bottom: 0;
+  bottom: 3px;
+  left: 3px;
   background-color: #708090e3;
   color: #ffe785;
-  width: 100%;
+  width: calc(100% - 6px);
   font-weight: 600;
   min-height: 3rem;
   font-size: 1.2rem;
   padding: 0.5rem;
   box-sizing: border-box;
   line-height: 1.3rem;
+}
+.img-node-error-hint {
+  color: #8a0000;
 }
 .img-fetched img, .img-fetched canvas {
   border: 3px solid #90ffae !important;

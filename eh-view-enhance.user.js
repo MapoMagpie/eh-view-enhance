@@ -415,7 +415,7 @@
         this.node.changeStyle("fetched");
         EBUS.emit("imf-on-finished", index, true, this);
       } catch (error) {
-        this.node.changeStyle("failed");
+        this.node.changeStyle("failed", error.toString());
         evLog("error", `IMG-FETCHER ERROR:`, error);
         this.stage = 0 /* FAILED */;
         EBUS.emit("imf-on-finished", index, false, this);
@@ -430,13 +430,12 @@
       }
     }
     async fetchImage() {
-      this.tryTimes = 0;
-      while (this.tryTimes < 3) {
-        switch (this.stage) {
-          case 0 /* FAILED */:
-          case 1 /* URL */:
-            let meta = await this.fetchOriginMeta();
-            if (meta !== null) {
+      const fetchMachine = async () => {
+        try {
+          switch (this.stage) {
+            case 0 /* FAILED */:
+            case 1 /* URL */:
+              const meta = await this.fetchOriginMeta();
               this.originURL = meta.url;
               if (meta.title) {
                 this.node.title = meta.title;
@@ -445,13 +444,9 @@
                 }
               }
               this.stage = 2 /* DATA */;
-            } else {
-              this.tryTimes++;
-            }
-            break;
-          case 2 /* DATA */:
-            const ret = await this.fetchImageData();
-            if (ret !== null) {
+              return fetchMachine();
+            case 2 /* DATA */:
+              const ret = await this.fetchImageData();
               [this.data, this.contentType] = ret;
               [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL);
               this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
@@ -460,41 +455,37 @@
                 this.node.render();
               }
               this.stage = 3 /* DONE */;
-            } else {
-              this.stage = 1 /* URL */;
-              this.tryTimes++;
-            }
-            break;
-          case 3 /* DONE */:
-            return;
+            case 3 /* DONE */:
+              return null;
+          }
+        } catch (error) {
+          return error;
         }
+      };
+      this.tryTimes = 0;
+      let err;
+      while (this.tryTimes < 3) {
+        err = await fetchMachine();
+        if (err === null)
+          return;
+        this.tryTimes++;
+        evLog("error", `fetch image error, try times: ${this.tryTimes}, error:`, err);
       }
-      throw new Error(`Fetch image failed, reach max try times, current stage: ${this.stage}`);
+      throw err;
     }
     async fetchOriginMeta() {
       try {
-        const meta = await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0, this.chapterIndex);
-        if (!meta) {
-          evLog("error", "Fetch URL failed, the URL is empty");
-          return null;
-        }
-        return meta;
+        return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0, this.chapterIndex);
       } catch (error) {
-        evLog("error", `Fetch URL error:`, error);
-        return null;
+        throw new Error(`fetch big image url error: ${error}`);
       }
     }
     async fetchImageData() {
-      try {
-        const data = await this.fetchBigImage();
-        if (data == null) {
-          throw new Error(`Data is null, image url:${this.originURL}`);
-        }
-        return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
-      } catch (error) {
-        evLog("error", `Fetch image data error:`, error);
-        return null;
+      const data = await this.fetchBigImage();
+      if (data == null) {
+        throw new Error(`fetch image data is empty, image url:${this.originURL}`);
       }
+      return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
     }
     render() {
       switch (this.rendered) {
@@ -523,15 +514,16 @@
         let abort;
         const timeout = () => {
           debouncer.addEvent("XHR_TIMEOUT", () => {
-            reject("timeout");
+            reject(new Error("timeout"));
             abort();
           }, conf.timeout * 1e3);
         };
         abort = xhrWapper(imgFetcher.originURL, "blob", {
           onload: function(response) {
             let data = response.response;
-            if (data.type === "text/html") {
-              console.error("warn: fetch big image data type is not blob: ", data);
+            if (data.type.startsWith("text/html")) {
+              reject(new Error(`expect image data, fetched wrong type: ${data.type}`));
+              return;
             }
             try {
               imgFetcher.setDownloadState({ readyState: response.readyState });
@@ -541,7 +533,7 @@
             resolve(data);
           },
           onerror: function(response) {
-            reject(`error:${response.error}, response:${response.response}`);
+            reject(new Error(`response status:${response.status}, error:${response.error}, response:${response.response}`));
           },
           onprogress: function(response) {
             imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
@@ -1802,9 +1794,10 @@ ${chapters.map((c, i) => `<div><label>
         this.downloadBar.firstElementChild.style.width = state.loaded / state.total * 100 + "%";
       }
     }
-    changeStyle(fetchStatus) {
+    changeStyle(fetchStatus, failedReason) {
       if (!this.root)
         return;
+      this.root.querySelector(".img-node-error-hint")?.remove();
       switch (fetchStatus) {
         case "fetching":
           this.root.classList.add("img-fetching");
@@ -1824,6 +1817,12 @@ ${chapters.map((c, i) => `<div><label>
           this.root.classList.remove("img-fetched");
           this.root.classList.remove("img-fetch-failed");
           this.root.classList.remove("img-fetching");
+      }
+      if (failedReason) {
+        const errorHintElement = document.createElement("div");
+        errorHintElement.classList.add("img-node-error-hint");
+        errorHintElement.innerHTML = `<span>${failedReason}</span><br><span style="color: white;">You can click here retry again,<br>Or press mouse middle button to open origin image url</span>`;
+        this.root.firstElementChild.appendChild(errorHintElement);
       }
     }
     equal(ele) {
@@ -2419,7 +2418,7 @@ ${chapters.map((c, i) => `<div><label>
     galleryMeta() {
       const url = new URL(window.location.href);
       const tags = url.searchParams.get("tags")?.trim();
-      const meta = new GalleryMeta(window.location.href, `yande_${tags}_${this.count}`);
+      const meta = new GalleryMeta(window.location.href, `yande_${tags || "post"}_${this.count}`);
       meta["infos"] = this.infos;
       return meta;
     }
@@ -4544,19 +4543,23 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   line-height: 0;
   position: relative;
 }
-.ehvp-chapter-description {
+.ehvp-chapter-description, .img-node-error-hint {
   display: block;
   position: absolute;
-  bottom: 0;
+  bottom: 3px;
+  left: 3px;
   background-color: #708090e3;
   color: #ffe785;
-  width: 100%;
+  width: calc(100% - 6px);
   font-weight: 600;
   min-height: 3rem;
   font-size: 1.2rem;
   padding: 0.5rem;
   box-sizing: border-box;
   line-height: 1.3rem;
+}
+.img-node-error-hint {
+  color: #8a0000;
 }
 .img-fetched img, .img-fetched canvas {
   border: 3px solid #90ffae !important;

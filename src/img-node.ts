@@ -146,8 +146,9 @@ export default class ImageNode {
     }
   }
 
-  changeStyle(fetchStatus?: "fetching" | "fetched" | "failed") {
+  changeStyle(fetchStatus?: "fetching" | "fetched" | "failed", failedReason?: string) {
     if (!this.root) return;
+    this.root.querySelector(".img-node-error-hint")?.remove();
     switch (fetchStatus) {
       case "fetching":
         this.root.classList.add("img-fetching");
@@ -167,6 +168,13 @@ export default class ImageNode {
         this.root.classList.remove("img-fetched");
         this.root.classList.remove("img-fetch-failed");
         this.root.classList.remove("img-fetching");
+    }
+    if (failedReason) {
+      // create error hint element
+      const errorHintElement = document.createElement("div");
+      errorHintElement.classList.add("img-node-error-hint");
+      errorHintElement.innerHTML = `<span>${failedReason}</span><br><span style="color: white;">You can click here retry again,<br>Or press mouse middle button to open origin image url</span>`;
+      this.root.firstElementChild!.appendChild(errorHintElement);
     }
   }
 

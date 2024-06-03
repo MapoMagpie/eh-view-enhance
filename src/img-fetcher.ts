@@ -104,6 +104,7 @@ export class IMGFetcher implements VisualNode {
                 this.node.imgElement.title = meta.title;
               }
             }
+            this.node.href = meta.href || this.node.href;
             this.stage = FetchState.DATA;
             return fetchMachine();
           case FetchState.DATA:
@@ -120,6 +121,7 @@ export class IMGFetcher implements VisualNode {
             return null;
         }
       } catch (error) {
+        this.stage = FetchState.FAILED;
         return error as Error;
       }
     }
@@ -136,7 +138,7 @@ export class IMGFetcher implements VisualNode {
 
   async fetchOriginMeta(): Promise<OriginMeta> {
     try {
-      return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0, this.chapterIndex);
+      return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0 || this.stage === FetchState.FAILED, this.chapterIndex);
     } catch (error) {
       throw new Error(`fetch big image url error: ${error}`);
     }

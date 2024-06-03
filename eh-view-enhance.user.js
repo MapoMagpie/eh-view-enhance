@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.11
+// @version            4.5.12
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -443,6 +443,7 @@
                   this.node.imgElement.title = meta.title;
                 }
               }
+              this.node.href = meta.href || this.node.href;
               this.stage = 2 /* DATA */;
               return fetchMachine();
             case 2 /* DATA */:
@@ -459,6 +460,7 @@
               return null;
           }
         } catch (error) {
+          this.stage = 0 /* FAILED */;
           return error;
         }
       };
@@ -475,7 +477,7 @@
     }
     async fetchOriginMeta() {
       try {
-        return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0, this.chapterIndex);
+        return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0 || this.stage === 0 /* FAILED */, this.chapterIndex);
       } catch (error) {
         throw new Error(`fetch big image url error: ${error}`);
       }
@@ -2639,9 +2641,6 @@ ${chapters.map((c, i) => `<div><label>
       this.meta.tags = tags;
       return this.meta;
     }
-    async fetchOriginMeta(href, retry) {
-      return { url: await this.fetchImgURL(href, retry) };
-    }
     async parseImgNodes(source) {
       const list = [];
       let doc = await (async () => {
@@ -2768,41 +2767,41 @@ ${chapters.map((c, i) => `<div><label>
         yield url.href;
       }
     }
-    async fetchImgURL(url, originChanged) {
+    async fetchOriginMeta(url, originChanged) {
       let text = "";
       try {
         text = await window.fetch(url).then((resp) => resp.text());
       } catch (error) {
-        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
+        throw new Error(`fetch source page error, expected [text]！ ${error}`);
       }
       if (!text)
         throw new Error("[text] is empty");
       if (conf.fetchOriginal) {
         const matchs = regulars.original.exec(text);
         if (matchs && matchs.length > 0) {
-          return matchs[1].replace(/&amp;/g, "&");
+          return { url: matchs[1].replace(/&amp;/g, "&") };
         }
       }
       let src;
+      let newUrl;
       if (originChanged) {
         const nlValue = regulars.nlValue.exec(text)?.[1];
         if (nlValue) {
-          const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
+          newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
           evLog("info", `IMG-FETCHER retry url:${newUrl}`);
-          src = await this.fetchImgURL(newUrl, false);
+          const newMeta = await this.fetchOriginMeta(newUrl, false);
+          src = newMeta.url;
         } else {
           evLog("error", `Cannot matching the nlValue, content: ${text}`);
         }
       }
-      if (!src) {
-        src = regulars.normal.exec(text)?.[1];
-      }
+      src = src || regulars.normal.exec(text)?.[1];
       if (!src)
-        throw new Error(`Cannot matching the image url, content: ${text}`);
+        throw new Error(`cannot matching the image url, content: ${text}`);
       if (!src.startsWith("http")) {
         src = window.location.origin + src;
       }
-      return src;
+      return { url: src, href: newUrl };
     }
   }
 

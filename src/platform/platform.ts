@@ -6,6 +6,7 @@ import { Chapter, PagesSource } from "../page-fetcher";
 export type OriginMeta = {
   url: string,
   title?: string,
+  href?: string,
 }
 
 export interface Matcher {

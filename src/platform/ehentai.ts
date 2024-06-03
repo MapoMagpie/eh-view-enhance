@@ -68,10 +68,6 @@ export class EHMatcher extends BaseMatcher {
     return this.meta;
   }
 
-  async fetchOriginMeta(href: string, retry: boolean): Promise<OriginMeta> {
-    return { url: await this.fetchImgURL(href, retry) };
-  }
-
   async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
     let doc = await (async (): Promise<Document | null> => {
@@ -212,12 +208,12 @@ export class EHMatcher extends BaseMatcher {
     }
   }
 
-  private async fetchImgURL(url: string, originChanged: boolean): Promise<string> {
+  async fetchOriginMeta(url: string, originChanged: boolean): Promise<OriginMeta> {
     let text = "";
     try {
-      text = await window.fetch(url).then(resp => resp.text());
+      text = await window.fetch(url).then(resp => resp.text()); // TODO: timeout
     } catch (error) {
-      throw new Error(`Fetch source page error, expected [text]！ ${error}`);
+      throw new Error(`fetch source page error, expected [text]！ ${error}`);
     }
     if (!text) throw new Error("[text] is empty");
 
@@ -225,31 +221,31 @@ export class EHMatcher extends BaseMatcher {
     if (conf.fetchOriginal) {
       const matchs = regulars.original.exec(text);
       if (matchs && matchs.length > 0) {
-        return matchs[1].replace(/&amp;/g, "&");
+        return { url: matchs[1].replace(/&amp;/g, "&") }
       }
     }
     let src: string | undefined;
+    let newUrl: string | undefined;
     // EH change the url
     if (originChanged) {
       const nlValue = regulars.nlValue.exec(text)?.[1];
       if (nlValue) {
-        const newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
+        newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
         evLog("info", `IMG-FETCHER retry url:${newUrl}`);
-        src = await this.fetchImgURL(newUrl, false);
+        const newMeta = await this.fetchOriginMeta(newUrl, false);
+        src = newMeta.url;
       } else {
         evLog("error", `Cannot matching the nlValue, content: ${text}`);
       }
     }
-    if (!src) {
-      // normal
-      src = regulars.normal.exec(text)?.[1];
-    }
-    if (!src) throw new Error(`Cannot matching the image url, content: ${text}`);
+    // if not originChanged, fallback to normal
+    src = src || regulars.normal.exec(text)?.[1];
+    if (!src) throw new Error(`cannot matching the image url, content: ${text}`);
     // check src has host prefix
     if (!src.startsWith("http")) {
       src = window.location.origin + src;
     }
-    return src;
+    return { url: src, href: newUrl };
   }
 }
 

@@ -55,7 +55,10 @@ function main(MATCHER: Matcher): DestoryFunc {
   }
   const href = window.location.href;
   // the real entry at ./ui/event/main
-  if (conf.autoOpen && enableAutoOpen(href)) events.main(true)
+  if (conf.autoOpen && enableAutoOpen(href)) {
+    HTML.entryBTN.setAttribute("data-stage", "open");
+    events.main(true);
+  }
   return () => {
     console.log("destory eh-view-enhance");
     PF.abort();

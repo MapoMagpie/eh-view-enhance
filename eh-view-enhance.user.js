@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.12
+// @version            4.5.13
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -34,6 +34,7 @@
 // @match              https://*.hm19.lol/*
 // @match              https://*.hm18.lol/*
 // @match              https://*.hm17.lol/*
+// @match              https://hentainexus.com/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -59,6 +60,7 @@
 // @connect            twimg.com
 // @connect            qy0.ru
 // @connect            wnimg.ru
+// @connect            hentainexus.com
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -2805,6 +2807,122 @@ ${chapters.map((c, i) => `<div><label>
     }
   }
 
+  const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?"(.*?)"\)/;
+  const REGEXP_EXTRACT_HASH = /read\/\d+\/(\d+)$/;
+  class HentaiNexusMatcher extends BaseMatcher {
+    meta;
+    baseURL;
+    readerData;
+    readDirection;
+    async *fetchPagesSource() {
+      this.meta = this.pasrseGalleryMeta(document);
+      yield document;
+    }
+    async parseImgNodes(page) {
+      const doc = page;
+      const result = [];
+      const list = Array.from(doc.querySelectorAll(".section .container + .container > .box > .columns > .column a"));
+      list.forEach((li, i) => {
+        const img = li.querySelector("img");
+        if (!img)
+          return;
+        const num = li.href.split("/").pop() || i.toString();
+        const ext = img.src.split(".").pop();
+        const title = num + "." + ext;
+        result.push(new ImageNode(img.src, li.href, title));
+      });
+      return result;
+    }
+    async fetchOriginMeta(href) {
+      if (!this.readerData) {
+        const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+        const args = doc.querySelector("body > script")?.textContent?.match(REGEXP_EXTRACT_INIT_ARGUMENTS)?.slice(1);
+        if (!args || args.length !== 3)
+          throw new Error("cannot find reader data");
+        this.initReader(args[0], args[1], args[2]);
+      }
+      if (!this.readerData)
+        throw new Error("cannot find reader data");
+      const hash = href.match(REGEXP_EXTRACT_HASH)?.[1] || "001";
+      const url = this.readerData.find((d) => d.url_label === hash)?.image;
+      if (!url)
+        throw new Error("cannot find image url");
+      const ext = url.split(".").pop();
+      return { url, title: hash + "." + ext };
+    }
+    workURL() {
+      return /hentainexus.com\/view\/\d+/;
+    }
+    galleryMeta(doc) {
+      return this.meta || super.galleryMeta(doc);
+    }
+    pasrseGalleryMeta(doc) {
+      const title = doc.querySelector("h1.title")?.textContent || "UNTITLED";
+      const meta = new GalleryMeta(this.baseURL || window.location.href, title);
+      doc.querySelectorAll(".view-page-details tr").forEach((tr) => {
+        const category = tr.querySelector(".viewcolumn")?.textContent?.trim();
+        if (!category)
+          return;
+        let values = Array.from(tr.querySelector(".viewcolumn + td")?.childNodes || []).map((c) => c?.textContent?.trim()).filter(Boolean);
+        if (values.length === 0)
+          return;
+        if (category === "Tags") {
+          values = values.map((v) => v.replace(/\s?\([0-9,]*\)$/, ""));
+        }
+        meta.tags[category] = values;
+      });
+      return meta;
+    }
+    initReader(data, originTitle, readDirection) {
+      if (this.meta) {
+        this.meta.originTitle = originTitle.replace(/::\s?HentaiNexus/, "");
+      }
+      this.readDirection = readDirection;
+      let poses = [];
+      let list = [];
+      for (let step2 = 2; list.length < 16; ++step2) {
+        if (!poses[step2]) {
+          list.push(step2);
+          for (let j = step2 << 1; j <= 256; j += step2) {
+            poses[j] = !![];
+          }
+        }
+      }
+      let a = 0;
+      const decoded = atob(data);
+      for (let step2 = 0; step2 < 64; step2++) {
+        a = a ^ decoded.charCodeAt(step2);
+        for (let i = 0; i < 8; i++) {
+          a = a & 1 ? a >>> 1 ^ 12 : a >>> 1;
+        }
+      }
+      a = a & 7;
+      let step = new Uint8Array(256);
+      for (let i = 0; i < 256; i++) {
+        step[i] = i;
+      }
+      let raw = "";
+      let c = 0;
+      for (let i = 0, b = 0; i < 256; i++) {
+        b = (b + step[i] + decoded.charCodeAt(i % 64)) % 256;
+        c = step[i];
+        step[i] = step[b];
+        step[b] = c;
+      }
+      for (let d = list[a], e = 0, f = 0, j = 0, k = 0, i = 0; i + 64 < decoded.length; i++) {
+        j = (j + d) % 256;
+        k = (f + step[(k + step[j]) % 256]) % 256;
+        f = (f + j + step[j]) % 256;
+        c = step[j];
+        step[j] = step[k];
+        step[k] = c;
+        e = step[(k + step[(j + step[(e + f) % 256]) % 256]) % 256];
+        raw += String.fromCharCode(decoded.charCodeAt(i + 64) ^ e);
+      }
+      this.readerData = JSON.parse(raw);
+    }
+  }
+
   class HitomiGG {
     base = "a";
     b;
@@ -4183,7 +4301,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     new GelBooruMatcher(),
     new IMHentaiMatcher(),
     new TwitterMatcher(),
-    new WnacgMatcher()
+    new WnacgMatcher(),
+    new HentaiNexusMatcher()
   ];
   function adaptMatcher(url) {
     const checkValid = (urls) => {
@@ -7104,8 +7223,10 @@ html {
       saveConf(conf);
     }
     const href = window.location.href;
-    if (conf.autoOpen && enableAutoOpen(href))
+    if (conf.autoOpen && enableAutoOpen(href)) {
+      HTML.entryBTN.setAttribute("data-stage", "open");
       events.main(true);
+    }
     return () => {
       console.log("destory eh-view-enhance");
       PF.abort();

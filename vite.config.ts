@@ -26,7 +26,7 @@ export default defineConfig(({ command }) => {
       monkey({
         entry: 'src/main.ts',
         userscript: {
-          version: '4.5.12',
+          version: '4.5.13',
           icon: 'https://exhentai.org/favicon.ico',
           namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
           supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',
@@ -56,6 +56,7 @@ export default defineConfig(({ command }) => {
             'https://*.hm19.lol/*',
             'https://*.hm18.lol/*',
             'https://*.hm17.lol/*',
+            'https://hentainexus.com/*',
           ],
           name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
           license: 'MIT',
@@ -86,6 +87,7 @@ export default defineConfig(({ command }) => {
             'twimg.com',
             'qy0.ru',
             'wnimg.ru',
+            'hentainexus.com',
           ],
           grant: [
             'GM_xmlhttpRequest',

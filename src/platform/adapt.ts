@@ -2,6 +2,7 @@ import { conf, saveConf } from "../config";
 import { Comic18Matcher } from "./18comic";
 import { DanbooruDonmaiMatcher, GelBooruMatcher, KonachanMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
 import { EHMatcher } from "./ehentai";
+import { HentaiNexusMatcher } from "./hentainexus";
 import { HitomiMather } from "./hitomi";
 import { IMHentaiMatcher } from "./im-hentai";
 import { NHMatcher } from "./nhentai";
@@ -28,6 +29,7 @@ export const matchers: Matcher[] = [
   new IMHentaiMatcher(),
   new TwitterMatcher(),
   new WnacgMatcher(),
+  new HentaiNexusMatcher(),
 ];
 
 export function adaptMatcher(url: string): Matcher | null {

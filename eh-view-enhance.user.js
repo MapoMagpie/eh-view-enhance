@@ -603,9 +603,9 @@
     autoPageInterval: new I18nValue("Auto Page Interval", "自动翻页间隔"),
     autoPageIntervalTooltip: new I18nValue("Use the mouse wheel on Input box to adjust the interval time.", "在输入框上使用鼠标滚轮快速修改间隔时间"),
     readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
-    threads: new I18nValue("PreloadThreads", "最大同时加载"),
+    threads: new I18nValue("Preload Threads", "最大同时加载"),
     threadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
-    downloadThreads: new I18nValue("DownloadThreads", "最大同时下载"),
+    downloadThreads: new I18nValue("Download Threads", "最大同时下载"),
     downloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
     timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
     fetchOriginal: new I18nValue("Raw Image", "最佳质量"),
@@ -4993,7 +4993,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   cursor: url("https://exhentai.org/img/n.png"), auto;
 }
 .p-tooltip {
-  border-bottom: 1px dotted black;
+  border-bottom: 3px solid var(--ehvp-font-color);
+  margin-left: 0.3rem;
 }
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
@@ -5904,7 +5905,7 @@ html {
         break;
     }
     const [start, end] = item.gridColumnRange ? item.gridColumnRange : [1, 11];
-    return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}"><label class="p-label"><span><span>${i18nValue.get()}</span><span class="p-tooltip">${i18nValueTooltip ? "?" : ""}<span class="p-tooltiptext">${i18nValueTooltip?.get() || ""}</span></span><span>:</span></span>${input}</label></div>`;
+    return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}"><label class="p-label"><span><span>${i18nValue.get()}</span><span class="p-tooltip">${i18nValueTooltip ? "🙻" : ""}<span class="p-tooltiptext">${i18nValueTooltip?.get() || ""}</span></span><span>:</span></span>${input}</label></div>`;
   }
   function createHTML() {
     const fullViewGrid = document.createElement("div");

@@ -117,7 +117,8 @@
       pageHelperAbRight: "unset",
       imgScale: 100,
       stickyMouse: "disable",
-      autoPageInterval: 5e3,
+      autoPageSpeed: 5,
+      // pagination readmode = 5, continuous readmode = 1
       autoPlay: false,
       filenameTemplate: "{number}-{title}",
       preventScrollPageTime: 100,
@@ -138,7 +139,7 @@
       autoLoadInBackground: true,
       reverseMultipleImagesPost: true,
       ehentaiTitlePrefer: "japanese",
-      scrollingSpeed: 5
+      scrollingSpeed: 30
     };
   }
   const VERSION = "4.4.0";
@@ -174,13 +175,20 @@
   function confHealthCheck(cf) {
     let changed = false;
     const defa = defaultConf();
-    const keys = Object.keys(defa);
-    keys.forEach((key) => {
+    const defaKeys = Object.keys(defa);
+    defaKeys.forEach((key) => {
       if (cf[key] === void 0) {
         cf[key] = defa[key];
         changed = true;
       }
     });
+    const cfKeys = Object.keys(cf);
+    for (const k of cfKeys) {
+      if (!defaKeys.includes(k)) {
+        delete cf[k];
+        changed = true;
+      }
+    }
     ["pageHelperAbTop", "pageHelperAbLeft", "pageHelperAbBottom", "pageHelperAbRight"].forEach((key) => {
       if (cf[key] !== "unset") {
         let pos = parseInt(cf[key]);
@@ -211,7 +219,7 @@
     { key: "paginationIMGCount", typ: "number" },
     { key: "timeout", typ: "number" },
     { key: "preventScrollPageTime", typ: "number" },
-    { key: "autoPageInterval", typ: "number" },
+    { key: "autoPageSpeed", typ: "number" },
     { key: "scrollingSpeed", typ: "number" },
     { key: "fetchOriginal", typ: "boolean", gridColumnRange: [1, 6] },
     { key: "autoLoad", typ: "boolean", gridColumnRange: [6, 11] },
@@ -605,10 +613,10 @@
     paginationIMGCount: new I18nValue("Images Per Page", "每页图片数量"),
     paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "在翻页阅读模式下，每页展示的图片数量"),
     timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
-    preventScrollPageTime: new I18nValue("Flip Page Time", "滚动翻页时间"),
-    preventScrollPageTimeTooltip: new I18nValue("In Read Mode:Single Page, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "在单页阅读模式下，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
-    autoPageInterval: new I18nValue("Auto Page Interval", "自动翻页间隔"),
-    autoPageIntervalTooltip: new I18nValue("Use the mouse wheel on Input box to adjust the interval time.", "在输入框上使用鼠标滚轮快速修改间隔时间"),
+    preventScrollPageTime: new I18nValue("Min Paging Time", "最小翻页时间"),
+    preventScrollPageTimeTooltip: new I18nValue("In Pagination read mode, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "在翻页阅读模式下，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
+    autoPageSpeed: new I18nValue("Auto Page Speed", "自动翻页速度"),
+    autoPageSpeedTooltip: new I18nValue("In Pagination read mode, Auto Page Speed means how many seconds it takes to flip the page automatically.<br>In Continuous read mode, Auto Page Speed means the scrolling speed.", "当阅读模式为翻页模式时，自动翻页速度表示为多少秒后翻页。<br>当阅读模式为连续模式时，自动翻页速度表示为滚动速度。"),
     scrollingSpeed: new I18nValue("Scrolling Speed", "滚动速度"),
     // config panel boolean option
     fetchOriginal: new I18nValue("Raw Image", "最佳质量"),
@@ -4372,7 +4380,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
-  function animatedScrollBy(element, y) {
+  function scrollSmoothly(element, y) {
     let scroller = TASKS.get(element);
     if (!scroller) {
       scroller = new Scroller(element);
@@ -4381,9 +4389,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     scroller.step = conf.scrollingSpeed;
     scroller.scroll(y > 0 ? "down" : "up");
   }
-  const scroller = {
-    animatedScrollBy
-  };
   const TASKS = /* @__PURE__ */ new WeakMap();
   class Scroller {
     element;
@@ -4464,6 +4469,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.endAt = this.last + duration;
     }
   }
+  const scroller = {
+    scrollSmoothly,
+    Scroller
+  };
 
   function createExcludeURLPanel(root, urls, autoOpen = false) {
     const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
@@ -5386,13 +5395,12 @@ html {
         threads: [1, 10],
         downloadThreads: [1, 10],
         timeout: [8, 40],
-        autoPageInterval: [500, 9e4],
+        autoPageSpeed: [1, 100],
         preventScrollPageTime: [0, 9e4],
         paginationIMGCount: [1, 5],
         scrollingSpeed: [1, 100]
       };
-      let mod = key === "autoPageInterval" ? 100 : 1;
-      mod = key === "preventScrollPageTime" ? 10 : mod;
+      let mod = key === "preventScrollPageTime" ? 10 : 1;
       if (data === "add") {
         if (conf[key] < range[key][1]) {
           conf[key] += mod;
@@ -5442,6 +5450,8 @@ html {
         conf.readMode = value;
         saveConf(conf);
       }
+      conf.autoPageSpeed = conf.readMode === "pagination" ? 5 : 1;
+      q("#autoPageSpeedInput", HTML.configPanel).value = conf.autoPageSpeed.toString();
       BIFM.resetScaleBigImages(true);
       if (conf.readMode === "pagination") {
         BIFM.frame.classList.add("bifm-flex");
@@ -5588,7 +5598,7 @@ html {
           (event) => {
             const key = parseKey(event);
             if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
-              scroller.animatedScrollBy(BIFM.frame, -1);
+              scroller.scrollSmoothly(BIFM.frame, -1);
             }
             if (scrollImage("prev", key)) {
               event.preventDefault();
@@ -5601,7 +5611,7 @@ html {
           (event) => {
             const key = parseKey(event);
             if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
-              scroller.animatedScrollBy(BIFM.frame, 1);
+              scroller.scrollSmoothly(BIFM.frame, 1);
             }
             if (scrollImage("next", key)) {
               event.preventDefault();
@@ -6061,7 +6071,7 @@ html {
         </div>
         <div id="auto-page-btn" class="b-main-item clickable" hidden data-status="paused">
            <span>${i18n.autoPagePlay.get()}</span>
-           <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
+           <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #cd8e8e;"></div>
         </div>
         <div id="config-panel-btn" class="b-main-item clickable" hidden>${i18n.config.get()}</div>
         <div id="downloader-panel-btn" class="b-main-item clickable" hidden>${i18n.download.get()}</div>
@@ -7195,8 +7205,10 @@ html {
     button;
     lockVer;
     restart;
+    scroller;
     constructor(BIFM, root) {
       this.bifm = BIFM;
+      this.scroller = new Scroller(this.bifm.frame);
       this.status = "stop";
       this.button = root;
       this.lockVer = 0;
@@ -7225,7 +7237,7 @@ html {
       this.button.setAttribute("data-status", "playing");
       this.button.firstElementChild.innerText = i18n.autoPagePause.get();
       const b = this.bifm.frame;
-      if (this.bifm.frame.classList.contains("big-img-frame-collapse")) {
+      if (!this.bifm.visible) {
         const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
         if (queue.length === 0)
           return;
@@ -7233,10 +7245,11 @@ html {
         this.bifm.show(queue[index]);
       }
       const progress = q("#auto-page-progress", this.button);
+      const interval = () => conf.readMode === "pagination" ? conf.autoPageSpeed : 1;
       while (true) {
         await sleep(10);
-        progress.style.animation = `${conf.autoPageInterval ?? 1e4}ms linear main-progress`;
-        await sleep(conf.autoPageInterval ?? 1e4);
+        progress.style.animation = `${interval() * 1e3}ms linear main-progress`;
+        await sleep(interval() * 1e3);
         if (this.lockVer !== lockVer) {
           return;
         }
@@ -7260,7 +7273,12 @@ html {
           if (conf.readMode === "pagination")
             continue;
         }
-        b.scrollBy({ top: deltaY, behavior: "smooth" });
+        if (conf.readMode === "pagination") {
+          b.scrollBy({ top: deltaY, behavior: "smooth" });
+        } else {
+          this.scroller.step = conf.autoPageSpeed;
+          this.scroller.scroll("down", interval() * 1e3 + 10);
+        }
       }
       this.stop();
     }
@@ -7271,6 +7289,7 @@ html {
       progress.style.animation = ``;
       this.lockVer += 1;
       this.button.firstElementChild.innerText = i18n.autoPagePlay.get();
+      this.scroller.scroll("up", 0);
     }
   }
   function parseIndex(ele) {

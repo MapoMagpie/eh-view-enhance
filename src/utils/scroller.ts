@@ -1,6 +1,6 @@
 import { conf } from "../config";
 
-function animatedScrollBy(element: HTMLElement, y: number): void {
+export function scrollSmoothly(element: HTMLElement, y: number): void {
   let scroller = TASKS.get(element);
   if (!scroller) {
     scroller = new Scroller(element);
@@ -11,13 +11,9 @@ function animatedScrollBy(element: HTMLElement, y: number): void {
   scroller.scroll(y > 0 ? "down" : "up");
 }
 
-export default {
-  animatedScrollBy,
-};
-
 const TASKS = new WeakMap<HTMLElement, Scroller>();
 
-class Scroller {
+export class Scroller {
   element: HTMLElement;
   timer?: Timer;
   scrolling: boolean = false;
@@ -99,4 +95,9 @@ class Timer {
     this.endAt = this.last + duration;
   }
 }
+
+export default {
+  scrollSmoothly,
+  Scroller,
+};
 

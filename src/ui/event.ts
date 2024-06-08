@@ -45,13 +45,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       threads: [1, 10],
       downloadThreads: [1, 10],
       timeout: [8, 40],
-      autoPageInterval: [500, 90000],
+      autoPageSpeed: [1, 100],
       preventScrollPageTime: [0, 90000],
       paginationIMGCount: [1, 5],
       scrollingSpeed: [1, 100],
     };
-    let mod = key === "autoPageInterval" ? 100 : 1;
-    mod = key === "preventScrollPageTime" ? 10 : mod;
+    let mod = key === "preventScrollPageTime" ? 10 : 1;
     if (data === "add") {
       if (conf[key] < range[key][1]) {
         conf[key] += mod;
@@ -101,6 +100,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       conf.readMode = value as any;
       saveConf(conf);
     }
+    conf.autoPageSpeed = conf.readMode === "pagination" ? 5 : 1;
+    q<HTMLInputElement>("#autoPageSpeedInput", HTML.configPanel).value = conf.autoPageSpeed.toString();
     BIFM.resetScaleBigImages(true);
     if (conf.readMode === "pagination") {
       BIFM.frame.classList.add("bifm-flex")
@@ -271,7 +272,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
             // scrolling = true;
             // BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
             // BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 2), behavior: "smooth" })
-            scroller.animatedScrollBy(BIFM.frame, -1);
+            scroller.scrollSmoothly(BIFM.frame, -1);
           }
           if (scrollImage("prev", key)) {
             event.preventDefault();
@@ -288,7 +289,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
             // scrolling = true;
             // BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
             // BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 2, behavior: "smooth" })
-            scroller.animatedScrollBy(BIFM.frame, 1);
+            scroller.scrollSmoothly(BIFM.frame, 1);
           }
           if (scrollImage("next", key)) {
             event.preventDefault();

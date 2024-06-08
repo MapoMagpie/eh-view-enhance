@@ -112,7 +112,7 @@ export function createHTML() {
         </div>
         <div id="auto-page-btn" class="b-main-item clickable" hidden data-status="paused">
            <span>${i18n.autoPagePlay.get()}</span>
-           <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #6a6a6a"></div>
+           <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #cd8e8e;"></div>
         </div>
         <div id="config-panel-btn" class="b-main-item clickable" hidden>${i18n.config.get()}</div>
         <div id="downloader-panel-btn" class="b-main-item clickable" hidden>${i18n.download.get()}</div>

@@ -10,6 +10,7 @@ import { VideoControl } from "./video-control";
 import EBUS from "../event-bus";
 import { Chapter } from "../page-fetcher";
 import queryCSSRules from "../utils/query-cssrules";
+import { Scroller } from "../utils/scroller";
 
 type MediaElement = HTMLImageElement | HTMLVideoElement;
 
@@ -679,8 +680,10 @@ class AutoPage {
   button: HTMLElement;
   lockVer: number;
   restart: boolean;
+  scroller: Scroller;
   constructor(BIFM: BigImageFrameManager, root: HTMLElement) {
     this.bifm = BIFM;
+    this.scroller = new Scroller(this.bifm.frame)
     this.status = "stop";
     this.button = root;
     this.lockVer = 0;
@@ -711,17 +714,18 @@ class AutoPage {
     this.button.setAttribute("data-status", "playing");
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
     const b = this.bifm.frame;
-    if (this.bifm.frame.classList.contains("big-img-frame-collapse")) {
+    if (!this.bifm.visible) {
       const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
       if (queue.length === 0) return;
       const index = Math.max(parseIndex(this.bifm.elements.curr[0]), 0);
       this.bifm.show(queue[index]);
     }
     const progress = q("#auto-page-progress", this.button);
+    const interval = () => conf.readMode === "pagination" ? conf.autoPageSpeed : 1;
     while (true) {
-      await sleep(10);
-      progress.style.animation = `${conf.autoPageInterval ?? 10000}ms linear main-progress`;
-      await sleep(conf.autoPageInterval ?? 10000);
+      await sleep(10); // need to wait 10ms for animation style changed
+      progress.style.animation = `${interval() * 1000}ms linear main-progress`;
+      await sleep(interval() * 1000);
       if (this.lockVer !== lockVer) {
         return;
       }
@@ -744,7 +748,12 @@ class AutoPage {
         this.bifm.onWheel(new WheelEvent("wheel", { deltaY }), false, true);
         if (conf.readMode === "pagination") continue;
       }
-      b.scrollBy({ top: deltaY, behavior: "smooth" });
+      if (conf.readMode === "pagination") {
+        b.scrollBy({ top: deltaY, behavior: "smooth" });
+      } else {
+        this.scroller.step = conf.autoPageSpeed;
+        this.scroller.scroll("down", interval() * 1000 + 10);
+      }
     }
     this.stop();
   }
@@ -756,6 +765,7 @@ class AutoPage {
     progress.style.animation = ``;
     this.lockVer += 1;
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePlay.get();
+    this.scroller.scroll("up", 0);
   }
 }
 

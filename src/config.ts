@@ -42,7 +42,7 @@ export type Config = {
   /** 图片缩放比例 */
   stickyMouse: "enable" | "disable" | "reverse"
   /** 自动翻页间隔 */
-  autoPageInterval: number
+  autoPageSpeed: number
   /** 自动开始 */
   autoPlay: boolean
   /** 图片名模板 */
@@ -66,13 +66,13 @@ export type Config = {
   excludeURLs: string[],
   /* 屏蔽自动展开的URL */
   autoOpenExcludeURLs: string[],
-  /** is video muted? */
+  /** Is video muted? */
   muted?: boolean,
-  /** video volume, min 0, max 100 */
+  /** Video volume, min 0, max 100 */
   volume?: number,
-  /** disable css animation */
+  /** Disable css animation */
   disableCssAnimation: boolean,
-  /** the feature of `multiple chapters` is enabled in a site */
+  /** The feature of `multiple chapters` is enabled in a site */
   mcInSites: string[],
   /**  */
   paginationIMGCount: number,
@@ -81,10 +81,11 @@ export type Config = {
   autoOpen: boolean,
   /** Keep auto-loading after the tab loses focus */
   autoLoadInBackground: boolean,
-  /** reverse order for post with multiple images attatched */
+  /** Reverse order for post with multiple images attatched */
   reverseMultipleImagesPost: boolean,
   /** Many galleries have both an English/Romanized title and a title in Japanese script. Which gallery name would you like as archive filename?  */
   ehentaiTitlePrefer: "english" | "japanese",
+  /** Custom key scrolling speed */
   scrollingSpeed: number,
 };
 
@@ -111,7 +112,7 @@ function defaultConf(): Config {
     pageHelperAbRight: "unset",
     imgScale: 100,
     stickyMouse: "disable",
-    autoPageInterval: 5000,
+    autoPageSpeed: 5, // pagination readmode = 5, continuous readmode = 1
     autoPlay: false,
     filenameTemplate: "{number}-{title}",
     preventScrollPageTime: 100,
@@ -132,7 +133,7 @@ function defaultConf(): Config {
     autoLoadInBackground: true,
     reverseMultipleImagesPost: true,
     ehentaiTitlePrefer: "japanese",
-    scrollingSpeed: 5,
+    scrollingSpeed: 30,
   };
 }
 
@@ -179,13 +180,21 @@ function confHealthCheck(cf: Config): Config {
   let changed = false;
   // check config keys and values undefined
   const defa = defaultConf();
-  const keys = Object.keys(defa) as (keyof Config)[];
-  keys.forEach((key) => {
+  const defaKeys = Object.keys(defa) as (keyof Config)[];
+  defaKeys.forEach((key) => {
     if (cf[key] === undefined) {
       (cf[key] as any) = defa[key];
       changed = true;
     }
   });
+  // delete invalid keys
+  const cfKeys = Object.keys(cf) as (keyof Config)[];
+  for (const k of cfKeys) {
+    if (!defaKeys.includes(k)) {
+      delete cf[k];
+      changed = true;
+    }
+  }
   (["pageHelperAbTop", "pageHelperAbLeft", "pageHelperAbBottom", "pageHelperAbRight"] as (keyof Config)[]).forEach((key) => {
     if ((cf[key]) !== "unset") {
       let pos = parseInt(cf[key] as string);
@@ -196,6 +205,7 @@ function confHealthCheck(cf: Config): Config {
       }
     }
   });
+  // check enum
   if (!["pagination", "continuous"].includes(cf.readMode)) {
     cf.readMode = "pagination";
     changed = true;
@@ -210,7 +220,7 @@ export function saveConf(c: Config) {
   storage.setItem(CONFIG_KEY, JSON.stringify(c));
 }
 
-export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
+export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageSpeed" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
 export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost";
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer";
 export const conf = getConf();
@@ -236,7 +246,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "paginationIMGCount", typ: "number" },
   { key: "timeout", typ: "number" },
   { key: "preventScrollPageTime", typ: "number" },
-  { key: "autoPageInterval", typ: "number" },
+  { key: "autoPageSpeed", typ: "number" },
   { key: "scrollingSpeed", typ: "number" },
   { key: "fetchOriginal", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoLoad", typ: "boolean", gridColumnRange: [6, 11] },

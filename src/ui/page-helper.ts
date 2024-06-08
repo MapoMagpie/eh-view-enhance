@@ -10,7 +10,8 @@ import { Elements } from "./html";
 export class PageHelper {
   html: Elements;
   chapterIndex: number = -1;
-  lastPageNumber: number = 0;
+  lastChapterIndex: number = 0;
+  pageNumInChapter: Record<number, number> = {};
   lastStage: "bigImageFrame" | "fullViewGrid" | "exit" = "exit";
   chapters: () => Chapter[];
   constructor(html: Elements, chapters: () => Chapter[]) {
@@ -19,8 +20,10 @@ export class PageHelper {
     EBUS.subscribe("pf-change-chapter", (index) => {
       let current = 0;
       if (index === -1) { // index = -1 means back to chapters selection, so record the last chapter number
-        this.lastPageNumber = this.chapterIndex;
-        current = this.lastPageNumber;
+        current = this.lastChapterIndex;
+      } else {
+        this.lastChapterIndex = index;
+        current = this.pageNumInChapter[index] || 0;
       }
       this.chapterIndex = index;
       const [total, finished] = (() => {
@@ -38,6 +41,7 @@ export class PageHelper {
       if (imf.chapterIndex !== this.chapterIndex) return;
       const queue = this.chapters()[this.chapterIndex]?.queue;
       if (!queue) return;
+      this.pageNumInChapter[this.chapterIndex] = index;
       this.setPageState({ current: (index + 1).toString() });
     });
     EBUS.subscribe("ifq-on-finished-report", (index, queue) => {
@@ -46,14 +50,14 @@ export class PageHelper {
       evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
     });
     EBUS.subscribe("pf-on-appended", (total, _ifs, chapterIndex: number, done) => {
-      if (chapterIndex !== this.chapterIndex) return;
+      if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex) return;
       this.setPageState({ total: `${total}${done ? "" : ".."}` });
     });
     html.currPageElement.addEventListener("click", (event) => {
       const ele = event.target as HTMLElement;
       const index = parseInt(ele.textContent || "1") - 1;
       if (this.chapterIndex === -1) { // this.chapterIndex = -1 means now in chapters selection
-        this.chapters()[this.lastPageNumber]?.onclick?.(this.lastPageNumber);
+        this.chapters()[this.lastChapterIndex]?.onclick?.(this.lastChapterIndex);
       } else {
         const queue = this.chapters()[this.chapterIndex]?.queue;
         if (!queue || !queue[index]) return;
@@ -116,7 +120,7 @@ export class PageHelper {
       return [];
     }
     const filter = (id: string) => {
-      if (id === "chapters-btn") return this.chapters().length > 1;
+      if (id === "chapters-btn") return this.chapterIndex > -1 && this.chapters().length > 1;
       if (id === "auto-page-btn" && level[0] === 3) return this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing";
       if (id === "pagination-adjust-bar") return conf.readMode === "pagination";
       return true;

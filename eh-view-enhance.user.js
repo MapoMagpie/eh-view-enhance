@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.14
+// @version            4.5.15
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -1921,8 +1921,8 @@ ${chapters.map((c, i) => `<div><label>
       EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
       EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
     }
-    appendToView(total, nodes, done) {
-      EBUS.emit("pf-on-appended", total, nodes, this.chapterIndex, done);
+    appendToView(total, nodes, chapterIndex, done) {
+      EBUS.emit("pf-on-appended", total, nodes, chapterIndex, done);
     }
     abort() {
       this.abortb = true;
@@ -1934,7 +1934,7 @@ ${chapters.map((c, i) => `<div><label>
         c.onclick = (index) => {
           EBUS.emit("pf-change-chapter", index);
           if (this.chapters[index].queue) {
-            this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, false);
+            this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
             if (this.chapters.length > 1) {
               this.chaptersSelectionElement.hidden = false;
             }
@@ -1951,12 +1951,12 @@ ${chapters.map((c, i) => `<div><label>
         this.changeChapter(0).finally(() => this.afterInit?.());
       }
       if (this.chapters.length > 1) {
-        this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
+        this.backChaptersSelection();
       }
     }
     backChaptersSelection() {
       EBUS.emit("pf-change-chapter", -1);
-      this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
+      this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), -1, true);
       this.chaptersSelectionElement.hidden = true;
     }
     /// start the chapter by index
@@ -1994,7 +1994,7 @@ ${chapters.map((c, i) => `<div><label>
         const next = await chapter.sourceIter.next();
         if (next.done) {
           chapter.done = true;
-          this.appendToView(this.queue.length, [], true);
+          this.appendToView(this.queue.length, [], this.chapterIndex, true);
           return false;
         } else {
           await this.appendImages(next.value);
@@ -2017,7 +2017,7 @@ ${chapters.map((c, i) => `<div><label>
         );
         this.queue.push(...IFs);
         this.chapters[this.chapterIndex].queue.push(...IFs);
-        this.appendToView(this.queue.length, IFs);
+        this.appendToView(this.queue.length, IFs, this.chapterIndex);
         return true;
       } catch (error) {
         evLog("error", `page fetcher append images error: `, error);
@@ -5797,14 +5797,14 @@ html {
     constructor(HTML, BIFM) {
       this.root = HTML.fullViewGrid;
       EBUS.subscribe("pf-on-appended", (_total, nodes, chapterIndex, done) => {
-        if (chapterIndex !== this.chapterIndex)
+        if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex)
           return;
         this.append(nodes);
         this.done = done || false;
         setTimeout(() => this.renderCurrView(), 200);
       });
       EBUS.subscribe("pf-change-chapter", (index) => {
-        this.chapterIndex = Math.max(0, index);
+        this.chapterIndex = index;
         this.root.innerHTML = "";
         this.queue = [];
         this.done = false;
@@ -6276,7 +6276,8 @@ html {
   class PageHelper {
     html;
     chapterIndex = -1;
-    lastPageNumber = 0;
+    lastChapterIndex = 0;
+    pageNumInChapter = {};
     lastStage = "exit";
     chapters;
     constructor(html, chapters) {
@@ -6285,8 +6286,10 @@ html {
       EBUS.subscribe("pf-change-chapter", (index) => {
         let current = 0;
         if (index === -1) {
-          this.lastPageNumber = this.chapterIndex;
-          current = this.lastPageNumber;
+          current = this.lastChapterIndex;
+        } else {
+          this.lastChapterIndex = index;
+          current = this.pageNumInChapter[index] || 0;
         }
         this.chapterIndex = index;
         const [total, finished] = (() => {
@@ -6307,6 +6310,7 @@ html {
         const queue = this.chapters()[this.chapterIndex]?.queue;
         if (!queue)
           return;
+        this.pageNumInChapter[this.chapterIndex] = index;
         this.setPageState({ current: (index + 1).toString() });
       });
       EBUS.subscribe("ifq-on-finished-report", (index, queue) => {
@@ -6316,7 +6320,7 @@ html {
         evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
       });
       EBUS.subscribe("pf-on-appended", (total, _ifs, chapterIndex, done) => {
-        if (chapterIndex !== this.chapterIndex)
+        if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex)
           return;
         this.setPageState({ total: `${total}${done ? "" : ".."}` });
       });
@@ -6324,7 +6328,7 @@ html {
         const ele = event.target;
         const index = parseInt(ele.textContent || "1") - 1;
         if (this.chapterIndex === -1) {
-          this.chapters()[this.lastPageNumber]?.onclick?.(this.lastPageNumber);
+          this.chapters()[this.lastChapterIndex]?.onclick?.(this.lastChapterIndex);
         } else {
           const queue = this.chapters()[this.chapterIndex]?.queue;
           if (!queue || !queue[index])
@@ -6383,7 +6387,7 @@ html {
       }
       const filter = (id) => {
         if (id === "chapters-btn")
-          return this.chapters().length > 1;
+          return this.chapterIndex > -1 && this.chapters().length > 1;
         if (id === "auto-page-btn" && level[0] === 3)
           return this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing";
         if (id === "pagination-adjust-bar")

@@ -42,8 +42,8 @@ export class PageFetcher {
     EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
   }
 
-  appendToView(total: number, nodes: VisualNode[], done?: boolean) {
-    EBUS.emit("pf-on-appended", total, nodes, this.chapterIndex, done);
+  appendToView(total: number, nodes: VisualNode[], chapterIndex: number, done?: boolean) {
+    EBUS.emit("pf-on-appended", total, nodes, chapterIndex, done);
   }
 
   abort() {
@@ -57,7 +57,7 @@ export class PageFetcher {
       c.onclick = (index) => {
         EBUS.emit("pf-change-chapter", index);
         if (this.chapters[index].queue) {
-          this.appendToView(this.chapters[index].queue!.length, this.chapters[index].queue!, false);
+          this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
           if (this.chapters.length > 1) {
             this.chaptersSelectionElement.hidden = false;
           }
@@ -75,13 +75,13 @@ export class PageFetcher {
       this.changeChapter(0).finally(() => this.afterInit?.());
     }
     if (this.chapters.length > 1) {
-      this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
+      this.backChaptersSelection();
     }
   }
 
   backChaptersSelection() {
     EBUS.emit("pf-change-chapter", -1);
-    this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), true);
+    this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), -1, true);
     this.chaptersSelectionElement.hidden = true;
   }
 
@@ -119,7 +119,7 @@ export class PageFetcher {
       const next = await chapter.sourceIter!.next();
       if (next.done) {
         chapter.done = true;
-        this.appendToView(this.queue.length, [], true);
+        this.appendToView(this.queue.length, [], this.chapterIndex, true);
         return false;
       } else {
         await this.appendImages(next.value);
@@ -142,7 +142,7 @@ export class PageFetcher {
       );
       this.queue.push(...IFs);
       this.chapters[this.chapterIndex].queue.push(...IFs);
-      this.appendToView(this.queue.length, IFs);
+      this.appendToView(this.queue.length, IFs, this.chapterIndex);
       return true;
     } catch (error) {
       evLog("error", `page fetcher append images error: `, error);

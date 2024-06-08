@@ -17,13 +17,13 @@ export class FullViewGridManager {
   constructor(HTML: Elements, BIFM: BigImageFrameManager) {
     this.root = HTML.fullViewGrid;
     EBUS.subscribe("pf-on-appended", (_total, nodes, chapterIndex, done) => {
-      if (chapterIndex !== this.chapterIndex) return;
+      if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex) return;
       this.append(nodes);
       this.done = done || false;
       setTimeout(() => this.renderCurrView(), 200);
     });
     EBUS.subscribe("pf-change-chapter", (index) => {
-      this.chapterIndex = Math.max(0, index);
+      this.chapterIndex = index;
       this.root.innerHTML = "";
       this.queue = [];
       this.done = false;

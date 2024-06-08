@@ -465,10 +465,7 @@ export function loadStyleSheel() {
   right: 0;
   cursor: url("https://exhentai.org/img/n.png"), auto;
 }
-.p-tooltip {
-  border-bottom: 3px solid var(--ehvp-font-color);
-  margin-left: 0.3rem;
-}
+.p-tooltip { }
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
   max-width: 24rem;

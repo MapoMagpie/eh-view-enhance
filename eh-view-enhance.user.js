@@ -611,13 +611,14 @@
     downloadThreads: new I18nValue("Download Threads", "最大同时下载"),
     downloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
     paginationIMGCount: new I18nValue("Images Per Page", "每页图片数量"),
-    paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "在翻页阅读模式下，每页展示的图片数量"),
+    paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "当阅读模式为翻页模式时，每页展示的图片数量"),
     timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
     preventScrollPageTime: new I18nValue("Min Paging Time", "最小翻页时间"),
-    preventScrollPageTimeTooltip: new I18nValue("In Pagination read mode, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "在翻页阅读模式下，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
-    autoPageSpeed: new I18nValue("Auto Page Speed", "自动翻页速度"),
+    preventScrollPageTimeTooltip: new I18nValue("In Pagination read mode, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "当阅读模式为翻页模式时，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
+    autoPageSpeed: new I18nValue("Auto Paging Speed", "自动翻页速度"),
     autoPageSpeedTooltip: new I18nValue("In Pagination read mode, Auto Page Speed means how many seconds it takes to flip the page automatically.<br>In Continuous read mode, Auto Page Speed means the scrolling speed.", "当阅读模式为翻页模式时，自动翻页速度表示为多少秒后翻页。<br>当阅读模式为连续模式时，自动翻页速度表示为滚动速度。"),
-    scrollingSpeed: new I18nValue("Scrolling Speed", "滚动速度"),
+    scrollingSpeed: new I18nValue("Scrolling Speed", "按键滚动速度"),
+    scrollingSpeedTooltip: new I18nValue("The scrolling Speed for Custom KeyBoard Keys for scrolling, not Auto Paging|Scrolling Speed", "自定义按键的滚动速度，并不是连续阅读模式下的自动翻页的滚动速度。"),
     // config panel boolean option
     fetchOriginal: new I18nValue("Raw Image", "最佳质量"),
     fetchOriginalTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
@@ -5102,10 +5103,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   right: 0;
   cursor: url("https://exhentai.org/img/n.png"), auto;
 }
-.p-tooltip {
-  border-bottom: 3px solid var(--ehvp-font-color);
-  margin-left: 0.3rem;
-}
+.p-tooltip { }
 .p-tooltip .p-tooltiptext {
   visibility: hidden;
   max-width: 24rem;
@@ -6006,7 +6004,7 @@ html {
         break;
     }
     const [start, end] = item.gridColumnRange ? item.gridColumnRange : [1, 11];
-    return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}"><label class="p-label"><span><span>${i18nValue.get()}</span><span class="p-tooltip">${i18nValueTooltip ? "🙻" : ""}<span class="p-tooltiptext">${i18nValueTooltip?.get() || ""}</span></span><span>:</span></span>${input}</label></div>`;
+    return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}"><label class="p-label"><span><span>${i18nValue.get()}</span><span class="p-tooltip">${i18nValueTooltip ? " 🙻:" : " :"}<span class="p-tooltiptext">${i18nValueTooltip?.get() || ""}</span></span></span>${input}</label></div>`;
   }
   function createHTML() {
     const fullViewGrid = document.createElement("div");

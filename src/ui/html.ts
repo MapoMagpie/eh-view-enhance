@@ -190,6 +190,11 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   function collapsePanel(key: "config" | "downloader") {
     const elements = { "config": HTML.configPanel, "downloader": HTML.downloaderPanel };
     conf.autoCollapsePanel && events.collapsePanelEvent(elements[key], key)
+    if (BIFM.visible) {
+      HTML.bigImageFrame.focus();
+    } else {
+      HTML.root.focus();
+    }
   }
   HTML.configPanel.addEventListener("mouseleave", () => collapsePanel("config"));
   HTML.configPanel.addEventListener("blur", () => collapsePanel("config"));

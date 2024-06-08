@@ -85,6 +85,7 @@ export type Config = {
   reverseMultipleImagesPost: boolean,
   /** Many galleries have both an English/Romanized title and a title in Japanese script. Which gallery name would you like as archive filename?  */
   ehentaiTitlePrefer: "english" | "japanese",
+  scrollingSpeed: number,
 };
 
 function defaultConf(): Config {
@@ -131,6 +132,7 @@ function defaultConf(): Config {
     autoLoadInBackground: true,
     reverseMultipleImagesPost: true,
     ehentaiTitlePrefer: "japanese",
+    scrollingSpeed: 5,
   };
 }
 
@@ -208,7 +210,7 @@ export function saveConf(c: Config) {
   storage.setItem(CONFIG_KEY, JSON.stringify(c));
 }
 
-export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime" | "paginationIMGCount";
+export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageInterval" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
 export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost";
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer";
 export const conf = getConf();
@@ -235,6 +237,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "timeout", typ: "number" },
   { key: "preventScrollPageTime", typ: "number" },
   { key: "autoPageInterval", typ: "number" },
+  { key: "scrollingSpeed", typ: "number" },
   { key: "fetchOriginal", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoLoad", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "reversePages", typ: "boolean", gridColumnRange: [1, 6] },

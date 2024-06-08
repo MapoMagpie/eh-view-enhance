@@ -7,6 +7,7 @@ import parseKey from "../utils/keyboard";
 import queryCSSRules from "../utils/query-cssrules";
 import q from "../utils/query-element";
 import relocateElement from "../utils/relocate-element";
+import scroller from "../utils/scroller";
 import createExcludeURLPanel from "./exclude-urls";
 import { FullViewGridManager } from "./full-view-grid-manager";
 import { Elements } from "./html";
@@ -47,6 +48,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       autoPageInterval: [500, 90000],
       preventScrollPageTime: [0, 90000],
       paginationIMGCount: [1, 5],
+      scrollingSpeed: [1, 100],
     };
     let mod = key === "autoPageInterval" ? 100 : 1;
     mod = key === "preventScrollPageTime" ? 10 : mod;
@@ -230,7 +232,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     return false;
   }
 
-  let scrolling = false;
   function initKeyboardEvent(): KeyboardEvents {
     const inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc> = {
       "exit-big-image-mode": new KeyboardDesc(
@@ -266,14 +267,15 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         (event) => {
           const key = parseKey(event);
           if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
-            if (scrolling) return;
-            scrolling = true;
-            BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
-            BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 2), behavior: "smooth" })
+            // if (scrolling) return;
+            // scrolling = true;
+            // BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
+            // BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 2), behavior: "smooth" })
+            scroller.animatedScrollBy(BIFM.frame, -1);
           }
           if (scrollImage("prev", key)) {
             event.preventDefault();
-            scrolling = false;
+            // scrolling = false;
           }
         }, true
       ),
@@ -282,14 +284,15 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         (event) => {
           const key = parseKey(event);
           if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
-            if (scrolling) return;
-            scrolling = true;
-            BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
-            BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 2, behavior: "smooth" })
+            // if (scrolling) return;
+            // scrolling = true;
+            // BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
+            // BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 2, behavior: "smooth" })
+            scroller.animatedScrollBy(BIFM.frame, 1);
           }
           if (scrollImage("next", key)) {
             event.preventDefault();
-            scrolling = false;
+            // scrolling = false;
           }
         }, true
       ),

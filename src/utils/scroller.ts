@@ -1,59 +1,102 @@
-function animatedScrollBy(element: HTMLElement, y: number): void {
-  let timer = TASKS.get(element);
-  if (timer) return;
+import { conf } from "../config";
 
-  timer = new Timer(y, element.scrollTop);
-  TASKS.set(element, timer);
-  function step(timeStamp: number) {
-    if (!timer) return;
-    if (timer.tick(timeStamp)) {
-      element.scrollTop = timer.scrollTop + (timer.moved * timer.numberSign);
-    }
-    if (timer.elapsed >= timer.duration || timer.done) {
-      TASKS.delete(element);
-    } else {
-      window.requestAnimationFrame(step);
-    }
+function animatedScrollBy(element: HTMLElement, y: number): void {
+  let scroller = TASKS.get(element);
+  if (!scroller) {
+    scroller = new Scroller(element);
+    TASKS.set(element, scroller);
+    // if element is removed
   }
-  window.requestAnimationFrame(step);
+  scroller.step = conf.scrollingSpeed;
+  scroller.scroll(y > 0 ? "down" : "up");
 }
 
 export default {
   animatedScrollBy,
 };
 
-const TASKS = new Map<HTMLElement, Timer>();
+const TASKS = new WeakMap<HTMLElement, Scroller>();
+
+class Scroller {
+  element: HTMLElement;
+  timer?: Timer;
+  scrolling: boolean = false;
+  step: number; // [1, 100]
+  additional: number = 0;
+  lastDirection: "up" | "down" | undefined;
+  directionChanged: boolean = false;
+  constructor(element: HTMLElement, step?: number) {
+    this.element = element;
+    this.step = step || 1;
+  }
+
+  scroll(direction: "up" | "down", duration: number = 100): Promise<void> {
+    this.directionChanged = this.lastDirection !== undefined && this.lastDirection !== direction;
+    this.lastDirection = direction;
+    let resolve: () => void;
+    const ret = new Promise<void>((reso) => resolve = reso);
+    if (!this.timer) {
+      this.timer = new Timer(duration)
+    }
+    if (this.scrolling) {
+      this.additional = 0; // disable additional temporary
+      this.timer.extend(duration);
+      return ret;
+    }
+    this.additional = 0;
+    this.scrolling = true;
+    const scrolled = () => {
+      this.scrolling = false;
+      this.timer = undefined;
+      this.directionChanged = false;
+      this.lastDirection = undefined;
+      resolve?.();
+    };
+    const doFrame = () => {
+      const [ok, finished] = this.timer?.tick() ?? [false, true];
+      // console.log(`timer tick [ok, finished]: [${ok}, ${finished}], now: ${Date.now()}, last: ${this.timer?.last}, endAt: ${this.timer?.endAt}`);
+      if (ok) {
+        let scrollTop = this.element.scrollTop + ((this.step + this.additional) * (direction === "up" ? -1 : 1));
+        scrollTop = Math.max(scrollTop, 0);
+        scrollTop = Math.min(scrollTop, this.element.scrollHeight - this.element.clientHeight);
+        this.element.scrollTop = scrollTop;
+        if (scrollTop === 0 || scrollTop === this.element.scrollHeight - this.element.clientHeight) {
+          return scrolled();
+        }
+      }
+      if (finished || this.directionChanged) return scrolled();
+      window.requestAnimationFrame(doFrame);
+    }
+    window.requestAnimationFrame(doFrame);
+    return ret;
+  }
+}
 
 class Timer {
-  rate: number = 5;
-  distance: number;
-  moved: number = 0;
-  scrollTop: number;
-  start?: number;
-  previousTimeStamp?: number;
-  elapsed: number = 0;
-  done: boolean = false;
-  duration: number;
-  numberSign: number = 1;
-  constructor(distance: number, scrollTop: number) {
-    this.numberSign = distance > 0 ? 1 : -1;
-    this.distance = Math.abs(distance);
-    this.scrollTop = scrollTop;
-    this.duration = this.distance / this.rate;
-  }
-
-  tick(timeStamp: number): boolean {
-    if (this.start === undefined) {
-      this.start = timeStamp;
+  interval: number = 1;
+  last: number;
+  endAt: number;
+  constructor(duration: number, interval?: number) {
+    const now = Date.now();
+    if (interval) {
+      this.interval = interval;
     }
-    this.elapsed = timeStamp - this.start;
-    const moved = Math.min(this.rate * this.elapsed, this.distance);
-    const ok = timeStamp !== this.previousTimeStamp && moved !== this.moved;
-    this.moved = moved;
-    this.done = this.moved >= this.distance;
-    this.previousTimeStamp = timeStamp;
-    return ok;
+    this.last = now;
+    this.endAt = now + duration;
   }
 
+  tick(): [boolean, boolean] {
+    const now = Date.now();
+    let ok = now >= this.last + this.interval;
+    if (ok) {
+      this.last = now;
+    }
+    let finished = now >= this.endAt;
+    return [ok, finished]
+  }
+
+  extend(duration: number) {
+    this.endAt = this.last + duration;
+  }
 }
 

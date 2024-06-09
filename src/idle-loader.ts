@@ -1,4 +1,5 @@
 import { conf } from "./config";
+import { CherryPick } from "./download/downloader";
 import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { FetchState } from "./img-fetcher";
@@ -14,6 +15,7 @@ export class IdleLoader {
   onFailedCallback?: () => void;
   autoLoad: boolean = false;
   debouncer: Debouncer;
+  cherryPick?: () => CherryPick;
   constructor(queue: IMGFetcherQueue) {
     //图片获取器队列
     this.queue = queue;
@@ -67,6 +69,14 @@ export class IdleLoader {
       return;
     }
     // Skip found Fetcher
+    const [sieve, positive] = (() => {
+      const picked = this.cherryPick?.();
+      if (picked) {
+        return [picked.sieve, picked.positive]
+      } else {
+        return [[], false];
+      }
+    })();
     let foundFetcherIndex = new Set<Number>();
     let hasFailed = false;
     for (let i = 0; i < this.processingIndexList.length; i++) {
@@ -85,12 +95,14 @@ export class IdleLoader {
         (j < limit);
         j++
       ) {
-        const imf = this.queue[j];
-        // find img fetcher that hasn't been fetching
-        if (!imf.lock && imf.stage === FetchState.URL && !foundFetcherIndex.has(j)) {
-          foundFetcherIndex.add(j);
-          this.processingIndexList[i] = j;
-          break;
+        if (positive ? sieve[j] : !sieve[j]) {
+          const imf = this.queue[j];
+          // find img fetcher that hasn't been fetching
+          if (!imf.lock && imf.stage === FetchState.URL && !foundFetcherIndex.has(j)) {
+            foundFetcherIndex.add(j);
+            this.processingIndexList[i] = j;
+            break;
+          }
         }
         if (imf.stage === FetchState.FAILED) {
           hasFailed = true;

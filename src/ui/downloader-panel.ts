@@ -1,4 +1,4 @@
-import { ChapterStat } from "../download/downloader";
+import { ChapterStat, CherryPickRnage } from "../download/downloader";
 import EBUS from "../event-bus";
 import { Chapter } from "../page-fetcher";
 import { i18n } from "../utils/i18n";
@@ -54,6 +54,7 @@ export class DownloaderPanel {
       {
         ele: this.tabCherryPick, cb: () => {
           elements.forEach((e, i) => e.hidden = i != 2)
+          q("#download-cherry-pick-input", this.cherryPickElement).focus();
         }
       },
     ];
@@ -98,7 +99,7 @@ export class DownloaderPanel {
   }
 
   noticeableBTN() {
-    if (this.btn.classList.contains("lightgreen")) {
+    if (!this.btn.classList.contains("lightgreen")) {
       this.btn.classList.add("lightgreen");
       if (!/✓/.test(this.btn.textContent!)) {
         this.btn.textContent += "✓";
@@ -139,6 +140,45 @@ ${chapters.map((c, i) => `<div><label>
     return idSet;
   }
 
+  initCherryPick(addCallback: (range: CherryPickRnage) => CherryPickRnage[] | null, onRemove: (id: string) => void) {
+    function addRangeElements(container: HTMLElement, rangeList: CherryPickRnage[], onRemove: (id: string) => void) {
+      container.querySelectorAll(".ehvp-custom-panel-item-value").forEach(e => e.remove());
+      const tamplate = document.createElement("div");
+      rangeList.forEach(range => {
+        const str = `<span class="ehvp-custom-panel-item-value" data-id="${range.id}"><span >${range.toString()}</span><button>x</button></span>`;
+        tamplate.innerHTML = str;
+        const element = tamplate.firstElementChild as HTMLElement;
+        element.style.backgroundColor = range.exclude ? "#ffa975" : "#7fef7b";
+        container.appendChild(element);
+        element.querySelector("button")!.addEventListener("click", (event) => {
+          const parent = (event.target as HTMLElement).parentElement!;
+          onRemove(parent.getAttribute("data-id")!);
+          parent.remove();
+        });
+        tamplate.remove();
+      });
+    }
+    const pickBTN = q<HTMLButtonElement>("#download-cherry-pick-btn-add", this.cherryPickElement);
+    const excludeBTN = q<HTMLButtonElement>("#download-cherry-pick-btn-exclude", this.cherryPickElement);
+    const input = q<HTMLInputElement>("#download-cherry-pick-input", this.cherryPickElement);
+    const addCherryPick = (exclude: boolean) => {
+      const rangeList = (input.value || "").split(",").map(s => (exclude ? "!" : "") + s)
+        .map(CherryPickRnage.from).filter(r => r !== null) as CherryPickRnage[];
+      if (rangeList.length > 0) {
+        rangeList.forEach(range => {
+          const newList = addCallback(range);
+          if (newList === null) return;
+          addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, newList, onRemove)
+        });
+      }
+      input.value = "";
+      input.focus();
+    }
+    pickBTN.addEventListener("click", () => addCherryPick(false));
+    excludeBTN.addEventListener("click", () => addCherryPick(true));
+    input.addEventListener("keypress", (event) => event.key === "Enter" && addCherryPick(false));
+  }
+
 
   static html() {
     return `
@@ -156,8 +196,12 @@ ${chapters.map((c, i) => `<div><label>
         </div>
         <div id="download-chapters" class="download-chapters" hidden></div>
         <div id="download-cherry-pick" class="download-cherry-pick" hidden>
-          <div class="ehvp-custom-panel-item-values">
-            <button class="ehvp-custom-panel-item-add-btn">+</button>
+          <div class="ehvp-custom-panel-item-values" style="text-align: start;">
+            <div style="margin-bottom: 1rem;align-items: center;display: flex; justify-content: space-around;">
+              <input type="text" class="ehvp-custom-panel-item-input" id="download-cherry-pick-input" placeholder="1, 2-3" style="text-align: start; width: 50%; height: 1.3rem; border-radius: 0px;" />
+              <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-add">Pick</button>
+              <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-exclude" style="background-color: #ffa975;">Exclude</button>
+            </div>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { CherryPick } from "../download/downloader";
 import EBUS from "../event-bus";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { FetchState, IMGFetcher } from "../img-fetcher";
@@ -8,6 +9,7 @@ type DrawNode = {
   x: number;
   y: number;
   selected: boolean;
+  disabled: boolean;
 };
 
 export class DownloaderCanvas {
@@ -23,8 +25,10 @@ export class DownloaderCanvas {
   scrollSize: number;
   debouncer: Debouncer;
   onClick?: (index: number) => void;
-  constructor(canvas: HTMLCanvasElement, queue: IMGFetcherQueue) {
+  cherryPick: () => CherryPick;
+  constructor(canvas: HTMLCanvasElement, queue: IMGFetcherQueue, cherryPick: () => CherryPick) {
     this.queue = queue;
+    this.cherryPick = cherryPick;
     if (!canvas) {
       throw new Error("canvas not found");
     }
@@ -87,6 +91,7 @@ export class DownloaderCanvas {
 
   computeDrawList(): DrawNode[] {
     const list: DrawNode[] = [];
+    const picked = this.cherryPick();
     const [_, h] = this.getWH();
     const startX = this.computeStartX();
     const startY = -this.scrollTop + this.padding;
@@ -108,6 +113,7 @@ export class DownloaderCanvas {
         x: atX,
         y: atY,
         selected: this.isSelected(atX, atY),
+        disabled: picked.positive ? !picked.sieve[i] : picked.sieve[i]
       });
     }
     return list;
@@ -124,7 +130,8 @@ export class DownloaderCanvas {
         node.y,
         this.queue[node.index],
         node.index === this.queue.currIndex,
-        node.selected
+        node.selected,
+        node.disabled
       );
     }
   }
@@ -178,23 +185,28 @@ export class DownloaderCanvas {
     y: number,
     imgFetcher: IMGFetcher,
     isCurr: boolean,
-    isSelected: boolean
+    isSelected: boolean,
+    disabled: boolean
   ) {
-    switch (imgFetcher.stage) {
-      case FetchState.FAILED:
-        this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
-        break;
-      case FetchState.URL:
-        this.ctx.fillStyle = "rgba(200, 200, 200, 0.6)";
-        break;
-      case FetchState.DATA:
-        const percent =
-          imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
-        this.ctx.fillStyle = `rgba(${200 + Math.ceil((110 - 200) * percent)}, ${200 + Math.ceil((200 - 200) * percent)}, ${200 + Math.ceil((120 - 200) * percent)}, ${0.6 + Math.ceil((1 - 0.6) * percent)})`;
-        break;
-      case FetchState.DONE:
-        this.ctx.fillStyle = "rgb(110, 200, 120)";
-        break;
+    if (disabled) {
+      this.ctx.fillStyle = "rgba(20, 20, 20, 1)";
+    } else {
+      switch (imgFetcher.stage) {
+        case FetchState.FAILED:
+          this.ctx.fillStyle = "rgba(250, 50, 20, 0.9)";
+          break;
+        case FetchState.URL:
+          this.ctx.fillStyle = "rgba(200, 200, 200, 0.6)";
+          break;
+        case FetchState.DATA:
+          const percent =
+            imgFetcher.downloadState.loaded / imgFetcher.downloadState.total;
+          this.ctx.fillStyle = `rgba(${200 + Math.ceil((110 - 200) * percent)}, ${200 + Math.ceil((200 - 200) * percent)}, ${200 + Math.ceil((120 - 200) * percent)}, ${0.6 + Math.ceil((1 - 0.6) * percent)})`;
+          break;
+        case FetchState.DONE:
+          this.ctx.fillStyle = "rgb(110, 200, 120)";
+          break;
+      }
     }
     this.ctx.fillRect(x, y, this.rectSize, this.rectSize);
     this.ctx.shadowColor = "#d53";

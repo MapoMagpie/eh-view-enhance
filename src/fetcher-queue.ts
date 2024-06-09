@@ -2,6 +2,7 @@ import { Debouncer } from "./utils/debouncer";
 import { FetchState, IMGFetcher } from "./img-fetcher";
 import { Oriented, conf } from "./config";
 import EBUS from "./event-bus";
+import { CherryPick } from "./download/downloader";
 
 export class IMGFetcherQueue extends Array<IMGFetcher> {
   executableQueue: number[];
@@ -11,6 +12,7 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
   downloading?: () => boolean;
   dataSize: number = 0;
   chapterIndex: number = 0;
+  cherryPick?: (chapterIndex: number) => CherryPick;
 
   clear() {
     this.length = 0;
@@ -48,8 +50,20 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     this.debouncer = new Debouncer();
   }
 
-  isFinised() {
-    return this.finishedIndex.size === this.length;
+  isFinished(): boolean {
+    const picked = this.cherryPick?.(this.chapterIndex);
+    if (picked && picked.values.length > 0) {
+      for (let index = 0; index < this.length; index++) {
+        if (picked.positive ? picked.sieve[index] : !picked.sieve[index]) {
+          if (!this.finishedIndex.has(index)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    } else {
+      return this.finishedIndex.size === this.length;
+    }
   }
 
   do(start: number, oriented?: Oriented) {

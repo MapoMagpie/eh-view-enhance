@@ -26,16 +26,23 @@ export class Downloader {
   filenames: Set<string> = new Set();
   panel: DownloaderPanel;
   canvas: DownloaderCanvas;
+  cherryPicks: CherryPick[] = [new CherryPick()];
 
   constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, pageFetcher: PageFetcher, matcher: Matcher) {
     this.panel = HTML.downloader;
     this.panel.initTabs();
     this.initEvents(this.panel);
+    this.panel.initCherryPick(
+      range => this.cherryPicks[0].add(range),
+      id => this.cherryPicks[0].remove(id)
+    );
 
-    this.canvas = new DownloaderCanvas(this.panel.canvas, queue);
+    this.canvas = new DownloaderCanvas(this.panel.canvas, queue, () => this.cherryPicks[0]);
 
     this.queue = queue;
+    this.queue.cherryPick = () => this.cherryPicks[0];
     this.idleLoader = idleLoader;
+    this.idleLoader.cherryPick = () => this.cherryPicks[0];
     this.pageFetcher = pageFetcher;
     this.meta = (ch: Chapter) => matcher.galleryMeta(document, ch);
     this.title = () => matcher.title(document);
@@ -43,7 +50,7 @@ export class Downloader {
     this.queue.downloading = () => this.downloading;
 
     EBUS.subscribe("ifq-on-finished-report", (_, queue) => {
-      if (queue.isFinised()) {
+      if (queue.isFinished()) {
         const sel = this.selectedChapters.find(sel => sel.index === queue.chapterIndex);
         if (sel) {
           sel.done = true;
@@ -151,7 +158,7 @@ export class Downloader {
           }
         });
         // already done
-        if (this.queue.isFinised()) {
+        if (this.queue.isFinished()) {
           sel.done = true;
           sel.resolve(true);
         } else { // not yet done
@@ -160,6 +167,7 @@ export class Downloader {
             .filter((index) => index >= 0)
             .splice(0, conf.downloadThreads);
           this.idleLoader.onFailed(() => sel.reject("download failed or canceled"));
+          this.idleLoader.checkProcessingIndex();
           this.idleLoader.start();
         }
         // wait all finished
@@ -197,6 +205,7 @@ export class Downloader {
     })();
 
     const ret = chapter.queue
+      // TODO: cherryPick
       .filter((imf) => imf.stage === FetchState.DONE && imf.data)
       .map((imf, index) => {
         return {
@@ -300,3 +309,151 @@ function promiseWithResolveAndReject() {
 // Example: 
 //   !10-20:   Download every page except page 10 to 20
 //   1-10,!1-8/2,!4,5:   Download page 1 to 10 but remove 1, 3, 5, 7 and 4, then add 5 back (2, 5, 6, 8, 9, 10)
+export class CherryPick {
+  values: CherryPickRnage[] = [];
+  positive = false; // if values has positive picked, ignore exclude
+  sieve: boolean[] = [];
+
+  add(range: CherryPickRnage): CherryPickRnage[] | null {
+    if (this.values.length === 0) {
+      this.positive = !range.exclude;
+    }
+    if (this.positive && range.exclude) return null;
+    if (!this.positive && !range.exclude) return null;
+
+    const exists = this.values.find(v => v.id === range.id);
+    if (exists) return null;
+
+    const r1 = range.range();
+    let removeList: number[] = [];
+    for (let i = 0; i < this.values.length; i++) {
+      const e = this.values[i];
+      const er = e.range();
+      // new range overlaps with old range
+      if (r1[0] >= er[0] && r1[1] <= er[1]) return null;
+      // new range contains old range
+      if (r1[0] <= er[0] && r1[1] >= er[1]) {
+        removeList.push(i);
+      }
+      // new range intersects with old range
+      else if (r1[0] <= er[0] && r1[1] >= er[0] && r1[1] <= er[1]) {
+        e.reset([r1[1] + 1, er[1]]);
+      }
+      else if (r1[0] >= er[0] && r1[0] <= er[1] && r1[1] >= er[1]) {
+        e.reset([er[0], r1[0] - 1]);
+      }
+    }
+
+    if (removeList.length > 0) {
+      removeList.reverse();
+      removeList.forEach(i => this.values.splice(i, 1));
+    }
+
+    this.values.push(range);
+    this.tryConcat();
+    const r2 = range.range();
+    for (let i = r2[0] - 1; i < r2[1]; i++) {
+      this.sieve[i] = true;
+    }
+    return this.values;
+  }
+
+  tryConcat() {
+    if (this.values.length < 2) return;
+    this.values.sort((v1, v2) => v1.range()[0] - v2.range()[0]);
+    let i = 0, j = 1;
+    let skip: number[] = [];
+    while (i < this.values.length && j < this.values.length) {
+      const r1 = this.values[i];
+      const r2 = this.values[j];
+      const r1v = r1.range();
+      const r2v = r2.range();
+      if (r1v[1] + 1 === r2v[0]) {
+        r1.reset([r1v[0], r2v[1]]);
+        skip.push(j);
+        j++;
+      } else {
+        do {
+          i++;
+        } while (skip.includes(i));
+        j = i + 1;
+      }
+    }
+    this.values = this.values.filter((_, i) => !skip.includes(i));
+  }
+
+  remove(id: string) {
+    const index = this.values.findIndex(v => v.id === id);
+    if (index === -1) return;
+    const range = this.values.splice(index, 1)[0];
+    const r = range.range();
+    for (let i = r[0] - 1; i < r[1]; i++) {
+      this.sieve[i] = false;
+    }
+    if (this.values.length === 0) {
+      this.sieve = [];
+      this.positive = false;
+    }
+  }
+
+  picked(): number[] {
+    const ret: number[] = [];
+    return ret;
+  }
+
+}
+
+export class CherryPickRnage {
+  value: number | number[];
+  exclude: boolean;
+  id: string;
+  constructor(value: number | number[], exclude: boolean) {
+    if (value instanceof Array && value[0] === value[1]) {
+      value = value[0];
+    }
+    this.value = value;
+    this.exclude = exclude;
+    this.id = CherryPickRnage.rangeToString(value, exclude);
+  }
+
+  toString() {
+    return CherryPickRnage.rangeToString(this.value, this.exclude);
+  }
+
+  reset(newRange: number[]) {
+    this.value = newRange[0] == newRange[1] ? newRange[0] : newRange;
+    this.id = CherryPickRnage.rangeToString(this.value, this.exclude);
+  }
+
+  range(): number[] {
+    if (typeof this.value === "number") {
+      return [this.value, this.value];
+    }
+    return this.value;
+  }
+
+  static rangeToString(value: number | number[], exclude: boolean) {
+    let str = "";
+    if (typeof value === "number") {
+      str = value.toString();
+    } else {
+      str = value.map(v => v.toString()).join("-");
+    }
+    return exclude ? "!" + str : str;
+  }
+
+  static from(value: string): CherryPickRnage | null {
+    value = value?.trim();
+    if (!value) return null;
+    value = value.replace(/!+/, "!");
+    const exclude = value.startsWith("!");
+    if (/^!?\d+$/.test(value)) {
+      return new CherryPickRnage(parseInt(value.replace("!", "")), exclude);
+    }
+    if (/^!?\d+-\d+$/.test(value)) {
+      const splits = value.replace("!", "").split("-").map(v => parseInt(v));
+      return new CherryPickRnage([splits[0], splits[1]], exclude);
+    }
+    return null;
+  }
+}

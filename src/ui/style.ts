@@ -616,7 +616,7 @@ export function loadStyleSheel() {
 .ehvp-custom-panel-item-value button:hover {
   background-color: #ffff00;
 }
-.ehvp-custom-panel-item-add-btn {
+.ehvp-custom-panel-item-add-btn, .ehvp-custom-panel-item-input {
   font-size: 1.1rem;
   line-height: 1.2rem;
   font-weight: bold;

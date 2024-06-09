@@ -47,6 +47,7 @@ export interface Events {
   "ifq-on-do": (index: number, queue: IMGFetcherQueue, downloading: boolean) => void;
   "ifq-on-finished-report": (index: number, queue: IMGFetcherQueue) => void;
   "pf-try-extend": () => void;
+  "downloader-canvas-resize": () => void;
 }
 
 export type EventID = keyof Events;

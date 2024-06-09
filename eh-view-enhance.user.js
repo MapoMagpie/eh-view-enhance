@@ -562,176 +562,6 @@
     }
   }
 
-  const lang = navigator.language;
-  const i18nIndex = lang.startsWith("zh") ? 1 : 0;
-  class I18nValue extends Array {
-    constructor(...value) {
-      super(...value);
-    }
-    get() {
-      return this[i18nIndex];
-    }
-  }
-  const keyboardCustom = {
-    inMain: {
-      "open-full-view-grid": new I18nValue("Enter Read Mode", "进入阅读模式")
-    },
-    inBigImageMode: {
-      "step-image-prev": new I18nValue("Go Prev Image", "切换到上一张图片"),
-      "step-image-next": new I18nValue("Go Next Image", "切换到下一张图片"),
-      "exit-big-image-mode": new I18nValue("Exit Big Image Mode", "退出大图模式"),
-      "step-to-first-image": new I18nValue("Go First Image", "跳转到第一张图片"),
-      "step-to-last-image": new I18nValue("Go Last Image", "跳转到最后一张图片"),
-      "scale-image-increase": new I18nValue("Increase Image Scale", "放大图片"),
-      "scale-image-decrease": new I18nValue("Decrease Image Scale", "缩小图片"),
-      "scroll-image-up": new I18nValue("Scroll Image Up (Please Keep Default Keys)", "向上滚动图片 (请保留默认按键)"),
-      "scroll-image-down": new I18nValue("Scroll Image Down (Please Keep Default Keys)", "向下滚动图片 (请保留默认按键)")
-    },
-    inFullViewGrid: {
-      "open-big-image-mode": new I18nValue("Enter Big Image Mode", "进入大图阅读模式"),
-      "pause-auto-load-temporarily": new I18nValue("Pause Auto Load Temporarily", "临时停止自动加载"),
-      "exit-full-view-grid": new I18nValue("Exit Read Mode", "退出阅读模式"),
-      "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
-      "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量"),
-      "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择")
-    }
-  };
-  const i18n = {
-    // page-helper
-    imageScale: new I18nValue("SCALE", "缩放"),
-    config: new I18nValue("CONF", "配置"),
-    backChapters: new I18nValue("Chapters", "章节"),
-    autoPagePlay: new I18nValue("PLAY", "播放"),
-    autoPagePause: new I18nValue("PAUSE", "暂停"),
-    collapse: new I18nValue("FOLD", "收起"),
-    // config panel number option
-    colCount: new I18nValue("Columns", "每行数量"),
-    threads: new I18nValue("Preload Threads", "最大同时加载"),
-    threadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
-    downloadThreads: new I18nValue("Download Threads", "最大同时下载"),
-    downloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
-    paginationIMGCount: new I18nValue("Images Per Page", "每页图片数量"),
-    paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "当阅读模式为翻页模式时，每页展示的图片数量"),
-    timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
-    preventScrollPageTime: new I18nValue("Min Paging Time", "最小翻页时间"),
-    preventScrollPageTimeTooltip: new I18nValue("In Pagination read mode, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "当阅读模式为翻页模式时，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
-    autoPageSpeed: new I18nValue("Auto Paging Speed", "自动翻页速度"),
-    autoPageSpeedTooltip: new I18nValue("In Pagination read mode, Auto Page Speed means how many seconds it takes to flip the page automatically.<br>In Continuous read mode, Auto Page Speed means the scrolling speed.", "当阅读模式为翻页模式时，自动翻页速度表示为多少秒后翻页。<br>当阅读模式为连续模式时，自动翻页速度表示为滚动速度。"),
-    scrollingSpeed: new I18nValue("Scrolling Speed", "按键滚动速度"),
-    scrollingSpeedTooltip: new I18nValue("The scrolling Speed for Custom KeyBoard Keys for scrolling, not Auto Paging|Scrolling Speed", "自定义按键的滚动速度，并不是连续阅读模式下的自动翻页的滚动速度。"),
-    // config panel boolean option
-    fetchOriginal: new I18nValue("Raw Image", "最佳质量"),
-    fetchOriginalTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
-    autoLoad: new I18nValue("Auto Load", "自动加载"),
-    autoLoadTooltip: new I18nValue("", "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。"),
-    reversePages: new I18nValue("Reverse Pages", "反向翻页"),
-    reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
-    autoPlay: new I18nValue("Auto Page", "自动翻页"),
-    autoPlayTooltip: new I18nValue("Auto Page when entering the big image readmode.", "当阅读大图时，开启自动播放模式。"),
-    autoLoadInBackground: new I18nValue("Keep Loading", "后台加载"),
-    autoLoadInBackgroundTooltip: new I18nValue("Keep Auto-Loading after the tab loses focus", "当标签页失去焦点后保持自动加载。"),
-    autoOpen: new I18nValue("Auto Open", "自动展开"),
-    autoOpenTooltip: new I18nValue("Automatically open after the gallery page is loaded", "进入画廊页面后，自动展开阅读视图。"),
-    disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
-    disableCssAnimationTooltip: new I18nValue("Valid after refreshing the page", "刷新页面后生效"),
-    autoCollapsePanel: new I18nValue("Auto Fold Control Panel", "自动收起控制面板"),
-    autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
-    // config panel select option
-    readMode: new I18nValue("Read Mode", "阅读模式"),
-    readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
-    stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
-    stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
-    minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
-    minifyPageHelperTooltip: new I18nValue("Minify Control Bar", "最小化控制栏"),
-    hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
-    hitomiFormatTooltip: new I18nValue("In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh", "在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。"),
-    ehentaiTitlePrefer: new I18nValue("EHentai Prefer Title", "EHentai标题语言"),
-    ehentaiTitlePreferTooltip: new I18nValue("Many galleries have both an English/Romanized title and a title in Japanese script. <br>Which one do you want to use as the archive filename?", "许多图库都同时拥有英文/罗马音标题和日文标题，<br>您希望下载时哪个作为文件名？"),
-    reverseMultipleImagesPost: new I18nValue("Descending Images In Post", "反转推文图片顺序"),
-    reverseMultipleImagesPostTooltip: new I18nValue("Reverse order for post with multiple images attatched", "反转推文图片顺序"),
-    dragToMove: new I18nValue("Drag to Move", "拖动移动"),
-    originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
-    showHelp: new I18nValue("Help", "帮助"),
-    showKeyboard: new I18nValue("Keyboard", "快捷键"),
-    showExcludes: new I18nValue("Excludes", "站点排除"),
-    showAutoOpenExcludes: new I18nValue("AutoOpenExcludes", "自动打开排除"),
-    letUsStar: new I18nValue("Let's Star", "点星"),
-    // download panel
-    download: new I18nValue("DL", "下载"),
-    forceDownload: new I18nValue("Take Loaded", "获取已下载的"),
-    downloadStart: new I18nValue("Start Download", "开始下载"),
-    downloading: new I18nValue("Downloading...", "下载中..."),
-    downloadFailed: new I18nValue("Failed(Retry)", "下载失败(重试)"),
-    downloaded: new I18nValue("Downloaded", "下载完成"),
-    packaging: new I18nValue("Packaging...", "打包中..."),
-    help: new I18nValue(`
-    <h1>GUIDE:</h1>
-    <ol>
-      <li>If you are browsing E-Hentai, please click <a style="color: red" id="renamelink" href="${window.location.href}?inline_set=ts_l">Here</a> to switch to Lager thumbnail mode for clearer thumbnails. (need login e-hentai)</li>
-      <li>Click <span style="background-color: gray;">&lessdot;📖&gtdot;</span> from left-bottom corner, entry reading.</li>
-      <li>Just a monment, all thumbnail will exhibited in grid, <strong style="color: red;">click</strong> one of thumbnails into big image mode.</li>
-      <li>You can use the <strong style="color: red;">mouse middle-click</strong> on a thumbnail to open the href of the image in new tab.</li>
-      <li><strong style="color: orange">Image quality:</strong>For e-hentai，you can enable control-bar > CONF > Image Raw, which will directly download the uploaded original uncompressed images, but it will consume more quotas. Generally, the compressed files provided by E-Hentai are already clear enough.</li>
-      <li><strong style="color: orange">Big image:</strong>click thumbnail image, into big image mode, use mouse wheel switch to next or prev</li>
-      <li><strong style="color: orange">Keyboard:</strong>
-        <table>
-          <tr><td>Scale Image</td><td>mouse right + wheel or -/=</td></tr>
-          <tr><td>Open  Image(In thumbnails)</td><td>Enter</td></tr>
-          <tr><td>Exit  Image(In big mode)</td><td>Enter/Esc</td></tr>
-          <tr><td>Open Specific Page(In thumbnails)</td><td>Input number(no echo) + Enter</td></tr>
-          <tr><td>Switch Page</td><td>→/←</td></tr>
-          <tr><td>Scroll Image</td><td>↑/↓/Space</td></tr>
-          <tr><td>Toggle Auto Load</td><td>p</td></tr>
-        </table>
-      </li>
-      <li><strong style="color: orange">Download:</strong>You can click on the download button in the download panel to quickly load all the images. You can still continue browsing the images. Downloading and viewing large images are integrated, and you can click on Download Loaded in the download panel to save the images at any time.</li>
-      <li><strong style="color: orange">Feedback:</strong>
-        Click 
-        <span>
-        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance/issues" target="_blank" alt="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
-        </span>
-        to provide feedback on issues, Give me a star if you like this script.
-        <span>
-        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank" alt="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
-        </span>
-      </li>
-    </ol>
-  `, `
-    <h1>操作说明:</h1>
-    <ol>
-      <li>如果你正在浏览E绅士，请点击<a style="color: red" id="renamelink" href="${window.location.href}?inline_set=ts_l">此处</a>切换到Lager缩略图模式，以获取更清晰的缩略图。</li>
-      <li>点击左下角 <span style="background-color: gray;">&lessdot;📖&gtdot;</span> 展开，进入阅读模式。</li>
-      <li>稍等片刻后，缩略图会全屏陈列在页面上，<strong style="color: red;">点击</strong>某一缩略图进入大图浏览模式。</li>
-      <li>你可以在某个缩略图上使用<strong style="color: red;">鼠标中键</strong>来打开该图片所在的页面。</li>
-      <li><strong style="color: orange">图片质量:</strong>图片质量: 对于E绅士，你可以在控制栏>配置，启用原图模式，这将直接下载上传原档未压缩的图片，但会消耗更多的配额。一般来说E绅士默认提供的压缩档已经足够清晰。</li>
-      <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
-      <li><strong style="color: orange">键盘操作:</strong>
-        <table>
-          <tr><td>图片缩放</td><td>鼠标右键+滚轮 或 -/=</td></tr>
-          <tr><td>打开大图(缩略图模式下)</td><td>回车</td></tr>
-          <tr><td>退出大图(大图模式下)</td><td>回车/Esc</td></tr>
-          <tr><td>打开指定图片(缩略图模式下)</td><td>直接输入数字(不回显) + 回车</td></tr>
-          <tr><td>切换图片</td><td>→/←</td></tr>
-          <tr><td>滚动图片</td><td>↑/↓</td></tr>
-          <tr><td>开关自动加载</td><td>p</td></tr>
-        </table>
-      </li>
-      <li><strong style="color: orange">下载功能:</strong>你可以在下载面板中点击下载，这将快速加载所有的图片，你依旧可以继续浏览图片。下载与大图浏览是一体的，你随时可以在下载面板点击<strong style="color: orange">下载已加载的</strong>保存图片。</li>
-      <li><strong style="color: orange">问题反馈:</strong>
-        点击 
-        <span>
-        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance/issues" target="_blank" alt="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
-        </span>
-        反馈你的问题或建议，如果你喜欢这个脚本，给我一个star吧。 
-        <span>
-        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank" alt="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
-        </span>
-      </li>
-    </ol>
-  `),
-    keyboardCustom
-  };
-
   class Crc32 {
     crc = -1;
     table = this.makeTable();
@@ -971,7 +801,7 @@
     scrollSize;
     debouncer;
     onClick;
-    constructor(canvas, HTML, queue) {
+    constructor(canvas, queue) {
       this.queue = queue;
       if (!canvas) {
         throw new Error("canvas not found");
@@ -1003,10 +833,11 @@
       this.scrollTop = 0;
       this.scrollSize = 10;
       this.debouncer = new Debouncer();
-      HTML.downloaderPanel.addEventListener("transitionend", () => this.resize(HTML.downloadDashboard));
       EBUS.subscribe("imf-download-state-change", () => this.drawDebouce());
+      EBUS.subscribe("downloader-canvas-resize", () => this.resize());
     }
     resize(parent) {
+      parent = parent || this.canvas.parentElement;
       this.canvas.width = Math.floor(parent.offsetWidth);
       this.canvas.height = Math.floor(parent.offsetHeight);
       this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));
@@ -1138,46 +969,26 @@
     meta;
     title;
     downloading;
-    buttonForce;
-    buttonStart;
-    elementNotice;
-    downloaderPanelBTN;
     queue;
     idleLoader;
     pageFetcher;
     done = false;
     selectedChapters = [];
     filenames = /* @__PURE__ */ new Set();
+    panel;
     canvas;
-    dashboardTab;
-    chapterTab;
-    elementDashboard;
-    elementChapters;
     constructor(HTML, queue, idleLoader, pageFetcher, matcher) {
+      this.panel = HTML.downloader;
+      this.panel.initTabs();
+      this.initEvents(this.panel);
+      this.canvas = new DownloaderCanvas(this.panel.canvas, queue);
       this.queue = queue;
       this.idleLoader = idleLoader;
       this.pageFetcher = pageFetcher;
       this.meta = (ch) => matcher.galleryMeta(document, ch);
       this.title = () => matcher.title(document);
       this.downloading = false;
-      this.buttonForce = HTML.downloadBTNForce;
-      this.buttonStart = HTML.downloadBTNStart;
-      this.elementNotice = HTML.downloadNotice;
-      this.downloaderPanelBTN = HTML.downloaderPanelBTN;
-      this.buttonForce.addEventListener("click", () => this.download(this.pageFetcher.chapters));
-      this.buttonStart.addEventListener("click", () => {
-        if (this.downloading) {
-          this.abort("downloadStart");
-        } else {
-          this.start();
-        }
-      });
       this.queue.downloading = () => this.downloading;
-      this.dashboardTab = HTML.downloadTabDashboard;
-      this.chapterTab = HTML.downloadTabChapters;
-      this.elementDashboard = HTML.downloadDashboard;
-      this.elementChapters = HTML.downloadChapters;
-      this.canvas = new DownloaderCanvas(HTML.downloaderCanvas, HTML, queue);
       EBUS.subscribe("ifq-on-finished-report", (_, queue2) => {
         if (queue2.isFinised()) {
           const sel = this.selectedChapters.find((sel2) => sel2.index === queue2.chapterIndex);
@@ -1185,37 +996,20 @@
             sel.done = true;
             sel.resolve(true);
           }
-          if (!this.downloading && !this.done && !this.downloaderPanelBTN.classList.contains("lightgreen")) {
-            this.downloaderPanelBTN.classList.add("lightgreen");
-            if (!/✓/.test(this.downloaderPanelBTN.textContent)) {
-              this.downloaderPanelBTN.textContent += "✓";
-            }
+          if (!this.downloading && !this.done) {
+            this.panel.noticeableBTN();
           }
         }
       });
-      this.initTabs();
     }
-    initTabs() {
-      const tabs = [{
-        ele: this.dashboardTab,
-        cb: () => {
-          this.elementDashboard.hidden = false;
-          this.elementChapters.hidden = true;
-          this.canvas.resize(this.elementDashboard);
+    initEvents(panel) {
+      panel.forceBTN.addEventListener("click", () => this.download(this.pageFetcher.chapters));
+      panel.startBTN.addEventListener("click", () => {
+        if (this.downloading) {
+          this.abort("downloadStart");
+        } else {
+          this.start();
         }
-      }, {
-        ele: this.chapterTab,
-        cb: () => {
-          this.elementDashboard.hidden = true;
-          this.elementChapters.hidden = false;
-        }
-      }];
-      tabs.forEach(({ ele, cb }, i) => {
-        ele.addEventListener("click", () => {
-          ele.classList.add("ehvp-p-tab-selected");
-          tabs.filter((_, j) => j != i).forEach((t) => t.ele.classList.remove("ehvp-p-tab-selected"));
-          cb();
-        });
       });
     }
     needNumberTitle(queue) {
@@ -1246,45 +1040,18 @@
         return newTitle;
       }
     }
-    createChapterSelectList() {
-      const chapters = this.pageFetcher.chapters;
-      const selectAll = chapters.length === 1;
-      this.elementChapters.innerHTML = `
-<div>
-  <span id="download-chapters-select-all" class="clickable p-btn">Select All</span>
-  <span id="download-chapters-unselect-all" class="clickable p-btn">Unselect All</span>
-</div>
-${chapters.map((c, i) => `<div><label>
-  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || this.selectedChapters.find((sel) => sel.index === i) ? "checked" : ""} />
-  <span>${c.title}</span></label></div>`).join("")}
-`;
-      [["#download-chapters-select-all", true], ["#download-chapters-unselect-all", false]].forEach(
-        ([id, checked]) => this.elementChapters.querySelector(id)?.addEventListener(
-          "click",
-          () => chapters.forEach((c) => {
-            const checkbox = this.elementChapters.querySelector("#ch-" + c.id);
-            if (checkbox)
-              checkbox.checked = checked;
-          })
-        )
-      );
-    }
     // check > start > download
     check() {
       if (this.downloading)
         return;
-      if (!conf.fetchOriginal) {
-        if (this.elementNotice && !this.downloading) {
-          this.elementNotice.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-          this.elementNotice.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
-        }
-      }
-      setTimeout(() => this.canvas.resize(this.elementDashboard), 110);
-      this.createChapterSelectList();
+      if (!conf.fetchOriginal)
+        this.panel.noticeOriginal(() => this.fetchOriginalTemporarily());
+      setTimeout(() => EBUS.emit("downloader-canvas-resize"), 110);
+      this.panel.createChapterSelectList(this.pageFetcher.chapters, this.selectedChapters);
       if (this.queue.length > 0) {
-        this.dashboardTab.click();
+        this.panel.switchTab("status");
       } else if (this.pageFetcher.chapters.length > 1) {
-        this.chapterTab.click();
+        this.panel.switchTab("chapters");
       }
     }
     fetchOriginalTemporarily() {
@@ -1297,20 +1064,18 @@ ${chapters.map((c, i) => `<div><label>
     }
     checkSelectedChapters() {
       this.selectedChapters.length = 0;
-      const idSet = /* @__PURE__ */ new Set();
-      this.elementChapters.querySelectorAll("input[type=checkbox][id^=ch-]:checked").forEach((checkbox) => idSet.add(Number(checkbox.value)));
+      const idSet = this.panel.selectedChapters();
       if (idSet.size === 0) {
         this.selectedChapters.push({ index: 0, done: false, ...promiseWithResolveAndReject() });
       } else {
         this.pageFetcher.chapters.forEach((c, i) => idSet.has(c.id) && this.selectedChapters.push({ index: i, done: false, ...promiseWithResolveAndReject() }));
       }
-      evLog("debug", "get selected chapters: ", this.selectedChapters);
       return this.selectedChapters;
     }
     async start() {
       if (this.downloading)
         return;
-      this.flushUI("downloading");
+      this.panel.flushUI("downloading");
       this.downloading = true;
       this.idleLoader.autoLoad = true;
       this.checkSelectedChapters();
@@ -1344,16 +1109,6 @@ ${chapters.map((c, i) => `<div><label>
       } finally {
         this.downloading = false;
       }
-    }
-    flushUI(stage) {
-      if (this.elementNotice) {
-        this.elementNotice.innerHTML = `<span>${i18n[stage].get()}</span>`;
-      }
-      if (this.buttonStart) {
-        this.buttonStart.style.color = stage === "downloadFailed" ? "red" : "";
-        this.buttonStart.textContent = i18n[stage].get();
-      }
-      this.downloaderPanelBTN.style.color = stage === "downloadFailed" ? "red" : "";
     }
     mapToFileLikes(chapter, singleChapter, separator) {
       if (!chapter || chapter.queue.length === 0)
@@ -1401,7 +1156,7 @@ ${chapters.map((c, i) => `<div><label>
         let archiveName = this.title().replaceAll(FILENAME_INVALIDCHAR, "_");
         let separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
         let singleChapter = chapters.length === 1;
-        this.flushUI("packaging");
+        this.panel.flushUI("packaging");
         const files = [];
         for (const chapter of chapters) {
           const ret = this.mapToFileLikes(chapter, singleChapter, separator);
@@ -1424,10 +1179,8 @@ ${chapters.map((c, i) => `<div><label>
       }
     }
     abort(stage) {
-      this.downloaderPanelBTN.textContent = i18n.download.get();
-      this.downloaderPanelBTN.classList.remove("lightgreen");
       this.downloading = false;
-      this.flushUI(stage);
+      this.panel.abort(stage);
       this.idleLoader.abort();
       this.selectedChapters.forEach((sel) => sel.reject("abort"));
     }
@@ -4347,6 +4100,179 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return conf.autoOpenExcludeURLs.find((excludeReg) => RegExp(excludeReg).test(url)) == void 0;
   }
 
+  const lang = navigator.language;
+  const i18nIndex = lang.startsWith("zh") ? 1 : 0;
+  class I18nValue extends Array {
+    constructor(...value) {
+      super(...value);
+    }
+    get() {
+      return this[i18nIndex];
+    }
+  }
+  const keyboardCustom = {
+    inMain: {
+      "open-full-view-grid": new I18nValue("Enter Read Mode", "进入阅读模式")
+    },
+    inBigImageMode: {
+      "step-image-prev": new I18nValue("Go Prev Image", "切换到上一张图片"),
+      "step-image-next": new I18nValue("Go Next Image", "切换到下一张图片"),
+      "exit-big-image-mode": new I18nValue("Exit Big Image Mode", "退出大图模式"),
+      "step-to-first-image": new I18nValue("Go First Image", "跳转到第一张图片"),
+      "step-to-last-image": new I18nValue("Go Last Image", "跳转到最后一张图片"),
+      "scale-image-increase": new I18nValue("Increase Image Scale", "放大图片"),
+      "scale-image-decrease": new I18nValue("Decrease Image Scale", "缩小图片"),
+      "scroll-image-up": new I18nValue("Scroll Image Up (Please Keep Default Keys)", "向上滚动图片 (请保留默认按键)"),
+      "scroll-image-down": new I18nValue("Scroll Image Down (Please Keep Default Keys)", "向下滚动图片 (请保留默认按键)")
+    },
+    inFullViewGrid: {
+      "open-big-image-mode": new I18nValue("Enter Big Image Mode", "进入大图阅读模式"),
+      "pause-auto-load-temporarily": new I18nValue("Pause Auto Load Temporarily", "临时停止自动加载"),
+      "exit-full-view-grid": new I18nValue("Exit Read Mode", "退出阅读模式"),
+      "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
+      "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量"),
+      "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择")
+    }
+  };
+  const i18n = {
+    // page-helper
+    imageScale: new I18nValue("SCALE", "缩放"),
+    config: new I18nValue("CONF", "配置"),
+    backChapters: new I18nValue("Chapters", "章节"),
+    autoPagePlay: new I18nValue("PLAY", "播放"),
+    autoPagePause: new I18nValue("PAUSE", "暂停"),
+    collapse: new I18nValue("FOLD", "收起"),
+    // config panel number option
+    colCount: new I18nValue("Columns", "每行数量"),
+    threads: new I18nValue("Preload Threads", "最大同时加载"),
+    threadsTooltip: new I18nValue("Max Preload Threads", "大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。"),
+    downloadThreads: new I18nValue("Download Threads", "最大同时下载"),
+    downloadThreadsTooltip: new I18nValue("Max Download Threads, suggest: <5", "下载模式下，同时加载的图片数量，建议小于等于5"),
+    paginationIMGCount: new I18nValue("Images Per Page", "每页图片数量"),
+    paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "当阅读模式为翻页模式时，每页展示的图片数量"),
+    timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
+    preventScrollPageTime: new I18nValue("Min Paging Time", "最小翻页时间"),
+    preventScrollPageTimeTooltip: new I18nValue("In Pagination read mode, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "当阅读模式为翻页模式时，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
+    autoPageSpeed: new I18nValue("Auto Paging Speed", "自动翻页速度"),
+    autoPageSpeedTooltip: new I18nValue("In Pagination read mode, Auto Page Speed means how many seconds it takes to flip the page automatically.<br>In Continuous read mode, Auto Page Speed means the scrolling speed.", "当阅读模式为翻页模式时，自动翻页速度表示为多少秒后翻页。<br>当阅读模式为连续模式时，自动翻页速度表示为滚动速度。"),
+    scrollingSpeed: new I18nValue("Scrolling Speed", "按键滚动速度"),
+    scrollingSpeedTooltip: new I18nValue("The scrolling Speed for Custom KeyBoard Keys for scrolling, not Auto Paging|Scrolling Speed", "自定义按键的滚动速度，并不是连续阅读模式下的自动翻页的滚动速度。"),
+    // config panel boolean option
+    fetchOriginal: new I18nValue("Raw Image", "最佳质量"),
+    fetchOriginalTooltip: new I18nValue("enable will download the original source, cost more traffic and quotas", "启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。"),
+    autoLoad: new I18nValue("Auto Load", "自动加载"),
+    autoLoadTooltip: new I18nValue("", "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。"),
+    reversePages: new I18nValue("Reverse Pages", "反向翻页"),
+    reversePagesTooltip: new I18nValue("Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.", "点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。"),
+    autoPlay: new I18nValue("Auto Page", "自动翻页"),
+    autoPlayTooltip: new I18nValue("Auto Page when entering the big image readmode.", "当阅读大图时，开启自动播放模式。"),
+    autoLoadInBackground: new I18nValue("Keep Loading", "后台加载"),
+    autoLoadInBackgroundTooltip: new I18nValue("Keep Auto-Loading after the tab loses focus", "当标签页失去焦点后保持自动加载。"),
+    autoOpen: new I18nValue("Auto Open", "自动展开"),
+    autoOpenTooltip: new I18nValue("Automatically open after the gallery page is loaded", "进入画廊页面后，自动展开阅读视图。"),
+    disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
+    disableCssAnimationTooltip: new I18nValue("Valid after refreshing the page", "刷新页面后生效"),
+    autoCollapsePanel: new I18nValue("Auto Fold Control Panel", "自动收起控制面板"),
+    autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
+    // config panel select option
+    readMode: new I18nValue("Read Mode", "阅读模式"),
+    readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
+    stickyMouse: new I18nValue("Sticky Mouse", "黏糊糊鼠标"),
+    stickyMouseTooltip: new I18nValue("In non-continuous reading mode, scroll a single image automatically by moving the mouse.", "非连续阅读模式下，通过鼠标移动来自动滚动单张图片。"),
+    minifyPageHelper: new I18nValue("Minify Control Bar", "最小化控制栏"),
+    minifyPageHelperTooltip: new I18nValue("Minify Control Bar", "最小化控制栏"),
+    hitomiFormat: new I18nValue("Hitomi Image Format", "Hitomi 图片格式"),
+    hitomiFormatTooltip: new I18nValue("In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh", "在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。"),
+    ehentaiTitlePrefer: new I18nValue("EHentai Prefer Title", "EHentai标题语言"),
+    ehentaiTitlePreferTooltip: new I18nValue("Many galleries have both an English/Romanized title and a title in Japanese script. <br>Which one do you want to use as the archive filename?", "许多图库都同时拥有英文/罗马音标题和日文标题，<br>您希望下载时哪个作为文件名？"),
+    reverseMultipleImagesPost: new I18nValue("Descending Images In Post", "反转推文图片顺序"),
+    reverseMultipleImagesPostTooltip: new I18nValue("Reverse order for post with multiple images attatched", "反转推文图片顺序"),
+    dragToMove: new I18nValue("Drag to Move", "拖动移动"),
+    originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
+    showHelp: new I18nValue("Help", "帮助"),
+    showKeyboard: new I18nValue("Keyboard", "快捷键"),
+    showExcludes: new I18nValue("Excludes", "站点排除"),
+    showAutoOpenExcludes: new I18nValue("AutoOpenExcludes", "自动打开排除"),
+    letUsStar: new I18nValue("Let's Star", "点星"),
+    // download panel
+    download: new I18nValue("DL", "下载"),
+    forceDownload: new I18nValue("Take Loaded", "获取已下载的"),
+    downloadStart: new I18nValue("Start Download", "开始下载"),
+    downloading: new I18nValue("Downloading...", "下载中..."),
+    downloadFailed: new I18nValue("Failed(Retry)", "下载失败(重试)"),
+    downloaded: new I18nValue("Downloaded", "下载完成"),
+    packaging: new I18nValue("Packaging...", "打包中..."),
+    status: new I18nValue("Status", "状态"),
+    selectChapters: new I18nValue("Select Chapters", "章节选择"),
+    cherryPick: new I18nValue("Cherry Pick", "范围选择"),
+    help: new I18nValue(`
+    <h1>GUIDE:</h1>
+    <ol>
+      <li>If you are browsing E-Hentai, please click <a style="color: red" id="renamelink" href="${window.location.href}?inline_set=ts_l">Here</a> to switch to Lager thumbnail mode for clearer thumbnails. (need login e-hentai)</li>
+      <li>Click <span style="background-color: gray;">&lessdot;📖&gtdot;</span> from left-bottom corner, entry reading.</li>
+      <li>Just a monment, all thumbnail will exhibited in grid, <strong style="color: red;">click</strong> one of thumbnails into big image mode.</li>
+      <li>You can use the <strong style="color: red;">mouse middle-click</strong> on a thumbnail to open the href of the image in new tab.</li>
+      <li><strong style="color: orange">Image quality:</strong>For e-hentai，you can enable control-bar > CONF > Image Raw, which will directly download the uploaded original uncompressed images, but it will consume more quotas. Generally, the compressed files provided by E-Hentai are already clear enough.</li>
+      <li><strong style="color: orange">Big image:</strong>click thumbnail image, into big image mode, use mouse wheel switch to next or prev</li>
+      <li><strong style="color: orange">Keyboard:</strong>
+        <table>
+          <tr><td>Scale Image</td><td>mouse right + wheel or -/=</td></tr>
+          <tr><td>Open  Image(In thumbnails)</td><td>Enter</td></tr>
+          <tr><td>Exit  Image(In big mode)</td><td>Enter/Esc</td></tr>
+          <tr><td>Open Specific Page(In thumbnails)</td><td>Input number(no echo) + Enter</td></tr>
+          <tr><td>Switch Page</td><td>→/←</td></tr>
+          <tr><td>Scroll Image</td><td>↑/↓/Space</td></tr>
+          <tr><td>Toggle Auto Load</td><td>p</td></tr>
+        </table>
+      </li>
+      <li><strong style="color: orange">Download:</strong>You can click on the download button in the download panel to quickly load all the images. You can still continue browsing the images. Downloading and viewing large images are integrated, and you can click on Download Loaded in the download panel to save the images at any time.</li>
+      <li><strong style="color: orange">Feedback:</strong>
+        Click 
+        <span>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance/issues" target="_blank" alt="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
+        </span>
+        to provide feedback on issues, Give me a star if you like this script.
+        <span>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank" alt="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
+        </span>
+      </li>
+    </ol>
+  `, `
+    <h1>操作说明:</h1>
+    <ol>
+      <li>如果你正在浏览E绅士，请点击<a style="color: red" id="renamelink" href="${window.location.href}?inline_set=ts_l">此处</a>切换到Lager缩略图模式，以获取更清晰的缩略图。</li>
+      <li>点击左下角 <span style="background-color: gray;">&lessdot;📖&gtdot;</span> 展开，进入阅读模式。</li>
+      <li>稍等片刻后，缩略图会全屏陈列在页面上，<strong style="color: red;">点击</strong>某一缩略图进入大图浏览模式。</li>
+      <li>你可以在某个缩略图上使用<strong style="color: red;">鼠标中键</strong>来打开该图片所在的页面。</li>
+      <li><strong style="color: orange">图片质量:</strong>图片质量: 对于E绅士，你可以在控制栏>配置，启用原图模式，这将直接下载上传原档未压缩的图片，但会消耗更多的配额。一般来说E绅士默认提供的压缩档已经足够清晰。</li>
+      <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
+      <li><strong style="color: orange">键盘操作:</strong>
+        <table>
+          <tr><td>图片缩放</td><td>鼠标右键+滚轮 或 -/=</td></tr>
+          <tr><td>打开大图(缩略图模式下)</td><td>回车</td></tr>
+          <tr><td>退出大图(大图模式下)</td><td>回车/Esc</td></tr>
+          <tr><td>打开指定图片(缩略图模式下)</td><td>直接输入数字(不回显) + 回车</td></tr>
+          <tr><td>切换图片</td><td>→/←</td></tr>
+          <tr><td>滚动图片</td><td>↑/↓</td></tr>
+          <tr><td>开关自动加载</td><td>p</td></tr>
+        </table>
+      </li>
+      <li><strong style="color: orange">下载功能:</strong>你可以在下载面板中点击下载，这将快速加载所有的图片，你依旧可以继续浏览图片。下载与大图浏览是一体的，你随时可以在下载面板点击<strong style="color: orange">下载已加载的</strong>保存图片。</li>
+      <li><strong style="color: orange">问题反馈:</strong>
+        点击 
+        <span>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance/issues" target="_blank" alt="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
+        </span>
+        反馈你的问题或建议，如果你喜欢这个脚本，给我一个star吧。 
+        <span>
+        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank" alt="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
+        </span>
+      </li>
+    </ol>
+  `),
+    keyboardCustom
+  };
+
   function parseKey(event) {
     const keys = [];
     if (event.ctrlKey)
@@ -5354,7 +5280,7 @@ html {
   font-size: 1rem;
   padding: 0 0.4rem;
 }
-.download-chapters, .download-dashboard {
+.download-chapters, .download-status, .download-cherry-pick {
   width: 100%;
   height: 100%;
 }
@@ -5449,7 +5375,7 @@ html {
         saveConf(conf);
       }
       conf.autoPageSpeed = conf.readMode === "pagination" ? 5 : 1;
-      q("#autoPageSpeedInput", HTML.configPanel).value = conf.autoPageSpeed.toString();
+      q("#autoPageSpeedInput", HTML.config.panel).value = conf.autoPageSpeed.toString();
       BIFM.resetScaleBigImages(true);
       if (conf.readMode === "pagination") {
         BIFM.frame.classList.add("bifm-flex");
@@ -5973,6 +5899,223 @@ html {
     zoomIcon
   };
 
+  class DownloaderPanel {
+    panel;
+    canvas;
+    tabStatus;
+    tabChapters;
+    tabCherryPick;
+    statusElement;
+    chaptersElement;
+    cherryPickElement;
+    noticeElement;
+    forceBTN;
+    startBTN;
+    btn;
+    constructor(root) {
+      this.btn = q("#downloader-panel-btn", root);
+      this.panel = q("#downloader-panel", root);
+      this.canvas = q("#downloader-canvas", root);
+      this.tabStatus = q("#download-tab-status", root);
+      this.tabChapters = q("#download-tab-chapters", root);
+      this.tabCherryPick = q("#download-tab-cherry-pick", root);
+      this.statusElement = q("#download-status", root);
+      this.chaptersElement = q("#download-chapters", root);
+      this.cherryPickElement = q("#download-cherry-pick", root);
+      this.noticeElement = q("#download-notice", root);
+      this.forceBTN = q("#download-force", root);
+      this.startBTN = q("#download-start", root);
+      this.panel.addEventListener("transitionend", () => EBUS.emit("downloader-canvas-resize"));
+    }
+    initTabs() {
+      const elements = [this.statusElement, this.chaptersElement, this.cherryPickElement];
+      const tabs = [
+        {
+          ele: this.tabStatus,
+          cb: () => {
+            elements.forEach((e, i) => e.hidden = i != 0);
+            EBUS.emit("downloader-canvas-resize");
+          }
+        },
+        {
+          ele: this.tabChapters,
+          cb: () => {
+            elements.forEach((e, i) => e.hidden = i != 1);
+          }
+        },
+        {
+          ele: this.tabCherryPick,
+          cb: () => {
+            elements.forEach((e, i) => e.hidden = i != 2);
+          }
+        }
+      ];
+      tabs.forEach(({ ele, cb }, i) => {
+        ele.addEventListener("click", () => {
+          ele.classList.add("ehvp-p-tab-selected");
+          tabs.filter((_, j) => j != i).forEach((t) => t.ele.classList.remove("ehvp-p-tab-selected"));
+          cb();
+        });
+      });
+    }
+    switchTab(tabID) {
+      switch (tabID) {
+        case "status":
+          this.tabStatus.click();
+          break;
+        case "chapters":
+          this.tabChapters.click();
+          break;
+        case "cherry-pick":
+          this.tabCherryPick.click();
+          break;
+      }
+    }
+    noticeOriginal(cb) {
+      this.noticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
+      this.noticeElement.querySelector("a")?.addEventListener("click", cb);
+    }
+    abort(stage) {
+      this.flushUI(stage);
+      this.normalizeBTN();
+    }
+    flushUI(stage) {
+      this.noticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
+      this.startBTN.style.color = stage === "downloadFailed" ? "red" : "";
+      this.startBTN.textContent = i18n[stage].get();
+      this.btn.style.color = stage === "downloadFailed" ? "red" : "";
+    }
+    noticeableBTN() {
+      if (this.btn.classList.contains("lightgreen")) {
+        this.btn.classList.add("lightgreen");
+        if (!/✓/.test(this.btn.textContent)) {
+          this.btn.textContent += "✓";
+        }
+      }
+    }
+    normalizeBTN() {
+      this.btn.textContent = i18n.download.get();
+      this.btn.classList.remove("lightgreen");
+    }
+    createChapterSelectList(chapters, selectedChapters) {
+      const selectAll = chapters.length === 1;
+      this.chaptersElement.innerHTML = `
+<div>
+  <span id="download-chapters-select-all" class="clickable p-btn">Select All</span>
+  <span id="download-chapters-unselect-all" class="clickable p-btn">Unselect All</span>
+</div>
+${chapters.map((c, i) => `<div><label>
+  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || selectedChapters.find((sel) => sel.index === i) ? "checked" : ""} />
+  <span>${c.title}</span></label></div>`).join("")}
+`;
+      [["#download-chapters-select-all", true], ["#download-chapters-unselect-all", false]].forEach(
+        ([id, checked]) => this.chaptersElement.querySelector(id)?.addEventListener(
+          "click",
+          () => chapters.forEach((c) => {
+            const checkbox = this.chaptersElement.querySelector("#ch-" + c.id);
+            if (checkbox)
+              checkbox.checked = checked;
+          })
+        )
+      );
+    }
+    selectedChapters() {
+      const idSet = /* @__PURE__ */ new Set();
+      this.chaptersElement.querySelectorAll("input[type=checkbox][id^=ch-]:checked").forEach((checkbox) => idSet.add(Number(checkbox.value)));
+      return idSet;
+    }
+    static html() {
+      return `
+<div id="downloader-panel" class="p-panel p-downloader p-collapse">
+    <div id="download-notice" class="download-notice"></div>
+    <div id="download-middle" class="download-middle">
+      <div class="ehvp-tabs">
+        <a id="download-tab-status" class="clickable ehvp-p-tab">${i18n.status.get()}</a>
+        <a id="download-tab-chapters" class="clickable ehvp-p-tab">${i18n.selectChapters.get()}</a>
+        <a id="download-tab-cherry-pick" class="clickable ehvp-p-tab">${i18n.cherryPick.get()}</a>
+      </div>
+      <div>
+        <div id="download-status" class="download-status" hidden>
+          <canvas id="downloader-canvas" width="0" height="0"></canvas>
+        </div>
+        <div id="download-chapters" class="download-chapters" hidden></div>
+        <div id="download-cherry-pick" class="download-cherry-pick" hidden>
+          <div class="ehvp-custom-panel-item-values">
+            <button class="ehvp-custom-panel-item-add-btn">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="download-btn-group">
+       <a id="download-force" class="clickable">${i18n.forceDownload.get()}</a>
+       <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.downloadStart.get()}</a>
+    </div>
+</div>`;
+    }
+  }
+
+  class ConfigPanel {
+    panel;
+    btn;
+    constructor(root) {
+      this.panel = q("#config-panel", root);
+      this.btn = q("#config-panel-btn", root);
+      this.panel.querySelectorAll(".p-tooltip").forEach((element) => {
+        const child = element.querySelector(".p-tooltiptext");
+        if (!child)
+          return;
+        element.addEventListener("mouseenter", () => {
+          relocateElement(child, element, root.offsetWidth, root.offsetHeight);
+          child.style.visibility = "visible";
+        });
+        element.addEventListener("mouseleave", () => child.style.visibility = "hidden");
+      });
+    }
+    initEvents(events) {
+      ConfigItems.forEach((item) => {
+        switch (item.typ) {
+          case "number":
+            q(`#${item.key}MinusBTN`, this.panel).addEventListener("click", () => events.modNumberConfigEvent(item.key, "minus"));
+            q(`#${item.key}AddBTN`, this.panel).addEventListener("click", () => events.modNumberConfigEvent(item.key, "add"));
+            q(`#${item.key}Input`, this.panel).addEventListener("wheel", (event) => {
+              event.preventDefault();
+              if (event.deltaY < 0) {
+                events.modNumberConfigEvent(item.key, "add");
+              } else if (event.deltaY > 0) {
+                events.modNumberConfigEvent(item.key, "minus");
+              }
+            });
+            break;
+          case "boolean":
+            q(`#${item.key}Checkbox`, this.panel).addEventListener("click", () => events.modBooleanConfigEvent(item.key));
+            break;
+          case "select":
+            q(`#${item.key}Select`, this.panel).addEventListener("change", () => events.modSelectConfigEvent(item.key));
+            break;
+        }
+      });
+    }
+    static html() {
+      const configItemStr = ConfigItems.map(createOption).join("");
+      return `
+<div id="config-panel" class="p-panel p-config p-collapse">
+    ${configItemStr}
+    <div style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px;">
+        <label class="p-label">
+            <span>${i18n.dragToMove.get()}:</span>
+            <span id="dragHub" style="font-size: 1.85rem;cursor: grab;">✠</span>
+        </label>
+    </div>
+    <div style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px; text-align: left;">
+         <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
+         <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
+         <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
+         <a id="show-autoopen-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showAutoOpenExcludes.get()}</a>
+         <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
+    </div>
+</div>`;
+    }
+  }
   function createOption(item) {
     const i18nKey = item.i18nKey || item.key;
     const i18nValue = i18n[i18nKey];
@@ -6006,12 +6149,12 @@ html {
     const [start, end] = item.gridColumnRange ? item.gridColumnRange : [1, 11];
     return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}"><label class="p-label"><span><span>${i18nValue.get()}</span><span class="p-tooltip">${i18nValueTooltip ? " 🙻:" : " :"}<span class="p-tooltiptext">${i18nValueTooltip?.get() || ""}</span></span></span>${input}</label></div>`;
   }
+
   function createHTML() {
     const fullViewGrid = document.createElement("div");
     fullViewGrid.classList.add("ehvp-root");
     fullViewGrid.classList.add("ehvp-root-collapse");
     document.body.after(fullViewGrid);
-    const configItemStr = ConfigItems.map(createOption).join("");
     const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
@@ -6023,41 +6166,8 @@ html {
 </div>
 <div id="p-helper" class="p-helper">
     <div>
-        <div id="config-panel" class="p-panel p-config p-collapse">
-            ${configItemStr}
-            <div style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px;">
-                <label class="p-label">
-                    <span>${i18n.dragToMove.get()}:</span>
-                    <span id="dragHub" style="font-size: 1.85rem;cursor: grab;">✠</span>
-                </label>
-            </div>
-            <div style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px; text-align: left;">
-                 <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
-                 <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
-                 <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
-                 <a id="show-autoopen-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showAutoOpenExcludes.get()}</a>
-                 <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
-            </div>
-        </div>
-        <div id="downloader-panel" class="p-panel p-downloader p-collapse">
-            <div id="download-notice" class="download-notice"></div>
-            <div id="download-middle" class="download-middle">
-              <div class="ehvp-tabs">
-                <a id="download-tab-dashboard" class="clickable ehvp-p-tab">Dashboard</a>
-                <a id="download-tab-chapters" class="clickable ehvp-p-tab">Select Chapters</a>
-              </div>
-              <div>
-                <div id="download-dashboard" class="download-dashboard" hidden>
-                  <canvas id="downloader-canvas" width="0" height="0"></canvas>
-                </div>
-                <div id="download-chapters" class="download-chapters" hidden></div>
-              </div>
-            </div>
-            <div class="download-btn-group">
-               <a id="download-force" style="color: gray;" class="clickable">${i18n.forceDownload.get()}</a>
-               <a id="download-start" style="color: rgb(120, 240, 80)" class="clickable">${i18n.downloadStart.get()}</a>
-            </div>
-        </div>
+        ${ConfigPanel.html()}
+        ${DownloaderPanel.html()}
     </div>
     <div id="b-main" class="b-main">
         <div id="entry-btn" class="b-main-item clickable">${icons.moonViewCeremony}</div>
@@ -6108,9 +6218,7 @@ html {
       bigImageFrame: q("#big-img-frame", fullViewGrid),
       pageHelper: q("#p-helper", fullViewGrid),
       configPanelBTN: q("#config-panel-btn", fullViewGrid),
-      configPanel: q("#config-panel", fullViewGrid),
       downloaderPanelBTN: q("#downloader-panel-btn", fullViewGrid),
-      downloaderPanel: q("#downloader-panel", fullViewGrid),
       entryBTN: q("#entry-btn", fullViewGrid),
       currPageElement: q("#p-curr-page", fullViewGrid),
       totalPageElement: q("#p-total", fullViewGrid),
@@ -6123,27 +6231,22 @@ html {
       imgLandRight: q("#img-land-right", fullViewGrid),
       autoPageBTN: q("#auto-page-btn", fullViewGrid),
       pageLoading: q("#page-loading", fullViewGrid),
-      downloaderCanvas: q("#downloader-canvas", fullViewGrid),
-      downloadTabDashboard: q("#download-tab-dashboard", fullViewGrid),
-      downloadTabChapters: q("#download-tab-chapters", fullViewGrid),
-      downloadDashboard: q("#download-dashboard", fullViewGrid),
-      downloadChapters: q("#download-chapters", fullViewGrid),
-      downloadNotice: q("#download-notice", fullViewGrid),
-      downloadBTNForce: q("#download-force", fullViewGrid),
-      downloadBTNStart: q("#download-start", fullViewGrid),
+      config: new ConfigPanel(fullViewGrid),
+      downloader: new DownloaderPanel(fullViewGrid),
       readModeSelect: q("#read-mode-select", fullViewGrid),
       paginationAdjustBar: q("#pagination-adjust-bar", fullViewGrid),
       styleSheel
     };
   }
   function addEventListeners(events, HTML, BIFM, DL, PH) {
+    HTML.config.initEvents(events);
     HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config", void 0, HTML.configPanelBTN));
     HTML.downloaderPanelBTN.addEventListener("click", () => {
       events.togglePanelEvent("downloader", void 0, HTML.downloaderPanelBTN);
       DL.check();
     });
     function collapsePanel(key) {
-      const elements = { "config": HTML.configPanel, "downloader": HTML.downloaderPanel };
+      const elements = { "config": HTML.config.panel, "downloader": HTML.downloader.panel };
       conf.autoCollapsePanel && events.collapsePanelEvent(elements[key], key);
       if (BIFM.visible) {
         HTML.bigImageFrame.focus();
@@ -6151,10 +6254,10 @@ html {
         HTML.root.focus();
       }
     }
-    HTML.configPanel.addEventListener("mouseleave", () => collapsePanel("config"));
-    HTML.configPanel.addEventListener("blur", () => collapsePanel("config"));
-    HTML.downloaderPanel.addEventListener("mouseleave", () => collapsePanel("downloader"));
-    HTML.downloaderPanel.addEventListener("blur", () => collapsePanel("downloader"));
+    HTML.config.panel.addEventListener("mouseleave", () => collapsePanel("config"));
+    HTML.config.panel.addEventListener("blur", () => collapsePanel("config"));
+    HTML.downloader.panel.addEventListener("mouseleave", () => collapsePanel("downloader"));
+    HTML.downloader.panel.addEventListener("blur", () => collapsePanel("downloader"));
     let hovering = false;
     HTML.pageHelper.addEventListener("mouseover", () => {
       hovering = true;
@@ -6165,28 +6268,6 @@ html {
       hovering = false;
       ["config", "downloader"].forEach((k) => collapsePanel(k));
       setTimeout(() => !hovering && PH.minify(PH.lastStage, false), 700);
-    });
-    ConfigItems.forEach((item) => {
-      switch (item.typ) {
-        case "number":
-          q(`#${item.key}MinusBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(item.key, "minus"));
-          q(`#${item.key}AddBTN`, HTML.root).addEventListener("click", () => events.modNumberConfigEvent(item.key, "add"));
-          q(`#${item.key}Input`, HTML.root).addEventListener("wheel", (event) => {
-            event.preventDefault();
-            if (event.deltaY < 0) {
-              events.modNumberConfigEvent(item.key, "add");
-            } else if (event.deltaY > 0) {
-              events.modNumberConfigEvent(item.key, "minus");
-            }
-          });
-          break;
-        case "boolean":
-          q(`#${item.key}Checkbox`, HTML.root).addEventListener("click", () => events.modBooleanConfigEvent(item.key));
-          break;
-        case "select":
-          q(`#${item.key}Select`, HTML.root).addEventListener("change", () => events.modSelectConfigEvent(item.key));
-          break;
-      }
     });
     HTML.entryBTN.addEventListener("click", () => {
       let stage = HTML.entryBTN.getAttribute("data-stage") || "exit";
@@ -6261,16 +6342,6 @@ html {
     q("#scaleMinusBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(-1, 10));
     q("#scaleAddBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(1, 10));
     q("#scaleInput", HTML.pageHelper).addEventListener("wheel", (event) => BIFM.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5));
-    HTML.configPanel.querySelectorAll(".p-tooltip").forEach((element) => {
-      const child = element.querySelector(".p-tooltiptext");
-      if (!child)
-        return;
-      element.addEventListener("mouseenter", () => {
-        relocateElement(child, element, HTML.root.offsetWidth, HTML.root.offsetHeight);
-        child.style.visibility = "visible";
-      });
-      element.addEventListener("mouseleave", () => child.style.visibility = "hidden");
-    });
   }
 
   class PageHelper {

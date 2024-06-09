@@ -716,7 +716,7 @@ html {
   font-size: 1rem;
   padding: 0 0.4rem;
 }
-.download-chapters, .download-dashboard {
+.download-chapters, .download-status, .download-cherry-pick {
   width: 100%;
   height: 100%;
 }

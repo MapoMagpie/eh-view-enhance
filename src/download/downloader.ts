@@ -1,6 +1,5 @@
 import { FetchState, IMGFetcher } from "../img-fetcher";
 import { conf } from "../config";
-import { i18n } from "../utils/i18n";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
 import { Matcher } from "../platform/platform";
@@ -12,53 +11,37 @@ import EBUS from "../event-bus";
 import { DownloaderCanvas } from "../ui/downloader-canvas";
 import { Chapter, PageFetcher } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
+import { DownloaderPanel } from "../ui/downloader-panel";
 
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|\n]/g;
 export class Downloader {
   meta: (ch: Chapter) => GalleryMeta;
   title: () => string;
   downloading: boolean;
-  buttonForce: HTMLAnchorElement;
-  buttonStart: HTMLAnchorElement;
-  elementNotice: HTMLElement;
-  downloaderPanelBTN: HTMLElement;
   queue: IMGFetcherQueue;
   idleLoader: IdleLoader;
   pageFetcher: PageFetcher;
   done: boolean = false;
   selectedChapters: ChapterStat[] = [];
   filenames: Set<string> = new Set();
+  panel: DownloaderPanel;
   canvas: DownloaderCanvas;
-  dashboardTab: HTMLElement;
-  chapterTab: HTMLElement;
-  elementDashboard: HTMLElement;
-  elementChapters: HTMLElement;
 
   constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, pageFetcher: PageFetcher, matcher: Matcher) {
+    this.panel = HTML.downloader;
+    this.panel.initTabs();
+    this.initEvents(this.panel);
+
+    this.canvas = new DownloaderCanvas(this.panel.canvas, queue);
+
     this.queue = queue;
     this.idleLoader = idleLoader;
     this.pageFetcher = pageFetcher;
     this.meta = (ch: Chapter) => matcher.galleryMeta(document, ch);
     this.title = () => matcher.title(document);
     this.downloading = false;
-    this.buttonForce = HTML.downloadBTNForce;
-    this.buttonStart = HTML.downloadBTNStart;
-    this.elementNotice = HTML.downloadNotice;
-    this.downloaderPanelBTN = HTML.downloaderPanelBTN;
-    this.buttonForce.addEventListener("click", () => this.download(this.pageFetcher.chapters));
-    this.buttonStart.addEventListener("click", () => {
-      if (this.downloading) {
-        this.abort("downloadStart");
-      } else {
-        this.start();
-      }
-    });
     this.queue.downloading = () => this.downloading;
-    this.dashboardTab = HTML.downloadTabDashboard;
-    this.chapterTab = HTML.downloadTabChapters;
-    this.elementDashboard = HTML.downloadDashboard;
-    this.elementChapters = HTML.downloadChapters;
-    this.canvas = new DownloaderCanvas(HTML.downloaderCanvas, HTML, queue);
+
     EBUS.subscribe("ifq-on-finished-report", (_, queue) => {
       if (queue.isFinised()) {
         const sel = this.selectedChapters.find(sel => sel.index === queue.chapterIndex);
@@ -66,36 +49,21 @@ export class Downloader {
           sel.done = true;
           sel.resolve(true);
         }
-        if (!this.downloading && !this.done && !this.downloaderPanelBTN.classList.contains("lightgreen")) {
-          this.downloaderPanelBTN.classList.add("lightgreen");
-          if (!/✓/.test(this.downloaderPanelBTN.textContent!)) {
-            this.downloaderPanelBTN.textContent += "✓";
-          }
+        if (!this.downloading && !this.done) {
+          this.panel.noticeableBTN();
         }
       }
     });
-    this.initTabs();
   }
 
-  initTabs() {
-    const tabs = [{
-      ele: this.dashboardTab, cb: () => {
-        this.elementDashboard.hidden = false;
-        this.elementChapters.hidden = true;
-        this.canvas.resize(this.elementDashboard);
+  initEvents(panel: DownloaderPanel) {
+    panel.forceBTN.addEventListener("click", () => this.download(this.pageFetcher.chapters));
+    panel.startBTN.addEventListener("click", () => {
+      if (this.downloading) {
+        this.abort("downloadStart");
+      } else {
+        this.start();
       }
-    }, {
-      ele: this.chapterTab, cb: () => {
-        this.elementDashboard.hidden = true;
-        this.elementChapters.hidden = false;
-      }
-    }];
-    tabs.forEach(({ ele, cb }, i) => {
-      ele.addEventListener("click", () => {
-        ele.classList.add("ehvp-p-tab-selected")
-        tabs.filter((_, j) => j != i).forEach(t => t.ele.classList.remove("ehvp-p-tab-selected"));
-        cb();
-      });
     });
   }
 
@@ -129,44 +97,17 @@ export class Downloader {
     }
   }
 
-  createChapterSelectList() {
-    const chapters = this.pageFetcher.chapters;
-    const selectAll = chapters.length === 1;
-    this.elementChapters.innerHTML = `
-<div>
-  <span id="download-chapters-select-all" class="clickable p-btn">Select All</span>
-  <span id="download-chapters-unselect-all" class="clickable p-btn">Unselect All</span>
-</div>
-${chapters.map((c, i) => `<div><label>
-  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || this.selectedChapters.find(sel => sel.index === i) ? "checked" : ""} />
-  <span>${c.title}</span></label></div>`).join("")}
-`;
-    ([["#download-chapters-select-all", true], ["#download-chapters-unselect-all", false]] as [string, boolean][]).forEach(([id, checked]) =>
-      this.elementChapters.querySelector<HTMLInputElement>(id)?.addEventListener("click", () =>
-        chapters.forEach(c => {
-          const checkbox = this.elementChapters.querySelector<HTMLInputElement>("#ch-" + c.id);
-          if (checkbox) checkbox.checked = checked;
-        })
-      )
-    );
-  }
 
   // check > start > download
   check() {
     if (this.downloading) return;
-    if (!conf.fetchOriginal) {
-      // append adviser element
-      if (this.elementNotice && !this.downloading) {
-        this.elementNotice.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-        this.elementNotice.querySelector("a")?.addEventListener("click", () => this.fetchOriginalTemporarily());
-      }
-    }
-    setTimeout(() => this.canvas.resize(this.elementDashboard), 110);
-    this.createChapterSelectList();
+    if (!conf.fetchOriginal) this.panel.noticeOriginal(() => this.fetchOriginalTemporarily());
+    setTimeout(() => EBUS.emit("downloader-canvas-resize"), 110);
+    this.panel.createChapterSelectList(this.pageFetcher.chapters, this.selectedChapters);
     if (this.queue.length > 0) {
-      this.dashboardTab.click();
+      this.panel.switchTab("status");
     } else if (this.pageFetcher.chapters.length > 1) {
-      this.chapterTab.click();
+      this.panel.switchTab("chapters");
     }
   }
 
@@ -181,20 +122,19 @@ ${chapters.map((c, i) => `<div><label>
 
   checkSelectedChapters() {
     this.selectedChapters.length = 0;
-    const idSet = new Set<number>();
-    this.elementChapters.querySelectorAll<HTMLInputElement>("input[type=checkbox][id^=ch-]:checked").forEach(checkbox => idSet.add(Number(checkbox.value)));
+    const idSet = this.panel.selectedChapters();
     if (idSet.size === 0) {
       this.selectedChapters.push({ index: 0, done: false, ...promiseWithResolveAndReject() });
     } else {
       this.pageFetcher.chapters.forEach((c, i) => idSet.has(c.id) && this.selectedChapters.push({ index: i, done: false, ...promiseWithResolveAndReject() }));
     }
-    evLog("debug", "get selected chapters: ", this.selectedChapters);
+    // evLog("debug", "get selected chapters: ", this.selectedChapters);
     return this.selectedChapters;
   }
 
   async start() {
     if (this.downloading) return;
-    this.flushUI("downloading");
+    this.panel.flushUI("downloading");
     this.downloading = true;
     this.idleLoader.autoLoad = true;
     this.checkSelectedChapters();
@@ -235,16 +175,6 @@ ${chapters.map((c, i) => `<div><label>
     }
   }
 
-  flushUI(stage: "downloadFailed" | "downloaded" | "downloading" | "downloadStart" | "packaging") {
-    if (this.elementNotice) {
-      this.elementNotice.innerHTML = `<span>${i18n[stage].get()}</span>`;
-    }
-    if (this.buttonStart) {
-      this.buttonStart.style.color = stage === "downloadFailed" ? "red" : "";
-      this.buttonStart.textContent = i18n[stage].get();
-    }
-    this.downloaderPanelBTN.style.color = stage === "downloadFailed" ? "red" : "";
-  }
 
   mapToFileLikes(chapter: Chapter, singleChapter: boolean, separator: string): FileLike[] {
     if (!chapter || chapter.queue.length === 0) return [];
@@ -295,7 +225,7 @@ ${chapters.map((c, i) => `<div><label>
       let archiveName = this.title().replaceAll(FILENAME_INVALIDCHAR, "_");
       let separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
       let singleChapter = chapters.length === 1;
-      this.flushUI("packaging");
+      this.panel.flushUI("packaging");
       const files: FileLike[] = [];
       for (const chapter of chapters) {
         const ret = this.mapToFileLikes(chapter, singleChapter, separator);
@@ -322,10 +252,8 @@ ${chapters.map((c, i) => `<div><label>
   };
 
   abort(stage: "downloadFailed" | "downloaded" | "downloadStart") {
-    this.downloaderPanelBTN.textContent = i18n.download.get();
-    this.downloaderPanelBTN.classList.remove("lightgreen");
     this.downloading = false;
-    this.flushUI(stage);
+    this.panel.abort(stage);
     this.idleLoader.abort();
     this.selectedChapters.forEach(sel => sel.reject("abort"));
   }
@@ -339,7 +267,7 @@ function uint8ArrayToReadableStream(arr: Uint8Array): ReadableStream<Uint8Array>
     }
   });
 }
-type ChapterStat = {
+export type ChapterStat = {
   index: number,
   done: boolean,
   promise: Promise<boolean>,
@@ -356,3 +284,19 @@ function promiseWithResolveAndReject() {
   });
   return { resolve: resolve!, reject: reject!, promise };
 }
+
+// Download ranges of pages, split each range with comma (,)
+// Ranges prefixed with ! means negative range, pages in these range will be excluded
+// Example: 
+//   -10:   Download from page 1 to 10
+//   !8:   Exclude page 8
+//   12:   Download page 12
+//   14-20:   Download from page 14 to 20
+//   15-17:   Exclude page 15 to 17
+//   30-40/2:   Download each 2 pages in 30-40 (30, 32, 34, 36, 38, 40)
+//   50-60/3:   Download each 3 pages in 50-60 (50, 53, 56, 59)
+//   70-:   Download from page 70 to the last page
+// Pages range follows your order, a negative range can drop previous selected pages, the latter positive range can add it back
+// Example: 
+//   !10-20:   Download every page except page 10 to 20
+//   1-10,!1-8/2,!4,5:   Download page 1 to 10 but remove 1, 3, 5, 7 and 4, then add 5 back (2, 5, 6, 8, 9, 10)

@@ -101,7 +101,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       saveConf(conf);
     }
     conf.autoPageSpeed = conf.readMode === "pagination" ? 5 : 1;
-    q<HTMLInputElement>("#autoPageSpeedInput", HTML.configPanel).value = conf.autoPageSpeed.toString();
+    q<HTMLInputElement>("#autoPageSpeedInput", HTML.config.panel).value = conf.autoPageSpeed.toString();
     BIFM.resetScaleBigImages(true);
     if (conf.readMode === "pagination") {
       BIFM.frame.classList.add("bifm-flex")

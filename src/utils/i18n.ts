@@ -109,6 +109,9 @@ export const i18n = {
   downloadFailed: new I18nValue("Failed(Retry)", "下载失败(重试)"),
   downloaded: new I18nValue("Downloaded", "下载完成"),
   packaging: new I18nValue("Packaging...", "打包中..."),
+  status: new I18nValue("Status", "状态"),
+  selectChapters: new I18nValue("Select Chapters", "章节选择"),
+  cherryPick: new I18nValue("Cherry Pick", "范围选择"),
 
   help: new I18nValue(`
     <h1>GUIDE:</h1>

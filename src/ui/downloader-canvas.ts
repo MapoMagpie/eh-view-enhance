@@ -2,7 +2,6 @@ import EBUS from "../event-bus";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { FetchState, IMGFetcher } from "../img-fetcher";
 import { Debouncer } from "../utils/debouncer";
-import { Elements } from "./html";
 
 type DrawNode = {
   index: number;
@@ -24,7 +23,7 @@ export class DownloaderCanvas {
   scrollSize: number;
   debouncer: Debouncer;
   onClick?: (index: number) => void;
-  constructor(canvas: HTMLCanvasElement, HTML: Elements, queue: IMGFetcherQueue) {
+  constructor(canvas: HTMLCanvasElement, queue: IMGFetcherQueue) {
     this.queue = queue;
     if (!canvas) {
       throw new Error("canvas not found");
@@ -57,11 +56,12 @@ export class DownloaderCanvas {
     this.debouncer = new Debouncer();
 
     // register animation event to parent for size change
-    HTML.downloaderPanel.addEventListener("transitionend", () => this.resize(HTML.downloadDashboard));
     EBUS.subscribe("imf-download-state-change", () => this.drawDebouce());
+    EBUS.subscribe("downloader-canvas-resize", () => this.resize());
   }
 
-  resize(parent: HTMLElement) {
+  private resize(parent?: HTMLElement) {
+    parent = parent || (this.canvas.parentElement as HTMLElement);
     this.canvas.width = Math.floor(parent.offsetWidth);
     this.canvas.height = Math.floor(parent.offsetHeight);
     this.columns = Math.ceil((this.canvas.width - this.padding * 2 - this.rectGap) / (this.rectSize + this.rectGap));

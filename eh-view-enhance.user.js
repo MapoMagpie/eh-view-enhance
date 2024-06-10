@@ -6603,7 +6603,7 @@ ${chapters.map((c, i) => `<div><label>
     const href = window.location.href;
     const meta = { href, version: "4.5.16", id: conf.id };
     const base = window.btoa(JSON.stringify(meta));
-    return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?base=${base}`;
+    return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }
 
   class PageHelper {

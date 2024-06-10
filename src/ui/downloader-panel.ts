@@ -187,14 +187,13 @@ ${chapters.map((c, i) => `<div><label>
     <div id="download-middle" class="download-middle">
       <div class="ehvp-tabs">
         <a id="download-tab-status" class="clickable ehvp-p-tab">${i18n.status.get()}</a>
-        <a id="download-tab-chapters" class="clickable ehvp-p-tab">${i18n.selectChapters.get()}</a>
         <a id="download-tab-cherry-pick" class="clickable ehvp-p-tab">${i18n.cherryPick.get()}</a>
+        <a id="download-tab-chapters" class="clickable ehvp-p-tab">${i18n.selectChapters.get()}</a>
       </div>
       <div>
         <div id="download-status" class="download-status" hidden>
           <canvas id="downloader-canvas" width="0" height="0"></canvas>
         </div>
-        <div id="download-chapters" class="download-chapters" hidden></div>
         <div id="download-cherry-pick" class="download-cherry-pick" hidden>
           <div class="ehvp-custom-panel-item-values" style="text-align: start;">
             <div style="margin-bottom: 1rem;align-items: center;display: flex; justify-content: space-around;">
@@ -204,6 +203,7 @@ ${chapters.map((c, i) => `<div><label>
             </div>
           </div>
         </div>
+        <div id="download-chapters" class="download-chapters" hidden></div>
       </div>
     </div>
     <div class="download-btn-group">

@@ -7690,46 +7690,37 @@ ${chapters.map((c, i) => `<div><label>
       return sleep(500);
     };
   }
-  (() => {
-    let oldPushState = history.pushState;
-    history.pushState = function pushState(...args) {
-      let ret = oldPushState.apply(this, args);
-      window.dispatchEvent(new Event("pushstate"));
-      window.dispatchEvent(new Event("locationchange"));
-      return ret;
-    };
-    let oldReplaceState = history.replaceState;
-    history.replaceState = function replaceState(...args) {
-      let ret = oldReplaceState.apply(this, args);
-      window.dispatchEvent(new Event("replacestate"));
-      window.dispatchEvent(new Event("locationchange"));
-      return ret;
-    };
-    window.addEventListener("popstate", () => {
-      window.dispatchEvent(new Event("locationchange"));
-    });
-  })();
   let destoryFunc;
   const debouncer = new Debouncer();
-  window.addEventListener("locationchange", () => {
+  function reMain() {
     debouncer.addEvent("LOCATION-CHANGE", () => {
       const newStart = () => {
         if (document.querySelector(".ehvp-root"))
           return;
-        const matcher2 = adaptMatcher(window.location.href);
-        matcher2 && (destoryFunc = main(matcher2));
+        const matcher = adaptMatcher(window.location.href);
+        matcher && (destoryFunc = main(matcher));
       };
       if (destoryFunc) {
-        console.log("locationchange");
         destoryFunc().then(newStart);
       } else {
         newStart();
       }
-    }, 10);
-  });
-  const matcher = adaptMatcher(window.location.href);
-  if (matcher !== null) {
-    destoryFunc = main(matcher);
+    }, 20);
   }
+  (() => {
+    const oldPushState = history.pushState;
+    history.pushState = function pushState(...args) {
+      let ret = oldPushState.apply(this, args);
+      reMain();
+      return ret;
+    };
+    const oldReplaceState = history.replaceState;
+    history.replaceState = function replaceState(...args) {
+      let ret = oldReplaceState.apply(this, args);
+      reMain();
+      return ret;
+    };
+    reMain();
+  })();
 
 })(saveAs, pica, zip, Hammer);

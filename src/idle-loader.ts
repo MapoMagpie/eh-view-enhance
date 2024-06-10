@@ -69,14 +69,7 @@ export class IdleLoader {
       return;
     }
     // Skip found Fetcher
-    const [sieve, positive] = (() => {
-      const picked = this.cherryPick?.();
-      if (picked) {
-        return [picked.sieve, picked.positive]
-      } else {
-        return [[], false];
-      }
-    })();
+    const picked = this.cherryPick?.() || new CherryPick();
     let foundFetcherIndex = new Set<Number>();
     let hasFailed = false;
     for (let i = 0; i < this.processingIndexList.length; i++) {
@@ -95,7 +88,7 @@ export class IdleLoader {
         (j < limit);
         j++
       ) {
-        if (positive ? sieve[j] : !sieve[j]) {
+        if (picked.picked(j)) {
           const imf = this.queue[j];
           // find img fetcher that hasn't been fetching
           if (!imf.lock && imf.stage === FetchState.URL && !foundFetcherIndex.has(j)) {
@@ -103,9 +96,9 @@ export class IdleLoader {
             this.processingIndexList[i] = j;
             break;
           }
-        }
-        if (imf.stage === FetchState.FAILED) {
-          hasFailed = true;
+          if (imf.stage === FetchState.FAILED) {
+            hasFailed = true;
+          }
         }
         // begin from the frist, stop at the processingIndex
         if (j >= this.queue.length - 1) {

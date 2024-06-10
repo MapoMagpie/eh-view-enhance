@@ -26,7 +26,7 @@ export class Downloader {
   filenames: Set<string> = new Set();
   panel: DownloaderPanel;
   canvas: DownloaderCanvas;
-  cherryPicks: CherryPick[] = [new CherryPick()];
+  cherryPicks: CherryPick[] = [new CherryPick()]; // TODO: support multiple chapters
 
   constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, pageFetcher: PageFetcher, matcher: Matcher) {
     this.panel = HTML.downloader;
@@ -37,12 +37,12 @@ export class Downloader {
       id => this.cherryPicks[0].remove(id)
     );
 
-    this.canvas = new DownloaderCanvas(this.panel.canvas, queue, () => this.cherryPicks[0]);
 
     this.queue = queue;
-    this.queue.cherryPick = () => this.cherryPicks[0];
+    this.queue.cherryPick = () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick();
     this.idleLoader = idleLoader;
-    this.idleLoader.cherryPick = () => this.cherryPicks[0];
+    this.idleLoader.cherryPick = () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick();
+    this.canvas = new DownloaderCanvas(this.panel.canvas, queue, () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick());
     this.pageFetcher = pageFetcher;
     this.meta = (ch: Chapter) => matcher.galleryMeta(document, ch);
     this.title = () => matcher.title(document);
@@ -184,7 +184,7 @@ export class Downloader {
   }
 
 
-  mapToFileLikes(chapter: Chapter, singleChapter: boolean, separator: string): FileLike[] {
+  mapToFileLikes(chapter: Chapter, picked: CherryPick, singleChapter: boolean, separator: string): FileLike[] {
     if (!chapter || chapter.queue.length === 0) return [];
     let checkTitle: (title: string, index: number) => string;
     const needNumberTitle = this.needNumberTitle(chapter.queue);
@@ -205,8 +205,7 @@ export class Downloader {
     })();
 
     const ret = chapter.queue
-      // TODO: cherryPick
-      .filter((imf) => imf.stage === FetchState.DONE && imf.data)
+      .filter((imf, i) => picked.picked(i) && imf.stage === FetchState.DONE && imf.data)
       .map((imf, index) => {
         return {
           stream: () => Promise.resolve(uint8ArrayToReadableStream(imf.data!)),
@@ -236,8 +235,10 @@ export class Downloader {
       let singleChapter = chapters.length === 1;
       this.panel.flushUI("packaging");
       const files: FileLike[] = [];
-      for (const chapter of chapters) {
-        const ret = this.mapToFileLikes(chapter, singleChapter, separator);
+      for (let i = 0; i < chapters.length; i++) {
+        const chapter = chapters[i];
+        const picked = this.cherryPicks[i] || new CherryPick();
+        const ret = this.mapToFileLikes(chapter, picked, singleChapter, separator);
         files.push(...ret);
       }
       const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
@@ -396,9 +397,8 @@ export class CherryPick {
     }
   }
 
-  picked(): number[] {
-    const ret: number[] = [];
-    return ret;
+  picked(index: number): boolean {
+    return this.positive ? this.sieve[index] : !this.sieve[index];
   }
 
 }

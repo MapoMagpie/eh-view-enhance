@@ -113,7 +113,7 @@ export class DownloaderCanvas {
         x: atX,
         y: atY,
         selected: this.isSelected(atX, atY),
-        disabled: picked.positive ? !picked.sieve[i] : picked.sieve[i]
+        disabled: !picked.picked(i)
       });
     }
     return list;

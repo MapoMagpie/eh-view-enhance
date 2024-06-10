@@ -54,10 +54,8 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     const picked = this.cherryPick?.(this.chapterIndex);
     if (picked && picked.values.length > 0) {
       for (let index = 0; index < this.length; index++) {
-        if (picked.positive ? picked.sieve[index] : !picked.sieve[index]) {
-          if (!this.finishedIndex.has(index)) {
-            return false;
-          }
+        if (picked.picked(index) && !this.finishedIndex.has(index)) {
+          return false;
         }
       }
       return true;
@@ -77,13 +75,14 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     //如果最后放入的数量为0,说明已经没有可以继续执行的图片获取器,可能意味着后面所有的图片都已经加载完毕,也可能意味着中间出现了什么错误
     if (!this.pushInExecutableQueue(oriented)) return;
 
-    /* 300毫秒的延迟，在这300毫秒的时间里，可执行队列executableQueue可能随时都会变更，300毫秒过后，只执行最新的可执行队列executableQueue中的图片请求器
-            在对大图元素使用滚轮事件的时候，由于速度非常快，大量的IMGFetcher图片请求器被添加到executableQueue队列中，如果调用这些图片请求器请求大图，可能会被认为是爬虫脚本
-            因此会有一个时间上的延迟，在这段时间里，executableQueue中的IMGFetcher图片请求器会不断更替，300毫秒结束后，只调用最新的executableQueue中的IMGFetcher图片请求器。 */
+    // delay 300ms to avoid too many requests, if user scroll quickly on big image, it will cause too many requests
     this.debouncer.addEvent("IFQ-EXECUTABLE", () =>
       // console.log("IFQ-EXECUTABLE", this.executableQueue);
       Promise.all(this.executableQueue.splice(0, conf.paginationIMGCount).map(imfIndex => this[imfIndex].start(imfIndex)))
-        .then(() => this.executableQueue.forEach(imfIndex => this[imfIndex].start(imfIndex)))
+        .then(() => {
+          const picked = this.cherryPick?.(this.chapterIndex);
+          this.executableQueue.filter(i => !picked || picked.picked(i)).forEach(imfIndex => this[imfIndex].start(imfIndex));
+        })
       ,
       300);
   }

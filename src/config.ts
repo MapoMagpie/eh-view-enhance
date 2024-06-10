@@ -1,5 +1,6 @@
 import { GM_getValue, GM_setValue } from "$";
 import { KeyboardInBigImageModeId, KeyboardInFullViewGridId, KeyboardInMainId } from "./ui/event";
+import { uuid } from "./utils/random";
 
 export type Oriented = "prev" | "next";
 
@@ -87,6 +88,7 @@ export type Config = {
   ehentaiTitlePrefer: "english" | "japanese",
   /** Custom key scrolling speed */
   scrollingSpeed: number,
+  id: string,
 };
 
 function defaultConf(): Config {
@@ -102,7 +104,7 @@ function defaultConf(): Config {
     threads: 3,
     downloadThreads: 4,
     timeout: 10,
-    version: VERSION,
+    version: CONF_VERSION,
     debug: true,
     first: true,
     reversePages: false,
@@ -134,10 +136,11 @@ function defaultConf(): Config {
     reverseMultipleImagesPost: true,
     ehentaiTitlePrefer: "japanese",
     scrollingSpeed: 30,
+    id: uuid(),
   };
 }
 
-export const VERSION = "4.4.0";
+const CONF_VERSION = "4.4.0";
 export const signal = { first: true };
 
 const CONFIG_KEY = "ehvh_cfg_";
@@ -167,7 +170,7 @@ function getConf(): Config {
   let cfgStr = storage.getItem(CONFIG_KEY);
   if (cfgStr) {
     let cfg: Config = JSON.parse(cfgStr);
-    if (cfg.version === VERSION) {
+    if (cfg.version === CONF_VERSION) {
       return confHealthCheck(cfg);
     }
   }

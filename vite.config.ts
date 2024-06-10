@@ -26,7 +26,7 @@ export default defineConfig(({ command }) => {
       monkey({
         entry: 'src/main.ts',
         userscript: {
-          version: "4.5.16",
+          version: "4.5.17",
           icon: 'https://exhentai.org/favicon.ico',
           namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
           supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',
@@ -88,6 +88,7 @@ export default defineConfig(({ command }) => {
             'qy0.ru',
             'wnimg.ru',
             'hentainexus.com',
+            'tencentcs.com',
           ],
           grant: [
             'GM_xmlhttpRequest',

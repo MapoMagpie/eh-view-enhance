@@ -200,7 +200,7 @@ export class TwitterMatcher extends BaseMatcher {
   }
 
   workURL(): RegExp {
-    return /(twitter|x).com\/(?!home)\w+(\/media)?/
+    return /(twitter|x).com\/\w+\/media/
   }
 
   galleryMeta(doc: Document): GalleryMeta {

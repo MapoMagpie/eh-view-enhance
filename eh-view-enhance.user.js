@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.17
+// @version            4.5.18
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -4181,7 +4181,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       };
     }
     workURL() {
-      return /(twitter|x).com\/(?!home)\w+(\/media)?/;
+      return /(twitter|x).com\/\w+\/media/;
     }
     galleryMeta(doc) {
       const userName = window.location.href.match(/twitter.com\/(\w+)\/?/)?.[1];
@@ -5897,6 +5897,8 @@ html {
           if (signal.first) {
             signal.first = false;
             PF.init();
+            fetchImage(generateOnePixelURL()).catch(() => {
+            });
           }
         } else {
           ["config", "downloader"].forEach((id) => togglePanelEvent(id, true));
@@ -5925,6 +5927,12 @@ html {
       showAutoOpenExcludeURLEvent,
       changeReadModeEvent
     };
+  }
+  function generateOnePixelURL() {
+    const href = window.location.href;
+    const meta = { href, version: "4.5.18", id: conf.id };
+    const base = window.btoa(JSON.stringify(meta));
+    return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }
 
   class FullViewGridManager {
@@ -6598,13 +6606,6 @@ ${chapters.map((c, i) => `<div><label>
     q("#scaleMinusBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(-1, 10));
     q("#scaleAddBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(1, 10));
     q("#scaleInput", HTML.pageHelper).addEventListener("wheel", (event) => BIFM.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5));
-    fetchImage(generateOnePixelURL());
-  }
-  function generateOnePixelURL() {
-    const href = window.location.href;
-    const meta = { href, version: "4.5.16", id: conf.id };
-    const base = window.btoa(JSON.stringify(meta));
-    return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }
 
   class PageHelper {

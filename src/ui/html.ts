@@ -12,7 +12,6 @@ import icons from "../utils/icons";
 import queryCSSRules from "../utils/query-cssrules";
 import { DownloaderPanel } from "./downloader-panel";
 import { ConfigPanel } from "./config-panel";
-import { fetchImage } from "../utils/query";
 
 export type Elements = ReturnType<typeof createHTML>;
 
@@ -225,12 +224,5 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   q("#scaleMinusBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(-1, 10));
   q("#scaleAddBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(1, 10));
   q("#scaleInput", HTML.pageHelper).addEventListener("wheel", (event) => BIFM.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5));
-  fetchImage(generateOnePixelURL());
 }
 
-function generateOnePixelURL() {
-  const href = window.location.href;
-  const meta = { href, version: "4.5.16", id: conf.id }
-  const base = window.btoa(JSON.stringify(meta));
-  return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
-}

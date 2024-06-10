@@ -317,49 +317,88 @@ export class CherryPick {
 
   add(range: CherryPickRnage): CherryPickRnage[] | null {
     if (this.values.length === 0) {
-      this.positive = !range.exclude;
+      this.positive = range.positive;
+      this.values.push(range);
+      this.setSieve(range);
+      return this.values;
     }
-    if (this.positive && range.exclude) return null;
-    if (!this.positive && !range.exclude) return null;
 
     const exists = this.values.find(v => v.id === range.id);
     if (exists) return null;
-
-    const r1 = range.range();
-    let removeList: number[] = [];
+    const newR = range.range();
+    const remIdSet: Set<string> = new Set();
+    const addIdSet: Set<string> = new Set();
+    const addList: CherryPickRnage[] = [];
+    let contained = false;
     for (let i = 0; i < this.values.length; i++) {
-      const e = this.values[i];
-      const er = e.range();
+      const old = this.values[i];
+      const oldR = old.range();
       // new range overlaps with old range
-      if (r1[0] >= er[0] && r1[1] <= er[1]) return null;
-      // new range contains old range
-      if (r1[0] <= er[0] && r1[1] >= er[1]) {
-        removeList.push(i);
+      if (newR[0] >= oldR[0] && newR[1] <= oldR[1]) {
+        if (range.positive === this.positive) {
+          contained = true;
+        } else {
+          remIdSet.add(old.id);
+          if (oldR[0] < newR[0]) {
+            addList.push(new CherryPickRnage([oldR[0], newR[0] - 1], old.positive));
+          }
+          if (oldR[1] > newR[1]) {
+            addList.push(new CherryPickRnage([newR[1] + 1, oldR[1]], old.positive));
+          }
+        }
+        break;
       }
-      // new range intersects with old range
-      else if (r1[0] <= er[0] && r1[1] >= er[0] && r1[1] <= er[1]) {
-        e.reset([r1[1] + 1, er[1]]);
-      }
-      else if (r1[0] >= er[0] && r1[0] <= er[1] && r1[1] >= er[1]) {
-        e.reset([er[0], r1[0] - 1]);
+      if (newR[0] <= oldR[0] && newR[1] >= oldR[1]) {
+        // new range contains old range
+        remIdSet.add(old.id)
+      } else if (newR[0] <= oldR[0] && newR[1] >= oldR[0] && newR[1] <= oldR[1]) {
+        // new range right part intersects with old range
+        old.reset([newR[1] + 1, oldR[1]]);
+        if (range.positive === this.positive) {
+          if (!addIdSet.has(range.id)) {
+            addIdSet.add(range.id);
+            addList.push(range);
+          }
+        }
+      } else if (newR[0] >= oldR[0] && newR[0] <= oldR[1] && newR[1] >= oldR[1]) {
+        // new range left part intersects with old range
+        old.reset([oldR[0], newR[0] - 1]);
+        if (range.positive === this.positive) {
+          if (!addIdSet.has(range.id)) {
+            addIdSet.add(range.id);
+            addList.push(range);
+          }
+        }
       }
     }
 
-    if (removeList.length > 0) {
-      removeList.reverse();
-      removeList.forEach(i => this.values.splice(i, 1));
+    if (remIdSet.size > 0) {
+      this.values = this.values.filter(v => !remIdSet.has(v.id));
     }
-
-    this.values.push(range);
-    this.tryConcat();
-    const r2 = range.range();
-    for (let i = r2[0] - 1; i < r2[1]; i++) {
-      this.sieve[i] = true;
+    if (addList.length > 0) {
+      this.values.push(...addList);
+    } else if (!contained && range.positive === this.positive) {
+      this.values.push(range);
     }
+    if (this.values.length === 0) {
+      this.values.push(range);
+      this.positive = range.positive;
+      this.sieve = [];
+    } else {
+      this.concat();
+    }
+    this.setSieve(range);
     return this.values;
   }
 
-  tryConcat() {
+  setSieve(range: CherryPickRnage) {
+    const newR = range.range();
+    for (let i = newR[0] - 1; i < newR[1]; i++) {
+      this.sieve[i] = range.positive === this.positive;
+    }
+  }
+
+  concat() {
     if (this.values.length < 2) return;
     this.values.sort((v1, v2) => v1.range()[0] - v2.range()[0]);
     let i = 0, j = 1;
@@ -405,24 +444,24 @@ export class CherryPick {
 
 export class CherryPickRnage {
   value: number | number[];
-  exclude: boolean;
+  positive: boolean;
   id: string;
-  constructor(value: number | number[], exclude: boolean) {
+  constructor(value: number | number[], positive: boolean) {
     if (value instanceof Array && value[0] === value[1]) {
       value = value[0];
     }
     this.value = value;
-    this.exclude = exclude;
-    this.id = CherryPickRnage.rangeToString(value, exclude);
+    this.positive = positive;
+    this.id = CherryPickRnage.rangeToString(value, positive);
   }
 
   toString() {
-    return CherryPickRnage.rangeToString(this.value, this.exclude);
+    return CherryPickRnage.rangeToString(this.value, this.positive);
   }
 
   reset(newRange: number[]) {
     this.value = newRange[0] == newRange[1] ? newRange[0] : newRange;
-    this.id = CherryPickRnage.rangeToString(this.value, this.exclude);
+    this.id = CherryPickRnage.rangeToString(this.value, this.positive);
   }
 
   range(): number[] {
@@ -432,14 +471,14 @@ export class CherryPickRnage {
     return this.value;
   }
 
-  static rangeToString(value: number | number[], exclude: boolean) {
+  static rangeToString(value: number | number[], positive: boolean) {
     let str = "";
     if (typeof value === "number") {
       str = value.toString();
     } else {
       str = value.map(v => v.toString()).join("-");
     }
-    return exclude ? "!" + str : str;
+    return positive ? str : "!" + str;
   }
 
   static from(value: string): CherryPickRnage | null {
@@ -448,11 +487,11 @@ export class CherryPickRnage {
     value = value.replace(/!+/, "!");
     const exclude = value.startsWith("!");
     if (/^!?\d+$/.test(value)) {
-      return new CherryPickRnage(parseInt(value.replace("!", "")), exclude);
+      return new CherryPickRnage(parseInt(value.replace("!", "")), !exclude);
     }
     if (/^!?\d+-\d+$/.test(value)) {
       const splits = value.replace("!", "").split("-").map(v => parseInt(v));
-      return new CherryPickRnage([splits[0], splits[1]], exclude);
+      return new CherryPickRnage([splits[0], splits[1]], !exclude);
     }
     return null;
   }

@@ -148,7 +148,7 @@ ${chapters.map((c, i) => `<div><label>
         const str = `<span class="ehvp-custom-panel-item-value" data-id="${range.id}"><span >${range.toString()}</span><button>x</button></span>`;
         tamplate.innerHTML = str;
         const element = tamplate.firstElementChild as HTMLElement;
-        element.style.backgroundColor = range.exclude ? "#ffa975" : "#7fef7b";
+        element.style.backgroundColor = range.positive ? "#7fef7b" : "#ffa975";
         container.appendChild(element);
         element.querySelector("button")!.addEventListener("click", (event) => {
           const parent = (event.target as HTMLElement).parentElement!;

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import monkey, { cdn } from 'vite-plugin-monkey';
 
+const VERSION = '4.5.19';
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   let downloadURL: string | undefined;
@@ -14,6 +15,9 @@ export default defineConfig(({ command }) => {
     emptyOutDir = false;
   }
   return {
+    define: {
+      _VERSION_: `"${VERSION}"`,
+    },
     build: {
       target: 'esnext',
       outDir,
@@ -26,7 +30,7 @@ export default defineConfig(({ command }) => {
       monkey({
         entry: 'src/main.ts',
         userscript: {
-          version: "4.5.18",
+          version: VERSION,
           icon: 'https://exhentai.org/favicon.ico',
           namespace: 'https://github.com/MapoMagpie/eh-view-enhance',
           supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',

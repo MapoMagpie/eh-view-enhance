@@ -1,8 +1,8 @@
 import { conf, saveConf } from "../config";
-import { matchers } from "../platform/adapt";
+import { getMatchers } from "../platform/adapt";
 
 export default function createExcludeURLPanel(root: HTMLElement, urls: string[], autoOpen: boolean = false) {
-  const workURLs = matchers.flatMap(m => m.workURLs()).map(r => r.source);
+  const workURLs = getMatchers().flatMap(m => m.workURLs()).map(r => r.source);
   const HTML_STR = `
 <div class="ehvp-custom-panel">
   <div class="ehvp-custom-panel-title">

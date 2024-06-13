@@ -81,11 +81,14 @@ export class TwitterMatcher extends BaseMatcher {
   uuid = uuid();
   postCount: number = 0;
   mediaCount: number = 0;
+  userID?: string;
 
   private async fetchUserMedia(cursor?: string): Promise<[Item[], string | undefined]> {
-    let userID = getUserID();
-    if (!userID) throw new Error("Cannot obatained User ID");
-    const variables = `{"userId":"${userID}","count":20,${cursor ? "\"cursor\":\"" + cursor + "\"," : ""}"includePromotedContent":false,"withClientEventToken":false,"withBirdwatchNotes":false,"withVoice":true,"withV2Timeline":true}`
+    if (!this.userID) {
+      this.userID = getUserID();
+    }
+    if (!this.userID) throw new Error("Cannot obatained User ID");
+    const variables = `{"userId":"${this.userID}","count":20,${cursor ? "\"cursor\":\"" + cursor + "\"," : ""}"includePromotedContent":false,"withClientEventToken":false,"withBirdwatchNotes":false,"withVoice":true,"withV2Timeline":true}`
     const features = "&features=%7B%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_media_interstitial_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
     const url = `${window.location.origin}/i/api/graphql/aQQLnkexAl5z9ec_UgbEIA/UserMedia?variables=${encodeURIComponent(variables)}${features}`;
     const headers = new Headers();
@@ -200,23 +203,20 @@ export class TwitterMatcher extends BaseMatcher {
   }
 
   workURL(): RegExp {
-    return /(twitter|x).com\/\w+\/media/
+    return /(x|twitter).com\/(?!(home|explore|notifications|messages)$|i\/|search\?)\w+/
   }
 
   galleryMeta(doc: Document): GalleryMeta {
-    const userName = window.location.href.match(/twitter.com\/(\w+)\/?/)?.[1];
+    const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2];
     return new GalleryMeta(window.location.href, `twitter-${userName || doc.title}-${this.postCount}-${this.mediaCount}`);
   }
 
 }
 
 function getUserID(): string | undefined {
-  try {
-    const jsonRaw = document.querySelector("script[data-testid=UserProfileSchema-test]")?.textContent;
-    if (!jsonRaw) throw new Error("NotFound: script[data-testid=UserProfileSchema-test]");
-    return JSON.parse(jsonRaw)?.author?.identifier;
-  } catch (error) {
-    evLog("error", `Cannot obatained User ID: ${error}`);
-    return undefined;
-  }
+  const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2] || "lililjiliijili";
+  const followBTNs = Array.from(document.querySelectorAll<HTMLButtonElement>("button[data-testid][aria-label^='Follow']"));
+  if (followBTNs.length === 0) return undefined;
+  const theBTN = followBTNs.find(btn => btn.getAttribute("aria-label")?.includes(`@${userName}`)) || followBTNs[0];
+  return theBTN.getAttribute("data-testid")!.match(/(\d+)/)?.[1];
 }

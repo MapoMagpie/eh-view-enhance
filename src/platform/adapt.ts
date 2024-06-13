@@ -13,26 +13,29 @@ import { SteamMatcher } from "./steam";
 import { TwitterMatcher } from "./twitter";
 import { WnacgMatcher } from "./wnacg";
 
-export const matchers: Matcher[] = [
-  new EHMatcher(),
-  new NHMatcher(),
-  new HitomiMather(),
-  new PixivMatcher(),
-  new SteamMatcher(),
-  new RokuHentaiMatcher(),
-  new Comic18Matcher(),
-  new DanbooruDonmaiMatcher(),
-  new Rule34Matcher(),
-  new YandereMatcher(),
-  new KonachanMatcher(),
-  new GelBooruMatcher(),
-  new IMHentaiMatcher(),
-  new TwitterMatcher(),
-  new WnacgMatcher(),
-  new HentaiNexusMatcher(),
-];
+export function getMatchers(): Matcher[] {
+  return [
+    new EHMatcher(),
+    new NHMatcher(),
+    new HitomiMather(),
+    new PixivMatcher(),
+    new SteamMatcher(),
+    new RokuHentaiMatcher(),
+    new Comic18Matcher(),
+    new DanbooruDonmaiMatcher(),
+    new Rule34Matcher(),
+    new YandereMatcher(),
+    new KonachanMatcher(),
+    new GelBooruMatcher(),
+    new IMHentaiMatcher(),
+    new TwitterMatcher(),
+    new WnacgMatcher(),
+    new HentaiNexusMatcher(),
+  ];
+}
 
 export function adaptMatcher(url: string): Matcher | null {
+  const matchers = getMatchers();
   const checkValid = (urls: string[]) => {
     const workURLs = matchers.flatMap(m => m.workURLs()).map(r => r.source);
     // check excludeURLs health, remove invalid RegExp

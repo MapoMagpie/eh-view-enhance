@@ -66,6 +66,7 @@ function main(MATCHER: Matcher): DestoryFunc {
     IFQ.length = 0;
     EBUS.reset();
     HTML.root.remove();
+    HTML.styleSheel.remove();
     return sleep(500);
   }
 }

@@ -48,18 +48,19 @@ export class VideoControl {
     ui.innerHTML = `
 <div>
   <button id="bifm-vid-ctl-play" class="bifm-vid-ctl-btn">${PLAY_ICON}</button>
-  <button id="bifm-vid-ctl-mute" class="bifm-vid-ctl-btn">▶️</button>
-  <div id="bifm-vid-ctl-volume" class="bifm-vid-ctl-pg">
-    <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
-  </div>
+  <button id="bifm-vid-ctl-mute" class="bifm-vid-ctl-btn">${MUTED_ICON}</button>
+    <div id="bifm-vid-ctl-volume" class="bifm-vid-ctl-pg">
+      <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
+    </div>
   <span id="bifm-vid-ctl-time" class="bifm-vid-ctl-span">00:00</span>
   <span class="bifm-vid-ctl-span">/</span>
   <span id="bifm-vid-ctl-duration" class="bifm-vid-ctl-span">10:00</span>
+  <!-- <span id = "bifm-vid-ctl-drag" class="bifm-vid-ctl-span" style = "cursor: grab;">✠</span> -->
 </div>
 <div>
-  <div id="bifm-vid-ctl-pg" class="bifm-vid-ctl-pg">
-    <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
-  </div>
+    <div id="bifm-vid-ctl-pg" class="bifm-vid-ctl-pg">
+      <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
+    </div>
 </div>
 `;
     root.appendChild(ui);

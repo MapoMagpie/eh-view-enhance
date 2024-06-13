@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.18
+// @version            4.5.19
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -4067,11 +4067,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     uuid = uuid();
     postCount = 0;
     mediaCount = 0;
+    userID;
     async fetchUserMedia(cursor) {
-      let userID = getUserID();
-      if (!userID)
+      if (!this.userID) {
+        this.userID = getUserID();
+      }
+      if (!this.userID)
         throw new Error("Cannot obatained User ID");
-      const variables = `{"userId":"${userID}","count":20,${cursor ? '"cursor":"' + cursor + '",' : ""}"includePromotedContent":false,"withClientEventToken":false,"withBirdwatchNotes":false,"withVoice":true,"withV2Timeline":true}`;
+      const variables = `{"userId":"${this.userID}","count":20,${cursor ? '"cursor":"' + cursor + '",' : ""}"includePromotedContent":false,"withClientEventToken":false,"withBirdwatchNotes":false,"withVoice":true,"withV2Timeline":true}`;
       const features = "&features=%7B%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_media_interstitial_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
       const url = `${window.location.origin}/i/api/graphql/aQQLnkexAl5z9ec_UgbEIA/UserMedia?variables=${encodeURIComponent(variables)}${features}`;
       const headers = new Headers();
@@ -4181,23 +4184,20 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       };
     }
     workURL() {
-      return /(twitter|x).com\/\w+\/media/;
+      return /(x|twitter).com\/(?!(home|explore|notifications|messages)$|i\/|search\?)\w+/;
     }
     galleryMeta(doc) {
-      const userName = window.location.href.match(/twitter.com\/(\w+)\/?/)?.[1];
+      const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2];
       return new GalleryMeta(window.location.href, `twitter-${userName || doc.title}-${this.postCount}-${this.mediaCount}`);
     }
   }
   function getUserID() {
-    try {
-      const jsonRaw = document.querySelector("script[data-testid=UserProfileSchema-test]")?.textContent;
-      if (!jsonRaw)
-        throw new Error("NotFound: script[data-testid=UserProfileSchema-test]");
-      return JSON.parse(jsonRaw)?.author?.identifier;
-    } catch (error) {
-      evLog("error", `Cannot obatained User ID: ${error}`);
+    const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2] || "lililjiliijili";
+    const followBTNs = Array.from(document.querySelectorAll("button[data-testid][aria-label^='Follow']"));
+    if (followBTNs.length === 0)
       return void 0;
-    }
+    const theBTN = followBTNs.find((btn) => btn.getAttribute("aria-label")?.includes(`@${userName}`)) || followBTNs[0];
+    return theBTN.getAttribute("data-testid").match(/(\d+)/)?.[1];
   }
 
   class WnacgMatcher extends BaseMatcher {
@@ -4269,37 +4269,43 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
-  const matchers = [
-    new EHMatcher(),
-    new NHMatcher(),
-    new HitomiMather(),
-    new PixivMatcher(),
-    new SteamMatcher(),
-    new RokuHentaiMatcher(),
-    new Comic18Matcher(),
-    new DanbooruDonmaiMatcher(),
-    new Rule34Matcher(),
-    new YandereMatcher(),
-    new KonachanMatcher(),
-    new GelBooruMatcher(),
-    new IMHentaiMatcher(),
-    new TwitterMatcher(),
-    new WnacgMatcher(),
-    new HentaiNexusMatcher()
-  ];
+  function getMatchers() {
+    return [
+      new EHMatcher(),
+      new NHMatcher(),
+      new HitomiMather(),
+      new PixivMatcher(),
+      new SteamMatcher(),
+      new RokuHentaiMatcher(),
+      new Comic18Matcher(),
+      new DanbooruDonmaiMatcher(),
+      new Rule34Matcher(),
+      new YandereMatcher(),
+      new KonachanMatcher(),
+      new GelBooruMatcher(),
+      new IMHentaiMatcher(),
+      new TwitterMatcher(),
+      new WnacgMatcher(),
+      new HentaiNexusMatcher()
+    ];
+  }
   function adaptMatcher(url) {
+    const matchers = getMatchers();
+    const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
     const checkValid = (urls) => {
-      const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
-      const newExcludeURLs = urls.filter((source) => {
-        return workURLs.indexOf(source) > -1;
-      });
-      if (newExcludeURLs.length !== urls.length) {
-        urls = newExcludeURLs;
-        saveConf(conf);
-      }
+      const newURLs2 = urls.filter((u) => workURLs.includes(u));
+      return newURLs2.length === urls.length ? null : newURLs2;
     };
-    checkValid(conf.excludeURLs);
-    checkValid(conf.autoOpenExcludeURLs);
+    let newURLs = checkValid(conf.excludeURLs);
+    if (newURLs) {
+      conf.excludeURLs = newURLs;
+      saveConf(conf);
+    }
+    newURLs = checkValid(conf.autoOpenExcludeURLs);
+    if (newURLs) {
+      conf.autoOpenExcludeURLs = newURLs;
+      saveConf(conf);
+    }
     if (conf.excludeURLs.length < matchers.length) {
       for (const regex of conf.excludeURLs) {
         if (new RegExp(regex).test(url)) {
@@ -4615,7 +4621,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   };
 
   function createExcludeURLPanel(root, urls, autoOpen = false) {
-    const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
+    const workURLs = getMatchers().flatMap((m) => m.workURLs()).map((r) => r.source);
     const HTML_STR = `
 <div class="ehvp-custom-panel">
   <div class="ehvp-custom-panel-title">
@@ -5052,8 +5058,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
   .bifm-vid-ctl {
     bottom: 0.2rem;
-    left: 30%;
-    width: 40vw;
+    ${conf.pageHelperAbLeft === "unset" ? "left: 0.2rem;" : "right: 0.2rem;"}
   }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
@@ -5420,11 +5425,12 @@ html {
 .bifm-vid-ctl {
   position: fixed;
   z-index: 2010;
+  padding: 3px 10px;
 }
 .bifm-vid-ctl > div {
-  line-height: 1.2rem;
   display: flex;
   align-items: center;
+  line-height: 1.2rem;
 }
 .bifm-vid-ctl > div > * {
   margin: 0 0.1rem;
@@ -5446,7 +5452,7 @@ html {
   cursor: pointer;
 }
 #bifm-vid-ctl-volume {
-  width: 7rem;
+  width: 5rem;
   height: 0.5rem;
 }
 .bifm-vid-ctl-pg {
@@ -5459,8 +5465,11 @@ html {
   height: 0.2rem;
   background-color: #333333ee;
 }
+.bifm-vid-ctl:hover {
+  background-color: var(--ehvp-background-color);
+}
 .bifm-vid-ctl:hover #bifm-vid-ctl-pg {
-  height: 0.7rem;
+  height: 0.8rem;
 }
 .bifm-vid-ctl-pg-inner {
   background-color: #ffffffa0;
@@ -5930,7 +5939,7 @@ html {
   }
   function generateOnePixelURL() {
     const href = window.location.href;
-    const meta = { href, version: "4.5.18", id: conf.id };
+    const meta = { href, version: "4.5.19", id: conf.id };
     const base = window.btoa(JSON.stringify(meta));
     return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }
@@ -6789,18 +6798,19 @@ ${chapters.map((c, i) => `<div><label>
       ui.innerHTML = `
 <div>
   <button id="bifm-vid-ctl-play" class="bifm-vid-ctl-btn">${PLAY_ICON}</button>
-  <button id="bifm-vid-ctl-mute" class="bifm-vid-ctl-btn">▶️</button>
-  <div id="bifm-vid-ctl-volume" class="bifm-vid-ctl-pg">
-    <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
-  </div>
+  <button id="bifm-vid-ctl-mute" class="bifm-vid-ctl-btn">${MUTED_ICON}</button>
+    <div id="bifm-vid-ctl-volume" class="bifm-vid-ctl-pg">
+      <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
+    </div>
   <span id="bifm-vid-ctl-time" class="bifm-vid-ctl-span">00:00</span>
   <span class="bifm-vid-ctl-span">/</span>
   <span id="bifm-vid-ctl-duration" class="bifm-vid-ctl-span">10:00</span>
+  <!-- <span id = "bifm-vid-ctl-drag" class="bifm-vid-ctl-span" style = "cursor: grab;">✠</span> -->
 </div>
 <div>
-  <div id="bifm-vid-ctl-pg" class="bifm-vid-ctl-pg">
-    <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
-  </div>
+    <div id="bifm-vid-ctl-pg" class="bifm-vid-ctl-pg">
+      <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
+    </div>
 </div>
 `;
       root.appendChild(ui);
@@ -7687,6 +7697,7 @@ ${chapters.map((c, i) => `<div><label>
       IFQ.length = 0;
       EBUS.reset();
       HTML.root.remove();
+      HTML.styleSheel.remove();
       return sleep(500);
     };
   }
@@ -7707,20 +7718,18 @@ ${chapters.map((c, i) => `<div><label>
       }
     }, 20);
   }
-  (() => {
+  setTimeout(() => {
     const oldPushState = history.pushState;
     history.pushState = function pushState(...args) {
-      let ret = oldPushState.apply(this, args);
       reMain();
-      return ret;
+      return oldPushState.apply(this, args);
     };
     const oldReplaceState = history.replaceState;
     history.replaceState = function replaceState(...args) {
-      let ret = oldReplaceState.apply(this, args);
-      reMain();
-      return ret;
+      return oldReplaceState.apply(this, args);
     };
+    window.addEventListener("popstate", reMain);
     reMain();
-  })();
+  }, 300);
 
 })(saveAs, pica, zip, Hammer);

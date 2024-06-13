@@ -275,8 +275,7 @@ export function loadStyleSheel() {
   }
   .bifm-vid-ctl {
     bottom: 0.2rem;
-    left: 30%;
-    width: 40vw;
+    ${conf.pageHelperAbLeft === "unset" ? "left: 0.2rem;" : "right: 0.2rem;"}
   }
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
@@ -643,11 +642,12 @@ html {
 .bifm-vid-ctl {
   position: fixed;
   z-index: 2010;
+  padding: 3px 10px;
 }
 .bifm-vid-ctl > div {
-  line-height: 1.2rem;
   display: flex;
   align-items: center;
+  line-height: 1.2rem;
 }
 .bifm-vid-ctl > div > * {
   margin: 0 0.1rem;
@@ -669,7 +669,7 @@ html {
   cursor: pointer;
 }
 #bifm-vid-ctl-volume {
-  width: 7rem;
+  width: 5rem;
   height: 0.5rem;
 }
 .bifm-vid-ctl-pg {
@@ -682,8 +682,11 @@ html {
   height: 0.2rem;
   background-color: #333333ee;
 }
+.bifm-vid-ctl:hover {
+  background-color: var(--ehvp-background-color);
+}
 .bifm-vid-ctl:hover #bifm-vid-ctl-pg {
-  height: 0.7rem;
+  height: 0.8rem;
 }
 .bifm-vid-ctl-pg-inner {
   background-color: #ffffffa0;

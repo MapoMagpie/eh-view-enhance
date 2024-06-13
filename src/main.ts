@@ -90,18 +90,16 @@ function reMain() {
 
 // https://stackoverflow.com/questions/6390341/how-to-detect-if-url-has-changed-after-hash-in-javascript
 // the firefox in twitter.com has a bug that it doesn't work with history.pushState when open the new tab
-(() => {
+setTimeout(() => {
   const oldPushState = history.pushState;
   history.pushState = function pushState(...args: any) {
-    let ret = oldPushState.apply(this, args);
     reMain();
-    return ret;
+    return oldPushState.apply(this, args);
   };
   const oldReplaceState = history.replaceState;
   history.replaceState = function replaceState(...args: any) {
-    let ret = oldReplaceState.apply(this, args);
-    reMain();
-    return ret;
-  };
+    return oldReplaceState.apply(this, args);
+  }
+  window.addEventListener("popstate", reMain);
   reMain();
-})();
+}, 300);

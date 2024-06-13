@@ -36,20 +36,22 @@ export function getMatchers(): Matcher[] {
 
 export function adaptMatcher(url: string): Matcher | null {
   const matchers = getMatchers();
+  const workURLs = matchers.flatMap(m => m.workURLs()).map(r => r.source);
+  // check excludeURLs health, remove invalid RegExp
   const checkValid = (urls: string[]) => {
-    const workURLs = matchers.flatMap(m => m.workURLs()).map(r => r.source);
-    // check excludeURLs health, remove invalid RegExp
-    const newExcludeURLs = urls.filter(source => {
-      return workURLs.indexOf(source) > -1;
-    });
-    if (newExcludeURLs.length !== urls.length) {
-      urls = newExcludeURLs;
-      saveConf(conf);
-    }
+    const newURLs = urls.filter(u => workURLs.includes(u));
+    return newURLs.length === urls.length ? null : newURLs;
   };
-  checkValid(conf.excludeURLs);
-  checkValid(conf.autoOpenExcludeURLs);
-
+  let newURLs = checkValid(conf.excludeURLs);
+  if (newURLs) {
+    conf.excludeURLs = newURLs;
+    saveConf(conf);
+  }
+  newURLs = checkValid(conf.autoOpenExcludeURLs);
+  if (newURLs) {
+    conf.autoOpenExcludeURLs = newURLs;
+    saveConf(conf);
+  }
   // if all sites are excluded, don't exclude any
   if (conf.excludeURLs.length < matchers.length) {
     for (const regex of conf.excludeURLs) {

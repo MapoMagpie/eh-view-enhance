@@ -2,7 +2,6 @@ import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, conf, saveConf, 
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
 import { PageFetcher } from "../page-fetcher";
-import { i18n } from "../utils/i18n";
 import parseKey from "../utils/keyboard";
 import { fetchImage } from "../utils/query";
 import queryCSSRules from "../utils/query-cssrules";
@@ -11,6 +10,7 @@ import relocateElement from "../utils/relocate-element";
 import scroller from "../utils/scroller";
 import createExcludeURLPanel from "./exclude-urls";
 import { FullViewGridManager } from "./full-view-grid-manager";
+import createHelpPanel from "./help";
 import { Elements } from "./html";
 import createKeyboardCustomPanel from "./keyboard-custom";
 import { PageHelper } from "./page-helper";
@@ -409,21 +409,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   // 显示简易指南事件
   function showGuideEvent() {
-    const oldGuide = document.getElementById("ehvp-guide");
-    if (oldGuide) {
-      oldGuide.remove();
-    }
-    const guideElement = document.createElement("div");
-    guideElement.setAttribute("id", "ehvp-guide")
-    guideElement.innerHTML = `<div style="width: 50vw; min-height: 300px; border: 1px solid black; background-color: rgba(255, 255, 255, 0.8); font-weight: bold; line-height: 30px">${i18n.help.get()}</div>`;
-    guideElement.classList.add("ehvp-full-panel");
-    guideElement.setAttribute("style", `align-items: center; color: black; text-align: left;`);
-    guideElement.addEventListener("click", () => guideElement.remove());
-    if (HTML.root.classList.contains("ehvp-root-collapse")) {
-      document.body.after(guideElement);
-    } else {
-      HTML.root.appendChild(guideElement);
-    }
+    createHelpPanel(document.body);
   };
 
   function showKeyboardCustomEvent() {

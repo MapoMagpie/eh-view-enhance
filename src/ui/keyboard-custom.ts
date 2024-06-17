@@ -45,6 +45,7 @@ export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents
     <span>Custom Keyboard</span>
     <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
   </div>
+  <div class="ehvp-custom-panel-container">
     <div class="ehvp-custom-panel-content">
       ${Object.entries(keyboardEvents.inMain).map(([id]) => `
         <div class="ehvp-custom-panel-item">
@@ -84,6 +85,7 @@ export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents
         </div>
       `).join("")}
     </div>
+  </div>
 </div>
 `;
   const fullPanel = document.createElement("div");

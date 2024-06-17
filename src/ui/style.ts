@@ -554,9 +554,10 @@ export function loadStyleSheel() {
 .ehvp-custom-panel {
   min-width: 50rem;
   min-height: 50vh;
+  max-width: 80rem;
+  max-height: 80vh;
   background-color: #333343aa;
   border: 1px solid #000000;
-  overflow: auto;
   display: flex;
   flex-direction: column;
   text-align: start;
@@ -575,6 +576,9 @@ export function loadStyleSheel() {
 }
 .ehvp-custom-panel-close:hover {
   background-color: #c3c0e0;
+}
+.ehvp-custom-panel-container {
+  overflow: auto;
 }
 .ehvp-custom-panel-content {
   border: 1px solid #000000;
@@ -635,6 +639,23 @@ export function loadStyleSheel() {
 .ehvp-custom-panel-list-item-disable {
   text-decoration: line-through;
   color: red;
+}
+.ehvp-help-panel > div > h2 {
+  color: #c1ffc9;
+}
+.ehvp-help-panel > div > p {
+  font-size: 1.1rem;
+  margin-left: 1rem;
+  font-weight: 600;
+}
+.ehvp-help-panel > div > ul {
+  font-size: 1rem;
+}
+.ehvp-help-panel > div a {
+  color: #ff5959;
+}
+.ehvp-help-panel > div strong {
+  color: #d76d00;
 }
 html {
   font-size: unset !important;

@@ -114,69 +114,125 @@ export const i18n = {
   cherryPick: new I18nValue("Cherry Pick", "范围选择"),
 
   help: new I18nValue(`
-    <h1>GUIDE:</h1>
-    <ol>
-      <li>If you are browsing E-Hentai, please click <a style="color: red" id="renamelink" href="${window.location.href}?inline_set=ts_l">Here</a> to switch to Lager thumbnail mode for clearer thumbnails. (need login e-hentai)</li>
-      <li>Click <span style="background-color: gray;">&lessdot;📖&gtdot;</span> from left-bottom corner, entry reading.</li>
-      <li>Just a monment, all thumbnail will exhibited in grid, <strong style="color: red;">click</strong> one of thumbnails into big image mode.</li>
-      <li>You can use the <strong style="color: red;">mouse middle-click</strong> on a thumbnail to open the href of the image in new tab.</li>
-      <li><strong style="color: orange">Image quality:</strong>For e-hentai，you can enable control-bar > CONF > Image Raw, which will directly download the uploaded original uncompressed images, but it will consume more quotas. Generally, the compressed files provided by E-Hentai are already clear enough.</li>
-      <li><strong style="color: orange">Big image:</strong>click thumbnail image, into big image mode, use mouse wheel switch to next or prev</li>
-      <li><strong style="color: orange">Keyboard:</strong>
-        <table>
-          <tr><td>Scale Image</td><td>mouse right + wheel or -/=</td></tr>
-          <tr><td>Open  Image(In thumbnails)</td><td>Enter</td></tr>
-          <tr><td>Exit  Image(In big mode)</td><td>Enter/Esc</td></tr>
-          <tr><td>Open Specific Page(In thumbnails)</td><td>Input number(no echo) + Enter</td></tr>
-          <tr><td>Switch Page</td><td>→/←</td></tr>
-          <tr><td>Scroll Image</td><td>↑/↓/Space</td></tr>
-          <tr><td>Toggle Auto Load</td><td>p</td></tr>
-        </table>
-      </li>
-      <li><strong style="color: orange">Download:</strong>You can click on the download button in the download panel to quickly load all the images. You can still continue browsing the images. Downloading and viewing large images are integrated, and you can click on Download Loaded in the download panel to save the images at any time.</li>
-      <li><strong style="color: orange">Feedback:</strong>
-        Click 
-        <span>
-        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance/issues" target="_blank" alt="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
-        </span>
-        to provide feedback on issues, Give me a star if you like this script.
-        <span>
-        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank" alt="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
-        </span>
-      </li>
-    </ol>
-  `, `
-    <h1>操作说明:</h1>
-    <ol>
-      <li>如果你正在浏览E绅士，请点击<a style="color: red" id="renamelink" href="${window.location.href}?inline_set=ts_l">此处</a>切换到Lager缩略图模式，以获取更清晰的缩略图。</li>
-      <li>点击左下角 <span style="background-color: gray;">&lessdot;📖&gtdot;</span> 展开，进入阅读模式。</li>
-      <li>稍等片刻后，缩略图会全屏陈列在页面上，<strong style="color: red;">点击</strong>某一缩略图进入大图浏览模式。</li>
-      <li>你可以在某个缩略图上使用<strong style="color: red;">鼠标中键</strong>来打开该图片所在的页面。</li>
-      <li><strong style="color: orange">图片质量:</strong>图片质量: 对于E绅士，你可以在控制栏>配置，启用原图模式，这将直接下载上传原档未压缩的图片，但会消耗更多的配额。一般来说E绅士默认提供的压缩档已经足够清晰。</li>
-      <li><strong style="color: orange">大图展示:</strong>点击缩略图，可以展开大图，在大图上滚动切换上一张下一张图片</li>
-      <li><strong style="color: orange">键盘操作:</strong>
-        <table>
-          <tr><td>图片缩放</td><td>鼠标右键+滚轮 或 -/=</td></tr>
-          <tr><td>打开大图(缩略图模式下)</td><td>回车</td></tr>
-          <tr><td>退出大图(大图模式下)</td><td>回车/Esc</td></tr>
-          <tr><td>打开指定图片(缩略图模式下)</td><td>直接输入数字(不回显) + 回车</td></tr>
-          <tr><td>切换图片</td><td>→/←</td></tr>
-          <tr><td>滚动图片</td><td>↑/↓</td></tr>
-          <tr><td>开关自动加载</td><td>p</td></tr>
-        </table>
-      </li>
-      <li><strong style="color: orange">下载功能:</strong>你可以在下载面板中点击下载，这将快速加载所有的图片，你依旧可以继续浏览图片。下载与大图浏览是一体的，你随时可以在下载面板点击<strong style="color: orange">下载已加载的</strong>保存图片。</li>
-      <li><strong style="color: orange">问题反馈:</strong>
-        点击 
-        <span>
-        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance/issues" target="_blank" alt="Issue MapoMagpie/eh-view-enhance on GitHub">Issue</a>
-        </span>
-        反馈你的问题或建议，如果你喜欢这个脚本，给我一个star吧。 
-        <span>
-        <a style="color: #ff6961;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank" alt="Star MapoMagpie/eh-view-enhance on GitHub">Star</a>
-        </span>
-      </li>
-    </ol>
-  `),
+<h2>[How to Use? Where is the Entry?]</h2>
+<p>The script typically activates on gallery homepages or artist homepages. For example, on E-Hentai, it activates on the gallery detail page, or on Twitter, it activates on the user&#39;s homepage or tweets.</p>
+<p>When active, a <strong>&lt;🎑&gt;</strong> icon will appear at the bottom left of the page. Click it to enter the script&#39;s reading interface.</p>
+<h2>[Can the Script&#39;s Entry Point or Control Bar be Relocated?]</h2>
+<p>Yes! At the bottom of the configuration panel, there&#39;s a <strong>Drag to Move</strong> option. Drag the icon to reposition the control bar anywhere on the page.</p>
+<h2>[Can the Script Auto-Open When Navigating to the Corresponding Page?]</h2>
+<p>Yes! There is an <strong>Auto Open</strong> option in the configuration panel. Enable it to activate this feature.</p>
+<h2>[How to Zoom Images?]</h2>
+<p>There are several ways to zoom images in big image reading mode:</p>
+<ul>
+<li>Right-click + mouse wheel</li>
+<li>Keyboard shortcuts</li>
+<li>Zoom controls on the control bar: click the -/+ buttons, scroll the mouse wheel over the numbers, or drag the numbers left or right.</li>
+</ul>
+<h2>[How to Open Images from a Specific Page?]</h2>
+<p>In the thumbnail list interface, simply type the desired page number on your keyboard (without any prompt) and press Enter or your custom shortcuts.</p>
+<h2>[About the Thumbnail List]</h2>
+<p>The thumbnail list interface is the script&#39;s most important feature, allowing you to quickly get an overview of the entire gallery.</p>
+<p>Thumbnails are also lazy-loaded, typically loading about 20 images, which is comparable to or even fewer requests than normal browsing.</p>
+<p>Pagination is also lazy-loaded, meaning not all gallery pages load at once. Only when you scroll near the bottom does the next page load.</p>
+<p>Don&#39;t worry about generating a lot of requests by quickly scrolling through the thumbnail list; the script is designed to handle this efficiently.</p>
+<h2>[About Auto-Loading and Pre-Loading]</h2>
+<p>By default, the script automatically and slowly loads large images one by one.</p>
+<p>You can still click any thumbnail to start loading and reading from that point, at which time auto-loading will stop and pre-load 3 images from the reading position.</p>
+<p>Just like the thumbnail list, you don&#39;t need to worry about generating a lot of loading requests by fast scrolling.</p>
+<h2>[About Downloading]</h2>
+<p>Downloading is integrated with large image loading. When you finish browsing a gallery and want to save and download the images, you can click <strong>Start Download</strong> in the download panel. don&#39;t worry about re-downloading already loaded images.</p>
+<p>You can also directly click <strong>Start Download</strong> in the download panel without reading.</p>
+<p>Alternatively, click the <strong>Take Loaded</strong> button in the download panel if some images consistently fail to load. This will save the images that have already been loaded.</p>
+<p>The download panel&#39;s status indicators provide a clear view of image loading progress.</p>
+<h2>[Can I Select the Download Range?]</h2>
+<p>Yes, the download panel has an option to select the download range(Cherry Pick), which applies to downloading, auto-loading, and pre-loading.</p>
+<p>Even if an image is excluded from the download range, you can still click its thumbnail to view it, which will load the corresponding large image.</p>
+<h2>[How to Select Images on Some Illustration Sites?]</h2>
+<p>While the script doesn&#39;t directly provide an image selection feature, several methods can achieve a similar effect:</p>
+<ul>
+<li>Middle-click on a thumbnail to open the original image url, then right-click to save the image.</li>
+<li>Set the download range to 1 in the download panel. This excludes all images except the first one. Then, click on thumbnails of interest in the list, which will load the corresponding large images. After selecting, clear the download range and click <strong>Take Loaded</strong> to package and download your selected images.</li>
+<li>Turn off auto-loading and set pre-loading to 1 in the configuration panel, then proceed as described above.</li>
+</ul>
+<h2>[Can I Operate the Script via Keyboard?]</h2>
+<p>Yes! There&#39;s a <strong>Keyboard</strong> button at the bottom of the configuration panel. Click it to view or configure keyboard operations.</p>
+<p>You can even configure it for one-handed full keyboard operation, freeing up your other hand!</p>
+<h2>[How to Disable Auto-Open on Certain Sites?]</h2>
+<p>There&#39;s an <strong>Auto Open Excludes</strong> button at the bottom of the configuration panel. Click it to exclude certain sites from auto-opening. For example, Twitter or Booru-type sites.</p>
+<h2>[How to Disable This Script on Certain Sites?]</h2>
+<p>There&#39;s a <strong>Excludes</strong> button at the bottom of the configuration panel to exclude specific sites. Once excluded, the script will no longer activate on those sites.</p>
+<p>To re-enable a site, you need to do so from a site that hasn&#39;t been excluded.</p>
+<h2>[How to Feed the Author]</h2>
+<p>Give me a star on <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a> or a good review on <a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>.</p>
+<p>Please do not review on Greasyfork, as its notification system cannot track subsequent feedback. Many people leave an issue and never back.
+Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/issues">issue</a></p>
+<h2>[How to Reopen the Guide?]</h2>
+<p>Click the <strong>Help</strong> button at the bottom of the configuration panel.</p>
+<h2>[Some Unresolved Issues]</h2>
+<ul>
+<li>When using Firefox to open Twitter&#39;s homepage in a new tab, then navigating to the user&#39;s homepage, the script doesn&#39;t activate and requires page refresh.</li>
+<li>Sometimes the Download function on Twitter doesn&#39;t work.</li>
+</ul>
+`, `
+<h2>[如何使用？入口在哪里？]</h2>
+<p>脚本一般生效于画廊详情页或画家的主页或作品页。比如在E-Hentai上，生效于画廊详情页，或者在Twitter上，生效于推主的主页或推文。</p>
+<p>生效时，在页面的左下方会有一个**&lt;🎑&gt;**图标，点击后即可进入脚本的阅读界面。</p>
+<h2>[脚本的入口或控制栏可以更改位置吗？]</h2>
+<p>可以！在配置面板的下方，有一个<strong>拖拽移动</strong>的选项，对着图标进行拖动，你可以将控制栏移动到页面上的任意位置。</p>
+<h2>[进入对应的页面的，可以自动打开脚本吗？]</h2>
+<p>可以！在配置面板中，有一个<strong>自动打开</strong>的选项，启用即可。</p>
+<h2>[如何缩放图片？]</h2>
+<p>有几种方式可以在大图阅读模式中缩放图片：</p>
+<ul>
+<li>鼠标右键+滚轮</li>
+<li>键盘快捷键</li>
+<li>控制栏上的缩放控制，点击-/+按钮，或者在数字上滚动滚轮，或者左右拖动数字。</li>
+</ul>
+<h2>[如何打开指定页数的图片？]</h2>
+<p>在缩略图列表界面中，直接在键盘上输入数字(没有提示)，然后按下回车或自定义的快捷键。</p>
+<h2>[关于缩略图列表。]</h2>
+<p>缩略图列表是脚本最重要的特性，可以让你快速地了解整个画廊的情况。</p>
+<p>并且缩略图也是延迟加载的，通常会加载20张左右，与正常浏览所发出的请求相当，甚至更低。</p>
+<p>并且分页也是延迟加载的，并不会一次性加载画廊的所有分页，只有滚动到接近底部时，才会加载下一页。</p>
+<p>不用担心因为在缩略图列表中快速滚动而导致发出大量的请求，脚本充分考虑到了这一点。</p>
+<h2>[关于自动加载和预加载。]</h2>
+<p>默认配置下，脚本会自动且缓慢地一张接一张地加载大图。</p>
+<p>你仍然可以点击任意位置的缩略图，并从该处开始加载并阅读，此时会自动加载会停止并从阅读的位置预加载3张图片。</p>
+<p>同缩略图列表一样，无需担心因为快速滚动而导致发出大量的加载请求。</p>
+<h2>[关于下载。]</h2>
+<p>下载与大图加载是一体的，当你浏览完画廊时，突然想起来要保存下载，此时你可以在下载面板中点击<strong>开始下载</strong>，不必担心会重复下载已经加载过的图片。</p>
+<p>当然你也可以不浏览，直接在下载面板中点击<strong>开始下载</strong>。</p>
+<p>或者点击下载面板中的<strong>获取已下载的</strong>按钮，当一些图片总是加载失败的时候，你可以使用此功能来保存已经加载过的图片。</p>
+<p>通过下载面板中的状态可以直观地看到图片加载的情况。</p>
+<h2>[可以选择下载范围吗？]</h2>
+<p>可以，在下载面板中有选择下载范围的功能，该功能对下载、自动加载、预加载都生效。</p>
+<p>另外，如果一张图片被排除在下载范围之外，你仍然可以点击该图片的缩略图进行浏览，这会加载对应的大图。</p>
+<h2>[如何在一些插画网站上挑选图片？]</h2>
+<p>虽然脚本并没有直接的挑选图片的功能，但是有数个方式可以达到类似的效果。</p>
+<ul>
+<li>在缩略图上按下鼠标中键，即可打开图片的原始地址，之后你可以右键保存图片。</li>
+<li>在下载面板中设置下载范围为1，这样会排除第一张图片以外的所有图片，之后在缩略图列表上点击你感兴趣的图片，对应的大图会被加载，最终挑选完毕后，删除掉下载范围并点击<strong>获取已下载的</strong>，这样你挑选的图片会被打包下载。</li>
+<li>在配置面板中关闭自动加载，并设置预加载数量为1，之后与上面的方法类似。</li>
+</ul>
+<h2>[可以通过键盘来操作吗？]</h2>
+<p>可以！在配置面板的下方，有一个<strong>快捷键</strong>按钮，点击后可以查看键盘操作，或进行配置。</p>
+<p>甚至可以配置为单手全键盘操作，解放另一只手！</p>
+<h2>[不想在某些网站启用自动打开功能？]</h2>
+<p>在配置面板的下方，有一个<strong>自动打开排除</strong>按钮，点击后可以对一些不适合自动打开的网站进行排除。比如Twitter或Booru类的网站。</p>
+<h2>[不想在某些网站使用这个脚本？]</h2>
+<p>在配置面板的下方，有一个<strong>站点排除</strong>的按钮，可对一些站点进行排除，排除后脚本不会再生效。</p>
+<p>如果想重新启用该站点，需要在其他未排除的站点中启用被禁用的站点。</p>
+<h2>[如何Feed作者。]</h2>
+<p>给我<a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a>星星，或者<a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>上好评。</p>
+<p>请勿在Greasyfork上反馈问题，因为该站点的通知系统无法跟踪后续的反馈。很多人只是留下一个问题，再也没有回来过。
+请在此反馈问题: <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/issues">issue</a></p>
+<h2>[如何再次打开指南？]</h2>
+<p>在配置面板的下方，点击<strong>帮助</strong>按钮。</p>
+<h2>[一些未能解决的问题。]</h2>
+<ul>
+<li>使用Firefox通过新标签页打开Twitter的首页后，然后跳转到推主的主页，脚本无法生效，需要刷新页面。</li>
+<li>在Twitter上使用打包下载功能，有时会出现无法下载的问题，这可能是Twitter修改了一些原生的功能。</li>
+</ul>
+`),
   keyboardCustom: keyboardCustom,
 };

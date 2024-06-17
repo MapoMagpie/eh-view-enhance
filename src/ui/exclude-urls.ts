@@ -9,15 +9,17 @@ export default function createExcludeURLPanel(root: HTMLElement, urls: string[],
     <span>${autoOpen ? "Auto Open " : ""}Exclude URL|Site</span>
     <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
   </div>
+  <div class="ehvp-custom-panel-container">
     <div class="ehvp-custom-panel-content">
-        <ul class="ehvp-custom-panel-list">
-          ${workURLs.map((r, index) => `
-             <li data-index="${index}" class="ehvp-custom-panel-list-item ${urls.indexOf(r) !== -1 ? "ehvp-custom-panel-list-item-disable" : ""}">
-               <span>${r}</span>
-             </li>
-          `).join("")}
-        </ul>
+      <ul class="ehvp-custom-panel-list">
+        ${workURLs.map((r, index) => `
+           <li data-index="${index}" class="ehvp-custom-panel-list-item ${urls.indexOf(r) !== -1 ? "ehvp-custom-panel-list-item-disable" : ""}">
+             <span>${r}</span>
+           </li>
+        `).join("")}
+      </ul>
     </div>
+  </div>
 </div>
 `;
   const fullPanel = document.createElement("div");

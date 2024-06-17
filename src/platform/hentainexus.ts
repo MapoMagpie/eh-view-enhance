@@ -43,7 +43,11 @@ export class HentaiNexusMatcher extends BaseMatcher {
       const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       const args = doc.querySelector("body > script")?.textContent?.match(REGEXP_EXTRACT_INIT_ARGUMENTS)?.slice(1);
       if (!args || args.length !== 3) throw new Error("cannot find reader data");
-      this.initReader(args[0], args[1], args[2]);
+      try {
+        this.initReader(args[0], args[1], args[2]);
+      } catch (_error) {
+        throw new Error("hentainexus updated decryption function");
+      }
     }
     if (!this.readerData) throw new Error("cannot find reader data");
     const hash = href.match(REGEXP_EXTRACT_HASH)?.[1] || "001";
@@ -82,6 +86,17 @@ export class HentaiNexusMatcher extends BaseMatcher {
       this.meta.originTitle = originTitle.replace(/::\s?HentaiNexus/, "");
     }
     this.readDirection = readDirection;
+
+    const hostname = window.location.hostname.split("");
+    const hostnameLen = Math.min(hostname.length, 64);
+    const rawSplits = window.atob(data).split("");
+    for (let i = 0; i < hostnameLen; i++) {
+      rawSplits[i] = String.fromCharCode(
+        rawSplits[i].charCodeAt(0) ^ hostname[i].charCodeAt(0)
+      );
+    }
+    const decoded = rawSplits.join("");
+
     let poses: boolean[] = [];
     let list: number[] = [];
     for (let step = 2; list.length < 16; ++step) {
@@ -93,7 +108,6 @@ export class HentaiNexusMatcher extends BaseMatcher {
       }
     }
     let a = 0;
-    const decoded = atob(data);
     for (let step = 0; step < 64; step++) {
       a = a ^ decoded.charCodeAt(step);
       for (let i = 0; i < 8; i++) {

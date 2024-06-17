@@ -48,9 +48,9 @@ function main(MATCHER: Matcher): DestoryFunc {
     IL.start();
   };
 
-  if (conf["first"]) {
+  if (conf.first) {
     events.showGuideEvent();
-    conf["first"] = false;
+    conf.first = false;
     saveConf(conf);
   }
   const href = window.location.href;

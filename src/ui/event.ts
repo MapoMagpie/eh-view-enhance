@@ -456,7 +456,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     }
   }
   return {
-    main: main,
+    main,
 
     modNumberConfigEvent,
     modBooleanConfigEvent,

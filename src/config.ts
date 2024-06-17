@@ -89,6 +89,8 @@ export type Config = {
   /** Custom key scrolling speed */
   scrollingSpeed: number,
   id: string,
+  /** modify some config items by patch */
+  configPatchVersion: number,
 };
 
 function defaultConf(): Config {
@@ -137,6 +139,7 @@ function defaultConf(): Config {
     ehentaiTitlePrefer: "japanese",
     scrollingSpeed: 30,
     id: uuid(),
+    configPatchVersion: 0,
   };
 }
 
@@ -213,10 +216,27 @@ function confHealthCheck(cf: Config): Config {
     cf.readMode = "pagination";
     changed = true;
   }
+  const newCf = patchConfig(cf, PATCH_CONFIG);
+  if (newCf) {
+    cf = newCf;
+    changed = true;
+  }
   if (changed) {
     saveConf(cf);
   }
   return cf;
+}
+
+const PATCH_CONFIG: Partial<Config> = {
+  first: true,
+}
+const CONFIG_PATCH_VERSION = 3;
+function patchConfig(cf: Config, patch: Partial<Config>): Config | null {
+  if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
+    return null;
+  }
+  cf.configPatchVersion = CONFIG_PATCH_VERSION;
+  return { ...cf, ...patch };
 }
 
 export function saveConf(c: Config) {

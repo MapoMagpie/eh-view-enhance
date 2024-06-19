@@ -215,7 +215,7 @@ export class TwitterMatcher extends BaseMatcher {
 
 function getUserID(): string | undefined {
   const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2] || "lililjiliijili";
-  const followBTNs = Array.from(document.querySelectorAll<HTMLButtonElement>("button[data-testid][aria-label^='Follow']"));
+  const followBTNs = Array.from(document.querySelectorAll<HTMLButtonElement>("button[data-testid][aria-label]"));
   if (followBTNs.length === 0) return undefined;
   const theBTN = followBTNs.find(btn => btn.getAttribute("aria-label")?.includes(`@${userName}`)) || followBTNs[0];
   return theBTN.getAttribute("data-testid")!.match(/(\d+)/)?.[1];

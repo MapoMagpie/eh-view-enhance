@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.20
+// @version            4.5.21
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -1901,6 +1901,7 @@
     queue;
     matcher;
     beforeInit;
+    onFailed;
     afterInit;
     appendPageLock = false;
     abortb = false;
@@ -1934,14 +1935,14 @@
           }
           if (!this.queue.downloading?.()) {
             this.beforeInit?.();
-            this.changeChapter(index).finally(() => this.afterInit?.());
+            this.changeChapter(index).then(this.afterInit).catch(this.onFailed);
           }
         };
       });
       if (this.chapters.length === 1) {
         this.beforeInit?.();
         EBUS.emit("pf-change-chapter", 0);
-        this.changeChapter(0).finally(() => this.afterInit?.());
+        this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
       }
       if (this.chapters.length > 1) {
         this.backChaptersSelection();
@@ -1995,6 +1996,7 @@
         }
       } catch (error) {
         evLog("error", "PageFetcher:appendNextPage error: ", error);
+        this.onFailed?.(error);
         return false;
       } finally {
         this.appendPageLock = false;
@@ -2014,6 +2016,7 @@
         return true;
       } catch (error) {
         evLog("error", `page fetcher append images error: `, error);
+        this.onFailed?.(error);
         return false;
       }
     }
@@ -4222,7 +4225,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
   function getUserID() {
     const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2] || "lililjiliijili";
-    const followBTNs = Array.from(document.querySelectorAll("button[data-testid][aria-label^='Follow']"));
+    const followBTNs = Array.from(document.querySelectorAll("button[data-testid][aria-label='s']"));
     if (followBTNs.length === 0)
       return void 0;
     const theBTN = followBTNs.find((btn) => btn.getAttribute("aria-label")?.includes(`@${userName}`)) || followBTNs[0];
@@ -5652,6 +5655,47 @@ html {
 .ehvp-p-tab-selected {
   color: rgb(120, 240, 80) !important;
 }
+.ehvp-root-collapse .ehvp-message-box {
+  display: none;
+}
+.ehvp-message-box {
+  position: fixed;
+  z-index: 4001;
+  top: 0;
+  left: 0;
+}
+.ehvp-message {
+  margin-top: 1rem;
+  margin-left: 1rem;
+  line-height: 2rem;
+  background-color: #ffffffd6;
+  border-radius: 6px;
+  padding-left: 0.3rem;
+  position: relative;
+  box-shadow: inset 0 0 5px 2px #8273ff;
+  color: black;
+}
+.ehvp-message > button {
+  border: 1px solid #00000000;
+  margin-left: 1rem;
+  color: black;
+  background-color: #00000000;
+  height: 2rem;
+  width: 2rem;
+  text-align: center;
+  font-weight: bold;
+}
+.ehvp-message > button:hover {
+  background-color: #444;
+}
+.ehvp-message-duration-bar {
+  position: absolute;
+  bottom: 0;
+  width: 0%;
+  left: 0;
+  height: 0.1rem;
+  background: red;
+}
 `;
     style.textContent = css;
     document.head.appendChild(style);
@@ -6059,7 +6103,7 @@ html {
   }
   function generateOnePixelURL() {
     const href = window.location.href;
-    const meta = { href, version: "4.5.20", id: conf.id };
+    const meta = { href, version: "4.5.21", id: conf.id };
     const base = window.btoa(JSON.stringify(meta));
     return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }
@@ -6552,6 +6596,7 @@ ${chapters.map((c, i) => `<div><label>
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
+<div id="message-box" class="ehvp-message-box"></div>
 <div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
 <div id="big-img-frame" class="big-img-frame big-img-frame-collapse${conf.readMode === "pagination" ? " bifm-flex" : ""}" tabindex="7">
    <a id="img-land-left" class="img-land-left"></a>
@@ -6624,6 +6669,7 @@ ${chapters.map((c, i) => `<div><label>
       imgLandRight: q("#img-land-right", fullViewGrid),
       autoPageBTN: q("#auto-page-btn", fullViewGrid),
       pageLoading: q("#page-loading", fullViewGrid),
+      messageBox: q("#message-box", fullViewGrid),
       config: new ConfigPanel(fullViewGrid),
       downloader: new DownloaderPanel(fullViewGrid),
       readModeSelect: q("#read-mode-select", fullViewGrid),
@@ -6735,6 +6781,18 @@ ${chapters.map((c, i) => `<div><label>
     q("#scaleMinusBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(-1, 10));
     q("#scaleAddBTN", HTML.pageHelper).addEventListener("click", () => BIFM.scaleBigImages(1, 10));
     q("#scaleInput", HTML.pageHelper).addEventListener("wheel", (event) => BIFM.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5));
+  }
+  function showMessage(box, level, message, duration) {
+    const element = document.createElement("div");
+    element.classList.add("ehvp-message");
+    element.innerHTML = `<span ${level === "error" ? "style='color: red;'" : ""}>${message}</span><button>X</button><div class="ehvp-message-duration-bar"></div>`;
+    box.appendChild(element);
+    element.querySelector("button")?.addEventListener("click", () => element.remove());
+    const durationBar = element.querySelector("div.ehvp-message-duration-bar");
+    if (duration) {
+      durationBar.style.animation = `${duration}ms linear main-progress`;
+      durationBar.addEventListener("animationend", () => element.remove());
+    }
   }
 
   class PageHelper {
@@ -7795,6 +7853,7 @@ ${chapters.map((c, i) => `<div><label>
       BIFM.show(IFQ[index]);
     });
     PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
+    PF.onFailed = (reason) => showMessage(HTML.messageBox, "error", reason.toString());
     PF.afterInit = () => {
       HTML.pageLoading.style.display = "none";
       IL.processingIndexList = [0];

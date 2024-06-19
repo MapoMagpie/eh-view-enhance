@@ -4225,7 +4225,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
   function getUserID() {
     const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2] || "lililjiliijili";
-    const followBTNs = Array.from(document.querySelectorAll("button[data-testid][aria-label='s']"));
+    const followBTNs = Array.from(document.querySelectorAll("button[data-testid][aria-label]"));
     if (followBTNs.length === 0)
       return void 0;
     const theBTN = followBTNs.find((btn) => btn.getAttribute("aria-label")?.includes(`@${userName}`)) || followBTNs[0];

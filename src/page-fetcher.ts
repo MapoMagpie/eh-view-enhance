@@ -26,6 +26,7 @@ export class PageFetcher {
   queue: IMGFetcherQueue;
   matcher: Matcher;
   beforeInit?: () => void;
+  onFailed?: (reason: any) => void;
   afterInit?: () => void;
   private appendPageLock: boolean = false;
   private abortb: boolean = false;
@@ -37,6 +38,7 @@ export class PageFetcher {
     this.chaptersSelectionElement = q("#chapters-btn");
     this.chaptersSelectionElement.addEventListener("click", () => this.backChaptersSelection());
     const debouncer = new Debouncer();
+    // triggered then ifq finished
     EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
     // triggered when scrolling
     EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
@@ -64,7 +66,7 @@ export class PageFetcher {
         }
         if (!this.queue.downloading?.()) {
           this.beforeInit?.();
-          this.changeChapter(index).finally(() => this.afterInit?.());
+          this.changeChapter(index).then(this.afterInit).catch(this.onFailed);
         }
       };
     });
@@ -72,7 +74,7 @@ export class PageFetcher {
     if (this.chapters.length === 1) {
       this.beforeInit?.();
       EBUS.emit("pf-change-chapter", 0);
-      this.changeChapter(0).finally(() => this.afterInit?.());
+      this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
     }
     if (this.chapters.length > 1) {
       this.backChaptersSelection();
@@ -127,6 +129,7 @@ export class PageFetcher {
       }
     } catch (error) {
       evLog("error", "PageFetcher:appendNextPage error: ", error);
+      this.onFailed?.(error);
       return false;
     } finally {
       this.appendPageLock = false;
@@ -146,6 +149,7 @@ export class PageFetcher {
       return true;
     } catch (error) {
       evLog("error", `page fetcher append images error: `, error);
+      this.onFailed?.(error)
       return false;
     }
   }

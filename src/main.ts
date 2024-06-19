@@ -8,7 +8,7 @@ import { adaptMatcher, enableAutoOpen } from "./platform/adapt";
 import { Matcher } from "./platform/platform";
 import { initEvents } from "./ui/event";
 import { FullViewGridManager } from "./ui/full-view-grid-manager";
-import { createHTML, addEventListeners } from "./ui/html";
+import { createHTML, addEventListeners, showMessage } from "./ui/html";
 import { PageHelper } from "./ui/page-helper";
 import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
 import { Debouncer } from "./utils/debouncer";
@@ -42,6 +42,7 @@ function main(MATCHER: Matcher): DestoryFunc {
 
 
   PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
+  PF.onFailed = (reason) => showMessage(HTML.messageBox, "error", reason.toString());
   PF.afterInit = () => {
     HTML.pageLoading.style.display = "none";
     IL.processingIndexList = [0];

@@ -756,6 +756,47 @@ html {
 .ehvp-p-tab-selected {
   color: rgb(120, 240, 80) !important;
 }
+.ehvp-root-collapse .ehvp-message-box {
+  display: none;
+}
+.ehvp-message-box {
+  position: fixed;
+  z-index: 4001;
+  top: 0;
+  left: 0;
+}
+.ehvp-message {
+  margin-top: 1rem;
+  margin-left: 1rem;
+  line-height: 2rem;
+  background-color: #ffffffd6;
+  border-radius: 6px;
+  padding-left: 0.3rem;
+  position: relative;
+  box-shadow: inset 0 0 5px 2px #8273ff;
+  color: black;
+}
+.ehvp-message > button {
+  border: 1px solid #00000000;
+  margin-left: 1rem;
+  color: black;
+  background-color: #00000000;
+  height: 2rem;
+  width: 2rem;
+  text-align: center;
+  font-weight: bold;
+}
+.ehvp-message > button:hover {
+  background-color: #444;
+}
+.ehvp-message-duration-bar {
+  position: absolute;
+  bottom: 0;
+  width: 0%;
+  left: 0;
+  height: 0.1rem;
+  background: red;
+}
 `;
   style.textContent = css;
   document.head.appendChild(style);

@@ -24,6 +24,7 @@ export function createHTML() {
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
 </div>
+<div id="message-box" class="ehvp-message-box"></div>
 <div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
 <div id="big-img-frame" class="big-img-frame big-img-frame-collapse${conf.readMode === "pagination" ? " bifm-flex" : ""}" tabindex="7">
    <a id="img-land-left" class="img-land-left"></a>
@@ -97,6 +98,7 @@ export function createHTML() {
     imgLandRight: q("#img-land-right", fullViewGrid),
     autoPageBTN: q("#auto-page-btn", fullViewGrid),
     pageLoading: q("#page-loading", fullViewGrid),
+    messageBox: q("#message-box", fullViewGrid),
     config: new ConfigPanel(fullViewGrid),
     downloader: new DownloaderPanel(fullViewGrid),
     readModeSelect: q<HTMLDivElement>("#read-mode-select", fullViewGrid),
@@ -226,3 +228,15 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   q("#scaleInput", HTML.pageHelper).addEventListener("wheel", (event) => BIFM.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5));
 }
 
+export function showMessage(box: HTMLElement, level: "info" | "error", message: string, duration?: number) {
+  const element = document.createElement("div");
+  element.classList.add("ehvp-message");
+  element.innerHTML = `<span ${level === "error" ? "style='color: red;'" : ""}>${message}</span><button>X</button><div class="ehvp-message-duration-bar"></div>`;
+  box.appendChild(element);
+  element.querySelector("button")?.addEventListener("click", () => element.remove());
+  const durationBar = element.querySelector<HTMLDivElement>("div.ehvp-message-duration-bar")!;
+  if (duration) {
+    durationBar.style.animation = `${duration}ms linear main-progress`;
+    durationBar.addEventListener("animationend", () => element.remove());
+  }
+}

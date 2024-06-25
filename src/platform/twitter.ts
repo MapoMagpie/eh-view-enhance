@@ -128,8 +128,7 @@ export class TwitterMatcher extends BaseMatcher {
         items = timelineModule?.items;
       }
       if (!items) {
-        // console.error("Not found items: cursor: ", cursor, ", addEntries: ", addEntries);
-        throw new Error("Not found items");
+        return [[], undefined]
       }
       const timelineCursor = addEntries.entries.find(entry => entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom"))?.content as TimelineTimelineCursor | undefined;
       return [items, timelineCursor?.value];
@@ -143,6 +142,7 @@ export class TwitterMatcher extends BaseMatcher {
     while (true) {
       const [mediaPage, nextCursor] = await this.fetchUserMedia(cursor);
       cursor = nextCursor || "last";
+      if (!mediaPage || mediaPage.length === 0) break;
       this.mediaPages.set(cursor, mediaPage);
       yield cursor;
       if (!nextCursor) break;

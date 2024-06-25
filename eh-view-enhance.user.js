@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.21
+// @version            4.5.22
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -4144,7 +4144,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           items = timelineModule?.items;
         }
         if (!items) {
-          throw new Error("Not found items");
+          return [[], void 0];
         }
         const timelineCursor = addEntries.entries.find((entry) => entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom"))?.content;
         return [items, timelineCursor?.value];
@@ -4157,6 +4157,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       while (true) {
         const [mediaPage, nextCursor] = await this.fetchUserMedia(cursor);
         cursor = nextCursor || "last";
+        if (!mediaPage || mediaPage.length === 0)
+          break;
         this.mediaPages.set(cursor, mediaPage);
         yield cursor;
         if (!nextCursor)
@@ -6103,7 +6105,7 @@ html {
   }
   function generateOnePixelURL() {
     const href = window.location.href;
-    const meta = { href, version: "4.5.21", id: conf.id };
+    const meta = { href, version: "4.5.22", id: conf.id };
     const base = window.btoa(JSON.stringify(meta));
     return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }

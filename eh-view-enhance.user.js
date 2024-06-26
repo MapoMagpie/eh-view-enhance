@@ -517,11 +517,7 @@
       throw err;
     }
     async fetchOriginMeta() {
-      try {
-        return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0 || this.stage === 0 /* FAILED */, this.chapterIndex);
-      } catch (error) {
-        throw new Error(`fetch big image url error: ${error}`);
-      }
+      return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0 || this.stage === 0 /* FAILED */, this.chapterIndex);
     }
     async fetchImageData() {
       const data = await this.fetchBigImage();
@@ -2815,6 +2811,9 @@
         throw new Error(`cannot matching the image url, content: ${text}`);
       if (!src.startsWith("http")) {
         src = window.location.origin + src;
+      }
+      if (src.endsWith("509.gif")) {
+        throw new Error("509, Image limits Exceeded, Please reset your Quota!");
       }
       return { url: src, href: newUrl };
     }

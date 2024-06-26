@@ -105,6 +105,7 @@ export class EHMatcher extends BaseMatcher {
       let i = 0;
       for (const match of matchs) {
         i++;
+        // TODO: MPV query image url from https://s.exhentai.org/api.php
         const node = new ImageNode(
           match[3].replaceAll("\\", ""),
           `${location.origin}/s/${match[2]}/${gid}-${i}`,
@@ -244,6 +245,9 @@ export class EHMatcher extends BaseMatcher {
     // check src has host prefix
     if (!src.startsWith("http")) {
       src = window.location.origin + src;
+    }
+    if (src.endsWith("509.gif")) {
+      throw new Error("509, Image limits Exceeded, Please reset your Quota!");
     }
     return { url: src, href: newUrl };
   }

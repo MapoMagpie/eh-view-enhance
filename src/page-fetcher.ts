@@ -26,7 +26,6 @@ export class PageFetcher {
   queue: IMGFetcherQueue;
   matcher: Matcher;
   beforeInit?: () => void;
-  onFailed?: (reason: any) => void;
   afterInit?: () => void;
   private appendPageLock: boolean = false;
   private abortb: boolean = false;
@@ -172,6 +171,10 @@ export class PageFetcher {
   //通过地址请求该页的文档
   async fetchDocument(pageURL: string): Promise<string> {
     return await window.fetch(pageURL).then((response) => response.text());
+  }
+
+  onFailed(reason: any) {
+    EBUS.emit("notify-message", "error", reason.toString());
   }
 
 }

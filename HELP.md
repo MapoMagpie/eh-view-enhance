@@ -96,4 +96,4 @@ Click the **Help** button at the bottom of the configuration panel.
 ## [Some Unresolved Issues]
 
 - When using Firefox to open Twitter's homepage in a new tab, then navigating to the user's homepage, the script doesn't activate and requires page refresh.
-- Sometimes the Download function on Twitter doesn't work.
+- Still Firefox, Download function not working on domain:`twitter.com`, firefox will not redirect `twitter.com` to `x.com` when open in new tab, you should use `x.com` instead `twitter.com`.

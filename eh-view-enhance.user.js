@@ -1187,12 +1187,7 @@
       });
       let meta = new TextEncoder().encode(JSON.stringify(this.meta(chapter), null, 2));
       ret.push({
-        stream: () => Promise.resolve(new ReadableStream({
-          start(c) {
-            c.enqueue(meta);
-            c.close();
-          }
-        })),
+        stream: () => Promise.resolve(uint8ArrayToReadableStream(meta)),
         size: () => meta.byteLength,
         name: directory + "meta.json"
       });
@@ -1223,6 +1218,9 @@
         };
         await save();
         this.done = true;
+      } catch (error) {
+        EBUS.emit("notify-message", "error", `packaging failed, ${error.toString()}`);
+        throw error;
       } finally {
         this.abort(this.done ? "downloaded" : "downloadFailed");
       }
@@ -1901,7 +1899,6 @@
     queue;
     matcher;
     beforeInit;
-    onFailed;
     afterInit;
     appendPageLock = false;
     abortb = false;
@@ -2037,6 +2034,9 @@
     //通过地址请求该页的文档
     async fetchDocument(pageURL) {
       return await window.fetch(pageURL).then((response) => response.text());
+    }
+    onFailed(reason) {
+      EBUS.emit("notify-message", "error", reason.toString());
     }
   }
 
@@ -4692,7 +4692,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <h2>[Some Unresolved Issues]</h2>
 <ul>
 <li>When using Firefox to open Twitter&#39;s homepage in a new tab, then navigating to the user&#39;s homepage, the script doesn&#39;t activate and requires page refresh.</li>
-<li>Sometimes the Download function on Twitter doesn&#39;t work.</li>
+<li>Still Firefox, Download function not working on twitter.com, firefox will not redirect twitter.com to x.com when open in new tab, you should use x.com instead twitter.com.</li>
 </ul>
 `, `
 <h2>[如何使用？入口在哪里？]</h2>
@@ -4752,7 +4752,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <h2>[一些未能解决的问题。]</h2>
 <ul>
 <li>使用Firefox通过新标签页打开Twitter的首页后，然后跳转到推主的主页，脚本无法生效，需要刷新页面。</li>
-<li>在Twitter上使用打包下载功能，有时会出现无法下载的问题，这可能是Twitter修改了一些原生的功能。</li>
+<li>使用Firefox打开twitter.com这个域名，下载功能会失效，这可能和Firefox不能自动跳转到x.com有关，你需要停止使用twitter.com这个域名。</li>
 </ul>
 `),
     keyboardCustom
@@ -7854,8 +7854,8 @@ ${chapters.map((c, i) => `<div><label>
         return;
       BIFM.show(IFQ[index]);
     });
+    EBUS.subscribe("notify-message", (level, msg) => showMessage(HTML.messageBox, level, msg));
     PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
-    PF.onFailed = (reason) => showMessage(HTML.messageBox, "error", reason.toString());
     PF.afterInit = () => {
       HTML.pageLoading.style.display = "none";
       IL.processingIndexList = [0];

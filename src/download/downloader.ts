@@ -216,12 +216,7 @@ export class Downloader {
     // gallery meta
     let meta = new TextEncoder().encode(JSON.stringify(this.meta(chapter), null, 2));
     ret.push({
-      stream: () => Promise.resolve(new ReadableStream({
-        start(c) {
-          c.enqueue(meta);
-          c.close();
-        }
-      })),
+      stream: () => Promise.resolve(uint8ArrayToReadableStream(meta)),
       size: () => meta.byteLength,
       name: directory + "meta.json"
     });
@@ -256,6 +251,9 @@ export class Downloader {
       }
       await save();
       this.done = true;
+    } catch (error: any) {
+      EBUS.emit("notify-message", "error", `packaging failed, ${error.toString()}`);
+      throw error;
     } finally {
       this.abort(this.done ? "downloaded" : "downloadFailed");
     }

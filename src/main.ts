@@ -39,10 +39,9 @@ function main(MATCHER: Matcher): DestoryFunc {
     if (IFQ.chapterIndex !== BIFM.chapterIndex) return;
     BIFM.show(IFQ[index]);
   });
-
+  EBUS.subscribe("notify-message", (level, msg) => showMessage(HTML.messageBox, level, msg));
 
   PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
-  PF.onFailed = (reason) => showMessage(HTML.messageBox, "error", reason.toString());
   PF.afterInit = () => {
     HTML.pageLoading.style.display = "none";
     IL.processingIndexList = [0];

@@ -42,6 +42,10 @@ export class Downloader {
         const ret = this.cherryPicks[chapterIndex].remove(id);
         EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
         return ret;
+      },
+      (chapterIndex) => {
+        this.cherryPicks[chapterIndex].reset();
+        EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
       }
     );
     this.queue = queue;
@@ -304,6 +308,12 @@ export class CherryPick {
   values: CherryPickRnage[] = [];
   positive = false; // if values has positive picked, ignore exclude
   sieve: boolean[] = [];
+
+  reset() {
+    this.values = [];
+    this.positive = false;
+    this.sieve = [];
+  }
 
   add(range: CherryPickRnage): CherryPickRnage[] | null {
     if (this.values.length === 0) {

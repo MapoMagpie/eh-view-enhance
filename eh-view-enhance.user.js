@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.22
+// @version            4.5.23
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -1058,6 +1058,10 @@
           const ret = this.cherryPicks[chapterIndex].remove(id);
           EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
           return ret;
+        },
+        (chapterIndex) => {
+          this.cherryPicks[chapterIndex].reset();
+          EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
         }
       );
       this.queue = queue;
@@ -1290,6 +1294,11 @@
     positive = false;
     // if values has positive picked, ignore exclude
     sieve = [];
+    reset() {
+      this.values = [];
+      this.positive = false;
+      this.sieve = [];
+    }
     add(range) {
       if (this.values.length === 0) {
         this.positive = range.positive;
@@ -5574,17 +5583,20 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 .ehvp-custom-panel-item-value button:hover {
   background-color: #ffff00;
 }
-.ehvp-custom-panel-item-add-btn, .ehvp-custom-panel-item-input {
+.ehvp-custom-panel-item-add-btn, .ehvp-custom-panel-item-input, .ehvp-custom-panel-item-span {
   font-size: 1.1rem;
   line-height: 1.2rem;
   font-weight: bold;
   background-color: #7fef7b;
   color: black;
-  margin-left: 0.3rem;
   border: none;
 }
+.ehvp-custom-panel-item-span {
+  background-color: #34355b;
+  color: white;
+}
 .ehvp-custom-panel-item-add-btn:hover {
-  background-color: #ffff00;
+  background-color: #ffff00 !important;
 }
 .ehvp-custom-panel-list > li {
   line-height: 3rem;
@@ -6159,7 +6171,7 @@ html {
   }
   function generateOnePixelURL() {
     const href = window.location.href;
-    const meta = { href, version: "4.5.22", id: conf.id };
+    const meta = { href, version: "4.5.23", id: conf.id };
     const base = window.btoa(JSON.stringify(meta));
     return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }
@@ -6479,7 +6491,7 @@ ${chapters.map((c, i) => `<div><label>
       this.chaptersElement.querySelectorAll("input[type=checkbox][id^=ch-]:checked").forEach((checkbox) => idSet.add(Number(checkbox.value)));
       return idSet;
     }
-    initCherryPick(onAdd, onRemove) {
+    initCherryPick(onAdd, onRemove, onClear) {
       function addRangeElements(container, rangeList, onRemove2) {
         container.querySelectorAll(".ehvp-custom-panel-item-value").forEach((e) => e.remove());
         const tamplate = document.createElement("div");
@@ -6499,12 +6511,15 @@ ${chapters.map((c, i) => `<div><label>
       }
       const pickBTN = q("#download-cherry-pick-btn-add", this.cherryPickElement);
       const excludeBTN = q("#download-cherry-pick-btn-exclude", this.cherryPickElement);
+      const clearBTN = q("#download-cherry-pick-btn-clear", this.cherryPickElement);
+      const rangeBeforeSpan = q("#download-cherry-pick-btn-range-before", this.cherryPickElement);
+      const rangeAfterSpan = q("#download-cherry-pick-btn-range-after", this.cherryPickElement);
       const input = q("#download-cherry-pick-input", this.cherryPickElement);
-      const addCherryPick = (exclude) => {
-        const rangeList = (input.value || "").split(",").map((s) => (exclude ? "!" : "") + s).map(CherryPickRnage.from).filter((r) => r !== null);
+      const addCherryPick = (exclude, range) => {
+        const rangeList = range ? [CherryPickRnage.from((exclude ? "!" : "") + range)].filter((r) => r !== null) : (input.value || "").split(",").map((s) => (exclude ? "!" : "") + s).map(CherryPickRnage.from).filter((r) => r !== null);
         if (rangeList.length > 0) {
-          rangeList.forEach((range) => {
-            const newList = onAdd(0, range);
+          rangeList.forEach((range2) => {
+            const newList = onAdd(0, range2);
             if (newList === null)
               return;
             addRangeElements(this.cherryPickElement.firstElementChild, newList, (id) => onRemove(0, id));
@@ -6513,8 +6528,29 @@ ${chapters.map((c, i) => `<div><label>
         input.value = "";
         input.focus();
       };
+      const clearPick = () => {
+        onClear(0);
+        addRangeElements(this.cherryPickElement.firstElementChild, [], (id) => onRemove(0, id));
+        input.value = "";
+        input.focus();
+      };
       pickBTN.addEventListener("click", () => addCherryPick(false));
       excludeBTN.addEventListener("click", () => addCherryPick(true));
+      clearBTN.addEventListener("click", clearPick);
+      this.cherryPickElement.querySelectorAll(".download-cherry-pick-follow-btn").forEach((btn) => {
+        const followBTNClick = () => {
+          const step = parseInt(btn.getAttribute("data-sibling-step") || "1");
+          let sibling = btn;
+          for (let i = 0; i < step; i++) {
+            sibling = sibling.previousElementSibling;
+          }
+          if (step <= 1) {
+            clearPick();
+          }
+          addCherryPick(step > 1, sibling.getAttribute("data-range") || void 0);
+        };
+        btn.addEventListener("click", followBTNClick);
+      });
       input.addEventListener("keypress", (event) => event.key === "Enter" && addCherryPick(false));
       let lastIndex;
       EBUS.subscribe("add-cherry-pick-range", (chapterIndex, index, positive, shiftKey) => {
@@ -6524,6 +6560,24 @@ ${chapters.map((c, i) => `<div><label>
         if (newList === null)
           return;
         addRangeElements(this.cherryPickElement.firstElementChild, newList, (id) => onRemove(chapterIndex, id));
+      });
+      let pad = 0;
+      EBUS.subscribe("pf-on-appended", (total) => {
+        pad = total.toString().length;
+        const rAfter = rangeAfterSpan.getAttribute("data-range").split("-").map((v) => v.padStart(pad, "0")).join("-");
+        rangeAfterSpan.textContent = rAfter;
+        rangeAfterSpan.setAttribute("data-range", rAfter);
+        const rBefore = rangeBeforeSpan.getAttribute("data-range").split("-").map((v, i) => i === 1 ? total.toString() : v.padStart(pad, "0")).join("-");
+        rangeBeforeSpan.textContent = rBefore;
+        rangeBeforeSpan.setAttribute("data-range", rBefore);
+      });
+      EBUS.subscribe("ifq-do", (index) => {
+        const rAfter = [1, index + 1].map((v) => v.toString().padStart(pad, "0")).join("-");
+        rangeAfterSpan.textContent = rAfter;
+        rangeAfterSpan.setAttribute("data-range", rAfter);
+        const rBefore = rangeBeforeSpan.getAttribute("data-range").split("-").map((v, i) => i === 0 ? (index + 1).toString().padStart(pad, "0") : v).join("-");
+        rangeBeforeSpan.textContent = rBefore;
+        rangeBeforeSpan.setAttribute("data-range", rBefore);
       });
     }
     static html() {
@@ -6546,6 +6600,19 @@ ${chapters.map((c, i) => `<div><label>
               <input type="text" class="ehvp-custom-panel-item-input" id="download-cherry-pick-input" placeholder="1, 2-3" style="text-align: start; width: 50%; height: 1.3rem; border-radius: 0px;" />
               <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-add">Pick</button>
               <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-exclude" style="background-color: #ffa975;">Exclude</button>
+              <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-clear" style="background-color: #c3ffd5;">Clear</button>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <div style="margin-bottom: 0.2rem">
+                <span class="ehvp-custom-panel-item-span" id="download-cherry-pick-btn-range-after" data-range="1-1">1-1</span><button
+                 class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="1">pick</button><button
+                 class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="2" style="background-color: #ffa975;">exclude</button>
+              </div>
+              <div>
+                <span class="ehvp-custom-panel-item-span" id="download-cherry-pick-btn-range-before" data-range="1-1">1-1</span><button
+                class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="1">pick</button><button
+                class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="2" style="background-color: #ffa975;">exclude</button>
+              </div>
             </div>
           </div>
         </div>

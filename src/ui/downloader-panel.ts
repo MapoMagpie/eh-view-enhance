@@ -140,7 +140,7 @@ ${chapters.map((c, i) => `<div><label>
     return idSet;
   }
 
-  initCherryPick(onAdd: (chapterIndex: number, range: CherryPickRnage) => CherryPickRnage[] | null, onRemove: (chapterIndex: number, id: string) => void) {
+  initCherryPick(onAdd: (chapterIndex: number, range: CherryPickRnage) => CherryPickRnage[] | null, onRemove: (chapterIndex: number, id: string) => void, onClear: (chapterIndex: number) => void) {
     function addRangeElements(container: HTMLElement, rangeList: CherryPickRnage[], onRemove: (id: string) => void) {
       container.querySelectorAll(".ehvp-custom-panel-item-value").forEach(e => e.remove());
       const tamplate = document.createElement("div");
@@ -160,10 +160,14 @@ ${chapters.map((c, i) => `<div><label>
     }
     const pickBTN = q<HTMLButtonElement>("#download-cherry-pick-btn-add", this.cherryPickElement);
     const excludeBTN = q<HTMLButtonElement>("#download-cherry-pick-btn-exclude", this.cherryPickElement);
+    const clearBTN = q<HTMLButtonElement>("#download-cherry-pick-btn-clear", this.cherryPickElement);
+    const rangeBeforeSpan = q<HTMLButtonElement>("#download-cherry-pick-btn-range-before", this.cherryPickElement);
+    const rangeAfterSpan = q<HTMLButtonElement>("#download-cherry-pick-btn-range-after", this.cherryPickElement);
     const input = q<HTMLInputElement>("#download-cherry-pick-input", this.cherryPickElement);
-    const addCherryPick = (exclude: boolean) => {
-      const rangeList = (input.value || "").split(",").map(s => (exclude ? "!" : "") + s)
-        .map(CherryPickRnage.from).filter(r => r !== null) as CherryPickRnage[];
+    const addCherryPick = (exclude: boolean, range?: string) => {
+      const rangeList = range ?
+        [CherryPickRnage.from((exclude ? "!" : "") + range)].filter(r => r !== null) as CherryPickRnage[] :
+        (input.value || "").split(",").map(s => (exclude ? "!" : "") + s).map(CherryPickRnage.from).filter(r => r !== null) as CherryPickRnage[];
       if (rangeList.length > 0) {
         rangeList.forEach(range => {
           const newList = onAdd(0, range);
@@ -174,8 +178,30 @@ ${chapters.map((c, i) => `<div><label>
       input.value = "";
       input.focus();
     }
+    const clearPick = () => {
+      onClear(0);
+      addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, [], (id) => onRemove(0, id))
+      input.value = "";
+      input.focus();
+    }
     pickBTN.addEventListener("click", () => addCherryPick(false));
     excludeBTN.addEventListener("click", () => addCherryPick(true));
+    clearBTN.addEventListener("click", clearPick);
+    this.cherryPickElement.querySelectorAll(".download-cherry-pick-follow-btn").forEach(btn => {
+      const followBTNClick = () => {
+        const step = parseInt(btn.getAttribute("data-sibling-step") || "1");
+        let sibling = btn;
+        for (let i = 0; i < step; i++) {
+          sibling = sibling.previousElementSibling as HTMLElement;
+        }
+        if (step <= 1) {
+          clearPick();
+        }
+        addCherryPick(step > 1, sibling.getAttribute("data-range") || undefined);
+      }
+      btn.addEventListener("click", followBTNClick);
+    });
+
     input.addEventListener("keypress", (event) => event.key === "Enter" && addCherryPick(false));
 
     let lastIndex: number | undefined;
@@ -187,6 +213,25 @@ ${chapters.map((c, i) => `<div><label>
       addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, newList, (id) => onRemove(chapterIndex, id))
     });
 
+    // EBUS.subscribe("pf-change-chapter", (index) => { });
+    let pad = 0;
+    EBUS.subscribe("pf-on-appended", (total) => {
+      pad = total.toString().length;
+      const rAfter = rangeAfterSpan.getAttribute("data-range")!.split("-").map(v => v.padStart(pad, "0")).join("-");
+      rangeAfterSpan.textContent = rAfter;
+      rangeAfterSpan.setAttribute("data-range", rAfter);
+      const rBefore = rangeBeforeSpan.getAttribute("data-range")!.split("-").map((v, i) => i === 1 ? total.toString() : v.padStart(pad, "0")).join("-")
+      rangeBeforeSpan.textContent = rBefore;
+      rangeBeforeSpan.setAttribute("data-range", rBefore);
+    })
+    EBUS.subscribe("ifq-do", (index) => {
+      const rAfter = [1, index + 1].map(v => v.toString().padStart(pad, "0")).join("-");
+      rangeAfterSpan.textContent = rAfter;
+      rangeAfterSpan.setAttribute("data-range", rAfter);
+      const rBefore = rangeBeforeSpan.getAttribute("data-range")!.split("-").map((v, i) => i === 0 ? (index + 1).toString().padStart(pad, "0") : v).join("-")
+      rangeBeforeSpan.textContent = rBefore;
+      rangeBeforeSpan.setAttribute("data-range", rBefore);
+    });
   }
 
 
@@ -210,6 +255,19 @@ ${chapters.map((c, i) => `<div><label>
               <input type="text" class="ehvp-custom-panel-item-input" id="download-cherry-pick-input" placeholder="1, 2-3" style="text-align: start; width: 50%; height: 1.3rem; border-radius: 0px;" />
               <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-add">Pick</button>
               <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-exclude" style="background-color: #ffa975;">Exclude</button>
+              <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-clear" style="background-color: #c3ffd5;">Clear</button>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <div style="margin-bottom: 0.2rem">
+                <span class="ehvp-custom-panel-item-span" id="download-cherry-pick-btn-range-after" data-range="1-1">1-1</span><button
+                 class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="1">pick</button><button
+                 class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="2" style="background-color: #ffa975;">exclude</button>
+              </div>
+              <div>
+                <span class="ehvp-custom-panel-item-span" id="download-cherry-pick-btn-range-before" data-range="1-1">1-1</span><button
+                class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="1">pick</button><button
+                class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="2" style="background-color: #ffa975;">exclude</button>
+              </div>
             </div>
           </div>
         </div>

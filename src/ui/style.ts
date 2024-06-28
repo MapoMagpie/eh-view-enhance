@@ -633,17 +633,20 @@ export function loadStyleSheel() {
 .ehvp-custom-panel-item-value button:hover {
   background-color: #ffff00;
 }
-.ehvp-custom-panel-item-add-btn, .ehvp-custom-panel-item-input {
+.ehvp-custom-panel-item-add-btn, .ehvp-custom-panel-item-input, .ehvp-custom-panel-item-span {
   font-size: 1.1rem;
   line-height: 1.2rem;
   font-weight: bold;
   background-color: #7fef7b;
   color: black;
-  margin-left: 0.3rem;
   border: none;
 }
+.ehvp-custom-panel-item-span {
+  background-color: #34355b;
+  color: white;
+}
 .ehvp-custom-panel-item-add-btn:hover {
-  background-color: #ffff00;
+  background-color: #ffff00 !important;
 }
 .ehvp-custom-panel-list > li {
   line-height: 3rem;

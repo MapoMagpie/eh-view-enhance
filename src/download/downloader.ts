@@ -33,10 +33,17 @@ export class Downloader {
     this.panel.initTabs();
     this.initEvents(this.panel);
     this.panel.initCherryPick(
-      range => this.cherryPicks[0].add(range),
-      id => this.cherryPicks[0].remove(id)
+      range => {
+        const ret = this.cherryPicks[0].add(range);
+        EBUS.emit("cherry-pick-changed", 0, this.cherryPicks[0]);
+        return ret;
+      },
+      id => {
+        const ret = this.cherryPicks[0].remove(id);
+        EBUS.emit("cherry-pick-changed", 0, this.cherryPicks[0]);
+        return ret;
+      }
     );
-
 
     this.queue = queue;
     this.queue.cherryPick = () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick();
@@ -61,6 +68,7 @@ export class Downloader {
         }
       }
     });
+    EBUS.subscribe("imf-check-picked", (chapterIndex, index) => this.cherryPicks[chapterIndex].picked(index));
   }
 
   initEvents(panel: DownloaderPanel) {
@@ -154,7 +162,7 @@ export class Downloader {
         // reset img fetcher stage to url, if it's failed
         this.queue.forEach((imf) => {
           if (imf.stage === FetchState.FAILED) {
-            imf.retry();
+            imf.resetStage();
           }
         });
         // already done
@@ -293,21 +301,6 @@ function promiseWithResolveAndReject() {
   return { resolve: resolve!, reject: reject!, promise };
 }
 
-// Download ranges of pages, split each range with comma (,)
-// Ranges prefixed with ! means negative range, pages in these range will be excluded
-// Example: 
-//   -10:   Download from page 1 to 10
-//   !8:   Exclude page 8
-//   12:   Download page 12
-//   14-20:   Download from page 14 to 20
-//   15-17:   Exclude page 15 to 17
-//   30-40/2:   Download each 2 pages in 30-40 (30, 32, 34, 36, 38, 40)
-//   50-60/3:   Download each 3 pages in 50-60 (50, 53, 56, 59)
-//   70-:   Download from page 70 to the last page
-// Pages range follows your order, a negative range can drop previous selected pages, the latter positive range can add it back
-// Example: 
-//   !10-20:   Download every page except page 10 to 20
-//   1-10,!1-8/2,!4,5:   Download page 1 to 10 but remove 1, 3, 5, 7 and 4, then add 5 back (2, 5, 6, 8, 9, 10)
 export class CherryPick {
   values: CherryPickRnage[] = [];
   positive = false; // if values has positive picked, ignore exclude
@@ -435,7 +428,7 @@ export class CherryPick {
   }
 
   picked(index: number): boolean {
-    return this.positive ? this.sieve[index] : !this.sieve[index];
+    return Boolean(this.positive ? this.sieve[index] : !this.sieve[index]);
   }
 
 }

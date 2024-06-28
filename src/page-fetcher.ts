@@ -139,8 +139,9 @@ export class PageFetcher {
     try {
       const nodes = await this.obtainImageNodeList(page);
       if (this.abortb) return false;
+      const len = this.queue.length;
       const IFs = nodes.map(
-        (imgNode) => new IMGFetcher(imgNode, this.matcher, this.chapterIndex)
+        (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex)
       );
       this.queue.push(...IFs);
       this.chapters[this.chapterIndex].queue.push(...IFs);

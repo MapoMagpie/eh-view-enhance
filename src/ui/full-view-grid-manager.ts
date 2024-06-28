@@ -41,6 +41,7 @@ export class FullViewGridManager {
         this.root.scrollTop = scrollTo;
       }
     });
+    EBUS.subscribe("cherry-pick-changed", (chapterIndex) => this.chapterIndex === chapterIndex && this.updateRender());
   }
 
   append(nodes: VisualNode[]) {
@@ -68,6 +69,10 @@ export class FullViewGridManager {
     EBUS.emit("pf-try-extend");
   }
 
+  updateRender() {
+    this.queue.forEach(({ node }) => node.isRender() && node.render());
+  }
+
   /**
    *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
    */
@@ -75,12 +80,6 @@ export class FullViewGridManager {
     const [scrollTop, clientHeight] = [this.root.scrollTop, this.root.clientHeight];
     const [start, end] = this.findOutsideRoundView(scrollTop, clientHeight);
     this.queue.slice(start, end + 1 + conf.colCount).forEach((e) => e.node.render());
-    // if (this.queue.dataSize >= 1000000000) {
-    //   const unrenders = findNotInNewRange(this.renderRangeRecord, [start, end]);
-    //   unrenders.forEach(([start, end]) => this.queue.slice(start, end + 1).forEach((imgFetcher) => imgFetcher.unrender()));
-    //   evLog("debug", `range of render:${start + 1}-${end + 1}, old range is:${this.renderRangeRecord[0] + 1}-${this.renderRangeRecord[1] + 1}, range of unrender:${unrenders.map(([start, end]) => `${start + 1}-${end + 1}`).join(",")}`);
-    // }
-    // this.renderRangeRecord = [start, end];
   }
 
   findOutsideRoundView(currTop: number, clientHeight: number): [number, number] {
@@ -108,25 +107,3 @@ export class FullViewGridManager {
   }
 }
 
-// function findNotInNewRange(old: number[], neo: number[]): number[][] {
-//   const ret: number[][] = [];
-//   if (neo[0] > old[0]) {
-//     ret.push([old[0], neo[0] - 1]);
-//   }
-//
-//   if (neo[1] < old[1]) {
-//     ret.push([neo[1] + 1, old[1]]);
-//   }
-//
-//   if (ret.length === 2) {
-//     if (ret[1][0] < ret[0][1]) {
-//       ret[1][0] = ret[0][1];
-//       ret.shift();
-//     }
-//     if (ret[0][1] > ret[1][0]) {
-//       ret[0][1] = ret[1][0];
-//       ret.pop();
-//     }
-//   }
-//   return ret;
-// }

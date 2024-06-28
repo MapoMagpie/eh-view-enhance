@@ -1,4 +1,5 @@
 import { Oriented } from "./config";
+import { CherryPick } from "./download/downloader";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
 import { VisualNode } from "./img-node";
@@ -15,9 +16,11 @@ export class EventManager {
       evLog("debug", "event bus emitted: ", id);
     }
     const cbs = this.events.get(id);
+    let ret: ReturnType<Events[ID]> | undefined;
     if (cbs) {
-      cbs.forEach((cb) => (cb as any)(...args));
+      cbs.forEach((cb) => ret = (cb as any)(...args));
     }
+    return ret;
   }
   subscribe<ID extends EventID>(id: ID, cb: Events[ID]) {
     evLog("info", "event bus subscribed: ", id);
@@ -32,7 +35,6 @@ export class EventManager {
     this.events = new Map();
   }
 }
-
 
 export interface Events {
   "downloader-canvas-on-click": (index: number) => void;
@@ -49,6 +51,8 @@ export interface Events {
   "pf-try-extend": () => void;
   "downloader-canvas-resize": () => void;
   "notify-message": (level: "error" | "info", message: string) => void;
+  "cherry-pick-changed": (chapaterIndex: number, cherryPick: CherryPick) => void;
+  "imf-check-picked": (chapterIndex: number, index: number) => boolean;
 }
 
 export type EventID = keyof Events;

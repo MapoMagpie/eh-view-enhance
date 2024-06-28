@@ -161,6 +161,20 @@ export function loadStyleSheel() {
 .img-fetching img, .img-fetching canvas {
   border: 3px solid #00000000 !important;
 }
+.img-excluded img, .img-excluded canvas {
+  border: 3px solid #777 !important;
+}
+.img-excluded a::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  /**aspect-ratio: 1;*/
+  background-color: #333333b0;
+}
 .img-fetching a::after {
 	content: '';
 	position: absolute;

@@ -327,9 +327,11 @@
         evLog("debug", "event bus emitted: ", id);
       }
       const cbs = this.events.get(id);
+      let ret;
       if (cbs) {
-        cbs.forEach((cb) => cb(...args));
+        cbs.forEach((cb) => ret = cb(...args));
       }
+      return ret;
     }
     subscribe(id, cb) {
       evLog("info", "event bus subscribed: ", id);
@@ -413,13 +415,14 @@
     return FetchState2;
   })(FetchState || {});
   class IMGFetcher {
+    index;
     node;
     originURL;
     stage = 1 /* URL */;
     tryTimes = 0;
     lock = false;
     /// 0: not rendered, 1: rendered tumbinal, 2: rendered big image
-    rendered = 0;
+    rendered = false;
     data;
     contentType;
     blobUrl;
@@ -429,7 +432,8 @@
     matcher;
     chapterIndex;
     randomID;
-    constructor(root, matcher, chapterIndex) {
+    constructor(index, root, matcher, chapterIndex) {
+      this.index = index;
       this.node = root;
       this.node.onclick = () => EBUS.emit("imf-on-click", this);
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
@@ -464,9 +468,9 @@
         this.lock = false;
       }
     }
-    retry() {
+    resetStage() {
       if (this.stage !== 3 /* DONE */) {
-        this.node.changeStyle();
+        this.node.changeStyle("init");
         this.stage = 1 /* URL */;
       }
     }
@@ -493,7 +497,7 @@
               [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL);
               this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.onloaded(this.blobUrl, this.contentType);
-              if (this.rendered === 2) {
+              if (this.rendered) {
                 this.node.render();
               }
               this.stage = 3 /* DONE */;
@@ -527,21 +531,41 @@
       return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
     }
     render() {
-      switch (this.rendered) {
-        case 0:
-        case 1:
-          this.node.render();
-          this.rendered = 2;
-          if (this.stage === 3 /* DONE */)
-            this.node.changeStyle("fetched");
-          break;
+      const picked = EBUS.emit("imf-check-picked", this.chapterIndex, this.index) ?? this.node.picked;
+      const shouldChangeStyle = picked !== this.node.picked;
+      this.node.picked = picked;
+      if (!this.rendered) {
+        this.node.render();
+        this.rendered = true;
+        this.node.changeStyle(this.stage === 3 /* DONE */ ? "fetched" : void 0);
+      } else if (shouldChangeStyle) {
+        let status;
+        switch (this.stage) {
+          case 0 /* FAILED */:
+            status = "failed";
+            break;
+          case 1 /* URL */:
+            status = "init";
+            break;
+          case 2 /* DATA */:
+            status = "fetching";
+            break;
+          case 3 /* DONE */:
+            status = "fetched";
+            break;
+        }
+        this.node.changeStyle(status);
       }
     }
+    isRender() {
+      return this.rendered;
+    }
     unrender() {
-      if (this.rendered === 1 || this.rendered === 0)
+      if (!this.rendered)
         return;
-      this.rendered = 1;
+      this.rendered = false;
       this.node.unrender();
+      this.node.changeStyle("init");
     }
     async fetchBigImage() {
       if (this.originURL?.startsWith("blob:")) {
@@ -1018,8 +1042,16 @@
       this.panel.initTabs();
       this.initEvents(this.panel);
       this.panel.initCherryPick(
-        (range) => this.cherryPicks[0].add(range),
-        (id) => this.cherryPicks[0].remove(id)
+        (range) => {
+          const ret = this.cherryPicks[0].add(range);
+          EBUS.emit("cherry-pick-changed", 0, this.cherryPicks[0]);
+          return ret;
+        },
+        (id) => {
+          const ret = this.cherryPicks[0].remove(id);
+          EBUS.emit("cherry-pick-changed", 0, this.cherryPicks[0]);
+          return ret;
+        }
       );
       this.queue = queue;
       this.queue.cherryPick = () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick();
@@ -1043,6 +1075,7 @@
           }
         }
       });
+      EBUS.subscribe("imf-check-picked", (chapterIndex, index) => this.cherryPicks[chapterIndex].picked(index));
     }
     initEvents(panel) {
       panel.forceBTN.addEventListener("click", () => this.download(this.pageFetcher.chapters));
@@ -1128,7 +1161,7 @@
           await this.pageFetcher.changeChapter(sel.index);
           this.queue.forEach((imf) => {
             if (imf.stage === FetchState.FAILED) {
-              imf.retry();
+              imf.resetStage();
             }
           });
           if (this.queue.isFinished()) {
@@ -1365,7 +1398,7 @@
       }
     }
     picked(index) {
-      return this.positive ? this.sieve[index] : !this.sieve[index];
+      return Boolean(this.positive ? this.sieve[index] : !this.sieve[index]);
     }
   }
   class CherryPickRnage {
@@ -1699,7 +1732,7 @@
     blobUrl;
     mimeType;
     downloadBar;
-    rendered = false;
+    picked = true;
     constructor(src, href, title, delaySRC) {
       this.src = src;
       this.href = href;
@@ -1752,7 +1785,6 @@
     render() {
       if (!this.imgElement)
         return;
-      this.rendered = true;
       let justThumbnail = !this.blobUrl;
       if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
         const tip = OVERLAY_TIP.cloneNode(true);
@@ -1773,7 +1805,7 @@
       this.imgElement.src = this.blobUrl || this.src || DEFAULT_THUMBNAIL;
     }
     unrender() {
-      if (!this.rendered || !this.imgElement)
+      if (!this.imgElement)
         return;
       this.imgElement.src = "";
       this.canvasSized = false;
@@ -1805,27 +1837,30 @@
     changeStyle(fetchStatus, failedReason) {
       if (!this.root)
         return;
-      this.root.querySelector(".img-node-error-hint")?.remove();
-      switch (fetchStatus) {
-        case "fetching":
-          this.root.classList.add("img-fetching");
-          this.root.classList.remove("img-fetched");
-          this.root.classList.remove("img-fetch-failed");
-          break;
-        case "fetched":
-          this.root.classList.add("img-fetched");
-          this.root.classList.remove("img-fetching");
-          this.root.classList.remove("img-fetch-failed");
-          break;
-        case "failed":
-          this.root.classList.add("img-fetch-failed");
-          this.root.classList.remove("img-fetching");
-          break;
-        default:
-          this.root.classList.remove("img-fetched");
-          this.root.classList.remove("img-fetch-failed");
-          this.root.classList.remove("img-fetching");
+      const clearClass = () => this.root.classList.forEach((cls) => ["img-excluded", "img-fetching", "img-fetched", "img-fetch-failed"].includes(cls) && this.root?.classList.remove(cls));
+      if (!this.picked) {
+        clearClass();
+        this.root.classList.add("img-excluded");
+      } else {
+        switch (fetchStatus) {
+          case "fetching":
+            clearClass();
+            this.root.classList.add("img-fetching");
+            break;
+          case "fetched":
+            clearClass();
+            this.root.classList.add("img-fetched");
+            break;
+          case "failed":
+            clearClass();
+            this.root.classList.add("img-fetch-failed");
+            break;
+          case "init":
+            clearClass();
+            break;
+        }
       }
+      this.root.querySelector(".img-node-error-hint")?.remove();
       if (failedReason) {
         const errorHintElement = document.createElement("div");
         errorHintElement.classList.add("img-node-error-hint");
@@ -1878,6 +1913,9 @@
       return element;
     }
     render() {
+    }
+    isRender() {
+      return true;
     }
   }
 
@@ -2000,8 +2038,9 @@
         const nodes = await this.obtainImageNodeList(page);
         if (this.abortb)
           return false;
+        const len = this.queue.length;
         const IFs = nodes.map(
-          (imgNode) => new IMGFetcher(imgNode, this.matcher, this.chapterIndex)
+          (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex)
         );
         this.queue.push(...IFs);
         this.chapters[this.chapterIndex].queue.push(...IFs);
@@ -5061,6 +5100,20 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 .img-fetching img, .img-fetching canvas {
   border: 3px solid #00000000 !important;
 }
+.img-excluded img, .img-excluded canvas {
+  border: 3px solid #777 !important;
+}
+.img-excluded a::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  /**aspect-ratio: 1;*/
+  background-color: #333333b0;
+}
 .img-fetching a::after {
 	content: '';
 	position: absolute;
@@ -6145,6 +6198,7 @@ html {
           this.root.scrollTop = scrollTo;
         }
       });
+      EBUS.subscribe("cherry-pick-changed", (chapterIndex) => this.chapterIndex === chapterIndex && this.updateRender());
     }
     append(nodes) {
       if (nodes.length > 0) {
@@ -6170,6 +6224,9 @@ html {
         return;
       }
       EBUS.emit("pf-try-extend");
+    }
+    updateRender() {
+      this.queue.forEach(({ node }) => node.isRender() && node.render());
     }
     /**
      *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片

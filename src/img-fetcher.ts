@@ -27,13 +27,13 @@ export enum FetchState {
 }
 
 export class IMGFetcher implements VisualNode {
+  index: number;
   node: ImageNode;
   originURL?: string;
   stage: FetchState = FetchState.URL;
   tryTimes: number = 0;
   lock: boolean = false;
-  /// 0: not rendered, 1: rendered tumbinal, 2: rendered big image
-  rendered: 0 | 1 | 2 = 0;
+  rendered: boolean = false;
   data?: Uint8Array;
   contentType?: string;
   blobUrl?: string;
@@ -44,7 +44,8 @@ export class IMGFetcher implements VisualNode {
   chapterIndex: number;
   randomID: string;
 
-  constructor(root: ImageNode, matcher: Matcher, chapterIndex: number) {
+  constructor(index: number, root: ImageNode, matcher: Matcher, chapterIndex: number) {
+    this.index = index;
     this.node = root;
     this.node.onclick = () => EBUS.emit("imf-on-click", this);
     this.downloadState = { total: 100, loaded: 0, readyState: 0, };
@@ -83,9 +84,9 @@ export class IMGFetcher implements VisualNode {
     }
   }
 
-  retry() {
+  resetStage() {
     if (this.stage !== FetchState.DONE) {
-      this.node.changeStyle();
+      this.node.changeStyle("init");
       this.stage = FetchState.URL;
     }
   }
@@ -113,7 +114,7 @@ export class IMGFetcher implements VisualNode {
             [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL!);
             this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
             this.node.onloaded(this.blobUrl, this.contentType);
-            if (this.rendered === 2) {
+            if (this.rendered) {
               this.node.render();
             }
             this.stage = FetchState.DONE;
@@ -149,22 +150,42 @@ export class IMGFetcher implements VisualNode {
   }
 
   render() {
-    switch (this.rendered) {
-      case 0:
-      case 1:
-        this.node.render();
-        this.rendered = 2;
-        if (this.stage === FetchState.DONE) this.node.changeStyle("fetched");
-        break;
-      case 2:
-        break;
+    const picked = EBUS.emit("imf-check-picked", this.chapterIndex, this.index) ?? this.node.picked;
+    const shouldChangeStyle = picked !== this.node.picked;
+    this.node.picked = picked;
+    if (!this.rendered) {
+      this.node.render();
+      this.rendered = true;
+      this.node.changeStyle(this.stage === FetchState.DONE ? "fetched" : undefined);
+    } else if (shouldChangeStyle) {
+      let status: "fetching" | "fetched" | "failed" | "init" | undefined;
+      switch (this.stage) {
+        case FetchState.FAILED:
+          status = "failed"
+          break;
+        case FetchState.URL:
+          status = "init"
+          break;
+        case FetchState.DATA:
+          status = "fetching"
+          break;
+        case FetchState.DONE:
+          status = "fetched"
+          break;
+      }
+      this.node.changeStyle(status);
     }
   }
 
+  isRender(): boolean {
+    return this.rendered;
+  }
+
   unrender() {
-    if (this.rendered === 1 || this.rendered === 0) return;
-    this.rendered = 1;
+    if (!this.rendered) return;
+    this.rendered = false;
     this.node.unrender();
+    this.node.changeStyle("init");
   }
 
   async fetchBigImage(): Promise<Blob | null> {

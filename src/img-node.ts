@@ -19,6 +19,7 @@ OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
 export interface VisualNode {
   create(): HTMLElement;
   render(): void;
+  isRender(): boolean;
 }
 
 export default class ImageNode {
@@ -35,7 +36,7 @@ export default class ImageNode {
   private blobUrl?: string;
   mimeType?: string;
   private downloadBar?: HTMLElement;
-  private rendered: boolean = false;
+  picked: boolean = true;
   constructor(src: string, href: string, title: string, delaySRC?: Promise<string>) {
     this.src = src;
     this.href = href;
@@ -93,7 +94,6 @@ export default class ImageNode {
 
   render() {
     if (!this.imgElement) return;
-    this.rendered = true;
     let justThumbnail = !this.blobUrl;
     if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
       const tip = OVERLAY_TIP.cloneNode(true);
@@ -115,7 +115,7 @@ export default class ImageNode {
   }
 
   unrender() {
-    if (!this.rendered || !this.imgElement) return;
+    if (!this.imgElement) return;
     this.imgElement.src = "";
     this.canvasSized = false;
   }
@@ -146,29 +146,34 @@ export default class ImageNode {
     }
   }
 
-  changeStyle(fetchStatus?: "fetching" | "fetched" | "failed", failedReason?: string) {
+  changeStyle(fetchStatus?: "fetching" | "fetched" | "failed" | "init", failedReason?: string) {
     if (!this.root) return;
-    this.root.querySelector(".img-node-error-hint")?.remove();
-    switch (fetchStatus) {
-      case "fetching":
-        this.root.classList.add("img-fetching");
-        this.root.classList.remove("img-fetched");
-        this.root.classList.remove("img-fetch-failed");
-        break
-      case "fetched":
-        this.root.classList.add("img-fetched");
-        this.root.classList.remove("img-fetching");
-        this.root.classList.remove("img-fetch-failed");
-        break;
-      case "failed":
-        this.root.classList.add("img-fetch-failed");
-        this.root.classList.remove("img-fetching");
-        break;
-      default:
-        this.root.classList.remove("img-fetched");
-        this.root.classList.remove("img-fetch-failed");
-        this.root.classList.remove("img-fetching");
+    const clearClass = () => this.root!.classList.forEach(cls => ["img-excluded", "img-fetching", "img-fetched", "img-fetch-failed"].includes(cls) && this.root?.classList.remove(cls));
+    if (!this.picked) {
+      clearClass();
+      this.root.classList.add("img-excluded");
+    } else {
+      switch (fetchStatus) {
+        case "fetching":
+          clearClass();
+          this.root.classList.add("img-fetching");
+          break
+        case "fetched":
+          clearClass();
+          this.root.classList.add("img-fetched");
+          break;
+        case "failed":
+          clearClass();
+          this.root.classList.add("img-fetch-failed");
+          break;
+        case "init":
+          clearClass();
+          break;
+        default:
+          break;
+      }
     }
+    this.root.querySelector(".img-node-error-hint")?.remove();
     if (failedReason) {
       // create error hint element
       const errorHintElement = document.createElement("div");
@@ -228,4 +233,8 @@ export class ChapterNode implements VisualNode {
   }
 
   render(): void { }
+
+  isRender(): boolean {
+    return true;
+  }
 }

@@ -323,7 +323,7 @@
       this.events = /* @__PURE__ */ new Map();
     }
     emit(id, ...args) {
-      if (!["imf-download-state-change"].includes(id)) {
+      if (!["imf-download-state-change", "imf-check-picked"].includes(id)) {
         evLog("debug", "event bus emitted: ", id);
       }
       const cbs = this.events.get(id);
@@ -421,7 +421,6 @@
     stage = 1 /* URL */;
     tryTimes = 0;
     lock = false;
-    /// 0: not rendered, 1: rendered tumbinal, 2: rendered big image
     rendered = false;
     data;
     contentType;
@@ -435,7 +434,15 @@
     constructor(index, root, matcher, chapterIndex) {
       this.index = index;
       this.node = root;
-      this.node.onclick = () => EBUS.emit("imf-on-click", this);
+      this.node.onclick = (event) => {
+        if (event.ctrlKey) {
+          EBUS.emit("add-cherry-pick-range", this.chapterIndex, this.index, true, event.shiftKey);
+        } else if (event.altKey) {
+          EBUS.emit("add-cherry-pick-range", this.chapterIndex, this.index, false, event.shiftKey);
+        } else {
+          EBUS.emit("imf-on-click", this);
+        }
+      };
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
       this.matcher = matcher;
       this.chapterIndex = chapterIndex;
@@ -1042,14 +1049,14 @@
       this.panel.initTabs();
       this.initEvents(this.panel);
       this.panel.initCherryPick(
-        (range) => {
-          const ret = this.cherryPicks[0].add(range);
-          EBUS.emit("cherry-pick-changed", 0, this.cherryPicks[0]);
+        (chapterIndex, range) => {
+          const ret = this.cherryPicks[chapterIndex].add(range);
+          EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
           return ret;
         },
-        (id) => {
-          const ret = this.cherryPicks[0].remove(id);
-          EBUS.emit("cherry-pick-changed", 0, this.cherryPicks[0]);
+        (chapterIndex, id) => {
+          const ret = this.cherryPicks[chapterIndex].remove(id);
+          EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
           return ret;
         }
       );
@@ -1406,30 +1413,24 @@
     positive;
     id;
     constructor(value, positive) {
-      if (value instanceof Array && value[0] === value[1]) {
-        value = value[0];
-      }
-      this.value = value;
       this.positive = positive;
-      this.id = CherryPickRnage.rangeToString(value, positive);
+      this.value = value.sort((a, b) => a - b);
+      this.id = CherryPickRnage.rangeToString(this.value, this.positive);
     }
     toString() {
       return CherryPickRnage.rangeToString(this.value, this.positive);
     }
     reset(newRange) {
-      this.value = newRange[0] == newRange[1] ? newRange[0] : newRange;
+      this.value = newRange.sort();
       this.id = CherryPickRnage.rangeToString(this.value, this.positive);
     }
     range() {
-      if (typeof this.value === "number") {
-        return [this.value, this.value];
-      }
       return this.value;
     }
     static rangeToString(value, positive) {
       let str = "";
-      if (typeof value === "number") {
-        str = value.toString();
+      if (value[0] === value[1]) {
+        str = value[0].toString();
       } else {
         str = value.map((v) => v.toString()).join("-");
       }
@@ -1442,7 +1443,8 @@
       value = value.replace(/!+/, "!");
       const exclude = value.startsWith("!");
       if (/^!?\d+$/.test(value)) {
-        return new CherryPickRnage(parseInt(value.replace("!", "")), !exclude);
+        const index = parseInt(value.replace("!", ""));
+        return new CherryPickRnage([index, index], !exclude);
       }
       if (/^!?\d+-\d+$/.test(value)) {
         const splits = value.replace("!", "").split("-").map((v) => parseInt(v));
@@ -6477,7 +6479,7 @@ ${chapters.map((c, i) => `<div><label>
       this.chaptersElement.querySelectorAll("input[type=checkbox][id^=ch-]:checked").forEach((checkbox) => idSet.add(Number(checkbox.value)));
       return idSet;
     }
-    initCherryPick(addCallback, onRemove) {
+    initCherryPick(onAdd, onRemove) {
       function addRangeElements(container, rangeList, onRemove2) {
         container.querySelectorAll(".ehvp-custom-panel-item-value").forEach((e) => e.remove());
         const tamplate = document.createElement("div");
@@ -6502,10 +6504,10 @@ ${chapters.map((c, i) => `<div><label>
         const rangeList = (input.value || "").split(",").map((s) => (exclude ? "!" : "") + s).map(CherryPickRnage.from).filter((r) => r !== null);
         if (rangeList.length > 0) {
           rangeList.forEach((range) => {
-            const newList = addCallback(range);
+            const newList = onAdd(0, range);
             if (newList === null)
               return;
-            addRangeElements(this.cherryPickElement.firstElementChild, newList, onRemove);
+            addRangeElements(this.cherryPickElement.firstElementChild, newList, (id) => onRemove(0, id));
           });
         }
         input.value = "";
@@ -6514,6 +6516,15 @@ ${chapters.map((c, i) => `<div><label>
       pickBTN.addEventListener("click", () => addCherryPick(false));
       excludeBTN.addEventListener("click", () => addCherryPick(true));
       input.addEventListener("keypress", (event) => event.key === "Enter" && addCherryPick(false));
+      let lastIndex;
+      EBUS.subscribe("add-cherry-pick-range", (chapterIndex, index, positive, shiftKey) => {
+        const range = new CherryPickRnage([index + 1, shiftKey ? (lastIndex ?? index) + 1 : index + 1], positive);
+        lastIndex = index;
+        const newList = onAdd(chapterIndex, range);
+        if (newList === null)
+          return;
+        addRangeElements(this.cherryPickElement.firstElementChild, newList, (id) => onRemove(chapterIndex, id));
+      });
     }
     static html() {
       return `

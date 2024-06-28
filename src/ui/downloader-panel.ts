@@ -140,7 +140,7 @@ ${chapters.map((c, i) => `<div><label>
     return idSet;
   }
 
-  initCherryPick(addCallback: (range: CherryPickRnage) => CherryPickRnage[] | null, onRemove: (id: string) => void) {
+  initCherryPick(onAdd: (chapterIndex: number, range: CherryPickRnage) => CherryPickRnage[] | null, onRemove: (chapterIndex: number, id: string) => void) {
     function addRangeElements(container: HTMLElement, rangeList: CherryPickRnage[], onRemove: (id: string) => void) {
       container.querySelectorAll(".ehvp-custom-panel-item-value").forEach(e => e.remove());
       const tamplate = document.createElement("div");
@@ -166,9 +166,9 @@ ${chapters.map((c, i) => `<div><label>
         .map(CherryPickRnage.from).filter(r => r !== null) as CherryPickRnage[];
       if (rangeList.length > 0) {
         rangeList.forEach(range => {
-          const newList = addCallback(range);
+          const newList = onAdd(0, range);
           if (newList === null) return;
-          addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, newList, onRemove)
+          addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, newList, (id) => onRemove(0, id))
         });
       }
       input.value = "";
@@ -177,6 +177,16 @@ ${chapters.map((c, i) => `<div><label>
     pickBTN.addEventListener("click", () => addCherryPick(false));
     excludeBTN.addEventListener("click", () => addCherryPick(true));
     input.addEventListener("keypress", (event) => event.key === "Enter" && addCherryPick(false));
+
+    let lastIndex: number | undefined;
+    EBUS.subscribe("add-cherry-pick-range", (chapterIndex, index, positive, shiftKey) => {
+      const range = new CherryPickRnage([index + 1, shiftKey ? (lastIndex ?? index) + 1 : index + 1], positive);
+      lastIndex = index;
+      const newList = onAdd(chapterIndex, range);
+      if (newList === null) return;
+      addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, newList, (id) => onRemove(chapterIndex, id))
+    });
+
   }
 
 

@@ -12,7 +12,7 @@ export class EventManager {
   }
   emit<ID extends EventID>(id: ID, ...args: Parameters<Events[ID]>) {
     // evLog("event bus emitted: ", id, ", args: ", ...args);
-    if (!["imf-download-state-change"].includes(id)) {
+    if (!["imf-download-state-change", "imf-check-picked"].includes(id)) {
       evLog("debug", "event bus emitted: ", id);
     }
     const cbs = this.events.get(id);
@@ -52,6 +52,7 @@ export interface Events {
   "downloader-canvas-resize": () => void;
   "notify-message": (level: "error" | "info", message: string) => void;
   "cherry-pick-changed": (chapaterIndex: number, cherryPick: CherryPick) => void;
+  "add-cherry-pick-range": (chapterIndex: number, index: number, positive: boolean, shiftKey: boolean) => void;
   "imf-check-picked": (chapterIndex: number, index: number) => boolean;
 }
 

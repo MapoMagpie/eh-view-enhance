@@ -33,18 +33,17 @@ export class Downloader {
     this.panel.initTabs();
     this.initEvents(this.panel);
     this.panel.initCherryPick(
-      range => {
-        const ret = this.cherryPicks[0].add(range);
-        EBUS.emit("cherry-pick-changed", 0, this.cherryPicks[0]);
+      (chapterIndex, range) => {
+        const ret = this.cherryPicks[chapterIndex].add(range);
+        EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
         return ret;
       },
-      id => {
-        const ret = this.cherryPicks[0].remove(id);
-        EBUS.emit("cherry-pick-changed", 0, this.cherryPicks[0]);
+      (chapterIndex, id) => {
+        const ret = this.cherryPicks[chapterIndex].remove(id);
+        EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
         return ret;
       }
     );
-
     this.queue = queue;
     this.queue.cherryPick = () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick();
     this.idleLoader = idleLoader;
@@ -434,16 +433,13 @@ export class CherryPick {
 }
 
 export class CherryPickRnage {
-  value: number | number[];
+  value: number[];
   positive: boolean;
   id: string;
-  constructor(value: number | number[], positive: boolean) {
-    if (value instanceof Array && value[0] === value[1]) {
-      value = value[0];
-    }
-    this.value = value;
+  constructor(value: number[], positive: boolean) {
     this.positive = positive;
-    this.id = CherryPickRnage.rangeToString(value, positive);
+    this.value = value.sort((a, b) => a - b);
+    this.id = CherryPickRnage.rangeToString(this.value, this.positive);
   }
 
   toString() {
@@ -451,21 +447,18 @@ export class CherryPickRnage {
   }
 
   reset(newRange: number[]) {
-    this.value = newRange[0] == newRange[1] ? newRange[0] : newRange;
+    this.value = newRange.sort();
     this.id = CherryPickRnage.rangeToString(this.value, this.positive);
   }
 
   range(): number[] {
-    if (typeof this.value === "number") {
-      return [this.value, this.value];
-    }
     return this.value;
   }
 
-  static rangeToString(value: number | number[], positive: boolean) {
+  static rangeToString(value: number[], positive: boolean) {
     let str = "";
-    if (typeof value === "number") {
-      str = value.toString();
+    if (value[0] === value[1]) {
+      str = value[0].toString();
     } else {
       str = value.map(v => v.toString()).join("-");
     }
@@ -478,7 +471,8 @@ export class CherryPickRnage {
     value = value.replace(/!+/, "!");
     const exclude = value.startsWith("!");
     if (/^!?\d+$/.test(value)) {
-      return new CherryPickRnage(parseInt(value.replace("!", "")), !exclude);
+      const index = parseInt(value.replace("!", ""));
+      return new CherryPickRnage([index, index], !exclude);
     }
     if (/^!?\d+-\d+$/.test(value)) {
       const splits = value.replace("!", "").split("-").map(v => parseInt(v));

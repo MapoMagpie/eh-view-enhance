@@ -47,7 +47,15 @@ export class IMGFetcher implements VisualNode {
   constructor(index: number, root: ImageNode, matcher: Matcher, chapterIndex: number) {
     this.index = index;
     this.node = root;
-    this.node.onclick = () => EBUS.emit("imf-on-click", this);
+    this.node.onclick = (event) => {
+      if (event.ctrlKey) {
+        EBUS.emit("add-cherry-pick-range", this.chapterIndex, this.index, true, event.shiftKey);
+      } else if (event.altKey) {
+        EBUS.emit("add-cherry-pick-range", this.chapterIndex, this.index, false, event.shiftKey);
+      } else {
+        EBUS.emit("imf-on-click", this);
+      }
+    };
     this.downloadState = { total: 100, loaded: 0, readyState: 0, };
     this.matcher = matcher;
     this.chapterIndex = chapterIndex;

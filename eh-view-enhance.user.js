@@ -6546,7 +6546,7 @@ ${chapters.map((c, i) => `<div><label>
         btn.addEventListener("click", followBTNClick);
       });
       input.addEventListener("keypress", (event) => event.key === "Enter" && addCherryPick(false));
-      let lastIndex;
+      let lastIndex = 0;
       EBUS.subscribe("add-cherry-pick-range", (chapterIndex, index, positive, shiftKey) => {
         const range = new CherryPickRnage([index + 1, shiftKey ? (lastIndex ?? index) + 1 : index + 1], positive);
         lastIndex = index;

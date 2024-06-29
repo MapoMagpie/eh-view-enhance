@@ -204,7 +204,7 @@ ${chapters.map((c, i) => `<div><label>
 
     input.addEventListener("keypress", (event) => event.key === "Enter" && addCherryPick(false));
 
-    let lastIndex: number | undefined;
+    let lastIndex: number | undefined = 0;
     EBUS.subscribe("add-cherry-pick-range", (chapterIndex, index, positive, shiftKey) => {
       const range = new CherryPickRnage([index + 1, shiftKey ? (lastIndex ?? index) + 1 : index + 1], positive);
       lastIndex = index;

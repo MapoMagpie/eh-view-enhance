@@ -1313,14 +1313,12 @@
       const remIdSet = /* @__PURE__ */ new Set();
       const addIdSet = /* @__PURE__ */ new Set();
       const addList = [];
-      let contained = false;
+      let equalsOld = false;
       for (let i = 0; i < this.values.length; i++) {
         const old = this.values[i];
         const oldR = old.range();
         if (newR[0] >= oldR[0] && newR[1] <= oldR[1]) {
-          if (range.positive === this.positive) {
-            contained = true;
-          } else {
+          if (range.positive !== this.positive) {
             remIdSet.add(old.id);
             if (oldR[0] < newR[0]) {
               addList.push(new CherryPickRnage([oldR[0], newR[0] - 1], old.positive));
@@ -1328,6 +1326,7 @@
             if (oldR[1] > newR[1]) {
               addList.push(new CherryPickRnage([newR[1] + 1, oldR[1]], old.positive));
             }
+            equalsOld = newR[0] === newR[1] && newR[0] === oldR[0] && newR[1] === oldR[1];
           }
           break;
         }
@@ -1335,19 +1334,13 @@
           remIdSet.add(old.id);
         } else if (newR[0] <= oldR[0] && newR[1] >= oldR[0] && newR[1] <= oldR[1]) {
           old.reset([newR[1] + 1, oldR[1]]);
-          if (range.positive === this.positive) {
-            if (!addIdSet.has(range.id)) {
-              addIdSet.add(range.id);
-              addList.push(range);
-            }
-          }
         } else if (newR[0] >= oldR[0] && newR[0] <= oldR[1] && newR[1] >= oldR[1]) {
           old.reset([oldR[0], newR[0] - 1]);
-          if (range.positive === this.positive) {
-            if (!addIdSet.has(range.id)) {
-              addIdSet.add(range.id);
-              addList.push(range);
-            }
+        }
+        if (range.positive === this.positive) {
+          if (!addIdSet.has(range.id)) {
+            addIdSet.add(range.id);
+            addList.push(range);
           }
         }
       }
@@ -1356,13 +1349,14 @@
       }
       if (addList.length > 0) {
         this.values.push(...addList);
-      } else if (!contained && range.positive === this.positive) {
-        this.values.push(range);
       }
       if (this.values.length === 0) {
-        this.values.push(range);
+        this.reset();
+        if (equalsOld) {
+          return this.values;
+        }
         this.positive = range.positive;
-        this.sieve = [];
+        this.values.push(range);
       } else {
         this.concat();
       }
@@ -1430,7 +1424,7 @@
       return CherryPickRnage.rangeToString(this.value, this.positive);
     }
     reset(newRange) {
-      this.value = newRange.sort();
+      this.value = newRange.sort((a, b) => a - b);
       this.id = CherryPickRnage.rangeToString(this.value, this.positive);
     }
     range() {

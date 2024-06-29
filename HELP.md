@@ -52,6 +52,8 @@ Alternatively, click the **Take Loaded** button in the download panel if some im
 
 The download panel's status indicators provide a clear view of image loading progress.
 
+**Note:** When the download file size exceeds 1.2GB, split compression will be automatically enabled. If you encounter errors while extracting the files, please update your extraction software or use 7-Zip.
+
 ## [Can I Select the Download Range?]
 
 Yes, the download panel has an option to select the download range(Cherry Pick), which applies to downloading, auto-loading, and pre-loading.
@@ -60,7 +62,14 @@ Even if an image is excluded from the download range, you can still click its th
 
 ## [How to Select Images on Some Illustration Sites?]
 
-While the script doesn't directly provide an image selection feature, several methods can achieve a similar effect:
+In the thumbnail list, you can use some hotkeys to select images:
+
+- **Ctrl + Left Click:** Selects the image. The first selection will exclude all other images.
+- **Ctrl + Shift + Left Click:** Selects the range of images between this image and the last selected image.
+- **Alt + Left Click:** Excludes the image. The first exclusion will select all other images.
+- **Alt + Shift + Left Click:** Excludes the range of images between this image and the last excluded image.
+
+In addition, there are several other methods:
 
 - Middle-click on a thumbnail to open the original image url, then right-click to save the image.
 - Set the download range to 1 in the download panel. This excludes all images except the first one. Then, click on thumbnails of interest in the list, which will load the corresponding large images. After selecting, clear the download range and click **Take Loaded** to package and download your selected images.

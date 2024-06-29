@@ -144,11 +144,19 @@ export const i18n = {
 <p>You can also directly click <strong>Start Download</strong> in the download panel without reading.</p>
 <p>Alternatively, click the <strong>Take Loaded</strong> button in the download panel if some images consistently fail to load. This will save the images that have already been loaded.</p>
 <p>The download panel&#39;s status indicators provide a clear view of image loading progress.</p>
+<p><strong>Note:</strong> When the download file size exceeds 1.2GB, split compression will be automatically enabled. If you encounter errors while extracting the files, please update your extraction software or use 7-Zip.</p>
 <h2>[Can I Select the Download Range?]</h2>
 <p>Yes, the download panel has an option to select the download range(Cherry Pick), which applies to downloading, auto-loading, and pre-loading.</p>
 <p>Even if an image is excluded from the download range, you can still click its thumbnail to view it, which will load the corresponding large image.</p>
 <h2>[How to Select Images on Some Illustration Sites?]</h2>
-<p>While the script doesn&#39;t directly provide an image selection feature, several methods can achieve a similar effect:</p>
+<p>In the thumbnail list, you can use some hotkeys to select images:</p>
+<ul>
+<li><strong>Ctrl + Left Click:</strong> Selects the image. The first selection will exclude all other images.</li>
+<li><strong>Ctrl + Shift + Left Click:</strong> Selects the range of images between this image and the last selected image.</li>
+<li><strong>Alt + Left Click:</strong> Excludes the image. The first exclusion will select all other images.</li>
+<li><strong>Alt + Shift + Left Click:</strong> Excludes the range of images between this image and the last excluded image.</li>
+</ul>
+<p>In addition, there are several other methods:</p>
 <ul>
 <li>Middle-click on a thumbnail to open the original image url, then right-click to save the image.</li>
 <li>Set the download range to 1 in the download panel. This excludes all images except the first one. Then, click on thumbnails of interest in the list, which will load the corresponding large images. After selecting, clear the download range and click <strong>Take Loaded</strong> to package and download your selected images.</li>
@@ -176,7 +184,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 `, `
 <h2>[如何使用？入口在哪里？]</h2>
 <p>脚本一般生效于画廊详情页或画家的主页或作品页。比如在E-Hentai上，生效于画廊详情页，或者在Twitter上，生效于推主的主页或推文。</p>
-<p>生效时，在页面的左下方会有一个**&lt;🎑&gt;**图标，点击后即可进入脚本的阅读界面。</p>
+<p>生效时，在页面的左下方会有一个<strong>&lt;🎑&gt;</strong>图标，点击后即可进入脚本的阅读界面。</p>
 <h2>[脚本的入口或控制栏可以更改位置吗？]</h2>
 <p>可以！在配置面板的下方，有一个<strong>拖拽移动</strong>的选项，对着图标进行拖动，你可以将控制栏移动到页面上的任意位置。</p>
 <h2>[进入对应的页面的，可以自动打开脚本吗？]</h2>
@@ -204,11 +212,19 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <p>当然你也可以不浏览，直接在下载面板中点击<strong>开始下载</strong>。</p>
 <p>或者点击下载面板中的<strong>获取已下载的</strong>按钮，当一些图片总是加载失败的时候，你可以使用此功能来保存已经加载过的图片。</p>
 <p>通过下载面板中的状态可以直观地看到图片加载的情况。</p>
+<p><strong>注意：</strong>当下载文件大小超过1.2G后，会自动启用分卷压缩。当使用解压软件解压出错时，请更新解压软件或使用7-Zip。</p>
 <h2>[可以选择下载范围吗？]</h2>
 <p>可以，在下载面板中有选择下载范围的功能，该功能对下载、自动加载、预加载都生效。</p>
 <p>另外，如果一张图片被排除在下载范围之外，你仍然可以点击该图片的缩略图进行浏览，这会加载对应的大图。</p>
 <h2>[如何在一些插画网站上挑选图片？]</h2>
-<p>虽然脚本并没有直接的挑选图片的功能，但是有数个方式可以达到类似的效果。</p>
+<p>在缩略图列表中使用一些快捷键可以进行图片的挑选。</p>
+<ul>
+<li><strong>Ctrl+鼠标左键：</strong> 选中该图片，当第一次选中时，其他的图片都会被排除。</li>
+<li><strong>Ctrl+Shift+鼠标左键：</strong> 选中该图片与上一张选中的图片之间的范围。</li>
+<li><strong>Alt+鼠标左键：</strong> 排除该图片，当第一次排除时，其他的图片都会被选中。</li>
+<li><strong>Alt+Shift+鼠标左键：</strong> 排除该图片与上一张排除的图片之间的范围。</li>
+</ul>
+<p>除此之外还有几种方式：</p>
 <ul>
 <li>在缩略图上按下鼠标中键，即可打开图片的原始地址，之后你可以右键保存图片。</li>
 <li>在下载面板中设置下载范围为1，这样会排除第一张图片以外的所有图片，之后在缩略图列表上点击你感兴趣的图片，对应的大图会被加载，最终挑选完毕后，删除掉下载范围并点击<strong>获取已下载的</strong>，这样你挑选的图片会被打包下载。</li>

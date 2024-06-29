@@ -230,7 +230,7 @@ function confHealthCheck(cf: Config): Config {
 const PATCH_CONFIG: Partial<Config> = {
   first: true,
 }
-const CONFIG_PATCH_VERSION = 3;
+const CONFIG_PATCH_VERSION = 4;
 function patchConfig(cf: Config, patch: Partial<Config>): Config | null {
   if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
     return null;

@@ -8,7 +8,15 @@ export function scrollSmoothly(element: HTMLElement, y: number): void {
     // if element is removed
   }
   scroller.step = conf.scrollingSpeed;
-  scroller.scroll(y > 0 ? "down" : "up");
+  scroller.scroll(y > 0 ? "down" : "up").then(() => element.dispatchEvent(new CustomEvent("scrollend")));
+}
+
+export function scrollTerminate(element: HTMLElement): void {
+  const scroller = TASKS.get(element);
+  if (scroller) {
+    scroller.timer = undefined;
+    scroller.scrolling = false;
+  }
 }
 
 const TASKS = new WeakMap<HTMLElement, Scroller>();
@@ -30,14 +38,14 @@ export class Scroller {
     this.directionChanged = this.lastDirection !== undefined && this.lastDirection !== direction;
     this.lastDirection = direction;
     let resolve: () => void;
-    const ret = new Promise<void>((reso) => resolve = reso);
+    const promise = new Promise<void>((r) => resolve = r);
     if (!this.timer) {
       this.timer = new Timer(duration)
     }
     if (this.scrolling) {
       this.additional = 0; // disable additional temporary
       this.timer.extend(duration);
-      return ret;
+      return promise;
     }
     this.additional = 0;
     this.scrolling = true;
@@ -64,7 +72,7 @@ export class Scroller {
       window.requestAnimationFrame(doFrame);
     }
     window.requestAnimationFrame(doFrame);
-    return ret;
+    return promise;
   }
 }
 
@@ -98,6 +106,7 @@ class Timer {
 
 export default {
   scrollSmoothly,
+  scrollTerminate,
   Scroller,
 };
 

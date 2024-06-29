@@ -224,11 +224,9 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
   };
 
   // keyboardEvents
-  function scrollImage(oriented: Oriented, key: string): boolean {
+  function shouldStep(oriented: Oriented, shouldPrevent: boolean): boolean {
     if (BIFM.isReachedBoundary(oriented)) {
-      const isSpace = key === "Space" || key === "Shift+Space";
-      if (!isSpace && conf.stickyMouse !== "disable" && BIFM.tryPreventStep()) return false;
-      BIFM.onWheel(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }), !isSpace);
+      if (shouldPrevent && BIFM.tryPreventStep()) return false;
       return true;
     }
     return false;
@@ -269,15 +267,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         (event) => {
           const key = parseKey(event);
           if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
-            // if (scrolling) return;
-            // scrolling = true;
-            // BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
-            // BIFM.frame.scrollBy({ left: 0, top: -(BIFM.frame.clientHeight / 2), behavior: "smooth" })
             scroller.scrollSmoothly(BIFM.frame, -1);
           }
-          if (scrollImage("prev", key)) {
+          if (shouldStep("prev", false)) {
             event.preventDefault();
-            // scrolling = false;
+            scroller.scrollTerminate(BIFM.frame);
+            BIFM.onWheel(new WheelEvent("wheel", { deltaY: -1 }), false);
           }
         }, true
       ),
@@ -286,15 +281,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         (event) => {
           const key = parseKey(event);
           if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
-            // if (scrolling) return;
-            // scrolling = true;
-            // BIFM.frame.addEventListener("scrollend", () => scrolling = false, { once: true });
-            // BIFM.frame.scrollBy({ left: 0, top: BIFM.frame.clientHeight / 2, behavior: "smooth" })
             scroller.scrollSmoothly(BIFM.frame, 1);
           }
-          if (scrollImage("next", key)) {
+          if (shouldStep("next", false)) {
             event.preventDefault();
-            // scrolling = false;
+            scroller.scrollTerminate(BIFM.frame);
+            BIFM.onWheel(new WheelEvent("wheel", { deltaY: 1 }), false);
           }
         }, true
       ),

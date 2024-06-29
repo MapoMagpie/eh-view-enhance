@@ -4437,7 +4437,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       TASKS.set(element, scroller);
     }
     scroller.step = conf.scrollingSpeed;
-    scroller.scroll(y > 0 ? "down" : "up");
+    scroller.scroll(y > 0 ? "down" : "up").then(() => element.dispatchEvent(new CustomEvent("scrollend")));
+  }
+  function scrollTerminate(element) {
+    const scroller = TASKS.get(element);
+    if (scroller) {
+      scroller.timer = void 0;
+      scroller.scrolling = false;
+    }
   }
   const TASKS = /* @__PURE__ */ new WeakMap();
   class Scroller {
@@ -4457,14 +4464,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.directionChanged = this.lastDirection !== void 0 && this.lastDirection !== direction;
       this.lastDirection = direction;
       let resolve;
-      const ret = new Promise((reso) => resolve = reso);
+      const promise = new Promise((r) => resolve = r);
       if (!this.timer) {
         this.timer = new Timer(duration);
       }
       if (this.scrolling) {
         this.additional = 0;
         this.timer.extend(duration);
-        return ret;
+        return promise;
       }
       this.additional = 0;
       this.scrolling = true;
@@ -4491,7 +4498,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         window.requestAnimationFrame(doFrame);
       };
       window.requestAnimationFrame(doFrame);
-      return ret;
+      return promise;
     }
   }
   class Timer {
@@ -4521,6 +4528,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
   const scroller = {
     scrollSmoothly,
+    scrollTerminate,
     Scroller
   };
 
@@ -5939,12 +5947,10 @@ html {
       FVGM.renderCurrView();
       FVGM.tryExtend();
     }
-    function scrollImage(oriented, key) {
+    function shouldStep(oriented, shouldPrevent) {
       if (BIFM.isReachedBoundary(oriented)) {
-        const isSpace = key === "Space" || key === "Shift+Space";
-        if (!isSpace && conf.stickyMouse !== "disable" && BIFM.tryPreventStep())
+        if (shouldPrevent && BIFM.tryPreventStep())
           return false;
-        BIFM.onWheel(new WheelEvent("wheel", { deltaY: oriented === "prev" ? -1 : 1 }), !isSpace);
         return true;
       }
       return false;
@@ -5986,8 +5992,10 @@ html {
             if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
               scroller.scrollSmoothly(BIFM.frame, -1);
             }
-            if (scrollImage("prev", key)) {
+            if (shouldStep("prev", false)) {
               event.preventDefault();
+              scroller.scrollTerminate(BIFM.frame);
+              BIFM.onWheel(new WheelEvent("wheel", { deltaY: -1 }), false);
             }
           },
           true
@@ -5999,8 +6007,10 @@ html {
             if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
               scroller.scrollSmoothly(BIFM.frame, 1);
             }
-            if (scrollImage("next", key)) {
+            if (shouldStep("next", false)) {
               event.preventDefault();
+              scroller.scrollTerminate(BIFM.frame);
+              BIFM.onWheel(new WheelEvent("wheel", { deltaY: 1 }), false);
             }
           },
           true

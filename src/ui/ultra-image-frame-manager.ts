@@ -315,7 +315,6 @@ export class BigImageFrameManager {
       if (isMouse && this.tryPreventStep()) return;
     }
     event.preventDefault();
-    // this.frame.addEventListener("scrollend", () => this.isReachedBoundary(oriented) && isMouse && this.tryPreventStep(), { once: true })
     this.stepNext(oriented);
   }
 

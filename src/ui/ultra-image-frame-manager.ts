@@ -679,7 +679,6 @@ class AutoPage {
   status: 'stop' | 'running';
   button: HTMLElement;
   lockVer: number;
-  restart: boolean;
   scroller: Scroller;
   constructor(BIFM: BigImageFrameManager, root: HTMLElement) {
     this.bifm = BIFM;
@@ -687,7 +686,6 @@ class AutoPage {
     this.status = "stop";
     this.button = root;
     this.lockVer = 0;
-    this.restart = false;
     this.bifm.callbackOnWheel = () => {
       if (this.status === "running") {
         this.stop();
@@ -713,7 +711,7 @@ class AutoPage {
     this.status = "running";
     this.button.setAttribute("data-status", "playing");
     (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
-    const b = this.bifm.frame;
+    const frame = this.bifm.frame;
     if (!this.bifm.visible) {
       const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
       if (queue.length === 0) return;
@@ -729,27 +727,36 @@ class AutoPage {
       if (this.lockVer !== lockVer) {
         return;
       }
-      if (this.restart) {
-        this.restart = false;
-        continue;
-      }
       progress.style.animation = ``;
+      // this.stop has been called
       if (this.status !== "running") {
         break;
       }
 
       if (this.bifm.elements.curr.length === 0) break;
+      // check boundary
       const index = parseInt(this.bifm.elements.curr[0]?.getAttribute("d-index")!);
       const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
       if (index < 0 || index >= queue.length) break;
 
-      const deltaY = this.bifm.frame.offsetHeight / 2;
-      if (this.bifm.isReachedBoundary("next")) {
-        this.bifm.onWheel(new WheelEvent("wheel", { deltaY }), false, true);
-        if (conf.readMode === "pagination") continue;
-      }
       if (conf.readMode === "pagination") {
-        b.scrollBy({ top: deltaY, behavior: "smooth" });
+        if (this.bifm.isReachedBoundary("next")) {
+          const curr = this.bifm.elements.curr[0]!;
+          if (curr instanceof HTMLVideoElement) {
+            let resolve: () => void;
+            const promise = new Promise<void>(r => resolve = r);
+            curr.addEventListener("timeupdate", () => {
+              if (curr.currentTime >= curr.duration - 1) {
+                sleep(1000).then(resolve);
+              }
+            });
+            await promise;
+          }
+          this.bifm.onWheel(new WheelEvent("wheel", { deltaY: 1 }), false, true);
+        } else {
+          const deltaY = this.bifm.frame.offsetHeight / 2;
+          frame.scrollBy({ top: deltaY, behavior: "smooth" });
+        }
       } else {
         this.scroller.step = conf.autoPageSpeed;
         this.scroller.scroll("down", interval() * 1000 + 10);

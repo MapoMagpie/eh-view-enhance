@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.24
+// @version            4.5.25
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -4437,7 +4437,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       TASKS.set(element, scroller);
     }
     scroller.step = conf.scrollingSpeed;
-    scroller.scroll(y > 0 ? "down" : "up").then(() => element.dispatchEvent(new CustomEvent("scrollend")));
+    scroller.scroll(y > 0 ? "down" : "up").then(() => element.dispatchEvent(new CustomEvent("smoothlyscrollend")));
   }
   function scrollTerminate(element) {
     const scroller = TASKS.get(element);
@@ -4632,7 +4632,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "当阅读模式为翻页模式时，每页展示的图片数量"),
     timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
     preventScrollPageTime: new I18nValue("Min Paging Time", "最小翻页时间"),
-    preventScrollPageTimeTooltip: new I18nValue("In Pagination read mode, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "当阅读模式为翻页模式时，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
+    preventScrollPageTimeTooltip: new I18nValue("In Pagination read mode, prevent immediate page flipping when scrolling to the bottom/top to improve the reading experience.<br>Set to 0 to disable this feature,<br>If set to less than 0, page-flipping via scrolling is always disabled, except for the spacebar.<br>measured in milliseconds.", "当阅读模式为翻页模式时，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。<br>设置为0时则禁用此功能，单位为毫秒。<br>设置小于0时则永远禁止通过滚动的方式翻页。空格键除外。"),
     autoPageSpeed: new I18nValue("Auto Paging Speed", "自动翻页速度"),
     autoPageSpeedTooltip: new I18nValue("In Pagination read mode, Auto Page Speed means how many seconds it takes to flip the page automatically.<br>In Continuous read mode, Auto Page Speed means the scrolling speed.", "当阅读模式为翻页模式时，自动翻页速度表示为多少秒后翻页。<br>当阅读模式为连续模式时，自动翻页速度表示为滚动速度。"),
     scrollingSpeed: new I18nValue("Scrolling Speed", "按键滚动速度"),
@@ -5806,7 +5806,7 @@ html {
         downloadThreads: [1, 10],
         timeout: [8, 40],
         autoPageSpeed: [1, 100],
-        preventScrollPageTime: [0, 9e4],
+        preventScrollPageTime: [-1, 9e4],
         paginationIMGCount: [1, 5],
         scrollingSpeed: [1, 100]
       };
@@ -5971,6 +5971,7 @@ html {
       }
       return false;
     }
+    const scrollEventDebouncer = new Debouncer();
     function initKeyboardEvent() {
       const inBigImageMode = {
         "exit-big-image-mode": new KeyboardDesc(
@@ -6005,10 +6006,18 @@ html {
           ["PageUp", "ArrowUp", "Shift+Space"],
           (event) => {
             const key = parseKey(event);
-            if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
+            const customKey = !["PageUp", "ArrowUp", "Shift+Space"].includes(key);
+            if (customKey) {
               scroller.scrollSmoothly(BIFM.frame, -1);
             }
-            if (shouldStep("prev", false)) {
+            const shouldPrevent = !["PageUp", "Shift+Space"].includes(key);
+            if (shouldPrevent) {
+              if (!customKey) {
+                scrollEventDebouncer.addEvent("SCROLL-IMAGE-UP", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
+              }
+              BIFM.frame.addEventListener("smoothlyscrollend", () => shouldStep("prev", true), { once: true });
+            }
+            if (shouldStep("prev", shouldPrevent)) {
               event.preventDefault();
               scroller.scrollTerminate(BIFM.frame);
               BIFM.onWheel(new WheelEvent("wheel", { deltaY: -1 }), false);
@@ -6020,10 +6029,18 @@ html {
           ["PageDown", "ArrowDown", "Space"],
           (event) => {
             const key = parseKey(event);
-            if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
+            const customKey = !["PageDown", "ArrowDown", "Space"].includes(key);
+            if (customKey) {
               scroller.scrollSmoothly(BIFM.frame, 1);
             }
-            if (shouldStep("next", false)) {
+            const shouldPrevent = !["PageDown", "Space"].includes(key);
+            if (shouldPrevent) {
+              if (!customKey) {
+                scrollEventDebouncer.addEvent("SCROLL-IMAGE-DOWN", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
+              }
+              BIFM.frame.addEventListener("smoothlyscrollend", () => shouldStep("next", true), { once: true });
+            }
+            if (shouldStep("next", shouldPrevent)) {
               event.preventDefault();
               scroller.scrollTerminate(BIFM.frame);
               BIFM.onWheel(new WheelEvent("wheel", { deltaY: 1 }), false);
@@ -6191,7 +6208,7 @@ html {
   }
   function generateOnePixelURL() {
     const href = window.location.href;
-    const meta = { href, version: "4.5.24", id: conf.id };
+    const meta = { href, version: "4.5.25", id: conf.id };
     const base = window.btoa(JSON.stringify(meta));
     return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }
@@ -7257,7 +7274,7 @@ ${chapters.map((c, i) => `<div><label>
     throttler;
     callbackOnWheel;
     hammer;
-    preventStep = { fin: false };
+    preventStep = { currentPreventFinished: false };
     visible = false;
     html;
     frameScrollAbort;
@@ -7550,14 +7567,14 @@ ${chapters.map((c, i) => `<div><label>
     resetPreventStep(fin) {
       this.preventStep.ani?.cancel();
       this.preventStep.ele?.remove();
-      this.preventStep = { fin: fin ?? false };
+      this.preventStep = { currentPreventFinished: fin ?? false };
     }
     // prevent scroll to next page while mouse scrolling;
     tryPreventStep() {
       if (!conf.imgScale || conf.imgScale === 100 || conf.preventScrollPageTime === 0) {
         return false;
       }
-      if (this.preventStep.fin) {
+      if (this.preventStep.currentPreventFinished) {
         this.resetPreventStep();
         return false;
       } else {
@@ -7568,12 +7585,15 @@ ${chapters.map((c, i) => `<div><label>
           lockEle.style.display = "flex";
           lockEle.style.justifyContent = "center";
           lockEle.style.bottom = "0px";
-          lockEle.innerHTML = `<div style="width: 30vw;height: 0.4rem;background-color: #ff8181d6;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray;border-radius: 7px;border: 1px solid #510000;"><span style="position: absolute;bottom: -3px;"></span></div>`;
+          lockEle.innerHTML = `<div style="width: 30vw;height: 0.1rem;background-color: #1b00ff59;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray;border-radius: 7px;border: 1px solid #510000;"><span style="position: absolute;bottom: -3px;"></span></div>`;
           this.frame.appendChild(lockEle);
-          const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });
-          this.preventStep = { ele: lockEle, ani, fin: false };
-          ani.onfinish = () => this.resetPreventStep(true);
-          ani.oncancel = () => this.resetPreventStep(true);
+          this.preventStep.ele = lockEle;
+          if (conf.preventScrollPageTime > 0) {
+            const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });
+            ani.onfinish = () => this.preventStep.ele && this.resetPreventStep(true);
+            this.preventStep.ani = ani;
+          }
+          this.preventStep.currentPreventFinished = false;
         }
         return true;
       }
@@ -7750,8 +7770,8 @@ ${chapters.map((c, i) => `<div><label>
     /**
      * @param fix: 1 or -1, means scale up or down
      * @param rate: step of scale, eg: current scale is 80, rate is 10, then new scale is 90
-     * @param _percent: directly set width percent
-     */
+    * @param _percent: directly set width percent 
+       */
     scaleBigImages(fix, rate, _percent) {
       const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
       if (!rule)

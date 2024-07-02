@@ -25,7 +25,7 @@ export class BigImageFrameManager {
   throttler: Debouncer;
   callbackOnWheel?: (event: WheelEvent) => void;
   hammer?: HammerManager;
-  preventStep: { ele?: HTMLElement, ani?: Animation, fin: boolean } = { fin: false };
+  preventStep: { ele?: HTMLElement, ani?: Animation, currentPreventFinished: boolean } = { currentPreventFinished: false };
   visible: boolean = false;
   html: Elements;
   frameScrollAbort?: AbortController;
@@ -327,7 +327,7 @@ export class BigImageFrameManager {
   resetPreventStep(fin?: boolean) {
     this.preventStep.ani?.cancel();
     this.preventStep.ele?.remove();
-    this.preventStep = { fin: fin ?? false };
+    this.preventStep = { currentPreventFinished: fin ?? false };
   }
 
   // prevent scroll to next page while mouse scrolling;
@@ -335,7 +335,7 @@ export class BigImageFrameManager {
     if (!conf.imgScale || conf.imgScale === 100 || conf.preventScrollPageTime === 0) {
       return false;
     }
-    if (this.preventStep.fin) {
+    if (this.preventStep.currentPreventFinished) {
       this.resetPreventStep();
       return false;
     } else {
@@ -346,12 +346,16 @@ export class BigImageFrameManager {
         lockEle.style.display = "flex";
         lockEle.style.justifyContent = "center";
         lockEle.style.bottom = "0px";
-        lockEle.innerHTML = `<div style="width: 30vw;height: 0.4rem;background-color: #ff8181d6;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray;border-radius: 7px;border: 1px solid #510000;"><span style="position: absolute;bottom: -3px;"></span></div>`;
+        lockEle.innerHTML = `<div style="width: 30vw;height: 0.1rem;background-color: #1b00ff59;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray;border-radius: 7px;border: 1px solid #510000;"><span style="position: absolute;bottom: -3px;"></span></div>`;
         this.frame.appendChild(lockEle);
-        const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });
-        this.preventStep = { ele: lockEle, ani: ani, fin: false }
-        ani.onfinish = () => this.resetPreventStep(true);
-        ani.oncancel = () => this.resetPreventStep(true);
+        this.preventStep.ele = lockEle;
+        // prevent time < 0 means prevent paging forever
+        if (conf.preventScrollPageTime > 0) {
+          const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });
+          ani.onfinish = () => this.preventStep.ele && this.resetPreventStep(true);
+          this.preventStep.ani = ani;
+        }
+        this.preventStep.currentPreventFinished = false;
       }
       return true;
     }
@@ -540,7 +544,7 @@ export class BigImageFrameManager {
   /**
    * @param fix: 1 or -1, means scale up or down
    * @param rate: step of scale, eg: current scale is 80, rate is 10, then new scale is 90
-   * @param _percent: directly set width percent
+   * @param _percent: directly set width percent 
    */
   scaleBigImages(fix: number, rate: number, _percent?: number): number {
     const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");

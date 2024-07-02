@@ -8,7 +8,7 @@ export function scrollSmoothly(element: HTMLElement, y: number): void {
     // if element is removed
   }
   scroller.step = conf.scrollingSpeed;
-  scroller.scroll(y > 0 ? "down" : "up").then(() => element.dispatchEvent(new CustomEvent("scrollend")));
+  scroller.scroll(y > 0 ? "down" : "up").then(() => element.dispatchEvent(new CustomEvent("smoothlyscrollend")));
 }
 
 export function scrollTerminate(element: HTMLElement): void {

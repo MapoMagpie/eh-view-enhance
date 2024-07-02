@@ -2,6 +2,7 @@ import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, conf, saveConf, 
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
 import { PageFetcher } from "../page-fetcher";
+import { Debouncer } from "../utils/debouncer";
 import parseKey from "../utils/keyboard";
 import { fetchImage } from "../utils/query";
 import queryCSSRules from "../utils/query-cssrules";
@@ -47,7 +48,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       downloadThreads: [1, 10],
       timeout: [8, 40],
       autoPageSpeed: [1, 100],
-      preventScrollPageTime: [0, 90000],
+      preventScrollPageTime: [-1, 90000],
       paginationIMGCount: [1, 5],
       scrollingSpeed: [1, 100],
     };
@@ -232,6 +233,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     return false;
   }
 
+  const scrollEventDebouncer = new Debouncer();
   function initKeyboardEvent(): KeyboardEvents {
     const inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc> = {
       "exit-big-image-mode": new KeyboardDesc(
@@ -266,10 +268,18 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         ["PageUp", "ArrowUp", "Shift+Space"],
         (event) => {
           const key = parseKey(event);
-          if (!["PageUp", "ArrowUp", "Shift+Space"].includes(key)) {
+          const customKey = !["PageUp", "ArrowUp", "Shift+Space"].includes(key);
+          if (customKey) {
             scroller.scrollSmoothly(BIFM.frame, -1);
           }
-          if (shouldStep("prev", false)) {
+          const shouldPrevent = !["PageUp", "Shift+Space"].includes(key);
+          if (shouldPrevent) {
+            if (!customKey) {
+              scrollEventDebouncer.addEvent("SCROLL-IMAGE-UP", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
+            }
+            BIFM.frame.addEventListener("smoothlyscrollend", () => shouldStep("prev", true), { once: true });
+          }
+          if (shouldStep("prev", shouldPrevent)) {
             event.preventDefault();
             scroller.scrollTerminate(BIFM.frame);
             BIFM.onWheel(new WheelEvent("wheel", { deltaY: -1 }), false);
@@ -280,10 +290,18 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         ["PageDown", "ArrowDown", "Space"],
         (event) => {
           const key = parseKey(event);
-          if (!["PageDown", "ArrowDown", "Space"].includes(key)) {
+          const customKey = !["PageDown", "ArrowDown", "Space"].includes(key);
+          if (customKey) {
             scroller.scrollSmoothly(BIFM.frame, 1);
           }
-          if (shouldStep("next", false)) {
+          const shouldPrevent = !["PageDown", "Space"].includes(key);
+          if (shouldPrevent) {
+            if (!customKey) {
+              scrollEventDebouncer.addEvent("SCROLL-IMAGE-DOWN", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
+            }
+            BIFM.frame.addEventListener("smoothlyscrollend", () => shouldStep("next", true), { once: true });
+          }
+          if (shouldStep("next", shouldPrevent)) {
             event.preventDefault();
             scroller.scrollTerminate(BIFM.frame);
             BIFM.onWheel(new WheelEvent("wheel", { deltaY: 1 }), false);

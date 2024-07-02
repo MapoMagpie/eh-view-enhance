@@ -57,7 +57,7 @@ export const i18n = {
   paginationIMGCountTooltip: new I18nValue("In Pagination Read mode, the number of images displayed on each page", "当阅读模式为翻页模式时，每页展示的图片数量"),
   timeout: new I18nValue("Timeout(second)", "超时时间(秒)"),
   preventScrollPageTime: new I18nValue("Min Paging Time", "最小翻页时间"),
-  preventScrollPageTimeTooltip: new I18nValue("In Pagination read mode, when scrolling through the content, prevent immediate page flipping when reaching the bottom, improve the reading experience. Set to 0 to disable this feature, measured in milliseconds.", "当阅读模式为翻页模式时，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。设置为0时则为禁用此功能，单位为毫秒。"),
+  preventScrollPageTimeTooltip: new I18nValue("In Pagination read mode, prevent immediate page flipping when scrolling to the bottom/top to improve the reading experience.<br>Set to 0 to disable this feature,<br>If set to less than 0, page-flipping via scrolling is always disabled, except for the spacebar.<br>measured in milliseconds.", "当阅读模式为翻页模式时，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。<br>设置为0时则禁用此功能，单位为毫秒。<br>设置小于0时则永远禁止通过滚动的方式翻页。空格键除外。"),
   autoPageSpeed: new I18nValue("Auto Paging Speed", "自动翻页速度"),
   autoPageSpeedTooltip: new I18nValue("In Pagination read mode, Auto Page Speed means how many seconds it takes to flip the page automatically.<br>In Continuous read mode, Auto Page Speed means the scrolling speed.", "当阅读模式为翻页模式时，自动翻页速度表示为多少秒后翻页。<br>当阅读模式为连续模式时，自动翻页速度表示为滚动速度。"),
   scrollingSpeed: new I18nValue("Scrolling Speed", "按键滚动速度"),

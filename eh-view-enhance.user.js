@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.25
+// @version            4.5.26
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -2258,9 +2258,11 @@
 
   class DanbooruMatcher extends BaseMatcher {
     tags = {};
+    blacklistTags = [];
     count = 0;
     async *fetchPagesSource() {
       let doc = document;
+      this.blacklistTags = this.getBlacklist(doc);
       yield doc;
       let tryTimes = 0;
       while (true) {
@@ -2307,6 +2309,8 @@
           return;
         this.count++;
         if (tags !== "") {
+          if (this.blacklistTags.findIndex((t) => tags.includes(t)) >= 0)
+            return;
           this.tags[imgNode.title.split(".")[0]] = tags.trim().replaceAll(": ", ":").split(" ").map((v) => v.trim()).filter((v) => v !== "");
         }
         list.push(imgNode);
@@ -2332,7 +2336,10 @@
       return doc.querySelector(".paginator a.paginator-next")?.href || null;
     }
     queryList(doc) {
-      return Array.from(doc.querySelectorAll(".posts-container > article:not(.blacklisted-active)"));
+      return Array.from(doc.querySelectorAll(".posts-container > article"));
+    }
+    getBlacklist(doc) {
+      return doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content")?.split(",") || [];
     }
     toImgNode(ele) {
       const anchor = ele.querySelector("a");
@@ -2374,6 +2381,9 @@
     }
     queryList(doc) {
       return Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
+    }
+    getBlacklist(doc) {
+      return doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content")?.split(",") || [];
     }
     toImgNode(ele) {
       const img = ele.querySelector("img");
@@ -2565,6 +2575,9 @@
     }
     queryList(doc) {
       return Array.from(doc.querySelectorAll(".thumbnail-container > article.thumbnail-preview:not(.blacklisted-image) > a"));
+    }
+    getBlacklist(doc) {
+      return doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content")?.split(",") || [];
     }
     toImgNode(ele) {
       const img = ele.querySelector("img");
@@ -6208,7 +6221,7 @@ html {
   }
   function generateOnePixelURL() {
     const href = window.location.href;
-    const meta = { href, version: "4.5.25", id: conf.id };
+    const meta = { href, version: "4.5.26", id: conf.id };
     const base = window.btoa(JSON.stringify(meta));
     return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }
@@ -7770,8 +7783,8 @@ ${chapters.map((c, i) => `<div><label>
     /**
      * @param fix: 1 or -1, means scale up or down
      * @param rate: step of scale, eg: current scale is 80, rate is 10, then new scale is 90
-    * @param _percent: directly set width percent 
-       */
+     * @param _percent: directly set width percent 
+     */
     scaleBigImages(fix, rate, _percent) {
       const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
       if (!rule)

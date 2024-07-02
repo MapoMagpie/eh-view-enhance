@@ -8,12 +8,14 @@ import { BaseMatcher, OriginMeta } from "./platform";
 
 abstract class DanbooruMatcher extends BaseMatcher {
   tags: Record<string, string[]> = {};
+  blacklistTags: string[] = [];
   count: number = 0;
 
   abstract nextPage(doc: Document): string | null;
 
   async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     let doc = document;
+    this.blacklistTags = this.getBlacklist(doc);
     yield doc;
     // find next page
     let tryTimes = 0;
@@ -35,6 +37,7 @@ abstract class DanbooruMatcher extends BaseMatcher {
   abstract getOriginalURL(doc: Document): string | null;
   abstract getNormalURL(doc: Document): string | null;
   abstract extractIDFromHref(href: string): string | undefined;
+  abstract getBlacklist(doc: Document): string[];
 
   async fetchOriginMeta(href: string): Promise<OriginMeta> {
     let url: string | null = null;
@@ -68,6 +71,7 @@ abstract class DanbooruMatcher extends BaseMatcher {
       if (!imgNode) return;
       this.count++;
       if (tags !== "") {
+        if (this.blacklistTags.findIndex(t => tags.includes(t)) >= 0) return;
         this.tags[imgNode.title.split(".")[0]] = tags.trim()
           .replaceAll(": ", ":")
           .split(" ")
@@ -102,7 +106,10 @@ export class DanbooruDonmaiMatcher extends DanbooruMatcher {
   }
   queryList(doc: Document): HTMLElement[] {
     // .post-preview.blacklisted-active, .image-container.blacklisted-active, #c-comments .post.blacklisted-active
-    return Array.from(doc.querySelectorAll(".posts-container > article:not(.blacklisted-active)"));
+    return Array.from(doc.querySelectorAll(".posts-container > article"));
+  }
+  getBlacklist(doc: Document): string[] {
+    return doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content")?.split(",") || [];
   }
   toImgNode(ele: HTMLElement): [ImageNode | null, string] {
     const anchor = ele.querySelector<HTMLAnchorElement>("a");
@@ -145,6 +152,9 @@ export class Rule34Matcher extends DanbooruMatcher {
   }
   queryList(doc: Document): HTMLElement[] {
     return Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
+  }
+  getBlacklist(doc: Document): string[] {
+    return doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content")?.split(",") || [];
   }
   toImgNode(ele: HTMLElement): [ImageNode | null, string] {
     const img = ele.querySelector<HTMLImageElement>("img");
@@ -354,6 +364,9 @@ export class GelBooruMatcher extends DanbooruMatcher {
   }
   queryList(doc: Document): HTMLElement[] {
     return Array.from(doc.querySelectorAll(".thumbnail-container > article.thumbnail-preview:not(.blacklisted-image) > a"));
+  }
+  getBlacklist(doc: Document): string[] {
+    return doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content")?.split(",") || [];
   }
   toImgNode(ele: HTMLElement): [ImageNode | null, string] {
     const img = ele.querySelector<HTMLImageElement>("img");

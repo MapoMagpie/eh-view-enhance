@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.26
+// @version            4.5.27
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -2876,13 +2876,13 @@
     }
   }
 
-  const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?"(.*?)"\)/;
+  const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?(.*?)\)/;
   const REGEXP_EXTRACT_HASH = /read\/\d+\/(\d+)$/;
   class HentaiNexusMatcher extends BaseMatcher {
     meta;
     baseURL;
     readerData;
-    readDirection;
+    // readDirection?: string;
     async *fetchPagesSource() {
       this.meta = this.pasrseGalleryMeta(document);
       yield document;
@@ -2909,7 +2909,7 @@
         if (!args || args.length !== 3)
           throw new Error("cannot find reader data");
         try {
-          this.initReader(args[0], args[1], args[2]);
+          this.initReader(args[0], args[1]);
         } catch (_error) {
           throw new Error("hentainexus updated decryption function");
         }
@@ -2946,11 +2946,10 @@
       });
       return meta;
     }
-    initReader(data, originTitle, readDirection) {
+    initReader(data, originTitle) {
       if (this.meta) {
         this.meta.originTitle = originTitle.replace(/::\s?HentaiNexus/, "");
       }
-      this.readDirection = readDirection;
       const hostname = window.location.hostname.split("");
       const hostnameLen = Math.min(hostname.length, 64);
       const rawSplits = window.atob(data).split("");
@@ -6221,7 +6220,7 @@ html {
   }
   function generateOnePixelURL() {
     const href = window.location.href;
-    const meta = { href, version: "4.5.26", id: conf.id };
+    const meta = { href, version: "4.5.27", id: conf.id };
     const base = window.btoa(JSON.stringify(meta));
     return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }

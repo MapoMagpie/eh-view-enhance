@@ -9,14 +9,14 @@ type HNImageInfo = {
   type: "image",
   url_label: string,
 }
-const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?"(.*?)"\)/;
+const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?(.*?)\)/;
 const REGEXP_EXTRACT_HASH = /read\/\d+\/(\d+)$/;
 export class HentaiNexusMatcher extends BaseMatcher {
 
   meta?: GalleryMeta;
   baseURL?: string;
   readerData?: HNImageInfo[];
-  readDirection?: string;
+  // readDirection?: string;
 
   async *fetchPagesSource(): AsyncGenerator<PagesSource, any, unknown> {
     this.meta = this.pasrseGalleryMeta(document);
@@ -43,8 +43,9 @@ export class HentaiNexusMatcher extends BaseMatcher {
       const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       const args = doc.querySelector("body > script")?.textContent?.match(REGEXP_EXTRACT_INIT_ARGUMENTS)?.slice(1);
       if (!args || args.length !== 3) throw new Error("cannot find reader data");
+      // args[2] :string = {"direction":"rtl","smooth_scroll":"enabled","fit_to_screen":"disabled"}
       try {
-        this.initReader(args[0], args[1], args[2]);
+        this.initReader(args[0], args[1]);
       } catch (_error) {
         throw new Error("hentainexus updated decryption function");
       }
@@ -81,11 +82,11 @@ export class HentaiNexusMatcher extends BaseMatcher {
     return meta;
   }
 
-  private initReader(data: string, originTitle: string, readDirection: string) {
+  private initReader(data: string, originTitle: string) {
     if (this.meta) {
       this.meta.originTitle = originTitle.replace(/::\s?HentaiNexus/, "");
     }
-    this.readDirection = readDirection;
+    // this.readDirection = readDirection;
 
     const hostname = window.location.hostname.split("");
     const hostnameLen = Math.min(hostname.length, 64);

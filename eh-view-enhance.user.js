@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.27
+// @version            4.5.28
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -2571,7 +2571,10 @@
       return /gelbooru.com\/index.php\?page=post&s=list/;
     }
     nextPage(doc) {
-      return doc.querySelector("#paginator a[alt=next]")?.href || null;
+      let href = doc.querySelector("#paginator a[alt=next]")?.href;
+      if (href)
+        return href;
+      return doc.querySelector("#paginator b + a")?.href || null;
     }
     queryList(doc) {
       return Array.from(doc.querySelectorAll(".thumbnail-container > article.thumbnail-preview:not(.blacklisted-image) > a"));
@@ -6220,7 +6223,7 @@ html {
   }
   function generateOnePixelURL() {
     const href = window.location.href;
-    const meta = { href, version: "4.5.27", id: conf.id };
+    const meta = { href, version: "4.5.28", id: conf.id };
     const base = window.btoa(JSON.stringify(meta));
     return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }

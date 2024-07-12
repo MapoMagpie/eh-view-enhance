@@ -360,7 +360,9 @@ export class GelBooruMatcher extends DanbooruMatcher {
     return /gelbooru.com\/index.php\?page=post&s=list/;
   }
   nextPage(doc: Document): string | null {
-    return doc.querySelector<HTMLAnchorElement>("#paginator a[alt=next]")?.href || null;
+    let href = doc.querySelector<HTMLAnchorElement>("#paginator a[alt=next]")?.href;
+    if (href) return href;
+    return doc.querySelector<HTMLAnchorElement>("#paginator b + a")?.href || null;
   }
   queryList(doc: Document): HTMLElement[] {
     return Array.from(doc.querySelectorAll(".thumbnail-container > article.thumbnail-preview:not(.blacklisted-image) > a"));

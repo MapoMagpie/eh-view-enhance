@@ -50,8 +50,9 @@ Or contribute: [Contribution Guide](https://github.com/MapoMagpie/eh-view-enhanc
 1. **`Prerequisites`**: Modern browser (Firefox\Chrome\Edge...)
 1. **`Prerequisites`**: Installed extension [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
 1. **`Prerequisites`**: click here to check if you can access [jsdelivr.net](https://cdn.jsdelivr.net) to ensure the script runs properly.
-1. **`Installation Link 1`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), login required
-1. **`Installation Link 2`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), no login required
+1. **`Installation Link 1`**: [OpenUserJS](https://openuserjs.org/scripts/zsyjklive.cn/E_HENTAI_VIEW_ENHANCE)
+1. **`Installation Link 2`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), login required
+1. **`Installation Link 3`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), no login required
 1. **`Installation Link 3`**: Direct install [here](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
 
 ## <a name="operates">Operates</a>

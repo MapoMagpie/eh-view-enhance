@@ -91,7 +91,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         rule.style.flexDirection = conf.reversePages ? "row-reverse" : "row";
       }
     }
-    // if (key === "disableCssAnimation") styleAnimationHTML(conf.disableCssAnimation);
   }
 
   function changeReadModeEvent(value?: string) {

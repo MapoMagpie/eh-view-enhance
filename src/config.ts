@@ -71,8 +71,6 @@ export type Config = {
   muted?: boolean,
   /** Video volume, min 0, max 100 */
   volume?: number,
-  /** Disable css animation */
-  disableCssAnimation: boolean,
   /** The feature of `multiple chapters` is enabled in a site */
   mcInSites: string[],
   /**  */
@@ -129,7 +127,6 @@ function defaultConf(): Config {
     autoOpenExcludeURLs: [],
     muted: false,
     volume: 50,
-    disableCssAnimation: true,
     mcInSites: ["18comic"],
     paginationIMGCount: 1,
     hitomiFormat: "auto",
@@ -244,7 +241,7 @@ export function saveConf(c: Config) {
 }
 
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageSpeed" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "disableCssAnimation" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost";
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost";
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer";
 export const conf = getConf();
 
@@ -277,7 +274,6 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoPlay", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "autoLoadInBackground", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
-  { key: "disableCssAnimation", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
   {
     key: "readMode", typ: "select", options: [

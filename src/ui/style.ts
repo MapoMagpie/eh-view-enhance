@@ -1,43 +1,5 @@
 import { conf } from "../config";
 
-export function styleAnimationCSS() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-  const css = `
-.ehvp-root {
-  transition: height 0.3s linear;
-}
-.ehvp-root-collapse {
-  transition: height 0.3s linear;
-}
-.big-img-frame {
-  transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
-}
-.p-helper {
-  transition: min-width 0.4s linear;
-}
-.p-panel {
-  transition: width 0.4s ease 0s, height 0.4s ease 0s;
-}
-.p-collapse {
-  transition: height 0.4s;
-}
-.big-img-frame-collapse {
-  transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
-}
-@media (min-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper.p-helper-extend {
-    transition: min-width 0.4s ease, color 0.5s ease-in-out, background-color 0.3s ease-in-out;
-  }
-}
-@media (max-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper.p-helper-extend {
-    transition: min-width 0.4s ease;
-  }
-}
-`;
-  return css;
-}
-
 export function styleCSS() {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
   const css = `

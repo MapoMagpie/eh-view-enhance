@@ -82,11 +82,6 @@ export function createHTML() {
   root.innerHTML = HTML_STRINGS;
   const style = document.createElement("style");
   style.innerHTML = styleCSS();
-  // if (!conf.disableCssAnimation) {
-  //   const aniStyle = document.createElement("style");
-  //   aniStyle.innerHTML = styleAnimationCSS();
-  //   shadowRoot.append(aniStyle);
-  // }
   shadowRoot.append(style);
   shadowRoot.append(root);
   return {

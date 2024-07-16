@@ -75,8 +75,6 @@ export const i18n = {
   autoLoadInBackgroundTooltip: new I18nValue("Keep Auto-Loading after the tab loses focus", "当标签页失去焦点后保持自动加载。"),
   autoOpen: new I18nValue("Auto Open", "自动展开"),
   autoOpenTooltip: new I18nValue("Automatically open after the gallery page is loaded", "进入画廊页面后，自动展开阅读视图。"),
-  disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
-  disableCssAnimationTooltip: new I18nValue("Valid after refreshing the page", "刷新页面后生效"),
   autoCollapsePanel: new I18nValue("Auto Fold Control Panel", "自动收起控制面板"),
   autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
   // config panel select option

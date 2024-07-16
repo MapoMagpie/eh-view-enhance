@@ -116,8 +116,8 @@ export class DownloaderPanel {
     const selectAll = chapters.length === 1;
     this.chaptersElement.innerHTML = `
 <div>
-  <span id="download-chapters-select-all" class="clickable p-btn">Select All</span>
-  <span id="download-chapters-unselect-all" class="clickable p-btn">Unselect All</span>
+  <span id="download-chapters-select-all" class="clickable">Select All</span>
+  <span id="download-chapters-unselect-all" class="clickable">Unselect All</span>
 </div>
 ${chapters.map((c, i) => `<div><label>
   <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || selectedChapters.find(sel => sel.index === i) ? "checked" : ""} />

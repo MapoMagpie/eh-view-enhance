@@ -92,7 +92,7 @@ export const i18n = {
   reverseMultipleImagesPostTooltip: new I18nValue("Reverse order for post with multiple images attatched", "反转推文图片顺序"),
 
   dragToMove: new I18nValue("Drag to Move", "拖动移动"),
-  originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
+  originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
   showHelp: new I18nValue("Help", "帮助"),
   showKeyboard: new I18nValue("Keyboard", "快捷键"),
   showExcludes: new I18nValue("Excludes", "站点排除"),

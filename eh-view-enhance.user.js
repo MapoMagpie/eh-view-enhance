@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.5.28
+// @version            4.6.0
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -35,6 +35,7 @@
 // @match              https://*.hm18.lol/*
 // @match              https://*.hm17.lol/*
 // @match              https://hentainexus.com/*
+// @match              https://koharu.to/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -61,7 +62,8 @@
 // @connect            qy0.ru
 // @connect            wnimg.ru
 // @connect            hentainexus.com
-// @connect            tencentcs.com
+// @connect            koharu.to
+// @connect            kisakisexo.xyz
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -142,7 +144,6 @@
       autoOpenExcludeURLs: [],
       muted: false,
       volume: 50,
-      disableCssAnimation: true,
       mcInSites: ["18comic"],
       paginationIMGCount: 1,
       hitomiFormat: "auto",
@@ -256,7 +257,6 @@
     { key: "autoPlay", typ: "boolean", gridColumnRange: [6, 11] },
     { key: "autoLoadInBackground", typ: "boolean", gridColumnRange: [1, 6] },
     { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
-    { key: "disableCssAnimation", typ: "boolean", gridColumnRange: [1, 11] },
     { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
     {
       key: "readMode",
@@ -389,6 +389,7 @@
         // "Accept-Encoding": "gzip, deflate, br",
         // "Connection": "keep-alive",
         "Referer": window.location.href,
+        "Origin": window.location.origin,
         "X-Alt-Referer": window.location.href,
         // "Sec-Fetch-Dest": "image",
         // "Sec-Fetch-Mode": "no-cors",
@@ -591,7 +592,7 @@
         abort = xhrWapper(imgFetcher.originURL, "blob", {
           onload: function(response) {
             let data = response.response;
-            if (data.type.startsWith("text/html")) {
+            if (data.type.startsWith("text")) {
               reject(new Error(`expect image data, fetched wrong type: ${data.type}`));
               return;
             }
@@ -1924,14 +1925,6 @@
     }
   }
 
-  function q(selector, parent) {
-    const element = (parent || document).querySelector(selector);
-    if (!element) {
-      throw new Error(`Can't find element: ${selector}`);
-    }
-    return element;
-  }
-
   class PageFetcher {
     chapters = [];
     chapterIndex = 0;
@@ -1941,15 +1934,14 @@
     afterInit;
     appendPageLock = false;
     abortb = false;
-    chaptersSelectionElement;
     constructor(queue, matcher) {
       this.queue = queue;
       this.matcher = matcher;
-      this.chaptersSelectionElement = q("#chapters-btn");
-      this.chaptersSelectionElement.addEventListener("click", () => this.backChaptersSelection());
       const debouncer = new Debouncer();
       EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
       EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
+      EBUS.subscribe("back-chapters-selection", () => this.backChaptersSelection());
+      EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
     }
     appendToView(total, nodes, chapterIndex, done) {
       EBUS.emit("pf-on-appended", total, nodes, chapterIndex, done);
@@ -1965,9 +1957,6 @@
           EBUS.emit("pf-change-chapter", index);
           if (this.chapters[index].queue) {
             this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
-            if (this.chapters.length > 1) {
-              this.chaptersSelectionElement.hidden = false;
-            }
           }
           if (!this.queue.downloading?.()) {
             this.beforeInit?.();
@@ -1987,7 +1976,6 @@
     backChaptersSelection() {
       EBUS.emit("pf-change-chapter", -1);
       this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), -1, true);
-      this.chaptersSelectionElement.hidden = true;
     }
     /// start the chapter by index
     async changeChapter(index) {
@@ -3158,6 +3146,14 @@
     }
   }
 
+  function q(selector, parent) {
+    const element = parent.querySelector(selector);
+    if (!element) {
+      throw new Error(`Can't find element: ${selector}`);
+    }
+    return element;
+  }
+
   class IMHentaiMatcher extends BaseMatcher {
     data;
     async fetchOriginMeta(href, _) {
@@ -3194,11 +3190,11 @@
       return ret;
     }
     async *fetchPagesSource() {
-      const server = q("#load_server").value;
-      const uid = q("#gallery_id").value;
-      const gid = q("#load_id").value;
-      const imgDir = q("#load_dir").value;
-      const total = q("#load_pages").value;
+      const server = q("#load_server", document).value;
+      const uid = q("#gallery_id", document).value;
+      const gid = q("#load_id", document).value;
+      const imgDir = q("#load_dir", document).value;
+      const total = q("#load_pages", document).value;
       this.data = { server, uid, gid, imgDir, total: Number(total) };
       yield document;
     }
@@ -3223,6 +3219,80 @@
     }
     workURL() {
       return /imhentai.xxx\/gallery\/\d+\//;
+    }
+  }
+
+  const REGEXP_EXTRACT_GALLERY_ID = /koharu.to\/\w+\/(\d+\/\w+)/;
+  const NAMESPACE_MAP = {
+    0: "misc",
+    1: "artist",
+    2: "circle",
+    7: "uploader",
+    8: "male",
+    9: "female",
+    10: "mixed",
+    11: "language"
+  };
+  class KoharuMatcher extends BaseMatcher {
+    originURLMap = /* @__PURE__ */ new Map();
+    meta;
+    galleryMeta() {
+      return this.meta || new GalleryMeta(window.location.href, "koharu-unknows");
+    }
+    async *fetchPagesSource(source) {
+      yield source.source;
+    }
+    createMeta(detail) {
+      const tags = detail.tags.reduce((map, tag) => {
+        const category = NAMESPACE_MAP[tag.namespace || 0] || "misc";
+        if (!map[category])
+          map[category] = [];
+        map[category].push(tag.name);
+        return map;
+      }, {});
+      this.meta = new GalleryMeta(window.location.href, detail.title);
+      this.meta.tags = tags;
+    }
+    async parseImgNodes(page) {
+      const matches = page.match(REGEXP_EXTRACT_GALLERY_ID);
+      if (!matches || matches.length < 2) {
+        throw new Error("invaild url: " + page);
+      }
+      const galleryID = matches[1];
+      const detailAPI = `https://api.koharu.to/books/detail/${galleryID}`;
+      const detail = await window.fetch(detailAPI).then((res) => res.json()).then((j) => j).catch((reason) => new Error(reason.toString()));
+      if (detail instanceof Error) {
+        throw detail;
+      }
+      this.createMeta(detail);
+      let dataId = Object.keys(detail.data).map(Number).sort((a, b) => b - a)[0];
+      const data = detail.data[dataId.toString()];
+      const token = JSON.parse(window.localStorage.getItem("token") || "{}")["session"];
+      const body = token && JSON.stringify({ token });
+      const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}`;
+      const items = await window.fetch(dataAPI, { method: "post", body }).then((res) => res.json()).then((j) => j).catch((reason) => new Error(reason.toString()));
+      if (items instanceof Error) {
+        throw items;
+      }
+      if (items.entries.length !== detail.thumbnails.entries.length) {
+        throw new Error("thumbnails length not match");
+      }
+      const thumbs = detail.thumbnails.entries;
+      const thumbBase = detail.thumbnails.base;
+      const itemBase = items.base;
+      const pad = items.entries.length.toString().length;
+      return items.entries.map((item, i) => {
+        const href = `${window.location.origin}/reader/${galleryID}/${i + 1}`;
+        const title = (i + 1).toString().padStart(pad, "0") + "." + item.path.split(".").pop();
+        this.originURLMap.set(href, itemBase + item.path);
+        return new ImageNode(thumbBase + thumbs[i].path, href, title);
+      });
+    }
+    async fetchOriginMeta(href) {
+      return { url: this.originURLMap.get(href) };
+    }
+    workURL() {
+      return /koharu.to\/(g|reader)\/\d+\/\w+/;
     }
   }
 
@@ -4378,7 +4448,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new IMHentaiMatcher(),
       new TwitterMatcher(),
       new WnacgMatcher(),
-      new HentaiNexusMatcher()
+      new HentaiNexusMatcher(),
+      new KoharuMatcher()
     ];
   }
   function adaptMatcher(url) {
@@ -4426,8 +4497,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return keys.join("+");
   }
 
-  function queryCSSRules(root, selector) {
-    return Array.from(root.sheet?.cssRules || []).find((rule) => rule.selectorText === selector);
+  function queryRule(root, selector) {
+    return Array.from(root.cssRules).find((rule) => rule.selectorText === selector);
   }
 
   function relocateElement(element, anchor, vw, vh) {
@@ -4665,8 +4736,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     autoLoadInBackgroundTooltip: new I18nValue("Keep Auto-Loading after the tab loses focus", "当标签页失去焦点后保持自动加载。"),
     autoOpen: new I18nValue("Auto Open", "自动展开"),
     autoOpenTooltip: new I18nValue("Automatically open after the gallery page is loaded", "进入画廊页面后，自动展开阅读视图。"),
-    disableCssAnimation: new I18nValue("Disable Animation", "禁用动画"),
-    disableCssAnimationTooltip: new I18nValue("Valid after refreshing the page", "刷新页面后生效"),
     autoCollapsePanel: new I18nValue("Auto Fold Control Panel", "自动收起控制面板"),
     autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
     // config panel select option
@@ -4683,7 +4752,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     reverseMultipleImagesPost: new I18nValue("Descending Images In Post", "反转推文图片顺序"),
     reverseMultipleImagesPostTooltip: new I18nValue("Reverse order for post with multiple images attatched", "反转推文图片顺序"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
-    originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "未启用最佳质量图片，点击此处<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
+    originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
     showHelp: new I18nValue("Help", "帮助"),
     showKeyboard: new I18nValue("Keyboard", "快捷键"),
     showExcludes: new I18nValue("Excludes", "站点排除"),
@@ -4984,825 +5053,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     });
   }
 
-  function toggleAnimationStyle(disable) {
-    removeAnimationStyleSheel();
-    if (disable)
-      return;
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-    const style = document.createElement("style");
-    style.id = "ehvp-style-animation";
-    const css = `
-.ehvp-root {
-  transition: height 0.3s linear;
-}
-.ehvp-root-collapse {
-  transition: height 0.3s linear;
-}
-.big-img-frame {
-  transition: width 0.3s cubic-bezier(0.06, 0.9, 0.33, 1.1);
-}
-.p-helper {
-  transition: min-width 0.4s linear;
-}
-.p-panel {
-  transition: width 0.4s ease 0s, height 0.4s ease 0s;
-}
-.p-collapse {
-  transition: height 0.4s;
-}
-.big-img-frame-collapse {
-  transition: width 0.2s cubic-bezier(1, -0.36, 1, 1);
-}
-@media (min-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper.p-helper-extend {
-    transition: min-width 0.4s ease, color 0.5s ease-in-out, background-color 0.3s ease-in-out;
-  }
-}
-@media (max-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper.p-helper-extend {
-    transition: min-width 0.4s ease;
-  }
-}
-`;
-    style.textContent = css;
-    document.head.appendChild(style);
-  }
-  function removeAnimationStyleSheel() {
-    const style = document.getElementById("ehvp-style-animation");
-    if (style) {
-      document.head.removeChild(style);
-    }
-  }
-  function loadStyleSheel() {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-    const style = document.createElement("style");
-    style.id = "ehvp-style";
-    const css = `
-:root {
-  --ehvp-background-color: #333343bb;
-  --ehvp-border: 1px solid #2f7b10;
-  --ehvp-font-color: #fff;
-}
-.ehvp-root {
-  width: 100vw;
-  height: 100vh;
-  background-color: #000;
-  position: fixed;
-  top: 0px;
-  left: 0px;
-  z-index: 2000;
-  box-sizing: border-box;
-  overflow: clip;
-}
-.ehvp-root-collapse {
-  height: 0;
-}
-.full-view-grid {
-  width: 100vw;
-  height: 100vh;
-  display: grid;
-  align-content: start;
-  grid-gap: 0.7rem;
-  grid-template-columns: repeat(${conf.colCount}, 1fr);
-  overflow: hidden scroll;
-  padding: 0.3rem;
-  box-sizing: border-box;
-}
-.ehvp-root * {
-  font-family: initial;
-}
-.ehvp-root a {
-  color: unset;
-}
-.ehvp-root input, .ehvp-root select {
-  color: #f1f1f1;
-  background-color: #34353b !important;
-  color-scheme: dark;
-  outline: none;
-  border: 1px solid #000000;
-  border-radius: 4px;
-  margin: 0px;
-  padding: 0px;
-  text-align: center;
-  position: unset !important;
-  top: unset !important;
-  vertical-align: middle;
-}
-.ehvp-root input:enabled:hover, .ehvp-root select:enabled:hover, .ehvp-root input:enabled:focus, .ehvp-root select:enabled:focus {
-  background-color: #34355b !important;
-}
-.ehvp-root select option {
-  background-color: #34355b !important;
-  color: #f1f1f1;
-  font-size: 1rem;
-}
-.p-label {
-  cursor: pointer;
-}
-.full-view-grid .img-node {
-  position: relative;
-}
-.img-node canvas, .img-node img {
-  position: relative;
-  width: 100%;
-  height: auto;
-  border: 3px solid #fff;
-  box-sizing: border-box;
-}
-.img-node:hover .ehvp-chapter-description {
-  color: #ffe7f5;
-}
-.img-node > a {
-  display: block;
-  line-height: 0;
-  position: relative;
-}
-.ehvp-chapter-description, .img-node-error-hint {
-  display: block;
-  position: absolute;
-  bottom: 3px;
-  left: 3px;
-  background-color: #708090e3;
-  color: #ffe785;
-  width: calc(100% - 6px);
-  font-weight: 600;
-  min-height: 3rem;
-  font-size: 1.2rem;
-  padding: 0.5rem;
-  box-sizing: border-box;
-  line-height: 1.3rem;
-}
-.img-node-error-hint {
-  color: #8a0000;
-}
-.img-fetched img, .img-fetched canvas {
-  border: 3px solid #90ffae !important;
-}
-.img-fetch-failed img, .img-fetch-failed canvas {
-  border: 3px solid red !important;
-}
-.img-fetching img, .img-fetching canvas {
-  border: 3px solid #00000000 !important;
-}
-.img-excluded img, .img-excluded canvas {
-  border: 3px solid #777 !important;
-}
-.img-excluded a::after {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  bottom: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
-  /**aspect-ratio: 1;*/
-  background-color: #333333b0;
-}
-.img-fetching a::after {
-	content: '';
-	position: absolute;
-	z-index: -1;
-  top: 0%;
-  left: 0%;
-	width: 30%;
-	height: 30%;
-	background-color: #ff0000;
-	animation: img-loading 1s linear infinite;
-}
-@keyframes img-loading {
-	25% {
-    background-color: #ff00ff;
-    top: 0%;
-    left: 70%;
-	}
-	50% {
-    background-color: #00ffff;
-    top: 70%;
-    left: 70%;
-	}
-	75% {
-    background-color: #ffff00;
-    top: 70%;
-    left: 0%;
-	}
-}
-.big-img-frame::-webkit-scrollbar {
-  display: none;
-}
-.big-img-frame {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  right: 0;
-  overflow: auto;
-  scrollbar-width: none;
-  z-index: 2001;
-  background-color: #000000d6;
-}
-.big-img-frame > img, .big-img-frame > video {
-  object-fit: contain;
-  display: block;
-}
-.bifm-flex {
-  display: flex;
-  justify-content: flex-start;
-  flex-direction: ${conf.reversePages ? "row-reverse" : "row"};
-}
-.bifm-img { }
-.p-helper {
-  position: fixed;
-  z-index: 2011 !important;
-  box-sizing: border-box;
-}
-.p-panel {
-  z-index: 2012 !important;
-  background-color: #333343aa;
-  box-sizing: border-box;
-  position: fixed;
-  color: white;
-  overflow: auto scroll;
-  padding: 3px;
-  scrollbar-width: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: bold;
-}
-.p-panel::-webkit-scrollbar {
-  display: none;
-}
-@media (min-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper {
-    top: ${conf.pageHelperAbTop};
-    left: ${conf.pageHelperAbLeft};
-    bottom: ${conf.pageHelperAbBottom};
-    right: ${conf.pageHelperAbRight};
-  }
-  .p-panel {
-    width: 24rem;
-    height: 32rem;
-  }
-  .p-btn {
-    height: 1.5rem;
-    width: 1.5rem;
-    border: 1px solid #000000;
-    border-radius: 4px;
-    line-height: initial;
-  }
-  .b-main {
-    flex-direction: ${conf.pageHelperAbLeft === "unset" ? "row-reverse" : "row"};
-  }
-  .b-main-item {
-    font-size: 1rem;
-    line-height: 1.2rem;
-  }
-  .ehvp-root input[type="checkbox"] {
-    width: 1rem;
-    height: unset !important;
-  }
-  .ehvp-root select {
-    width: 7rem !important;
-  }
-  .ehvp-root input, .ehvp-root select {
-    width: 3rem;
-    height: 1.5rem;
-  }
-  .p-config {
-    line-height: 1.85rem;
-  }
-  .bifm-vid-ctl {
-    bottom: 0.2rem;
-    ${conf.pageHelperAbLeft === "unset" ? "left: 0.2rem;" : "right: 0.2rem;"}
-  }
-}
-@media (max-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper {
-    bottom: 0px;
-    left: 0px;
-  }
-  .p-panel {
-    width: 100vw;
-    height: 70vh;
-  }
-  .p-btn {
-    height: 6cqw;
-    width: 6cqw;
-    border: 0.4cqw solid #000000;
-    border-radius: 1cqw;
-  }
-  .b-main {
-    flex-direction: row;
-    justify-content: space-between;
-  }
-  .b-main-item {
-    font-size: 5cqw;
-    line-height: 5.5cqw;
-  }
-  #entry-btn[data-stage="exit"] {
-    line-height: 7cqw;
-    font-size: 6.5cqw;
-  }
-  .ehvp-root input[type="checkbox"] {
-    width: 4cqw;
-    height: unset !important;
-  }
-  .ehvp-root select {
-    width: 25cqw !important;
-  }
-  .ehvp-root input, .ehvp-root select {
-    width: 10cqw;
-    height: 6cqw;
-    font-size: 3cqw;
-  }
-  .p-config {
-    line-height: 8.2cqw;
-  }
-  .bifm-vid-ctl {
-    bottom: 5.2cqw;
-    left: 0;
-    width: 100vw;
-  }
-}
-.clickable {
-  text-decoration-line: underline;
-  z-index: 2111;
-  user-select: none;
-  text-align: center;
-  white-space: nowrap;
-}
-.clickable:hover {
-  color: #90ea90 !important;
-}
-.p-collapse {
-  height: 0px !important;
-  padding: 0px !important;
-}
-.b-main {
-  display: flex;
-  user-select: none;
-}
-.b-main-item {
-  box-sizing: border-box;
-  border: var(--ehvp-border);
-  border-radius: 4px;
-  background-color: var(--ehvp-background-color);
-  color: var(--ehvp-font-color);
-  font-weight: bold;
-  padding: 0rem 0.3rem;
-  margin: 0rem 0.2rem;
-  position: relative;
-  white-space: nowrap;
-}
-.b-main-option {
-  padding: 0rem 0.2rem;
-}
-.b-main-option-selected {
-  color: black;
-  background-color: #ffffffa0;
-  border-radius: 6px;
-}
-.b-main-btn {
-  display: inline-block;
-  width: 1rem;
-}
-.b-main-input {
-  color: black;
-  background-color: #ffffffa0;
-  border-radius: 6px;
-  display: inline-block;
-  text-align: center;
-  width: 1.5rem;
-  cursor: ns-resize;
-}
-.p-config {
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  align-content: start;
-}
-.p-config label {
-  display: flex;
-  justify-content: space-between;
-  padding-right: 10px;
-  margin-bottom: unset;
-}
-.p-config input {
-  cursor: ns-resize;
-}
-.p-downloader {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-}
-.p-downloader canvas {
-  /* border: 1px solid greenyellow; */
-}
-.p-downloader .download-notice {
-  font-size: small;
-  text-align: center;
-  width: 100%;
-}
-.p-downloader .downloader-btn-group {
-  align-items: center;
-  text-align: right;
-  width: 100%;
-}
-.p-btn {
-  color: var(--ehvp-font-color);
-  cursor: pointer;
-  font-weight: 900;
-  background-color: rgb(81, 81, 81);
-  vertical-align: middle;
-}
-@keyframes main-progress {
-  from {
-    width: 0%;
-  }
-  to {
-    width: 100%;
-  }
-}
-.big-img-frame-collapse {
-  width: 0px !important;
-}
-.big-img-frame-collapse .img-land-left,
-.big-img-frame-collapse .img-land-right,
-.big-img-frame-collapse .img-land-top,
-.big-img-frame-collapse .img-land-bottom {
-  display: none !important;
-}
-.download-bar {
-  background-color: #333333c0;
-  height: 0.3rem;
-  width: 100%;
-  bottom: -0.3rem;
-  position: absolute;
-  border-left: 3px solid #00000000;
-  border-right: 3px solid #00000000;
-  box-sizing: border-box;
-}
-.download-bar > div {
-  background-color: #f0fff0;
-  height: 100%;
-  border: none;
-}
-.img-land-left, .img-land-right {
-  width: 15%;
-  height: 50%;
-  position: fixed;
-  z-index: 2004;
-  top: 25%;
-}
-.img-land-left {
-  left: 0;
-  cursor: url("https://exhentai.org/img/p.png"), auto;
-}
-.img-land-right {
-  right: 0;
-  cursor: url("https://exhentai.org/img/n.png"), auto;
-}
-.p-tooltip { }
-.p-tooltip .p-tooltiptext {
-  visibility: hidden;
-  max-width: 24rem;
-  background-color: #000000df;
-  color: var(--ehvp-font-color);
-  border-radius: 6px;
-  position: fixed;
-  z-index: 1;
-  font-size: medium;
-  white-space: normal;
-  text-align: left;
-  padding: 0.3rem 1rem;
-  box-sizing: border-box;
-  display: block;
-}
-.page-loading {
-  width: 100vw;
-  height: 100vh;
-  justify-content: center;
-  align-items: center;
-  background-color: #333333a6;
-}
-.page-loading-text {
-  color: var(--ehvp-font-color);
-  font-size: 6rem;
-}
-@keyframes rotate {
-	100% {
-		transform: rotate(1turn);
-	}
-}
-.border-ani {
-	position: relative;
-	z-index: 0;
-	overflow: hidden;
-	padding: 2rem;
-}
-.border-ani::before {
-	content: '';
-	position: absolute;
-	z-index: -2;
-	left: -50%;
-	top: -50%;
-	width: 200%;
-	height: 200%;
-	background-color: #fff;
-	animation: rotate 4s linear infinite;
-}
-.border-ani::after {
-	content: '';
-	position: absolute;
-	z-index: -1;
-	left: 6px;
-	top: 6px;
-	width: calc(100% - 16px);
-	height: calc(100% - 16px);
-	background-color: #333;
-}
-.overlay-tip {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  z-index: 10;
-  height: 1rem;
-  border-radius: 10%;
-  border: 1px solid #333;
-  color: var(--ehvp-font-color);
-  background-color: #959595d1;
-  line-height: 1rem;
-  font-size: 1rem;
-  text-align: center;
-  font-weight: bold;
-}
-.lightgreen { color: #90ea90; }
-.ehvp-full-panel {
-  position: fixed;
-  width: 100vw;
-  height: 100vh;
-  background-color: #000000e8;
-  z-index: 3000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  top: 0;
-}
-.ehvp-custom-panel {
-  min-width: 50rem;
-  min-height: 50vh;
-  max-width: 80rem;
-  max-height: 80vh;
-  background-color: #333343aa;
-  border: 1px solid #000000;
-  display: flex;
-  flex-direction: column;
-  text-align: start;
-  color: var(--ehvp-font-color);
-}
-.ehvp-custom-panel-title {
-  font-size: 2.1rem;
-  font-weight: bold;
-  display: flex;
-  justify-content: space-between;
-  padding-left: 1rem;
-}
-.ehvp-custom-panel-close {
-  width: 2rem;
-  text-align: center;
-}
-.ehvp-custom-panel-close:hover {
-  background-color: #c3c0e0;
-}
-.ehvp-custom-panel-container {
-  overflow: auto;
-}
-.ehvp-custom-panel-content {
-  border: 1px solid #000000;
-  border-radius: 4px;
-  margin: 0.5rem;
-  padding: 0.5rem;
-}
-.ehvp-custom-panel-item {
-  margin: 0.2rem 0rem;
-}
-.ehvp-custom-panel-item-title {
-  font-size: 1.4rem;
-}
-.ehvp-custom-panel-item-values {
-  margin-top: 0.3rem;
-  text-align: end;
-}
-.ehvp-custom-panel-item-value {
-  font-size: 1.1rem;
-  line-height: 1.2rem;
-  font-weight: bold;
-  color: black;
-  background-color: #c5c5c5;
-  border: 1px solid #000000;
-  box-sizing: border-box;
-  margin-left: 0.3rem;
-  display: inline-flex;
-}
-.ehvp-custom-panel-item-value span {
-  padding: 0rem 0.5rem;
-}
-.ehvp-custom-panel-item-value button {
-  background-color: #fff;
-  color: black;
-  border: none;
-  height: 1.2rem;
-}
-.ehvp-custom-panel-item-value button:hover {
-  background-color: #ffff00;
-}
-.ehvp-custom-panel-item-add-btn, .ehvp-custom-panel-item-input, .ehvp-custom-panel-item-span {
-  font-size: 1.1rem;
-  line-height: 1.2rem;
-  font-weight: bold;
-  background-color: #7fef7b;
-  color: black;
-  border: none;
-}
-.ehvp-custom-panel-item-span {
-  background-color: #34355b;
-  color: white;
-}
-.ehvp-custom-panel-item-add-btn:hover {
-  background-color: #ffff00 !important;
-}
-.ehvp-custom-panel-list > li {
-  line-height: 3rem;
-  margin-left: 0.5rem;
-  font-size: 1.4rem;
-}
-.ehvp-custom-panel-list-item-disable {
-  text-decoration: line-through;
-  color: red;
-}
-.ehvp-help-panel > div > h2 {
-  color: #c1ffc9;
-}
-.ehvp-help-panel > div > p {
-  font-size: 1.1rem;
-  margin-left: 1rem;
-  font-weight: 600;
-}
-.ehvp-help-panel > div > ul {
-  font-size: 1rem;
-}
-.ehvp-help-panel > div a {
-  color: #ff5959;
-}
-.ehvp-help-panel > div strong {
-  color: #d76d00;
-}
-html {
-  font-size: unset !important;
-}
-.bifm-vid-ctl {
-  position: fixed;
-  z-index: 2010;
-  padding: 3px 10px;
-}
-.bifm-vid-ctl > div {
-  display: flex;
-  align-items: center;
-  line-height: 1.2rem;
-}
-.bifm-vid-ctl > div > * {
-  margin: 0 0.1rem;
-}
-.bifm-vid-ctl:not(:hover) .bifm-vid-ctl-btn,
-.bifm-vid-ctl:not(:hover) .bifm-vid-ctl-span,
-.bifm-vid-ctl:not(:hover) #bifm-vid-ctl-volume
-{
-  opacity: 0;
-}
-.bifm-vid-ctl-btn {
-  height: 1.5rem;
-  width: 1.5rem;
-  font-size: 1.2rem;
-  padding: 0;
-  margin: 0;
-  border: none;
-  background-color: #00000000;
-  cursor: pointer;
-}
-#bifm-vid-ctl-volume {
-  width: 5rem;
-  height: 0.5rem;
-}
-.bifm-vid-ctl-pg {
-  border: 1px solid #00000000;
-  background-color: #3333337e;
-  -webkit-appearance: none;
-}
-#bifm-vid-ctl-pg {
-  width: 100%;
-  height: 0.2rem;
-  background-color: #333333ee;
-}
-.bifm-vid-ctl:hover {
-  background-color: var(--ehvp-background-color);
-}
-.bifm-vid-ctl:hover #bifm-vid-ctl-pg {
-  height: 0.8rem;
-}
-.bifm-vid-ctl-pg-inner {
-  background-color: #ffffffa0;
-  height: 100%;
-}
-.bifm-vid-ctl:hover #bifm-vid-ctl-pg .bifm-vid-ctl-pg-inner {
-  background-color: #fff;
-}
-.bifm-vid-ctl-span {
-  color: white;
-  font-weight: bold;
-}
-.download-middle {
-  width: 100%;
-  height: auto;
-  flex-grow: 1;
-  overflow: hidden;
-}
-.download-middle .ehvp-tabs + div {
-  width: 100%;
-  height: calc(100% - 2rem);
-}
-.ehvp-tabs {
-  height: 2rem;
-  width: 100%;
-  line-height: 2rem;
-}
-.ehvp-p-tab {
-  border: 1px dotted #ff0;
-  font-size: 1rem;
-  padding: 0 0.4rem;
-}
-.download-chapters, .download-status, .download-cherry-pick {
-  width: 100%;
-  height: 100%;
-}
-.download-chapters {
-  overflow: hidden auto;
-}
-.download-chapters label {
-  white-space: nowrap;
-}
-.download-chapters label span {
-  margin-left: 0.5rem;
-}
-.ehvp-p-tab-selected {
-  color: rgb(120, 240, 80) !important;
-}
-.ehvp-root-collapse .ehvp-message-box {
-  display: none;
-}
-.ehvp-message-box {
-  position: fixed;
-  z-index: 4001;
-  top: 0;
-  left: 0;
-}
-.ehvp-message {
-  margin-top: 1rem;
-  margin-left: 1rem;
-  line-height: 2rem;
-  background-color: #ffffffd6;
-  border-radius: 6px;
-  padding-left: 0.3rem;
-  position: relative;
-  box-shadow: inset 0 0 5px 2px #8273ff;
-  color: black;
-}
-.ehvp-message > button {
-  border: 1px solid #00000000;
-  margin-left: 1rem;
-  color: black;
-  background-color: #00000000;
-  height: 2rem;
-  width: 2rem;
-  text-align: center;
-  font-weight: bold;
-}
-.ehvp-message > button:hover {
-  background-color: #444;
-}
-.ehvp-message-duration-bar {
-  position: absolute;
-  bottom: 0;
-  width: 0%;
-  left: 0;
-  height: 0.1rem;
-  background: red;
-}
-`;
-    style.textContent = css;
-    document.head.appendChild(style);
-    return style;
-  }
-
   class KeyboardDesc {
     defaultKeys;
     cb;
@@ -5813,7 +5063,7 @@ html {
       this.noPreventDefault = noPreventDefault || false;
     }
   }
-  function initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH) {
+  function initEvents(HTML, BIFM, IFQ, IL, PH) {
     function modNumberConfigEvent(key, data) {
       const range = {
         colCount: [1, 12],
@@ -5835,17 +5085,17 @@ html {
           conf[key] -= mod;
         }
       }
-      const inputElement = q(`#${key}Input`);
+      const inputElement = q(`#${key}Input`, HTML.config.panel);
       if (inputElement) {
         inputElement.value = conf[key].toString();
       }
       if (key === "colCount") {
-        const rule = queryCSSRules(HTML.styleSheel, ".full-view-grid");
+        const rule = queryRule(HTML.styleSheet, ".full-view-grid");
         if (rule)
           rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
       }
       if (key === "paginationIMGCount") {
-        const rule = queryCSSRules(HTML.styleSheel, ".bifm-img");
+        const rule = queryRule(HTML.styleSheet, ".bifm-img");
         if (rule)
           rule.style.minWidth = conf[key] > 1 ? "" : "100vw";
         q("#paginationInput", HTML.paginationAdjustBar).textContent = conf.paginationIMGCount.toString();
@@ -5854,7 +5104,7 @@ html {
       saveConf(conf);
     }
     function modBooleanConfigEvent(key) {
-      const inputElement = q(`#${key}Checkbox`);
+      const inputElement = q(`#${key}Checkbox`, HTML.config.panel);
       conf[key] = inputElement?.checked || false;
       saveConf(conf);
       if (key === "autoLoad") {
@@ -5862,13 +5112,11 @@ html {
         IL.abort(0, conf.restartIdleLoader / 3);
       }
       if (key === "reversePages") {
-        const rule = queryCSSRules(HTML.styleSheel, ".bifm-flex");
+        const rule = queryRule(HTML.styleSheet, ".bifm-flex");
         if (rule) {
           rule.style.flexDirection = conf.reversePages ? "row-reverse" : "row";
         }
       }
-      if (key === "disableCssAnimation")
-        toggleAnimationStyle(conf.disableCssAnimation);
     }
     function changeReadModeEvent(value) {
       if (value) {
@@ -5897,7 +5145,7 @@ html {
       });
     }
     function modSelectConfigEvent(key) {
-      const inputElement = q(`#${key}Select`);
+      const inputElement = q(`#${key}Select`, HTML.config.panel);
       const value = inputElement?.value;
       if (value) {
         conf[key] = value;
@@ -5935,7 +5183,7 @@ html {
       });
     }
     function togglePanelEvent(id, collapse, target) {
-      let element = q(`#${id}-panel`);
+      let element = q(`#${id}-panel`, HTML.pageHelper);
       if (!element)
         return;
       if (collapse === void 0) {
@@ -5959,11 +5207,6 @@ html {
       HTML.fullViewGrid.focus();
       document.body.style.overflow = "hidden";
     }
-    function hiddenFullViewGridEvent(event) {
-      if (event.target === HTML.fullViewGrid || event.target.classList.contains("img-node")) {
-        main(false);
-      }
-    }
     function hiddenFullViewGrid() {
       BIFM.hidden();
       PH.minify("exit");
@@ -5971,12 +5214,6 @@ html {
       HTML.root.classList.add("ehvp-root-collapse");
       HTML.fullViewGrid.blur();
       document.body.style.overflow = bodyOverflow;
-    }
-    function scrollEvent() {
-      if (HTML.root.classList.contains("ehvp-root-collapse"))
-        return;
-      FVGM.renderCurrView();
-      FVGM.tryExtend();
     }
     function shouldStep(oriented, shouldPrevent) {
       if (BIFM.isReachedBoundary(oriented)) {
@@ -6090,7 +5327,7 @@ html {
         ),
         "exit-full-view-grid": new KeyboardDesc(
           ["Escape"],
-          () => main(false)
+          () => EBUS.emit("toggle-main-view", false)
         ),
         "columns-increase": new KeyboardDesc(
           ["="],
@@ -6102,7 +5339,7 @@ html {
         ),
         "back-chapters-selection": new KeyboardDesc(
           ["b"],
-          () => PF.backChaptersSelection()
+          () => EBUS.emit("back-chapters-selection")
         )
       };
       const inMain = {
@@ -6110,7 +5347,7 @@ html {
           const activeElement = document.activeElement;
           if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement)
             return;
-          main(true);
+          EBUS.emit("toggle-main-view", true);
         }, true)
       };
       return { inBigImageMode, inFullViewGrid, inMain };
@@ -6171,7 +5408,7 @@ html {
       }
     }
     function showGuideEvent() {
-      createHelpPanel(document.body);
+      createHelpPanel(HTML.root);
     }
     function showKeyboardCustomEvent() {
       createKeyboardCustomPanel(keyboardEvents, HTML.root);
@@ -6182,33 +5419,13 @@ html {
     function showAutoOpenExcludeURLEvent() {
       createExcludeURLPanel(HTML.root, conf.autoOpenExcludeURLs, true);
     }
-    const signal = { first: true };
-    function main(expand) {
-      if (HTML.pageHelper) {
-        if (expand) {
-          showFullViewGrid();
-          if (signal.first) {
-            signal.first = false;
-            PF.init();
-            fetchImage(generateOnePixelURL()).catch(() => {
-            });
-          }
-        } else {
-          ["config", "downloader"].forEach((id) => togglePanelEvent(id, true));
-          hiddenFullViewGrid();
-        }
-      }
-    }
     return {
-      main,
       modNumberConfigEvent,
       modBooleanConfigEvent,
       modSelectConfigEvent,
       togglePanelEvent,
       showFullViewGrid,
-      hiddenFullViewGridEvent,
       hiddenFullViewGrid,
-      scrollEvent,
       fullViewGridKeyBoardEvent,
       bigImageFrameKeyBoardEvent,
       keyboardEvent,
@@ -6220,12 +5437,6 @@ html {
       showAutoOpenExcludeURLEvent,
       changeReadModeEvent
     };
-  }
-  function generateOnePixelURL() {
-    const href = window.location.href;
-    const meta = { href, version: "4.5.28", id: conf.id };
-    const base = window.btoa(JSON.stringify(meta));
-    return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
   }
 
   class FullViewGridManager {
@@ -6265,6 +5476,18 @@ html {
         }
       });
       EBUS.subscribe("cherry-pick-changed", (chapterIndex) => this.chapterIndex === chapterIndex && this.updateRender());
+      const debouncer = new Debouncer();
+      this.root.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", () => {
+        if (HTML.root.classList.contains("ehvp-root-collapse"))
+          return;
+        this.renderCurrView();
+        this.tryExtend();
+      }, 400));
+      this.root.addEventListener("click", (event) => {
+        if (event.target === HTML.fullViewGrid || event.target.classList.contains("img-node")) {
+          EBUS.emit("toggle-main-view", false);
+        }
+      });
     }
     append(nodes) {
       if (nodes.length > 0) {
@@ -6404,6 +5627,755 @@ html {
     return { start: { x: startX, y: startY }, end: { x: endX, y: endY }, distance, direction };
   }
 
+  function styleCSS() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+    const css = `
+.ehvp-root {
+  --ehvp-background-color: #333343bb;
+  --ehvp-border: 1px solid #2f7b10;
+  --ehvp-font-color: #fff;
+  font-size: 16px;
+}
+.ehvp-root {
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  z-index: 2000;
+  box-sizing: border-box;
+  overflow: clip;
+}
+.ehvp-root-collapse {
+  height: 0;
+}
+.full-view-grid {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  align-content: start;
+  grid-gap: 0.7em;
+  grid-template-columns: repeat(${conf.colCount}, 1fr);
+  overflow: hidden scroll;
+  padding: 0.3em;
+  box-sizing: border-box;
+}
+.ehvp-root input, .ehvp-root select {
+  color: #f1f1f1;
+  background-color: #34353b;
+  color-scheme: dark;
+  border: 1px solid #000000;
+  border-radius: 4px;
+  margin: 0px;
+  padding: 0px;
+  text-align: center;
+  vertical-align: middle;
+}
+.ehvp-root input:enabled:hover, .ehvp-root select:enabled:hover, .ehvp-root input:enabled:focus, .ehvp-root select:enabled:focus {
+  background-color: #34355b !important;
+}
+.ehvp-root select option {
+  background-color: #34355b !important;
+  color: #f1f1f1;
+  font-size: 1em;
+}
+.p-label {
+  cursor: pointer;
+}
+.full-view-grid .img-node {
+  position: relative;
+}
+.img-node canvas, .img-node img {
+  position: relative;
+  width: 100%;
+  height: auto;
+  border: 3px solid #fff;
+  box-sizing: border-box;
+}
+.img-node:hover .ehvp-chapter-description {
+  color: #ffe7f5;
+}
+.img-node > a {
+  display: block;
+  line-height: 0;
+  position: relative;
+}
+.ehvp-chapter-description, .img-node-error-hint {
+  display: block;
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  background-color: #708090e3;
+  color: #ffe785;
+  width: calc(100% - 6px);
+  font-weight: 600;
+  min-height: 3em;
+  font-size: 1.2em;
+  padding: 0.5em;
+  box-sizing: border-box;
+  line-height: 1.3em;
+}
+.img-node-error-hint {
+  color: #8a0000;
+}
+.img-fetched img, .img-fetched canvas {
+  border: 3px solid #90ffae !important;
+}
+.img-fetch-failed img, .img-fetch-failed canvas {
+  border: 3px solid red !important;
+}
+.img-fetching img, .img-fetching canvas {
+  border: 3px solid #00000000 !important;
+}
+.img-excluded img, .img-excluded canvas {
+  border: 3px solid #777 !important;
+}
+.img-excluded a::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  /**aspect-ratio: 1;*/
+  background-color: #333333b0;
+}
+.img-fetching a::after {
+	content: '';
+	position: absolute;
+	z-index: -1;
+  top: 0%;
+  left: 0%;
+	width: 30%;
+	height: 30%;
+	background-color: #ff0000;
+	animation: img-loading 1s linear infinite;
+}
+@keyframes img-loading {
+	25% {
+    background-color: #ff00ff;
+    top: 0%;
+    left: 70%;
+	}
+	50% {
+    background-color: #00ffff;
+    top: 70%;
+    left: 70%;
+	}
+	75% {
+    background-color: #ffff00;
+    top: 70%;
+    left: 0%;
+	}
+}
+.big-img-frame::-webkit-scrollbar {
+  display: none;
+}
+.big-img-frame {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  right: 0;
+  overflow: auto;
+  scrollbar-width: none;
+  z-index: 2001;
+  background-color: #000000d6;
+}
+.big-img-frame > img, .big-img-frame > video {
+  object-fit: contain;
+  display: block;
+}
+.bifm-flex {
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: ${conf.reversePages ? "row-reverse" : "row"};
+}
+.bifm-img { }
+.p-helper {
+  position: fixed;
+  z-index: 2011 !important;
+  box-sizing: border-box;
+}
+.p-panel {
+  z-index: 2012 !important;
+  background-color: #333343aa;
+  box-sizing: border-box;
+  position: fixed;
+  color: white;
+  overflow: auto scroll;
+  padding: 3px;
+  scrollbar-width: none;
+  border-radius: 4px;
+  font-weight: 800;
+}
+.p-panel::-webkit-scrollbar {
+  display: none;
+}
+@media (min-width: ${isMobile ? "1440px" : "720px"}) {
+  .p-helper {
+    top: ${conf.pageHelperAbTop};
+    left: ${conf.pageHelperAbLeft};
+    bottom: ${conf.pageHelperAbBottom};
+    right: ${conf.pageHelperAbRight};
+  }
+  .p-panel {
+    width: 24em;
+    height: 32em;
+  }
+  .p-btn { }
+  .b-main {
+    flex-direction: ${conf.pageHelperAbLeft === "unset" ? "row-reverse" : "row"};
+  }
+  .b-main-item {
+    font-size: 1em;
+    line-height: 1.2em;
+  }
+  .ehvp-root input[type="checkbox"] {
+    width: 1em;
+    height: unset !important;
+  }
+  .ehvp-root select {
+    width: 8em;
+    height: 2em;
+  }
+  .ehvp-root input {
+    width: 3em;
+    height: 1.5em;
+  }
+  .ehvp-root select {
+  }
+  .p-config {
+    line-height: 2em;
+  }
+  .bifm-vid-ctl {
+    bottom: 0.2em;
+    ${conf.pageHelperAbLeft === "unset" ? "left: 0.2em;" : "right: 0.2em;"}
+  }
+}
+@media (max-width: ${isMobile ? "1440px" : "720px"}) {
+  .p-helper {
+    bottom: 0px;
+    left: 0px;
+  }
+  .p-panel {
+    width: 100vw;
+    height: 70vh;
+  }
+  .p-btn {
+    height: 6cqw;
+    width: 6cqw;
+    border: 0.4cqw solid #000000;
+    border-radius: 1cqw;
+  }
+  .b-main {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .b-main-item {
+    font-size: 5cqw;
+    line-height: 5.5cqw;
+  }
+  #entry-btn[data-stage="exit"] {
+    line-height: 7cqw;
+    font-size: 6.5cqw;
+  }
+  .ehvp-root input[type="checkbox"] {
+    width: 4cqw;
+    height: unset !important;
+  }
+  .ehvp-root select {
+    width: 25cqw !important;
+  }
+  .ehvp-root input, .ehvp-root select {
+    width: 10cqw;
+    height: 6cqw;
+    font-size: 3cqw;
+  }
+  .p-config {
+    line-height: 8.2cqw;
+  }
+  .bifm-vid-ctl {
+    bottom: 5.2cqw;
+    left: 0;
+    width: 100vw;
+  }
+}
+.clickable {
+  text-decoration-line: underline;
+  z-index: 2111;
+  user-select: none;
+  text-align: center;
+  white-space: nowrap;
+}
+.clickable:hover {
+  color: #90ea90 !important;
+}
+.p-collapse {
+  height: 0px !important;
+  padding: 0px !important;
+}
+.b-main {
+  display: flex;
+  user-select: none;
+}
+.b-main-item {
+  box-sizing: border-box;
+  border: var(--ehvp-border);
+  border-radius: 4px;
+  background-color: var(--ehvp-background-color);
+  color: var(--ehvp-font-color);
+  font-weight: 800;
+  padding: 0em 0.3em;
+  margin: 0em 0.2em;
+  position: relative;
+  white-space: nowrap;
+}
+.b-main-option {
+  padding: 0em 0.2em;
+}
+.b-main-option-selected {
+  color: black;
+  background-color: #ffffffa0;
+  border-radius: 6px;
+}
+.b-main-btn {
+  display: inline-block;
+  width: 1em;
+}
+.b-main-input {
+  color: black;
+  background-color: #ffffffa0;
+  border-radius: 6px;
+  display: inline-block;
+  text-align: center;
+  width: 1.5em;
+  cursor: ns-resize;
+}
+.p-config {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  align-content: start;
+}
+.p-config label {
+  display: flex;
+  justify-content: space-between;
+  padding-right: 10px;
+  margin-bottom: unset;
+}
+.p-config input {
+  cursor: ns-resize;
+}
+.p-downloader {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+.p-downloader canvas {
+  /* border: 1px solid greenyellow; */
+}
+.p-downloader .download-notice {
+  text-align: center;
+  width: 100%;
+}
+.p-downloader .downloader-btn-group {
+  align-items: center;
+  text-align: right;
+  width: 100%;
+}
+.p-btn {
+  color: var(--ehvp-font-color);
+  cursor: pointer;
+  font-weight: 800;
+  background-color: rgb(81, 81, 81);
+  vertical-align: middle;
+  width: 1.5em;
+  height: 1.5em;
+  border: 1px solid #000000;
+  border-radius: 4px;
+}
+@keyframes main-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+.big-img-frame-collapse {
+  width: 0px !important;
+}
+.big-img-frame-collapse .img-land-left,
+.big-img-frame-collapse .img-land-right,
+.big-img-frame-collapse .img-land-top,
+.big-img-frame-collapse .img-land-bottom {
+  display: none !important;
+}
+.download-bar {
+  background-color: #333333c0;
+  height: 0.3em;
+  width: 100%;
+  bottom: -0.3em;
+  position: absolute;
+  border-left: 3px solid #00000000;
+  border-right: 3px solid #00000000;
+  box-sizing: border-box;
+}
+.download-bar > div {
+  background-color: #f0fff0;
+  height: 100%;
+  border: none;
+}
+.img-land-left, .img-land-right {
+  width: 15%;
+  height: 50%;
+  position: fixed;
+  z-index: 2004;
+  top: 25%;
+}
+.img-land-left {
+  left: 0;
+  cursor: url("https://exhentai.org/img/p.png"), auto;
+}
+.img-land-right {
+  right: 0;
+  cursor: url("https://exhentai.org/img/n.png"), auto;
+}
+.p-tooltip { }
+.p-tooltip .p-tooltiptext {
+  visibility: hidden;
+  max-width: 24em;
+  background-color: #000000df;
+  color: var(--ehvp-font-color);
+  border-radius: 6px;
+  position: fixed;
+  z-index: 1;
+  font-size: medium;
+  white-space: normal;
+  text-align: left;
+  padding: 0.3em 1em;
+  box-sizing: border-box;
+  display: block;
+}
+.page-loading {
+  width: 100vw;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  background-color: #333333a6;
+}
+.page-loading-text {
+  color: var(--ehvp-font-color);
+  font-size: 6em;
+}
+@keyframes rotate {
+	100% {
+		transform: rotate(1turn);
+	}
+}
+.border-ani {
+	position: relative;
+	z-index: 0;
+	overflow: hidden;
+}
+.border-ani::before {
+	content: '';
+	position: absolute;
+	z-index: -2;
+	left: -50%;
+	top: -50%;
+	width: 200%;
+	height: 200%;
+	background-color: #fff;
+	animation: rotate 4s linear infinite;
+}
+.border-ani::after {
+	content: '';
+	position: absolute;
+	z-index: -1;
+	left: 6px;
+	top: 6px;
+	width: calc(100% - 16px);
+	height: calc(100% - 16px);
+	background-color: #333;
+}
+.overlay-tip {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 10;
+  height: 1em;
+  border-radius: 10%;
+  border: 1px solid #333;
+  color: var(--ehvp-font-color);
+  background-color: #959595d1;
+  text-align: center;
+  font-weight: 800;
+}
+.lightgreen { color: #90ea90; }
+.ehvp-full-panel {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000e8;
+  z-index: 3000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  top: 0;
+}
+.ehvp-custom-panel {
+  min-width: 50em;
+  min-height: 50vh;
+  max-width: 80em;
+  max-height: 80vh;
+  background-color: #333343aa;
+  border: 1px solid #000000;
+  display: flex;
+  flex-direction: column;
+  text-align: start;
+  color: var(--ehvp-font-color);
+}
+.ehvp-custom-panel-title {
+  font-size: 2em;
+  font-weight: 800;
+  display: flex;
+  justify-content: space-between;
+  padding-left: 1em;
+}
+.ehvp-custom-panel-close {
+  width: 2em;
+  text-align: center;
+}
+.ehvp-custom-panel-close:hover {
+  background-color: #c3c0e0;
+}
+.ehvp-custom-panel-container {
+  overflow: auto;
+}
+.ehvp-custom-panel-content {
+  border: 1px solid #000000;
+  border-radius: 4px;
+  margin: 0.5em;
+  padding: 0.5em;
+}
+.ehvp-custom-panel-item {
+  margin: 0.2em 0em;
+}
+.ehvp-custom-panel-item-title {
+  font-size: 1.4em;
+}
+.ehvp-custom-panel-item-values {
+  margin-top: 0.3em;
+  text-align: end;
+  line-height: 1.3em;
+}
+.ehvp-custom-panel-item-value {
+  font-size: 1.1em;
+  font-weight: 800;
+  color: black;
+  background-color: #c5c5c5;
+  border: 1px solid #000000;
+  box-sizing: border-box;
+  margin-left: 0.3em;
+  display: inline-flex;
+}
+.ehvp-custom-panel-item-value span {
+  padding: 0em 0.5em;
+}
+.ehvp-custom-panel-item-value button {
+  background-color: #fff;
+  color: black;
+  border: none;
+}
+.ehvp-custom-panel-item-value button:hover {
+  background-color: #ffff00;
+}
+.ehvp-custom-panel-item-add-btn, .ehvp-custom-panel-item-input, .ehvp-custom-panel-item-span {
+  font-size: 1.1em;
+  font-weight: 800;
+  background-color: #7fef7b;
+  color: black;
+  border: none;
+}
+.ehvp-custom-panel-item-span {
+  background-color: #34355b;
+  color: white;
+}
+.ehvp-custom-panel-item-add-btn:hover {
+  background-color: #ffff00 !important;
+}
+.ehvp-custom-panel-list > li {
+  line-height: 3em;
+  margin-left: 0.5em;
+  font-size: 1.4em;
+}
+.ehvp-custom-panel-list-item-disable {
+  text-decoration: line-through;
+  color: red;
+}
+.ehvp-help-panel > div > h2 {
+  color: #c1ffc9;
+}
+.ehvp-help-panel > div > p {
+  font-size: 1.1em;
+  margin-left: 1em;
+  font-weight: 600;
+}
+.ehvp-help-panel > div > ul {
+  font-size: 1em;
+}
+.ehvp-help-panel > div a {
+  color: #ff5959;
+}
+.ehvp-help-panel > div strong {
+  color: #d76d00;
+}
+.bifm-vid-ctl {
+  position: fixed;
+  z-index: 2010;
+  padding: 3px 10px;
+}
+.bifm-vid-ctl > div {
+  display: flex;
+  align-items: center;
+  line-height: 1.2em;
+}
+.bifm-vid-ctl > div > * {
+  margin: 0 0.1em;
+}
+.bifm-vid-ctl:not(:hover) .bifm-vid-ctl-btn,
+.bifm-vid-ctl:not(:hover) .bifm-vid-ctl-span,
+.bifm-vid-ctl:not(:hover) #bifm-vid-ctl-volume
+{
+  opacity: 0;
+}
+.bifm-vid-ctl-btn {
+  height: 1.5em;
+  width: 1.5em;
+  font-size: 1.2em;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background-color: #00000000;
+  cursor: pointer;
+}
+#bifm-vid-ctl-volume {
+  width: 5em;
+  height: 0.5em;
+}
+.bifm-vid-ctl-pg {
+  border: 1px solid #00000000;
+  background-color: #3333337e;
+  -webkit-appearance: none;
+}
+#bifm-vid-ctl-pg {
+  width: 100%;
+  height: 0.2em;
+  background-color: #333333ee;
+}
+.bifm-vid-ctl:hover {
+  background-color: var(--ehvp-background-color);
+}
+.bifm-vid-ctl:hover #bifm-vid-ctl-pg {
+  height: 0.8em;
+}
+.bifm-vid-ctl-pg-inner {
+  background-color: #ffffffa0;
+  height: 100%;
+}
+.bifm-vid-ctl:hover #bifm-vid-ctl-pg .bifm-vid-ctl-pg-inner {
+  background-color: #fff;
+}
+.bifm-vid-ctl-span {
+  color: white;
+  font-weight: 800;
+}
+.download-middle {
+  width: 100%;
+  height: auto;
+  flex-grow: 1;
+  overflow: hidden;
+}
+.download-middle .ehvp-tabs + div {
+  width: 100%;
+  height: calc(100% - 2em);
+}
+.ehvp-tabs {
+  height: 2em;
+  width: 100%;
+  line-height: 2em;
+}
+.ehvp-p-tab {
+  border: 1px dotted #ff0;
+  font-size: 1em;
+  padding: 0 0.4em;
+}
+.download-chapters, .download-status, .download-cherry-pick {
+  width: 100%;
+  height: 100%;
+}
+.download-chapters {
+  overflow: hidden auto;
+}
+.download-chapters label {
+  white-space: nowrap;
+}
+.download-chapters label span {
+  margin-left: 0.5em;
+}
+.ehvp-p-tab-selected {
+  color: rgb(120, 240, 80) !important;
+}
+.ehvp-root-collapse .ehvp-message-box {
+  display: none;
+}
+.ehvp-message-box {
+  position: fixed;
+  z-index: 4001;
+  top: 0;
+  left: 0;
+}
+.ehvp-message {
+  margin-top: 1em;
+  margin-left: 1em;
+  line-height: 2em;
+  background-color: #ffffffd6;
+  border-radius: 6px;
+  padding-left: 0.3em;
+  position: relative;
+  box-shadow: inset 0 0 5px 2px #8273ff;
+  color: black;
+}
+.ehvp-message > button {
+  border: 1px solid #00000000;
+  margin-left: 1em;
+  color: black;
+  background-color: #00000000;
+  height: 2em;
+  width: 2em;
+  text-align: center;
+  font-weight: 800;
+}
+.ehvp-message > button:hover {
+  background-color: #444;
+}
+.ehvp-message-duration-bar {
+  position: absolute;
+  bottom: 0;
+  width: 0%;
+  left: 0;
+  height: 0.1em;
+  background: red;
+}
+`;
+    return css;
+  }
+
   const bookIcon = `📖`;
   const moonViewCeremony = `<🎑>`;
   const sixPointedStar = `🔯`;
@@ -6520,8 +6492,8 @@ html {
       const selectAll = chapters.length === 1;
       this.chaptersElement.innerHTML = `
 <div>
-  <span id="download-chapters-select-all" class="clickable p-btn">Select All</span>
-  <span id="download-chapters-unselect-all" class="clickable p-btn">Unselect All</span>
+  <span id="download-chapters-select-all" class="clickable">Select All</span>
+  <span id="download-chapters-unselect-all" class="clickable">Unselect All</span>
 </div>
 ${chapters.map((c, i) => `<div><label>
   <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || selectedChapters.find((sel) => sel.index === i) ? "checked" : ""} />
@@ -6776,10 +6748,11 @@ ${chapters.map((c, i) => `<div><label>
   }
 
   function createHTML() {
-    const fullViewGrid = document.createElement("div");
-    fullViewGrid.classList.add("ehvp-root");
-    fullViewGrid.classList.add("ehvp-root-collapse");
-    document.body.after(fullViewGrid);
+    const base = document.createElement("div");
+    base.id = "ehvp-base";
+    base.setAttribute("tabindex", "0");
+    base.setAttribute("style", "all: initial");
+    document.body.after(base);
     const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
@@ -6833,36 +6806,40 @@ ${chapters.map((c, i) => `<div><label>
     </div>
 </div>
 `;
-    fullViewGrid.innerHTML = HTML_STRINGS;
-    const styleSheel = loadStyleSheel();
-    if (!conf.disableCssAnimation) {
-      toggleAnimationStyle(conf.disableCssAnimation);
-    }
+    const shadowRoot = base.attachShadow({ mode: "open" });
+    const root = document.createElement("div");
+    root.classList.add("ehvp-root");
+    root.classList.add("ehvp-root-collapse");
+    root.innerHTML = HTML_STRINGS;
+    const style = document.createElement("style");
+    style.innerHTML = styleCSS();
+    shadowRoot.append(style);
+    shadowRoot.append(root);
     return {
-      root: fullViewGrid,
-      fullViewGrid: q("#ehvp-nodes-container", fullViewGrid),
-      bigImageFrame: q("#big-img-frame", fullViewGrid),
-      pageHelper: q("#p-helper", fullViewGrid),
-      configPanelBTN: q("#config-panel-btn", fullViewGrid),
-      downloaderPanelBTN: q("#downloader-panel-btn", fullViewGrid),
-      entryBTN: q("#entry-btn", fullViewGrid),
-      currPageElement: q("#p-curr-page", fullViewGrid),
-      totalPageElement: q("#p-total", fullViewGrid),
-      finishedElement: q("#p-finished", fullViewGrid),
-      showGuideElement: q("#show-guide-element", fullViewGrid),
-      showKeyboardCustomElement: q("#show-keyboard-custom-element", fullViewGrid),
-      showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
-      showAutoOpenExcludeURLElement: q("#show-autoopen-exclude-url-element", fullViewGrid),
-      imgLandLeft: q("#img-land-left", fullViewGrid),
-      imgLandRight: q("#img-land-right", fullViewGrid),
-      autoPageBTN: q("#auto-page-btn", fullViewGrid),
-      pageLoading: q("#page-loading", fullViewGrid),
-      messageBox: q("#message-box", fullViewGrid),
-      config: new ConfigPanel(fullViewGrid),
-      downloader: new DownloaderPanel(fullViewGrid),
-      readModeSelect: q("#read-mode-select", fullViewGrid),
-      paginationAdjustBar: q("#pagination-adjust-bar", fullViewGrid),
-      styleSheel
+      root,
+      fullViewGrid: q("#ehvp-nodes-container", root),
+      bigImageFrame: q("#big-img-frame", root),
+      pageHelper: q("#p-helper", root),
+      configPanelBTN: q("#config-panel-btn", root),
+      downloaderPanelBTN: q("#downloader-panel-btn", root),
+      entryBTN: q("#entry-btn", root),
+      currPageElement: q("#p-curr-page", root),
+      totalPageElement: q("#p-total", root),
+      finishedElement: q("#p-finished", root),
+      showGuideElement: q("#show-guide-element", root),
+      showKeyboardCustomElement: q("#show-keyboard-custom-element", root),
+      showExcludeURLElement: q("#show-exclude-url-element", root),
+      showAutoOpenExcludeURLElement: q("#show-autoopen-exclude-url-element", root),
+      imgLandLeft: q("#img-land-left", root),
+      imgLandRight: q("#img-land-right", root),
+      autoPageBTN: q("#auto-page-btn", root),
+      pageLoading: q("#page-loading", root),
+      messageBox: q("#message-box", root),
+      config: new ConfigPanel(root),
+      downloader: new DownloaderPanel(root),
+      readModeSelect: q("#read-mode-select", root),
+      paginationAdjustBar: q("#pagination-adjust-bar", root),
+      styleSheet: style.sheet
     };
   }
   function addEventListeners(events, HTML, BIFM, DL, PH) {
@@ -6900,11 +6877,8 @@ ${chapters.map((c, i) => `<div><label>
       let stage = HTML.entryBTN.getAttribute("data-stage") || "exit";
       stage = stage === "open" ? "exit" : "open";
       HTML.entryBTN.setAttribute("data-stage", stage);
-      events.main(stage === "open");
+      EBUS.emit("toggle-main-view", stage === "open");
     });
-    const debouncer = new Debouncer();
-    HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
-    HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
     HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", event.deltaY > 0 ? -1 : 1, parseInt(HTML.currPageElement.textContent) - 1));
     document.addEventListener("keydown", (event) => events.keyboardEvent(event));
     HTML.fullViewGrid.addEventListener("keydown", (event) => {
@@ -6940,7 +6914,7 @@ ${chapters.map((c, i) => `<div><label>
         HTML.pageHelper.style.bottom = pos.bottom === void 0 ? "unset" : `${pos.bottom}px`;
         HTML.pageHelper.style.left = pos.left === void 0 ? "unset" : `${pos.left}px`;
         HTML.pageHelper.style.right = pos.right === void 0 ? "unset" : `${pos.right}px`;
-        const rule = queryCSSRules(HTML.styleSheel, ".b-main");
+        const rule = queryRule(HTML.styleSheet, ".b-main");
         if (rule)
           rule.style.flexDirection = pos.left === void 0 ? "row-reverse" : "row";
       }
@@ -7046,6 +7020,8 @@ ${chapters.map((c, i) => `<div><label>
           EBUS.emit("imf-on-click", queue[index]);
         }
       });
+      const chaptersSelectionElement = q("#chapters-btn", this.html.pageHelper);
+      chaptersSelectionElement.addEventListener("click", () => EBUS.emit("back-chapters-selection"));
     }
     setPageState({ total, current, finished }) {
       if (total !== void 0) {
@@ -7788,7 +7764,7 @@ ${chapters.map((c, i) => `<div><label>
      * @param _percent: directly set width percent 
      */
     scaleBigImages(fix, rate, _percent) {
-      const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
+      const rule = queryRule(this.html.styleSheet, ".bifm-img");
       if (!rule)
         return 0;
       let percent = _percent || parseInt(conf.readMode === "pagination" ? rule.style.height : rule.style.width);
@@ -7819,7 +7795,7 @@ ${chapters.map((c, i) => `<div><label>
       return percent;
     }
     checkFrameOverflow() {
-      const flexRule = queryCSSRules(this.html.styleSheel, ".bifm-flex");
+      const flexRule = queryRule(this.html.styleSheet, ".bifm-flex");
       if (flexRule) {
         if (this.frame.offsetWidth < this.frame.scrollWidth) {
           flexRule.style.justifyContent = "flex-start";
@@ -7829,7 +7805,7 @@ ${chapters.map((c, i) => `<div><label>
       }
     }
     resetScaleBigImages(syncConf) {
-      const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
+      const rule = queryRule(this.html.styleSheet, ".bifm-img");
       if (!rule)
         return;
       rule.style.minWidth = "";
@@ -8038,8 +8014,8 @@ ${chapters.map((c, i) => `<div><label>
     const DL = new Downloader(HTML, IFQ, IL, PF, MATCHER);
     const PH = new PageHelper(HTML, () => PF.chapters);
     const BIFM = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
-    const FVGM = new FullViewGridManager(HTML, BIFM);
-    const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
+    new FullViewGridManager(HTML, BIFM);
+    const events = initEvents(HTML, BIFM, IFQ, IL, PH);
     addEventListeners(events, HTML, BIFM, DL, PH);
     EBUS.subscribe("downloader-canvas-on-click", (index) => {
       IFQ.currIndex = index;
@@ -8060,9 +8036,26 @@ ${chapters.map((c, i) => `<div><label>
       saveConf(conf);
     }
     const href = window.location.href;
+    const signal = { first: true };
+    function entry(expand) {
+      if (HTML.pageHelper) {
+        if (expand) {
+          events.showFullViewGrid();
+          if (signal.first) {
+            signal.first = false;
+            EBUS.emit("pf-init", () => {
+            });
+          }
+        } else {
+          ["config", "downloader"].forEach((id) => events.togglePanelEvent(id, true));
+          events.hiddenFullViewGrid();
+        }
+      }
+    }
+    EBUS.subscribe("toggle-main-view", entry);
     if (conf.autoOpen && enableAutoOpen(href)) {
       HTML.entryBTN.setAttribute("data-stage", "open");
-      events.main(true);
+      entry(true);
     }
     return () => {
       console.log("destory eh-view-enhance");
@@ -8070,8 +8063,7 @@ ${chapters.map((c, i) => `<div><label>
       IL.abort();
       IFQ.length = 0;
       EBUS.reset();
-      HTML.root.remove();
-      HTML.styleSheel.remove();
+      document.querySelector("#ehvp-base")?.remove();
       return sleep(500);
     };
   }
@@ -8080,7 +8072,7 @@ ${chapters.map((c, i) => `<div><label>
   function reMain() {
     debouncer.addEvent("LOCATION-CHANGE", () => {
       const newStart = () => {
-        if (document.querySelector(".ehvp-root"))
+        if (document.querySelector(".ehvp-base"))
           return;
         const matcher = adaptMatcher(window.location.href);
         matcher && (destoryFunc = main(matcher));

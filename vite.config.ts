@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import monkey, { cdn } from 'vite-plugin-monkey';
 
-const VERSION = '4.5.28';
+const VERSION = '4.6.0';
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   let downloadURL: string | undefined;
@@ -95,7 +95,6 @@ export default defineConfig(({ command }) => {
             'hentainexus.com',
             'koharu.to',
             'kisakisexo.xyz',
-            'tencentcs.com',
           ],
           grant: [
             'GM_xmlhttpRequest',

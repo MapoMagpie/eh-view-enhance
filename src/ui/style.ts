@@ -34,21 +34,15 @@ export function styleCSS() {
   padding: 0.3em;
   box-sizing: border-box;
 }
-.ehvp-root a {
-  color: unset;
-}
 .ehvp-root input, .ehvp-root select {
   color: #f1f1f1;
-  background-color: #34353b !important;
+  background-color: #34353b;
   color-scheme: dark;
-  outline: none;
   border: 1px solid #000000;
   border-radius: 4px;
   margin: 0px;
   padding: 0px;
   text-align: center;
-  position: unset !important;
-  top: unset !important;
   vertical-align: middle;
 }
 .ehvp-root input:enabled:hover, .ehvp-root select:enabled:hover, .ehvp-root input:enabled:focus, .ehvp-root select:enabled:focus {
@@ -188,8 +182,7 @@ export function styleCSS() {
   padding: 3px;
   scrollbar-width: none;
   border-radius: 4px;
-  font-size: 1em;
-  font-weight: bold;
+  font-weight: 800;
 }
 .p-panel::-webkit-scrollbar {
   display: none;
@@ -205,13 +198,7 @@ export function styleCSS() {
     width: 24em;
     height: 32em;
   }
-  .p-btn {
-    height: 1.5em;
-    width: 1.5em;
-    border: 1px solid #000000;
-    border-radius: 4px;
-    line-height: initial;
-  }
+  .p-btn { }
   .b-main {
     flex-direction: ${conf.pageHelperAbLeft === "unset" ? "row-reverse" : "row"};
   }
@@ -224,14 +211,17 @@ export function styleCSS() {
     height: unset !important;
   }
   .ehvp-root select {
-    width: 7em !important;
+    width: 8em;
+    height: 2em;
   }
-  .ehvp-root input, .ehvp-root select {
+  .ehvp-root input {
     width: 3em;
     height: 1.5em;
   }
+  .ehvp-root select {
+  }
   .p-config {
-    line-height: 1.85em;
+    line-height: 2em;
   }
   .bifm-vid-ctl {
     bottom: 0.2em;
@@ -310,7 +300,7 @@ export function styleCSS() {
   border-radius: 4px;
   background-color: var(--ehvp-background-color);
   color: var(--ehvp-font-color);
-  font-weight: bold;
+  font-weight: 800;
   padding: 0em 0.3em;
   margin: 0em 0.2em;
   position: relative;
@@ -361,7 +351,6 @@ export function styleCSS() {
   /* border: 1px solid greenyellow; */
 }
 .p-downloader .download-notice {
-  font-size: small;
   text-align: center;
   width: 100%;
 }
@@ -373,9 +362,13 @@ export function styleCSS() {
 .p-btn {
   color: var(--ehvp-font-color);
   cursor: pointer;
-  font-weight: 900;
+  font-weight: 800;
   background-color: rgb(81, 81, 81);
   vertical-align: middle;
+  width: 1.5em;
+  height: 1.5em;
+  border: 1px solid #000000;
+  border-radius: 4px;
 }
 @keyframes main-progress {
   from {
@@ -492,10 +485,8 @@ export function styleCSS() {
   border: 1px solid #333;
   color: var(--ehvp-font-color);
   background-color: #959595d1;
-  line-height: 1em;
-  font-size: 1em;
   text-align: center;
-  font-weight: bold;
+  font-weight: 800;
 }
 .lightgreen { color: #90ea90; }
 .ehvp-full-panel {
@@ -523,8 +514,8 @@ export function styleCSS() {
   color: var(--ehvp-font-color);
 }
 .ehvp-custom-panel-title {
-  font-size: 2.1em;
-  font-weight: bold;
+  font-size: 2em;
+  font-weight: 800;
   display: flex;
   justify-content: space-between;
   padding-left: 1em;
@@ -554,11 +545,11 @@ export function styleCSS() {
 .ehvp-custom-panel-item-values {
   margin-top: 0.3em;
   text-align: end;
+  line-height: 1.3em;
 }
 .ehvp-custom-panel-item-value {
   font-size: 1.1em;
-  line-height: 1.2em;
-  font-weight: bold;
+  font-weight: 800;
   color: black;
   background-color: #c5c5c5;
   border: 1px solid #000000;
@@ -573,15 +564,13 @@ export function styleCSS() {
   background-color: #fff;
   color: black;
   border: none;
-  height: 1.2em;
 }
 .ehvp-custom-panel-item-value button:hover {
   background-color: #ffff00;
 }
 .ehvp-custom-panel-item-add-btn, .ehvp-custom-panel-item-input, .ehvp-custom-panel-item-span {
   font-size: 1.1em;
-  line-height: 1.2em;
-  font-weight: bold;
+  font-weight: 800;
   background-color: #7fef7b;
   color: black;
   border: none;
@@ -677,7 +666,7 @@ export function styleCSS() {
 }
 .bifm-vid-ctl-span {
   color: white;
-  font-weight: bold;
+  font-weight: 800;
 }
 .download-middle {
   width: 100%;
@@ -743,7 +732,7 @@ export function styleCSS() {
   height: 2em;
   width: 2em;
   text-align: center;
-  font-weight: bold;
+  font-weight: 800;
 }
 .ehvp-message > button:hover {
   background-color: #444;

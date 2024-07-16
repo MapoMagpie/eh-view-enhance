@@ -547,7 +547,7 @@ export class BigImageFrameManager {
    * @param _percent: directly set width percent 
    */
   scaleBigImages(fix: number, rate: number, _percent?: number): number {
-    const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
+    const rule = queryCSSRules(this.html.styleSheet, ".bifm-img");
     if (!rule) return 0;
 
     let percent = _percent || parseInt(conf.readMode === "pagination" ? rule.style.height : rule.style.width);
@@ -577,7 +577,7 @@ export class BigImageFrameManager {
   }
 
   checkFrameOverflow() {
-    const flexRule = queryCSSRules(this.html.styleSheel, ".bifm-flex");
+    const flexRule = queryCSSRules(this.html.styleSheet, ".bifm-flex");
     if (flexRule) {
       if (this.frame.offsetWidth < this.frame.scrollWidth) {
         flexRule.style.justifyContent = "flex-start";
@@ -588,7 +588,7 @@ export class BigImageFrameManager {
   }
 
   resetScaleBigImages(syncConf: boolean) {
-    const rule = queryCSSRules(this.html.styleSheel, ".bifm-img");
+    const rule = queryCSSRules(this.html.styleSheet, ".bifm-img");
     if (!rule) return;
     rule.style.minWidth = "";
     rule.style.minHeight = "";

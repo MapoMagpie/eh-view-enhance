@@ -5,7 +5,6 @@ import ImageNode, { ChapterNode, VisualNode } from "./img-node";
 import { Matcher } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
-import q from "./utils/query-element";
 
 export type PagesSource = string | Document;
 
@@ -29,18 +28,17 @@ export class PageFetcher {
   afterInit?: () => void;
   private appendPageLock: boolean = false;
   private abortb: boolean = false;
-  private chaptersSelectionElement: HTMLElement;
 
   constructor(queue: IMGFetcherQueue, matcher: Matcher) {
     this.queue = queue;
     this.matcher = matcher;
-    this.chaptersSelectionElement = q("#chapters-btn");
-    this.chaptersSelectionElement.addEventListener("click", () => this.backChaptersSelection());
     const debouncer = new Debouncer();
     // triggered then ifq finished
     EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
     // triggered when scrolling
     EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
+    EBUS.subscribe("back-chapters-selection", () => this.backChaptersSelection());
+    EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
   }
 
   appendToView(total: number, nodes: VisualNode[], chapterIndex: number, done?: boolean) {
@@ -59,9 +57,6 @@ export class PageFetcher {
         EBUS.emit("pf-change-chapter", index);
         if (this.chapters[index].queue) {
           this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
-          if (this.chapters.length > 1) {
-            this.chaptersSelectionElement.hidden = false;
-          }
         }
         if (!this.queue.downloading?.()) {
           this.beforeInit?.();
@@ -83,7 +78,6 @@ export class PageFetcher {
   backChaptersSelection() {
     EBUS.emit("pf-change-chapter", -1);
     this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), -1, true);
-    this.chaptersSelectionElement.hidden = true;
   }
 
   /// start the chapter by index

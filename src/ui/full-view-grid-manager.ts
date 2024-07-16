@@ -1,6 +1,7 @@
 import { conf } from "../config";
 import EBUS from "../event-bus";
 import { VisualNode } from "../img-node";
+import { Debouncer } from "../utils/debouncer";
 import { Elements } from "./html";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
@@ -42,6 +43,17 @@ export class FullViewGridManager {
       }
     });
     EBUS.subscribe("cherry-pick-changed", (chapterIndex) => this.chapterIndex === chapterIndex && this.updateRender());
+    const debouncer = new Debouncer();
+    this.root.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", () => {
+      if (HTML.root.classList.contains("ehvp-root-collapse")) return;
+      this.renderCurrView();
+      this.tryExtend();
+    }, 400));
+    this.root.addEventListener("click", (event) => {
+      if (event.target === HTML.fullViewGrid || (event.target as HTMLElement).classList.contains("img-node")) {
+        EBUS.emit("toggle-main-view", false);
+      }
+    });
   }
 
   append(nodes: VisualNode[]) {

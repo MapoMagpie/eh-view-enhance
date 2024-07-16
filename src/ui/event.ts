@@ -1,21 +1,18 @@
 import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, conf, saveConf, Oriented } from "../config";
+import EBUS from "../event-bus";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
-import { PageFetcher } from "../page-fetcher";
 import { Debouncer } from "../utils/debouncer";
 import parseKey from "../utils/keyboard";
-import { fetchImage } from "../utils/query";
 import queryCSSRules from "../utils/query-cssrules";
 import q from "../utils/query-element";
 import relocateElement from "../utils/relocate-element";
 import scroller from "../utils/scroller";
 import createExcludeURLPanel from "./exclude-urls";
-import { FullViewGridManager } from "./full-view-grid-manager";
 import createHelpPanel from "./help";
 import { Elements } from "./html";
 import createKeyboardCustomPanel from "./keyboard-custom";
 import { PageHelper } from "./page-helper";
-import { toggleAnimationStyle } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
 export type Events = ReturnType<typeof initEvents>;
@@ -39,7 +36,7 @@ export class KeyboardDesc {
   }
 }
 
-export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: FullViewGridManager, IFQ: IMGFetcherQueue, PF: PageFetcher, IL: IdleLoader, PH: PageHelper) {
+export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGFetcherQueue, IL: IdleLoader, PH: PageHelper) {
   // modify config
   function modNumberConfigEvent(key: ConfigNumberType, data?: "add" | "minus") {
     const range = {
@@ -62,16 +59,16 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         conf[key] -= mod;
       }
     }
-    const inputElement = q<HTMLInputElement>(`#${key}Input`);
+    const inputElement = q<HTMLInputElement>(`#${key}Input`, HTML.config.panel);
     if (inputElement) {
       inputElement.value = conf[key].toString();
     }
     if (key === "colCount") {
-      const rule = queryCSSRules(HTML.styleSheel, ".full-view-grid");
+      const rule = queryCSSRules(HTML.styleSheet, ".full-view-grid");
       if (rule) rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
     }
     if (key === "paginationIMGCount") {
-      const rule = queryCSSRules(HTML.styleSheel, ".bifm-img");
+      const rule = queryCSSRules(HTML.styleSheet, ".bifm-img");
       if (rule) rule.style.minWidth = conf[key] > 1 ? "" : "100vw";
       q("#paginationInput", HTML.paginationAdjustBar).textContent = conf.paginationIMGCount.toString();
       BIFM.setNow(IFQ[IFQ.currIndex], "next");
@@ -81,7 +78,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   // modify config
   function modBooleanConfigEvent(key: ConfigBooleanType) {
-    const inputElement = q<HTMLInputElement>(`#${key}Checkbox`);
+    const inputElement = q<HTMLInputElement>(`#${key}Checkbox`, HTML.config.panel);
     conf[key] = inputElement?.checked || false;
     saveConf(conf);
     if (key === "autoLoad") {
@@ -89,12 +86,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       IL.abort(0, conf.restartIdleLoader / 3);
     }
     if (key === "reversePages") {
-      const rule = queryCSSRules(HTML.styleSheel, ".bifm-flex");
+      const rule = queryCSSRules(HTML.styleSheet, ".bifm-flex");
       if (rule) {
         rule.style.flexDirection = conf.reversePages ? "row-reverse" : "row";
       }
     }
-    if (key === "disableCssAnimation") toggleAnimationStyle(conf.disableCssAnimation);
+    // if (key === "disableCssAnimation") styleAnimationHTML(conf.disableCssAnimation);
   }
 
   function changeReadModeEvent(value?: string) {
@@ -126,7 +123,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   // modify config
   function modSelectConfigEvent(key: ConfigSelectType) {
-    const inputElement = q<HTMLSelectElement>(`#${key}Select`);
+    const inputElement = q<HTMLSelectElement>(`#${key}Select`, HTML.config.panel);
     const value = inputElement?.value;
     if (value) {
       (conf[key] as any) = value;
@@ -168,7 +165,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
   }
 
   function togglePanelEvent(id: string, collapse?: boolean, target?: HTMLElement) {
-    let element = q(`#${id}-panel`);
+    let element = q(`#${id}-panel`, HTML.pageHelper);
     if (!element) return;
 
     // collapse not specified, toggle
@@ -192,18 +189,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   let bodyOverflow = document.body.style.overflow;
   function showFullViewGrid() {
-    // HTML.fullViewGrid.scroll(0, 0); //否则加载会触发滚动事件
     PH.minify("fullViewGrid");
     HTML.root.classList.remove("ehvp-root-collapse");
     HTML.fullViewGrid.focus();
     document.body.style.overflow = "hidden";
   };
 
-  function hiddenFullViewGridEvent(event: Event) {
-    if (event.target === HTML.fullViewGrid || (event.target as HTMLElement).classList.contains("img-node")) {
-      main(false);
-    }
-  };
 
   function hiddenFullViewGrid() {
     BIFM.hidden();
@@ -213,15 +204,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     HTML.fullViewGrid.blur();
     document.body.style.overflow = bodyOverflow;
     // document.body.focus();
-  };
-
-  //全屏阅览元素的滚动事件
-  function scrollEvent() {
-    //对冒泡的处理
-    if (HTML.root.classList.contains("ehvp-root-collapse")) return;
-    //根据currTop获取当前滚动高度对应的未渲染缩略图的图片元素
-    FVGM.renderCurrView();
-    FVGM.tryExtend();
   };
 
   // keyboardEvents
@@ -333,7 +315,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       ),
       "exit-full-view-grid": new KeyboardDesc(
         ["Escape"],
-        () => main(false)
+        () => EBUS.emit("toggle-main-view", false)
       ),
       "columns-increase": new KeyboardDesc(
         ["="],
@@ -345,7 +327,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
       ),
       "back-chapters-selection": new KeyboardDesc(
         ["b"],
-        () => PF.backChaptersSelection()
+        () => EBUS.emit("back-chapters-selection")
       ),
     };
     const inMain: Record<KeyboardInMainId, KeyboardDesc> = {
@@ -353,7 +335,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
         // check focus element is not input Elements
         const activeElement = document.activeElement;
         if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
-        main(true);
+        EBUS.emit("toggle-main-view", true)
       }, true),
     };
     return { inBigImageMode, inFullViewGrid, inMain }
@@ -419,7 +401,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
 
   // 显示简易指南事件
   function showGuideEvent() {
-    createHelpPanel(document.body);
+    createHelpPanel(HTML.root);
   };
 
   function showKeyboardCustomEvent() {
@@ -434,36 +416,15 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
     createExcludeURLPanel(HTML.root, conf.autoOpenExcludeURLs, true);
   }
 
-  const signal = { first: true };
-  // 入口Entry
-  function main(expand: boolean) {
-    if (HTML.pageHelper) {
-      if (expand) {
-        showFullViewGrid();
-        if (signal.first) {
-          signal.first = false;
-          PF.init();
-          fetchImage(generateOnePixelURL()).catch(() => { });
-        }
-      } else {
-        ["config", "downloader"].forEach(id => togglePanelEvent(id, true));
-        hiddenFullViewGrid();
-      }
-    }
-  }
   return {
-    main,
-
     modNumberConfigEvent,
     modBooleanConfigEvent,
     modSelectConfigEvent,
 
     togglePanelEvent,
     showFullViewGrid,
-    hiddenFullViewGridEvent,
     hiddenFullViewGrid,
 
-    scrollEvent,
     fullViewGridKeyBoardEvent,
     bigImageFrameKeyBoardEvent,
     keyboardEvent,
@@ -478,9 +439,9 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, FVGM: Ful
   }
 }
 
-function generateOnePixelURL() {
-  const href = window.location.href;
-  const meta = { href, version: _VERSION_, id: conf.id }
-  const base = window.btoa(JSON.stringify(meta));
-  return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
-}
+// function generateOnePixelURL() {
+//   const href = window.location.href;
+//   const meta = { href, version: _VERSION_, id: conf.id }
+//   const base = window.btoa(JSON.stringify(meta));
+//   return `https://1308291390-f8z0v307tj-hk.scf.tencentcs.com/onepixel.png?v=${Date.now()}&base=${base}`;
+// }

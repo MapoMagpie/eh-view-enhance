@@ -1,25 +1,26 @@
 import { conf, saveConf } from "../config";
 import { Downloader } from "../download/downloader";
-import { Debouncer } from "../utils/debouncer";
 import { dragElement, dragElementWithLine } from "../utils/drag-element";
 import { i18n } from "../utils/i18n";
 import q from "../utils/query-element";
 import { Events } from "./event";
 import { PageHelper } from "./page-helper";
-import { toggleAnimationStyle, loadStyleSheel } from "./style";
+import { styleCSS } from "./style";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 import icons from "../utils/icons";
 import queryCSSRules from "../utils/query-cssrules";
 import { DownloaderPanel } from "./downloader-panel";
 import { ConfigPanel } from "./config-panel";
+import EBUS from "../event-bus";
 
 export type Elements = ReturnType<typeof createHTML>;
 
 export function createHTML() {
-  const fullViewGrid = document.createElement("div");
-  fullViewGrid.classList.add("ehvp-root");
-  fullViewGrid.classList.add("ehvp-root-collapse");
-  document.body.after(fullViewGrid);
+  const base = document.createElement("div");
+  base.id = "ehvp-base";
+  base.setAttribute("tabindex", "0");
+  base.setAttribute("style", "all: initial");
+  document.body.after(base);
   const HTML_STRINGS = `
 <div id="page-loading" class="page-loading" style="display: none;">
     <div class="page-loading-text border-ani">Loading...</div>
@@ -74,36 +75,45 @@ export function createHTML() {
 </div>
 `;
 
-  fullViewGrid.innerHTML = HTML_STRINGS;
-  const styleSheel = loadStyleSheel();
-  if (!conf.disableCssAnimation) {
-    toggleAnimationStyle(conf.disableCssAnimation);
-  }
+  const shadowRoot = base.attachShadow({ mode: "open" });
+  const root = document.createElement("div");
+  root.classList.add("ehvp-root");
+  root.classList.add("ehvp-root-collapse");
+  root.innerHTML = HTML_STRINGS;
+  const style = document.createElement("style");
+  style.innerHTML = styleCSS();
+  // if (!conf.disableCssAnimation) {
+  //   const aniStyle = document.createElement("style");
+  //   aniStyle.innerHTML = styleAnimationCSS();
+  //   shadowRoot.append(aniStyle);
+  // }
+  shadowRoot.append(style);
+  shadowRoot.append(root);
   return {
-    root: fullViewGrid,
-    fullViewGrid: q("#ehvp-nodes-container", fullViewGrid),
-    bigImageFrame: q("#big-img-frame", fullViewGrid),
-    pageHelper: q("#p-helper", fullViewGrid),
-    configPanelBTN: q("#config-panel-btn", fullViewGrid),
-    downloaderPanelBTN: q("#downloader-panel-btn", fullViewGrid),
-    entryBTN: q("#entry-btn", fullViewGrid),
-    currPageElement: q("#p-curr-page", fullViewGrid),
-    totalPageElement: q("#p-total", fullViewGrid),
-    finishedElement: q("#p-finished", fullViewGrid),
-    showGuideElement: q("#show-guide-element", fullViewGrid),
-    showKeyboardCustomElement: q("#show-keyboard-custom-element", fullViewGrid),
-    showExcludeURLElement: q("#show-exclude-url-element", fullViewGrid),
-    showAutoOpenExcludeURLElement: q('#show-autoopen-exclude-url-element', fullViewGrid),
-    imgLandLeft: q("#img-land-left", fullViewGrid),
-    imgLandRight: q("#img-land-right", fullViewGrid),
-    autoPageBTN: q("#auto-page-btn", fullViewGrid),
-    pageLoading: q("#page-loading", fullViewGrid),
-    messageBox: q("#message-box", fullViewGrid),
-    config: new ConfigPanel(fullViewGrid),
-    downloader: new DownloaderPanel(fullViewGrid),
-    readModeSelect: q<HTMLDivElement>("#read-mode-select", fullViewGrid),
-    paginationAdjustBar: q<HTMLDivElement>("#pagination-adjust-bar", fullViewGrid),
-    styleSheel,
+    root,
+    fullViewGrid: q("#ehvp-nodes-container", root),
+    bigImageFrame: q("#big-img-frame", root),
+    pageHelper: q("#p-helper", root),
+    configPanelBTN: q("#config-panel-btn", root),
+    downloaderPanelBTN: q("#downloader-panel-btn", root),
+    entryBTN: q("#entry-btn", root),
+    currPageElement: q("#p-curr-page", root),
+    totalPageElement: q("#p-total", root),
+    finishedElement: q("#p-finished", root),
+    showGuideElement: q("#show-guide-element", root),
+    showKeyboardCustomElement: q("#show-keyboard-custom-element", root),
+    showExcludeURLElement: q("#show-exclude-url-element", root),
+    showAutoOpenExcludeURLElement: q('#show-autoopen-exclude-url-element', root),
+    imgLandLeft: q("#img-land-left", root),
+    imgLandRight: q("#img-land-right", root),
+    autoPageBTN: q("#auto-page-btn", root),
+    pageLoading: q("#page-loading", root),
+    messageBox: q("#message-box", root),
+    config: new ConfigPanel(root),
+    downloader: new DownloaderPanel(root),
+    readModeSelect: q<HTMLDivElement>("#read-mode-select", root),
+    paginationAdjustBar: q<HTMLDivElement>("#pagination-adjust-bar", root),
+    styleSheet: style.sheet!,
   };
 }
 
@@ -146,14 +156,8 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     let stage = HTML.entryBTN.getAttribute("data-stage") || "exit";
     stage = stage === "open" ? "exit" : "open";
     HTML.entryBTN.setAttribute("data-stage", stage);
-    events.main(stage === "open");
+    EBUS.emit("toggle-main-view", stage === "open")
   });
-
-  const debouncer = new Debouncer();
-
-  //全屏阅读元素滚动事件
-  HTML.fullViewGrid.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", events.scrollEvent, 400));
-  HTML.fullViewGrid.addEventListener("click", events.hiddenFullViewGridEvent);
 
   HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", event.deltaY > 0 ? -1 : 1, parseInt(HTML.currPageElement.textContent!) - 1));
 
@@ -195,7 +199,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
       HTML.pageHelper.style.bottom = pos.bottom === undefined ? "unset" : `${pos.bottom}px`;
       HTML.pageHelper.style.left = pos.left === undefined ? "unset" : `${pos.left}px`;
       HTML.pageHelper.style.right = pos.right === undefined ? "unset" : `${pos.right}px`;
-      const rule = queryCSSRules(HTML.styleSheel, ".b-main");
+      const rule = queryCSSRules(HTML.styleSheet, ".b-main");
       if (rule) rule.style.flexDirection = pos.left === undefined ? "row-reverse" : "row";
 
     }

@@ -1,4 +1,4 @@
-export default function queryCSSRules(root: HTMLStyleElement, selector: string) {
-  return Array.from<CSSStyleRule>((root.sheet?.cssRules as any) || [])
+export default function queryRule(root: CSSStyleSheet, selector: string) {
+  return Array.from<CSSStyleRule>(root.cssRules as any)
     .find(rule => rule.selectorText === selector);
 }

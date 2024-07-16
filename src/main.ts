@@ -29,9 +29,9 @@ function main(MATCHER: Matcher): DestoryFunc {
   // UI Manager
   const PH: PageHelper = new PageHelper(HTML, () => PF.chapters);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
-  const FVGM: FullViewGridManager = new FullViewGridManager(HTML, BIFM);
+  new FullViewGridManager(HTML, BIFM);
 
-  const events = initEvents(HTML, BIFM, FVGM, IFQ, PF, IL, PH);
+  const events = initEvents(HTML, BIFM, IFQ, IL, PH);
   addEventListeners(events, HTML, BIFM, DL, PH);
 
   EBUS.subscribe("downloader-canvas-on-click", (index) => {
@@ -54,19 +54,36 @@ function main(MATCHER: Matcher): DestoryFunc {
     saveConf(conf);
   }
   const href = window.location.href;
-  // the real entry at ./ui/event/main
+
+  // 入口Entry
+  const signal = { first: true };
+  function entry(expand?: boolean) {
+    if (HTML.pageHelper) {
+      if (expand) {
+        events.showFullViewGrid();
+        if (signal.first) {
+          signal.first = false;
+          EBUS.emit("pf-init", () => { });
+        }
+      } else {
+        ["config", "downloader"].forEach(id => events.togglePanelEvent(id, true));
+        events.hiddenFullViewGrid();
+      }
+    }
+  }
+  EBUS.subscribe("toggle-main-view", entry);
   if (conf.autoOpen && enableAutoOpen(href)) {
     HTML.entryBTN.setAttribute("data-stage", "open");
-    events.main(true);
+    entry(true);
   }
+
   return () => {
     console.log("destory eh-view-enhance");
     PF.abort();
     IL.abort();
     IFQ.length = 0;
     EBUS.reset();
-    HTML.root.remove();
-    HTML.styleSheel.remove();
+    document.querySelector("#ehvp-base")?.remove();
     return sleep(500);
   }
 }
@@ -76,7 +93,7 @@ const debouncer = new Debouncer();
 function reMain() {
   debouncer.addEvent("LOCATION-CHANGE", () => {
     const newStart = () => {
-      if (document.querySelector(".ehvp-root")) return;
+      if (document.querySelector(".ehvp-base")) return;
       const matcher = adaptMatcher(window.location.href);
       matcher && (destoryFunc = main(matcher));
     };

@@ -47,11 +47,11 @@ export class IMHentaiMatcher extends BaseMatcher {
   }
 
   async *fetchPagesSource(): AsyncGenerator<PagesSource> {
-    const server = q<HTMLInputElement>("#load_server").value;
-    const uid = q<HTMLInputElement>("#gallery_id").value;
-    const gid = q<HTMLInputElement>("#load_id").value;
-    const imgDir = q<HTMLInputElement>("#load_dir").value;
-    const total = q<HTMLInputElement>("#load_pages").value;
+    const server = q<HTMLInputElement>("#load_server", document).value;
+    const uid = q<HTMLInputElement>("#gallery_id", document).value;
+    const gid = q<HTMLInputElement>("#load_id", document).value;
+    const imgDir = q<HTMLInputElement>("#load_dir", document).value;
+    const total = q<HTMLInputElement>("#load_pages", document).value;
     this.data = { server, uid, gid, imgDir, total: Number(total) };
     yield document;
   }

@@ -54,6 +54,9 @@ export interface Events {
   "cherry-pick-changed": (chapaterIndex: number, cherryPick: CherryPick) => void;
   "add-cherry-pick-range": (chapterIndex: number, index: number, positive: boolean, shiftKey: boolean) => void;
   "imf-check-picked": (chapterIndex: number, index: number) => boolean;
+  "back-chapters-selection": () => void;
+  "pf-init": (cb: () => void) => void;
+  "toggle-main-view": (open?: boolean) => void;
 }
 
 export type EventID = keyof Events;

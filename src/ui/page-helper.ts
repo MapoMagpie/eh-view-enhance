@@ -5,6 +5,7 @@ import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { i18n } from "../utils/i18n";
 import icons from "../utils/icons";
+import q from "../utils/query-element";
 import { Elements } from "./html";
 
 export class PageHelper {
@@ -64,6 +65,8 @@ export class PageHelper {
         EBUS.emit("imf-on-click", queue[index]);
       }
     });
+    const chaptersSelectionElement = q("#chapters-btn", this.html.pageHelper);
+    chaptersSelectionElement.addEventListener("click", () => EBUS.emit("back-chapters-selection"));
   }
 
   private setPageState({ total, current, finished }: { total?: string, current?: string, finished?: string }) {

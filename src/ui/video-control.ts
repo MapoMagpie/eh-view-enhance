@@ -28,9 +28,11 @@ export class VideoControl {
   ui: UI;
   paused: boolean = false;
   abortController?: AbortController;
+  root: HTMLElement;
 
   constructor(root: HTMLElement) {
-    this.ui = this.create(root);
+    this.root = root;
+    this.ui = this.create(this.root);
     this.flushUI();
   }
 
@@ -116,7 +118,7 @@ export class VideoControl {
       element.id = elementID;
     }
     this.ui.playBTN.addEventListener("click", () => {
-      const vid = document.querySelector<HTMLVideoElement>(`#${elementID}`);
+      const vid = this.root.querySelector<HTMLVideoElement>(`#${elementID}`);
       if (vid) {
         this.paused = !this.paused;
         if (this.paused) {
@@ -128,7 +130,7 @@ export class VideoControl {
       }
     }, { signal: this.abortController.signal });
     this.ui.volumeBTN.addEventListener("click", () => {
-      const vid = document.querySelector<HTMLVideoElement>(`#${elementID}`);
+      const vid = this.root.querySelector<HTMLVideoElement>(`#${elementID}`);
       if (vid) {
         conf.muted = !conf.muted;
         vid.muted = conf.muted;
@@ -138,7 +140,7 @@ export class VideoControl {
     }, { signal: this.abortController.signal });
 
     onMouse(this.ui.progress, (percent) => {
-      const vid = document.querySelector<HTMLVideoElement>(`#${elementID}`);
+      const vid = this.root.querySelector<HTMLVideoElement>(`#${elementID}`);
       if (vid) {
         vid.currentTime = vid.duration * (percent / 100);
         state.time = vid.currentTime;
@@ -147,7 +149,7 @@ export class VideoControl {
     }, this.abortController.signal);
 
     onMouse(this.ui.volumeProgress, (percent) => {
-      const vid = document.querySelector<HTMLVideoElement>(`#${elementID}`);
+      const vid = this.root.querySelector<HTMLVideoElement>(`#${elementID}`);
       if (vid) {
         conf.volume = percent;
         saveConf(conf);

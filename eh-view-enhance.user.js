@@ -7134,8 +7134,10 @@ ${chapters.map((c, i) => `<div><label>
     ui;
     paused = false;
     abortController;
+    root;
     constructor(root) {
-      this.ui = this.create(root);
+      this.root = root;
+      this.ui = this.create(this.root);
       this.flushUI();
     }
     show() {
@@ -7214,7 +7216,7 @@ ${chapters.map((c, i) => `<div><label>
         element.id = elementID;
       }
       this.ui.playBTN.addEventListener("click", () => {
-        const vid = document.querySelector(`#${elementID}`);
+        const vid = this.root.querySelector(`#${elementID}`);
         if (vid) {
           this.paused = !this.paused;
           if (this.paused) {
@@ -7226,7 +7228,7 @@ ${chapters.map((c, i) => `<div><label>
         }
       }, { signal: this.abortController.signal });
       this.ui.volumeBTN.addEventListener("click", () => {
-        const vid = document.querySelector(`#${elementID}`);
+        const vid = this.root.querySelector(`#${elementID}`);
         if (vid) {
           conf.muted = !conf.muted;
           vid.muted = conf.muted;
@@ -7235,7 +7237,7 @@ ${chapters.map((c, i) => `<div><label>
         }
       }, { signal: this.abortController.signal });
       onMouse(this.ui.progress, (percent) => {
-        const vid = document.querySelector(`#${elementID}`);
+        const vid = this.root.querySelector(`#${elementID}`);
         if (vid) {
           vid.currentTime = vid.duration * (percent / 100);
           state.time = vid.currentTime;
@@ -7243,7 +7245,7 @@ ${chapters.map((c, i) => `<div><label>
         }
       }, this.abortController.signal);
       onMouse(this.ui.volumeProgress, (percent) => {
-        const vid = document.querySelector(`#${elementID}`);
+        const vid = this.root.querySelector(`#${elementID}`);
         if (vid) {
           conf.volume = percent;
           saveConf(conf);

@@ -31,6 +31,7 @@ export interface Matcher {
   title(doc: Document): string;
   workURLs(): RegExp[];
   processData(data: Uint8Array, contentType: string, url: string): Promise<[Uint8Array, string]>;
+  headers(): Record<string, string>;
 }
 
 export abstract class BaseMatcher implements Matcher {
@@ -65,6 +66,10 @@ export abstract class BaseMatcher implements Matcher {
 
   async processData(data: Uint8Array, contentType: string, _url: string): Promise<[Uint8Array, string]> {
     return [data, contentType];
+  }
+
+  headers(): Record<string, string> {
+    return {};
   }
 
 }

@@ -372,7 +372,7 @@
   }
 
   const HOST_REGEX = /\/\/([^\/]*)\//;
-  function xhrWapper(url, respType, cb, timeout) {
+  function xhrWapper(url, respType, cb, headers, timeout) {
     return _GM_xmlhttpRequest({
       method: "GET",
       url,
@@ -383,18 +383,19 @@
       // fetch: false,
       headers: {
         "Host": HOST_REGEX.exec(url)?.[1] || window.location.host,
-        // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:106.0) Gecko/20100101 Firefox/106.0",
-        "Accept": "image/avif,image/webp,*/*",
-        // "Accept-Language": "en-US,en;q=0.5",
-        // "Accept-Encoding": "gzip, deflate, br",
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
+        "Accept": "*/*",
         // "Connection": "keep-alive",
         "Referer": window.location.href,
         "Origin": window.location.origin,
         "X-Alt-Referer": window.location.href,
-        // "Sec-Fetch-Dest": "image",
-        // "Sec-Fetch-Mode": "no-cors",
+        "Cache-Control": "public, max-age=2592000, immutable",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        // "Sec-Fetch-Dest": "empty",
+        // "Sec-Fetch-Mode": "cors",
         // "Sec-Fetch-Site": "cross-site",
-        "Cache-Control": "public, max-age=2592000, immutable"
+        ...headers
       },
       ...cb
     }).abort;
@@ -404,7 +405,7 @@
       xhrWapper(url, "blob", {
         onload: (response) => resolve(response.response),
         onerror: (error) => reject(error)
-      }, 10 * 1e3);
+      }, {}, 10 * 1e3);
     });
   }
 
@@ -613,7 +614,7 @@
           onloadstart: function() {
             imgFetcher.setDownloadState(imgFetcher.downloadState);
           }
-        });
+        }, this.matcher.headers());
         timeout();
       });
     }
@@ -2104,6 +2105,9 @@
     async processData(data, contentType, _url) {
       return [data, contentType];
     }
+    headers() {
+      return {};
+    }
   }
 
   function toMD5(s) {
@@ -3265,8 +3269,8 @@
         throw detail;
       }
       this.createMeta(detail);
-      let dataId = Object.keys(detail.data).map(Number).sort((a, b) => b - a)[0];
-      const data = detail.data[dataId.toString()];
+      const dataID = conf.fetchOriginal ? 0 : Object.keys(detail.data).map(Number).sort((a, b) => b - a)[0];
+      const data = detail.data[dataID.toString()];
       const token = JSON.parse(window.localStorage.getItem("token") || "{}")["session"];
       const body = token && JSON.stringify({ token });
       const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}`;
@@ -3293,6 +3297,12 @@
     }
     workURL() {
       return /koharu.to\/(g|reader)\/\d+\/\w+/;
+    }
+    headers() {
+      return {
+        "Referer": "https://koharu.to/",
+        "TE": "trailers"
+      };
     }
   }
 

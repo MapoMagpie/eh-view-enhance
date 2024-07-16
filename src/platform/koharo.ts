@@ -1,3 +1,4 @@
+import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { Chapter, PagesSource } from "../page-fetcher";
@@ -47,7 +48,7 @@ const NAMESPACE_MAP: Record<number, string> = {
 
 export class KoharuMatcher extends BaseMatcher {
 
-  originURLMap: Map<string, string> = new Map<string, string>();
+  originURLMap: Map<string, string> = new Map();
   meta?: GalleryMeta;
 
   galleryMeta(): GalleryMeta {
@@ -81,9 +82,9 @@ export class KoharuMatcher extends BaseMatcher {
       throw detail;
     }
     this.createMeta(detail);
-    let dataId = Object.keys(detail.data).map(Number).sort((a, b) => b - a)[0];
-    // let dataId = 1280;
-    const data = detail.data[dataId.toString()];
+    // 0: means original data, otherwise 1600px
+    const dataID = conf.fetchOriginal ? 0 : Object.keys(detail.data).map(Number).sort((a, b) => b - a)[0];
+    const data = detail.data[dataID.toString()];
     // read token from localStorage for fetch data
     const token = JSON.parse(window.localStorage.getItem("token") || "{}")["session"] as string | undefined;
     const body = token && JSON.stringify({ token });
@@ -114,6 +115,13 @@ export class KoharuMatcher extends BaseMatcher {
 
   workURL(): RegExp {
     return /koharu.to\/(g|reader)\/\d+\/\w+/;
+  }
+
+  headers(): Record<string, string> {
+    return {
+      "Referer": "https://koharu.to/",
+      "TE": "trailers",
+    }
   }
 
 }

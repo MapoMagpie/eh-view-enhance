@@ -234,7 +234,7 @@ export class IMGFetcher implements VisualNode {
         onloadstart: function() {
           imgFetcher.setDownloadState(imgFetcher.downloadState);
         }
-      });
+      }, this.matcher.headers());
       timeout();
     });
   }

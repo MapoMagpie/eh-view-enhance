@@ -29,6 +29,7 @@ export function xhrWapper<T extends RespType>(url: string, respType: T, cb: Even
       // "Accept-Encoding": "gzip, deflate, br",
       // "Connection": "keep-alive",
       "Referer": window.location.href,
+      "Origin": window.location.origin,
       "X-Alt-Referer": window.location.href,
       // "Sec-Fetch-Dest": "image",
       // "Sec-Fetch-Mode": "no-cors",

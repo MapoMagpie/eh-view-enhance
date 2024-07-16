@@ -61,6 +61,7 @@ export default defineConfig(({ command }) => {
             'https://*.hm18.lol/*',
             'https://*.hm17.lol/*',
             'https://hentainexus.com/*',
+            'https://koharu.to/*',
           ],
           name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
           license: 'MIT',
@@ -92,6 +93,8 @@ export default defineConfig(({ command }) => {
             'qy0.ru',
             'wnimg.ru',
             'hentainexus.com',
+            'koharu.to',
+            'kisakisexo.xyz',
             'tencentcs.com',
           ],
           grant: [

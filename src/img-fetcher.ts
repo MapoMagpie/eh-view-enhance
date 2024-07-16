@@ -213,7 +213,7 @@ export class IMGFetcher implements VisualNode {
       abort = xhrWapper(imgFetcher.originURL!, "blob", {
         onload: function(response) {
           let data = response.response;
-          if (data.type.startsWith("text/html")) {
+          if (data.type.startsWith("text")) {
             reject(new Error(`expect image data, fetched wrong type: ${data.type}`));
             return;
           }

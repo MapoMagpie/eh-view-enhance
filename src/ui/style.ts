@@ -724,7 +724,11 @@ export function styleCSS() {
   .p-btn {
     font-size: 1em;
   }
+  .bifm-vid-ctl {
+    display: none;
+  }
 }
 `;
+  // TODO: bifm-vid-ctl layout on mobile page;
   return css;
 }

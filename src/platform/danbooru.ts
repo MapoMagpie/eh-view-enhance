@@ -183,7 +183,8 @@ export class Rule34Matcher extends DanbooruMatcher {
     return null;
   }
   getNormalURL(doc: Document): string | null {
-    return doc.querySelector<HTMLElement>("#image,#gelcomVideoPlayer > source")?.getAttribute("src") || null;
+    const element = doc.querySelector<HTMLElement>("#image,#gelcomVideoPlayer > source");
+    return element?.getAttribute("src") || element?.getAttribute("data-cfsrc") || null;
   }
   extractIDFromHref(href: string): string | undefined {
     return href.match(/id=(\d+)/)?.[1];

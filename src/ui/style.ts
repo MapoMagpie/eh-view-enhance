@@ -20,6 +20,18 @@ export function styleCSS() {
   box-sizing: border-box;
   overflow: clip;
 }
+.ehvp-root input[type="checkbox"] {
+  width: 1em;
+  height: unset !important;
+}
+.ehvp-root select {
+  width: 8em;
+  height: 2em;
+}
+.ehvp-root input {
+  width: 3em;
+  height: 1.5em;
+}
 .ehvp-root-collapse {
   height: 0;
 }
@@ -171,6 +183,10 @@ export function styleCSS() {
   position: fixed;
   z-index: 2011 !important;
   box-sizing: border-box;
+  top: ${conf.pageHelperAbTop};
+  left: ${conf.pageHelperAbLeft};
+  bottom: ${conf.pageHelperAbBottom};
+  right: ${conf.pageHelperAbRight};
 }
 .p-panel {
   z-index: 2012 !important;
@@ -183,102 +199,14 @@ export function styleCSS() {
   scrollbar-width: none;
   border-radius: 4px;
   font-weight: 800;
+  width: 24em;
+  height: 32em;
 }
 .p-panel::-webkit-scrollbar {
   display: none;
 }
-@media (min-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper {
-    top: ${conf.pageHelperAbTop};
-    left: ${conf.pageHelperAbLeft};
-    bottom: ${conf.pageHelperAbBottom};
-    right: ${conf.pageHelperAbRight};
-  }
-  .p-panel {
-    width: 24em;
-    height: 32em;
-  }
-  .p-btn { }
-  .b-main {
-    flex-direction: ${conf.pageHelperAbLeft === "unset" ? "row-reverse" : "row"};
-  }
-  .b-main-item {
-    font-size: 1em;
-    line-height: 1.2em;
-  }
-  .ehvp-root input[type="checkbox"] {
-    width: 1em;
-    height: unset !important;
-  }
-  .ehvp-root select {
-    width: 8em;
-    height: 2em;
-  }
-  .ehvp-root input {
-    width: 3em;
-    height: 1.5em;
-  }
-  .ehvp-root select {
-  }
-  .p-config {
-    line-height: 2em;
-  }
-  .bifm-vid-ctl {
-    bottom: 0.2em;
-    ${conf.pageHelperAbLeft === "unset" ? "left: 0.2em;" : "right: 0.2em;"}
-  }
-}
-@media (max-width: ${isMobile ? "1440px" : "720px"}) {
-  .p-helper {
-    bottom: 0px;
-    left: 0px;
-  }
-  .p-panel {
-    width: 100vw;
-    height: 70vh;
-  }
-  .p-btn {
-    height: 6cqw;
-    width: 6cqw;
-    border: 0.4cqw solid #000000;
-    border-radius: 1cqw;
-  }
-  .b-main {
-    flex-direction: row;
-    justify-content: space-between;
-  }
-  .b-main-item {
-    font-size: 5cqw;
-    line-height: 5.5cqw;
-  }
-  #entry-btn[data-stage="exit"] {
-    line-height: 7cqw;
-    font-size: 6.5cqw;
-  }
-  .ehvp-root input[type="checkbox"] {
-    width: 4cqw;
-    height: unset !important;
-  }
-  .ehvp-root select {
-    width: 25cqw !important;
-  }
-  .ehvp-root input, .ehvp-root select {
-    width: 10cqw;
-    height: 6cqw;
-    font-size: 3cqw;
-  }
-  .p-config {
-    line-height: 8.2cqw;
-  }
-  .bifm-vid-ctl {
-    bottom: 5.2cqw;
-    left: 0;
-    width: 100vw;
-  }
-}
 .clickable {
   text-decoration-line: underline;
-  z-index: 2111;
   user-select: none;
   text-align: center;
   white-space: nowrap;
@@ -293,6 +221,8 @@ export function styleCSS() {
 .b-main {
   display: flex;
   user-select: none;
+  flex-direction: ${conf.pageHelperAbLeft === "unset" ? "row-reverse" : "row"};
+  flex-wrap: wrap-reverse;
 }
 .b-main-item {
   box-sizing: border-box;
@@ -305,6 +235,8 @@ export function styleCSS() {
   margin: 0em 0.2em;
   position: relative;
   white-space: nowrap;
+  font-size: 1em;
+  line-height: 1.2em;
 }
 .b-main-option {
   padding: 0em 0.2em;
@@ -331,6 +263,7 @@ export function styleCSS() {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   align-content: start;
+  line-height: 2em;
 }
 .p-config label {
   display: flex;
@@ -502,9 +435,9 @@ export function styleCSS() {
   top: 0;
 }
 .ehvp-custom-panel {
-  min-width: 50em;
+  min-width: 50vw;
   min-height: 50vh;
-  max-width: 80em;
+  max-width: 80vw;
   max-height: 80vh;
   background-color: #333343aa;
   border: 1px solid #000000;
@@ -612,6 +545,8 @@ export function styleCSS() {
   position: fixed;
   z-index: 2010;
   padding: 3px 10px;
+  bottom: 0.2em;
+  ${conf.pageHelperAbLeft === "unset" ? "left: 0.2em;" : "right: 0.2em;"}
 }
 .bifm-vid-ctl > div {
   display: flex;
@@ -744,6 +679,51 @@ export function styleCSS() {
   left: 0;
   height: 0.1em;
   background: red;
+}
+@media (max-width: ${isMobile ? "1440px" : "720px"}) {
+  .ehvp-root {
+    font-size: 4cqw;
+  }
+  .ehvp-root-collapse #entry-btn {
+    font-size: 2.2em;
+  }
+  .p-helper {
+    bottom: 0px;
+    left: 0px;
+    top: unset;
+    right: unset;
+  }
+  .b-main {
+    flex-direction: row;
+  }
+  .b-main-item {
+    font-size: 1.3em;
+    margin-top: 0.2em;
+  }
+  #pagination-adjust-bar {
+    display: none;
+  }
+  .bifm-img {
+    min-weight: 100vw !important;
+  }
+  .p-panel {
+    width: 100vw;
+    font-size: 5cqw;
+  }
+  .ehvp-custom-panel {
+    max-width: 100vw;
+  }
+  .ehvp-root input, .ehvp-root select {
+    width: 2em;
+    height: 1.2em;
+    font-size: 1em;
+  }
+  .ehvp-root select {
+    width: 7em !important;
+  }
+  .p-btn {
+    font-size: 1em;
+  }
 }
 `;
   return css;

@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.6.2
+// @version            4.6.3
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -4371,7 +4371,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const followBTNs = Array.from(document.querySelectorAll("button[data-testid][aria-label]"));
     if (followBTNs.length === 0)
       return void 0;
-    const theBTN = followBTNs.find((btn) => btn.getAttribute("aria-label")?.includes(`@${userName}`)) || followBTNs[0];
+    const theBTN = followBTNs.find((btn) => (btn.getAttribute("aria-label") ?? "").toLowerCase().includes(`@${userName.toLowerCase()}`)) || followBTNs[0];
     return theBTN.getAttribute("data-testid").match(/(\d+)/)?.[1];
   }
 

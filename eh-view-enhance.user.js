@@ -8057,6 +8057,7 @@ ${chapters.map((c, i) => `<div><label>
     }
     return () => {
       console.log("destory eh-view-enhance");
+      entry(false);
       PF.abort();
       IL.abort();
       IFQ.length = 0;

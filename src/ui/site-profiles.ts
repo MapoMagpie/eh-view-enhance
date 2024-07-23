@@ -131,6 +131,7 @@ export default function createExcludeURLPanel(root: HTMLElement) {
           return;
         }
         getProfile().workURLs.push(value);
+        saveConf(conf);
         createWorkURLs(getProfile().workURLs, workURLContainer, (value) => {
           removeWorkURL(value, getProfile());
         });

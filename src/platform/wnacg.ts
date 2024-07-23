@@ -54,7 +54,7 @@ export class WnacgMatcher extends BaseMatcher {
   }
 
   workURL(): RegExp {
-    return /(wnacg.com|hm\d{2}.lol)\/photos-index/;
+    return /(wnacg.com|wn\d{2}.cc)\/photos-index/;
   }
 
   galleryMeta(doc: Document): GalleryMeta {

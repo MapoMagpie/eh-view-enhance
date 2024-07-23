@@ -4462,7 +4462,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return { url, title };
     }
     workURL() {
-      return /(wnacg.com|hm\d{2}.lol)\/photos-index/;
+      return /(wnacg.com|wn\d{2}.cc)\/photos-index/;
     }
     galleryMeta(doc) {
       return this.meta || super.galleryMeta(doc);
@@ -4778,6 +4778,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             return;
           }
           getProfile().workURLs.push(value);
+          saveConf(conf);
           createWorkURLs(getProfile().workURLs, workURLContainer, (value2) => {
             removeWorkURL(value2, getProfile());
           });

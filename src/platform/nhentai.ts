@@ -5,6 +5,9 @@ import { BaseMatcher, OriginMeta } from "./platform";
 
 const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
 export class NHMatcher extends BaseMatcher {
+  name(): string {
+    return "nhentai";
+  }
 
   workURL(): RegExp {
     return /nhentai.net\/g\/\d+\/?$/;

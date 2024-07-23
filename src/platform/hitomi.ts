@@ -72,6 +72,9 @@ type GalleryInfo = {
 const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/s;
 const GG_B_REGEX = /b:\s'(\d*\/)'/;
 export class HitomiMather extends BaseMatcher {
+  name(): string {
+    return "hitomi"
+  }
 
   gg?: HitomiGG;
   meta: Record<number, GalleryMeta> = {};

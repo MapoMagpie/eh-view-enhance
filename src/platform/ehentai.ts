@@ -23,6 +23,9 @@ const regulars = {
 }
 
 export class EHMatcher extends BaseMatcher {
+  name(): string {
+    return "e-hentai"
+  }
   meta?: GalleryMeta;
   // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
   workURL(): RegExp {

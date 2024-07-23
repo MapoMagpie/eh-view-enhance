@@ -97,8 +97,7 @@ export function createHTML() {
     finishedElement: q("#p-finished", root),
     showGuideElement: q("#show-guide-element", root),
     showKeyboardCustomElement: q("#show-keyboard-custom-element", root),
-    showExcludeURLElement: q("#show-exclude-url-element", root),
-    showAutoOpenExcludeURLElement: q('#show-autoopen-exclude-url-element', root),
+    showSiteProfilesElement: q("#show-site-profiles-element", root),
     imgLandLeft: q("#img-land-left", root),
     imgLandRight: q("#img-land-right", root),
     autoPageBTN: q("#auto-page-btn", root),
@@ -178,8 +177,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
 
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
   HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
-  HTML.showExcludeURLElement.addEventListener("click", events.showExcludeURLEvent);
-  HTML.showAutoOpenExcludeURLElement.addEventListener("click", events.showAutoOpenExcludeURLEvent);
+  HTML.showSiteProfilesElement.addEventListener("click", events.showSiteProfilesEvent);
 
   dragElement(HTML.pageHelper, {
     onFinish: () => {

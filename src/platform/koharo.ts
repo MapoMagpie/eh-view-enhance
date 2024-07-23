@@ -47,6 +47,9 @@ const NAMESPACE_MAP: Record<number, string> = {
 };
 
 export class KoharuMatcher extends BaseMatcher {
+  name(): string {
+    return "Koharu";
+  }
 
   originURLMap: Map<string, string> = new Map();
   meta?: GalleryMeta;

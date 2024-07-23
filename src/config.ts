@@ -4,6 +4,12 @@ import { uuid } from "./utils/random";
 
 export type Oriented = "prev" | "next";
 
+export type SiteProfile = {
+  disable: boolean,
+  disableAutoOpen: boolean,
+  workURLs: string[],
+}
+
 export type Config = {
   backgroundImage: string
   /** 每行显示的数量 */
@@ -64,9 +70,7 @@ export type Config = {
     inFullViewGrid: { [key in KeyboardInFullViewGridId]?: string[] },
     inMain: { [key in KeyboardInMainId]?: string[] },
   },
-  excludeURLs: string[],
-  /* 屏蔽自动展开的URL */
-  autoOpenExcludeURLs: string[],
+  siteProfiles: Record<string, SiteProfile>,
   /** Is video muted? */
   muted?: boolean,
   /** Video volume, min 0, max 100 */
@@ -123,8 +127,7 @@ function defaultConf(): Config {
     autoCollapsePanel: true,
     minifyPageHelper: "inBigMode",
     keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
-    excludeURLs: [],
-    autoOpenExcludeURLs: [],
+    siteProfiles: {},
     muted: false,
     volume: 50,
     mcInSites: ["18comic"],
@@ -225,9 +228,10 @@ function confHealthCheck(cf: Config): Config {
 }
 
 const PATCH_CONFIG: Partial<Config> = {
-  first: true,
+  autoOpen: false,
+  siteProfiles: {},
 }
-const CONFIG_PATCH_VERSION = 4;
+const CONFIG_PATCH_VERSION = 5;
 function patchConfig(cf: Config, patch: Partial<Config>): Config | null {
   if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
     return null;

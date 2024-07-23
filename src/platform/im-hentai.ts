@@ -5,6 +5,9 @@ import q from "../utils/query-element";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 export class IMHentaiMatcher extends BaseMatcher {
+  name(): string {
+    return "im-hentai";
+  }
   data?: { server: string, uid: string, gid: string, imgDir: string, total: number };
 
   async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {

@@ -1,4 +1,4 @@
-import { conf, saveConf } from "../config";
+import { conf } from "../config";
 import { Comic18Matcher } from "./18comic";
 import { DanbooruDonmaiMatcher, GelBooruMatcher, KonachanMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
 import { EHMatcher } from "./ehentai";
@@ -36,37 +36,18 @@ export function getMatchers(): Matcher[] {
   ];
 }
 
-export function adaptMatcher(url: string): Matcher | null {
+export function adaptMatcher(url: string): [Matcher | null, boolean] {
   const matchers = getMatchers();
-  const workURLs = matchers.flatMap(m => m.workURLs()).map(r => r.source);
-  // check excludeURLs health, remove invalid RegExp
-  const checkValid = (urls: string[]) => {
-    const newURLs = urls.filter(u => workURLs.includes(u));
-    return newURLs.length === urls.length ? null : newURLs;
-  };
-  let newURLs = checkValid(conf.excludeURLs);
-  if (newURLs) {
-    conf.excludeURLs = newURLs;
-    saveConf(conf);
-  }
-  newURLs = checkValid(conf.autoOpenExcludeURLs);
-  if (newURLs) {
-    conf.autoOpenExcludeURLs = newURLs;
-    saveConf(conf);
-  }
-  // if all sites are excluded, don't exclude any
-  if (conf.excludeURLs.length < matchers.length) {
-    for (const regex of conf.excludeURLs) {
-      if (new RegExp(regex).test(url)) {
-        return null;
+  const matcher = matchers
+    .filter(matcher => !conf.siteProfiles[matcher.name()]?.disable)
+    .find(matcher => {
+      let workURLs = matcher.workURLs();
+      if (conf.siteProfiles[matcher.name()] && conf.siteProfiles[matcher.name()].workURLs.length > 0) {
+        workURLs = conf.siteProfiles[matcher.name()].workURLs.map(regex => new RegExp(regex));
       }
-    }
-  }
-  return matchers.find(m => m.workURLs().find(r => r.test(url))) || null;
-}
+      return workURLs.find(regex => regex.test(url));
+    });
 
-export function enableAutoOpen(url: string): boolean {
-  // this must execute after adaptMatcher
-  // if the url matches any in Exclude list, then do not enable
-  return conf.autoOpenExcludeURLs.find(excludeReg => RegExp(excludeReg).test(url)) == undefined;
+  if (!matcher) return [null, false];
+  return [matcher, !conf.siteProfiles[matcher.name()]?.disableAutoOpen];
 }

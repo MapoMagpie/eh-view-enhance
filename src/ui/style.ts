@@ -445,6 +445,8 @@ export function styleCSS() {
   flex-direction: column;
   text-align: start;
   color: var(--ehvp-font-color);
+  position: relative;
+  user-select: none;
 }
 .ehvp-custom-panel-title {
   font-size: 2em;
@@ -679,6 +681,13 @@ export function styleCSS() {
   left: 0;
   height: 0.1em;
   background: red;
+}
+.ehvp-custom-btn-cover:hover {
+  filter: brightness(150%);
+}
+.ehvp-custom-btn-cover:active {
+  background-color: white !important;
+  color: black;
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .ehvp-root {

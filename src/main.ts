@@ -4,7 +4,7 @@ import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IdleLoader } from "./idle-loader";
 import { PageFetcher } from "./page-fetcher";
-import { adaptMatcher, enableAutoOpen } from "./platform/adapt";
+import { adaptMatcher } from "./platform/adapt";
 import { Matcher } from "./platform/platform";
 import { initEvents } from "./ui/event";
 import { FullViewGridManager } from "./ui/full-view-grid-manager";
@@ -17,7 +17,7 @@ import { sleep } from "./utils/sleep";
 
 type DestoryFunc = () => Promise<void>;
 
-function main(MATCHER: Matcher): DestoryFunc {
+function main(MATCHER: Matcher, autoOpen: boolean): DestoryFunc {
   const HTML = createHTML();
   [HTML.fullViewGrid, HTML.bigImageFrame].forEach(e => revertMonkeyPatch(e));
 
@@ -53,8 +53,6 @@ function main(MATCHER: Matcher): DestoryFunc {
     conf.first = false;
     saveConf(conf);
   }
-  const href = window.location.href;
-
   // 入口Entry
   const signal = { first: true };
   function entry(expand?: boolean) {
@@ -72,7 +70,7 @@ function main(MATCHER: Matcher): DestoryFunc {
     }
   }
   EBUS.subscribe("toggle-main-view", entry);
-  if (conf.autoOpen && enableAutoOpen(href)) {
+  if (conf.autoOpen && autoOpen) {
     HTML.entryBTN.setAttribute("data-stage", "open");
     entry(true);
   }
@@ -95,8 +93,10 @@ function reMain() {
   debouncer.addEvent("LOCATION-CHANGE", () => {
     const newStart = () => {
       if (document.querySelector(".ehvp-base")) return;
-      const matcher = adaptMatcher(window.location.href);
-      matcher && (destoryFunc = main(matcher));
+      const [matcher, autoOpen] = adaptMatcher(window.location.href);
+      if (matcher) {
+        destoryFunc = main(matcher, autoOpen)
+      }
     };
     if (destoryFunc) {
       destoryFunc().then(newStart);

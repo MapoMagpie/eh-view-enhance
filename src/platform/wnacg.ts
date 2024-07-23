@@ -4,6 +4,9 @@ import { PagesSource } from "../page-fetcher";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 export class WnacgMatcher extends BaseMatcher {
+  name(): string {
+    return "绅士漫画"
+  }
 
   meta?: GalleryMeta;
   baseURL?: string;

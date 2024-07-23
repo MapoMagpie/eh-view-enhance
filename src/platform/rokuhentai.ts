@@ -5,6 +5,9 @@ import { ImagePosition, splitImagesFromUrl } from "../utils/sprite-split";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 export class RokuHentaiMatcher extends BaseMatcher {
+  name(): string {
+    return "rokuhentai";
+  }
   sprites: ({ src: string, pos: ImagePosition } | undefined)[] = [];
   fetchedThumbnail: (string | undefined)[] = [];
   galleryId: string = "";

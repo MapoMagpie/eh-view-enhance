@@ -43,6 +43,9 @@ function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, p
 }
 
 export class Comic18Matcher extends BaseMatcher {
+  name(): string {
+    return "禁漫";
+  }
 
   meta?: GalleryMeta;
 

@@ -10,6 +10,7 @@ export type OriginMeta = {
 }
 
 export interface Matcher {
+  name(): string;
   /**
    * step 0: in some site, the gallery is divided into chapters
    */
@@ -45,6 +46,7 @@ export abstract class BaseMatcher implements Matcher {
     }];
   }
 
+  abstract name(): string;
   abstract fetchPagesSource(source: Chapter): AsyncGenerator<PagesSource>;
   abstract parseImgNodes(page: PagesSource, chapterID?: number): Promise<ImageNode[]>;
   abstract fetchOriginMeta(href: string, retry: boolean, chapterID?: number): Promise<OriginMeta>;

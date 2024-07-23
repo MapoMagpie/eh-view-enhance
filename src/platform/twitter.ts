@@ -76,6 +76,9 @@ type TimelineAddEntries = {
 type Instructions = [TimelineAddToModule, TimelineAddEntries];
 
 export class TwitterMatcher extends BaseMatcher {
+  name(): string {
+    return "Twitter | X";
+  }
   mediaPages: Map<string, Item[]> = new Map();
   largeSrcMap: Map<string, string> = new Map();
   uuid = uuid();

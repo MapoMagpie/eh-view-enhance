@@ -12,6 +12,9 @@ type HNImageInfo = {
 const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?(.*?)\)/;
 const REGEXP_EXTRACT_HASH = /read\/\d+\/(\d+)$/;
 export class HentaiNexusMatcher extends BaseMatcher {
+  name(): string {
+    return "hentainexus";
+  }
 
   meta?: GalleryMeta;
   baseURL?: string;

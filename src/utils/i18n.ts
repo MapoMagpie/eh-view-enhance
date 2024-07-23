@@ -95,8 +95,7 @@ export const i18n = {
   originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
   showHelp: new I18nValue("Help", "帮助"),
   showKeyboard: new I18nValue("Keyboard", "快捷键"),
-  showExcludes: new I18nValue("Excludes", "站点排除"),
-  showAutoOpenExcludes: new I18nValue("AutoOpenExcludes", "自动打开排除"),
+  showSiteProfiles: new I18nValue("Site Profiles", "站点配置"),
   letUsStar: new I18nValue("Let's Star", "点星"),
 
   // download panel

@@ -13,7 +13,6 @@
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/*
 // @match              https://e-hentai.org/*
-// @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://nhentai.net/*
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*
@@ -23,7 +22,6 @@
 // @match              https://rokuhentai.com/*
 // @match              https://18comic.org/*
 // @match              https://18comic.vip/*
-// @match              https://18-comicfreedom.xyz/*
 // @match              https://rule34.xxx/*
 // @match              https://imhentai.xxx/*
 // @match              https://danbooru.donmai.us/*
@@ -31,11 +29,9 @@
 // @match              https://twitter.com/*
 // @match              https://x.com/*
 // @match              https://*.wnacg.com/*
-// @match              https://*.hm19.lol/*
-// @match              https://*.hm18.lol/*
-// @match              https://*.hm17.lol/*
 // @match              https://hentainexus.com/*
 // @match              https://koharu.to/*
+// @match              *://*/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -66,6 +62,7 @@
 // @connect            kisakisexo.xyz
 // @connect            koharusexo.xyz
 // @connect            aronasexo.xyz
+// @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest
@@ -142,8 +139,7 @@
       autoCollapsePanel: true,
       minifyPageHelper: "inBigMode",
       keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
-      excludeURLs: [],
-      autoOpenExcludeURLs: [],
+      siteProfiles: {},
       muted: false,
       volume: 50,
       mcInSites: ["18comic"],
@@ -230,9 +226,10 @@
     return cf;
   }
   const PATCH_CONFIG = {
-    first: true
+    autoOpen: false,
+    siteProfiles: {}
   };
-  const CONFIG_PATCH_VERSION = 4;
+  const CONFIG_PATCH_VERSION = 5;
   function patchConfig(cf, patch) {
     if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
       return null;
@@ -2142,6 +2139,9 @@
     }
   }
   class Comic18Matcher extends BaseMatcher {
+    name() {
+      return "禁漫";
+    }
     meta;
     async fetchChapters() {
       const ret = [];
@@ -2252,6 +2252,9 @@
     tags = {};
     blacklistTags = [];
     count = 0;
+    name() {
+      return this.site();
+    }
     async *fetchPagesSource() {
       let doc = document;
       this.blacklistTags = this.getBlacklist(doc);
@@ -2312,7 +2315,7 @@
     galleryMeta() {
       const url = new URL(window.location.href);
       const tags = url.searchParams.get("tags")?.trim();
-      const meta = new GalleryMeta(window.location.href, `${this.site()}_${tags}_${this.count}`);
+      const meta = new GalleryMeta(window.location.href, `${this.site().toLowerCase().replace(" ", "-")}_${tags}_${this.count}`);
       meta.tags = this.tags;
       return meta;
     }
@@ -2412,6 +2415,9 @@
   }
   const POST_INFO_REGEX = /Post\.register\((.*)\)/g;
   class YandereMatcher extends BaseMatcher {
+    name() {
+      return "yande.re";
+    }
     infos = {};
     count = 0;
     workURL() {
@@ -2484,6 +2490,9 @@
     }
   }
   class KonachanMatcher extends BaseMatcher {
+    name() {
+      return "konachan";
+    }
     infos = {};
     count = 0;
     workURL() {
@@ -2661,6 +2670,9 @@
     sprite: /url\((.*?)\)/
   };
   class EHMatcher extends BaseMatcher {
+    name() {
+      return "e-hentai";
+    }
     meta;
     // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
     workURL() {
@@ -2875,6 +2887,9 @@
   const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?(.*?)\)/;
   const REGEXP_EXTRACT_HASH = /read\/\d+\/(\d+)$/;
   class HentaiNexusMatcher extends BaseMatcher {
+    name() {
+      return "hentainexus";
+    }
     meta;
     baseURL;
     readerData;
@@ -3045,6 +3060,9 @@
   const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/s;
   const GG_B_REGEX = /b:\s'(\d*\/)'/;
   class HitomiMather extends BaseMatcher {
+    name() {
+      return "hitomi";
+    }
     gg;
     meta = {};
     infoRecord = {};
@@ -3160,6 +3178,9 @@
   }
 
   class IMHentaiMatcher extends BaseMatcher {
+    name() {
+      return "im-hentai";
+    }
     data;
     async fetchOriginMeta(href, _) {
       const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
@@ -3239,6 +3260,9 @@
     11: "language"
   };
   class KoharuMatcher extends BaseMatcher {
+    name() {
+      return "Koharu";
+    }
     originURLMap = /* @__PURE__ */ new Map();
     meta;
     galleryMeta() {
@@ -3309,6 +3333,9 @@
 
   const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
   class NHMatcher extends BaseMatcher {
+    name() {
+      return "nhentai";
+    }
     workURL() {
       return /nhentai.net\/g\/\d+\/?$/;
     }
@@ -3890,6 +3917,9 @@ duration 0.04`).join("\n");
 
   const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
   class PixivMatcher extends BaseMatcher {
+    name() {
+      return "Pixiv";
+    }
     authorID;
     meta;
     pidList = [];
@@ -4062,6 +4092,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 
   class RokuHentaiMatcher extends BaseMatcher {
+    name() {
+      return "rokuhentai";
+    }
     sprites = [];
     fetchedThumbnail = [];
     galleryId = "";
@@ -4158,6 +4191,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 
   const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
   class SteamMatcher extends BaseMatcher {
+    name() {
+      return "Steam Screenshots";
+    }
     workURL() {
       return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
     }
@@ -4233,6 +4269,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 
   class TwitterMatcher extends BaseMatcher {
+    name() {
+      return "Twitter | X";
+    }
     mediaPages = /* @__PURE__ */ new Map();
     largeSrcMap = /* @__PURE__ */ new Map();
     uuid = uuid();
@@ -4374,6 +4413,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 
   class WnacgMatcher extends BaseMatcher {
+    name() {
+      return "绅士漫画";
+    }
     meta;
     baseURL;
     async *fetchPagesSource() {
@@ -4465,32 +4507,16 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
   function adaptMatcher(url) {
     const matchers = getMatchers();
-    const workURLs = matchers.flatMap((m) => m.workURLs()).map((r) => r.source);
-    const checkValid = (urls) => {
-      const newURLs2 = urls.filter((u) => workURLs.includes(u));
-      return newURLs2.length === urls.length ? null : newURLs2;
-    };
-    let newURLs = checkValid(conf.excludeURLs);
-    if (newURLs) {
-      conf.excludeURLs = newURLs;
-      saveConf(conf);
-    }
-    newURLs = checkValid(conf.autoOpenExcludeURLs);
-    if (newURLs) {
-      conf.autoOpenExcludeURLs = newURLs;
-      saveConf(conf);
-    }
-    if (conf.excludeURLs.length < matchers.length) {
-      for (const regex of conf.excludeURLs) {
-        if (new RegExp(regex).test(url)) {
-          return null;
-        }
+    const matcher = matchers.filter((matcher2) => !conf.siteProfiles[matcher2.name()]?.disable).find((matcher2) => {
+      let workURLs = matcher2.workURLs();
+      if (conf.siteProfiles[matcher2.name()] && conf.siteProfiles[matcher2.name()].workURLs.length > 0) {
+        workURLs = conf.siteProfiles[matcher2.name()].workURLs.map((regex) => new RegExp(regex));
       }
-    }
-    return matchers.find((m) => m.workURLs().find((r) => r.test(url))) || null;
-  }
-  function enableAutoOpen(url) {
-    return conf.autoOpenExcludeURLs.find((excludeReg) => RegExp(excludeReg).test(url)) == void 0;
+      return workURLs.find((regex) => regex.test(url));
+    });
+    if (!matcher)
+      return [null, false];
+    return [matcher, !conf.siteProfiles[matcher.name()]?.disableAutoOpen];
   }
 
   function parseKey(event) {
@@ -4629,22 +4655,58 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     Scroller
   };
 
-  function createExcludeURLPanel(root, urls, autoOpen = false) {
-    const workURLs = getMatchers().flatMap((m) => m.workURLs()).map((r) => r.source);
+  function createInputElement(root, anchor, callback) {
+    const element = document.createElement("div");
+    element.style.position = "fixed";
+    element.id = "input-element";
+    element.innerHTML = `<input type="text" style="width:20em;height:2em;"><button class="ehvp-custom-btn-cover" style="border:none;height:2em;background-color:#7fef7b;margin-left:0.3em;color:white;font-weight:800;">√</button>`;
+    root.appendChild(element);
+    const input = element.querySelector("input");
+    const button = element.querySelector("button");
+    button.addEventListener("click", () => {
+      callback(input.value);
+      element.remove();
+    });
+    relocateElement(element, anchor, root.offsetWidth, root.offsetHeight);
+  }
+  function createWorkURLs(workURLs, container, onRemove) {
+    const urls = workURLs.map((regex) => `<div><span style="user-select: text;">${regex}</span><span class="ehvp-custom-btn-cover" data-value="${regex}" style="background-color:#fd5454;">&nbspx&nbsp</span></div>`);
+    container.innerHTML = urls.join("");
+    Array.from(container.querySelectorAll("div > span + span")).forEach((element) => {
+      element.addEventListener("click", () => {
+        onRemove(element.getAttribute("data-value"));
+        element.parentElement.remove();
+      });
+    });
+  }
+  function createExcludeURLPanel(root) {
+    const matchers = getMatchers();
+    const listItems = matchers.map((matcher) => {
+      const name = matcher.name();
+      const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
+      const profile = conf.siteProfiles[name];
+      return `<li data-index="${id}" class="ehvp-custom-panel-list-item">
+             <div style="display:flex;justify-content: space-between;">
+               <div style="font-size: 1.2em;font-weight: 800;">${name}</div>
+               <div>
+                 <label><span>Enable: </span><input id="${id}-enable-checkbox" ${!profile?.disable ? "checked" : ""} type="checkbox"></label>
+                 <label><span>Auto Open: </span><input id="${id}-enable-auto-open-checkbox" ${!profile?.disableAutoOpen ? "checked" : ""} type="checkbox"></label>
+                 <label><span>Add Regexp: </span><span id="${id}-add-workurl" class="ehvp-custom-btn-cover" style="background-color:#7fef7b;">&nbsp+&nbsp</span></label>
+               </div>
+             </div>
+             <div id="${id}-workurls"></div>
+           </li>`;
+    });
     const HTML_STR = `
 <div class="ehvp-custom-panel">
   <div class="ehvp-custom-panel-title">
-    <span>${autoOpen ? "Auto Open " : ""}Exclude URL|Site</span>
+    <span>Site Profiles</span>
     <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
   </div>
   <div class="ehvp-custom-panel-container">
     <div class="ehvp-custom-panel-content">
       <ul class="ehvp-custom-panel-list">
-        ${workURLs.map((r, index) => `
-           <li data-index="${index}" class="ehvp-custom-panel-list-item ${urls.indexOf(r) !== -1 ? "ehvp-custom-panel-list-item-disable" : ""}">
-             <span>${r}</span>
-           </li>
-        `).join("")}
+      ${listItems.join("")}
       </ul>
     </div>
   </div>
@@ -4660,19 +4722,73 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     });
     root.appendChild(fullPanel);
     fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", () => fullPanel.remove());
-    const list = Array.from(fullPanel.querySelectorAll(".ehvp-custom-panel-list-item"));
-    list.forEach((li) => {
-      const index = parseInt(li.getAttribute("data-index"));
-      li.addEventListener("click", () => {
-        const i = urls.indexOf(workURLs[index]);
-        if (i === -1) {
-          li.classList.add("ehvp-custom-panel-list-item-disable");
-          urls.push(workURLs[index]);
-        } else {
-          li.classList.remove("ehvp-custom-panel-list-item-disable");
-          urls.splice(i, 1);
+    const siteProfiles = conf.siteProfiles;
+    matchers.forEach((matcher) => {
+      const name = matcher.name();
+      const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
+      const defaultWorkURLs = matcher.workURLs().map((u) => u.source);
+      const getProfile = () => {
+        let profile = siteProfiles[name];
+        if (!profile) {
+          profile = { disable: false, disableAutoOpen: false, workURLs: [...defaultWorkURLs] };
+          siteProfiles[name] = profile;
         }
+        return profile;
+      };
+      const enableCheckbox = q(`#${id}-enable-checkbox`, fullPanel);
+      enableCheckbox.addEventListener("click", () => {
+        getProfile().disable = !enableCheckbox.checked;
         saveConf(conf);
+      });
+      const enableAutoOpenCheckbox = q(`#${id}-enable-auto-open-checkbox`, fullPanel);
+      enableAutoOpenCheckbox.addEventListener("click", () => {
+        getProfile().disableAutoOpen = !enableAutoOpenCheckbox.checked;
+        saveConf(conf);
+      });
+      const addWorkURL = q(`#${id}-add-workurl`, fullPanel);
+      const workURLContainer = q(`#${id}-workurls`, fullPanel);
+      const removeWorkURL = (value, profile) => {
+        const index = profile.workURLs.indexOf(value);
+        let changed = false;
+        if (index > -1) {
+          profile.workURLs.splice(index, 1);
+          changed = true;
+        }
+        if (profile.workURLs.length === 0) {
+          profile.workURLs = [...defaultWorkURLs];
+          changed = true;
+          createWorkURLs(defaultWorkURLs, workURLContainer, (value2) => {
+            removeWorkURL(value2, getProfile());
+          });
+        }
+        if (changed)
+          saveConf(conf);
+      };
+      addWorkURL.addEventListener("click", () => {
+        const background = document.createElement("div");
+        background.addEventListener("click", (event) => event.target === background && background.remove());
+        background.setAttribute("style", "position:absolute;width:100%;height:100%;");
+        fullPanel.appendChild(background);
+        createInputElement(background, addWorkURL, (value) => {
+          if (!value)
+            return;
+          try {
+            new RegExp(value);
+          } catch (_) {
+            return;
+          }
+          getProfile().workURLs.push(value);
+          createWorkURLs(getProfile().workURLs, workURLContainer, (value2) => {
+            removeWorkURL(value2, getProfile());
+          });
+        });
+      });
+      let workURLs = defaultWorkURLs;
+      if (siteProfiles[name] && siteProfiles[name].workURLs.length > 0) {
+        workURLs = siteProfiles[name].workURLs;
+      }
+      createWorkURLs(workURLs, workURLContainer, (value) => {
+        removeWorkURL(value, getProfile());
       });
     });
   }
@@ -4766,8 +4882,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
     showHelp: new I18nValue("Help", "帮助"),
     showKeyboard: new I18nValue("Keyboard", "快捷键"),
-    showExcludes: new I18nValue("Excludes", "站点排除"),
-    showAutoOpenExcludes: new I18nValue("AutoOpenExcludes", "自动打开排除"),
+    showSiteProfiles: new I18nValue("Site Profiles", "站点配置"),
     letUsStar: new I18nValue("Let's Star", "点星"),
     // download panel
     download: new I18nValue("DL", "下载"),
@@ -5424,11 +5539,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     function showKeyboardCustomEvent() {
       createKeyboardCustomPanel(keyboardEvents, HTML.root);
     }
-    function showExcludeURLEvent() {
-      createExcludeURLPanel(HTML.root, conf.excludeURLs);
-    }
-    function showAutoOpenExcludeURLEvent() {
-      createExcludeURLPanel(HTML.root, conf.autoOpenExcludeURLs, true);
+    function showSiteProfilesEvent() {
+      createExcludeURLPanel(HTML.root);
     }
     return {
       modNumberConfigEvent,
@@ -5444,8 +5556,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       collapsePanelEvent,
       abortMouseleavePanelEvent,
       showKeyboardCustomEvent,
-      showExcludeURLEvent,
-      showAutoOpenExcludeURLEvent,
+      showSiteProfilesEvent,
       changeReadModeEvent
     };
   }
@@ -6083,6 +6194,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   flex-direction: column;
   text-align: start;
   color: var(--ehvp-font-color);
+  position: relative;
+  user-select: none;
 }
 .ehvp-custom-panel-title {
   font-size: 2em;
@@ -6317,6 +6430,13 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   left: 0;
   height: 0.1em;
   background: red;
+}
+.ehvp-custom-btn-cover:hover {
+  filter: brightness(150%);
+}
+.ehvp-custom-btn-cover:active {
+  background-color: white !important;
+  color: black;
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .ehvp-root {
@@ -6700,8 +6820,7 @@ ${chapters.map((c, i) => `<div><label>
     <div style="grid-column-start: 1; grid-column-end: 11; padding-left: 5px; text-align: left;">
          <a id="show-guide-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showHelp.get()}</a>
          <a id="show-keyboard-custom-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
-         <a id="show-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showExcludes.get()}</a>
-         <a id="show-autoopen-exclude-url-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showAutoOpenExcludes.get()}</a>
+         <a id="show-site-profiles-element" class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;">${i18n.showSiteProfiles.get()}</a>
          <a class="clickable" style="color: #fff; border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
     </div>
 </div>`;
@@ -6822,8 +6941,7 @@ ${chapters.map((c, i) => `<div><label>
       finishedElement: q("#p-finished", root),
       showGuideElement: q("#show-guide-element", root),
       showKeyboardCustomElement: q("#show-keyboard-custom-element", root),
-      showExcludeURLElement: q("#show-exclude-url-element", root),
-      showAutoOpenExcludeURLElement: q("#show-autoopen-exclude-url-element", root),
+      showSiteProfilesElement: q("#show-site-profiles-element", root),
       imgLandLeft: q("#img-land-left", root),
       imgLandRight: q("#img-land-right", root),
       autoPageBTN: q("#auto-page-btn", root),
@@ -6893,8 +7011,7 @@ ${chapters.map((c, i) => `<div><label>
     });
     HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
     HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
-    HTML.showExcludeURLElement.addEventListener("click", events.showExcludeURLEvent);
-    HTML.showAutoOpenExcludeURLElement.addEventListener("click", events.showAutoOpenExcludeURLEvent);
+    HTML.showSiteProfilesElement.addEventListener("click", events.showSiteProfilesEvent);
     dragElement(HTML.pageHelper, {
       onFinish: () => {
         conf.pageHelperAbTop = HTML.pageHelper.style.top;
@@ -8001,7 +8118,7 @@ ${chapters.map((c, i) => `<div><label>
     });
   }
 
-  function main(MATCHER) {
+  function main(MATCHER, autoOpen) {
     const HTML = createHTML();
     [HTML.fullViewGrid, HTML.bigImageFrame].forEach((e) => revertMonkeyPatch(e));
     const IFQ = IMGFetcherQueue.newQueue();
@@ -8031,7 +8148,6 @@ ${chapters.map((c, i) => `<div><label>
       conf.first = false;
       saveConf(conf);
     }
-    const href = window.location.href;
     const signal = { first: true };
     function entry(expand) {
       if (HTML.pageHelper) {
@@ -8049,7 +8165,7 @@ ${chapters.map((c, i) => `<div><label>
       }
     }
     EBUS.subscribe("toggle-main-view", entry);
-    if (conf.autoOpen && enableAutoOpen(href)) {
+    if (conf.autoOpen && autoOpen) {
       HTML.entryBTN.setAttribute("data-stage", "open");
       entry(true);
     }
@@ -8071,8 +8187,10 @@ ${chapters.map((c, i) => `<div><label>
       const newStart = () => {
         if (document.querySelector(".ehvp-base"))
           return;
-        const matcher = adaptMatcher(window.location.href);
-        matcher && (destoryFunc = main(matcher));
+        const [matcher, autoOpen] = adaptMatcher(window.location.href);
+        if (matcher) {
+          destoryFunc = main(matcher, autoOpen);
+        }
       };
       if (destoryFunc) {
         destoryFunc().then(newStart);

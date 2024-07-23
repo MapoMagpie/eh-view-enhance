@@ -11,6 +11,10 @@ abstract class DanbooruMatcher extends BaseMatcher {
   blacklistTags: string[] = [];
   count: number = 0;
 
+  name(): string {
+    return this.site();
+  }
+
   abstract nextPage(doc: Document): string | null;
 
   async *fetchPagesSource(): AsyncGenerator<PagesSource> {
@@ -88,7 +92,7 @@ abstract class DanbooruMatcher extends BaseMatcher {
   galleryMeta(): GalleryMeta {
     const url = new URL(window.location.href);
     const tags = url.searchParams.get("tags")?.trim();
-    const meta = new GalleryMeta(window.location.href, `${this.site()}_${tags}_${this.count}`);
+    const meta = new GalleryMeta(window.location.href, `${this.site().toLowerCase().replace(" ", "-")}_${tags}_${this.count}`);
     meta.tags = this.tags;
     return meta;
   }
@@ -202,6 +206,9 @@ type YandereKonachanPostInfo = {
   jpeg_url: string,
 }
 export class YandereMatcher extends BaseMatcher {
+  name(): string {
+    return "yande.re";
+  }
 
   infos: Record<string, YandereKonachanPostInfo> = {};
   count: number = 0;
@@ -278,6 +285,9 @@ export class YandereMatcher extends BaseMatcher {
 }
 
 export class KonachanMatcher extends BaseMatcher {
+  name(): string {
+    return "konachan";
+  }
 
   infos: Record<string, YandereKonachanPostInfo> = {};
   count: number = 0;

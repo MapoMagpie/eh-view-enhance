@@ -13,7 +13,6 @@
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/*
 // @match              https://e-hentai.org/*
-// @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://nhentai.net/*
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*
@@ -23,7 +22,6 @@
 // @match              https://rokuhentai.com/*
 // @match              https://18comic.org/*
 // @match              https://18comic.vip/*
-// @match              https://18-comicfreedom.xyz/*
 // @match              https://rule34.xxx/*
 // @match              https://imhentai.xxx/*
 // @match              https://danbooru.donmai.us/*
@@ -31,11 +29,9 @@
 // @match              https://twitter.com/*
 // @match              https://x.com/*
 // @match              https://*.wnacg.com/*
-// @match              https://*.hm19.lol/*
-// @match              https://*.hm18.lol/*
-// @match              https://*.hm17.lol/*
 // @match              https://hentainexus.com/*
 // @match              https://koharu.to/*
+// @match              *://*/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -66,6 +62,7 @@
 // @connect            kisakisexo.xyz
 // @connect            koharusexo.xyz
 // @connect            aronasexo.xyz
+// @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue
 // @grant              GM_xmlhttpRequest

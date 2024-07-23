@@ -43,6 +43,9 @@ type UgoiraMeta = {
 
 const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
 export class PixivMatcher extends BaseMatcher {
+  name(): string {
+    return "Pixiv"
+  }
 
   authorID: string | undefined;
   meta: GalleryMeta;

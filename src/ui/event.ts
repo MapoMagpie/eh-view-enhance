@@ -8,7 +8,7 @@ import queryCSSRules from "../utils/query-cssrules";
 import q from "../utils/query-element";
 import relocateElement from "../utils/relocate-element";
 import scroller from "../utils/scroller";
-import createExcludeURLPanel from "./exclude-urls";
+import createSiteProfilePanel from "./site-profiles";
 import createHelpPanel from "./help";
 import { Elements } from "./html";
 import createKeyboardCustomPanel from "./keyboard-custom";
@@ -407,12 +407,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     createKeyboardCustomPanel(keyboardEvents, HTML.root);
   }
 
-  function showExcludeURLEvent() {
-    createExcludeURLPanel(HTML.root, conf.excludeURLs);
-  }
-
-  function showAutoOpenExcludeURLEvent() {
-    createExcludeURLPanel(HTML.root, conf.autoOpenExcludeURLs, true);
+  function showSiteProfilesEvent() {
+    createSiteProfilePanel(HTML.root);
   }
 
   return {
@@ -431,8 +427,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     collapsePanelEvent,
     abortMouseleavePanelEvent,
     showKeyboardCustomEvent,
-    showExcludeURLEvent,
-    showAutoOpenExcludeURLEvent,
+    showSiteProfilesEvent,
 
     changeReadModeEvent,
   }

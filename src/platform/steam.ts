@@ -5,6 +5,9 @@ import { BaseMatcher, OriginMeta } from "./platform";
 
 const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
 export class SteamMatcher extends BaseMatcher {
+  name(): string {
+    return "Steam Screenshots";
+  }
 
   workURL(): RegExp {
     return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;

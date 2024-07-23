@@ -24,7 +24,7 @@ export interface VisualNode {
 
 export default class ImageNode {
   root?: HTMLElement;
-  src: string;
+  thumbnailSrc: string;
   href: string;
   title: string;
   onclick?: (event: MouseEvent) => void;
@@ -33,12 +33,12 @@ export default class ImageNode {
   canvasCtx?: CanvasRenderingContext2D;
   canvasSized: boolean = false;
   delaySRC?: Promise<string>;
-  private blobUrl?: string;
+  private blobSrc?: string;
   mimeType?: string;
   private downloadBar?: HTMLElement;
   picked: boolean = true;
-  constructor(src: string, href: string, title: string, delaySRC?: Promise<string>) {
-    this.src = src;
+  constructor(thumbnailSrc: string, href: string, title: string, delaySRC?: Promise<string>) {
+    this.thumbnailSrc = thumbnailSrc;
     this.href = href;
     this.title = title;
     this.delaySRC = delaySRC;
@@ -72,8 +72,8 @@ export default class ImageNode {
     const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
     const oldRatio = this.canvasElement.height / this.canvasElement.width;
     if (this.canvasSized) {
-      // if newRatio is less than (or more than) the oldRatio by 20%, we don't need to resize
-      this.canvasSized = Math.abs(newRatio - oldRatio) < 1.2;
+      // if newRatio is less than (or more than) the oldRatio by 10%, we don't need to resize
+      this.canvasSized = Math.abs(newRatio - oldRatio) < 1.1;
     }
     // TODO: maybe limit the ratio of the image, if it's too large
     if (!this.canvasSized) {
@@ -81,7 +81,7 @@ export default class ImageNode {
       this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
       this.canvasSized = true;
     }
-    if (this.imgElement.src === this.src) {
+    if (this.imgElement.src === this.thumbnailSrc) {
       // https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image
       this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
       this.imgElement!.src = "";
@@ -94,7 +94,7 @@ export default class ImageNode {
 
   render() {
     if (!this.imgElement) return;
-    let justThumbnail = !this.blobUrl;
+    let justThumbnail = !this.blobSrc;
     if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
       const tip = OVERLAY_TIP.cloneNode(true);
       tip.firstChild!.textContent = this.mimeType.split("/")[1].toUpperCase();
@@ -105,13 +105,13 @@ export default class ImageNode {
       const delaySRC = this.delaySRC;
       this.delaySRC = undefined;
       if (delaySRC) {
-        delaySRC.then(src => (this.src = src) && this.render());
+        delaySRC.then(src => (this.thumbnailSrc = src) && this.render());
       } else { // normally set src
-        this.imgElement.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
+        this.imgElement.src = this.thumbnailSrc || this.blobSrc || DEFAULT_THUMBNAIL;
       }
       return;
     }
-    this.imgElement.src = this.blobUrl || this.src || DEFAULT_THUMBNAIL;
+    this.imgElement.src = this.blobSrc || this.thumbnailSrc || DEFAULT_THUMBNAIL;
   }
 
   unrender() {
@@ -120,8 +120,8 @@ export default class ImageNode {
     this.canvasSized = false;
   }
 
-  onloaded(blobUrl: string, mimeType: string) {
-    this.blobUrl = blobUrl;
+  onloaded(blobSrc: string, mimeType: string) {
+    this.blobSrc = blobSrc;
     this.mimeType = mimeType;
   }
 

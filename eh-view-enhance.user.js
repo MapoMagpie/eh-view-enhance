@@ -428,7 +428,7 @@
     rendered = false;
     data;
     contentType;
-    blobUrl;
+    blobSrc;
     downloadState;
     downloadBar;
     timeoutId;
@@ -506,11 +506,9 @@
               const ret = await this.fetchImageData();
               [this.data, this.contentType] = ret;
               [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL);
-              this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
-              this.node.onloaded(this.blobUrl, this.contentType);
-              if (this.rendered) {
-                this.node.render();
-              }
+              this.blobSrc = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
+              this.node.onloaded(this.blobSrc, this.contentType);
+              this.node.render();
               this.stage = 3 /* DONE */;
             case 3 /* DONE */:
               return null;
@@ -1729,7 +1727,7 @@
   OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
   class ImageNode {
     root;
-    src;
+    thumbnailSrc;
     href;
     title;
     onclick;
@@ -1738,12 +1736,12 @@
     canvasCtx;
     canvasSized = false;
     delaySRC;
-    blobUrl;
+    blobSrc;
     mimeType;
     downloadBar;
     picked = true;
-    constructor(src, href, title, delaySRC) {
-      this.src = src;
+    constructor(thumbnailSrc, href, title, delaySRC) {
+      this.thumbnailSrc = thumbnailSrc;
       this.href = href;
       this.title = title;
       this.delaySRC = delaySRC;
@@ -1777,14 +1775,14 @@
       const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
       const oldRatio = this.canvasElement.height / this.canvasElement.width;
       if (this.canvasSized) {
-        this.canvasSized = Math.abs(newRatio - oldRatio) < 1.2;
+        this.canvasSized = Math.abs(newRatio - oldRatio) < 1.1;
       }
       if (!this.canvasSized) {
         this.canvasElement.width = this.root.offsetWidth;
         this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
         this.canvasSized = true;
       }
-      if (this.imgElement.src === this.src) {
+      if (this.imgElement.src === this.thumbnailSrc) {
         this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
         this.imgElement.src = "";
       } else {
@@ -1794,7 +1792,7 @@
     render() {
       if (!this.imgElement)
         return;
-      let justThumbnail = !this.blobUrl;
+      let justThumbnail = !this.blobSrc;
       if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
         const tip = OVERLAY_TIP.cloneNode(true);
         tip.firstChild.textContent = this.mimeType.split("/")[1].toUpperCase();
@@ -1805,13 +1803,13 @@
         const delaySRC = this.delaySRC;
         this.delaySRC = void 0;
         if (delaySRC) {
-          delaySRC.then((src) => (this.src = src) && this.render());
+          delaySRC.then((src) => (this.thumbnailSrc = src) && this.render());
         } else {
-          this.imgElement.src = this.src || this.blobUrl || DEFAULT_THUMBNAIL;
+          this.imgElement.src = this.thumbnailSrc || this.blobSrc || DEFAULT_THUMBNAIL;
         }
         return;
       }
-      this.imgElement.src = this.blobUrl || this.src || DEFAULT_THUMBNAIL;
+      this.imgElement.src = this.blobSrc || this.thumbnailSrc || DEFAULT_THUMBNAIL;
     }
     unrender() {
       if (!this.imgElement)
@@ -1819,8 +1817,8 @@
       this.imgElement.src = "";
       this.canvasSized = false;
     }
-    onloaded(blobUrl, mimeType) {
-      this.blobUrl = blobUrl;
+    onloaded(blobSrc, mimeType) {
+      this.blobSrc = blobSrc;
       this.mimeType = mimeType;
     }
     progress(state) {
@@ -7311,7 +7309,7 @@ ${chapters.map((c, i) => `<div><label>
           img.remove();
           return;
         }
-        img.setAttribute("src", imf.blobUrl);
+        img.setAttribute("src", imf.blobSrc);
         this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
       });
       this.loadingHelper = document.createElement("span");
@@ -7730,7 +7728,7 @@ ${chapters.map((c, i) => `<div><label>
             this.tryPlayVideo(vid);
           }
         };
-        vid.src = imf.blobUrl;
+        vid.src = imf.blobSrc;
         return vid;
       } else {
         const img = document.createElement("img");
@@ -7739,9 +7737,9 @@ ${chapters.map((c, i) => `<div><label>
         img.setAttribute("d-index", index.toString());
         img.setAttribute("d-random-id", imf.randomID);
         if (imf.stage === FetchState.DONE) {
-          img.src = imf.blobUrl;
+          img.src = imf.blobSrc;
         } else {
-          img.src = imf.node.src;
+          img.src = imf.node.thumbnailSrc;
         }
         return img;
       }

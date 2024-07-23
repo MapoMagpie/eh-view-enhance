@@ -36,7 +36,7 @@ export class IMGFetcher implements VisualNode {
   rendered: boolean = false;
   data?: Uint8Array;
   contentType?: string;
-  blobUrl?: string;
+  blobSrc?: string;
   downloadState: DownloadState;
   downloadBar?: HTMLElement;
   timeoutId?: number;
@@ -120,11 +120,9 @@ export class IMGFetcher implements VisualNode {
             const ret = await this.fetchImageData();
             [this.data, this.contentType] = ret;
             [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL!);
-            this.blobUrl = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
-            this.node.onloaded(this.blobUrl, this.contentType);
-            if (this.rendered) {
-              this.node.render();
-            }
+            this.blobSrc = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
+            this.node.onloaded(this.blobSrc, this.contentType);
+            this.node.render();
             this.stage = FetchState.DONE;
           case FetchState.DONE:
             return null;

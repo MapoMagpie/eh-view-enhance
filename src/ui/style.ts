@@ -747,6 +747,9 @@ export function styleCSS() {
   .bifm-vid-ctl {
     display: none;
   }
+  .ehvp-custom-panel-list-item-title {
+    display: block;
+  }
 }
 `;
   // TODO: bifm-vid-ctl layout on mobile page;

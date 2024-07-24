@@ -449,7 +449,8 @@ export function styleCSS() {
   user-select: none;
 }
 .ehvp-custom-panel-title {
-  font-size: 2em;
+  font-size: 1.8em;
+  line-height: 2em;
   font-weight: 800;
   display: flex;
   justify-content: space-between;
@@ -464,6 +465,7 @@ export function styleCSS() {
 }
 .ehvp-custom-panel-container {
   overflow: auto;
+  scrollbar-width: thin;
 }
 .ehvp-custom-panel-content {
   border: 1px solid #000000;
@@ -688,6 +690,15 @@ export function styleCSS() {
 .ehvp-custom-btn-cover:active {
   background-color: white !important;
   color: black;
+}
+.ehvp-custom-panel-list-item-title {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 2px solid #000;
+  padding: 0em 1em;
+}
+.ehvp-custom-panel-title:hover, .ehvp-custom-panel-list-item-title:hover {
+  background-color: #33333388;
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .ehvp-root {

@@ -110,6 +110,12 @@ export const i18n = {
   selectChapters: new I18nValue("Select Chapters", "章节选择"),
   cherryPick: new I18nValue("Cherry Pick", "范围选择"),
 
+  enable: new I18nValue("Enable", "启用"),
+  enableTooltips: new I18nValue("Enable the script on this site.", "在此站点上启用本脚本的功能。"),
+  enableAutoOpen: new I18nValue("Auto Open", "自动打开"),
+  enableAutoOpenTooltips: new I18nValue("Automatically open the interface of this script when entering the corresponding page.", "当进入对应的生效页面后，自动打开本脚本界面。"),
+  addRegexp: new I18nValue("Add Work URL Regexp", "添加生效地址规则"),
+
   help: new I18nValue(`
 <h2>[How to Use? Where is the Entry?]</h2>
 <p>The script typically activates on gallery homepages or artist homepages. For example, on E-Hentai, it activates on the gallery detail page, or on Twitter, it activates on the user&#39;s homepage or tweets.</p>

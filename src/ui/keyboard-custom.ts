@@ -42,7 +42,7 @@ export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents
   const HTML_STR = `
 <div class="ehvp-custom-panel">
   <div class="ehvp-custom-panel-title">
-    <span>Custom Keyboard</span>
+    <span>${i18n.showKeyboard.get()}</span>
     <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
   </div>
   <div class="ehvp-custom-panel-container">

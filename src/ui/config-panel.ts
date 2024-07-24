@@ -20,7 +20,7 @@ export class ConfigPanel {
         child.style.visibility = "visible";
       });
       element.addEventListener("mouseleave", () => child.style.visibility = "hidden");
-    })
+    });
   }
 
   initEvents(events: Events) {

@@ -1,5 +1,6 @@
 import { SiteProfile, conf, saveConf } from "../config";
 import { getMatchers } from "../platform/adapt";
+import { i18n } from "../utils/i18n";
 import q from "../utils/query-element";
 import relocateElement from "../utils/relocate-element";
 
@@ -36,12 +37,12 @@ export default function createExcludeURLPanel(root: HTMLElement) {
     const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
     const profile: SiteProfile | undefined = conf.siteProfiles[name];
     return `<li data-index="${id}" class="ehvp-custom-panel-list-item">
-             <div style="display:flex;justify-content: space-between;">
+             <div class="ehvp-custom-panel-list-item-title">
                <div style="font-size: 1.2em;font-weight: 800;">${name}</div>
                <div>
-                 <label><span>Enable: </span><input id="${id}-enable-checkbox" ${!profile?.disable ? "checked" : ""} type="checkbox"></label>
-                 <label><span>Auto Open: </span><input id="${id}-enable-auto-open-checkbox" ${!profile?.disableAutoOpen ? "checked" : ""} type="checkbox"></label>
-                 <label><span>Add Regexp: </span><span id="${id}-add-workurl" class="ehvp-custom-btn-cover" style="background-color:#7fef7b;">&nbsp+&nbsp</span></label>
+                 <label><span>${i18n.enable.get()}: </span><input id="${id}-enable-checkbox" ${!profile?.disable ? "checked" : ""} type="checkbox"></label>
+                 <label><span>${i18n.enableAutoOpen.get()}: </span><input id="${id}-enable-auto-open-checkbox" ${!profile?.disableAutoOpen ? "checked" : ""} type="checkbox"></label>
+                 <label><span>${i18n.addRegexp.get()}: </span><span id="${id}-add-workurl" class="ehvp-custom-btn-cover" style="background-color:#7fef7b;">&nbsp+&nbsp</span></label>
                </div>
              </div>
              <div id="${id}-workurls"></div>
@@ -50,7 +51,13 @@ export default function createExcludeURLPanel(root: HTMLElement) {
   const HTML_STR = `
 <div class="ehvp-custom-panel">
   <div class="ehvp-custom-panel-title">
-    <span>Site Profiles</span>
+    <span>
+      <span>${i18n.showSiteProfiles.get()}</span>
+      <span style="font-size:0.5em;">
+        <span class="p-tooltip"> ${i18n.enable.get()}? <span class="p-tooltiptext">${i18n.enableTooltips.get()}</span></span>
+        <span class="p-tooltip"> ${i18n.enableAutoOpen.get()}? <span class="p-tooltiptext">${i18n.enableAutoOpenTooltips.get()}</span></span>
+      </span>
+    </span>
     <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
   </div>
   <div class="ehvp-custom-panel-container">
@@ -145,5 +152,14 @@ export default function createExcludeURLPanel(root: HTMLElement) {
     createWorkURLs(workURLs, workURLContainer, (value) => {
       removeWorkURL(value, getProfile());
     });
+  });
+  fullPanel.querySelectorAll<HTMLElement>(".p-tooltip").forEach(element => {
+    const child = element.querySelector<HTMLElement>(".p-tooltiptext");
+    if (!child) return;
+    element.addEventListener("mouseenter", () => {
+      relocateElement(child, element, root.offsetWidth, root.offsetHeight);
+      child.style.visibility = "visible";
+    });
+    element.addEventListener("mouseleave", () => child.style.visibility = "hidden");
   });
 }

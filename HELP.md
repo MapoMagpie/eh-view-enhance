@@ -83,11 +83,11 @@ You can even configure it for one-handed full keyboard operation, freeing up you
 
 ## [How to Disable Auto-Open on Certain Sites?]
 
-There's an **Auto Open Excludes** button at the bottom of the configuration panel. Click it to exclude certain sites from auto-opening. For example, Twitter or Booru-type sites.
+There's a **Site Profiles** button at the bottom of the configuration panel. Click it to exclude certain sites from auto-opening. For example, Twitter or Booru-type sites.
 
 ## [How to Disable This Script on Certain Sites?]
 
-There's a **Excludes** button at the bottom of the configuration panel to exclude specific sites. Once excluded, the script will no longer activate on those sites.
+There's a **Site Profiles** button at the bottom of the configuration panel to exclude specific sites. Once excluded, the script will no longer activate on those sites.
 
 To re-enable a site, you need to do so from a site that hasn't been excluded.
 

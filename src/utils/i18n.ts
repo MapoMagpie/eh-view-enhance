@@ -169,9 +169,9 @@ export const i18n = {
 <p>Yes! There&#39;s a <strong>Keyboard</strong> button at the bottom of the configuration panel. Click it to view or configure keyboard operations.</p>
 <p>You can even configure it for one-handed full keyboard operation, freeing up your other hand!</p>
 <h2>[How to Disable Auto-Open on Certain Sites?]</h2>
-<p>There&#39;s an <strong>Auto Open Excludes</strong> button at the bottom of the configuration panel. Click it to exclude certain sites from auto-opening. For example, Twitter or Booru-type sites.</p>
+<p>There&#39;s a <strong>Site Profiles</strong> button at the bottom of the configuration panel. Click it to exclude certain sites from auto-opening. For example, Twitter or Booru-type sites.</p>
 <h2>[How to Disable This Script on Certain Sites?]</h2>
-<p>There&#39;s a <strong>Excludes</strong> button at the bottom of the configuration panel to exclude specific sites. Once excluded, the script will no longer activate on those sites.</p>
+<p>There&#39;s a <strong>Site Profiles</strong> button at the bottom of the configuration panel to exclude specific sites. Once excluded, the script will no longer activate on those sites.</p>
 <p>To re-enable a site, you need to do so from a site that hasn&#39;t been excluded.</p>
 <h2>[How to Feed the Author]</h2>
 <p>Give me a star on <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a> or a good review on <a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>.</p>
@@ -237,9 +237,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <p>可以！在配置面板的下方，有一个<strong>快捷键</strong>按钮，点击后可以查看键盘操作，或进行配置。</p>
 <p>甚至可以配置为单手全键盘操作，解放另一只手！</p>
 <h2>[不想在某些网站启用自动打开功能？]</h2>
-<p>在配置面板的下方，有一个<strong>自动打开排除</strong>按钮，点击后可以对一些不适合自动打开的网站进行排除。比如Twitter或Booru类的网站。</p>
+<p>在配置面板的下方，有一个<strong>站点配置</strong>按钮，点击后可以对一些不适合自动打开的网站进行排除。比如Twitter或Booru类的网站。</p>
 <h2>[不想在某些网站使用这个脚本？]</h2>
-<p>在配置面板的下方，有一个<strong>站点排除</strong>的按钮，可对一些站点进行排除，排除后脚本不会再生效。</p>
+<p>在配置面板的下方，有一个<strong>站点配置</strong>的按钮，可对一些站点进行排除，排除后脚本不会再生效。</p>
 <p>如果想重新启用该站点，需要在其他未排除的站点中启用被禁用的站点。</p>
 <h2>[如何Feed作者。]</h2>
 <p>给我<a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a>星星，或者<a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>上好评。</p>

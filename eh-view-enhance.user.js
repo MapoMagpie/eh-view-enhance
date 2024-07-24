@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.6.4
+// @version            4.6.5
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -4396,7 +4396,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       };
     }
     workURL() {
-      return /(x|twitter).com\/(?!(home|explore|notifications|messages)$|i\/|search\?)\w+/;
+      return /(\/x|twitter).com\/(?!(home|explore|notifications|messages)$|i\/|search\?)\w+/;
     }
     galleryMeta(doc) {
       const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2];
@@ -4655,145 +4655,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     Scroller
   };
 
-  function createInputElement(root, anchor, callback) {
-    const element = document.createElement("div");
-    element.style.position = "fixed";
-    element.id = "input-element";
-    element.innerHTML = `<input type="text" style="width:20em;height:2em;"><button class="ehvp-custom-btn-cover" style="border:none;height:2em;background-color:#7fef7b;margin-left:0.3em;color:white;font-weight:800;">√</button>`;
-    root.appendChild(element);
-    const input = element.querySelector("input");
-    const button = element.querySelector("button");
-    button.addEventListener("click", () => {
-      callback(input.value);
-      element.remove();
-    });
-    relocateElement(element, anchor, root.offsetWidth, root.offsetHeight);
-  }
-  function createWorkURLs(workURLs, container, onRemove) {
-    const urls = workURLs.map((regex) => `<div><span style="user-select: text;">${regex}</span><span class="ehvp-custom-btn-cover" data-value="${regex}" style="background-color:#fd5454;">&nbspx&nbsp</span></div>`);
-    container.innerHTML = urls.join("");
-    Array.from(container.querySelectorAll("div > span + span")).forEach((element) => {
-      element.addEventListener("click", () => {
-        onRemove(element.getAttribute("data-value"));
-        element.parentElement.remove();
-      });
-    });
-  }
-  function createExcludeURLPanel(root) {
-    const matchers = getMatchers();
-    const listItems = matchers.map((matcher) => {
-      const name = matcher.name();
-      const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
-      const profile = conf.siteProfiles[name];
-      return `<li data-index="${id}" class="ehvp-custom-panel-list-item">
-             <div style="display:flex;justify-content: space-between;">
-               <div style="font-size: 1.2em;font-weight: 800;">${name}</div>
-               <div>
-                 <label><span>Enable: </span><input id="${id}-enable-checkbox" ${!profile?.disable ? "checked" : ""} type="checkbox"></label>
-                 <label><span>Auto Open: </span><input id="${id}-enable-auto-open-checkbox" ${!profile?.disableAutoOpen ? "checked" : ""} type="checkbox"></label>
-                 <label><span>Add Regexp: </span><span id="${id}-add-workurl" class="ehvp-custom-btn-cover" style="background-color:#7fef7b;">&nbsp+&nbsp</span></label>
-               </div>
-             </div>
-             <div id="${id}-workurls"></div>
-           </li>`;
-    });
-    const HTML_STR = `
-<div class="ehvp-custom-panel">
-  <div class="ehvp-custom-panel-title">
-    <span>Site Profiles</span>
-    <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
-  </div>
-  <div class="ehvp-custom-panel-container">
-    <div class="ehvp-custom-panel-content">
-      <ul class="ehvp-custom-panel-list">
-      ${listItems.join("")}
-      </ul>
-    </div>
-  </div>
-</div>
-`;
-    const fullPanel = document.createElement("div");
-    fullPanel.classList.add("ehvp-full-panel");
-    fullPanel.innerHTML = HTML_STR;
-    fullPanel.addEventListener("click", (event) => {
-      if (event.target.classList.contains("ehvp-full-panel")) {
-        fullPanel.remove();
-      }
-    });
-    root.appendChild(fullPanel);
-    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", () => fullPanel.remove());
-    const siteProfiles = conf.siteProfiles;
-    matchers.forEach((matcher) => {
-      const name = matcher.name();
-      const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
-      const defaultWorkURLs = matcher.workURLs().map((u) => u.source);
-      const getProfile = () => {
-        let profile = siteProfiles[name];
-        if (!profile) {
-          profile = { disable: false, disableAutoOpen: false, workURLs: [...defaultWorkURLs] };
-          siteProfiles[name] = profile;
-        }
-        return profile;
-      };
-      const enableCheckbox = q(`#${id}-enable-checkbox`, fullPanel);
-      enableCheckbox.addEventListener("click", () => {
-        getProfile().disable = !enableCheckbox.checked;
-        saveConf(conf);
-      });
-      const enableAutoOpenCheckbox = q(`#${id}-enable-auto-open-checkbox`, fullPanel);
-      enableAutoOpenCheckbox.addEventListener("click", () => {
-        getProfile().disableAutoOpen = !enableAutoOpenCheckbox.checked;
-        saveConf(conf);
-      });
-      const addWorkURL = q(`#${id}-add-workurl`, fullPanel);
-      const workURLContainer = q(`#${id}-workurls`, fullPanel);
-      const removeWorkURL = (value, profile) => {
-        const index = profile.workURLs.indexOf(value);
-        let changed = false;
-        if (index > -1) {
-          profile.workURLs.splice(index, 1);
-          changed = true;
-        }
-        if (profile.workURLs.length === 0) {
-          profile.workURLs = [...defaultWorkURLs];
-          changed = true;
-          createWorkURLs(defaultWorkURLs, workURLContainer, (value2) => {
-            removeWorkURL(value2, getProfile());
-          });
-        }
-        if (changed)
-          saveConf(conf);
-      };
-      addWorkURL.addEventListener("click", () => {
-        const background = document.createElement("div");
-        background.addEventListener("click", (event) => event.target === background && background.remove());
-        background.setAttribute("style", "position:absolute;width:100%;height:100%;");
-        fullPanel.appendChild(background);
-        createInputElement(background, addWorkURL, (value) => {
-          if (!value)
-            return;
-          try {
-            new RegExp(value);
-          } catch (_) {
-            return;
-          }
-          getProfile().workURLs.push(value);
-          saveConf(conf);
-          createWorkURLs(getProfile().workURLs, workURLContainer, (value2) => {
-            removeWorkURL(value2, getProfile());
-          });
-        });
-      });
-      let workURLs = defaultWorkURLs;
-      if (siteProfiles[name] && siteProfiles[name].workURLs.length > 0) {
-        workURLs = siteProfiles[name].workURLs;
-      }
-      createWorkURLs(workURLs, workURLContainer, (value) => {
-        removeWorkURL(value, getProfile());
-      });
-    });
-  }
-
   const lang = navigator.language;
   const i18nIndex = lang.startsWith("zh") ? 1 : 0;
   class I18nValue extends Array {
@@ -4896,6 +4757,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     status: new I18nValue("Status", "状态"),
     selectChapters: new I18nValue("Select Chapters", "章节选择"),
     cherryPick: new I18nValue("Cherry Pick", "范围选择"),
+    enable: new I18nValue("Enable", "启用"),
+    enableTooltips: new I18nValue("Enable the script on this site.", "在此站点上启用本脚本的功能。"),
+    enableAutoOpen: new I18nValue("Auto Open", "自动打开"),
+    enableAutoOpenTooltips: new I18nValue("Automatically open the interface of this script when entering the corresponding page.", "当进入对应的生效页面后，自动打开本脚本界面。"),
+    addRegexp: new I18nValue("Add Work URL Regexp", "添加生效地址规则"),
     help: new I18nValue(`
 <h2>[How to Use? Where is the Entry?]</h2>
 <p>The script typically activates on gallery homepages or artist homepages. For example, on E-Hentai, it activates on the gallery detail page, or on Twitter, it activates on the user&#39;s homepage or tweets.</p>
@@ -4949,9 +4815,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 <p>Yes! There&#39;s a <strong>Keyboard</strong> button at the bottom of the configuration panel. Click it to view or configure keyboard operations.</p>
 <p>You can even configure it for one-handed full keyboard operation, freeing up your other hand!</p>
 <h2>[How to Disable Auto-Open on Certain Sites?]</h2>
-<p>There&#39;s an <strong>Auto Open Excludes</strong> button at the bottom of the configuration panel. Click it to exclude certain sites from auto-opening. For example, Twitter or Booru-type sites.</p>
+<p>There&#39;s a <strong>Site Profiles</strong> button at the bottom of the configuration panel. Click it to exclude certain sites from auto-opening. For example, Twitter or Booru-type sites.</p>
 <h2>[How to Disable This Script on Certain Sites?]</h2>
-<p>There&#39;s a <strong>Excludes</strong> button at the bottom of the configuration panel to exclude specific sites. Once excluded, the script will no longer activate on those sites.</p>
+<p>There&#39;s a <strong>Site Profiles</strong> button at the bottom of the configuration panel to exclude specific sites. Once excluded, the script will no longer activate on those sites.</p>
 <p>To re-enable a site, you need to do so from a site that hasn&#39;t been excluded.</p>
 <h2>[How to Feed the Author]</h2>
 <p>Give me a star on <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a> or a good review on <a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>.</p>
@@ -5017,9 +4883,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <p>可以！在配置面板的下方，有一个<strong>快捷键</strong>按钮，点击后可以查看键盘操作，或进行配置。</p>
 <p>甚至可以配置为单手全键盘操作，解放另一只手！</p>
 <h2>[不想在某些网站启用自动打开功能？]</h2>
-<p>在配置面板的下方，有一个<strong>自动打开排除</strong>按钮，点击后可以对一些不适合自动打开的网站进行排除。比如Twitter或Booru类的网站。</p>
+<p>在配置面板的下方，有一个<strong>站点配置</strong>按钮，点击后可以对一些不适合自动打开的网站进行排除。比如Twitter或Booru类的网站。</p>
 <h2>[不想在某些网站使用这个脚本？]</h2>
-<p>在配置面板的下方，有一个<strong>站点排除</strong>的按钮，可对一些站点进行排除，排除后脚本不会再生效。</p>
+<p>在配置面板的下方，有一个<strong>站点配置</strong>的按钮，可对一些站点进行排除，排除后脚本不会再生效。</p>
 <p>如果想重新启用该站点，需要在其他未排除的站点中启用被禁用的站点。</p>
 <h2>[如何Feed作者。]</h2>
 <p>给我<a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a>星星，或者<a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>上好评。</p>
@@ -5035,6 +4901,162 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 `),
     keyboardCustom
   };
+
+  function createInputElement(root, anchor, callback) {
+    const element = document.createElement("div");
+    element.style.position = "fixed";
+    element.id = "input-element";
+    element.innerHTML = `<input type="text" style="width:20em;height:2em;"><button class="ehvp-custom-btn-cover" style="border:none;height:2em;background-color:#7fef7b;margin-left:0.3em;color:white;font-weight:800;">√</button>`;
+    root.appendChild(element);
+    const input = element.querySelector("input");
+    const button = element.querySelector("button");
+    button.addEventListener("click", () => {
+      callback(input.value);
+      element.remove();
+    });
+    relocateElement(element, anchor, root.offsetWidth, root.offsetHeight);
+  }
+  function createWorkURLs(workURLs, container, onRemove) {
+    const urls = workURLs.map((regex) => `<div><span style="user-select: text;">${regex}</span><span class="ehvp-custom-btn-cover" data-value="${regex}" style="background-color:#fd5454;">&nbspx&nbsp</span></div>`);
+    container.innerHTML = urls.join("");
+    Array.from(container.querySelectorAll("div > span + span")).forEach((element) => {
+      element.addEventListener("click", () => {
+        onRemove(element.getAttribute("data-value"));
+        element.parentElement.remove();
+      });
+    });
+  }
+  function createExcludeURLPanel(root) {
+    const matchers = getMatchers();
+    const listItems = matchers.map((matcher) => {
+      const name = matcher.name();
+      const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
+      const profile = conf.siteProfiles[name];
+      return `<li data-index="${id}" class="ehvp-custom-panel-list-item">
+             <div class="ehvp-custom-panel-list-item-title">
+               <div style="font-size: 1.2em;font-weight: 800;">${name}</div>
+               <div>
+                 <label><span>${i18n.enable.get()}: </span><input id="${id}-enable-checkbox" ${!profile?.disable ? "checked" : ""} type="checkbox"></label>
+                 <label><span>${i18n.enableAutoOpen.get()}: </span><input id="${id}-enable-auto-open-checkbox" ${!profile?.disableAutoOpen ? "checked" : ""} type="checkbox"></label>
+                 <label><span>${i18n.addRegexp.get()}: </span><span id="${id}-add-workurl" class="ehvp-custom-btn-cover" style="background-color:#7fef7b;">&nbsp+&nbsp</span></label>
+               </div>
+             </div>
+             <div id="${id}-workurls"></div>
+           </li>`;
+    });
+    const HTML_STR = `
+<div class="ehvp-custom-panel">
+  <div class="ehvp-custom-panel-title">
+    <span>
+      <span>${i18n.showSiteProfiles.get()}</span>
+      <span style="font-size:0.5em;">
+        <span class="p-tooltip"> ${i18n.enable.get()}? <span class="p-tooltiptext">${i18n.enableTooltips.get()}</span></span>
+        <span class="p-tooltip"> ${i18n.enableAutoOpen.get()}? <span class="p-tooltiptext">${i18n.enableAutoOpenTooltips.get()}</span></span>
+      </span>
+    </span>
+    <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
+  </div>
+  <div class="ehvp-custom-panel-container">
+    <div class="ehvp-custom-panel-content">
+      <ul class="ehvp-custom-panel-list">
+      ${listItems.join("")}
+      </ul>
+    </div>
+  </div>
+</div>
+`;
+    const fullPanel = document.createElement("div");
+    fullPanel.classList.add("ehvp-full-panel");
+    fullPanel.innerHTML = HTML_STR;
+    fullPanel.addEventListener("click", (event) => {
+      if (event.target.classList.contains("ehvp-full-panel")) {
+        fullPanel.remove();
+      }
+    });
+    root.appendChild(fullPanel);
+    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", () => fullPanel.remove());
+    const siteProfiles = conf.siteProfiles;
+    matchers.forEach((matcher) => {
+      const name = matcher.name();
+      const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
+      const defaultWorkURLs = matcher.workURLs().map((u) => u.source);
+      const getProfile = () => {
+        let profile = siteProfiles[name];
+        if (!profile) {
+          profile = { disable: false, disableAutoOpen: false, workURLs: [...defaultWorkURLs] };
+          siteProfiles[name] = profile;
+        }
+        return profile;
+      };
+      const enableCheckbox = q(`#${id}-enable-checkbox`, fullPanel);
+      enableCheckbox.addEventListener("click", () => {
+        getProfile().disable = !enableCheckbox.checked;
+        saveConf(conf);
+      });
+      const enableAutoOpenCheckbox = q(`#${id}-enable-auto-open-checkbox`, fullPanel);
+      enableAutoOpenCheckbox.addEventListener("click", () => {
+        getProfile().disableAutoOpen = !enableAutoOpenCheckbox.checked;
+        saveConf(conf);
+      });
+      const addWorkURL = q(`#${id}-add-workurl`, fullPanel);
+      const workURLContainer = q(`#${id}-workurls`, fullPanel);
+      const removeWorkURL = (value, profile) => {
+        const index = profile.workURLs.indexOf(value);
+        let changed = false;
+        if (index > -1) {
+          profile.workURLs.splice(index, 1);
+          changed = true;
+        }
+        if (profile.workURLs.length === 0) {
+          profile.workURLs = [...defaultWorkURLs];
+          changed = true;
+          createWorkURLs(defaultWorkURLs, workURLContainer, (value2) => {
+            removeWorkURL(value2, getProfile());
+          });
+        }
+        if (changed)
+          saveConf(conf);
+      };
+      addWorkURL.addEventListener("click", () => {
+        const background = document.createElement("div");
+        background.addEventListener("click", (event) => event.target === background && background.remove());
+        background.setAttribute("style", "position:absolute;width:100%;height:100%;");
+        fullPanel.appendChild(background);
+        createInputElement(background, addWorkURL, (value) => {
+          if (!value)
+            return;
+          try {
+            new RegExp(value);
+          } catch (_) {
+            return;
+          }
+          background.remove();
+          getProfile().workURLs.push(value);
+          saveConf(conf);
+          createWorkURLs(getProfile().workURLs, workURLContainer, (value2) => {
+            removeWorkURL(value2, getProfile());
+          });
+        });
+      });
+      let workURLs = defaultWorkURLs;
+      if (siteProfiles[name] && siteProfiles[name].workURLs.length > 0) {
+        workURLs = siteProfiles[name].workURLs;
+      }
+      createWorkURLs(workURLs, workURLContainer, (value) => {
+        removeWorkURL(value, getProfile());
+      });
+    });
+    fullPanel.querySelectorAll(".p-tooltip").forEach((element) => {
+      const child = element.querySelector(".p-tooltiptext");
+      if (!child)
+        return;
+      element.addEventListener("mouseenter", () => {
+        relocateElement(child, element, root.offsetWidth, root.offsetHeight);
+        child.style.visibility = "visible";
+      });
+      element.addEventListener("mouseleave", () => child.style.visibility = "hidden");
+    });
+  }
 
   function createHelpPanel(root) {
     const HTML_STR = `
@@ -5090,7 +5112,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     const HTML_STR = `
 <div class="ehvp-custom-panel">
   <div class="ehvp-custom-panel-title">
-    <span>Custom Keyboard</span>
+    <span>${i18n.showKeyboard.get()}</span>
     <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
   </div>
   <div class="ehvp-custom-panel-container">
@@ -6199,7 +6221,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   user-select: none;
 }
 .ehvp-custom-panel-title {
-  font-size: 2em;
+  font-size: 1.8em;
+  line-height: 2em;
   font-weight: 800;
   display: flex;
   justify-content: space-between;
@@ -6214,6 +6237,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 }
 .ehvp-custom-panel-container {
   overflow: auto;
+  scrollbar-width: thin;
 }
 .ehvp-custom-panel-content {
   border: 1px solid #000000;
@@ -6439,6 +6463,15 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   background-color: white !important;
   color: black;
 }
+.ehvp-custom-panel-list-item-title {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 2px solid #000;
+  padding: 0em 1em;
+}
+.ehvp-custom-panel-title:hover, .ehvp-custom-panel-list-item-title:hover {
+  background-color: #33333388;
+}
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .ehvp-root {
     font-size: 4cqw;
@@ -6485,6 +6518,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   }
   .bifm-vid-ctl {
     display: none;
+  }
+  .ehvp-custom-panel-list-item-title {
+    display: block;
   }
 }
 `;

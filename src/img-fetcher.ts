@@ -120,6 +120,9 @@ export class IMGFetcher implements VisualNode {
             const ret = await this.fetchImageData();
             [this.data, this.contentType] = ret;
             [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL!);
+            if (this.contentType.startsWith("text")) {
+              throw new Error(`expect image data, fetched wrong type: ${this.contentType}`);
+            }
             this.blobSrc = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
             this.node.onloaded(this.blobSrc, this.contentType);
             this.node.render();
@@ -211,10 +214,6 @@ export class IMGFetcher implements VisualNode {
       abort = xhrWapper(imgFetcher.originURL!, "blob", {
         onload: function(response) {
           let data = response.response;
-          if (data.type.startsWith("text")) {
-            reject(new Error(`expect image data, fetched wrong type: ${data.type}`));
-            return;
-          }
           try {
             imgFetcher.setDownloadState({ readyState: response.readyState });
           } catch (error) {

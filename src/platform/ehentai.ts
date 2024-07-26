@@ -254,5 +254,14 @@ export class EHMatcher extends BaseMatcher {
     }
     return { url: src, href: newUrl };
   }
+
+  async processData(data: Uint8Array, contentType: string): Promise<[Uint8Array, string]> {
+    if (contentType.startsWith("text")) {
+      if (data.byteLength === 1329) {
+        throw new Error("fetching the raw image requires being logged in, please try logging in or disable \"raw image\"");
+      }
+    }
+    return [data, contentType];
+  }
 }
 

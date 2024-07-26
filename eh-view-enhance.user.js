@@ -2047,16 +2047,18 @@
     //从文档的字符串中创建缩略图元素列表
     async obtainImageNodeList(page) {
       let tryTimes = 0;
+      let err;
       while (tryTimes < 3) {
         try {
           return await this.matcher.parseImgNodes(page, this.chapters[this.chapterIndex].id);
         } catch (error) {
           evLog("error", "warn: parse image nodes failed, retrying: ", error);
           tryTimes++;
+          err = error;
         }
       }
       evLog("error", "warn: parse image nodes failed: reached max try times!");
-      return [];
+      throw err;
     }
     //通过地址请求该页的文档
     async fetchDocument(pageURL) {
@@ -3305,12 +3307,10 @@
       this.createMeta(detail);
       const dataID = conf.fetchOriginal ? 0 : Object.keys(detail.data).map(Number).sort((a, b) => b - a)[0];
       const data = detail.data[dataID.toString()];
-      const token = JSON.parse(window.localStorage.getItem("token") || "{}")["session"];
-      const body = token && JSON.stringify({ token });
-      const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}`;
-      const items = await window.fetch(dataAPI, { method: "post", body }).then((res) => res.json()).then((j) => j).catch((reason) => new Error(reason.toString()));
+      const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}?v=${detail.updated_at ?? detail.created_at}&w=${dataID}`;
+      const items = await window.fetch(dataAPI).then((res) => res.json()).then((j) => j).catch((reason) => new Error(reason.toString()));
       if (items instanceof Error) {
-        throw items;
+        throw new Error(`koharu updated their api, ${items.toString()}`);
       }
       if (items.entries.length !== detail.thumbnails.entries.length) {
         throw new Error("thumbnails length not match");

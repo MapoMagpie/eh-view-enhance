@@ -151,16 +151,18 @@ export class PageFetcher {
   //从文档的字符串中创建缩略图元素列表
   async obtainImageNodeList(page: PagesSource): Promise<ImageNode[]> {
     let tryTimes = 0;
+    let err: any;
     while (tryTimes < 3) {
       try {
         return await this.matcher.parseImgNodes(page, this.chapters[this.chapterIndex].id);
       } catch (error) {
         evLog("error", "warn: parse image nodes failed, retrying: ", error)
         tryTimes++;
+        err = error;
       }
     }
     evLog("error", "warn: parse image nodes failed: reached max try times!");
-    return [];
+    throw err;
   }
 
   //通过地址请求该页的文档

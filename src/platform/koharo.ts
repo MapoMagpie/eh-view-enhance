@@ -33,6 +33,8 @@ type BookDetail = {
   data: Record<string, BookDataDetail>,
   thumbnails: BookData,
   tags: BookTag[],
+  created_at: number,
+  updated_at: number,
 }
 
 const NAMESPACE_MAP: Record<number, string> = {
@@ -88,13 +90,10 @@ export class KoharuMatcher extends BaseMatcher {
     // 0: means original data, otherwise 1600px
     const dataID = conf.fetchOriginal ? 0 : Object.keys(detail.data).map(Number).sort((a, b) => b - a)[0];
     const data = detail.data[dataID.toString()];
-    // read token from localStorage for fetch data
-    const token = JSON.parse(window.localStorage.getItem("token") || "{}")["session"] as string | undefined;
-    const body = token && JSON.stringify({ token });
-    const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}`;
-    const items = await window.fetch(dataAPI, { method: "post", body, }).then(res => res.json()).then(j => j as BookData).catch(reason => new Error(reason.toString()));
+    const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}?v=${detail.updated_at ?? detail.created_at}&w=${dataID}`;
+    const items = await window.fetch(dataAPI).then(res => res.json()).then(j => j as BookData).catch(reason => new Error(reason.toString()));
     if (items instanceof Error) {
-      throw items;
+      throw new Error(`koharu updated their api, ${items.toString()}`);
     }
     if (items.entries.length !== detail.thumbnails.entries.length) {
       throw new Error("thumbnails length not match");

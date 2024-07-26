@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import monkey, { cdn } from 'vite-plugin-monkey';
 
-const VERSION = '4.6.6';
+const VERSION = '4.6.7';
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   let downloadURL: string | undefined;
@@ -61,12 +61,23 @@ export default defineConfig(({ command }) => {
             'https://hentainexus.com/*',
             'https://koharu.to/*',
           ],
-          name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
+          name: {
+            "": "E HENTAI VIEW ENHANCE",
+            "zh-CN": "E绅士阅读强化",
+            "zh-TW": "E紳士閱讀強化",
+            "ja": "E紳士閱讀強化",
+            "ko": "E-HENTAI 보기 향상",
+            "ru": "E-HENTAI VIEW ENHANCE",
+          },
           license: 'MIT',
           author: 'MapoMagpie',
           description: {
             "": "Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com",
-            "zh-CN": "漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com"
+            "zh-CN": "漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com",
+            "zh-TW": "漫畫閱讀 + 下載器，注重體驗和對站點的負載控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com",
+            "ja": "サイトのエクスペリエンスと負荷制御に重点を置いたコミック閲覧 + ダウンローダー。サポート：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com",
+            "ko": "만화 읽기 + 다운로더, 사이트 경험 및 로드 제어에 중점을 둡니다. 지원하다: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com",
+            "ru": "Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com",
           },
           connect: [
             'exhentai.org',

@@ -1,11 +1,19 @@
 // ==UserScript==
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
+// @name:zh-TW         E紳士閱讀強化
+// @name:ja            E紳士閱讀強化
+// @name:ko            E-HENTAI 보기 향상
+// @name:ru            E-HENTAI VIEW ENHANCE
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.6.6
+// @version            4.6.7
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
+// @description:zh-TW  漫畫閱讀 + 下載器，注重體驗和對站點的負載控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
+// @description:ja     サイトのエクスペリエンスと負荷制御に重点を置いたコミック閲覧 + ダウンローダー。サポート：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
+// @description:ko     만화 읽기 + 다운로더, 사이트 경험 및 로드 제어에 중점을 둡니다. 지원하다: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
+// @description:ru     Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @license            MIT
 // @icon               https://exhentai.org/favicon.ico
 // @supportURL         https://github.com/MapoMagpie/eh-view-enhance/issues

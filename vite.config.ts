@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import monkey, { cdn } from 'vite-plugin-monkey';
 
-const VERSION = '4.6.5';
+const VERSION = '4.6.6';
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   let downloadURL: string | undefined;
@@ -39,6 +39,7 @@ export default defineConfig(({ command }) => {
           match: [
             'https://exhentai.org/*',
             'https://e-hentai.org/*',
+            "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
             'https://nhentai.net/*',
             'https://steamcommunity.com/id/*/screenshots*',
             'https://hitomi.la/*',
@@ -55,9 +56,10 @@ export default defineConfig(({ command }) => {
             'https://twitter.com/*',
             'https://x.com/*',
             'https://*.wnacg.com/*',
+            'https://*.wn01.cc/*',
+            'https://*.wn02.cc/*',
             'https://hentainexus.com/*',
             'https://koharu.to/*',
-            '*://*/*',
           ],
           name: { "": "E HENTAI VIEW ENHANCE", "zh-CN": "E绅士阅读强化" },
           license: 'MIT',

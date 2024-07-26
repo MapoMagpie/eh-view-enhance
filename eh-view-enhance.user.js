@@ -2,7 +2,7 @@
 // @name               E HENTAI VIEW ENHANCE
 // @name:zh-CN         E绅士阅读强化
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.6.5
+// @version            4.6.6
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -13,6 +13,7 @@
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
 // @match              https://exhentai.org/*
 // @match              https://e-hentai.org/*
+// @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://nhentai.net/*
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*
@@ -29,9 +30,10 @@
 // @match              https://twitter.com/*
 // @match              https://x.com/*
 // @match              https://*.wnacg.com/*
+// @match              https://*.wn01.cc/*
+// @match              https://*.wn02.cc/*
 // @match              https://hentainexus.com/*
 // @match              https://koharu.to/*
-// @match              *://*/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -503,6 +505,9 @@
               const ret = await this.fetchImageData();
               [this.data, this.contentType] = ret;
               [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL);
+              if (this.contentType.startsWith("text")) {
+                throw new Error(`expect image data, fetched wrong type: ${this.contentType}`);
+              }
               this.blobSrc = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.onloaded(this.blobSrc, this.contentType);
               this.node.render();
@@ -590,10 +595,6 @@
         abort = xhrWapper(imgFetcher.originURL, "blob", {
           onload: function(response) {
             let data = response.response;
-            if (data.type.startsWith("text")) {
-              reject(new Error(`expect image data, fetched wrong type: ${data.type}`));
-              return;
-            }
             try {
               imgFetcher.setDownloadState({ readyState: response.readyState });
             } catch (error) {
@@ -2882,6 +2883,14 @@
       }
       return { url: src, href: newUrl };
     }
+    async processData(data, contentType) {
+      if (contentType.startsWith("text")) {
+        if (data.byteLength === 1329) {
+          throw new Error('fetching the raw image requires being logged in, please try logging in or disable "raw image"');
+        }
+      }
+      return [data, contentType];
+    }
   }
 
   const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?(.*?)\)/;
@@ -4186,6 +4195,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         }
         return this.fetchedThumbnail[index];
       }
+    }
+    async processData(data) {
+      return [data, "image/jpeg"];
     }
   }
 

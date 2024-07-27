@@ -1,4 +1,4 @@
-import { ChapterStat, CherryPickRnage } from "../download/downloader";
+import { ChapterStat, CherryPickRange } from "../download/downloader";
 import EBUS from "../event-bus";
 import { Chapter } from "../page-fetcher";
 import { i18n } from "../utils/i18n";
@@ -140,8 +140,9 @@ ${chapters.map((c, i) => `<div><label>
     return idSet;
   }
 
-  initCherryPick(onAdd: (chapterIndex: number, range: CherryPickRnage) => CherryPickRnage[] | null, onRemove: (chapterIndex: number, id: string) => void, onClear: (chapterIndex: number) => void) {
-    function addRangeElements(container: HTMLElement, rangeList: CherryPickRnage[], onRemove: (id: string) => void) {
+  initCherryPick(onAdd: (chIndex: number, range: CherryPickRange) => CherryPickRange[] | null, onRemove: (chIndex: number, id: string) => void, onClear: (chIndex: number) => void, getRangeList: (chIndex: number) => CherryPickRange[] | null) {
+    let chapterIndex = 0; // chapterIndex will be changed on event bus: pf-change-chapter
+    function addRangeElements(container: HTMLElement, rangeList: CherryPickRange[], onRemove: (id: string) => void) {
       container.querySelectorAll(".ehvp-custom-panel-item-value").forEach(e => e.remove());
       const tamplate = document.createElement("div");
       rangeList.forEach(range => {
@@ -166,21 +167,21 @@ ${chapters.map((c, i) => `<div><label>
     const input = q<HTMLInputElement>("#download-cherry-pick-input", this.cherryPickElement);
     const addCherryPick = (exclude: boolean, range?: string) => {
       const rangeList = range ?
-        [CherryPickRnage.from((exclude ? "!" : "") + range)].filter(r => r !== null) as CherryPickRnage[] :
-        (input.value || "").split(",").map(s => (exclude ? "!" : "") + s).map(CherryPickRnage.from).filter(r => r !== null) as CherryPickRnage[];
+        [CherryPickRange.from((exclude ? "!" : "") + range)].filter(r => r !== null) as CherryPickRange[] :
+        (input.value || "").split(",").map(s => (exclude ? "!" : "") + s).map(CherryPickRange.from).filter(r => r !== null) as CherryPickRange[];
       if (rangeList.length > 0) {
         rangeList.forEach(range => {
-          const newList = onAdd(0, range);
+          const newList = onAdd(chapterIndex, range);
           if (newList === null) return;
-          addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, newList, (id) => onRemove(0, id))
+          addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, newList, (id) => onRemove(chapterIndex, id))
         });
       }
       input.value = "";
       input.focus();
     }
     const clearPick = () => {
-      onClear(0);
-      addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, [], (id) => onRemove(0, id))
+      onClear(chapterIndex);
+      addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, [], (id) => onRemove(chapterIndex, id))
       input.value = "";
       input.focus();
     }
@@ -205,15 +206,16 @@ ${chapters.map((c, i) => `<div><label>
     input.addEventListener("keypress", (event) => event.key === "Enter" && addCherryPick(false));
 
     let lastIndex: number | undefined = 0;
-    EBUS.subscribe("add-cherry-pick-range", (chapterIndex, index, positive, shiftKey) => {
-      const range = new CherryPickRnage([index + 1, shiftKey ? (lastIndex ?? index) + 1 : index + 1], positive);
+    EBUS.subscribe("add-cherry-pick-range", (chIndex, index, positive, shiftKey) => {
+      const range = new CherryPickRange([index + 1, shiftKey ? (lastIndex ?? index) + 1 : index + 1], positive);
       lastIndex = index;
-      const newList = onAdd(chapterIndex, range);
-      if (newList === null) return;
-      addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, newList, (id) => onRemove(chapterIndex, id))
+      addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, onAdd(chIndex, range) || [], (id) => onRemove(chIndex, id));
     });
-
-    // EBUS.subscribe("pf-change-chapter", (index) => { });
+    EBUS.subscribe("pf-change-chapter", (index) => {
+      if (index === -1) return;
+      chapterIndex = index;
+      addRangeElements(this.cherryPickElement.firstElementChild as HTMLElement, getRangeList(chapterIndex) || [], (id) => onRemove(chapterIndex, id));
+    });
     let pad = 0;
     EBUS.subscribe("pf-on-appended", (total) => {
       pad = total.toString().length;

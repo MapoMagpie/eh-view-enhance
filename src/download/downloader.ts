@@ -34,18 +34,33 @@ export class Downloader {
     this.initEvents(this.panel);
     this.panel.initCherryPick(
       (chapterIndex, range) => {
+        if (this.cherryPicks[chapterIndex] === undefined) {
+          this.cherryPicks[chapterIndex] = new CherryPick();
+        }
         const ret = this.cherryPicks[chapterIndex].add(range);
         EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
         return ret;
       },
       (chapterIndex, id) => {
+        if (this.cherryPicks[chapterIndex] === undefined) {
+          this.cherryPicks[chapterIndex] = new CherryPick();
+        }
         const ret = this.cherryPicks[chapterIndex].remove(id);
         EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
         return ret;
       },
       (chapterIndex) => {
+        if (this.cherryPicks[chapterIndex] === undefined) {
+          this.cherryPicks[chapterIndex] = new CherryPick();
+        }
         this.cherryPicks[chapterIndex].reset();
         EBUS.emit("cherry-pick-changed", chapterIndex, this.cherryPicks[chapterIndex]);
+      },
+      (chapterIndex) => {
+        if (this.cherryPicks[chapterIndex] === undefined) {
+          this.cherryPicks[chapterIndex] = new CherryPick();
+        }
+        return this.cherryPicks[chapterIndex].values;
       }
     );
     this.queue = queue;
@@ -305,7 +320,7 @@ function promiseWithResolveAndReject() {
 }
 
 export class CherryPick {
-  values: CherryPickRnage[] = [];
+  values: CherryPickRange[] = [];
   positive = false; // if values has positive picked, ignore exclude
   sieve: boolean[] = [];
 
@@ -315,7 +330,7 @@ export class CherryPick {
     this.sieve = [];
   }
 
-  add(range: CherryPickRnage): CherryPickRnage[] | null {
+  add(range: CherryPickRange): CherryPickRange[] | null {
     if (this.values.length === 0) {
       this.positive = range.positive;
       this.values.push(range);
@@ -328,7 +343,7 @@ export class CherryPick {
     const newR = range.range();
     const remIdSet: Set<string> = new Set();
     const addIdSet: Set<string> = new Set();
-    const addList: CherryPickRnage[] = [];
+    const addList: CherryPickRange[] = [];
     let equalsOld = false;
     for (let i = 0; i < this.values.length; i++) {
       const old = this.values[i];
@@ -338,10 +353,10 @@ export class CherryPick {
         if (range.positive !== this.positive) {
           remIdSet.add(old.id);
           if (oldR[0] < newR[0]) {
-            addList.push(new CherryPickRnage([oldR[0], newR[0] - 1], old.positive));
+            addList.push(new CherryPickRange([oldR[0], newR[0] - 1], old.positive));
           }
           if (oldR[1] > newR[1]) {
-            addList.push(new CherryPickRnage([newR[1] + 1, oldR[1]], old.positive));
+            addList.push(new CherryPickRange([newR[1] + 1, oldR[1]], old.positive));
           }
           equalsOld = newR[0] === newR[1] && newR[0] === oldR[0] && newR[1] === oldR[1];
         }
@@ -386,7 +401,7 @@ export class CherryPick {
     return this.values;
   }
 
-  setSieve(range: CherryPickRnage) {
+  setSieve(range: CherryPickRange) {
     const newR = range.range();
     for (let i = newR[0] - 1; i < newR[1]; i++) {
       this.sieve[i] = range.positive === this.positive;
@@ -437,23 +452,23 @@ export class CherryPick {
 
 }
 
-export class CherryPickRnage {
+export class CherryPickRange {
   value: number[];
   positive: boolean;
   id: string;
   constructor(value: number[], positive: boolean) {
     this.positive = positive;
     this.value = value.sort((a, b) => a - b);
-    this.id = CherryPickRnage.rangeToString(this.value, this.positive);
+    this.id = CherryPickRange.rangeToString(this.value, this.positive);
   }
 
   toString() {
-    return CherryPickRnage.rangeToString(this.value, this.positive);
+    return CherryPickRange.rangeToString(this.value, this.positive);
   }
 
   reset(newRange: number[]) {
     this.value = newRange.sort((a, b) => a - b);
-    this.id = CherryPickRnage.rangeToString(this.value, this.positive);
+    this.id = CherryPickRange.rangeToString(this.value, this.positive);
   }
 
   range(): number[] {
@@ -470,18 +485,18 @@ export class CherryPickRnage {
     return positive ? str : "!" + str;
   }
 
-  static from(value: string): CherryPickRnage | null {
+  static from(value: string): CherryPickRange | null {
     value = value?.trim();
     if (!value) return null;
     value = value.replace(/!+/, "!");
     const exclude = value.startsWith("!");
     if (/^!?\d+$/.test(value)) {
       const index = parseInt(value.replace("!", ""));
-      return new CherryPickRnage([index, index], !exclude);
+      return new CherryPickRange([index, index], !exclude);
     }
     if (/^!?\d+-\d+$/.test(value)) {
       const splits = value.replace("!", "").split("-").map(v => parseInt(v));
-      return new CherryPickRnage([splits[0], splits[1]], !exclude);
+      return new CherryPickRange([splits[0], splits[1]], !exclude);
     }
     return null;
   }

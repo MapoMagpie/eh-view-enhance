@@ -1094,7 +1094,7 @@
           }
         }
       });
-      EBUS.subscribe("imf-check-picked", (chapterIndex, index) => this.cherryPicks[chapterIndex].picked(index));
+      EBUS.subscribe("imf-check-picked", (chapterIndex, index) => this.cherryPicks[chapterIndex]?.picked(index));
     }
     initEvents(panel) {
       panel.forceBTN.addEventListener("click", () => this.download(this.pageFetcher.chapters));

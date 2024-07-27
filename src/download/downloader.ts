@@ -71,7 +71,7 @@ export class Downloader {
         }
       }
     });
-    EBUS.subscribe("imf-check-picked", (chapterIndex, index) => this.cherryPicks[chapterIndex].picked(index));
+    EBUS.subscribe("imf-check-picked", (chapterIndex, index) => this.cherryPicks[chapterIndex]?.picked(index));
   }
 
   initEvents(panel: DownloaderPanel) {

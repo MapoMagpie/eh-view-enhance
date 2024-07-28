@@ -26,7 +26,7 @@ export class Downloader {
   filenames: Set<string> = new Set();
   panel: DownloaderPanel;
   canvas: DownloaderCanvas;
-  cherryPicks: CherryPick[] = [new CherryPick()]; // TODO: support multiple chapters
+  cherryPicks: CherryPick[] = [new CherryPick()];
 
   constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, pageFetcher: PageFetcher, matcher: Matcher) {
     this.panel = HTML.downloader;
@@ -111,25 +111,6 @@ export class Downloader {
     return false;
   }
 
-  checkDuplicateTitle(index: number, title: string): string {
-    let newTitle = title;
-    if (this.filenames.has(newTitle)) {
-      let splits = newTitle.split(".");
-      const ext = splits.pop();
-      const prefix = splits.join(".");
-      const num = parseInt(prefix.match(/_(\d+)$/)?.[1] || "");
-      if (isNaN(num)) {
-        newTitle = `${prefix}_1.${ext}`;
-      } else {
-        newTitle = `${prefix.replace(/\d+$/, (num + 1).toString())}.${ext}`;
-      }
-      return this.checkDuplicateTitle(index, newTitle);
-    } else {
-      this.filenames.add(newTitle);
-      return newTitle;
-    }
-  }
-
 
   // check > start > download
   check() {
@@ -209,8 +190,7 @@ export class Downloader {
     }
   }
 
-
-  mapToFileLikes(chapter: Chapter, picked: CherryPick, singleChapter: boolean, separator: string): FileLike[] {
+  mapToFileLikes(chapter: Chapter, picked: CherryPick, directory: string): FileLike[] {
     if (!chapter || chapter.queue.length === 0) return [];
     let checkTitle: (title: string, index: number) => string;
     const needNumberTitle = this.needNumberTitle(chapter.queue);
@@ -219,17 +199,8 @@ export class Downloader {
       checkTitle = (title: string, index: number) => `${index + 1}`.padStart(digits, "0") + "_" + title.replaceAll(FILENAME_INVALIDCHAR, "_");
     } else {
       this.filenames.clear();
-      checkTitle = (title: string, index: number) => this.checkDuplicateTitle(index, title.replaceAll(FILENAME_INVALIDCHAR, "_"));
+      checkTitle = (title: string) => deduplicate(this.filenames, title.replaceAll(FILENAME_INVALIDCHAR, "_"));
     }
-    let directory = (() => {
-      if (singleChapter) return "";
-      if (chapter.title instanceof Array) {
-        return chapter.title.join("_").replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
-      } else {
-        return chapter.title.replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
-      }
-    })();
-
     const ret = chapter.queue
       .filter((imf, i) => picked.picked(i) && imf.stage === FetchState.DONE && imf.data)
       .map((imf, index) => {
@@ -255,11 +226,22 @@ export class Downloader {
       let separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
       let singleChapter = chapters.length === 1;
       this.panel.flushUI("packaging");
+      const dirnameSet = new Set<string>();
       const files: FileLike[] = [];
       for (let i = 0; i < chapters.length; i++) {
         const chapter = chapters[i];
         const picked = this.cherryPicks[i] || new CherryPick();
-        const ret = this.mapToFileLikes(chapter, picked, singleChapter, separator);
+        let directory = (() => {
+          if (singleChapter) return "";
+          if (chapter.title instanceof Array) {
+            return chapter.title.join("_").replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
+          } else {
+            return chapter.title.replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
+          }
+        })();
+        directory = shrinkFilename(directory, 200);
+        directory = deduplicate(dirnameSet, directory);
+        const ret = this.mapToFileLikes(chapter, picked, directory);
         files.push(...ret);
       }
       const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
@@ -293,6 +275,51 @@ export class Downloader {
   }
 }
 
+function shrinkFilename(str: string, limit: number): string {
+  const encoder = new TextEncoder();
+  const byteLen = (s: string) => encoder.encode(s).byteLength;
+  const bLen = byteLen(str);
+  if (bLen <= limit) return str;
+  const sliceRange = [str.length >> 1, (str.length >> 1) + 1]
+  let left = true;
+  while (true) {
+    if (bLen - byteLen(str.slice(...sliceRange)) <= limit) {
+      return str.slice(0, sliceRange[0]) + ",,," + str.slice(sliceRange[1]);
+    }
+    if (left && sliceRange[0] > 3) {
+      sliceRange[0] -= 1;
+      left = false;
+      continue;
+    }
+    if (sliceRange[1] < str.length - 3) {
+      sliceRange[1] += 1;
+      left = true;
+      continue;
+    }
+    break;
+  }
+  return str.slice(0, limit);
+}
+
+function deduplicate(set: Set<string>, title: string): string {
+  let newTitle = title;
+  if (set.has(newTitle)) {
+    let splits = newTitle.split(".");
+    const ext = splits.pop();
+    const prefix = splits.join(".");
+    const num = parseInt(prefix.match(/_(\d+)$/)?.[1] || "");
+    if (isNaN(num)) {
+      newTitle = `${prefix}_1.${ext}`;
+    } else {
+      newTitle = `${prefix.replace(/\d+$/, (num + 1).toString())}.${ext}`;
+    }
+    return deduplicate(set, newTitle);
+  } else {
+    set.add(newTitle);
+    return newTitle;
+  }
+}
+
 function uint8ArrayToReadableStream(arr: Uint8Array): ReadableStream<Uint8Array> {
   return new ReadableStream({
     pull(controller) {
@@ -301,13 +328,6 @@ function uint8ArrayToReadableStream(arr: Uint8Array): ReadableStream<Uint8Array>
     }
   });
 }
-export type ChapterStat = {
-  index: number,
-  done: boolean,
-  promise: Promise<boolean>,
-  reject: (reason?: any) => void
-  resolve: (value: boolean | PromiseLike<boolean>) => void
-};
 
 function promiseWithResolveAndReject() {
   let resolve: (value: boolean | PromiseLike<boolean>) => void;
@@ -318,6 +338,14 @@ function promiseWithResolveAndReject() {
   });
   return { resolve: resolve!, reject: reject!, promise };
 }
+
+export type ChapterStat = {
+  index: number,
+  done: boolean,
+  promise: Promise<boolean>,
+  reject: (reason?: any) => void
+  resolve: (value: boolean | PromiseLike<boolean>) => void
+};
 
 export class CherryPick {
   values: CherryPickRange[] = [];

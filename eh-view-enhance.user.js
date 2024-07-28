@@ -2899,35 +2899,32 @@
         yield url.href;
       }
     }
-    async fetchOriginMeta(url, originChanged) {
-      let text = "";
-      try {
-        text = await window.fetch(url).then((resp) => resp.text());
-      } catch (error) {
-        throw new Error(`fetch source page error, expected [text]！ ${error}`);
-      }
-      if (!text)
-        throw new Error("[text] is empty");
-      if (conf.fetchOriginal) {
-        const matchs = regulars.original.exec(text);
-        if (matchs && matchs.length > 0) {
-          return { url: matchs[1].replace(/&amp;/g, "&") };
-        }
-      }
+    async fetchOriginMeta(url, retry) {
+      let text = await window.fetch(url).then((resp) => resp.text()).catch((reason) => new Error(reason));
+      if (text instanceof Error || !text)
+        throw new Error(`fetch source page error, ${text.toString()}`);
       let src;
-      let newUrl;
-      if (originChanged) {
+      let newHref;
+      if (conf.fetchOriginal) {
+        src = regulars.original.exec(text)?.[1].replace(/&amp;/g, "&");
+        const nl = url.split("?").pop();
+        if (src && nl) {
+          src += "?" + nl;
+        }
+      } else {
+        src = regulars.normal.exec(text)?.[1];
+      }
+      if (retry) {
         const nlValue = regulars.nlValue.exec(text)?.[1];
         if (nlValue) {
-          newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-          evLog("info", `IMG-FETCHER retry url:${newUrl}`);
-          const newMeta = await this.fetchOriginMeta(newUrl, false);
+          newHref = url + (url.includes("?") ? "&" : "?") + "nl=" + nlValue;
+          evLog("info", `IMG-FETCHER retry url:${newHref}`);
+          const newMeta = await this.fetchOriginMeta(newHref, false);
           src = newMeta.url;
         } else {
           evLog("error", `Cannot matching the nlValue, content: ${text}`);
         }
       }
-      src = src || regulars.normal.exec(text)?.[1];
       if (!src)
         throw new Error(`cannot matching the image url, content: ${text}`);
       if (!src.startsWith("http")) {
@@ -2936,7 +2933,7 @@
       if (src.endsWith("509.gif")) {
         throw new Error("509, Image limits Exceeded, Please reset your Quota!");
       }
-      return { url: src, href: newUrl };
+      return { url: src, href: newHref };
     }
     async processData(data, contentType) {
       if (contentType.startsWith("text")) {

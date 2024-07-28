@@ -212,38 +212,36 @@ export class EHMatcher extends BaseMatcher {
     }
   }
 
-  async fetchOriginMeta(url: string, originChanged: boolean): Promise<OriginMeta> {
-    let text = "";
-    try {
-      text = await window.fetch(url).then(resp => resp.text()); // TODO: timeout
-    } catch (error) {
-      throw new Error(`fetch source page error, expected [text]！ ${error}`);
-    }
-    if (!text) throw new Error("[text] is empty");
+  async fetchOriginMeta(url: string, retry: boolean): Promise<OriginMeta> {
+    let text: string | Error = await window.fetch(url).then(resp => resp.text()).catch(reason => new Error(reason));
+    if (text instanceof Error || !text) throw new Error(`fetch source page error, ${text.toString()}`);
 
     // TODO: Your IP address has been temporarily banned for excessive pageloads which indicates that you are using automated mirroring/harvesting software. The ban expires in 2 days and 23 hours
-    if (conf.fetchOriginal) {
-      const matchs = regulars.original.exec(text);
-      if (matchs && matchs.length > 0) {
-        return { url: matchs[1].replace(/&amp;/g, "&") }
-      }
-    }
     let src: string | undefined;
-    let newUrl: string | undefined;
+    let newHref: string | undefined; // record &nl=value
+
+    if (conf.fetchOriginal) {
+      src = regulars.original.exec(text)?.[1].replace(/&amp;/g, "&");
+      const nl = url.split("?").pop();
+      if (src && nl) {
+        src += "?" + nl;
+      }
+    } else {
+      src = regulars.normal.exec(text)?.[1];
+    }
     // EH change the url
-    if (originChanged) {
+    if (retry) {
       const nlValue = regulars.nlValue.exec(text)?.[1];
       if (nlValue) {
-        newUrl = url + ((url + "").indexOf("?") > -1 ? "&" : "?") + "nl=" + nlValue;
-        evLog("info", `IMG-FETCHER retry url:${newUrl}`);
-        const newMeta = await this.fetchOriginMeta(newUrl, false);
+        newHref = url + (url.includes("?") ? "&" : "?") + "nl=" + nlValue;
+        evLog("info", `IMG-FETCHER retry url:${newHref}`);
+        const newMeta = await this.fetchOriginMeta(newHref, false);
         src = newMeta.url;
       } else {
         evLog("error", `Cannot matching the nlValue, content: ${text}`);
       }
     }
-    // if not originChanged, fallback to normal
-    src = src || regulars.normal.exec(text)?.[1];
+
     if (!src) throw new Error(`cannot matching the image url, content: ${text}`);
     // check src has host prefix
     if (!src.startsWith("http")) {
@@ -252,7 +250,7 @@ export class EHMatcher extends BaseMatcher {
     if (src.endsWith("509.gif")) {
       throw new Error("509, Image limits Exceeded, Please reset your Quota!");
     }
-    return { url: src, href: newUrl };
+    return { url: src, href: newHref };
   }
 
   async processData(data: Uint8Array, contentType: string): Promise<[Uint8Array, string]> {

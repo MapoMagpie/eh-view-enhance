@@ -6,7 +6,7 @@
 // @name:ko            E-HENTAI 보기 향상
 // @name:ru            E-HENTAI VIEW ENHANCE
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.6.9
+// @version            4.6.10
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com
@@ -514,9 +514,11 @@
               [this.data, this.contentType] = ret;
               [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL);
               if (this.contentType.startsWith("text")) {
-                const str = new TextDecoder().decode(this.data);
-                evLog("error", "unexpect content:\n", str);
-                throw new Error(`expect image data, fetched wrong type: ${this.contentType}, the content is showing up in console(F12 open it).`);
+                if (this.data.byteLength < 1e5) {
+                  const str = new TextDecoder().decode(this.data);
+                  evLog("error", "unexpect content:\n", str);
+                  throw new Error(`expect image data, fetched wrong type: ${this.contentType}, the content is showing up in console(F12 open it).`);
+                }
               }
               this.blobSrc = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.onloaded(this.blobSrc, this.contentType);
@@ -2911,9 +2913,9 @@
         if (src && nl) {
           src += "?" + nl;
         }
-      } else {
-        src = regulars.normal.exec(text)?.[1];
       }
+      if (!src)
+        src = regulars.normal.exec(text)?.[1];
       if (retry) {
         const nlValue = regulars.nlValue.exec(text)?.[1];
         if (nlValue) {
@@ -2925,8 +2927,10 @@
           evLog("error", `Cannot matching the nlValue, content: ${text}`);
         }
       }
-      if (!src)
-        throw new Error(`cannot matching the image url, content: ${text}`);
+      if (!src) {
+        evLog("error", "cannot matching the image url from content:\n", text);
+        throw new Error(`cannot matching the image url from content. (the content is showing up in console(F12 open it)`);
+      }
       if (!src.startsWith("http")) {
         src = window.location.origin + src;
       }
@@ -2940,6 +2944,7 @@
         if (data.byteLength === 1329) {
           throw new Error('fetching the raw image requires being logged in, please try logging in or disable "raw image"');
         }
+        contentType = "image/jpeg";
       }
       return [data, contentType];
     }

@@ -121,9 +121,11 @@ export class IMGFetcher implements VisualNode {
             [this.data, this.contentType] = ret;
             [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL!);
             if (this.contentType.startsWith("text")) {
-              const str = new TextDecoder().decode(this.data);
-              evLog("error", "unexpect content:\n", str);
-              throw new Error(`expect image data, fetched wrong type: ${this.contentType}, the content is showing up in console(F12 open it).`);
+              if (this.data.byteLength < 100000) { // less then 100kb
+                const str = new TextDecoder().decode(this.data);
+                evLog("error", "unexpect content:\n", str);
+                throw new Error(`expect image data, fetched wrong type: ${this.contentType}, the content is showing up in console(F12 open it).`);
+              }
             }
             this.blobSrc = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
             this.node.onloaded(this.blobSrc, this.contentType);

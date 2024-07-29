@@ -226,9 +226,8 @@ export class EHMatcher extends BaseMatcher {
       if (src && nl) {
         src += "?" + nl;
       }
-    } else {
-      src = regulars.normal.exec(text)?.[1];
     }
+    if (!src) src = regulars.normal.exec(text)?.[1];
     // EH change the url
     if (retry) {
       const nlValue = regulars.nlValue.exec(text)?.[1];
@@ -242,7 +241,10 @@ export class EHMatcher extends BaseMatcher {
       }
     }
 
-    if (!src) throw new Error(`cannot matching the image url, content: ${text}`);
+    if (!src) {
+      evLog("error", "cannot matching the image url from content:\n", text);
+      throw new Error(`cannot matching the image url from content. (the content is showing up in console(F12 open it)`);
+    }
     // check src has host prefix
     if (!src.startsWith("http")) {
       src = window.location.origin + src;
@@ -258,6 +260,7 @@ export class EHMatcher extends BaseMatcher {
       if (data.byteLength === 1329) {
         throw new Error("fetching the raw image requires being logged in, please try logging in or disable \"raw image\"");
       }
+      contentType = "image/jpeg";
     }
     return [data, contentType];
   }

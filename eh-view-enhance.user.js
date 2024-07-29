@@ -42,6 +42,7 @@
 // @match              https://*.wn02.cc/*
 // @match              https://hentainexus.com/*
 // @match              https://koharu.to/*
+// @match              https://*.manhuagui.com/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -72,6 +73,7 @@
 // @connect            kisakisexo.xyz
 // @connect            koharusexo.xyz
 // @connect            aronasexo.xyz
+// @connect            hamreus.com
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue
@@ -114,6 +116,11 @@
   }
   function transactionId() {
     return window.btoa(uuid());
+  }
+  function b64EncodeUnicode(str) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(_match, p1) {
+      return String.fromCharCode(parseInt(p1, 16));
+    }));
   }
 
   function defaultConf() {
@@ -3395,6 +3402,168 @@
     }
   }
 
+  class MHGMatcher extends BaseMatcher {
+    srcMap = /* @__PURE__ */ new Map();
+    name() {
+      return "漫画柜";
+    }
+    async *fetchPagesSource(source) {
+      yield source.source;
+    }
+    async parseImgNodes(page, _chapterID) {
+      const docRaw = await window.fetch(page).then((res) => res.text());
+      const matches = docRaw.match(IMG_DATA_PARAM_REGEX);
+      if (!matches || matches.length < 5)
+        throw new Error("cannot match image data");
+      let data;
+      try {
+        data = parseImgData(matches[1], parseInt(matches[2]), parseInt(matches[3]), matches[4]);
+      } catch (error) {
+        throw new Error("cannot parse image data: " + error.toString());
+      }
+      const server = getServer();
+      const createHref = (i, f) => {
+        const src = `${server}/${data.path}/${f}?e=${data.sl.e}&m=${data.sl.m}}`;
+        const href = `https://www.manhuagui.com/comic/${data.bid}/${data.cid}.html#p=${i + 1}`;
+        this.srcMap.set(href, src);
+        return href;
+      };
+      return data.files.map((f, i) => new ImageNode("", createHref(i, f), f));
+    }
+    async fetchOriginMeta(href) {
+      const url = this.srcMap.get(href);
+      if (!url)
+        throw new Error("cannot find original src by href: " + href);
+      return { url };
+    }
+    workURL() {
+      return /manhuagui.com\/comic\/\d+\/?$/;
+    }
+    async fetchChapters() {
+      const thumbimg = document.querySelector(".book-cover img")?.src;
+      const chapters = [];
+      document.querySelectorAll(".chapter-list").forEach((element) => {
+        let prefix = findSibling(element, "prev", (e) => e.tagName.toLowerCase() === "h4")?.firstElementChild?.textContent ?? void 0;
+        prefix = prefix ? prefix + "-" : "";
+        element.querySelectorAll("ul").forEach((ul, i) => {
+          const ret = Array.from(ul.querySelectorAll("li > a")).reverse().map((element2, j) => {
+            return {
+              id: (i + 1) * (j + 1),
+              title: prefix + element2.title,
+              source: element2.href,
+              queue: [],
+              thumbimg
+            };
+          });
+          chapters.push(...ret);
+        });
+      });
+      return chapters;
+    }
+  }
+  function findSibling(element, dir, eq) {
+    const sibling = (e2) => dir === "prev" ? e2.previousElementSibling : e2.nextElementSibling;
+    let e = element;
+    while (e = sibling(e)) {
+      if (eq(e))
+        return e;
+    }
+    return null;
+  }
+  const MHG_SERVERS = [
+    {
+      name: "自动",
+      hosts: [
+        {
+          h: "i",
+          w: 0.1
+        },
+        {
+          h: "eu",
+          w: 5
+        },
+        {
+          h: "eu1",
+          w: 5
+        },
+        {
+          h: "us",
+          w: 1
+        },
+        {
+          h: "us1",
+          w: 1
+        },
+        {
+          h: "us2",
+          w: 1
+        },
+        {
+          h: "us3",
+          w: 1
+        }
+      ]
+    },
+    {
+      name: "电信",
+      hosts: [
+        {
+          h: "eu",
+          w: 1
+        },
+        {
+          h: "eu1",
+          w: 1
+        }
+      ]
+    },
+    {
+      name: "联通",
+      hosts: [
+        {
+          h: "us",
+          w: 1
+        },
+        {
+          h: "us1",
+          w: 1
+        },
+        {
+          h: "us2",
+          w: 1
+        },
+        {
+          h: "us3",
+          w: 1
+        }
+      ]
+    }
+  ];
+  function getServer() {
+    const serv = parseInt(window.localStorage.getItem("") ?? "0");
+    const host = parseInt(window.localStorage.getItem("") ?? "0");
+    const prefix = MHG_SERVERS[serv]?.hosts[host]?.h ?? "us1";
+    return `https://${prefix}.hamreus.com`;
+  }
+  const IMG_DATA_PARAM_REGEX = /\('\w+\.\w+\((.*?)\).*?,(\d+),(\d+),'(.*?)'\[/;
+  function decompressFromBase64(input) {
+    return LZString.decompressFromBase64(input);
+  }
+  function parseImgData(tamplate, a, c, raw) {
+    const keys = decompressFromBase64(raw).split("|");
+    const d = {};
+    function e(n) {
+      let aa = n < a ? "" : e(Math.floor(n / a)).toString();
+      let bb = (n = n % a) > 35 ? String.fromCharCode(n + 29) : n.toString(36);
+      return aa + bb;
+    }
+    while (c--) {
+      d[e(c)] = keys[c] || e(c);
+    }
+    const dataStr = tamplate.replace(new RegExp("\\b\\w+\\b", "g"), (key) => d[key]);
+    return JSON.parse(dataStr);
+  }
+
   const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
   class NHMatcher extends BaseMatcher {
     name() {
@@ -4569,7 +4738,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new TwitterMatcher(),
       new WnacgMatcher(),
       new HentaiNexusMatcher(),
-      new KoharuMatcher()
+      new KoharuMatcher(),
+      new MHGMatcher()
     ];
   }
   function adaptMatcher(url) {
@@ -4993,11 +5163,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       });
     });
   }
-  function createExcludeURLPanel(root) {
+  function createSiteProfilePanel(root) {
     const matchers = getMatchers();
     const listItems = matchers.map((matcher) => {
       const name = matcher.name();
-      const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
+      const id = "id-" + b64EncodeUnicode(name).replaceAll(/[+=\/]/g, "-");
       const profile = conf.siteProfiles[name];
       return `<li data-index="${id}" class="ehvp-custom-panel-list-item">
              <div class="ehvp-custom-panel-list-item-title">
@@ -5045,7 +5215,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     const siteProfiles = conf.siteProfiles;
     matchers.forEach((matcher) => {
       const name = matcher.name();
-      const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
+      const id = "id-" + b64EncodeUnicode(name).replaceAll(/[+=\/]/g, "-");
       const defaultWorkURLs = matcher.workURLs().map((u) => u.source);
       const getProfile = () => {
         let profile = siteProfiles[name];
@@ -5630,7 +5800,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       createKeyboardCustomPanel(keyboardEvents, HTML.root);
     }
     function showSiteProfilesEvent() {
-      createExcludeURLPanel(HTML.root);
+      createSiteProfilePanel(HTML.root);
     }
     return {
       modNumberConfigEvent,

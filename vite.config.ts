@@ -60,6 +60,7 @@ export default defineConfig(({ command }) => {
             'https://*.wn02.cc/*',
             'https://hentainexus.com/*',
             'https://koharu.to/*',
+            'https://*.manhuagui.com/*',
           ],
           name: {
             "": "E HENTAI VIEW ENHANCE",
@@ -106,6 +107,7 @@ export default defineConfig(({ command }) => {
             'kisakisexo.xyz',
             'koharusexo.xyz',
             'aronasexo.xyz',
+            'hamreus.com',
             '*',
           ],
           grant: [

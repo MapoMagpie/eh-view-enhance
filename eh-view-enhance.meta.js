@@ -42,6 +42,7 @@
 // @match              https://*.wn02.cc/*
 // @match              https://hentainexus.com/*
 // @match              https://koharu.to/*
+// @match              https://*.manhuagui.com/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -72,6 +73,7 @@
 // @connect            kisakisexo.xyz
 // @connect            koharusexo.xyz
 // @connect            aronasexo.xyz
+// @connect            hamreus.com
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue

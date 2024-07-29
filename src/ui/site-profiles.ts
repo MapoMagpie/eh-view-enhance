@@ -2,6 +2,7 @@ import { SiteProfile, conf, saveConf } from "../config";
 import { getMatchers } from "../platform/adapt";
 import { i18n } from "../utils/i18n";
 import q from "../utils/query-element";
+import { b64EncodeUnicode } from "../utils/random";
 import relocateElement from "../utils/relocate-element";
 
 function createInputElement(root: HTMLElement, anchor: HTMLElement, callback: (value: string) => void) {
@@ -30,11 +31,11 @@ function createWorkURLs(workURLs: string[], container: HTMLElement, onRemove: (v
   });
 }
 
-export default function createExcludeURLPanel(root: HTMLElement) {
+export default function createSiteProfilePanel(root: HTMLElement) {
   const matchers = getMatchers();
   const listItems = matchers.map((matcher) => {
     const name = matcher.name();
-    const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
+    const id = "id-" + b64EncodeUnicode(name).replaceAll(/[+=\/]/g, "-");
     const profile: SiteProfile | undefined = conf.siteProfiles[name];
     return `<li data-index="${id}" class="ehvp-custom-panel-list-item">
              <div class="ehvp-custom-panel-list-item-title">
@@ -83,7 +84,7 @@ export default function createExcludeURLPanel(root: HTMLElement) {
   const siteProfiles = conf.siteProfiles;
   matchers.forEach(matcher => {
     const name = matcher.name();
-    const id = "id-" + window.btoa(unescape(encodeURIComponent(name))).replaceAll("=", "-");
+    const id = "id-" + b64EncodeUnicode(name).replaceAll(/[+=\/]/g, "-");
     const defaultWorkURLs = matcher.workURLs().map(u => u.source);
 
     const getProfile = () => {

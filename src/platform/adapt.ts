@@ -6,6 +6,7 @@ import { HentaiNexusMatcher } from "./hentainexus";
 import { HitomiMather } from "./hitomi";
 import { IMHentaiMatcher } from "./im-hentai";
 import { KoharuMatcher } from "./koharo";
+import { MangaCopyMatcher } from "./mangacopy";
 import { MHGMatcher } from "./manhuagui";
 import { NHMatcher } from "./nhentai";
 import { PixivMatcher } from "./pixiv";
@@ -35,6 +36,7 @@ export function getMatchers(): Matcher[] {
     new HentaiNexusMatcher(),
     new KoharuMatcher(),
     new MHGMatcher(),
+    new MangaCopyMatcher(),
   ];
 }
 

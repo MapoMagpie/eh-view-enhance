@@ -43,6 +43,8 @@
 // @match              https://hentainexus.com/*
 // @match              https://koharu.to/*
 // @match              https://*.manhuagui.com/*
+// @match              http*://*.mangacopy.com/*
+// @match              http*://*.copymanga.site/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
@@ -74,6 +76,7 @@
 // @connect            koharusexo.xyz
 // @connect            aronasexo.xyz
 // @connect            hamreus.com
+// @connect            mangafuna.xyz
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue
@@ -551,6 +554,8 @@
       throw err;
     }
     async fetchOriginMeta() {
+      if (this.node.originSrc)
+        return { url: this.node.originSrc };
       return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0 || this.stage === 0 /* FAILED */, this.chapterIndex);
     }
     async fetchImageData() {
@@ -1796,15 +1801,17 @@
     canvasCtx;
     canvasSized = false;
     delaySRC;
+    originSrc;
     blobSrc;
     mimeType;
     downloadBar;
     picked = true;
-    constructor(thumbnailSrc, href, title, delaySRC) {
+    constructor(thumbnailSrc, href, title, delaySRC, originSrc) {
       this.thumbnailSrc = thumbnailSrc;
       this.href = href;
       this.title = title;
       this.delaySRC = delaySRC;
+      this.originSrc = originSrc;
     }
     create() {
       this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
@@ -2011,7 +2018,7 @@
       this.abortb = true;
     }
     async init() {
-      this.chapters = await this.matcher.fetchChapters();
+      this.chapters = await this.matcher.fetchChapters().catch((reason) => EBUS.emit("notify-message", "error", reason) || []);
       this.chapters.forEach((c) => {
         c.sourceIter = this.matcher.fetchPagesSource(c);
         c.onclick = (index) => {
@@ -3336,7 +3343,6 @@
     name() {
       return "Koharu";
     }
-    originURLMap = /* @__PURE__ */ new Map();
     meta;
     galleryMeta() {
       return this.meta || new GalleryMeta(window.location.href, "koharu-unknows");
@@ -3384,12 +3390,12 @@
       return items.entries.map((item, i) => {
         const href = `${window.location.origin}/reader/${galleryID}/${i + 1}`;
         const title = (i + 1).toString().padStart(pad, "0") + "." + item.path.split(".").pop();
-        this.originURLMap.set(href, itemBase + item.path);
-        return new ImageNode(thumbBase + thumbs[i].path, href, title);
+        const src = itemBase + item.path;
+        return new ImageNode(thumbBase + thumbs[i].path, href, title, void 0, src);
       });
     }
-    async fetchOriginMeta(href) {
-      return { url: this.originURLMap.get(href) };
+    async fetchOriginMeta() {
+      throw new Error("the image src already exists in the ImageNode");
     }
     workURL() {
       return /koharu.to\/(g|reader)\/\d+\/\w+/;
@@ -3402,10 +3408,138 @@
     }
   }
 
+  class MangaCopyMatcher extends BaseMatcher {
+    name() {
+      return "拷贝漫画";
+    }
+    update_date;
+    chapterCount = 0;
+    meta;
+    galleryMeta() {
+      if (this.meta)
+        return this.meta;
+      let title = document.querySelector(".comicParticulars-title-right > ul > li > h6")?.textContent ?? document.title;
+      document.querySelectorAll(".comicParticulars-title-right > ul > li > span.comicParticulars-right-txt").forEach((ele) => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(ele.textContent?.trim() || "")) {
+          this.update_date = ele.textContent?.trim();
+        }
+      });
+      title += "-c" + this.chapterCount + (this.update_date ? "-" + this.update_date : "");
+      this.meta = new GalleryMeta(window.location.href, title);
+      return this.meta;
+    }
+    async *fetchPagesSource(source) {
+      yield source.source;
+    }
+    async parseImgNodes(page) {
+      const raw = await window.fetch(page).then((resp) => resp.text());
+      const doc = new DOMParser().parseFromString(raw, "text/html");
+      const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
+      if (!contentKey)
+        throw new Error("cannot find content key");
+      try {
+        const decryption = decrypt(contentKey);
+        const images = JSON.parse(decryption);
+        const digits = images.length.toString().length;
+        return images.map((img, i) => {
+          return new ImageNode("", page, (i + 1).toString().padStart(digits, "0") + ".webp", void 0, img.url);
+        });
+      } catch (error) {
+        throw new Error("cannot decrypt contentKey: " + error.toString() + "\n" + contentKey);
+      }
+    }
+    async fetchOriginMeta() {
+      throw new Error("the image src already exists in the ImageNode");
+    }
+    workURL() {
+      return /(mangacopy|copymanga).*?\/comic\/[^\/]*\/?$/;
+    }
+    async fetchChapters() {
+      const thumbimg = document.querySelector(".comicParticulars-left-img > img[data-src]")?.getAttribute("data-src") || void 0;
+      const pathWord = window.location.href.match(PATH_WORD_REGEX)?.[1];
+      if (!pathWord)
+        throw new Error("cannot match comic id");
+      const url = `${window.location.origin}/comicdetail/${pathWord}/chapters`;
+      const data = await window.fetch(url).then((res) => res.json()).catch((reason) => new Error(reason.toString()));
+      if (data instanceof Error)
+        throw new Error("fetch chapter detail error: " + data.toString());
+      if (data.code !== 200)
+        throw new Error("fetch chater detail error: " + data.message);
+      let details;
+      try {
+        const decryption = decrypt(data.results);
+        details = JSON.parse(decryption);
+      } catch (error) {
+        throw new Error("parse chapter details error: " + error.toString());
+      }
+      const origin = window.location.origin;
+      return [...details.groups.default.chapters, ...details.groups.tankobon?.chapters ?? []].map((ch, i) => {
+        this.chapterCount++;
+        return {
+          id: i + 1,
+          title: ch.name,
+          source: `${origin}/comic/${pathWord}/chapter/${ch.id}`,
+          queue: [],
+          thumbimg
+        };
+      });
+    }
+  }
+  const PATH_WORD_REGEX = /\/comic\/(\w*)/;
+  function initCypto() {
+    let c = [];
+    function r(i) {
+      if (c[i])
+        return c[i].exports;
+      c[i] = {
+        i,
+        l: false,
+        exports: {}
+      };
+      let e = c[i];
+      const wj = webpackJsonp;
+      return wj[0][1][i].call(e.exports, e, e.exports, r), e.l = true, e.exports;
+    }
+    return r(6);
+  }
+  function decrypt(raw) {
+    let dio = "xxxmanga.woo.key";
+    let cypto = initCypto();
+    let str = raw;
+    let header = str.substring(0, 16);
+    let body = str.substring(16, str.length);
+    let dioEn = cypto.enc.Utf8["parse"](dio);
+    let headerEn = cypto.enc.Utf8["parse"](header);
+    let bodyDe = function(b) {
+      let bHex = cypto.enc.Hex.parse(b);
+      let b64 = cypto.enc.Base64.stringify(bHex);
+      return cypto.AES.decrypt(b64, dioEn, {
+        iv: headerEn,
+        mode: cypto.mode["CBC"],
+        padding: cypto.pad.Pkcs7
+      }).toString(cypto["enc"].Utf8).toString();
+    }(body);
+    return bodyDe;
+  }
+
   class MHGMatcher extends BaseMatcher {
-    srcMap = /* @__PURE__ */ new Map();
     name() {
       return "漫画柜";
+    }
+    meta;
+    chapterCount = 0;
+    galleryMeta() {
+      if (this.meta)
+        return this.meta;
+      let title = document.querySelector(".book-title > h1")?.textContent ?? document.title;
+      title += "-c" + this.chapterCount;
+      const matches = document.querySelector(".detail-list .status")?.textContent?.match(STATUS_REGEX);
+      const date = matches?.[1];
+      title += date ? "-" + date : "";
+      const last = matches?.[2];
+      title += last ? "-" + last.trim() : "";
+      this.meta = new GalleryMeta(window.location.href, title);
+      return this.meta;
     }
     async *fetchPagesSource(source) {
       yield source.source;
@@ -3422,19 +3556,14 @@
         throw new Error("cannot parse image data: " + error.toString());
       }
       const server = getServer();
-      const createHref = (i, f) => {
+      return data.files.map((f, i) => {
         const src = `${server}/${data.path}/${f}?e=${data.sl.e}&m=${data.sl.m}}`;
         const href = `https://www.manhuagui.com/comic/${data.bid}/${data.cid}.html#p=${i + 1}`;
-        this.srcMap.set(href, src);
-        return href;
-      };
-      return data.files.map((f, i) => new ImageNode("", createHref(i, f), f));
+        return new ImageNode("", href, f, void 0, src);
+      });
     }
-    async fetchOriginMeta(href) {
-      const url = this.srcMap.get(href);
-      if (!url)
-        throw new Error("cannot find original src by href: " + href);
-      return { url };
+    async fetchOriginMeta() {
+      throw new Error("the image src already exists in the ImageNode");
     }
     workURL() {
       return /manhuagui.com\/comic\/\d+\/?$/;
@@ -3445,10 +3574,10 @@
       document.querySelectorAll(".chapter-list").forEach((element) => {
         let prefix = findSibling(element, "prev", (e) => e.tagName.toLowerCase() === "h4")?.firstElementChild?.textContent ?? void 0;
         prefix = prefix ? prefix + "-" : "";
-        element.querySelectorAll("ul").forEach((ul, i) => {
-          const ret = Array.from(ul.querySelectorAll("li > a")).reverse().map((element2, j) => {
+        element.querySelectorAll("ul").forEach((ul) => {
+          const ret = Array.from(ul.querySelectorAll("li > a")).reverse().map((element2) => {
             return {
-              id: (i + 1) * (j + 1),
+              id: 0,
               title: prefix + element2.title,
               source: element2.href,
               queue: [],
@@ -3458,6 +3587,7 @@
           chapters.push(...ret);
         });
       });
+      chapters.forEach((ch, i) => ch.id = i + 1);
       return chapters;
     }
   }
@@ -3545,6 +3675,7 @@
     const prefix = MHG_SERVERS[serv]?.hosts[host]?.h ?? "us1";
     return `https://${prefix}.hamreus.com`;
   }
+  const STATUS_REGEX = /\[(\d{4}-\d{2}-\d{2})\].*?\[(.*?)\]/;
   const IMG_DATA_PARAM_REGEX = /\('\w+\.\w+\((.*?)\).*?,(\d+),(\d+),'(.*?)'\[/;
   function decompressFromBase64(input) {
     return LZString.decompressFromBase64(input);
@@ -4353,8 +4484,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       meta.tags = tags;
       return meta;
     }
-    async fetchOriginMeta(url, _) {
-      return { url };
+    async fetchOriginMeta() {
+      throw new Error("the image src already exists in the ImageNode");
     }
     async parseImgNodes(source) {
       const range = source.split("-").map(Number);
@@ -4365,11 +4496,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         if (this.sprites[i]) {
           thumbnail = await this.fetchThumbnail(i);
         }
-        const newNode = new ImageNode(
-          thumbnail,
-          `https://rokuhentai.com/_images/pages/${this.galleryId}/${i}.jpg`,
-          i.toString().padStart(digits, "0") + ".jpg"
-        );
+        const src = `https://rokuhentai.com/_images/pages/${this.galleryId}/${i}.jpg`;
+        const newNode = new ImageNode(thumbnail, src, i.toString().padStart(digits, "0") + ".jpg", void 0, src);
         list.push(newNode);
       }
       return list;
@@ -4509,7 +4637,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return "Twitter | X";
     }
     mediaPages = /* @__PURE__ */ new Map();
-    largeSrcMap = /* @__PURE__ */ new Map();
     uuid = uuid();
     postCount = 0;
     mediaCount = 0;
@@ -4607,29 +4734,26 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           href = `${href}/${media.type === "video" ? "video" : "photo"}/${i + 1}`;
           let largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`;
           const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`;
-          const node = new ImageNode(src, href, title);
+          const node = new ImageNode(src, href, title, void 0, largeSrc);
           if (media.video_info) {
             let bitrate = 0;
             for (const variant of media.video_info.variants) {
               if (variant.bitrate !== void 0 && variant.bitrate >= bitrate) {
                 bitrate = variant.bitrate;
-                largeSrc = variant.url;
+                node.originSrc = largeSrc;
                 node.mimeType = variant.content_type;
                 node.title = node.title.replace(/\.\w+$/, `.${variant.content_type.split("/")[1]}`);
               }
             }
           }
-          this.largeSrcMap.set(href, largeSrc);
           list.push(node);
           this.mediaCount++;
         }
       }
       return list;
     }
-    async fetchOriginMeta(href) {
-      return {
-        url: this.largeSrcMap.get(href) || href
-      };
+    async fetchOriginMeta() {
+      throw new Error("the image src already exists in the ImageNode");
     }
     workURL() {
       return /(\/x|twitter).com\/(?!(home|explore|notifications|messages)$|i\/|search\?)\w+/;
@@ -4739,7 +4863,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new WnacgMatcher(),
       new HentaiNexusMatcher(),
       new KoharuMatcher(),
-      new MHGMatcher()
+      new MHGMatcher(),
+      new MangaCopyMatcher()
     ];
   }
   function adaptMatcher(url) {

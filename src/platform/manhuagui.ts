@@ -1,11 +1,25 @@
+import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { Chapter, PagesSource } from "../page-fetcher";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 export class MHGMatcher extends BaseMatcher {
-  srcMap: Map<string, string> = new Map();
   name(): string {
     return "漫画柜";
+  }
+  meta?: GalleryMeta;
+  chapterCount: number = 0;
+  galleryMeta(): GalleryMeta {
+    if (this.meta) return this.meta;
+    let title = document.querySelector(".book-title > h1")?.textContent ?? document.title;
+    title += "-c" + this.chapterCount;
+    const matches = document.querySelector(".detail-list .status")?.textContent?.match(STATUS_REGEX);
+    const date = matches?.[1];
+    title += date ? "-" + date : "";
+    const last = matches?.[2];
+    title += last ? "-" + last.trim() : "";
+    this.meta = new GalleryMeta(window.location.href, title);
+    return this.meta;
   }
   async *fetchPagesSource(source: Chapter): AsyncGenerator<PagesSource> {
     yield source.source;
@@ -21,18 +35,14 @@ export class MHGMatcher extends BaseMatcher {
       throw new Error("cannot parse image data: " + (error as any).toString());
     }
     const server = getServer();
-    const createHref = (i: number, f: string) => {
+    return data.files.map((f, i) => {
       const src = `${server}/${data.path}/${f}?e=${data.sl.e}&m=${data.sl.m}}`;
       const href = `https://www.manhuagui.com/comic/${data.bid}/${data.cid}.html#p=${i + 1}`;
-      this.srcMap.set(href, src);
-      return href;
-    }
-    return data.files.map((f, i) => new ImageNode("", createHref(i, f), f));
+      return new ImageNode("", href, f, undefined, src);
+    });
   }
-  async fetchOriginMeta(href: string): Promise<OriginMeta> {
-    const url = this.srcMap.get(href);
-    if (!url) throw new Error("cannot find original src by href: " + href);
-    return { url };
+  async fetchOriginMeta(): Promise<OriginMeta> {
+    throw new Error("the image src already exists in the ImageNode");
   }
   workURL(): RegExp {
     return /manhuagui.com\/comic\/\d+\/?$/;
@@ -43,11 +53,11 @@ export class MHGMatcher extends BaseMatcher {
     document.querySelectorAll<HTMLElement>(".chapter-list").forEach(element => {
       let prefix = findSibling(element, "prev", (e) => e.tagName.toLowerCase() === "h4")?.firstElementChild?.textContent ?? undefined;
       prefix = prefix ? prefix + "-" : "";
-      element.querySelectorAll("ul").forEach((ul, i) => {
-        const ret = Array.from(ul.querySelectorAll<HTMLAnchorElement>("li > a")).reverse().map((element, j) => {
+      element.querySelectorAll("ul").forEach((ul) => {
+        const ret = Array.from(ul.querySelectorAll<HTMLAnchorElement>("li > a")).reverse().map((element) => {
           return {
-            id: (i + 1) * (j + 1),
-            title: prefix + element.title ?? `${i + 1}-${j + 1}`,
+            id: 0,
+            title: prefix + element.title,
             source: element.href,
             queue: [],
             thumbimg,
@@ -56,6 +66,7 @@ export class MHGMatcher extends BaseMatcher {
         chapters.push(...ret);
       })
     });
+    chapters.forEach((ch, i) => ch.id = i + 1);
     return chapters;
   }
 
@@ -165,6 +176,7 @@ function getServer(): string {
   return `https://${prefix}.hamreus.com`;
 }
 
+const STATUS_REGEX = /\[(\d{4}-\d{2}-\d{2})\].*?\[(.*?)\]/;
 const IMG_DATA_PARAM_REGEX = /\('\w+\.\w+\((.*?)\).*?,(\d+),(\d+),'(.*?)'\[/;
 function decompressFromBase64(input: string): string {
   // @ts-ignore

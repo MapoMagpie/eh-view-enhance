@@ -4740,7 +4740,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             for (const variant of media.video_info.variants) {
               if (variant.bitrate !== void 0 && variant.bitrate >= bitrate) {
                 bitrate = variant.bitrate;
-                node.originSrc = largeSrc;
+                node.originSrc = variant.url;
                 node.mimeType = variant.content_type;
                 node.title = node.title.replace(/\.\w+$/, `.${variant.content_type.split("/")[1]}`);
               }

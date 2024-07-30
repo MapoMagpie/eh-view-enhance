@@ -53,7 +53,6 @@ export class KoharuMatcher extends BaseMatcher {
     return "Koharu";
   }
 
-  originURLMap: Map<string, string> = new Map();
   meta?: GalleryMeta;
 
   galleryMeta(): GalleryMeta {
@@ -106,15 +105,13 @@ export class KoharuMatcher extends BaseMatcher {
     return items.entries.map((item, i) => {
       const href = `${window.location.origin}/reader/${galleryID}/${i + 1}`;
       const title = (i + 1).toString().padStart(pad, "0") + "." + item.path.split(".").pop();
-      this.originURLMap.set(href, itemBase + item.path);
-      return new ImageNode(thumbBase + thumbs[i].path, href, title);
+      const src = itemBase + item.path;
+      return new ImageNode(thumbBase + thumbs[i].path, href, title, undefined, src);
     });
   }
-
-  async fetchOriginMeta(href: string): Promise<OriginMeta> {
-    return { url: this.originURLMap.get(href)! };
+  async fetchOriginMeta(): Promise<OriginMeta> {
+    throw new Error("the image src already exists in the ImageNode");
   }
-
   workURL(): RegExp {
     return /koharu.to\/(g|reader)\/\d+\/\w+/;
   }

@@ -80,7 +80,6 @@ export class TwitterMatcher extends BaseMatcher {
     return "Twitter | X";
   }
   mediaPages: Map<string, Item[]> = new Map();
-  largeSrcMap: Map<string, string> = new Map();
   uuid = uuid();
   postCount: number = 0;
   mediaCount: number = 0;
@@ -179,19 +178,18 @@ export class TwitterMatcher extends BaseMatcher {
         href = `${href}/${media.type === "video" ? "video" : "photo"}/${i + 1}`
         let largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`
         const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`
-        const node = new ImageNode(src, href, title);
+        const node = new ImageNode(src, href, title, undefined, largeSrc);
         if (media.video_info) {
           let bitrate = 0;
           for (const variant of media.video_info.variants) {
             if (variant.bitrate !== undefined && variant.bitrate >= bitrate) {
               bitrate = variant.bitrate;
-              largeSrc = variant.url;
+              node.originSrc = largeSrc;
               node.mimeType = variant.content_type;
               node.title = node.title.replace(/\.\w+$/, `.${variant.content_type.split("/")[1]}`);
             }
           }
         }
-        this.largeSrcMap.set(href, largeSrc);
         list.push(node);
         this.mediaCount++;
       }
@@ -199,10 +197,8 @@ export class TwitterMatcher extends BaseMatcher {
     return list;
   }
 
-  async fetchOriginMeta(href: string): Promise<OriginMeta> {
-    return {
-      url: this.largeSrcMap.get(href) || href,
-    }
+  async fetchOriginMeta(): Promise<OriginMeta> {
+    throw new Error("the image src already exists in the ImageNode");
   }
 
   workURL(): RegExp {

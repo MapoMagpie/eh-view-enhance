@@ -34,8 +34,8 @@ export class RokuHentaiMatcher extends BaseMatcher {
     return meta;
   }
 
-  async fetchOriginMeta(url: string, _: boolean): Promise<OriginMeta> {
-    return { url };
+  async fetchOriginMeta(): Promise<OriginMeta> {
+    throw new Error("the image src already exists in the ImageNode");
   }
 
   async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
@@ -47,11 +47,8 @@ export class RokuHentaiMatcher extends BaseMatcher {
       if (this.sprites[i]) {
         thumbnail = await this.fetchThumbnail(i);
       }
-      const newNode = new ImageNode(
-        thumbnail,
-        `https://rokuhentai.com/_images/pages/${this.galleryId}/${i}.jpg`,
-        i.toString().padStart(digits, "0") + ".jpg",
-      );
+      const src = `https://rokuhentai.com/_images/pages/${this.galleryId}/${i}.jpg`;
+      const newNode = new ImageNode(thumbnail, src, i.toString().padStart(digits, "0") + ".jpg", undefined, src,);
       list.push(newNode);
     }
     return list;

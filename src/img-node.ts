@@ -33,15 +33,17 @@ export default class ImageNode {
   canvasCtx?: CanvasRenderingContext2D;
   canvasSized: boolean = false;
   delaySRC?: Promise<string>;
+  originSrc?: string;
   private blobSrc?: string;
   mimeType?: string;
   private downloadBar?: HTMLElement;
   picked: boolean = true;
-  constructor(thumbnailSrc: string, href: string, title: string, delaySRC?: Promise<string>) {
+  constructor(thumbnailSrc: string, href: string, title: string, delaySRC?: Promise<string>, originSrc?: string) {
     this.thumbnailSrc = thumbnailSrc;
     this.href = href;
     this.title = title;
     this.delaySRC = delaySRC;
+    this.originSrc = originSrc;
   }
 
   create(): HTMLElement {

@@ -151,6 +151,7 @@ export class IMGFetcher implements VisualNode {
   }
 
   async fetchOriginMeta(): Promise<OriginMeta> {
+    if (this.node.originSrc) return { url: this.node.originSrc };
     return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0 || this.stage === FetchState.FAILED, this.chapterIndex);
   }
 

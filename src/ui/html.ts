@@ -37,38 +37,40 @@ export function createHTML() {
         ${DownloaderPanel.html()}
     </div>
     <div id="b-main" class="b-main">
-        <div id="entry-btn" class="b-main-item clickable">${icons.moonViewCeremony}</div>
+        <a id="entry-btn" class="b-main-item clickable">${icons.moonViewCeremony}</a>
         <div id="page-status" class="b-main-item" hidden>
-            <span class="clickable" id="p-curr-page" style="color:#ffc005;">1</span><span id="p-slash-1">/</span><span id="p-total">0</span>
+            <a class="clickable" id="p-curr-page" style="color:#ffc005;">1</a><span id="p-slash-1">/</span><span id="p-total">0</span>
         </div>
         <div id="fin-status" class="b-main-item" hidden>
             <span>FIN:</span><span id="p-finished">0</span>
         </div>
-        <div id="auto-page-btn" class="b-main-item clickable" hidden data-status="paused">
+        <a id="auto-page-btn" class="b-main-item clickable" hidden data-status="paused">
            <span>${i18n.autoPagePlay.get()}</span>
            <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #cd8e8e;"></div>
-        </div>
-        <div id="config-panel-btn" class="b-main-item clickable" hidden>${i18n.config.get()}</div>
-        <div id="downloader-panel-btn" class="b-main-item clickable" hidden>${i18n.download.get()}</div>
-        <div id="chapters-btn" class="b-main-item clickable" hidden>${i18n.backChapters.get()}</div>
+        </a>
+        <a id="config-panel-btn" class="b-main-item clickable" hidden>${i18n.config.get()}</a>
+        <a id="downloader-panel-btn" class="b-main-item clickable" hidden>${i18n.download.get()}</a>
+        <a id="chapters-btn" class="b-main-item clickable" hidden>${i18n.backChapters.get()}</a>
         <div id="read-mode-bar" class="b-main-item" hidden>
-            <div id="read-mode-select"><span class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">PAGE</span><span class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">CONT</span></div>
+            <div id="read-mode-select"
+            ><a class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">PAGE</a
+            ><a class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">CONT</a></div>
         </div>
         <div id="pagination-adjust-bar" class="b-main-item" hidden>
             <span>
-              <span id="paginationStepPrev" class="b-main-btn clickable" type="button">&lt;</span>
-              <span id="paginationMinusBTN" class="b-main-btn clickable" type="button">-</span>
+              <a id="paginationStepPrev" class="b-main-btn clickable" type="button">&lt;</a>
+              <a id="paginationMinusBTN" class="b-main-btn clickable" type="button">-</a>
               <span id="paginationInput" class="b-main-input">${conf.paginationIMGCount}</span>
-              <span id="paginationAddBTN" class="b-main-btn clickable" type="button">+</span>
-              <span id="paginationStepNext" class="b-main-btn clickable" type="button">&gt;</span>
+              <a id="paginationAddBTN" class="b-main-btn clickable" type="button">+</a>
+              <a id="paginationStepNext" class="b-main-btn clickable" type="button">&gt;</a>
             </span>
         </div>
         <div id="scale-bar" class="b-main-item" hidden>
             <span>
               <span>${icons.zoomIcon}</span>
-              <span id="scaleMinusBTN" class="b-main-btn clickable" type="button">-</span>
+              <a id="scaleMinusBTN" class="b-main-btn clickable" type="button">-</a>
               <span id="scaleInput" class="b-main-input" style="width: 3rem; cursor: move;">${conf.imgScale}</span>
-              <span id="scaleAddBTN" class="b-main-btn clickable" type="button">+</span>
+              <a id="scaleAddBTN" class="b-main-btn clickable" type="button">+</a>
             </span>
         </div>
     </div>

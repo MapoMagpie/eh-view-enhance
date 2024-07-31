@@ -43,7 +43,7 @@ export const i18n = {
   // page-helper
   imageScale: new I18nValue("SCALE", "缩放"),
   config: new I18nValue("CONF", "配置"),
-  backChapters: new I18nValue("Chapters", "章节"),
+  backChapters: new I18nValue("CHAPTERS", "章节"),
   autoPagePlay: new I18nValue("PLAY", "播放"),
   autoPagePause: new I18nValue("PAUSE", "暂停"),
   collapse: new I18nValue("FOLD", "收起"),

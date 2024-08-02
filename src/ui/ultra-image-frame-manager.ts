@@ -1,7 +1,6 @@
 import { conf, saveConf, Oriented } from "../config";
 import { FetchState, IMGFetcher } from "../img-fetcher";
 import { Debouncer } from "../utils/debouncer";
-import { i18n } from "../utils/i18n";
 import { sleep } from "../utils/sleep";
 import Hammer from "hammerjs";
 import { Elements } from "./html";
@@ -713,7 +712,8 @@ class AutoPage {
   async start(lockVer: number) {
     this.status = "running";
     this.button.setAttribute("data-status", "playing");
-    (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePause.get();
+    const displayTexts = this.button.getAttribute("data-display-texts")!.split(",");
+    (this.button.firstElementChild as HTMLSpanElement).innerText = displayTexts[1];
     const frame = this.bifm.frame;
     if (!this.bifm.visible) {
       const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
@@ -774,7 +774,8 @@ class AutoPage {
     const progress = q("#auto-page-progress", this.button);
     progress.style.animation = ``;
     this.lockVer += 1;
-    (this.button.firstElementChild as HTMLSpanElement).innerText = i18n.autoPagePlay.get();
+    const displayTexts = this.button.getAttribute("data-display-texts")!.split(",");
+    (this.button.firstElementChild as HTMLSpanElement).innerText = displayTexts[0];
     this.scroller.scroll("up", 0);
   }
 }

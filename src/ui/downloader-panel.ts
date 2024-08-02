@@ -108,7 +108,7 @@ export class DownloaderPanel {
   }
 
   normalizeBTN() {
-    this.btn.textContent = i18n.download.get();
+    this.btn.textContent = this.btn.textContent!.replace("✓", "");
     this.btn.classList.remove("lightgreen");
   }
 

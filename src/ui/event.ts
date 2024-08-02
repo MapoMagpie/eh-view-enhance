@@ -14,6 +14,7 @@ import { Elements } from "./html";
 import createKeyboardCustomPanel from "./keyboard-custom";
 import { PageHelper } from "./page-helper";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
+import { createStyleCustomPanel } from "./style-custom-panel";
 
 export type Events = ReturnType<typeof initEvents>;
 
@@ -411,6 +412,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     createSiteProfilePanel(HTML.root);
   }
 
+  function showStyleCustomEvent() {
+    createStyleCustomPanel(HTML.root);
+  }
+
   return {
     modNumberConfigEvent,
     modBooleanConfigEvent,
@@ -428,6 +433,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     abortMouseleavePanelEvent,
     showKeyboardCustomEvent,
     showSiteProfilesEvent,
+    showStyleCustomEvent,
 
     changeReadModeEvent,
   }

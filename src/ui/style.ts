@@ -700,6 +700,10 @@ export function styleCSS() {
 .ehvp-custom-panel-title:hover, .ehvp-custom-panel-list-item-title:hover {
   background-color: #33333388;
 }
+.s-pickable:hover {
+  border: 1px solid red;
+  filter: brightness(150%);
+}
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .ehvp-root {
     font-size: 4cqw;

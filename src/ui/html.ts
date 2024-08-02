@@ -1,7 +1,6 @@
-import { conf, saveConf } from "../config";
+import { conf, getDisplayText, saveConf } from "../config";
 import { Downloader } from "../download/downloader";
 import { dragElement, dragElementWithLine } from "../utils/drag-element";
-import { i18n } from "../utils/i18n";
 import q from "../utils/query-element";
 import { Events } from "./event";
 import { PageHelper } from "./page-helper";
@@ -17,6 +16,7 @@ export type Elements = ReturnType<typeof createHTML>;
 
 export function createHTML() {
   const base = document.createElement("div");
+  const dt = getDisplayText();
   base.id = "ehvp-base";
   base.setAttribute("tabindex", "0");
   base.setAttribute("style", "all: initial");
@@ -37,24 +37,24 @@ export function createHTML() {
         ${DownloaderPanel.html()}
     </div>
     <div id="b-main" class="b-main">
-        <a id="entry-btn" class="b-main-item clickable">${icons.moonViewCeremony}</a>
+        <a id="entry-btn" class="b-main-item clickable" data-display-texts="${dt.entry},${dt.collapse}">${dt.entry}</a>
         <div id="page-status" class="b-main-item" hidden>
             <a class="clickable" id="p-curr-page" style="color:#ffc005;">1</a><span id="p-slash-1">/</span><span id="p-total">0</span>
         </div>
         <div id="fin-status" class="b-main-item" hidden>
-            <span>FIN:</span><span id="p-finished">0</span>
+            <span>${dt.fin}:</span><span id="p-finished">0</span>
         </div>
-        <a id="auto-page-btn" class="b-main-item clickable" hidden data-status="paused">
-           <span>${i18n.autoPagePlay.get()}</span>
+        <a id="auto-page-btn" class="b-main-item clickable" hidden data-status="paused" data-display-texts="${dt.autoPagePlay},${dt.autoPagePause}">
+           <span>${dt.autoPagePlay}</span>
            <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #cd8e8e;"></div>
         </a>
-        <a id="config-panel-btn" class="b-main-item clickable" hidden>${i18n.config.get()}</a>
-        <a id="downloader-panel-btn" class="b-main-item clickable" hidden>${i18n.download.get()}</a>
-        <a id="chapters-btn" class="b-main-item clickable" hidden>${i18n.backChapters.get()}</a>
+        <a id="config-panel-btn" class="b-main-item clickable" hidden>${dt.config}</a>
+        <a id="downloader-panel-btn" class="b-main-item clickable" hidden>${dt.download}</a>
+        <a id="chapters-btn" class="b-main-item clickable" hidden>${dt.chapters}</a>
         <div id="read-mode-bar" class="b-main-item" hidden>
             <div id="read-mode-select"
-            ><a class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">PAGE</a
-            ><a class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">CONT</a></div>
+            ><a class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">${dt.pagination}</a
+            ><a class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">${dt.continuous}</a></div>
         </div>
         <div id="pagination-adjust-bar" class="b-main-item" hidden>
             <span>
@@ -100,6 +100,7 @@ export function createHTML() {
     showGuideElement: q("#show-guide-element", root),
     showKeyboardCustomElement: q("#show-keyboard-custom-element", root),
     showSiteProfilesElement: q("#show-site-profiles-element", root),
+    showStyleCustomElement: q("#show-style-custom-element", root),
     imgLandLeft: q("#img-land-left", root),
     imgLandRight: q("#img-land-right", root),
     autoPageBTN: q("#auto-page-btn", root),
@@ -180,6 +181,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.showGuideElement.addEventListener("click", events.showGuideEvent);
   HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
   HTML.showSiteProfilesElement.addEventListener("click", events.showSiteProfilesEvent);
+  HTML.showStyleCustomElement.addEventListener("click", events.showStyleCustomEvent);
 
   dragElement(HTML.pageHelper, {
     onFinish: () => {

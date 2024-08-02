@@ -1,5 +1,7 @@
 import { GM_getValue, GM_setValue } from "$";
 import { KeyboardInBigImageModeId, KeyboardInFullViewGridId, KeyboardInMainId } from "./ui/event";
+import { i18n } from "./utils/i18n";
+import icons from "./utils/icons";
 import { uuid } from "./utils/random";
 
 export type Oriented = "prev" | "next";
@@ -93,6 +95,7 @@ export type Config = {
   id: string,
   /** modify some config items by patch */
   configPatchVersion: number,
+  displayText: Partial<DisplayText>,
 };
 
 function defaultConf(): Config {
@@ -140,6 +143,7 @@ function defaultConf(): Config {
     scrollingSpeed: 30,
     id: uuid(),
     configPatchVersion: 0,
+    displayText: {},
   };
 }
 
@@ -316,3 +320,47 @@ export const ConfigItems: ConfigItem[] = [
   },
 ];
 
+export type DisplayText = {
+  entry: string,
+  collapse: string,
+  fin: string,
+  autoPagePlay: string,
+  autoPagePause: string,
+  config: string,
+  download: string,
+  chapters: string,
+  pagination: string,
+  continuous: string,
+}
+
+const DEFAULT_DISPLAY_TEXT: DisplayText = {
+  entry: icons.moonViewCeremony,
+  collapse: i18n.collapse.get(),
+  fin: "FIN",
+  autoPagePlay: i18n.autoPagePlay.get(),
+  autoPagePause: i18n.autoPagePause.get(),
+  config: i18n.config.get(),
+  download: i18n.download.get(),
+  chapters: i18n.chapters.get(),
+  pagination: "PAGE",
+  continuous: "CONT"
+};
+
+export function getDisplayText(): DisplayText {
+  return { ...DEFAULT_DISPLAY_TEXT, ...conf.displayText };
+}
+
+export function presetDisplayText(): DisplayText {
+  return {
+    entry: "<(✥)>",
+    collapse: ".)(.",
+    config: "⚙",
+    download: "⮋",
+    autoPagePause: "------",
+    chapters: "🎴",
+    autoPagePlay: "▶",
+    fin: "⑇",
+    pagination: "🗐",
+    continuous: "🗏⭭"
+  };
+}

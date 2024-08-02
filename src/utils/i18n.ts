@@ -43,7 +43,7 @@ export const i18n = {
   // page-helper
   imageScale: new I18nValue("SCALE", "缩放"),
   config: new I18nValue("CONF", "配置"),
-  backChapters: new I18nValue("CHAPTERS", "章节"),
+  chapters: new I18nValue("CHAPTERS", "章节"),
   autoPagePlay: new I18nValue("PLAY", "播放"),
   autoPagePause: new I18nValue("PAUSE", "暂停"),
   collapse: new I18nValue("FOLD", "收起"),
@@ -96,6 +96,7 @@ export const i18n = {
   showHelp: new I18nValue("Help", "帮助"),
   showKeyboard: new I18nValue("Keyboard", "快捷键"),
   showSiteProfiles: new I18nValue("Site Profiles", "站点配置"),
+  showStyleCustom: new I18nValue("Style", "样式"),
   letUsStar: new I18nValue("Let's Star", "点星"),
 
   // download panel

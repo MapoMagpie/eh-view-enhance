@@ -3,8 +3,6 @@ import EBUS from "../event-bus";
 import { FetchState } from "../img-fetcher";
 import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
-import { i18n } from "../utils/i18n";
-import icons from "../utils/icons";
 import q from "../utils/query-element";
 import { Elements } from "./html";
 
@@ -137,6 +135,8 @@ export class PageHelper {
       item.style.opacity = index === -1 ? "0" : "1";
       item.hidden = !notHidden.includes(item.id);
     }
-    this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!.textContent = stage === "exit" ? icons.moonViewCeremony : i18n.collapse.get();
+    const entryBTN = this.html.pageHelper.querySelector<HTMLElement>("#entry-btn")!;
+    const displayTexts = entryBTN.getAttribute("data-display-texts")!.split(",");
+    entryBTN.textContent = stage === "exit" ? displayTexts[0] : displayTexts[1];
   }
 }

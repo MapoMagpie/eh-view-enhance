@@ -9,7 +9,7 @@ function createInputElement(root: HTMLElement, anchor: HTMLElement, callback: (v
   const element = document.createElement("div");
   element.style.position = "fixed";
   element.id = "input-element";
-  element.innerHTML = `<input type="text" style="width:20em;height:2em;"><button class="ehvp-custom-btn-cover" style="border:none;height:2em;background-color:#7fef7b;margin-left:0.3em;color:white;font-weight:800;">√</button>`;
+  element.innerHTML = `<input type="text" style="width:20em;height:2em;"><button class="ehvp-custom-btn-cover" style="border:none;height:2em;background-color:#7fef7b;margin-left:0.3em;color:white;font-weight:800;">&nbsp√&nbsp</button>`;
   root.appendChild(element);
   const input = element.querySelector("input");
   const button = element.querySelector("button");

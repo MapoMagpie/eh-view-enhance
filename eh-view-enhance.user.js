@@ -6536,6 +6536,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .img-fetching img, .img-fetching canvas {
   border: 3px solid #00000000 !important;
+  z-index: 1;
 }
 .img-excluded img, .img-excluded canvas {
   border: 3px solid #777 !important;
@@ -6552,15 +6553,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   background-color: #333333b0;
 }
 .img-fetching a::after {
-	content: '';
-	position: absolute;
-	z-index: -1;
+  content: '';
+  position: absolute;
   top: 0%;
   left: 0%;
-	width: 30%;
-	height: 30%;
-	background-color: #ff0000;
-	animation: img-loading 1s linear infinite;
+  width: 30%;
+  height: 30%;
+  background-color: #ff0000;
+  animation: img-loading 1s linear infinite;
 }
 @keyframes img-loading {
 	25% {

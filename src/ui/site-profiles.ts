@@ -8,8 +8,9 @@ import relocateElement from "../utils/relocate-element";
 function createInputElement(root: HTMLElement, anchor: HTMLElement, callback: (value: string) => void) {
   const element = document.createElement("div");
   element.style.position = "fixed";
+  element.style.lineHeight = "2em";
   element.id = "input-element";
-  element.innerHTML = `<input type="text" style="width:20em;height:2em;"><button class="ehvp-custom-btn-cover" style="border:none;height:2em;background-color:#7fef7b;margin-left:0.3em;color:white;font-weight:800;">&nbsp√&nbsp</button>`;
+  element.innerHTML = `<input type="text" style="width:20em;height:2em;"><span class="ehvp-custom-btn ehvp-custom-btn-plain">&nbsp√&nbsp</button>`;
   root.appendChild(element);
   const input = element.querySelector("input");
   const button = element.querySelector("button");
@@ -21,7 +22,7 @@ function createInputElement(root: HTMLElement, anchor: HTMLElement, callback: (v
 }
 
 function createWorkURLs(workURLs: string[], container: HTMLElement, onRemove: (vaule: string) => void) {
-  const urls = workURLs.map(regex => `<div><span style="user-select: text;">${regex}</span><span class="ehvp-custom-btn-cover" data-value="${regex}" style="background-color:#fd5454;">&nbspx&nbsp</span></div>`);
+  const urls = workURLs.map(regex => `<div><span style="user-select: text;">${regex}</span><span class="ehvp-custom-btn ehvp-custom-btn-plain" data-value="${regex}">&nbspx&nbsp</span></div>`);
   container.innerHTML = urls.join("");
   Array.from(container.querySelectorAll("div > span + span")).forEach(element => {
     element.addEventListener("click", () => {
@@ -43,7 +44,7 @@ export default function createSiteProfilePanel(root: HTMLElement) {
                <div>
                  <label><span>${i18n.enable.get()}: </span><input id="${id}-enable-checkbox" ${!profile?.disable ? "checked" : ""} type="checkbox"></label>
                  <label><span>${i18n.enableAutoOpen.get()}: </span><input id="${id}-enable-auto-open-checkbox" ${!profile?.disableAutoOpen ? "checked" : ""} type="checkbox"></label>
-                 <label><span>${i18n.addRegexp.get()}: </span><span id="${id}-add-workurl" class="ehvp-custom-btn-cover" style="background-color:#7fef7b;">&nbsp+&nbsp</span></label>
+                 <label><span>${i18n.addRegexp.get()}: </span><span id="${id}-add-workurl" class="ehvp-custom-btn ehvp-custom-btn-green">&nbsp+&nbsp</span></label>
                </div>
              </div>
              <div id="${id}-workurls"></div>

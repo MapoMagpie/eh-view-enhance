@@ -13,7 +13,6 @@ export type SiteProfile = {
 }
 
 export type Config = {
-  backgroundImage: string
   /** 每行显示的数量 */
   colCount: number,
   /** 滚动换页 */
@@ -96,13 +95,13 @@ export type Config = {
   /** modify some config items by patch */
   configPatchVersion: number,
   displayText: Partial<DisplayText>,
+  customStyle: string,
 };
 
 function defaultConf(): Config {
   const screenWidth = window.screen.width;
   const colCount = screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : 5;
   return {
-    backgroundImage: `TBD`,
     colCount: colCount,
     readMode: "pagination",
     autoLoad: true,
@@ -144,6 +143,7 @@ function defaultConf(): Config {
     id: uuid(),
     configPatchVersion: 0,
     displayText: {},
+    customStyle: "",
   };
 }
 

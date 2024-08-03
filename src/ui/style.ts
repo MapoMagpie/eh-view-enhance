@@ -5,8 +5,15 @@ export function styleCSS() {
   const css = `
 .ehvp-root {
   --ehvp-background-color: #333343bb;
+  --ehvp-fvg-background: #000;
   --ehvp-border: 1px solid #2f7b10;
   --ehvp-font-color: #fff;
+  --ehvp-img-fetched: #90ffae;
+  --ehvp-img-failed: red;
+  --ehvp-img-init: #fff;
+  --ehvp-img-box-shadow: -3px 4px 4px 0px #3d243d;
+  --ehvp-panel-border: none;
+  --ehvp-panel-box-shadow: none;
   font-size: 16px;
 }
 .ehvp-root {
@@ -45,11 +52,11 @@ export function styleCSS() {
   overflow: hidden scroll;
   padding: 0.3em;
   box-sizing: border-box;
+  background: var(--ehvp-fvg-background);
 }
 .ehvp-root input, .ehvp-root select {
-  color: #f1f1f1;
-  background-color: #34353b;
-  color-scheme: dark;
+  color: var(--ehvp-font-color);
+  background-color: var(--ehvp-background-color);
   border: 1px solid #000000;
   border-radius: 4px;
   margin: 0px;
@@ -75,8 +82,9 @@ export function styleCSS() {
   position: relative;
   width: 100%;
   height: auto;
-  border: 3px solid #fff;
+  border: 3px solid var(--ehvp-img-init);
   box-sizing: border-box;
+  box-shadow: var(--ehvp-img-box-shadow);
 }
 .img-node:hover .ehvp-chapter-description {
   color: #ffe7f5;
@@ -105,10 +113,10 @@ export function styleCSS() {
   color: #8a0000;
 }
 .img-fetched img, .img-fetched canvas {
-  border: 3px solid #90ffae !important;
+  border: 3px solid var(--ehvp-img-fetched) !important;
 }
 .img-fetch-failed img, .img-fetch-failed canvas {
-  border: 3px solid red !important;
+  border: 3px solid var(--ehvp-img-failed) !important;
 }
 .img-fetching img, .img-fetching canvas {
   border: 3px solid #00000000 !important;
@@ -190,10 +198,10 @@ export function styleCSS() {
 }
 .p-panel {
   z-index: 2012 !important;
-  background-color: #333343aa;
+  background-color: var(--ehvp-background-color);
   box-sizing: border-box;
   position: fixed;
-  color: white;
+  color: var(--ehvp-font-color);
   overflow: auto scroll;
   padding: 3px;
   scrollbar-width: none;
@@ -201,6 +209,8 @@ export function styleCSS() {
   font-weight: 800;
   width: 24em;
   height: 32em;
+  border: var(--ehvp-panel-border);
+  box-shadow: var(--ehvp-panel-box-shadow);
 }
 .p-panel::-webkit-scrollbar {
   display: none;
@@ -217,6 +227,7 @@ export function styleCSS() {
 .p-collapse {
   height: 0px !important;
   padding: 0px !important;
+  border: none;
 }
 .b-main {
   display: flex;
@@ -251,8 +262,8 @@ export function styleCSS() {
   width: 1em;
 }
 .b-main-input {
-  color: black;
-  background-color: #ffffffa0;
+  color: var(--ehvp-font-color);
+  background-color: var(--ehvp-background-color);
   border-radius: 6px;
   display: inline-block;
   text-align: center;
@@ -296,7 +307,7 @@ export function styleCSS() {
   color: var(--ehvp-font-color);
   cursor: pointer;
   font-weight: 800;
-  background-color: rgb(81, 81, 81);
+  background-color: var(--ehvp-background-color);
   vertical-align: middle;
   width: 1.5em;
   height: 1.5em;
@@ -439,7 +450,7 @@ export function styleCSS() {
   min-height: 50vh;
   max-width: 80vw;
   max-height: 80vh;
-  background-color: #333343aa;
+  background-color: var(--ehvp-background-color);
   border: 1px solid #000000;
   display: flex;
   flex-direction: column;
@@ -505,7 +516,7 @@ export function styleCSS() {
 .ehvp-custom-panel-item-value button:hover {
   background-color: #ffff00;
 }
-.ehvp-custom-panel-item-add-btn, .ehvp-custom-panel-item-input, .ehvp-custom-panel-item-span {
+.ehvp-custom-panel-item-input, .ehvp-custom-panel-item-span {
   font-size: 1.1em;
   font-weight: 800;
   background-color: #7fef7b;
@@ -684,12 +695,26 @@ export function styleCSS() {
   height: 0.1em;
   background: red;
 }
-.ehvp-custom-btn-cover:hover {
+.ehvp-custom-btn {
+  border: 1px solid #000;
+  font-weight: 700;
+  color: #000;
+  background-color: #ffffff80;
+}
+.ehvp-custom-btn-plain {
+  background-color: #aaa;
+}
+.ehvp-custom-btn-green {
+  background-color: #7fef7b;
+}
+.ehvp-custom-btn:hover {
+  border: 1px solid #fff;
+  color: #333;
+  background-color: #ffffff90;
   filter: brightness(150%);
 }
-.ehvp-custom-btn-cover:active {
-  background-color: white !important;
-  color: black;
+.ehvp-custom-btn:active {
+  color: #ccc;
 }
 .ehvp-custom-panel-list-item-title {
   display: flex;

@@ -97,6 +97,7 @@ export const i18n = {
   showKeyboard: new I18nValue("Keyboard", "快捷键"),
   showSiteProfiles: new I18nValue("Site Profiles", "站点配置"),
   showStyleCustom: new I18nValue("Style", "样式"),
+  controlBarStyleTooltip: new I18nValue("Click on an item to modify its display text, such as emoji or personalized text. Changes will take effect after restarting.", "点击某项后修改其显示文本，比如emoji或个性文字，也许svg，重启后生效。"),
   letUsStar: new I18nValue("Let's Star", "点星"),
 
   // download panel

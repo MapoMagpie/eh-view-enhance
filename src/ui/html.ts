@@ -84,7 +84,11 @@ export function createHTML() {
   root.innerHTML = HTML_STRINGS;
   const style = document.createElement("style");
   style.innerHTML = styleCSS();
+  const styleCustom = document.createElement("style");
+  styleCustom.id = "ehvp-style-custom";
+  styleCustom.innerHTML = conf.customStyle;
   shadowRoot.append(style);
+  root.append(styleCustom);
   shadowRoot.append(root);
   return {
     root,

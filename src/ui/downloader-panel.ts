@@ -146,12 +146,12 @@ ${chapters.map((c, i) => `<div><label>
       container.querySelectorAll(".ehvp-custom-panel-item-value").forEach(e => e.remove());
       const tamplate = document.createElement("div");
       rangeList.forEach(range => {
-        const str = `<span class="ehvp-custom-panel-item-value" data-id="${range.id}"><span >${range.toString()}</span><button>x</button></span>`;
+        const str = `<span class="ehvp-custom-panel-item-value" data-id="${range.id}"><span >${range.toString()}</span><span class="ehvp-custom-btn ehvp-custom-btn-plain" style="padding:0;border:none;">&nbspx&nbsp</span></span>`;
         tamplate.innerHTML = str;
         const element = tamplate.firstElementChild as HTMLElement;
         element.style.backgroundColor = range.positive ? "#7fef7b" : "#ffa975";
         container.appendChild(element);
-        element.querySelector("button")!.addEventListener("click", (event) => {
+        element.querySelector(".ehvp-custom-btn")!.addEventListener("click", (event) => {
           const parent = (event.target as HTMLElement).parentElement!;
           onRemove(parent.getAttribute("data-id")!);
           parent.remove();
@@ -253,22 +253,22 @@ ${chapters.map((c, i) => `<div><label>
         </div>
         <div id="download-cherry-pick" class="download-cherry-pick" hidden>
           <div class="ehvp-custom-panel-item-values" style="text-align: start;">
-            <div style="margin-bottom: 1rem;align-items: center;display: flex; justify-content: space-around;">
+            <div style="margin-bottom: 1rem;display: flex;">
               <input type="text" class="ehvp-custom-panel-item-input" id="download-cherry-pick-input" placeholder="1, 2-3" style="text-align: start; width: 50%; height: 1.3rem; border-radius: 0px;" />
-              <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-add">Pick</button>
-              <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-exclude" style="background-color: #ffa975;">Exclude</button>
-              <button class="ehvp-custom-panel-item-add-btn" id="download-cherry-pick-btn-clear" style="background-color: #c3ffd5;">Clear</button>
+              <span class="ehvp-custom-btn ehvp-custom-btn-green" id="download-cherry-pick-btn-add">Pick</span>
+              <span class="ehvp-custom-btn ehvp-custom-btn-plain" id="download-cherry-pick-btn-exclude">Exclude</span>
+              <span class="ehvp-custom-btn ehvp-custom-btn-plain" id="download-cherry-pick-btn-clear">Clear</span>
             </div>
             <div style="margin-bottom: 1rem;">
               <div style="margin-bottom: 0.2rem">
-                <span class="ehvp-custom-panel-item-span" id="download-cherry-pick-btn-range-after" data-range="1-1">1-1</span><button
-                 class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="1">pick</button><button
-                 class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="2" style="background-color: #ffa975;">exclude</button>
+                <span class="ehvp-custom-panel-item-span" id="download-cherry-pick-btn-range-after" data-range="1-1">1-1</span><span
+                 class="ehvp-custom-btn ehvp-custom-btn-green download-cherry-pick-follow-btn" data-sibling-step="1">pick</span><span
+                 class="ehvp-custom-btn ehvp-custom-btn-plain download-cherry-pick-follow-btn" data-sibling-step="2">exclude</span>
               </div>
               <div>
-                <span class="ehvp-custom-panel-item-span" id="download-cherry-pick-btn-range-before" data-range="1-1">1-1</span><button
-                class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="1">pick</button><button
-                class="ehvp-custom-panel-item-add-btn download-cherry-pick-follow-btn" data-sibling-step="2" style="background-color: #ffa975;">exclude</button>
+                <span class="ehvp-custom-panel-item-span" id="download-cherry-pick-btn-range-before" data-range="1-1">1-1</span><span
+                class="ehvp-custom-btn ehvp-custom-btn-green download-cherry-pick-follow-btn" data-sibling-step="1">pick</span><span
+                class="ehvp-custom-btn ehvp-custom-btn-plain download-cherry-pick-follow-btn" data-sibling-step="2">exclude</span>
               </div>
             </div>
           </div>

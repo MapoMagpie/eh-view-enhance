@@ -29,6 +29,7 @@ const keyboardCustom: KeyboardCustom = {
     "scale-image-decrease": new I18nValue("Decrease Image Scale", "缩小图片"),
     "scroll-image-up": new I18nValue("Scroll Image Up (Please Keep Default Keys)", "向上滚动图片 (请保留默认按键)"),
     "scroll-image-down": new I18nValue("Scroll Image Down (Please Keep Default Keys)", "向下滚动图片 (请保留默认按键)"),
+    "toggle-auto-play": new I18nValue("Toggle Auto Play", "切换自动播放"),
   },
   inFullViewGrid: {
     "open-big-image-mode": new I18nValue("Enter Big Image Mode", "进入大图阅读模式"),
@@ -37,6 +38,7 @@ const keyboardCustom: KeyboardCustom = {
     "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
     "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量"),
     "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择"),
+    "toggle-auto-play": new I18nValue("Toggle Auto Play", "切换自动播放"),
   },
 }
 export const i18n = {

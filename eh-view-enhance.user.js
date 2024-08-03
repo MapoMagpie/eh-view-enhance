@@ -134,7 +134,8 @@
       "scale-image-increase": new I18nValue("Increase Image Scale", "放大图片"),
       "scale-image-decrease": new I18nValue("Decrease Image Scale", "缩小图片"),
       "scroll-image-up": new I18nValue("Scroll Image Up (Please Keep Default Keys)", "向上滚动图片 (请保留默认按键)"),
-      "scroll-image-down": new I18nValue("Scroll Image Down (Please Keep Default Keys)", "向下滚动图片 (请保留默认按键)")
+      "scroll-image-down": new I18nValue("Scroll Image Down (Please Keep Default Keys)", "向下滚动图片 (请保留默认按键)"),
+      "toggle-auto-play": new I18nValue("Toggle Auto Play", "切换自动播放")
     },
     inFullViewGrid: {
       "open-big-image-mode": new I18nValue("Enter Big Image Mode", "进入大图阅读模式"),
@@ -142,7 +143,8 @@
       "exit-full-view-grid": new I18nValue("Exit Read Mode", "退出阅读模式"),
       "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
       "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量"),
-      "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择")
+      "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择"),
+      "toggle-auto-play": new I18nValue("Toggle Auto Play", "切换自动播放")
     }
   };
   const i18n = {
@@ -6075,6 +6077,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             }
           },
           true
+        ),
+        "toggle-auto-play": new KeyboardDesc(
+          ["p"],
+          () => EBUS.emit("toggle-auto-play")
         )
       };
       const inFullViewGrid = {
@@ -6093,11 +6099,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           }
         ),
         "pause-auto-load-temporarily": new KeyboardDesc(
-          ["p"],
+          ["Ctrl+p"],
           () => {
             IL.autoLoad = !IL.autoLoad;
             if (IL.autoLoad) {
               IL.abort(IFQ.currIndex, conf.restartIdleLoader / 3);
+              EBUS.emit("notify-message", "info", "Auto load Restarted", 3 * 1e3);
+            } else {
+              EBUS.emit("notify-message", "info", "Auto load Pause", 3 * 1e3);
             }
           }
         ),
@@ -6116,6 +6125,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         "back-chapters-selection": new KeyboardDesc(
           ["b"],
           () => EBUS.emit("back-chapters-selection")
+        ),
+        "toggle-auto-play": new KeyboardDesc(
+          ["p"],
+          () => EBUS.emit("toggle-auto-play")
         )
       };
       const inMain = {
@@ -8724,6 +8737,13 @@ ${chapters.map((c, i) => `<div><label>
       };
       EBUS.subscribe("bifm-on-hidden", () => this.stop());
       EBUS.subscribe("bifm-on-show", () => conf.autoPlay && this.start(this.lockVer));
+      EBUS.subscribe("toggle-auto-play", () => {
+        if (this.status === "stop") {
+          this.start(this.lockVer);
+        } else {
+          this.stop();
+        }
+      });
       this.initPlayButton();
     }
     initPlayButton() {
@@ -8838,7 +8858,7 @@ ${chapters.map((c, i) => `<div><label>
         return;
       BIFM.show(IFQ[index]);
     });
-    EBUS.subscribe("notify-message", (level, msg) => showMessage(HTML.messageBox, level, msg));
+    EBUS.subscribe("notify-message", (level, msg, duration) => showMessage(HTML.messageBox, level, msg, duration));
     PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
     PF.afterInit = () => {
       HTML.pageLoading.style.display = "none";

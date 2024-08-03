@@ -18,8 +18,8 @@ import { createStyleCustomPanel } from "./style-custom-panel";
 
 export type Events = ReturnType<typeof initEvents>;
 
-export type KeyboardInBigImageModeId = "step-image-prev" | "step-image-next" | "exit-big-image-mode" | "step-to-first-image" | "step-to-last-image" | "scale-image-increase" | "scale-image-decrease" | "scroll-image-up" | "scroll-image-down";
-export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "back-chapters-selection";
+export type KeyboardInBigImageModeId = "step-image-prev" | "step-image-next" | "exit-big-image-mode" | "step-to-first-image" | "step-to-last-image" | "scale-image-increase" | "scale-image-decrease" | "scroll-image-up" | "scroll-image-down" | "toggle-auto-play";
+export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "back-chapters-selection" | "toggle-auto-play";
 export type KeyboardInMainId = "open-full-view-grid";
 export type KeyboardEvents = {
   inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
@@ -290,6 +290,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
           }
         }, true
       ),
+      "toggle-auto-play": new KeyboardDesc(
+        ["p"],
+        () => EBUS.emit("toggle-auto-play")
+      ),
     };
     const inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc> = {
       "open-big-image-mode": new KeyboardDesc(
@@ -305,11 +309,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         }
       ),
       "pause-auto-load-temporarily": new KeyboardDesc(
-        ["p"],
+        ["Ctrl+p"],
         () => {
           IL.autoLoad = !IL.autoLoad;
           if (IL.autoLoad) {
             IL.abort(IFQ.currIndex, conf.restartIdleLoader / 3);
+            EBUS.emit("notify-message", "info", "Auto load Restarted", 3 * 1000);
+          } else {
+            EBUS.emit("notify-message", "info", "Auto load Pause", 3 * 1000);
           }
         }
       ),
@@ -328,6 +335,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       "back-chapters-selection": new KeyboardDesc(
         ["b"],
         () => EBUS.emit("back-chapters-selection")
+      ),
+      "toggle-auto-play": new KeyboardDesc(
+        ["p"],
+        () => EBUS.emit("toggle-auto-play")
       ),
     };
     const inMain: Record<KeyboardInMainId, KeyboardDesc> = {

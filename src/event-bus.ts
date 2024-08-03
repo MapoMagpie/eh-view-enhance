@@ -50,13 +50,14 @@ export interface Events {
   "ifq-on-finished-report": (index: number, queue: IMGFetcherQueue) => void;
   "pf-try-extend": () => void;
   "downloader-canvas-resize": () => void;
-  "notify-message": (level: "error" | "info", message: string) => void;
+  "notify-message": (level: "error" | "info", message: string, duration?: number) => void;
   "cherry-pick-changed": (chapaterIndex: number, cherryPick: CherryPick) => void;
   "add-cherry-pick-range": (chapterIndex: number, index: number, positive: boolean, shiftKey: boolean) => void;
   "imf-check-picked": (chapterIndex: number, index: number) => boolean;
   "back-chapters-selection": () => void;
   "pf-init": (cb: () => void) => void;
   "toggle-main-view": (open?: boolean) => void;
+  "toggle-auto-play": () => void;
 }
 
 export type EventID = keyof Events;

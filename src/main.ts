@@ -39,7 +39,7 @@ function main(MATCHER: Matcher, autoOpen: boolean): DestoryFunc {
     if (IFQ.chapterIndex !== BIFM.chapterIndex) return;
     BIFM.show(IFQ[index]);
   });
-  EBUS.subscribe("notify-message", (level, msg) => showMessage(HTML.messageBox, level, msg));
+  EBUS.subscribe("notify-message", (level, msg, duration) => showMessage(HTML.messageBox, level, msg, duration));
 
   PF.beforeInit = () => HTML.pageLoading.style.display = "flex";
   PF.afterInit = () => {

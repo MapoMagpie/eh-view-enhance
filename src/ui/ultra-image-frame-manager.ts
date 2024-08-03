@@ -696,6 +696,13 @@ class AutoPage {
     };
     EBUS.subscribe("bifm-on-hidden", () => this.stop());
     EBUS.subscribe("bifm-on-show", () => conf.autoPlay && this.start(this.lockVer));
+    EBUS.subscribe("toggle-auto-play", () => {
+      if (this.status === "stop") {
+        this.start(this.lockVer);
+      } else {
+        this.stop();
+      }
+    });
     this.initPlayButton();
   }
 

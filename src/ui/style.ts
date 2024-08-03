@@ -340,6 +340,7 @@ export function styleCSS() {
   border-left: 3px solid #00000000;
   border-right: 3px solid #00000000;
   box-sizing: border-box;
+  z-index: 1;
 }
 .download-bar > div {
   background-color: #f0fff0;

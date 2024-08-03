@@ -38,7 +38,6 @@ export class IMGFetcher implements VisualNode {
   contentType?: string;
   blobSrc?: string;
   downloadState: DownloadState;
-  downloadBar?: HTMLElement;
   timeoutId?: number;
   matcher: Matcher;
   chapterIndex: number;

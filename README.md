@@ -40,6 +40,10 @@ Currently supports:
 - [Steam Screenshots](https://steamcommunity.com/id/some/screenshots)
 - [Twitter User Media](https://twitter.com/NASA/media)
 - [wnacg.com](https://www.wnacg.com)
+- [hentainexus.com](https://hentainexus.com)
+- [koharu.to](https://koharu.to)
+- [manhuagui.com](https://www.manhuagui.com/comic/7580)
+- [mangacopy.com](https://www.mangacopy.com)
 
 You can request support for a site here: [https://github.com/MapoMagpie/eh-view-enhance/issues](https://github.com/MapoMagpie/eh-view-enhance/issues)
 

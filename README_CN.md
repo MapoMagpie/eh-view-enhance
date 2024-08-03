@@ -40,6 +40,10 @@
 - [steam截图](https://steamcommunity.com/id/some/screenshots)
 - [twitter用户媒体](https://twitter.com/NASA/media)
 - [wnacg.com](https://www.wnacg.com)
+- [hentainexus.com](https://hentainexus.com)
+- [koharu.to](https://koharu.to)
+- [漫画柜](https://www.manhuagui.com)
+- [拷贝漫画](https://www.mangacopy.com)
 
 你可以发起对某站点的支持请求：[https://github.com/MapoMagpie/eh-view-enhance/issues](https://github.com/MapoMagpie/eh-view-enhance/issues)
 

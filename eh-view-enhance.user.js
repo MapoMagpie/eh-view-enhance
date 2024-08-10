@@ -825,7 +825,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
               }
               this.blobSrc = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.onloaded(this.blobSrc, this.contentType);
-              this.node.render();
+              this.node.render(() => this.rendered = false);
               this.stage = 3 /* DONE */;
             case 3 /* DONE */:
               return null;
@@ -863,8 +863,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const shouldChangeStyle = picked !== this.node.picked;
       this.node.picked = picked;
       if (!this.rendered) {
-        this.node.render();
         this.rendered = true;
+        this.node.render(() => this.rendered = false);
         this.node.changeStyle(this.stage === 3 /* DONE */ ? "fetched" : void 0);
       } else if (shouldChangeStyle) {
         let status;
@@ -2124,18 +2124,21 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           this.onclick(event);
         });
       }
-      this.imgElement.onload = () => this.resize();
       return this.root;
     }
-    resize() {
+    resize(onfailed) {
       if (!this.root || !this.imgElement || !this.canvasElement)
-        return;
+        return onfailed("undefined elements");
       if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL)
-        return;
+        return onfailed("empty or default src");
+      if (this.root.offsetWidth <= 1)
+        return onfailed("element too small");
+      this.imgElement.onload = null;
+      this.imgElement.onerror = null;
       const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
       const oldRatio = this.canvasElement.height / this.canvasElement.width;
       if (this.canvasSized) {
-        this.canvasSized = Math.abs(newRatio - oldRatio) < 1.1;
+        this.canvasSized = this.canvasElement.height + this.canvasElement.width > 100 && Math.abs(newRatio - oldRatio) < 1.1;
       }
       if (!this.canvasSized) {
         this.canvasElement.width = this.root.offsetWidth;
@@ -2149,9 +2152,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         resizing(this.imgElement, this.canvasElement).then(() => this.imgElement.src = "").catch(() => this.imgElement.src = this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height) || "");
       }
     }
-    render() {
+    render(onfailed) {
       if (!this.imgElement)
-        return;
+        return onfailed("element undefined");
       let justThumbnail = !this.blobSrc;
       if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
         const tip = OVERLAY_TIP.cloneNode(true);
@@ -2159,17 +2162,19 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         this.root?.appendChild(tip);
         justThumbnail = true;
       }
+      this.imgElement.onload = () => this.resize(onfailed);
+      this.imgElement.onerror = () => onfailed("img load error");
       if (justThumbnail) {
         const delaySRC = this.delaySRC;
         this.delaySRC = void 0;
         if (delaySRC) {
-          delaySRC.then((src) => (this.thumbnailSrc = src) && this.render());
+          delaySRC.then((src) => (this.thumbnailSrc = src) && this.render(onfailed)).catch(onfailed);
         } else {
           this.imgElement.src = this.thumbnailSrc || this.blobSrc || DEFAULT_THUMBNAIL;
         }
-        return;
+      } else {
+        this.imgElement.src = this.blobSrc || this.thumbnailSrc || DEFAULT_THUMBNAIL;
       }
-      this.imgElement.src = this.blobSrc || this.thumbnailSrc || DEFAULT_THUMBNAIL;
     }
     unrender() {
       if (!this.imgElement)

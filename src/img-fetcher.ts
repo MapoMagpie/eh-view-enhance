@@ -128,7 +128,7 @@ export class IMGFetcher implements VisualNode {
             }
             this.blobSrc = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
             this.node.onloaded(this.blobSrc, this.contentType);
-            this.node.render();
+            this.node.render(() => this.rendered = false);
             this.stage = FetchState.DONE;
           case FetchState.DONE:
             return null;
@@ -167,8 +167,9 @@ export class IMGFetcher implements VisualNode {
     const shouldChangeStyle = picked !== this.node.picked;
     this.node.picked = picked;
     if (!this.rendered) {
-      this.node.render();
+      // evLog("info", `img node [${this.index}] rendered`);
       this.rendered = true;
+      this.node.render(() => this.rendered = false);
       this.node.changeStyle(this.stage === FetchState.DONE ? "fetched" : undefined);
     } else if (shouldChangeStyle) {
       let status: "fetching" | "fetched" | "failed" | "init" | undefined;

@@ -64,18 +64,20 @@ export default class ImageNode {
         this.onclick!(event);
       });
     }
-    this.imgElement.onload = () => this.resize();
     return this.root;
   }
 
-  resize() {
-    if (!this.root || !this.imgElement || !this.canvasElement) return;
-    if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL) return;
+  resize(onfailed: (reason: string) => void) {
+    if (!this.root || !this.imgElement || !this.canvasElement) return onfailed("undefined elements");
+    if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL) return onfailed("empty or default src");
+    if (this.root.offsetWidth <= 1) return onfailed("element too small");
+    this.imgElement.onload = null;
+    this.imgElement.onerror = null;
     const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
     const oldRatio = this.canvasElement.height / this.canvasElement.width;
     if (this.canvasSized) {
       // if newRatio is less than (or more than) the oldRatio by 10%, we don't need to resize
-      this.canvasSized = Math.abs(newRatio - oldRatio) < 1.1;
+      this.canvasSized = (this.canvasElement.height + this.canvasElement.width) > 100 && Math.abs(newRatio - oldRatio) < 1.1;
     }
     // TODO: maybe limit the ratio of the image, if it's too large
     if (!this.canvasSized) {
@@ -94,8 +96,8 @@ export default class ImageNode {
     }
   }
 
-  render() {
-    if (!this.imgElement) return;
+  render(onfailed: (reason: string) => void) {
+    if (!this.imgElement) return onfailed("element undefined");
     let justThumbnail = !this.blobSrc;
     if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
       const tip = OVERLAY_TIP.cloneNode(true);
@@ -103,17 +105,19 @@ export default class ImageNode {
       this.root?.appendChild(tip);
       justThumbnail = true;
     }
+    this.imgElement.onload = () => this.resize(onfailed);
+    this.imgElement.onerror = () => onfailed("img load error");
     if (justThumbnail) {
       const delaySRC = this.delaySRC;
       this.delaySRC = undefined;
       if (delaySRC) {
-        delaySRC.then(src => (this.thumbnailSrc = src) && this.render());
+        delaySRC.then(src => (this.thumbnailSrc = src) && this.render(onfailed)).catch(onfailed);
       } else { // normally set src
         this.imgElement.src = this.thumbnailSrc || this.blobSrc || DEFAULT_THUMBNAIL;
       }
-      return;
+    } else {
+      this.imgElement.src = this.blobSrc || this.thumbnailSrc || DEFAULT_THUMBNAIL;
     }
-    this.imgElement.src = this.blobSrc || this.thumbnailSrc || DEFAULT_THUMBNAIL;
   }
 
   unrender() {

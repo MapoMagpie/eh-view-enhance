@@ -104,7 +104,7 @@ export function styleCSS() {
   width: calc(100% - 6px);
   font-weight: 600;
   min-height: 3em;
-  font-size: 1.2em;
+  font-size: 0.8em;
   padding: 0.5em;
   box-sizing: border-box;
   line-height: 1.3em;

@@ -745,6 +745,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     matcher;
     chapterIndex;
     randomID;
+    failedReason;
     constructor(index, root, matcher, chapterIndex) {
       this.index = index;
       this.node = root;
@@ -780,8 +781,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         await this.fetchImage();
         this.node.changeStyle("fetched");
         EBUS.emit("imf-on-finished", index, true, this);
+        this.failedReason = void 0;
       } catch (error) {
-        this.node.changeStyle("failed", error.toString());
+        this.failedReason = error.toString();
+        this.node.changeStyle("failed", this.failedReason);
         evLog("error", `IMG-FETCHER ERROR:`, error);
         this.stage = 0 /* FAILED */;
         EBUS.emit("imf-on-finished", index, false, this);
@@ -865,7 +868,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (!this.rendered) {
         this.rendered = true;
         this.node.render(() => this.rendered = false);
-        this.node.changeStyle(this.stage === 3 /* DONE */ ? "fetched" : void 0);
+        this.node.changeStyle(this.stage === 3 /* DONE */ ? "fetched" : void 0, this.failedReason);
       } else if (shouldChangeStyle) {
         let status;
         switch (this.stage) {
@@ -882,7 +885,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
             status = "fetched";
             break;
         }
-        this.node.changeStyle(status);
+        this.node.changeStyle(status, this.failedReason);
       }
     }
     isRender() {
@@ -6524,7 +6527,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   width: calc(100% - 6px);
   font-weight: 600;
   min-height: 3em;
-  font-size: 1.2em;
+  font-size: 0.8em;
   padding: 0.5em;
   box-sizing: border-box;
   line-height: 1.3em;

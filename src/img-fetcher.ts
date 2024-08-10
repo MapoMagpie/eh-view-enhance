@@ -42,6 +42,7 @@ export class IMGFetcher implements VisualNode {
   matcher: Matcher;
   chapterIndex: number;
   randomID: string;
+  failedReason?: string;
 
   constructor(index: number, root: ImageNode, matcher: Matcher, chapterIndex: number) {
     this.index = index;
@@ -80,8 +81,10 @@ export class IMGFetcher implements VisualNode {
       await this.fetchImage();
       this.node.changeStyle("fetched");
       EBUS.emit("imf-on-finished", index, true, this);
+      this.failedReason = undefined;
     } catch (error) {
-      this.node.changeStyle("failed", (error as Error).toString());
+      this.failedReason = (error as Error).toString();
+      this.node.changeStyle("failed", this.failedReason);
       evLog("error", `IMG-FETCHER ERROR:`, error);
       this.stage = FetchState.FAILED;
       EBUS.emit("imf-on-finished", index, false, this);
@@ -170,7 +173,7 @@ export class IMGFetcher implements VisualNode {
       // evLog("info", `img node [${this.index}] rendered`);
       this.rendered = true;
       this.node.render(() => this.rendered = false);
-      this.node.changeStyle(this.stage === FetchState.DONE ? "fetched" : undefined);
+      this.node.changeStyle(this.stage === FetchState.DONE ? "fetched" : undefined, this.failedReason);
     } else if (shouldChangeStyle) {
       let status: "fetching" | "fetched" | "failed" | "init" | undefined;
       switch (this.stage) {
@@ -187,7 +190,7 @@ export class IMGFetcher implements VisualNode {
           status = "fetched"
           break;
       }
-      this.node.changeStyle(status);
+      this.node.changeStyle(status, this.failedReason);
     }
   }
 

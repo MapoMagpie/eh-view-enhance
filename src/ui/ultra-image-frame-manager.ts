@@ -2,7 +2,6 @@ import { conf, saveConf, Oriented } from "../config";
 import { FetchState, IMGFetcher } from "../img-fetcher";
 import { Debouncer } from "../utils/debouncer";
 import { sleep } from "../utils/sleep";
-import Hammer from "hammerjs";
 import { Elements } from "./html";
 import q from "../utils/query-element";
 import { VideoControl } from "./video-control";
@@ -10,13 +9,13 @@ import EBUS from "../event-bus";
 import { Chapter } from "../page-fetcher";
 import queryCSSRules from "../utils/query-cssrules";
 import { Scroller } from "../utils/scroller";
+import { TouchManager } from "../utils/touch";
 
 type MediaElement = HTMLImageElement | HTMLVideoElement;
 
 export class BigImageFrameManager {
   frame: HTMLElement;
   lockInit: boolean;
-  lastMouse?: { x: number, y: number }
   fragment: DocumentFragment;
   // image decode will take a while, so cache it to fragment
   elements: { next: MediaElement[], curr: MediaElement[], prev: MediaElement[] } = { next: [], curr: [], prev: [] };
@@ -33,6 +32,8 @@ export class BigImageFrameManager {
   getChapter: (index: number) => Chapter;
   loadingHelper: HTMLElement;
   currLoadingState: Map<number, number> = new Map();
+  scroller: Scroller;
+  lastMouse?: { x: number, y: number };
 
   constructor(HTML: Elements, getChapter: (index: number) => Chapter) {
     this.html = HTML;
@@ -42,10 +43,9 @@ export class BigImageFrameManager {
     this.throttler = new Debouncer("throttle");
     this.lockInit = false;
     this.getChapter = getChapter;
-    this.resetStickyMouse();
+    this.scroller = new Scroller(this.frame);
     this.initFrame();
     this.initImgScaleStyle();
-    this.initHammer();
     EBUS.subscribe("pf-change-chapter", index => this.chapterIndex = Math.max(0, index));
     EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
     EBUS.subscribe("imf-on-finished", (index, success, imf) => {
@@ -96,53 +96,83 @@ export class BigImageFrameManager {
     });
 
     // enable auto page
-    new AutoPage(this, HTML.autoPageBTN);
-  }
-
-  initHammer() {
-    this.hammer = new Hammer(this.frame, {
-      // touchAction: "auto",
-      recognizers: [
-        [Hammer.Swipe, { direction: Hammer.DIRECTION_ALL, enable: false }],
-      ]
-    });
-    this.hammer.on("swipe", (ev) => {
-      ev.preventDefault();
-      if (conf.readMode === "pagination") {
-        switch (ev.direction) {
-          case Hammer.DIRECTION_LEFT:
-            this.stepNext(conf.reversePages ? "prev" : "next");
-            break;
-          case Hammer.DIRECTION_UP:
-            this.stepNext("next");
-            break;
-          case Hammer.DIRECTION_RIGHT:
-            this.stepNext(conf.reversePages ? "next" : "prev");
-            break;
-          case Hammer.DIRECTION_DOWN:
-            this.stepNext("prev");
-            break;
-        }
-      }
-    });
-  }
-
-  resetStickyMouse() {
-    this.lastMouse = undefined;
+    new AutoPage(this, this.scroller, HTML.autoPageBTN);
   }
 
   initFrame() {
     this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
-    // this.frame.addEventListener("scroll", (event) => this.onScroll(event)); // move to show()
-    this.frame.addEventListener("click", (event) => this.hidden(event));
     this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
     const debouncer = new Debouncer("throttle");
-    this.frame.addEventListener("mousemove", event => {
+    // stick mouse
+    this.frame.addEventListener("mousemove", (mmevt) => {
+      if (conf.stickyMouse === "disable" || conf.readMode !== "pagination") return;
       debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
-        if (this.lastMouse) this.stickyMouse(event, this.lastMouse);
-        this.lastMouse = { x: event.clientX, y: event.clientY };
+        if (this.lastMouse) {
+          stickyMouse(this.frame, mmevt, this.lastMouse, conf.stickyMouse === "enable");
+        }
+        this.lastMouse = { x: mmevt.clientX, y: mmevt.clientY };
       }, 5);
     });
+    // click
+    this.frame.addEventListener("mousedown", (mdevt) => {
+      if (mdevt.button !== 0) return;
+      let moved = false;
+      let last = { x: mdevt.clientX, y: mdevt.clientY };
+      const abort = new AbortController();
+      // mouseup 
+      this.frame.addEventListener("mouseup", (muevt) => {
+        abort.abort();
+        if (!moved) {
+          this.hidden(muevt);
+        } else if (conf.imgScale === 100) {
+          this.scaleBigImages(1, 0, conf.imgScale, false);
+        }
+      }, { once: true });
+      // mousemove
+      if (conf.readMode !== "pagination" || conf.stickyMouse !== "disable") return;
+      this.frame.addEventListener("mousemove", (mmevt) => {
+        if (!moved && conf.imgScale === 100) {
+          this.scaleBigImages(1, 0, 150, false);
+        }
+        moved = true;
+        debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
+          stickyMouse(this.frame, mmevt, last, true);
+          last = { x: mmevt.clientX, y: mmevt.clientY };
+        }, 5);
+      }, { signal: abort.signal });
+    });
+    // touch
+    new TouchManager(this.frame, {
+      swipe: (direction) => {
+        if (conf.readMode === "continuous") return;
+        let oriented: Oriented = (() => {
+          switch (direction) {
+            case "L":
+              return conf.reversePages ? "next" : "prev";
+            case "R":
+              return conf.reversePages ? "prev" : "next";
+            case "U":
+              return "next";
+            case "D":
+              return "prev";
+          }
+        })();
+        if (conf.imgScale === 100) {
+          this.stepNext(oriented);
+        } else if (this.isReachedBoundary(oriented, direction === "L" || direction === "R") && !this.tryPreventStep()) {
+          this.stepNext(oriented);
+        }
+      },
+    });
+  }
+
+  scroll(y: number) {
+    this.scroller.step = conf.scrollingSpeed;
+    this.scroller.scroll(y);
+  }
+
+  scrollStop() {
+    this.scroller.scrolling = false;
   }
 
   hidden(event?: MouseEvent) {
@@ -168,7 +198,6 @@ export class BigImageFrameManager {
 
   setNow(imf: IMGFetcher, oriented?: Oriented) {
     if (this.visible) {
-      this.resetStickyMouse();
       this.initElements(imf, oriented);
     } else {
       const queue = this.getChapter(this.chapterIndex).queue;
@@ -176,6 +205,7 @@ export class BigImageFrameManager {
       if (index === -1) return;
       EBUS.emit("ifq-do", index, imf, oriented || "next");
     }
+    this.lastMouse = undefined;
     this.currLoadingState.clear();
     this.flushLoadingHelper();
   }
@@ -360,12 +390,21 @@ export class BigImageFrameManager {
     }
   }
 
-  isReachedBoundary(oriented: Oriented): boolean {
-    if (oriented === "prev") {
-      return this.frame.scrollTop <= 0;
-    }
-    if (oriented === "next") {
-      return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight;
+  isReachedBoundary(oriented: Oriented, side: boolean = false): boolean {
+    if (!side) {
+      if (oriented === "prev") {
+        return this.frame.scrollTop <= 0;
+      }
+      if (oriented === "next") {
+        return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight;
+      }
+    } else {
+      if (oriented === "prev") {
+        return this.frame.scrollLeft <= 0;
+      }
+      if (oriented === "next") {
+        return this.frame.scrollLeft >= this.frame.scrollWidth - this.frame.offsetWidth;
+      }
     }
     return false;
   }
@@ -503,6 +542,7 @@ export class BigImageFrameManager {
       const vid = document.createElement("video");
       vid.classList.add("bifm-img");
       vid.classList.add("bifm-vid");
+      vid.draggable = false;
       vid.setAttribute("d-index", index.toString());
       vid.setAttribute("d-random-id", imf.randomID);
       vid.onloadeddata = () => {
@@ -517,6 +557,7 @@ export class BigImageFrameManager {
       const img = document.createElement("img");
       img.decoding = "sync";
       img.classList.add("bifm-img");
+      img.draggable = false;
       // img.addEventListener("click", () => this.hidden());
       img.setAttribute("d-index", index.toString());
       img.setAttribute("d-random-id", imf.randomID);
@@ -544,8 +585,9 @@ export class BigImageFrameManager {
    * @param fix: 1 or -1, means scale up or down
    * @param rate: step of scale, eg: current scale is 80, rate is 10, then new scale is 90
    * @param _percent: directly set width percent 
+   * @param syncConf: sync to config, default = true 
    */
-  scaleBigImages(fix: number, rate: number, _percent?: number): number {
+  scaleBigImages(fix: number, rate: number, _percent?: number, syncConf?: boolean): number {
     const rule = queryCSSRules(this.html.styleSheet, ".bifm-img");
     if (!rule) return 0;
 
@@ -569,9 +611,11 @@ export class BigImageFrameManager {
       rule.style.minWidth = percent > 100 ? "" : "100vw";
       if (percent === 100) this.resetScaleBigImages(false);
     }
-    conf.imgScale = percent;
-    saveConf(conf);
-    q("#scaleInput", this.html.pageHelper).textContent = `${conf.imgScale}`;
+    if (syncConf ?? true) {
+      conf.imgScale = percent;
+      saveConf(conf);
+    }
+    q("#scaleInput", this.html.pageHelper).textContent = `${percent}`;
     return percent;
   }
 
@@ -589,6 +633,7 @@ export class BigImageFrameManager {
   resetScaleBigImages(syncConf: boolean) {
     const rule = queryCSSRules(this.html.styleSheet, ".bifm-img");
     if (!rule) return;
+    let percent = 100;
     rule.style.minWidth = "";
     rule.style.minHeight = "";
     rule.style.maxWidth = "";
@@ -605,9 +650,10 @@ export class BigImageFrameManager {
       rule.style.maxWidth = "100vw";
       rule.style.width = isMobile ? "100vw" : "80vw";
       rule.style.margin = "0 auto";
+      percent = isMobile ? 100 : 80;
     }
     if (syncConf) {
-      conf.imgScale = conf.readMode === "pagination" ? 100 : 80;
+      conf.imgScale = percent;
       saveConf(conf);
       q("#scaleInput", this.html.pageHelper).textContent = `${conf.imgScale}`;
     }
@@ -617,35 +663,6 @@ export class BigImageFrameManager {
     this.resetScaleBigImages(false);
     if (conf.imgScale && conf.imgScale > 0) {
       this.scaleBigImages(1, 0, conf.imgScale);
-    }
-  }
-
-  stickyMouse(event: MouseEvent, lastMouse: { x: number, y: number }) {
-    if (conf.readMode !== "pagination" || conf.stickyMouse === "disable") return;
-
-    let [distanceY, distanceX] = [event.clientY - lastMouse.y, event.clientX - lastMouse.x];
-    if (conf.stickyMouse === "enable") [distanceY, distanceX] = [-distanceY, -distanceX];
-
-    const overflowY = this.frame.scrollHeight - this.frame.offsetHeight;
-    if (overflowY > 0) {
-      const rateY = overflowY / (this.frame.offsetHeight / 4) * 3;
-      let scrollTop = this.frame.scrollTop + distanceY * rateY;
-      scrollTop = Math.max(scrollTop, 0);
-      scrollTop = Math.min(scrollTop, overflowY);
-      this.frame.scrollTop = scrollTop;
-    }
-    const overflowX = this.frame.scrollWidth - this.frame.offsetWidth;
-    if (overflowX > 0) {
-      const rateX = overflowX / (this.frame.offsetWidth / 4) * 3;
-      let scrollLeft = this.frame.scrollLeft + distanceX * rateX;
-      if (conf.reversePages) { // if conf reversePages, then scrollLeft should be negative
-        scrollLeft = Math.min(scrollLeft, 0);
-        scrollLeft = Math.max(scrollLeft, -overflowX);
-      } else {
-        scrollLeft = Math.max(scrollLeft, 0);
-        scrollLeft = Math.min(scrollLeft, overflowX);
-      }
-      this.frame.scrollLeft = scrollLeft;
     }
   }
 
@@ -682,9 +699,9 @@ class AutoPage {
   button: HTMLElement;
   lockVer: number;
   scroller: Scroller;
-  constructor(BIFM: BigImageFrameManager, root: HTMLElement) {
+  constructor(BIFM: BigImageFrameManager, scroller: Scroller, root: HTMLElement) {
     this.bifm = BIFM;
-    this.scroller = new Scroller(this.bifm.frame)
+    this.scroller = scroller;
     this.status = "stop";
     this.button = root;
     this.lockVer = 0;
@@ -769,7 +786,7 @@ class AutoPage {
         }
       } else {
         this.scroller.step = conf.autoPageSpeed;
-        this.scroller.scroll("down", interval() * 1000 + 10);
+        this.scroller.scroll(this.bifm.frame.offsetHeight);
       }
     }
     this.stop();
@@ -783,7 +800,7 @@ class AutoPage {
     this.lockVer += 1;
     const displayTexts = this.button.getAttribute("data-display-texts")!.split(",");
     (this.button.firstElementChild as HTMLSpanElement).innerText = displayTexts[0];
-    this.scroller.scroll("up", 0);
+    this.scroller.scroll(-1);
   }
 }
 
@@ -793,4 +810,32 @@ function parseIndex(ele: HTMLElement): number {
   const i = parseInt(d);
   return isNaN(i) ? -1 : i;
 }
+
+function stickyMouse(element: HTMLElement, event: MouseEvent, lastMouse: { x: number, y: number }, reverse: boolean) {
+  let [distanceY, distanceX] = [event.clientY - lastMouse.y, event.clientX - lastMouse.x];
+  if (reverse) [distanceY, distanceX] = [-distanceY, -distanceX];
+
+  const overflowY = element.scrollHeight - element.offsetHeight;
+  if (overflowY > 0) {
+    const rateY = overflowY / (element.offsetHeight / 4) * 3;
+    let scrollTop = element.scrollTop + distanceY * rateY;
+    scrollTop = Math.max(scrollTop, 0);
+    scrollTop = Math.min(scrollTop, overflowY);
+    element.scrollTop = scrollTop;
+  }
+  const overflowX = element.scrollWidth - element.offsetWidth;
+  if (overflowX > 0) {
+    const rateX = overflowX / (element.offsetWidth / 4) * 3;
+    let scrollLeft = element.scrollLeft + distanceX * rateX;
+    if (conf.reversePages) { // if conf reversePages, then scrollLeft should be negative
+      scrollLeft = Math.min(scrollLeft, 0);
+      scrollLeft = Math.max(scrollLeft, -overflowX);
+    } else {
+      scrollLeft = Math.max(scrollLeft, 0);
+      scrollLeft = Math.min(scrollLeft, overflowX);
+    }
+    element.scrollLeft = scrollLeft;
+  }
+}
+
 

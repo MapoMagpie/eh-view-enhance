@@ -28,8 +28,8 @@ export function createHTML() {
 <div id="message-box" class="ehvp-message-box"></div>
 <div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
 <div id="big-img-frame" class="big-img-frame big-img-frame-collapse${conf.readMode === "pagination" ? " bifm-flex" : ""}" tabindex="7">
-   <a id="img-land-left" class="img-land-left"></a>
-   <a id="img-land-right" class="img-land-right"></a>
+   <a id="img-land-left" class="img-land img-land-left"></a>
+   <a id="img-land-right" class="img-land img-land-right"></a>
 </div>
 <div id="p-helper" class="p-helper">
     <div>

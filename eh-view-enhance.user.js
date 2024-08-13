@@ -47,7 +47,6 @@
 // @match              http*://*.copymanga.site/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
-// @require            https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
 // @connect            exhentai.org
 // @connect            e-hentai.org
@@ -83,7 +82,7 @@
 // @grant              GM_xmlhttpRequest
 // ==/UserScript==
 
-(function (fileSaver, pica, zip_js, Hammer) {
+(function (fileSaver, pica, zip_js) {
   'use strict';
 
   var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
@@ -5216,108 +5215,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
-  function scrollSmoothly(element, y) {
-    let scroller = TASKS.get(element);
-    if (!scroller) {
-      scroller = new Scroller(element);
-      TASKS.set(element, scroller);
-    }
-    scroller.step = conf.scrollingSpeed;
-    scroller.scroll(y > 0 ? "down" : "up").then(() => element.dispatchEvent(new CustomEvent("smoothlyscrollend")));
-  }
-  function scrollTerminate(element) {
-    const scroller = TASKS.get(element);
-    if (scroller) {
-      scroller.timer = void 0;
-      scroller.scrolling = false;
-    }
-  }
-  const TASKS = /* @__PURE__ */ new WeakMap();
-  class Scroller {
-    element;
-    timer;
-    scrolling = false;
-    step;
-    // [1, 100]
-    additional = 0;
-    lastDirection;
-    directionChanged = false;
-    constructor(element, step) {
-      this.element = element;
-      this.step = step || 1;
-    }
-    scroll(direction, duration = 100) {
-      this.directionChanged = this.lastDirection !== void 0 && this.lastDirection !== direction;
-      this.lastDirection = direction;
-      let resolve;
-      const promise = new Promise((r) => resolve = r);
-      if (!this.timer) {
-        this.timer = new Timer(duration);
-      }
-      if (this.scrolling) {
-        this.additional = 0;
-        this.timer.extend(duration);
-        return promise;
-      }
-      this.additional = 0;
-      this.scrolling = true;
-      const scrolled = () => {
-        this.scrolling = false;
-        this.timer = void 0;
-        this.directionChanged = false;
-        this.lastDirection = void 0;
-        resolve?.();
-      };
-      const doFrame = () => {
-        const [ok, finished] = this.timer?.tick() ?? [false, true];
-        if (ok) {
-          let scrollTop = this.element.scrollTop + (this.step + this.additional) * (direction === "up" ? -1 : 1);
-          scrollTop = Math.max(scrollTop, 0);
-          scrollTop = Math.min(scrollTop, this.element.scrollHeight - this.element.clientHeight);
-          this.element.scrollTop = scrollTop;
-          if (scrollTop === 0 || scrollTop === this.element.scrollHeight - this.element.clientHeight) {
-            return scrolled();
-          }
-        }
-        if (finished || this.directionChanged)
-          return scrolled();
-        window.requestAnimationFrame(doFrame);
-      };
-      window.requestAnimationFrame(doFrame);
-      return promise;
-    }
-  }
-  class Timer {
-    interval = 1;
-    last;
-    endAt;
-    constructor(duration, interval) {
-      const now = Date.now();
-      if (interval) {
-        this.interval = interval;
-      }
-      this.last = now;
-      this.endAt = now + duration;
-    }
-    tick() {
-      const now = Date.now();
-      let ok = now >= this.last + this.interval;
-      if (ok) {
-        this.last = now;
-      }
-      let finished = now >= this.endAt;
-      return [ok, finished];
-    }
-    extend(duration) {
-      this.endAt = this.last + duration;
-    }
-  }
-  const scroller = {
-    scrollSmoothly,
-    scrollTerminate,
-    Scroller
-  };
-
   function createInputElement(root, anchor, callback) {
     const element = document.createElement("div");
     element.style.position = "fixed";
@@ -5928,6 +5825,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           element.classList.remove("b-main-option-selected");
         }
       });
+      if (conf.readMode === "pagination") {
+        HTML.root.querySelectorAll(".img-land").forEach((element) => element.style.display = "");
+      } else {
+        HTML.root.querySelectorAll(".img-land").forEach((element) => element.style.display = "none");
+      }
     }
     function modSelectConfigEvent(key) {
       const inputElement = q(`#${key}Select`, HTML.config.panel);
@@ -6045,7 +5947,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             const key = parseKey(event);
             const customKey = !["PageUp", "ArrowUp", "Shift+Space"].includes(key);
             if (customKey) {
-              scroller.scrollSmoothly(BIFM.frame, -1);
+              BIFM.scroll(BIFM.frame.offsetHeight / 8 * -1);
             }
             const shouldPrevent = !["PageUp", "Shift+Space"].includes(key);
             if (shouldPrevent) {
@@ -6056,7 +5958,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             }
             if (shouldStep("prev", shouldPrevent)) {
               event.preventDefault();
-              scroller.scrollTerminate(BIFM.frame);
+              BIFM.scrollStop();
               BIFM.onWheel(new WheelEvent("wheel", { deltaY: -1 }), false);
             }
           },
@@ -6068,7 +5970,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             const key = parseKey(event);
             const customKey = !["PageDown", "ArrowDown", "Space"].includes(key);
             if (customKey) {
-              scroller.scrollSmoothly(BIFM.frame, 1);
+              BIFM.scroll(BIFM.frame.offsetHeight / 8);
             }
             const shouldPrevent = !["PageDown", "Space"].includes(key);
             if (shouldPrevent) {
@@ -6079,7 +5981,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             }
             if (shouldStep("next", shouldPrevent)) {
               event.preventDefault();
-              scroller.scrollTerminate(BIFM.frame);
+              BIFM.scrollStop();
               BIFM.onWheel(new WheelEvent("wheel", { deltaY: 1 }), false);
             }
           },
@@ -7584,8 +7486,8 @@ ${chapters.map((c, i) => `<div><label>
 <div id="message-box" class="ehvp-message-box"></div>
 <div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
 <div id="big-img-frame" class="big-img-frame big-img-frame-collapse${conf.readMode === "pagination" ? " bifm-flex" : ""}" tabindex="7">
-   <a id="img-land-left" class="img-land-left"></a>
-   <a id="img-land-right" class="img-land-right"></a>
+   <a id="img-land-left" class="img-land img-land-left"></a>
+   <a id="img-land-right" class="img-land img-land-right"></a>
 </div>
 <div id="p-helper" class="p-helper">
     <div>
@@ -8088,10 +7990,148 @@ ${chapters.map((c, i) => `<div><label>
     return `${min}:${sec}`;
   }
 
+  class Scroller {
+    element;
+    scrolling = false;
+    step;
+    // [1, 100]
+    distance = 0;
+    additional = 0;
+    lastDirection;
+    directionChanged = false;
+    constructor(element, step) {
+      this.element = element;
+      this.step = step || 1;
+    }
+    scroll(y) {
+      let resolve;
+      const promise = new Promise((r) => resolve = r);
+      this.distance = Math.abs(y);
+      if (this.scrolling || this.distance <= 0) {
+        this.additional = 0;
+        return promise;
+      }
+      const sign = y / this.distance;
+      const direction = y < 0 ? "up" : "down";
+      this.directionChanged = this.lastDirection !== void 0 && this.lastDirection !== direction;
+      this.lastDirection = direction;
+      this.additional = 0;
+      this.scrolling = true;
+      const scrolled = () => {
+        this.scrolling = false;
+        this.directionChanged = false;
+        this.lastDirection = void 0;
+        this.distance = 0;
+        resolve?.();
+      };
+      const doFrame = () => {
+        if (!this.scrolling)
+          return scrolled();
+        this.distance -= this.step + this.additional;
+        let scrollTop = this.element.scrollTop + (this.step + this.additional) * sign;
+        scrollTop = Math.max(scrollTop, 0);
+        scrollTop = Math.min(scrollTop, this.element.scrollHeight - this.element.clientHeight);
+        this.element.scrollTop = scrollTop;
+        if (this.distance <= 0)
+          return scrolled();
+        if (scrollTop === 0 || scrollTop === this.element.scrollHeight - this.element.clientHeight)
+          return scrolled();
+        if (this.directionChanged)
+          return scrolled();
+        window.requestAnimationFrame(doFrame);
+      };
+      window.requestAnimationFrame(doFrame);
+      return promise;
+    }
+  }
+
+  class TouchPoint {
+    id;
+    x;
+    y;
+    constructor(id, x, y) {
+      this.id = id;
+      this.x = x;
+      this.y = y;
+    }
+    static from(tp) {
+      return new TouchPoint(tp.identifier, tp.clientX, tp.clientY);
+    }
+    distance(other) {
+      return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2);
+    }
+    direction(other) {
+      const x = this.x - other.x;
+      const y = this.y - other.y;
+      const absX = Math.abs(x);
+      const absY = Math.abs(y);
+      if (absX > absY) {
+        return x > 0 ? "L" : "R";
+      } else {
+        return y > 0 ? "U" : "D";
+      }
+    }
+  }
+  class TouchManager {
+    element;
+    tpCache = [];
+    trail = [];
+    handlers;
+    constructor(element, handles) {
+      this.element = element;
+      this.handlers = handles;
+      this.element.addEventListener("touchstart", (ev) => this.start(ev));
+      this.element.addEventListener("touchmove", (ev) => this.move(ev));
+      this.element.addEventListener("touchend", (ev) => this.end(ev));
+    }
+    start(ev) {
+      this.tpCache = Array.from(ev.targetTouches).map(TouchPoint.from);
+      this.trail = [this.tpCache[0]];
+      let distance = 0;
+      if (this.tpCache.length === 2) {
+        distance = this.tpCache[0].distance(this.tpCache[1]);
+      }
+      this.handlers.start?.(distance, ev);
+    }
+    move(ev) {
+      if (this.tpCache.length === 1) {
+        const last = this.trail[this.trail.length - 1];
+        let tp = TouchPoint.from(ev.targetTouches[0]);
+        const distance = last.distance(tp);
+        if (distance > 30) {
+          this.trail.push(tp);
+        }
+        return;
+      }
+      if (this.tpCache.length === 2 && ev.targetTouches.length === 2) {
+        const tp1 = TouchPoint.from(ev.targetTouches[0]);
+        const tp2 = TouchPoint.from(ev.targetTouches[1]);
+        this.handlers.zoom?.(tp1.distance(tp2), ev);
+        return;
+      }
+    }
+    end(ev) {
+      if (this.tpCache.length === 1 && this.trail.length > 1) {
+        let direction = void 0;
+        for (let i = 0, j = 1; j < this.trail.length; i++, j++) {
+          if (!direction) {
+            direction = this.trail[i].direction(this.trail[j]);
+          } else {
+            if (this.trail[i].direction(this.trail[j]) !== direction)
+              return;
+          }
+        }
+        this.handlers.swipe?.(direction, ev);
+      }
+      this.trail = [];
+      this.tpCache = [];
+      this.handlers.end?.(ev);
+    }
+  }
+
   class BigImageFrameManager {
     frame;
     lockInit;
-    lastMouse;
     fragment;
     // image decode will take a while, so cache it to fragment
     elements = { next: [], curr: [], prev: [] };
@@ -8108,6 +8148,8 @@ ${chapters.map((c, i) => `<div><label>
     getChapter;
     loadingHelper;
     currLoadingState = /* @__PURE__ */ new Map();
+    scroller;
+    lastMouse;
     constructor(HTML, getChapter) {
       this.html = HTML;
       this.frame = HTML.bigImageFrame;
@@ -8116,10 +8158,9 @@ ${chapters.map((c, i) => `<div><label>
       this.throttler = new Debouncer("throttle");
       this.lockInit = false;
       this.getChapter = getChapter;
-      this.resetStickyMouse();
+      this.scroller = new Scroller(this.frame);
       this.initFrame();
       this.initImgScaleStyle();
-      this.initHammer();
       EBUS.subscribe("pf-change-chapter", (index) => this.chapterIndex = Math.max(0, index));
       EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
       EBUS.subscribe("imf-on-finished", (index, success, imf) => {
@@ -8170,50 +8211,79 @@ ${chapters.map((c, i) => `<div><label>
         this.currLoadingState.set(index, Math.floor(imf.downloadState.loaded / imf.downloadState.total * 100));
         this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
       });
-      new AutoPage(this, HTML.autoPageBTN);
+      new AutoPage(this, this.scroller, HTML.autoPageBTN);
     }
-    initHammer() {
-      this.hammer = new Hammer(this.frame, {
-        // touchAction: "auto",
-        recognizers: [
-          [Hammer.Swipe, { direction: Hammer.DIRECTION_ALL, enable: false }]
-        ]
+    initFrame() {
+      this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
+      this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
+      const debouncer = new Debouncer("throttle");
+      this.frame.addEventListener("mousemove", (mmevt) => {
+        if (conf.stickyMouse === "disable" || conf.readMode !== "pagination")
+          return;
+        debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
+          if (this.lastMouse) {
+            stickyMouse(this.frame, mmevt, this.lastMouse, conf.stickyMouse === "enable");
+          }
+          this.lastMouse = { x: mmevt.clientX, y: mmevt.clientY };
+        }, 5);
       });
-      this.hammer.on("swipe", (ev) => {
-        ev.preventDefault();
-        if (conf.readMode === "pagination") {
-          switch (ev.direction) {
-            case Hammer.DIRECTION_LEFT:
-              this.stepNext(conf.reversePages ? "prev" : "next");
-              break;
-            case Hammer.DIRECTION_UP:
-              this.stepNext("next");
-              break;
-            case Hammer.DIRECTION_RIGHT:
-              this.stepNext(conf.reversePages ? "next" : "prev");
-              break;
-            case Hammer.DIRECTION_DOWN:
-              this.stepNext("prev");
-              break;
+      this.frame.addEventListener("mousedown", (mdevt) => {
+        if (mdevt.button !== 0)
+          return;
+        let moved = false;
+        let last = { x: mdevt.clientX, y: mdevt.clientY };
+        const abort = new AbortController();
+        this.frame.addEventListener("mouseup", (muevt) => {
+          abort.abort();
+          if (!moved) {
+            this.hidden(muevt);
+          } else if (conf.imgScale === 100) {
+            this.scaleBigImages(1, 0, conf.imgScale, false);
+          }
+        }, { once: true });
+        if (conf.readMode !== "pagination" || conf.stickyMouse !== "disable")
+          return;
+        this.frame.addEventListener("mousemove", (mmevt) => {
+          if (!moved && conf.imgScale === 100) {
+            this.scaleBigImages(1, 0, 150, false);
+          }
+          moved = true;
+          debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
+            stickyMouse(this.frame, mmevt, last, true);
+            last = { x: mmevt.clientX, y: mmevt.clientY };
+          }, 5);
+        }, { signal: abort.signal });
+      });
+      new TouchManager(this.frame, {
+        swipe: (direction) => {
+          if (conf.readMode === "continuous")
+            return;
+          let oriented = (() => {
+            switch (direction) {
+              case "L":
+                return conf.reversePages ? "next" : "prev";
+              case "R":
+                return conf.reversePages ? "prev" : "next";
+              case "U":
+                return "next";
+              case "D":
+                return "prev";
+            }
+          })();
+          if (conf.imgScale === 100) {
+            this.stepNext(oriented);
+          } else if (this.isReachedBoundary(oriented, direction === "L" || direction === "R") && !this.tryPreventStep()) {
+            this.stepNext(oriented);
           }
         }
       });
     }
-    resetStickyMouse() {
-      this.lastMouse = void 0;
+    scroll(y) {
+      this.scroller.step = conf.scrollingSpeed;
+      this.scroller.scroll(y);
     }
-    initFrame() {
-      this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
-      this.frame.addEventListener("click", (event) => this.hidden(event));
-      this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
-      const debouncer = new Debouncer("throttle");
-      this.frame.addEventListener("mousemove", (event) => {
-        debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
-          if (this.lastMouse)
-            this.stickyMouse(event, this.lastMouse);
-          this.lastMouse = { x: event.clientX, y: event.clientY };
-        }, 5);
-      });
+    scrollStop() {
+      this.scroller.scrolling = false;
     }
     hidden(event) {
       if (event && event.target && event.target.tagName === "SPAN")
@@ -8236,7 +8306,6 @@ ${chapters.map((c, i) => `<div><label>
     }
     setNow(imf, oriented) {
       if (this.visible) {
-        this.resetStickyMouse();
         this.initElements(imf, oriented);
       } else {
         const queue = this.getChapter(this.chapterIndex).queue;
@@ -8245,6 +8314,7 @@ ${chapters.map((c, i) => `<div><label>
           return;
         EBUS.emit("ifq-do", index, imf, oriented || "next");
       }
+      this.lastMouse = void 0;
       this.currLoadingState.clear();
       this.flushLoadingHelper();
     }
@@ -8423,12 +8493,21 @@ ${chapters.map((c, i) => `<div><label>
         return true;
       }
     }
-    isReachedBoundary(oriented) {
-      if (oriented === "prev") {
-        return this.frame.scrollTop <= 0;
-      }
-      if (oriented === "next") {
-        return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight;
+    isReachedBoundary(oriented, side = false) {
+      if (!side) {
+        if (oriented === "prev") {
+          return this.frame.scrollTop <= 0;
+        }
+        if (oriented === "next") {
+          return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight;
+        }
+      } else {
+        if (oriented === "prev") {
+          return this.frame.scrollLeft <= 0;
+        }
+        if (oriented === "next") {
+          return this.frame.scrollLeft >= this.frame.scrollWidth - this.frame.offsetWidth;
+        }
       }
       return false;
     }
@@ -8559,6 +8638,7 @@ ${chapters.map((c, i) => `<div><label>
         const vid = document.createElement("video");
         vid.classList.add("bifm-img");
         vid.classList.add("bifm-vid");
+        vid.draggable = false;
         vid.setAttribute("d-index", index.toString());
         vid.setAttribute("d-random-id", imf.randomID);
         vid.onloadeddata = () => {
@@ -8572,6 +8652,7 @@ ${chapters.map((c, i) => `<div><label>
         const img = document.createElement("img");
         img.decoding = "sync";
         img.classList.add("bifm-img");
+        img.draggable = false;
         img.setAttribute("d-index", index.toString());
         img.setAttribute("d-random-id", imf.randomID);
         if (imf.stage === FetchState.DONE) {
@@ -8596,8 +8677,9 @@ ${chapters.map((c, i) => `<div><label>
      * @param fix: 1 or -1, means scale up or down
      * @param rate: step of scale, eg: current scale is 80, rate is 10, then new scale is 90
      * @param _percent: directly set width percent 
+     * @param syncConf: sync to config, default = true 
      */
-    scaleBigImages(fix, rate, _percent) {
+    scaleBigImages(fix, rate, _percent, syncConf) {
       const rule = queryRule(this.html.styleSheet, ".bifm-img");
       if (!rule)
         return 0;
@@ -8623,9 +8705,11 @@ ${chapters.map((c, i) => `<div><label>
         if (percent === 100)
           this.resetScaleBigImages(false);
       }
-      conf.imgScale = percent;
-      saveConf(conf);
-      q("#scaleInput", this.html.pageHelper).textContent = `${conf.imgScale}`;
+      if (syncConf ?? true) {
+        conf.imgScale = percent;
+        saveConf(conf);
+      }
+      q("#scaleInput", this.html.pageHelper).textContent = `${percent}`;
       return percent;
     }
     checkFrameOverflow() {
@@ -8642,6 +8726,7 @@ ${chapters.map((c, i) => `<div><label>
       const rule = queryRule(this.html.styleSheet, ".bifm-img");
       if (!rule)
         return;
+      let percent = 100;
       rule.style.minWidth = "";
       rule.style.minHeight = "";
       rule.style.maxWidth = "";
@@ -8659,9 +8744,10 @@ ${chapters.map((c, i) => `<div><label>
         rule.style.maxWidth = "100vw";
         rule.style.width = isMobile ? "100vw" : "80vw";
         rule.style.margin = "0 auto";
+        percent = isMobile ? 100 : 80;
       }
       if (syncConf) {
-        conf.imgScale = conf.readMode === "pagination" ? 100 : 80;
+        conf.imgScale = percent;
         saveConf(conf);
         q("#scaleInput", this.html.pageHelper).textContent = `${conf.imgScale}`;
       }
@@ -8670,34 +8756,6 @@ ${chapters.map((c, i) => `<div><label>
       this.resetScaleBigImages(false);
       if (conf.imgScale && conf.imgScale > 0) {
         this.scaleBigImages(1, 0, conf.imgScale);
-      }
-    }
-    stickyMouse(event, lastMouse) {
-      if (conf.readMode !== "pagination" || conf.stickyMouse === "disable")
-        return;
-      let [distanceY, distanceX] = [event.clientY - lastMouse.y, event.clientX - lastMouse.x];
-      if (conf.stickyMouse === "enable")
-        [distanceY, distanceX] = [-distanceY, -distanceX];
-      const overflowY = this.frame.scrollHeight - this.frame.offsetHeight;
-      if (overflowY > 0) {
-        const rateY = overflowY / (this.frame.offsetHeight / 4) * 3;
-        let scrollTop = this.frame.scrollTop + distanceY * rateY;
-        scrollTop = Math.max(scrollTop, 0);
-        scrollTop = Math.min(scrollTop, overflowY);
-        this.frame.scrollTop = scrollTop;
-      }
-      const overflowX = this.frame.scrollWidth - this.frame.offsetWidth;
-      if (overflowX > 0) {
-        const rateX = overflowX / (this.frame.offsetWidth / 4) * 3;
-        let scrollLeft = this.frame.scrollLeft + distanceX * rateX;
-        if (conf.reversePages) {
-          scrollLeft = Math.min(scrollLeft, 0);
-          scrollLeft = Math.max(scrollLeft, -overflowX);
-        } else {
-          scrollLeft = Math.max(scrollLeft, 0);
-          scrollLeft = Math.min(scrollLeft, overflowX);
-        }
-        this.frame.scrollLeft = scrollLeft;
       }
     }
     findMediaNodeIndexOnCenter(imgNodes) {
@@ -8731,9 +8789,9 @@ ${chapters.map((c, i) => `<div><label>
     button;
     lockVer;
     scroller;
-    constructor(BIFM, root) {
+    constructor(BIFM, scroller, root) {
       this.bifm = BIFM;
-      this.scroller = new Scroller(this.bifm.frame);
+      this.scroller = scroller;
       this.status = "stop";
       this.button = root;
       this.lockVer = 0;
@@ -8815,7 +8873,7 @@ ${chapters.map((c, i) => `<div><label>
           }
         } else {
           this.scroller.step = conf.autoPageSpeed;
-          this.scroller.scroll("down", interval() * 1e3 + 10);
+          this.scroller.scroll(this.bifm.frame.offsetHeight);
         }
       }
       this.stop();
@@ -8828,7 +8886,7 @@ ${chapters.map((c, i) => `<div><label>
       this.lockVer += 1;
       const displayTexts = this.button.getAttribute("data-display-texts").split(",");
       this.button.firstElementChild.innerText = displayTexts[0];
-      this.scroller.scroll("up", 0);
+      this.scroller.scroll(-1);
     }
   }
   function parseIndex(ele) {
@@ -8837,6 +8895,32 @@ ${chapters.map((c, i) => `<div><label>
     const d = ele.getAttribute("d-index") || "";
     const i = parseInt(d);
     return isNaN(i) ? -1 : i;
+  }
+  function stickyMouse(element, event, lastMouse, reverse) {
+    let [distanceY, distanceX] = [event.clientY - lastMouse.y, event.clientX - lastMouse.x];
+    if (reverse)
+      [distanceY, distanceX] = [-distanceY, -distanceX];
+    const overflowY = element.scrollHeight - element.offsetHeight;
+    if (overflowY > 0) {
+      const rateY = overflowY / (element.offsetHeight / 4) * 3;
+      let scrollTop = element.scrollTop + distanceY * rateY;
+      scrollTop = Math.max(scrollTop, 0);
+      scrollTop = Math.min(scrollTop, overflowY);
+      element.scrollTop = scrollTop;
+    }
+    const overflowX = element.scrollWidth - element.offsetWidth;
+    if (overflowX > 0) {
+      const rateX = overflowX / (element.offsetWidth / 4) * 3;
+      let scrollLeft = element.scrollLeft + distanceX * rateX;
+      if (conf.reversePages) {
+        scrollLeft = Math.min(scrollLeft, 0);
+        scrollLeft = Math.max(scrollLeft, -overflowX);
+      } else {
+        scrollLeft = Math.max(scrollLeft, 0);
+        scrollLeft = Math.min(scrollLeft, overflowX);
+      }
+      element.scrollLeft = scrollLeft;
+    }
   }
 
   function revertMonkeyPatch(element) {
@@ -8943,4 +9027,4 @@ ${chapters.map((c, i) => `<div><label>
     reMain();
   }, 300);
 
-})(saveAs, pica, zip, Hammer);
+})(saveAs, pica, zip);

@@ -7,7 +7,6 @@ import parseKey from "../utils/keyboard";
 import queryCSSRules from "../utils/query-cssrules";
 import q from "../utils/query-element";
 import relocateElement from "../utils/relocate-element";
-import scroller from "../utils/scroller";
 import createSiteProfilePanel from "./site-profiles";
 import createHelpPanel from "./help";
 import { Elements } from "./html";
@@ -119,6 +118,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         element.classList.remove("b-main-option-selected");
       }
     });
+    if (conf.readMode === "pagination") {
+      HTML.root.querySelectorAll<HTMLElement>(".img-land").forEach(element => element.style.display = "");
+    } else {
+      HTML.root.querySelectorAll<HTMLElement>(".img-land").forEach(element => element.style.display = "none");
+    }
   }
 
   // modify config
@@ -252,7 +256,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
           const key = parseKey(event);
           const customKey = !["PageUp", "ArrowUp", "Shift+Space"].includes(key);
           if (customKey) {
-            scroller.scrollSmoothly(BIFM.frame, -1);
+            BIFM.scroll(BIFM.frame.offsetHeight / 8 * -1);
           }
           const shouldPrevent = !["PageUp", "Shift+Space"].includes(key);
           if (shouldPrevent) {
@@ -263,7 +267,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
           }
           if (shouldStep("prev", shouldPrevent)) {
             event.preventDefault();
-            scroller.scrollTerminate(BIFM.frame);
+            BIFM.scrollStop();
             BIFM.onWheel(new WheelEvent("wheel", { deltaY: -1 }), false);
           }
         }, true
@@ -274,7 +278,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
           const key = parseKey(event);
           const customKey = !["PageDown", "ArrowDown", "Space"].includes(key);
           if (customKey) {
-            scroller.scrollSmoothly(BIFM.frame, 1);
+            BIFM.scroll(BIFM.frame.offsetHeight / 8);
           }
           const shouldPrevent = !["PageDown", "Space"].includes(key);
           if (shouldPrevent) {
@@ -285,7 +289,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
           }
           if (shouldStep("next", shouldPrevent)) {
             event.preventDefault();
-            scroller.scrollTerminate(BIFM.frame);
+            BIFM.scrollStop();
             BIFM.onWheel(new WheelEvent("wheel", { deltaY: 1 }), false);
           }
         }, true

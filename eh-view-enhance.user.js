@@ -2682,9 +2682,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           return;
         this.count++;
         if (tags !== "") {
-          if (this.blacklistTags.findIndex((t) => tags.includes(t)) >= 0)
+          const tagList = tags.trim().replaceAll(": ", ":").split(" ").map((v) => v.trim()).filter((v) => v !== "");
+          if (this.blacklistTags.findIndex((t) => tagList.includes(t)) >= 0)
             return;
-          this.tags[imgNode.title.split(".")[0]] = tags.trim().replaceAll(": ", ":").split(" ").map((v) => v.trim()).filter((v) => v !== "");
+          this.tags[imgNode.title.split(".")[0]] = tagList;
         }
         list.push(imgNode);
       });

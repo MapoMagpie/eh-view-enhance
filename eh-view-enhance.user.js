@@ -200,7 +200,9 @@
     reverseMultipleImagesPost: new I18nValue("Descending Images In Post", "反转推文图片顺序"),
     reverseMultipleImagesPostTooltip: new I18nValue("Reverse order for post with multiple images attatched", "反转推文图片顺序"),
     dragToMove: new I18nValue("Drag to Move", "拖动移动"),
-    originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
+    resetDownloaded: new I18nValue("Reset Downloaded Images", "重置已下载的图片"),
+    resetDownloadedConfirm: new I18nValue("You will reset Downloaded Images!", "已下载的图片将会被重置为未下载！"),
+    resetFailed: new I18nValue("Reset Failed Images", "重置下载错误的图片"),
     showHelp: new I18nValue("Help", "帮助"),
     showKeyboard: new I18nValue("Keyboard", "快捷键"),
     showSiteProfiles: new I18nValue("Site Profiles", "站点配置"),
@@ -793,10 +795,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }
     }
     resetStage() {
-      if (this.stage !== 3 /* DONE */) {
-        this.node.changeStyle("init");
-        this.stage = 1 /* URL */;
-      }
+      this.node.changeStyle("init");
+      this.stage = 1 /* URL */;
     }
     async fetchImage() {
       const fetchMachine = async () => {
@@ -1398,6 +1398,23 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           return this.cherryPicks[chapterIndex].values;
         }
       );
+      this.panel.initNotice([
+        {
+          btn: i18n.resetDownloaded.get(),
+          cb: () => {
+            if (confirm(i18n.resetDownloadedConfirm.get()))
+              this.queue.forEach((imf) => imf.stage === FetchState.DONE && imf.resetStage());
+          }
+        },
+        {
+          btn: i18n.resetFailed.get(),
+          cb: () => {
+            this.queue.forEach((imf) => imf.stage === FetchState.FAILED && imf.resetStage());
+            if (!this.downloading)
+              this.idleLoader.abort(0, 100);
+          }
+        }
+      ]);
       this.queue = queue;
       this.queue.cherryPick = () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick();
       this.idleLoader = idleLoader;
@@ -1446,8 +1463,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     check() {
       if (this.downloading)
         return;
-      if (!conf.fetchOriginal)
-        this.panel.noticeOriginal(() => this.fetchOriginalTemporarily());
       setTimeout(() => EBUS.emit("downloader-canvas-resize"), 110);
       this.panel.createChapterSelectList(this.pageFetcher.chapters, this.selectedChapters);
       if (this.queue.length > 0) {
@@ -1455,14 +1470,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       } else if (this.pageFetcher.chapters.length > 1) {
         this.panel.switchTab("chapters");
       }
-    }
-    fetchOriginalTemporarily() {
-      conf.fetchOriginal = true;
-      this.pageFetcher.chapters.forEach((ch) => {
-        ch.done = false;
-        ch.queue.forEach((imf) => imf.stage = FetchState.URL);
-      });
-      this.start();
     }
     checkSelectedChapters() {
       this.selectedChapters.length = 0;
@@ -1486,11 +1493,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           if (!this.downloading)
             return;
           await this.pageFetcher.changeChapter(sel.index);
-          this.queue.forEach((imf) => {
-            if (imf.stage === FetchState.FAILED) {
-              imf.resetStage();
-            }
-          });
+          this.queue.forEach((imf) => imf.stage === FetchState.FAILED && imf.resetStage());
           if (this.queue.isFinished()) {
             sel.done = true;
             sel.resolve(true);
@@ -3012,29 +3015,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       transient.imgSrcCSP = true;
       return Array.from(doc.querySelectorAll("#posts-container > article"));
     }
-    // id="post_4988821"
-    // class="post-preview post-status-pending post-rating-explicit blacklistable"
-    // data-id="4988821"
-    // data-flags="pending"
-    // data-tags="anthro asgore_dreemurr back_boob belly big_breasts big_butt big_penis body_hair boss_monster_(undertale) bovid breasts butt butt_grab butt_squish caprine conditional_dnp duo eyes_closed female female_penetrated fur genitals goat hand_on_butt hi_res horn huge_butt internal jezzlen male male/female male_penetrating male_penetrating_female mammal mature_anthro mature_female mature_male nude on_bottom on_top overweight overweight_male penetration penile penis pussy reverse_cowgirl_position sex simple_background sketch slightly_chubby squish tail thick_thighs toriel undertale undertale_(series) vaginal xray_view"
-    // data-rating="e"
-    // data-file-ext="png"
-    // data-width="1974"
-    // data-height="1623"
-    // data-size="1517509"
-    // data-created-at='"2024-08-16T00:26:23.361-04:00"'
-    // data-uploader="jezzlen"
-    // data-uploader-id="760438"
-    // data-score="21"
-    // data-fav-count="49"
-    // data-is-favorited="false"
-    // data-pools="[]"
-    // data-md5="9b9cf6d7356c269a1ebb9a86fda68442"
-    // data-preview-url="https://static1.e621.net/data/preview/9b/9c/9b9cf6d7356c269a1ebb9a86fda68442.jpg"
-    // data-large-url="https://static1.e621.net/data/sample/9b/9c/9b9cf6d7356c269a1ebb9a86fda68442.jpg"
-    // data-file-url="https://static1.e621.net/data/9b/9c/9b9cf6d7356c269a1ebb9a86fda68442.png"
-    // data-preview-width="150"
-    // data-preview-height="123"
     toImgNode(ele) {
       let src = ele.getAttribute("data-preview-url");
       if (!src)
@@ -7281,16 +7261,23 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           break;
       }
     }
-    noticeOriginal(cb) {
-      this.noticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-      this.noticeElement.querySelector("a")?.addEventListener("click", cb);
+    initNotice(btns) {
+      this.noticeElement.innerHTML = "";
+      btns.forEach((b) => {
+        const a = document.createElement("a");
+        a.textContent = b.btn;
+        a.classList.add("clickable");
+        a.style.color = "gray";
+        a.style.margin = "0em 0.5em";
+        a.addEventListener("click", b.cb);
+        this.noticeElement.append(a);
+      });
     }
     abort(stage) {
       this.flushUI(stage);
       this.normalizeBTN();
     }
     flushUI(stage) {
-      this.noticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
       this.startBTN.style.color = stage === "downloadFailed" ? "red" : "";
       this.startBTN.textContent = i18n[stage].get();
       this.btn.style.color = stage === "downloadFailed" ? "red" : "";
@@ -7430,7 +7417,7 @@ ${chapters.map((c, i) => `<div><label>
     static html() {
       return `
 <div id="downloader-panel" class="p-panel p-downloader p-collapse">
-    <div id="download-notice" class="download-notice"></div>
+    <div id="download-notice" class="download-notice" style="font-size: 0.7em;"></div>
     <div id="download-middle" class="download-middle">
       <div class="ehvp-tabs">
         <a id="download-tab-status" class="clickable ehvp-p-tab">${i18n.status.get()}</a>

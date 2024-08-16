@@ -12,6 +12,7 @@ import { DownloaderCanvas } from "../ui/downloader-canvas";
 import { Chapter, PageFetcher } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { DownloaderPanel } from "../ui/downloader-panel";
+import { i18n } from "../utils/i18n";
 
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|\n]/g;
 export class Downloader {
@@ -63,6 +64,21 @@ export class Downloader {
         return this.cherryPicks[chapterIndex].values;
       }
     );
+    this.panel.initNotice([
+      {
+        btn: i18n.resetDownloaded.get(),
+        cb: () => {
+          if (confirm(i18n.resetDownloadedConfirm.get())) this.queue.forEach(imf => (imf.stage === FetchState.DONE) && imf.resetStage());
+        }
+      },
+      {
+        btn: i18n.resetFailed.get(),
+        cb: () => {
+          this.queue.forEach(imf => (imf.stage === FetchState.FAILED) && imf.resetStage());
+          if (!this.downloading) this.idleLoader.abort(0, 100);
+        }
+      }
+    ]);
     this.queue = queue;
     this.queue.cherryPick = () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick();
     this.idleLoader = idleLoader;
@@ -115,7 +131,6 @@ export class Downloader {
   // check > start > download
   check() {
     if (this.downloading) return;
-    if (!conf.fetchOriginal) this.panel.noticeOriginal(() => this.fetchOriginalTemporarily());
     setTimeout(() => EBUS.emit("downloader-canvas-resize"), 110);
     this.panel.createChapterSelectList(this.pageFetcher.chapters, this.selectedChapters);
     if (this.queue.length > 0) {
@@ -123,15 +138,6 @@ export class Downloader {
     } else if (this.pageFetcher.chapters.length > 1) {
       this.panel.switchTab("chapters");
     }
-  }
-
-  fetchOriginalTemporarily() {
-    conf.fetchOriginal = true; // May result in incorrect persistence of the conf
-    this.pageFetcher.chapters.forEach(ch => {
-      ch.done = false;
-      ch.queue.forEach(imf => imf.stage = FetchState.URL);
-    });
-    this.start();
   }
 
   checkSelectedChapters() {
@@ -159,11 +165,7 @@ export class Downloader {
         // the queue has been reset, IMGFetcherQueue.restore(chapter.queue)
         await this.pageFetcher.changeChapter(sel.index);
         // reset img fetcher stage to url, if it's failed
-        this.queue.forEach((imf) => {
-          if (imf.stage === FetchState.FAILED) {
-            imf.resetStage();
-          }
-        });
+        this.queue.forEach((imf) => (imf.stage === FetchState.FAILED) && imf.resetStage());
         // already done
         if (this.queue.isFinished()) {
           sel.done = true;

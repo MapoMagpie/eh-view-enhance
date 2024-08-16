@@ -93,10 +93,8 @@ export class IMGFetcher implements VisualNode {
   }
 
   resetStage() {
-    if (this.stage !== FetchState.DONE) {
-      this.node.changeStyle("init");
-      this.stage = FetchState.URL;
-    }
+    this.node.changeStyle("init");
+    this.stage = FetchState.URL;
   }
 
   async fetchImage(): Promise<void> {

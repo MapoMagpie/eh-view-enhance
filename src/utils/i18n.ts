@@ -94,7 +94,9 @@ export const i18n = {
   reverseMultipleImagesPostTooltip: new I18nValue("Reverse order for post with multiple images attatched", "反转推文图片顺序"),
 
   dragToMove: new I18nValue("Drag to Move", "拖动移动"),
-  originalCheck: new I18nValue("<a class='clickable' style='color:gray;'>Enable RawImage Transient</a>", "<a class='clickable' style='color:gray;'>临时开启最佳质量</a>"),
+  resetDownloaded: new I18nValue("Reset Downloaded Images", "重置已下载的图片"),
+  resetDownloadedConfirm: new I18nValue("You will reset Downloaded Images!", "已下载的图片将会被重置为未下载！"),
+  resetFailed: new I18nValue("Reset Failed Images", "重置下载错误的图片"),
   showHelp: new I18nValue("Help", "帮助"),
   showKeyboard: new I18nValue("Keyboard", "快捷键"),
   showSiteProfiles: new I18nValue("Site Profiles", "站点配置"),

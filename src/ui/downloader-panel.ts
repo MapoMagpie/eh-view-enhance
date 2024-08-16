@@ -81,9 +81,18 @@ export class DownloaderPanel {
     }
   }
 
-  noticeOriginal(cb: () => void) {
-    this.noticeElement.innerHTML = `<span>${i18n.originalCheck.get()}</span>`;
-    this.noticeElement.querySelector("a")?.addEventListener("click", cb);
+  initNotice(btns: { btn: string, tooltip?: string, cb: () => void }[]) {
+    this.noticeElement.innerHTML = "";
+    btns.forEach(b => {
+      // <a class='clickable' style='color:gray;'>Enable RawImage Transient</a>
+      const a = document.createElement("a");
+      a.textContent = b.btn;
+      a.classList.add("clickable");
+      a.style.color = "gray";
+      a.style.margin = "0em 0.5em";
+      a.addEventListener("click", b.cb);
+      this.noticeElement.append(a);
+    });
   }
 
   abort(stage: "downloadFailed" | "downloaded" | "downloadStart") {
@@ -92,7 +101,6 @@ export class DownloaderPanel {
   }
 
   flushUI(stage: "downloadFailed" | "downloaded" | "downloading" | "downloadStart" | "packaging") {
-    this.noticeElement.innerHTML = `<span>${i18n[stage].get()}</span>`;
     this.startBTN.style.color = stage === "downloadFailed" ? "red" : "";
     this.startBTN.textContent = i18n[stage].get();
     this.btn.style.color = stage === "downloadFailed" ? "red" : "";
@@ -240,7 +248,7 @@ ${chapters.map((c, i) => `<div><label>
   static html() {
     return `
 <div id="downloader-panel" class="p-panel p-downloader p-collapse">
-    <div id="download-notice" class="download-notice"></div>
+    <div id="download-notice" class="download-notice" style="font-size: 0.7em;"></div>
     <div id="download-middle" class="download-middle">
       <div class="ehvp-tabs">
         <a id="download-tab-status" class="clickable ehvp-p-tab">${i18n.status.get()}</a>

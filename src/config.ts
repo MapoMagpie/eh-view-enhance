@@ -252,6 +252,7 @@ export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "tim
 export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost";
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer";
 export const conf = getConf();
+export const transient = { imgSrcCSP: false, originalPolicy: "" };
 
 type OptionValue = {
   value: string;

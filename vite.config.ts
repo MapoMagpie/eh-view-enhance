@@ -62,7 +62,8 @@ export default defineConfig(({ command }) => {
             'https://koharu.to/*',
             'https://*.manhuagui.com/*',
             'http*://*.mangacopy.com/*',
-            'http*://*.copymanga.site/*',
+            'http*://*.copymanga.tv/*',
+            'https://e621.net/*',
           ],
           name: {
             "": "E HENTAI VIEW ENHANCE",
@@ -111,6 +112,7 @@ export default defineConfig(({ command }) => {
             'aronasexo.xyz',
             'hamreus.com',
             'mangafuna.xyz',
+            'e621.net',
             '*',
           ],
           grant: [

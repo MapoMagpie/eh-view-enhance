@@ -44,7 +44,8 @@
 // @match              https://koharu.to/*
 // @match              https://*.manhuagui.com/*
 // @match              http*://*.mangacopy.com/*
-// @match              http*://*.copymanga.site/*
+// @match              http*://*.copymanga.tv/*
+// @match              https://e621.net/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
@@ -76,6 +77,7 @@
 // @connect            aronasexo.xyz
 // @connect            hamreus.com
 // @connect            mangafuna.xyz
+// @connect            e621.net
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue

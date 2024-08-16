@@ -1,4 +1,4 @@
-import { conf } from "../config";
+import { conf, transient } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { PagesSource } from "../page-fetcher";
@@ -44,6 +44,8 @@ abstract class DanbooruMatcher extends BaseMatcher {
   abstract getBlacklist(doc: Document): string[];
 
   async fetchOriginMeta(href: string): Promise<OriginMeta> {
+    let cached = this.cachedOriginMeta(href);
+    if (cached) return cached;
     let url: string | null = null;
     const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
     if (conf.fetchOriginal) {
@@ -62,6 +64,10 @@ abstract class DanbooruMatcher extends BaseMatcher {
       title = `${id}.${ext}`;
     }
     return { url, title };
+  }
+
+  cachedOriginMeta(_href: string): OriginMeta | null {
+    return null;
   }
 
   abstract queryList(doc: Document): HTMLElement[];
@@ -407,4 +413,94 @@ export class GelBooruMatcher extends DanbooruMatcher {
   extractIDFromHref(href: string): string | undefined {
     return href.match(/id=(\d+)/)?.[1];
   }
+}
+
+export class E621Matcher extends DanbooruMatcher {
+  cache: Map<string, { normal: string, original: string, id: string, fileExt?: string }> = new Map();
+  constructor() {
+    super();
+    transient.imgSrcCSP = true;
+    // // check csp
+    // const img = new Image();
+    // document.body.append(img);
+    // document.addEventListener("securitypolicyviolation", ev => {
+    //   transient.originalPolicy = ev.originalPolicy;
+    //   transient.imgSrcCSP = true;
+    //   img.remove();
+    //   console.log("originalPolicy:", transient);
+    // }, { once: true });
+    // img.src = "data:base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    // img.onload = () => img.remove();
+  }
+  nextPage(doc: Document): string | null {
+    return doc.querySelector<HTMLAnchorElement>(".paginator #paginator-next")?.href ?? null;
+  }
+  getOriginalURL(): string | null {
+    throw new Error("Method not implemented.");
+  }
+  getNormalURL(): string | null {
+    throw new Error("Method not implemented.");
+  }
+  extractIDFromHref(): string | undefined {
+    throw new Error("Method not implemented.");
+  }
+  getBlacklist(doc: Document): string[] {
+    let content = doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content");
+    if (!content) return [];
+    return content.slice(1, -1).split(",").map(s => s.slice(1, -1))
+  }
+  queryList(doc: Document): HTMLElement[] {
+    return Array.from(doc.querySelectorAll<HTMLElement>("#posts-container > article"));
+  }
+  // id="post_4988821"
+  // class="post-preview post-status-pending post-rating-explicit blacklistable"
+  // data-id="4988821"
+  // data-flags="pending"
+  // data-tags="anthro asgore_dreemurr back_boob belly big_breasts big_butt big_penis body_hair boss_monster_(undertale) bovid breasts butt butt_grab butt_squish caprine conditional_dnp duo eyes_closed female female_penetrated fur genitals goat hand_on_butt hi_res horn huge_butt internal jezzlen male male/female male_penetrating male_penetrating_female mammal mature_anthro mature_female mature_male nude on_bottom on_top overweight overweight_male penetration penile penis pussy reverse_cowgirl_position sex simple_background sketch slightly_chubby squish tail thick_thighs toriel undertale undertale_(series) vaginal xray_view"
+  // data-rating="e"
+  // data-file-ext="png"
+  // data-width="1974"
+  // data-height="1623"
+  // data-size="1517509"
+  // data-created-at='"2024-08-16T00:26:23.361-04:00"'
+  // data-uploader="jezzlen"
+  // data-uploader-id="760438"
+  // data-score="21"
+  // data-fav-count="49"
+  // data-is-favorited="false"
+  // data-pools="[]"
+  // data-md5="9b9cf6d7356c269a1ebb9a86fda68442"
+  // data-preview-url="https://static1.e621.net/data/preview/9b/9c/9b9cf6d7356c269a1ebb9a86fda68442.jpg"
+  // data-large-url="https://static1.e621.net/data/sample/9b/9c/9b9cf6d7356c269a1ebb9a86fda68442.jpg"
+  // data-file-url="https://static1.e621.net/data/9b/9c/9b9cf6d7356c269a1ebb9a86fda68442.png"
+  // data-preview-width="150"
+  // data-preview-height="123"
+  toImgNode(ele: HTMLElement): [ImageNode | null, string] {
+    let src = ele.getAttribute("data-preview-url");
+    if (!src) return [null, ""];
+    const href = `${window.location.origin}/posts/${ele.getAttribute("data-id")}`;
+    const tags = ele.getAttribute("data-tags");
+    const id = ele.getAttribute("data-id");
+    const normal = ele.getAttribute("data-large-url");
+    const original = ele.getAttribute("data-file-url");
+    const fileExt = ele.getAttribute("data-file-ext") || undefined;
+    if (!normal || !original || !id) return [null, ""];
+    this.cache.set(href, { normal, original, id, fileExt });
+    return [new ImageNode(src, href, `${id}.jpg`), tags || ""];
+  }
+  cachedOriginMeta(href: string): OriginMeta | null {
+    const cached = this.cache.get(href);
+    if (!cached) throw new Error("miss origin meta: " + href);
+    if (["webm", "webp", "mp4"].includes(cached.fileExt ?? "bbb") || conf.fetchOriginal) {
+      return { url: cached.original, title: `${cached.id}.${cached.fileExt}` };
+    }
+    return { url: cached.normal, title: `${cached.id}.${cached.normal.split(".").pop()}` };
+  }
+  site(): string {
+    return "e621";
+  }
+  workURL(): RegExp {
+    return /e621.net\/(posts(?!\/)|$)/;
+  }
+
 }

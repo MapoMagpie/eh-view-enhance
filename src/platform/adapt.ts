@@ -1,6 +1,6 @@
 import { conf } from "../config";
 import { Comic18Matcher } from "./18comic";
-import { DanbooruDonmaiMatcher, GelBooruMatcher, KonachanMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
+import { DanbooruDonmaiMatcher, E621Matcher, GelBooruMatcher, KonachanMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
 import { EHMatcher } from "./ehentai";
 import { HentaiNexusMatcher } from "./hentainexus";
 import { HitomiMather } from "./hitomi";
@@ -37,6 +37,7 @@ export function getMatchers(): Matcher[] {
     new KoharuMatcher(),
     new MHGMatcher(),
     new MangaCopyMatcher(),
+    new E621Matcher(),
   ];
 }
 

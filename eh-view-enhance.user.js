@@ -44,7 +44,8 @@
 // @match              https://koharu.to/*
 // @match              https://*.manhuagui.com/*
 // @match              http*://*.mangacopy.com/*
-// @match              http*://*.copymanga.site/*
+// @match              http*://*.copymanga.tv/*
+// @match              https://e621.net/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
@@ -76,6 +77,7 @@
 // @connect            aronasexo.xyz
 // @connect            hamreus.com
 // @connect            mangafuna.xyz
+// @connect            e621.net
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue
@@ -525,6 +527,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     storage.setItem(CONFIG_KEY, JSON.stringify(c));
   }
   const conf = getConf();
+  const transient = { imgSrcCSP: false, originalPolicy: "" };
   const ConfigItems = [
     { key: "colCount", typ: "number" },
     { key: "threads", typ: "number" },
@@ -731,14 +734,12 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   class IMGFetcher {
     index;
     node;
-    originURL;
     stage = 1 /* URL */;
     tryTimes = 0;
     lock = false;
     rendered = false;
     data;
     contentType;
-    blobSrc;
     downloadState;
     timeoutId;
     matcher;
@@ -804,7 +805,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
             case 0 /* FAILED */:
             case 1 /* URL */:
               const meta = await this.fetchOriginMeta();
-              this.originURL = meta.url;
+              this.node.originSrc = meta.url;
               if (meta.title) {
                 this.node.title = meta.title;
                 if (this.node.imgElement) {
@@ -817,7 +818,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
             case 2 /* DATA */:
               const ret = await this.fetchImageData();
               [this.data, this.contentType] = ret;
-              [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL);
+              [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.node.originSrc);
               if (this.contentType.startsWith("text")) {
                 if (this.data.byteLength < 1e5) {
                   const str = new TextDecoder().decode(this.data);
@@ -825,8 +826,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
                   throw new Error(`expect image data, fetched wrong type: ${this.contentType}, the content is showing up in console(F12 open it).`);
                 }
               }
-              this.blobSrc = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
-              this.node.onloaded(this.blobSrc, this.contentType);
+              this.node.blobSrc = transient.imgSrcCSP ? this.node.originSrc : URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
+              this.node.mimeType = this.contentType;
               this.node.render(() => this.rendered = false);
               this.stage = 3 /* DONE */;
             case 3 /* DONE */:
@@ -856,7 +857,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     async fetchImageData() {
       const data = await this.fetchBigImage();
       if (data == null) {
-        throw new Error(`fetch image data is empty, image url:${this.originURL}`);
+        throw new Error(`fetch image data is empty, image url:${this.node.originSrc}`);
       }
       return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
     }
@@ -898,8 +899,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.node.changeStyle("init");
     }
     async fetchBigImage() {
-      if (this.originURL?.startsWith("blob:")) {
-        return await fetch(this.originURL).then((resp) => resp.blob());
+      if (this.node.originSrc?.startsWith("blob:")) {
+        return await fetch(this.node.originSrc).then((resp) => resp.blob());
       }
       const imgFetcher = this;
       return new Promise(async (resolve, reject) => {
@@ -911,7 +912,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
             abort();
           }, conf.timeout * 1e3);
         };
-        abort = xhrWapper(imgFetcher.originURL, "blob", {
+        abort = xhrWapper(imgFetcher.node.originSrc, "blob", {
           onload: function(response) {
             let data = response.response;
             try {
@@ -2184,10 +2185,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.imgElement.src = "";
       this.canvasSized = false;
     }
-    onloaded(blobSrc, mimeType) {
-      this.blobSrc = blobSrc;
-      this.mimeType = mimeType;
-    }
     progress(state) {
       if (!this.root)
         return;
@@ -2649,6 +2646,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }
     }
     async fetchOriginMeta(href) {
+      let cached = this.cachedOriginMeta(href);
+      if (cached)
+        return cached;
       let url = null;
       const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       if (conf.fetchOriginal) {
@@ -2666,6 +2666,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         title = `${id}.${ext}`;
       }
       return { url, title };
+    }
+    cachedOriginMeta(_href) {
+      return null;
     }
     async parseImgNodes(source) {
       const list = [];
@@ -2983,6 +2986,87 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     extractIDFromHref(href) {
       return href.match(/id=(\d+)/)?.[1];
+    }
+  }
+  class E621Matcher extends DanbooruMatcher {
+    cache = /* @__PURE__ */ new Map();
+    constructor() {
+      super();
+      transient.imgSrcCSP = true;
+    }
+    nextPage(doc) {
+      return doc.querySelector(".paginator #paginator-next")?.href ?? null;
+    }
+    getOriginalURL() {
+      throw new Error("Method not implemented.");
+    }
+    getNormalURL() {
+      throw new Error("Method not implemented.");
+    }
+    extractIDFromHref() {
+      throw new Error("Method not implemented.");
+    }
+    getBlacklist(doc) {
+      let content = doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content");
+      if (!content)
+        return [];
+      return content.slice(1, -1).split(",").map((s) => s.slice(1, -1));
+    }
+    queryList(doc) {
+      return Array.from(doc.querySelectorAll("#posts-container > article"));
+    }
+    // id="post_4988821"
+    // class="post-preview post-status-pending post-rating-explicit blacklistable"
+    // data-id="4988821"
+    // data-flags="pending"
+    // data-tags="anthro asgore_dreemurr back_boob belly big_breasts big_butt big_penis body_hair boss_monster_(undertale) bovid breasts butt butt_grab butt_squish caprine conditional_dnp duo eyes_closed female female_penetrated fur genitals goat hand_on_butt hi_res horn huge_butt internal jezzlen male male/female male_penetrating male_penetrating_female mammal mature_anthro mature_female mature_male nude on_bottom on_top overweight overweight_male penetration penile penis pussy reverse_cowgirl_position sex simple_background sketch slightly_chubby squish tail thick_thighs toriel undertale undertale_(series) vaginal xray_view"
+    // data-rating="e"
+    // data-file-ext="png"
+    // data-width="1974"
+    // data-height="1623"
+    // data-size="1517509"
+    // data-created-at='"2024-08-16T00:26:23.361-04:00"'
+    // data-uploader="jezzlen"
+    // data-uploader-id="760438"
+    // data-score="21"
+    // data-fav-count="49"
+    // data-is-favorited="false"
+    // data-pools="[]"
+    // data-md5="9b9cf6d7356c269a1ebb9a86fda68442"
+    // data-preview-url="https://static1.e621.net/data/preview/9b/9c/9b9cf6d7356c269a1ebb9a86fda68442.jpg"
+    // data-large-url="https://static1.e621.net/data/sample/9b/9c/9b9cf6d7356c269a1ebb9a86fda68442.jpg"
+    // data-file-url="https://static1.e621.net/data/9b/9c/9b9cf6d7356c269a1ebb9a86fda68442.png"
+    // data-preview-width="150"
+    // data-preview-height="123"
+    toImgNode(ele) {
+      let src = ele.getAttribute("data-preview-url");
+      if (!src)
+        return [null, ""];
+      const href = `${window.location.origin}/posts/${ele.getAttribute("data-id")}`;
+      const tags = ele.getAttribute("data-tags");
+      const id = ele.getAttribute("data-id");
+      const normal = ele.getAttribute("data-large-url");
+      const original = ele.getAttribute("data-file-url");
+      const fileExt = ele.getAttribute("data-file-ext") || void 0;
+      if (!normal || !original || !id)
+        return [null, ""];
+      this.cache.set(href, { normal, original, id, fileExt });
+      return [new ImageNode(src, href, `${id}.jpg`), tags || ""];
+    }
+    cachedOriginMeta(href) {
+      const cached = this.cache.get(href);
+      if (!cached)
+        throw new Error("miss origin meta: " + href);
+      if (["webm", "webp", "mp4"].includes(cached.fileExt ?? "bbb") || conf.fetchOriginal) {
+        return { url: cached.original, title: `${cached.id}.${cached.fileExt}` };
+      }
+      return { url: cached.normal, title: `${cached.id}.${cached.normal.split(".").pop()}` };
+    }
+    site() {
+      return "e621";
+    }
+    workURL() {
+      return /e621.net\/(posts(?!\/)|$)/;
     }
   }
 
@@ -5164,7 +5248,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new HentaiNexusMatcher(),
       new KoharuMatcher(),
       new MHGMatcher(),
-      new MangaCopyMatcher()
+      new MangaCopyMatcher(),
+      new E621Matcher()
     ];
   }
   function adaptMatcher(url) {
@@ -8204,7 +8289,7 @@ ${chapters.map((c, i) => `<div><label>
           img.remove();
           return;
         }
-        img.setAttribute("src", imf.blobSrc);
+        img.setAttribute("src", imf.node.blobSrc);
         this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
       });
       this.loadingHelper = document.createElement("span");
@@ -8662,7 +8747,7 @@ ${chapters.map((c, i) => `<div><label>
             this.tryPlayVideo(vid);
           }
         };
-        vid.src = imf.blobSrc;
+        vid.src = imf.node.blobSrc;
         return vid;
       } else {
         const img = document.createElement("img");
@@ -8672,7 +8757,7 @@ ${chapters.map((c, i) => `<div><label>
         img.setAttribute("d-index", index.toString());
         img.setAttribute("d-random-id", imf.randomID);
         if (imf.stage === FetchState.DONE) {
-          img.src = imf.blobSrc;
+          img.src = imf.node.blobSrc;
         } else {
           img.src = imf.node.thumbnailSrc;
         }

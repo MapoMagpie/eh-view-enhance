@@ -22,6 +22,8 @@ export interface VisualNode {
   isRender(): boolean;
 }
 
+type Onfailed = (reason: string, source?: string, error?: Error) => void;
+
 export default class ImageNode {
   root?: HTMLElement;
   thumbnailSrc: string;
@@ -34,7 +36,7 @@ export default class ImageNode {
   canvasSized: boolean = false;
   delaySRC?: Promise<string>;
   originSrc?: string;
-  private blobSrc?: string;
+  blobSrc?: string;
   mimeType?: string;
   private downloadBar?: HTMLElement;
   picked: boolean = true;
@@ -67,7 +69,7 @@ export default class ImageNode {
     return this.root;
   }
 
-  resize(onfailed: (reason: string) => void) {
+  resize(onfailed: Onfailed) {
     if (!this.root || !this.imgElement || !this.canvasElement) return onfailed("undefined elements");
     if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL) return onfailed("empty or default src");
     if (this.root.offsetWidth <= 1) return onfailed("element too small");
@@ -96,7 +98,7 @@ export default class ImageNode {
     }
   }
 
-  render(onfailed: (reason: string) => void) {
+  render(onfailed: Onfailed) {
     if (!this.imgElement) return onfailed("element undefined");
     let justThumbnail = !this.blobSrc;
     if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
@@ -124,11 +126,6 @@ export default class ImageNode {
     if (!this.imgElement) return;
     this.imgElement.src = "";
     this.canvasSized = false;
-  }
-
-  onloaded(blobSrc: string, mimeType: string) {
-    this.blobSrc = blobSrc;
-    this.mimeType = mimeType;
   }
 
   progress(state: DownloadState) {

@@ -1,4 +1,4 @@
-import { conf } from "./config";
+import { conf, transient } from "./config";
 import EBUS from "./event-bus";
 import ImageNode, { VisualNode } from "./img-node";
 import { Matcher, OriginMeta } from "./platform/platform";
@@ -29,14 +29,12 @@ export enum FetchState {
 export class IMGFetcher implements VisualNode {
   index: number;
   node: ImageNode;
-  originURL?: string;
   stage: FetchState = FetchState.URL;
   tryTimes: number = 0;
   lock: boolean = false;
   rendered: boolean = false;
   data?: Uint8Array;
   contentType?: string;
-  blobSrc?: string;
   downloadState: DownloadState;
   timeoutId?: number;
   matcher: Matcher;
@@ -108,7 +106,7 @@ export class IMGFetcher implements VisualNode {
           case FetchState.FAILED:
           case FetchState.URL:
             const meta = await this.fetchOriginMeta();
-            this.originURL = meta.url;
+            this.node.originSrc = meta.url;
             if (meta.title) {
               this.node.title = meta.title;
               if (this.node.imgElement) {
@@ -121,7 +119,7 @@ export class IMGFetcher implements VisualNode {
           case FetchState.DATA:
             const ret = await this.fetchImageData();
             [this.data, this.contentType] = ret;
-            [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.originURL!);
+            [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.node.originSrc!);
             if (this.contentType.startsWith("text")) {
               if (this.data.byteLength < 100000) { // less then 100kb
                 const str = new TextDecoder().decode(this.data);
@@ -129,8 +127,8 @@ export class IMGFetcher implements VisualNode {
                 throw new Error(`expect image data, fetched wrong type: ${this.contentType}, the content is showing up in console(F12 open it).`);
               }
             }
-            this.blobSrc = URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
-            this.node.onloaded(this.blobSrc, this.contentType);
+            this.node.blobSrc = transient.imgSrcCSP ? this.node.originSrc : URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
+            this.node.mimeType = this.contentType;
             this.node.render(() => this.rendered = false);
             this.stage = FetchState.DONE;
           case FetchState.DONE:
@@ -160,7 +158,7 @@ export class IMGFetcher implements VisualNode {
   async fetchImageData(): Promise<[Uint8Array, string]> {
     const data = await this.fetchBigImage();
     if (data == null) {
-      throw new Error(`fetch image data is empty, image url:${this.originURL}`);
+      throw new Error(`fetch image data is empty, image url:${this.node.originSrc}`);
     }
     return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
   }
@@ -206,8 +204,8 @@ export class IMGFetcher implements VisualNode {
   }
 
   async fetchBigImage(): Promise<Blob | null> {
-    if (this.originURL?.startsWith("blob:")) {
-      return await fetch(this.originURL).then(resp => resp.blob());
+    if (this.node.originSrc?.startsWith("blob:")) {
+      return await fetch(this.node.originSrc).then(resp => resp.blob());
     }
     const imgFetcher = this;
     return new Promise(async (resolve, reject) => {
@@ -219,7 +217,7 @@ export class IMGFetcher implements VisualNode {
           abort();
         }, conf.timeout * 1000);
       };
-      abort = xhrWapper(imgFetcher.originURL!, "blob", {
+      abort = xhrWapper(imgFetcher.node.originSrc!, "blob", {
         onload: function(response) {
           let data = response.response;
           try {

@@ -71,7 +71,7 @@ export class BigImageFrameManager {
         img.remove();
         return;
       }
-      img.setAttribute("src", imf.blobSrc!);
+      img.setAttribute("src", imf.node.blobSrc!);
       this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
     });
 
@@ -550,7 +550,7 @@ export class BigImageFrameManager {
           this.tryPlayVideo(vid);
         }
       };
-      vid.src = imf.blobSrc!;
+      vid.src = imf.node.blobSrc!;
       // vid.addEventListener("click", () => this.hidden());
       return vid;
     } else {
@@ -562,7 +562,7 @@ export class BigImageFrameManager {
       img.setAttribute("d-index", index.toString());
       img.setAttribute("d-random-id", imf.randomID);
       if (imf.stage === FetchState.DONE) {
-        img.src = imf.blobSrc!;
+        img.src = imf.node.blobSrc!;
       } else {
         img.src = imf.node.thumbnailSrc;
       }

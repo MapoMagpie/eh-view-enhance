@@ -417,21 +417,6 @@ export class GelBooruMatcher extends DanbooruMatcher {
 
 export class E621Matcher extends DanbooruMatcher {
   cache: Map<string, { normal: string, original: string, id: string, fileExt?: string }> = new Map();
-  constructor() {
-    super();
-    transient.imgSrcCSP = true;
-    // // check csp
-    // const img = new Image();
-    // document.body.append(img);
-    // document.addEventListener("securitypolicyviolation", ev => {
-    //   transient.originalPolicy = ev.originalPolicy;
-    //   transient.imgSrcCSP = true;
-    //   img.remove();
-    //   console.log("originalPolicy:", transient);
-    // }, { once: true });
-    // img.src = "data:base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-    // img.onload = () => img.remove();
-  }
   nextPage(doc: Document): string | null {
     return doc.querySelector<HTMLAnchorElement>(".paginator #paginator-next")?.href ?? null;
   }
@@ -450,6 +435,18 @@ export class E621Matcher extends DanbooruMatcher {
     return content.slice(1, -1).split(",").map(s => s.slice(1, -1))
   }
   queryList(doc: Document): HTMLElement[] {
+    transient.imgSrcCSP = true;
+    // // check csp
+    // const img = new Image();
+    // document.body.append(img);
+    // document.addEventListener("securitypolicyviolation", ev => {
+    //   transient.originalPolicy = ev.originalPolicy;
+    //   transient.imgSrcCSP = true;
+    //   img.remove();
+    //   console.log("originalPolicy:", transient);
+    // }, { once: true });
+    // img.src = "data:base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    // img.onload = () => img.remove();
     return Array.from(doc.querySelectorAll<HTMLElement>("#posts-container > article"));
   }
   // id="post_4988821"

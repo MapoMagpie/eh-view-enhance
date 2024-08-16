@@ -2990,10 +2990,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   }
   class E621Matcher extends DanbooruMatcher {
     cache = /* @__PURE__ */ new Map();
-    constructor() {
-      super();
-      transient.imgSrcCSP = true;
-    }
     nextPage(doc) {
       return doc.querySelector(".paginator #paginator-next")?.href ?? null;
     }
@@ -3013,6 +3009,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return content.slice(1, -1).split(",").map((s) => s.slice(1, -1));
     }
     queryList(doc) {
+      transient.imgSrcCSP = true;
       return Array.from(doc.querySelectorAll("#posts-container > article"));
     }
     // id="post_4988821"

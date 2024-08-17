@@ -41,9 +41,9 @@ export class HentaiNexusMatcher extends BaseMatcher {
     return result;
   }
 
-  async fetchOriginMeta(href: string): Promise<OriginMeta> {
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
     if (!this.readerData) {
-      const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       const args = doc.querySelector("body > script")?.textContent?.match(REGEXP_EXTRACT_INIT_ARGUMENTS)?.slice(1);
       if (!args || args.length !== 3) throw new Error("cannot find reader data");
       // args[2] :string = {"direction":"rtl","smooth_scroll":"enabled","fit_to_screen":"disabled"}
@@ -54,7 +54,7 @@ export class HentaiNexusMatcher extends BaseMatcher {
       }
     }
     if (!this.readerData) throw new Error("cannot find reader data");
-    const hash = href.match(REGEXP_EXTRACT_HASH)?.[1] || "001";
+    const hash = node.href.match(REGEXP_EXTRACT_HASH)?.[1] || "001";
     const url = this.readerData.find(d => d.url_label === hash)?.image;
     if (!url) throw new Error("cannot find image url");
     const ext = url.split(".").pop();

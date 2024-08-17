@@ -44,10 +44,10 @@ export class WnacgMatcher extends BaseMatcher {
     return result;
   }
 
-  async fetchOriginMeta(href: string): Promise<OriginMeta> {
-    const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
     const img = doc.querySelector<HTMLImageElement>("#picarea")
-    if (!img) throw new Error(`Cannot find #picarea from ${href}`);
+    if (!img) throw new Error(`Cannot find #picarea from ${node.href}`);
     const url = img.src;
     const title = url.split("/").pop();
     return { url, title }

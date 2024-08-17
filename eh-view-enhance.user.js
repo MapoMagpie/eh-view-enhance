@@ -850,9 +850,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       throw err;
     }
     async fetchOriginMeta() {
-      if (this.node.originSrc)
-        return { url: this.node.originSrc };
-      return await this.matcher.fetchOriginMeta(this.node.href, this.tryTimes > 0 || this.stage === 0 /* FAILED */, this.chapterIndex);
+      return await this.matcher.fetchOriginMeta(this.node, this.tryTimes > 0 || this.stage === 0 /* FAILED */, this.chapterIndex);
     }
     async fetchImageData() {
       const data = await this.fetchBigImage();
@@ -2563,7 +2561,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           evLog("error", "warn: cannot find data-original", element);
           continue;
         }
-        list.push(new ImageNode("", src, title));
+        list.push(new ImageNode("", src, title, void 0, src));
       }
       return list;
     }
@@ -2615,8 +2613,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return this.meta;
     }
     // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
-    async fetchOriginMeta(url) {
-      return { url };
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
     }
   }
 
@@ -2648,12 +2646,12 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         yield doc;
       }
     }
-    async fetchOriginMeta(href) {
-      let cached = this.cachedOriginMeta(href);
+    async fetchOriginMeta(node) {
+      let cached = this.cachedOriginMeta(node.href);
       if (cached)
         return cached;
       let url = null;
-      const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       if (conf.fetchOriginal) {
         url = this.getOriginalURL(doc);
       }
@@ -2664,7 +2662,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         throw new Error("Cannot find origin image or video url");
       let title;
       const ext = url.split(".").pop()?.match(/^\w+/)?.[0];
-      const id = this.extractIDFromHref(href);
+      const id = this.extractIDFromHref(node.href);
       if (ext && id) {
         title = `${id}.${ext}`;
       }
@@ -2844,10 +2842,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }
       return ret;
     }
-    async fetchOriginMeta(href) {
-      let id = href.split("/").pop();
+    async fetchOriginMeta(node) {
+      let id = node.href.split("/").pop();
       if (!id) {
-        throw new Error(`cannot find id from ${href}`);
+        throw new Error(`cannot find id from ${node.href}`);
       }
       let url;
       if (conf.fetchOriginal) {
@@ -2920,10 +2918,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }
       return ret;
     }
-    async fetchOriginMeta(href) {
-      let id = href.split("/").pop();
+    async fetchOriginMeta(node) {
+      let id = node.href.split("/").pop();
       if (!id) {
-        throw new Error(`cannot find id from ${href}`);
+        throw new Error(`cannot find id from ${node.href}`);
       }
       let url;
       if (conf.fetchOriginal) {
@@ -3277,15 +3275,14 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         yield url.href;
       }
     }
-    async fetchOriginMeta(url, retry) {
-      let text = await window.fetch(url).then((resp) => resp.text()).catch((reason) => new Error(reason));
+    async fetchOriginMeta(node, retry) {
+      let text = await window.fetch(node.href).then((resp) => resp.text()).catch((reason) => new Error(reason));
       if (text instanceof Error || !text)
         throw new Error(`fetch source page error, ${text.toString()}`);
       let src;
-      let newHref;
       if (conf.fetchOriginal) {
         src = regulars.original.exec(text)?.[1].replace(/&amp;/g, "&");
-        const nl = url.split("?").pop();
+        const nl = node.href.split("?").pop();
         if (src && nl) {
           src += "?" + nl;
         }
@@ -3295,9 +3292,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (retry) {
         const nlValue = regulars.nlValue.exec(text)?.[1];
         if (nlValue) {
-          newHref = url + (url.includes("?") ? "&" : "?") + "nl=" + nlValue;
-          evLog("info", `IMG-FETCHER retry url:${newHref}`);
-          const newMeta = await this.fetchOriginMeta(newHref, false);
+          node.href = node.href + (node.href.includes("?") ? "&" : "?") + "nl=" + nlValue;
+          evLog("info", `IMG-FETCHER retry url:${node.href}`);
+          const newMeta = await this.fetchOriginMeta(node, false);
           src = newMeta.url;
         } else {
           evLog("error", `Cannot matching the nlValue, content: ${text}`);
@@ -3313,7 +3310,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (src.endsWith("509.gif")) {
         throw new Error("509, Image limits Exceeded, Please reset your Quota!");
       }
-      return { url: src, href: newHref };
+      return { url: src, href: node.href };
     }
     async processData(data, contentType) {
       if (contentType.startsWith("text")) {
@@ -3355,9 +3352,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       });
       return result;
     }
-    async fetchOriginMeta(href) {
+    async fetchOriginMeta(node) {
       if (!this.readerData) {
-        const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+        const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
         const args = doc.querySelector("body > script")?.textContent?.match(REGEXP_EXTRACT_INIT_ARGUMENTS)?.slice(1);
         if (!args || args.length !== 3)
           throw new Error("cannot find reader data");
@@ -3369,7 +3366,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }
       if (!this.readerData)
         throw new Error("cannot find reader data");
-      const hash = href.match(REGEXP_EXTRACT_HASH)?.[1] || "001";
+      const hash = node.href.match(REGEXP_EXTRACT_HASH)?.[1] || "001";
       const url = this.readerData.find((d) => d.url_label === hash)?.image;
       if (!url)
         throw new Error("cannot find image url");
@@ -3572,17 +3569,13 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           continue;
         }
         let title = files[i].name.replace(/\.\w+$/, "");
-        const node = new ImageNode(
-          this.gg.thumbURL(files[i].hash),
-          this.gg.originURL(files[i].hash, ext),
-          title + "." + ext
-        );
-        list.push(node);
+        const src = this.gg.originURL(files[i].hash, ext);
+        list.push(new ImageNode(this.gg.thumbURL(files[i].hash), src, title + "." + ext, void 0, src));
       }
       return list;
     }
-    async fetchOriginMeta(url) {
-      return { url };
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
     }
     setGalleryMeta(info, galleryID, chapter) {
       this.infoRecord[chapter.id] = info;
@@ -3624,18 +3617,18 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return "im-hentai";
     }
     data;
-    async fetchOriginMeta(href, _) {
-      const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+    async fetchOriginMeta(node, _) {
+      const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       const imgNode = doc.querySelector("#gimg");
       if (!imgNode) {
-        throw new Error("cannot find image node from: " + href);
+        throw new Error("cannot find image node from: " + node.href);
       }
       const src = imgNode.getAttribute("data-src");
       if (!src) {
         throw new Error("cannot find image src from: #gimg");
       }
       const ext = src.split(".").pop()?.match(/^\w+/)?.[0];
-      const num = href.match(/\/(\d+)\/?$/)?.[1];
+      const num = node.href.match(/\/(\d+)\/?$/)?.[1];
       let title;
       if (ext && num) {
         const digits = this.data.total.toString().length;
@@ -3756,8 +3749,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         return new ImageNode(thumbBase + thumbs[i].path, href, title, void 0, src);
       });
     }
-    async fetchOriginMeta() {
-      throw new Error("the image src already exists in the ImageNode");
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
     }
     workURL() {
       return /koharu.to\/(g|reader)\/\d+\/\w+/;
@@ -3810,8 +3803,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         throw new Error("cannot decrypt contentKey: " + error.toString() + "\n" + contentKey);
       }
     }
-    async fetchOriginMeta() {
-      throw new Error("the image src already exists in the ImageNode");
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
     }
     workURL() {
       return /(mangacopy|copymanga).*?\/comic\/[^\/]*\/?$/;
@@ -3924,8 +3917,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         return new ImageNode("", href, f, void 0, src);
       });
     }
-    async fetchOriginMeta() {
-      throw new Error("the image src already exists in the ImageNode");
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
     }
     workURL() {
       return /manhuagui.com\/comic\/\d+\/?$/;
@@ -4097,10 +4090,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       meta.tags = tags;
       return meta;
     }
-    async fetchOriginMeta(href) {
+    async fetchOriginMeta(node) {
       let text = "";
       try {
-        text = await window.fetch(href).then((resp) => resp.text());
+        text = await window.fetch(node.href).then((resp) => resp.text());
         if (!text)
           throw new Error("[text] is empty");
       } catch (error) {
@@ -4699,15 +4692,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
       return this.meta;
     }
-    async fetchOriginMeta(url) {
-      const matches = url.match(PID_EXTRACT);
+    async fetchOriginMeta(node) {
+      const matches = node.href.match(PID_EXTRACT);
       if (!matches || matches.length < 2) {
-        return { url };
+        return { url: node.originSrc };
       }
       const pid = matches[1];
       const p = matches[2];
       if (this.works[pid]?.illustType !== 2 || p !== "ugoira") {
-        return { url };
+        return { url: node.originSrc };
       }
       const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then((resp) => resp.json());
       this.ugoiraMetas[meta.body.src] = meta;
@@ -4760,11 +4753,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             title = title.replace(/\.\w+$/, ".gif");
           }
           j++;
-          const node = new ImageNode(
-            p.urls.small,
-            p.urls.original,
-            title
-          );
+          const node = new ImageNode(p.urls.small, p.urls.original, title, void 0, p.urls.original);
           list.push(node);
         }
       }
@@ -4846,8 +4835,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       meta.tags = tags;
       return meta;
     }
-    async fetchOriginMeta() {
-      throw new Error("the image src already exists in the ImageNode");
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
     }
     async parseImgNodes(source) {
       const range = source.split("-").map(Number);
@@ -4859,8 +4848,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           thumbnail = await this.fetchThumbnail(i);
         }
         const src = `https://rokuhentai.com/_images/pages/${this.galleryId}/${i}.jpg`;
-        const newNode = new ImageNode(thumbnail, src, i.toString().padStart(digits, "0") + ".jpg", void 0, src);
-        list.push(newNode);
+        list.push(new ImageNode(thumbnail, src, i.toString().padStart(digits, "0") + ".jpg", void 0, src));
       }
       return list;
     }
@@ -4923,10 +4911,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     workURL() {
       return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
     }
-    async fetchOriginMeta(href) {
+    async fetchOriginMeta(node) {
       let raw = "";
       try {
-        raw = await window.fetch(href).then((resp) => resp.text());
+        raw = await window.fetch(node.href).then((resp) => resp.text());
         if (!raw)
           throw new Error("[text] is empty");
       } catch (error) {
@@ -5114,8 +5102,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
       return list;
     }
-    async fetchOriginMeta() {
-      throw new Error("the image src already exists in the ImageNode");
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
     }
     workURL() {
       return /(\/x|twitter).com\/(?!(home|explore|notifications|messages)$|i\/|search\?)\w+/;
@@ -5174,11 +5162,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
       return result;
     }
-    async fetchOriginMeta(href) {
-      const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+    async fetchOriginMeta(node) {
+      const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       const img = doc.querySelector("#picarea");
       if (!img)
-        throw new Error(`Cannot find #picarea from ${href}`);
+        throw new Error(`Cannot find #picarea from ${node.href}`);
       const url = img.src;
       const title = url.split("/").pop();
       return { url, title };

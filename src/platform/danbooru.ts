@@ -43,11 +43,11 @@ abstract class DanbooruMatcher extends BaseMatcher {
   abstract extractIDFromHref(href: string): string | undefined;
   abstract getBlacklist(doc: Document): string[];
 
-  async fetchOriginMeta(href: string): Promise<OriginMeta> {
-    let cached = this.cachedOriginMeta(href);
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    let cached = this.cachedOriginMeta(node.href);
     if (cached) return cached;
     let url: string | null = null;
-    const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+    const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
     if (conf.fetchOriginal) {
       url = this.getOriginalURL(doc);
     }
@@ -59,7 +59,7 @@ abstract class DanbooruMatcher extends BaseMatcher {
     // extract ext from url
     const ext = url.split(".").pop()?.match(/^\w+/)?.[0];
     // extract id from href
-    const id = this.extractIDFromHref(href);
+    const id = this.extractIDFromHref(node.href);
     if (ext && id) {
       title = `${id}.${ext}`;
     }
@@ -261,10 +261,10 @@ export class YandereMatcher extends BaseMatcher {
     return ret;
   }
 
-  async fetchOriginMeta(href: string): Promise<OriginMeta> {
-    let id = href.split("/").pop();
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    let id = node.href.split("/").pop();
     if (!id) {
-      throw new Error(`cannot find id from ${href}`);
+      throw new Error(`cannot find id from ${node.href}`);
     }
     let url: string | undefined;
     if (conf.fetchOriginal) {
@@ -339,10 +339,10 @@ export class KonachanMatcher extends BaseMatcher {
     }
     return ret;
   }
-  async fetchOriginMeta(href: string): Promise<OriginMeta> {
-    let id = href.split("/").pop();
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    let id = node.href.split("/").pop();
     if (!id) {
-      throw new Error(`cannot find id from ${href}`);
+      throw new Error(`cannot find id from ${node.href}`);
     }
     let url: string | undefined;
     if (conf.fetchOriginal) {

@@ -105,15 +105,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return this.meta;
   }
 
-  async fetchOriginMeta(url: string): Promise<OriginMeta> {
-    const matches = url.match(PID_EXTRACT);
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    const matches = node.href.match(PID_EXTRACT);
     if (!matches || matches.length < 2) {
-      return { url };
+      return { url: node.originSrc! }; // cannot extract pid, should throw an error
     }
     const pid = matches[1];
     const p = matches[2];
     if (this.works[pid]?.illustType !== 2 || p !== "ugoira") {
-      return { url };
+      return { url: node.originSrc! };
     }
     const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then(resp => resp.json()) as UgoiraMeta;
     this.ugoiraMetas[meta.body.src] = meta;
@@ -172,11 +172,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           title = title.replace(/\.\w+$/, ".gif");
         }
         j++;
-        const node = new ImageNode(
-          p.urls.small,
-          p.urls.original,
-          title,
-        );
+        const node = new ImageNode(p.urls.small, p.urls.original, title, undefined, p.urls.original);
         list.push(node);
       }
     }

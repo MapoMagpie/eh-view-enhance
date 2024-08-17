@@ -41,8 +41,8 @@ export class MHGMatcher extends BaseMatcher {
       return new ImageNode("", href, f, undefined, src);
     });
   }
-  async fetchOriginMeta(): Promise<OriginMeta> {
-    throw new Error("the image src already exists in the ImageNode");
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    return { url: node.originSrc! };
   }
   workURL(): RegExp {
     return /manhuagui.com\/comic\/\d+\/?$/;

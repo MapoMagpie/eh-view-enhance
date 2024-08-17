@@ -197,8 +197,8 @@ export class TwitterMatcher extends BaseMatcher {
     return list;
   }
 
-  async fetchOriginMeta(): Promise<OriginMeta> {
-    throw new Error("the image src already exists in the ImageNode");
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    return { url: node.originSrc! };
   }
 
   workURL(): RegExp {

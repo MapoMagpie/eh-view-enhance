@@ -46,10 +46,10 @@ export class NHMatcher extends BaseMatcher {
     return meta;
   }
 
-  async fetchOriginMeta(href: string): Promise<OriginMeta> {
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
     let text = "";
     try {
-      text = await window.fetch(href).then(resp => resp.text());
+      text = await window.fetch(node.href).then(resp => resp.text());
       if (!text) throw new Error("[text] is empty");
     } catch (error) {
       throw new Error(`Fetch source page error, expected [text]！ ${error}`);

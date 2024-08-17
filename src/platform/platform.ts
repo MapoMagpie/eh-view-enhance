@@ -26,7 +26,7 @@ export interface Matcher {
   /**
    * step 3: fetch origin img url from every single image node's href
    */
-  fetchOriginMeta(href: string, retry: boolean, chapterID?: number): Promise<OriginMeta>;
+  fetchOriginMeta(node: ImageNode, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
   galleryMeta(doc: Document, chapter?: Chapter): GalleryMeta;
   title(doc: Document): string;
@@ -49,7 +49,7 @@ export abstract class BaseMatcher implements Matcher {
   abstract name(): string;
   abstract fetchPagesSource(source: Chapter): AsyncGenerator<PagesSource>;
   abstract parseImgNodes(page: PagesSource, chapterID?: number): Promise<ImageNode[]>;
-  abstract fetchOriginMeta(href: string, retry: boolean, chapterID?: number): Promise<OriginMeta>;
+  abstract fetchOriginMeta(node: ImageNode, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
   title(doc: Document): string {
     const meta = this.galleryMeta(doc);

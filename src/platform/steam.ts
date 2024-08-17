@@ -13,10 +13,10 @@ export class SteamMatcher extends BaseMatcher {
     return /steamcommunity.com\/id\/[^/]+\/screenshots.*/;
   }
 
-  async fetchOriginMeta(href: string): Promise<OriginMeta> {
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
     let raw = "";
     try {
-      raw = await window.fetch(href).then(resp => resp.text());
+      raw = await window.fetch(node.href).then(resp => resp.text());
       if (!raw) throw new Error("[text] is empty");
     } catch (error) {
       throw new Error(`Fetch source page error, expected [text]！ ${error}`);

@@ -41,8 +41,8 @@ export class MangaCopyMatcher extends BaseMatcher {
       throw new Error("cannot decrypt contentKey: " + (error as any).toString() + "\n" + contentKey);
     }
   }
-  async fetchOriginMeta(): Promise<OriginMeta> {
-    throw new Error("the image src already exists in the ImageNode");
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    return { url: node.originSrc! };
   }
   workURL(): RegExp {
     return /(mangacopy|copymanga).*?\/comic\/[^\/]*\/?$/;

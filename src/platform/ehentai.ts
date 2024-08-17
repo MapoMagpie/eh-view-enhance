@@ -212,17 +212,16 @@ export class EHMatcher extends BaseMatcher {
     }
   }
 
-  async fetchOriginMeta(url: string, retry: boolean): Promise<OriginMeta> {
-    let text: string | Error = await window.fetch(url).then(resp => resp.text()).catch(reason => new Error(reason));
+  async fetchOriginMeta(node: ImageNode, retry: boolean): Promise<OriginMeta> {
+    let text: string | Error = await window.fetch(node.href).then(resp => resp.text()).catch(reason => new Error(reason));
     if (text instanceof Error || !text) throw new Error(`fetch source page error, ${text.toString()}`);
 
     // TODO: Your IP address has been temporarily banned for excessive pageloads which indicates that you are using automated mirroring/harvesting software. The ban expires in 2 days and 23 hours
     let src: string | undefined;
-    let newHref: string | undefined; // record &nl=value
 
     if (conf.fetchOriginal) {
       src = regulars.original.exec(text)?.[1].replace(/&amp;/g, "&");
-      const nl = url.split("?").pop();
+      const nl = node.href.split("?").pop();
       if (src && nl) {
         src += "?" + nl;
       }
@@ -232,9 +231,9 @@ export class EHMatcher extends BaseMatcher {
     if (retry) {
       const nlValue = regulars.nlValue.exec(text)?.[1];
       if (nlValue) {
-        newHref = url + (url.includes("?") ? "&" : "?") + "nl=" + nlValue;
-        evLog("info", `IMG-FETCHER retry url:${newHref}`);
-        const newMeta = await this.fetchOriginMeta(newHref, false);
+        node.href = node.href + (node.href.includes("?") ? "&" : "?") + "nl=" + nlValue;
+        evLog("info", `IMG-FETCHER retry url:${node.href}`);
+        const newMeta = await this.fetchOriginMeta(node, false);
         src = newMeta.url;
       } else {
         evLog("error", `Cannot matching the nlValue, content: ${text}`);
@@ -252,7 +251,7 @@ export class EHMatcher extends BaseMatcher {
     if (src.endsWith("509.gif")) {
       throw new Error("509, Image limits Exceeded, Please reset your Quota!");
     }
-    return { url: src, href: newHref };
+    return { url: src, href: node.href };
   }
 
   async processData(data: Uint8Array, contentType: string): Promise<[Uint8Array, string]> {

@@ -109,8 +109,8 @@ export class KoharuMatcher extends BaseMatcher {
       return new ImageNode(thumbBase + thumbs[i].path, href, title, undefined, src);
     });
   }
-  async fetchOriginMeta(): Promise<OriginMeta> {
-    throw new Error("the image src already exists in the ImageNode");
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    return { url: node.originSrc! };
   }
   workURL(): RegExp {
     return /koharu.to\/(g|reader)\/\d+\/\w+/;

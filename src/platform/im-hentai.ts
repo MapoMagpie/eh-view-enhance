@@ -10,11 +10,11 @@ export class IMHentaiMatcher extends BaseMatcher {
   }
   data?: { server: string, uid: string, gid: string, imgDir: string, total: number };
 
-  async fetchOriginMeta(href: string, _: boolean): Promise<OriginMeta> {
-    const doc = await window.fetch(href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+  async fetchOriginMeta(node: ImageNode, _: boolean): Promise<OriginMeta> {
+    const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
     const imgNode = doc.querySelector<HTMLImageElement>("#gimg");
     if (!imgNode) {
-      throw new Error("cannot find image node from: " + href);
+      throw new Error("cannot find image node from: " + node.href);
     }
     const src = imgNode.getAttribute("data-src");
     if (!src) {
@@ -23,7 +23,7 @@ export class IMHentaiMatcher extends BaseMatcher {
     // extract ext from url
     const ext = src.split(".").pop()?.match(/^\w+/)?.[0];
     // extract id from href
-    const num = href.match(/\/(\d+)\/?$/)?.[1];
+    const num = node.href.match(/\/(\d+)\/?$/)?.[1];
     let title: string | undefined;
     if (ext && num) {
       const digits = this.data!.total.toString().length;

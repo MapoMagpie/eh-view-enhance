@@ -150,18 +150,14 @@ export class HitomiMather extends BaseMatcher {
         continue;
       }
       let title = files[i].name.replace(/\.\w+$/, "");
-      const node = new ImageNode(
-        this.gg!.thumbURL(files[i].hash),
-        this.gg!.originURL(files[i].hash, ext),
-        title + "." + ext,
-      );
-      list.push(node);
+      const src = this.gg!.originURL(files[i].hash, ext);
+      list.push(new ImageNode(this.gg!.thumbURL(files[i].hash), src, title + "." + ext, undefined, src));
     }
     return list;
   }
 
-  async fetchOriginMeta(url: string): Promise<OriginMeta> {
-    return { url };
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    return { url: node.originSrc! };
   }
 
   private setGalleryMeta(info: GalleryInfo, galleryID: string, chapter: Chapter) {

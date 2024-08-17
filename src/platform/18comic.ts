@@ -100,7 +100,7 @@ export class Comic18Matcher extends BaseMatcher {
         evLog("error", "warn: cannot find data-original", element);
         continue;
       }
-      list.push(new ImageNode("", src, title));
+      list.push(new ImageNode("", src, title, undefined, src));
     }
     return list;
   }
@@ -153,7 +153,7 @@ export class Comic18Matcher extends BaseMatcher {
     return this.meta;
   }
   // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
-  async fetchOriginMeta(url: string): Promise<OriginMeta> {
-    return { url };
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    return { url: node.originSrc! };
   }
 }

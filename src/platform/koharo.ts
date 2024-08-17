@@ -105,7 +105,7 @@ export class KoharuMatcher extends BaseMatcher {
     return items.entries.map((item, i) => {
       const href = `${window.location.origin}/reader/${galleryID}/${i + 1}`;
       const title = (i + 1).toString().padStart(pad, "0") + "." + item.path.split(".").pop();
-      const src = itemBase + item.path;
+      const src = itemBase + item.path + "?w=" + dataID;
       return new ImageNode(thumbBase + thumbs[i].path, href, title, undefined, src);
     });
   }

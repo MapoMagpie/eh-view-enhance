@@ -129,8 +129,10 @@ export class BigImageFrameManager {
         }
       }, { once: true });
       // mousemove
-      if (conf.readMode !== "pagination" || conf.stickyMouse !== "disable") return;
       this.frame.addEventListener("mousemove", (mmevt) => {
+        if (
+          (!conf.magnifier || conf.readMode !== "pagination" || conf.stickyMouse !== "disable")
+          && (moved = true)) return; // we set moved = true
         if (!moved && conf.imgScale === 100) {
           this.scaleBigImages(1, 0, 150, false);
         }
@@ -542,7 +544,7 @@ export class BigImageFrameManager {
       const vid = document.createElement("video");
       vid.classList.add("bifm-img");
       vid.classList.add("bifm-vid");
-      vid.draggable = false;
+      vid.draggable = !(conf.magnifier && conf.readMode === "pagination");
       vid.setAttribute("d-index", index.toString());
       vid.setAttribute("d-random-id", imf.randomID);
       vid.onloadeddata = () => {
@@ -557,7 +559,7 @@ export class BigImageFrameManager {
       const img = document.createElement("img");
       img.decoding = "sync";
       img.classList.add("bifm-img");
-      img.draggable = false;
+      img.draggable = !(conf.magnifier && conf.readMode === "pagination");
       // img.addEventListener("click", () => this.hidden());
       img.setAttribute("d-index", index.toString());
       img.setAttribute("d-random-id", imf.randomID);

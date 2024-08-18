@@ -79,6 +79,8 @@ export const i18n = {
   autoOpenTooltip: new I18nValue("Automatically open after the gallery page is loaded", "进入画廊页面后，自动展开阅读视图。"),
   autoCollapsePanel: new I18nValue("Auto Fold Control Panel", "自动收起控制面板"),
   autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
+  magnifier: new I18nValue("Magnifier", "放大镜"),
+  magnifierTooltip: new I18nValue("In the pagination reading mode, you can temporarily zoom in on an image by dragging it with the mouse click, and the image will follow the movement of the cursor.", "在翻页阅读模式下，你可以通过鼠标左键拖动图片临时放大图片以及图片跟随指针移动。"),
   // config panel select option
   readMode: new I18nValue("Read Mode", "阅读模式"),
   readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),

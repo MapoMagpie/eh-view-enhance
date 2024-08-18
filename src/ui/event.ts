@@ -91,6 +91,9 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         rule.style.flexDirection = conf.reversePages ? "row-reverse" : "row";
       }
     }
+    if (key === "magnifier") {
+      BIFM.elements.curr.forEach(ele => ele.draggable = !(conf.magnifier && conf.readMode === "pagination"));
+    }
   }
 
   function changeReadModeEvent(value?: string) {

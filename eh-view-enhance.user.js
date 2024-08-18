@@ -186,6 +186,8 @@
     autoOpenTooltip: new I18nValue("Automatically open after the gallery page is loaded", "进入画廊页面后，自动展开阅读视图。"),
     autoCollapsePanel: new I18nValue("Auto Fold Control Panel", "自动收起控制面板"),
     autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
+    magnifier: new I18nValue("Magnifier", "放大镜"),
+    magnifierTooltip: new I18nValue("In the pagination reading mode, you can temporarily zoom in on an image by dragging it with the mouse click, and the image will follow the movement of the cursor.", "在翻页阅读模式下，你可以通过鼠标左键拖动图片临时放大图片以及图片跟随指针移动。"),
     // config panel select option
     readMode: new I18nValue("Read Mode", "阅读模式"),
     readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
@@ -439,7 +441,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       id: uuid(),
       configPatchVersion: 0,
       displayText: {},
-      customStyle: ""
+      customStyle: "",
+      magnifier: false
     };
   }
   const CONF_VERSION = "4.4.0";
@@ -546,6 +549,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     { key: "autoLoadInBackground", typ: "boolean", gridColumnRange: [1, 6] },
     { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
     { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
+    { key: "magnifier", typ: "boolean", gridColumnRange: [1, 11] },
     {
       key: "readMode",
       typ: "select",
@@ -5866,6 +5870,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           rule.style.flexDirection = conf.reversePages ? "row-reverse" : "row";
         }
       }
+      if (key === "magnifier") {
+        BIFM.elements.curr.forEach((ele) => ele.draggable = !(conf.magnifier && conf.readMode === "pagination"));
+      }
     }
     function changeReadModeEvent(value) {
       if (value) {
@@ -8315,9 +8322,9 @@ ${chapters.map((c, i) => `<div><label>
             this.scaleBigImages(1, 0, conf.imgScale, false);
           }
         }, { once: true });
-        if (conf.readMode !== "pagination" || conf.stickyMouse !== "disable")
-          return;
         this.frame.addEventListener("mousemove", (mmevt) => {
+          if ((!conf.magnifier || conf.readMode !== "pagination" || conf.stickyMouse !== "disable") && (moved = true))
+            return;
           if (!moved && conf.imgScale === 100) {
             this.scaleBigImages(1, 0, 150, false);
           }
@@ -8712,7 +8719,7 @@ ${chapters.map((c, i) => `<div><label>
         const vid = document.createElement("video");
         vid.classList.add("bifm-img");
         vid.classList.add("bifm-vid");
-        vid.draggable = false;
+        vid.draggable = !(conf.magnifier && conf.readMode === "pagination");
         vid.setAttribute("d-index", index.toString());
         vid.setAttribute("d-random-id", imf.randomID);
         vid.onloadeddata = () => {
@@ -8726,7 +8733,7 @@ ${chapters.map((c, i) => `<div><label>
         const img = document.createElement("img");
         img.decoding = "sync";
         img.classList.add("bifm-img");
-        img.draggable = false;
+        img.draggable = !(conf.magnifier && conf.readMode === "pagination");
         img.setAttribute("d-index", index.toString());
         img.setAttribute("d-random-id", imf.randomID);
         if (imf.stage === FetchState.DONE) {

@@ -96,6 +96,7 @@ export type Config = {
   configPatchVersion: number,
   displayText: Partial<DisplayText>,
   customStyle: string,
+  magnifier: boolean,
 };
 
 function defaultConf(): Config {
@@ -144,6 +145,7 @@ function defaultConf(): Config {
     configPatchVersion: 0,
     displayText: {},
     customStyle: "",
+    magnifier: false,
   };
 }
 
@@ -249,7 +251,7 @@ export function saveConf(c: Config) {
 }
 
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageSpeed" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost";
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost" | "magnifier";
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer";
 export const conf = getConf();
 export const transient = { imgSrcCSP: false, originalPolicy: "" };
@@ -284,6 +286,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoLoadInBackground", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
+  { key: "magnifier", typ: "boolean", gridColumnRange: [1, 11] },
   {
     key: "readMode", typ: "select", options: [
       { value: "pagination", display: "Pagination" },

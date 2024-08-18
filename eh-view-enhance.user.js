@@ -1884,17 +1884,13 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         return;
       if (!this.pushInExecutableQueue(oriented))
         return;
-      this.debouncer.addEvent(
-        "IFQ-EXECUTABLE",
-        () => (
-          // console.log("IFQ-EXECUTABLE", this.executableQueue);
-          Promise.all(this.executableQueue.splice(0, conf.paginationIMGCount).map((imfIndex) => this[imfIndex].start(imfIndex))).then(() => {
-            const picked = this.cherryPick?.(this.chapterIndex);
-            this.executableQueue.filter((i) => !picked || picked.picked(i)).forEach((imfIndex) => this[imfIndex].start(imfIndex));
-          })
-        ),
-        300
-      );
+      this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
+        console.log("IFQ-EXECUTABLE: ", this.executableQueue);
+        Promise.all(this.executableQueue.splice(0, conf.paginationIMGCount).map((imfIndex) => this[imfIndex].start(imfIndex))).then(() => {
+          const picked = this.cherryPick?.(this.chapterIndex);
+          this.executableQueue.filter((i) => !picked || picked.picked(i)).forEach((imfIndex) => this[imfIndex].start(imfIndex));
+        });
+      }, 300);
     }
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
     finishedReport(index, success, imf) {

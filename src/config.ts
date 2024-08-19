@@ -94,9 +94,12 @@ export type Config = {
   id: string,
   /** modify some config items by patch */
   configPatchVersion: number,
+  /** custom display text of controlbar buttons */
   displayText: Partial<DisplayText>,
   customStyle: string,
   magnifier: boolean,
+  /** directly enter into big image view */
+  autoEnterBig: boolean,
 };
 
 function defaultConf(): Config {
@@ -146,6 +149,7 @@ function defaultConf(): Config {
     displayText: {},
     customStyle: "",
     magnifier: false,
+    autoEnterBig: true,
   };
 }
 
@@ -251,7 +255,7 @@ export function saveConf(c: Config) {
 }
 
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageSpeed" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost" | "magnifier";
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost" | "magnifier" | "autoEnterBig";
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer";
 export const conf = getConf();
 export const transient = { imgSrcCSP: false, originalPolicy: "" };
@@ -285,8 +289,9 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoPlay", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "autoLoadInBackground", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
+  { key: "magnifier", typ: "boolean", gridColumnRange: [1, 6] },
+  { key: "autoEnterBig", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
-  { key: "magnifier", typ: "boolean", gridColumnRange: [1, 11] },
   {
     key: "readMode", typ: "select", options: [
       { value: "pagination", display: "Pagination" },

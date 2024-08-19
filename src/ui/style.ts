@@ -177,6 +177,9 @@ export function styleCSS() {
   z-index: 2001;
   background-color: #000000d6;
 }
+.ehvp-root-collapse .big-img-frame {
+  position: unset;
+}
 .big-img-frame > img, .big-img-frame > video {
   object-fit: contain;
   display: block;

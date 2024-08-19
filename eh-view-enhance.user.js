@@ -188,6 +188,8 @@
     autoCollapsePanelTooltip: new I18nValue("When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.", "当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。"),
     magnifier: new I18nValue("Magnifier", "放大镜"),
     magnifierTooltip: new I18nValue("In the pagination reading mode, you can temporarily zoom in on an image by dragging it with the mouse click, and the image will follow the movement of the cursor.", "在翻页阅读模式下，你可以通过鼠标左键拖动图片临时放大图片以及图片跟随指针移动。"),
+    autoEnterBig: new I18nValue("Auto Big", "自动大图"),
+    autoEnterBigTooltip: new I18nValue("Directly enter the Big image view when the script's entry is clicked or auto-opened", "点击脚本入口或自动打开脚本后直接进入大图阅读视图。"),
     // config panel select option
     readMode: new I18nValue("Read Mode", "阅读模式"),
     readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
@@ -442,7 +444,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       configPatchVersion: 0,
       displayText: {},
       customStyle: "",
-      magnifier: false
+      magnifier: false,
+      autoEnterBig: true
     };
   }
   const CONF_VERSION = "4.4.0";
@@ -548,8 +551,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     { key: "autoPlay", typ: "boolean", gridColumnRange: [6, 11] },
     { key: "autoLoadInBackground", typ: "boolean", gridColumnRange: [1, 6] },
     { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
+    { key: "magnifier", typ: "boolean", gridColumnRange: [1, 6] },
+    { key: "autoEnterBig", typ: "boolean", gridColumnRange: [6, 11] },
     { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
-    { key: "magnifier", typ: "boolean", gridColumnRange: [1, 11] },
     {
       key: "readMode",
       typ: "select",
@@ -5959,17 +5963,25 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     let bodyOverflow = document.body.style.overflow;
     function showFullViewGrid() {
-      PH.minify("fullViewGrid");
       HTML.root.classList.remove("ehvp-root-collapse");
-      HTML.fullViewGrid.focus();
+      if (BIFM.visible) {
+        BIFM.frame.focus();
+        PH.minify("bigImageFrame");
+      } else {
+        HTML.fullViewGrid.focus();
+        PH.minify("fullViewGrid");
+      }
       document.body.style.overflow = "hidden";
     }
     function hiddenFullViewGrid() {
-      BIFM.hidden();
       PH.minify("exit");
       HTML.entryBTN.setAttribute("data-stage", "exit");
       HTML.root.classList.add("ehvp-root-collapse");
-      HTML.fullViewGrid.blur();
+      if (BIFM.visible) {
+        BIFM.frame.blur();
+      } else {
+        HTML.fullViewGrid.blur();
+      }
       document.body.style.overflow = bodyOverflow;
     }
     function shouldStep(oriented, shouldPrevent) {
@@ -6571,6 +6583,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   scrollbar-width: none;
   z-index: 2001;
   background-color: #000000d6;
+}
+.ehvp-root-collapse .big-img-frame {
+  position: unset;
 }
 .big-img-frame > img, .big-img-frame > video {
   object-fit: contain;
@@ -9033,6 +9048,9 @@ ${chapters.map((c, i) => `<div><label>
       HTML.pageLoading.style.display = "none";
       IL.processingIndexList = [0];
       IL.start();
+      if (conf.autoEnterBig && PF.chapters.length === 1 && IFQ[0]) {
+        BIFM.show(IFQ[0]);
+      }
     };
     if (conf.first) {
       events.showGuideEvent();

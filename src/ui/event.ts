@@ -196,19 +196,27 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
 
   let bodyOverflow = document.body.style.overflow;
   function showFullViewGrid() {
-    PH.minify("fullViewGrid");
     HTML.root.classList.remove("ehvp-root-collapse");
-    HTML.fullViewGrid.focus();
+    if (BIFM.visible) {
+      BIFM.frame.focus();
+      PH.minify("bigImageFrame");
+    } else {
+      HTML.fullViewGrid.focus();
+      PH.minify("fullViewGrid");
+    }
     document.body.style.overflow = "hidden";
   };
 
 
   function hiddenFullViewGrid() {
-    BIFM.hidden();
     PH.minify("exit");
     HTML.entryBTN.setAttribute("data-stage", "exit");
     HTML.root.classList.add("ehvp-root-collapse");
-    HTML.fullViewGrid.blur();
+    if (BIFM.visible) {
+      BIFM.frame.blur();
+    } else {
+      HTML.fullViewGrid.blur();
+    }
     document.body.style.overflow = bodyOverflow;
     // document.body.focus();
   };

@@ -99,7 +99,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 
   galleryMeta(): GalleryMeta {
-    this.meta.title = `PIXIV_${this.authorID}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
+    this.meta.title = `PIXIV_${this.authorID ?? this.first}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
     let tags = Object.values(this.works).map(w => w.tags).flat();
     this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
     return this.meta;

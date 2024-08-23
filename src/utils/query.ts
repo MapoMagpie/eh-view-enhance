@@ -11,7 +11,7 @@ type RespType = keyof {
 
 type EventListener<T extends RespType> = Pick<GmXhrRequest<unknown, T>, "onload" | "onprogress" | "onerror" | "ontimeout" | "onloadstart">;
 
-const HOST_REGEX = /\/\/([^\/]*)\//;
+// const HOST_REGEX = /\/\/([^\/]*)\//;
 export function xhrWapper<T extends RespType>(url: string, respType: T, cb: EventListener<T>, headers: Record<string, string>, timeout?: number) {
   return GM_xmlhttpRequest<unknown, T>({
     method: "GET",
@@ -22,16 +22,16 @@ export function xhrWapper<T extends RespType>(url: string, respType: T, cb: Even
     revalidate: false,
     // fetch: false,
     headers: {
-      "Host": HOST_REGEX.exec(url)?.[1] || window.location.host,
-      "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
-      "Accept": "*/*",
+      // "Host": HOST_REGEX.exec(url)?.[1] || window.location.host,
+      // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
+      // "Accept": "*/*",
       // "Connection": "keep-alive",
       "Referer": window.location.href,
-      "Origin": window.location.origin,
-      "X-Alt-Referer": window.location.href,
+      // "Origin": window.location.origin,
+      // "X-Alt-Referer": window.location.href,
       "Cache-Control": "public, max-age=2592000, immutable",
-      "Accept-Language": "en-US,en;q=0.5",
-      "Accept-Encoding": "gzip, deflate, br, zstd",
+      // "Accept-Language": "en-US,en;q=0.5",
+      // "Accept-Encoding": "gzip, deflate, br, zstd",
       // "Sec-Fetch-Dest": "empty",
       // "Sec-Fetch-Mode": "cors",
       // "Sec-Fetch-Site": "cross-site",

@@ -64,6 +64,7 @@ export default defineConfig(({ command }) => {
             'http*://*.mangacopy.com/*',
             'http*://*.copymanga.tv/*',
             'https://e621.net/*',
+            'https://arca.live/*',
           ],
           name: {
             "": "E HENTAI VIEW ENHANCE",
@@ -113,6 +114,7 @@ export default defineConfig(({ command }) => {
             'hamreus.com',
             'mangafuna.xyz',
             'e621.net',
+            'namu.la',
             '*',
           ],
           grant: [
@@ -127,7 +129,6 @@ export default defineConfig(({ command }) => {
           externalGlobals: {
             "@zip.js/zip.js": cdn.jsdelivr("zip", "dist/zip-full.min.js"),
             "file-saver": cdn.jsdelivr("saveAs", "dist/FileSaver.min.js"),
-            "hammerjs": cdn.jsdelivr("Hammer", "hammer.min.js"),
             "pica": cdn.jsdelivr("pica", "dist/pica.min.js"),
           },
           autoGrant: true,

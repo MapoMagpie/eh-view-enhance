@@ -46,6 +46,7 @@
 // @match              http*://*.mangacopy.com/*
 // @match              http*://*.copymanga.tv/*
 // @match              https://e621.net/*
+// @match              https://arca.live/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
@@ -78,6 +79,7 @@
 // @connect            hamreus.com
 // @connect            mangafuna.xyz
 // @connect            e621.net
+// @connect            namu.la
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue
@@ -696,7 +698,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
   }
 
-  const HOST_REGEX = /\/\/([^\/]*)\//;
   function xhrWapper(url, respType, cb, headers, timeout) {
     return _GM_xmlhttpRequest({
       method: "GET",
@@ -707,16 +708,16 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       revalidate: false,
       // fetch: false,
       headers: {
-        "Host": HOST_REGEX.exec(url)?.[1] || window.location.host,
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
-        "Accept": "*/*",
+        // "Host": HOST_REGEX.exec(url)?.[1] || window.location.host,
+        // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
+        // "Accept": "*/*",
         // "Connection": "keep-alive",
         "Referer": window.location.href,
-        "Origin": window.location.origin,
-        "X-Alt-Referer": window.location.href,
+        // "Origin": window.location.origin,
+        // "X-Alt-Referer": window.location.href,
         "Cache-Control": "public, max-age=2592000, immutable",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate, br, zstd",
+        // "Accept-Language": "en-US,en;q=0.5",
+        // "Accept-Encoding": "gzip, deflate, br, zstd",
         // "Sec-Fetch-Dest": "empty",
         // "Sec-Fetch-Mode": "cors",
         // "Sec-Fetch-Site": "cross-site",
@@ -2619,6 +2620,33 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
     async fetchOriginMeta(node) {
       return { url: node.originSrc };
+    }
+  }
+
+  class ArcaMatcher extends BaseMatcher {
+    name() {
+      return "Arca";
+    }
+    async *fetchPagesSource() {
+      yield document;
+    }
+    async parseImgNodes(page) {
+      const doc = page;
+      const images = Array.from(doc.querySelectorAll(".article-content > p > a > img:not(.arca-emoticon)"));
+      const digits = images.length.toString().length;
+      return images.map((img, i) => {
+        const src = img.src;
+        const href = img.parentElement.href;
+        const ext = new URL(href).pathname.split(".").pop();
+        let title = (i + 1).toString().padStart(digits, "0") + "." + ext;
+        return new ImageNode(src, href, title, void 0, href);
+      });
+    }
+    async fetchOriginMeta(node) {
+      return { url: conf.fetchOriginal ? node.href : node.thumbnailSrc };
+    }
+    workURL() {
+      return /arca.live\/b\/\w*\/\d+/;
     }
   }
 
@@ -5219,7 +5247,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new KoharuMatcher(),
       new MHGMatcher(),
       new MangaCopyMatcher(),
-      new E621Matcher()
+      new E621Matcher(),
+      new ArcaMatcher()
     ];
   }
   function adaptMatcher(url) {

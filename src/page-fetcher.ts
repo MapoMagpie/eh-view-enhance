@@ -117,8 +117,7 @@ export class PageFetcher {
         this.appendToView(this.queue.length, [], this.chapterIndex, true);
         return false;
       } else {
-        await this.appendImages(next.value);
-        return true;
+        return await this.appendImages(next.value);
       }
     } catch (error) {
       evLog("error", "PageFetcher:appendNextPage error: ", error);
@@ -133,6 +132,7 @@ export class PageFetcher {
     try {
       const nodes = await this.obtainImageNodeList(page);
       if (this.abortb) return false;
+      if (nodes.length === 0) return false;
       const len = this.queue.length;
       const IFs = nodes.map(
         (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex)

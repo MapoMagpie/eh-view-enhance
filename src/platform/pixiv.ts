@@ -81,9 +81,9 @@ export class PixivMatcher extends BaseMatcher {
     if (files.length !== meta.body.frames.length) {
       throw new Error("unpack ugoira file error: file count not equal to meta");
     }
-    const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
+    const blob = await this.convertor.convertTo(files, conf.pixivConvertTo, meta.body.frames);
     const convertEnd = performance.now();
-    evLog("debug", `convert ugoira to ${conf.convertTo}
+    evLog("debug", `convert ugoira to ${conf.pixivConvertTo}
 init convertor cost: ${(initConvertorEnd - start)}ms
 unpack ugoira  cost: ${(unpackUgoira - initConvertorEnd)}ms
 ffmpeg convert cost: ${(convertEnd - unpackUgoira)}ms
@@ -150,6 +150,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 
   async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
+    if (source === "") return list;
     const pidList = JSON.parse(source as string) as string[];
     // async function but no await, it will fetch tags in background
     this.fetchTagsByPids(pidList);
@@ -181,6 +182,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 
   async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+    this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
+    if (this.first) {
+      yield JSON.stringify([this.first]);
+      while (conf.pixivJustCurrPage) {
+        yield "";
+      }
+    }
     // find author eg. https://www.pixiv.net/en/users/xxx
     let u = document.querySelector<HTMLAnchorElement>("a[data-gtm-value][href*='/users/']")?.href || document.querySelector<HTMLAnchorElement>("a.user-details-icon[href*='/users/']")?.href || window.location.href;
     const author = /users\/(\d+)/.exec(u)?.[1];
@@ -197,14 +205,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     this.pidList = [...pidList];
     pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
     // try to get current pid from href
-    this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
     if (this.first) {
       // remove this.first from pidList
       const index = pidList.indexOf(this.first);
-      if (index > -1) {
-        pidList.splice(index, 1);
-      }
-      pidList.unshift(this.first);
+      if (index > -1) pidList.splice(index, 1);
     }
     while (pidList.length > 0) {
       const pids = pidList.splice(0, 20);

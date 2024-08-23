@@ -18,7 +18,7 @@ import { createStyleCustomPanel } from "./style-custom-panel";
 export type Events = ReturnType<typeof initEvents>;
 
 export type KeyboardInBigImageModeId = "step-image-prev" | "step-image-next" | "exit-big-image-mode" | "step-to-first-image" | "step-to-last-image" | "scale-image-increase" | "scale-image-decrease" | "scroll-image-up" | "scroll-image-down" | "toggle-auto-play";
-export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "back-chapters-selection" | "toggle-auto-play";
+export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "back-chapters-selection" | "toggle-auto-play" | "retry-fetch-next-page";
 export type KeyboardInMainId = "open-full-view-grid";
 export type KeyboardEvents = {
   inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
@@ -354,6 +354,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       "toggle-auto-play": new KeyboardDesc(
         ["p"],
         () => EBUS.emit("toggle-auto-play")
+      ),
+      "retry-fetch-next-page": new KeyboardDesc(
+        ["Shift+n"],
+        () => EBUS.emit("pf-try-extend")
       ),
     };
     const inMain: Record<KeyboardInMainId, KeyboardDesc> = {

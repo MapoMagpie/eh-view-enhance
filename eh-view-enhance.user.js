@@ -147,7 +147,8 @@
       "columns-increase": new I18nValue("Increase Columns ", "增加每行数量"),
       "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量"),
       "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择"),
-      "toggle-auto-play": new I18nValue("Toggle Auto Play", "切换自动播放")
+      "toggle-auto-play": new I18nValue("Toggle Auto Play", "切换自动播放"),
+      "retry-fetch-next-page": new I18nValue("Try Fetch Next Page", "重新加载下一分页")
     }
   };
   const i18n = {
@@ -192,6 +193,11 @@
     magnifierTooltip: new I18nValue("In the pagination reading mode, you can temporarily zoom in on an image by dragging it with the mouse click, and the image will follow the movement of the cursor.", "在翻页阅读模式下，你可以通过鼠标左键拖动图片临时放大图片以及图片跟随指针移动。"),
     autoEnterBig: new I18nValue("Auto Big", "自动大图"),
     autoEnterBigTooltip: new I18nValue("Directly enter the Big image view when the script's entry is clicked or auto-opened", "点击脚本入口或自动打开脚本后直接进入大图阅读视图。"),
+    pixivJustCurrPage: new I18nValue("Pixiv Only Load Current Page", "Pixiv仅加载当前作品页"),
+    pixivJustCurrPageTooltip: new I18nValue(
+      "In Pixiv, if the current page is on a artwork page, only load the images from current page. Disable this option or the current page is on the artist's homepage, all images by that author will be loaded. <br>Note: You can continue loading all the remaining images by the author by scrolling on the page or pressing Shift+n after disabling this option.",
+      "在Pixiv中，如果当前页是作品页则只加载当前页中的图片，如果该选项禁用或者当前页是作者主页，则加载该作者所有的作品。<br>注：你可以禁用该选项后，然后通过页面滚动或按下Shift+n来继续加载该作者所有的图片。"
+    ),
     // config panel select option
     readMode: new I18nValue("Read Mode", "阅读模式"),
     readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),
@@ -427,7 +433,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       filenameTemplate: "{number}-{title}",
       preventScrollPageTime: 100,
       archiveVolumeSize: 1200,
-      convertTo: "GIF",
+      pixivConvertTo: "GIF",
       autoCollapsePanel: true,
       minifyPageHelper: "inBigMode",
       keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
@@ -447,7 +453,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       displayText: {},
       customStyle: "",
       magnifier: false,
-      autoEnterBig: true
+      autoEnterBig: true,
+      pixivJustCurrPage: false
     };
   }
   const CONF_VERSION = "4.4.0";
@@ -556,6 +563,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     { key: "magnifier", typ: "boolean", gridColumnRange: [1, 6] },
     { key: "autoEnterBig", typ: "boolean", gridColumnRange: [6, 11] },
     { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
+    { key: "pixivJustCurrPage", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
     {
       key: "readMode",
       typ: "select",
@@ -2386,8 +2394,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           this.appendToView(this.queue.length, [], this.chapterIndex, true);
           return false;
         } else {
-          await this.appendImages(next.value);
-          return true;
+          return await this.appendImages(next.value);
         }
       } catch (error) {
         evLog("error", "PageFetcher:appendNextPage error: ", error);
@@ -2401,6 +2408,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       try {
         const nodes = await this.obtainImageNodeList(page);
         if (this.abortb)
+          return false;
+        if (nodes.length === 0)
           return false;
         const len = this.queue.length;
         const IFs = nodes.map(
@@ -4704,9 +4713,9 @@ duration 0.04`).join("\n");
       if (files.length !== meta.body.frames.length) {
         throw new Error("unpack ugoira file error: file count not equal to meta");
       }
-      const blob = await this.convertor.convertTo(files, conf.convertTo, meta.body.frames);
+      const blob = await this.convertor.convertTo(files, conf.pixivConvertTo, meta.body.frames);
       const convertEnd = performance.now();
-      evLog("debug", `convert ugoira to ${conf.convertTo}
+      evLog("debug", `convert ugoira to ${conf.pixivConvertTo}
 init convertor cost: ${initConvertorEnd - start}ms
 unpack ugoira  cost: ${unpackUgoira - initConvertorEnd}ms
 ffmpeg convert cost: ${convertEnd - unpackUgoira}ms
@@ -4766,6 +4775,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     async parseImgNodes(source) {
       const list = [];
+      if (source === "")
+        return list;
       const pidList = JSON.parse(source);
       this.fetchTagsByPids(pidList);
       const pageListData = await fetchUrls(pidList.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5);
@@ -4793,6 +4804,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return list;
     }
     async *fetchPagesSource() {
+      this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
+      if (this.first) {
+        yield JSON.stringify([this.first]);
+        while (conf.pixivJustCurrPage) {
+          yield "";
+        }
+      }
       let u = document.querySelector("a[data-gtm-value][href*='/users/']")?.href || document.querySelector("a.user-details-icon[href*='/users/']")?.href || window.location.href;
       const author = /users\/(\d+)/.exec(u)?.[1];
       if (!author) {
@@ -4806,13 +4824,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
       this.pidList = [...pidList];
       pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
-      this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
       if (this.first) {
         const index = pidList.indexOf(this.first);
-        if (index > -1) {
+        if (index > -1)
           pidList.splice(index, 1);
-        }
-        pidList.unshift(this.first);
       }
       while (pidList.length > 0) {
         const pids = pidList.splice(0, 20);
@@ -6150,6 +6165,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         "toggle-auto-play": new KeyboardDesc(
           ["p"],
           () => EBUS.emit("toggle-auto-play")
+        ),
+        "retry-fetch-next-page": new KeyboardDesc(
+          ["Shift+n"],
+          () => EBUS.emit("pf-try-extend")
         )
       };
       const inMain = {

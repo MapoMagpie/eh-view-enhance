@@ -60,7 +60,7 @@ export type Config = {
   /** 下载文件分卷大小，单位Mib */
   archiveVolumeSize: number
   /** 动图转换为 */
-  convertTo: "GIF" | "MP4"
+  pixivConvertTo: "GIF" | "MP4"
   /** 自动收起控制面板 */
   autoCollapsePanel: boolean,
   /** 最小化控制栏 */
@@ -100,6 +100,7 @@ export type Config = {
   magnifier: boolean,
   /** directly enter into big image view */
   autoEnterBig: boolean,
+  pixivJustCurrPage: boolean,
 };
 
 function defaultConf(): Config {
@@ -129,7 +130,7 @@ function defaultConf(): Config {
     filenameTemplate: "{number}-{title}",
     preventScrollPageTime: 100,
     archiveVolumeSize: 1200,
-    convertTo: "GIF",
+    pixivConvertTo: "GIF",
     autoCollapsePanel: true,
     minifyPageHelper: "inBigMode",
     keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
@@ -150,6 +151,7 @@ function defaultConf(): Config {
     customStyle: "",
     magnifier: false,
     autoEnterBig: true,
+    pixivJustCurrPage: false,
   };
 }
 
@@ -255,7 +257,7 @@ export function saveConf(c: Config) {
 }
 
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageSpeed" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost" | "magnifier" | "autoEnterBig";
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost" | "magnifier" | "autoEnterBig" | "pixivJustCurrPage";
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer";
 export const conf = getConf();
 export const transient = { imgSrcCSP: false, originalPolicy: "" };
@@ -292,6 +294,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "magnifier", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoEnterBig", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
+  { key: "pixivJustCurrPage", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
   {
     key: "readMode", typ: "select", options: [
       { value: "pagination", display: "Pagination" },

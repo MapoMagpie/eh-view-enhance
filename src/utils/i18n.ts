@@ -39,6 +39,7 @@ const keyboardCustom: KeyboardCustom = {
     "columns-decrease": new I18nValue("Decrease Columns ", "减少每行数量"),
     "back-chapters-selection": new I18nValue("Back to Chapters Selection", "返回章节选择"),
     "toggle-auto-play": new I18nValue("Toggle Auto Play", "切换自动播放"),
+    "retry-fetch-next-page": new I18nValue("Try Fetch Next Page", "重新加载下一分页"),
   },
 }
 export const i18n = {
@@ -83,6 +84,12 @@ export const i18n = {
   magnifierTooltip: new I18nValue("In the pagination reading mode, you can temporarily zoom in on an image by dragging it with the mouse click, and the image will follow the movement of the cursor.", "在翻页阅读模式下，你可以通过鼠标左键拖动图片临时放大图片以及图片跟随指针移动。"),
   autoEnterBig: new I18nValue("Auto Big", "自动大图"),
   autoEnterBigTooltip: new I18nValue("Directly enter the Big image view when the script's entry is clicked or auto-opened", "点击脚本入口或自动打开脚本后直接进入大图阅读视图。"),
+  pixivJustCurrPage: new I18nValue("Pixiv Only Load Current Page", "Pixiv仅加载当前作品页"),
+  pixivJustCurrPageTooltip: new I18nValue(
+    "In Pixiv, if the current page is on a artwork page, only load the images from current page. Disable this option or the current page is on the artist's homepage, all images by that author will be loaded. <br>" +
+    "Note: You can continue loading all the remaining images by the author by scrolling on the page or pressing Shift+n after disabling this option.",
+    "在Pixiv中，如果当前页是作品页则只加载当前页中的图片，如果该选项禁用或者当前页是作者主页，则加载该作者所有的作品。<br>" +
+    "注：你可以禁用该选项后，然后通过页面滚动或按下Shift+n来继续加载该作者所有的图片。"),
   // config panel select option
   readMode: new I18nValue("Read Mode", "阅读模式"),
   readModeTooltip: new I18nValue("Switch to the next picture when scrolling, otherwise read continuously", "滚动时切换到下一张图片，否则连续阅读"),

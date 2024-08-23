@@ -119,7 +119,8 @@ export class KoharuMatcher extends BaseMatcher {
   headers(): Record<string, string> {
     return {
       "Referer": "https://koharu.to/",
-      "TE": "trailers",
+      "Origin": window.location.origin,
+      // "TE": "trailers",
     }
   }
 

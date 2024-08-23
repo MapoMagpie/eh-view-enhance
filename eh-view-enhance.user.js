@@ -3790,7 +3790,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     headers() {
       return {
         "Referer": "https://koharu.to/",
-        "TE": "trailers"
+        "Origin": window.location.origin
+        // "TE": "trailers",
       };
     }
   }

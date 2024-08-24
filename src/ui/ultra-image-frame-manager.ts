@@ -116,6 +116,7 @@ export class BigImageFrameManager {
     // click
     this.frame.addEventListener("mousedown", (mdevt) => {
       if (mdevt.button !== 0) return;
+      if ((mdevt.target as HTMLElement).classList.contains("img-land")) return;
       let moved = false;
       let last = { x: mdevt.clientX, y: mdevt.clientY };
       const abort = new AbortController();

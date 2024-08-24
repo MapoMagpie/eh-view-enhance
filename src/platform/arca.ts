@@ -13,7 +13,7 @@ export class ArcaMatcher extends BaseMatcher {
   }
   async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
     const doc = page as Document;
-    const images = Array.from(doc.querySelectorAll<HTMLImageElement>(".article-content > p > a > img:not(.arca-emoticon)"));
+    const images = Array.from(doc.querySelectorAll<HTMLImageElement>(".article-content a > img:not(.arca-emoticon)"));
     const digits = images.length.toString().length;
     return images.map<ImageNode>((img, i) => {
       const src = img.src;

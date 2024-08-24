@@ -99,7 +99,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 
   galleryMeta(): GalleryMeta {
-    this.meta.title = `PIXIV_${this.authorID ?? this.first}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
+    this.meta.title = `pixiv_${this.authorID ?? this.first}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
+    if (this.first) { // current page at artwork page
+      const title = document.querySelector("meta[property='twitter:title']")?.getAttribute("content");
+      if (title) {
+        this.meta.title = `pixiv_${title}`
+      }
+    }
     let tags = Object.values(this.works).map(w => w.tags).flat();
     this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
     return this.meta;
@@ -190,7 +196,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
     }
     // find author eg. https://www.pixiv.net/en/users/xxx
-    let u = document.querySelector<HTMLAnchorElement>("a[data-gtm-value][href*='/users/']")?.href || document.querySelector<HTMLAnchorElement>("a.user-details-icon[href*='/users/']")?.href || window.location.href;
+    let u = document.querySelector<HTMLAnchorElement>("a[data-gtm-value][href*='/users/']")?.href
+      || document.querySelector<HTMLAnchorElement>("a.user-details-icon[href*='/users/']")?.href
+      || window.location.href;
     const author = /users\/(\d+)/.exec(u)?.[1];
     if (!author) {
       throw new Error("Cannot find author id!");

@@ -6,7 +6,7 @@
 // @name:ko            E-HENTAI 보기 향상
 // @name:ru            E-HENTAI VIEW ENHANCE
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.7.6
+// @version            4.7.7
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuqgui.com | mangacopy.com
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuqgui.com | mangacopy.com
@@ -2641,18 +2641,19 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     async parseImgNodes(page) {
       const doc = page;
-      const images = Array.from(doc.querySelectorAll(".article-content > p > a > img:not(.arca-emoticon)"));
+      const images = Array.from(doc.querySelectorAll(".article-content img:not(.arca-emoticon)"));
       const digits = images.length.toString().length;
-      return images.map((img, i) => {
+      return images.filter((img) => img.style.width !== "0px").map((img, i) => {
         const src = img.src;
-        const href = img.parentElement.href;
-        const ext = new URL(href).pathname.split(".").pop();
+        const href = new URL(src);
+        const ext = href.pathname.split(".").pop();
+        href.searchParams.set("type", "orig");
         let title = (i + 1).toString().padStart(digits, "0") + "." + ext;
-        return new ImageNode(src, href, title, void 0, href);
+        return new ImageNode(src, href.href, title, void 0, href.href);
       });
     }
     async fetchOriginMeta(node) {
-      return { url: conf.fetchOriginal ? node.href : node.thumbnailSrc };
+      return { url: node.href };
     }
     workURL() {
       return /arca.live\/b\/\w*\/\d+/;
@@ -4729,7 +4730,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
     }
     galleryMeta() {
-      this.meta.title = `PIXIV_${this.authorID ?? this.first}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
+      this.meta.title = `pixiv_${this.authorID ?? this.first}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
+      if (this.first) {
+        const title = document.querySelector("meta[property='twitter:title']")?.getAttribute("content");
+        if (title) {
+          this.meta.title = `pixiv_${title}`;
+        }
+      }
       let tags = Object.values(this.works).map((w) => w.tags).flat();
       this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
       return this.meta;
@@ -6815,11 +6822,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .img-land-left {
   left: 0;
-  cursor: url("https://exhentai.org/img/p.png"), auto;
+  cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAC3UlEQVR4nO2ZS28TMRDHV0APcON1gXKisUMRJ0QFJ74EAgQfhMclF15nCqk2noTHcVF2nDRCqBc+AZUKRYR3U0olaODK47JoNiqU0mjX9uymSPlLI0Vayfv72157ZuJ5Qw01lLMCL9gKxfAESLwMAutK4nMQ+BWE/tkL+o3z8bNi41Kl2Dhe8kpbvEGrdhAPKKlvKIlLIHVkGB9A4vXKWH00d/DqWLAXhPaV0D8swP8K1RujfK8Y7s4FXkk8B0J/cQXfwEhXCTyTGbh/1B8BqRU3OPxjBKdKJx9vY4Zv7lBSP8waHlZNSGzRO5ng/ZE84WGNCZaVyGPbQP8ou8KfHyB8RFEV4WkreDrWQOIKF8jsZDuaq7wy30pCd33R3GM++0L7nPCrsjEBEm8ZwdPtyHFJrYe3N4Hf7xam96c2QOlBVvCk2dtt8/EEXksFT0lWL0/JBv7ZnTdW4ymJS5Q0JhroZZXZwM/ff+s0riqEE8kGKCXOAL4dLERQdJsYJfTFFPsfQ274l/VOVD3UcP6mQOCD5BWgwoMR/jUu8sDLeAWepjBgnir3g3/36GNUG+eBhzhwJXkLGZ7//eDfzywzw+v4PmA1UB1vRAszy3xnvWQwYLqFaoebfU3YpQ3abQvZfMR5mVDpPmKs2wyejwkMMr3IMjch8EKiAWo6ubwkSxO+aB5LlcwpqRc3nQmBndTdPOqYuS43twkl9NVU8JwFTT8TTyZfZFvQkKgj4GpgIxPm8Jpm/6ZnKjUe7FJSf+Y0YQnfte6bQkGf5TBAYZuRVqQ+ZQX/eyUETnGZyGXrrBfVoS5FjnUIPc3W5O01d7GVI3wzGA22e5yi2eA6mZK2TYm7vb5W1KvkbDnCn/jk/MGaHLHU7qMLxnnGJX6jWS8fae308hbdjtQxs8qdBHZA4BWQep83aMUJYCGcoL4NtT6o8KDKjtKROCWJqzyco2eUElNWuSn+Zh1qKO//1y8OuBKqSFLycQAAAABJRU5ErkJggg=="), auto;
 }
 .img-land-right {
   right: 0;
-  cursor: url("https://exhentai.org/img/n.png"), auto;
+  cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAADG0lEQVR4nO2ZS2tTQRTHL2oXuvO10bqymYkVV2LRlV9CVPQrdO9jE/ANPvCZcjvToju5mpxJGqtWwZ1QH4UWa1WotTUWtNWt1VJHTi6V2KbJnZmTW4X8YaAQuPP7z5nHOaee11BDDTkr8IKVMpndIzkclwwygsOwZPBNMvUzHPg3vCr9lswd60zmdqe81ApvudW9FbYIrs4JDkXJlTYcHyWHs50tmebYwbtago2SKV8w9cMC/K8hwm+kbyWz62OBFxwOSaa+uoJXMDItGByoG7i/02+SXAlqcLnICHSk9j5ZRQyfXyO46q03vJw3waGAcxLB+01xwssyEySRiGPbyKVH2hX+8DLCaxxdLLvfCh6vNclhynTCR+39+sXl13Rbialpn+U3mK8+U77pZI/b+/Xc7JxGvbwyQhgJuG4Ej6+j6SNVDj8vukjAzM1Ez+bIBjA9MJ1k9F5RV9Lzi8M0JhiciQSPSVaYpxgettacHi0sYeKSeyQEhyImjTUNhFml3SRVTRBEQiSybbUNYErsMEk1E88uuJkQTB2NsP8h67pSVU2cdzDB4E7tCGDhQXDoljTxS+unJ4dsIzAUwQBdqty9Pa8/9E1WNnFi0OKbMFV7CxEUKfUzATOxG8AxcONNxfMwcnuM3gB1tTVwrTL827vjumtbjn4LUR3iqvAZG3gV9RBDpp7w72DCCl6GEQjq/pBVg8d8Ca9X628zOFLTADad6gH/vreou13gudI+y++KlMwJriZI4e9/coaXDMYjd/OwY0YG/4AAnpcO8OlI8LYFDSZqCzX2kAZemhY0YRRU2nSichNjfZOlV9gdXuHqX/VMJVqDdYKrLzYmiOGnrfumMqEO2kxqf8+rRaOTq31W8H8iwaCDCiaWrbNQWIdSFDnGg6kesiZv2NyFQozw+aA5WO1RClfD5may2TYp6vZ6ubBXadNyjDA+Ox9YkysW2334wDivOIfvuOrpHYW1XtzC1xE7Zla5E4NxyeCU5GqTt9wqJYCJbBv2bbD1gYUHVnaYjpRSklKVB4P4G6bEmFX+E/9mbagh7//Xb5hJEJPq8mugAAAAAElFTkSuQmCC"), auto;
 }
 .p-tooltip { }
 .p-tooltip .p-tooltiptext {
@@ -8370,6 +8377,8 @@ ${chapters.map((c, i) => `<div><label>
       });
       this.frame.addEventListener("mousedown", (mdevt) => {
         if (mdevt.button !== 0)
+          return;
+        if (mdevt.target.classList.contains("img-land"))
           return;
         let moved = false;
         let last = { x: mdevt.clientX, y: mdevt.clientY };

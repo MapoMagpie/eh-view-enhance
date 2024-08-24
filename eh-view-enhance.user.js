@@ -2641,18 +2641,19 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     async parseImgNodes(page) {
       const doc = page;
-      const images = Array.from(doc.querySelectorAll(".article-content > p > a > img:not(.arca-emoticon)"));
+      const images = Array.from(doc.querySelectorAll(".article-content img:not(.arca-emoticon)"));
       const digits = images.length.toString().length;
-      return images.map((img, i) => {
+      return images.filter((img) => img.style.width !== "0px").map((img, i) => {
         const src = img.src;
-        const href = img.parentElement.href;
-        const ext = new URL(href).pathname.split(".").pop();
+        const href = new URL(src);
+        const ext = href.pathname.split(".").pop();
+        href.searchParams.set("type", "orig");
         let title = (i + 1).toString().padStart(digits, "0") + "." + ext;
-        return new ImageNode(src, href, title, void 0, href);
+        return new ImageNode(src, href.href, title, void 0, href.href);
       });
     }
     async fetchOriginMeta(node) {
-      return { url: conf.fetchOriginal ? node.href : node.thumbnailSrc };
+      return { url: node.href };
     }
     workURL() {
       return /arca.live\/b\/\w*\/\d+/;

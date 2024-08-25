@@ -2641,16 +2641,36 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     async parseImgNodes(page) {
       const doc = page;
-      const images = Array.from(doc.querySelectorAll(".article-content img:not(.arca-emoticon)"));
-      const digits = images.length.toString().length;
-      return images.filter((img) => img.style.width !== "0px").map((img, i) => {
-        const src = img.src;
-        const href = new URL(src);
-        const ext = href.pathname.split(".").pop();
-        href.searchParams.set("type", "orig");
-        let title = (i + 1).toString().padStart(digits, "0") + "." + ext;
-        return new ImageNode(src, href.href, title, void 0, href.href);
+      const imageString = ".article-content img:not(.arca-emoticon):not(.twemoji)";
+      const videoString = ".article-content video:not(.arca-emoticon)";
+      const elements = Array.from(doc.querySelectorAll(`${imageString}, ${videoString}`));
+      const nodes = [];
+      const digits = elements.length.toString().length;
+      elements.forEach((element, i) => {
+        if (element.tagName.toLowerCase() === "img") {
+          const img = element;
+          if (img.src && img.style.width !== "0px") {
+            const src = img.src;
+            const href = new URL(src);
+            const ext = href.pathname.split(".").pop();
+            href.searchParams.set("type", "orig");
+            const title = (i + 1).toString().padStart(digits, "0") + "." + ext;
+            nodes.push(new ImageNode(src, href.href, title, void 0, href.href));
+          }
+        } else if (element.tagName.toLowerCase() === "video") {
+          const video = element;
+          if (video.src) {
+            const src = video.src;
+            const href = new URL(src);
+            const ext = href.pathname.split(".").pop();
+            href.searchParams.set("type", "orig");
+            const title = (i + 1).toString().padStart(digits, "0") + "." + ext;
+            const poster = video.poster || "";
+            nodes.push(new ImageNode(poster, href.href, title, void 0, href.href));
+          }
+        }
       });
+      return nodes;
     }
     async fetchOriginMeta(node) {
       return { url: node.href };
@@ -8286,7 +8306,6 @@ ${chapters.map((c, i) => `<div><label>
     debouncer;
     throttler;
     callbackOnWheel;
-    hammer;
     preventStep = { currentPreventFinished: false };
     visible = false;
     html;
@@ -8479,12 +8498,10 @@ ${chapters.map((c, i) => `<div><label>
         this.elements.curr[0] = this.newMediaNode(index, imf);
         this.frame.appendChild(this.elements.curr[0]);
         this.tryExtend();
-        this.hammer?.get("swipe").set({ enable: false });
       } else {
         this.balanceElements(index, queue, oriented);
         this.placeElements();
         this.checkFrameOverflow();
-        this.hammer?.get("swipe").set({ enable: true });
       }
       EBUS.emit("ifq-do", index, imf, oriented);
       this.elements.curr[0]?.scrollIntoView();

@@ -22,7 +22,6 @@ export class BigImageFrameManager {
   debouncer: Debouncer;
   throttler: Debouncer;
   callbackOnWheel?: (event: WheelEvent) => void;
-  hammer?: HammerManager;
   preventStep: { ele?: HTMLElement, ani?: Animation, currentPreventFinished: boolean } = { currentPreventFinished: false };
   visible: boolean = false;
   html: Elements;
@@ -223,12 +222,12 @@ export class BigImageFrameManager {
       this.elements.curr[0] = this.newMediaNode(index, imf);
       this.frame.appendChild(this.elements.curr[0]);
       this.tryExtend();
-      this.hammer?.get("swipe").set({ enable: false });
+      // this.hammer?.get("swipe").set({ enable: false });
     } else {
       this.balanceElements(index, queue, oriented);
       this.placeElements();
       this.checkFrameOverflow();
-      this.hammer?.get("swipe").set({ enable: true });
+      // this.hammer?.get("swipe").set({ enable: true });
     }
     EBUS.emit("ifq-do", index, imf, oriented);
     this.elements.curr[0]?.scrollIntoView();

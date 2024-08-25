@@ -1,27 +1,49 @@
-import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
-import { BaseMatcher, OriginMeta } from "./platform";
+import ImageNode from '../img-node';
+import { PagesSource } from '../page-fetcher';
+import { BaseMatcher, OriginMeta } from './platform';
 
 export class ArcaMatcher extends BaseMatcher {
-
   name(): string {
-    return "Arca";
+    return 'Arca';
   }
   async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     yield document;
   }
   async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
     const doc = page as Document;
-    const images = Array.from(doc.querySelectorAll<HTMLImageElement>(".article-content img:not(.arca-emoticon)"));
-    const digits = images.length.toString().length;
-    return images.filter(img => img.style.width !== "0px").map<ImageNode>((img, i) => {
-      const src = img.src;
-      const href = new URL(src);
-      const ext = href.pathname.split(".").pop();
-      href.searchParams.set("type", "orig");
-      let title = (i + 1).toString().padStart(digits, "0") + "." + ext;
-      return new ImageNode(src, href.href, title, undefined, href.href);
+    const imageString = '.article-content img:not(.arca-emoticon):not(.twemoji)';
+    const videoString = '.article-content video:not(.arca-emoticon)';
+
+    const elements = Array.from(doc.querySelectorAll<HTMLElement>(`${imageString}, ${videoString}`));
+    const nodes: ImageNode[] = [];
+    const digits = elements.length.toString().length;
+
+    elements.forEach((element, i) => {
+      if (element.tagName.toLowerCase() === 'img') {
+        const img = element as HTMLImageElement;
+        if (img.src && img.style.width !== '0px') {
+          const src = img.src;
+          const href = new URL(src);
+          const ext = href.pathname.split('.').pop();
+          href.searchParams.set('type', 'orig');
+          const title = (i + 1).toString().padStart(digits, '0') + '.' + ext;
+          nodes.push(new ImageNode(src, href.href, title, undefined, href.href));
+        }
+      } else if (element.tagName.toLowerCase() === 'video') {
+        const video = element as HTMLVideoElement;
+        if (video.src) {
+          const src = video.src;
+          const href = new URL(src);
+          const ext = href.pathname.split('.').pop();
+          href.searchParams.set('type', 'orig');
+          const title = (i + 1).toString().padStart(digits, '0') + '.' + ext;
+          const poster = video.poster || '';
+          nodes.push(new ImageNode(poster, href.href, title, undefined, href.href));
+        }
+      }
     });
+
+    return nodes;
   }
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
     return { url: node.href };

@@ -1,5 +1,6 @@
 import { DownloadState } from "./img-fetcher";
 import { Chapter } from "./page-fetcher";
+import { Debouncer } from "./utils/debouncer";
 import { resizing } from "./utils/image-resizing";
 
 const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
@@ -40,6 +41,7 @@ export default class ImageNode {
   mimeType?: string;
   private downloadBar?: HTMLElement;
   picked: boolean = true;
+  private debouncer: Debouncer = new Debouncer();
   constructor(thumbnailSrc: string, href: string, title: string, delaySRC?: Promise<string>, originSrc?: string) {
     this.thumbnailSrc = thumbnailSrc;
     this.href = href;
@@ -93,33 +95,35 @@ export default class ImageNode {
       this.imgElement!.src = "";
     } else {
       resizing(this.imgElement, this.canvasElement)
-        .then(() => this.imgElement!.src = "")
+        .then(() => window.setTimeout(() => this.imgElement!.src = "", 100))
         .catch(() => this.imgElement!.src = this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height) || "");
     }
   }
 
   render(onfailed: Onfailed) {
-    if (!this.imgElement) return onfailed("element undefined");
-    let justThumbnail = !this.blobSrc;
-    if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
-      const tip = OVERLAY_TIP.cloneNode(true);
-      tip.firstChild!.textContent = this.mimeType.split("/")[1].toUpperCase();
-      this.root?.appendChild(tip);
-      justThumbnail = true;
-    }
-    this.imgElement.onload = () => this.resize(onfailed);
-    this.imgElement.onerror = () => onfailed("img load error");
-    if (justThumbnail) {
-      const delaySRC = this.delaySRC;
-      this.delaySRC = undefined;
-      if (delaySRC) {
-        delaySRC.then(src => (this.thumbnailSrc = src) && this.render(onfailed)).catch(onfailed);
-      } else { // normally set src
-        this.imgElement.src = this.thumbnailSrc || this.blobSrc || DEFAULT_THUMBNAIL;
+    this.debouncer.addEvent("IMG-RENDER", () => {
+      if (!this.imgElement) return onfailed("element undefined");
+      let justThumbnail = !this.blobSrc;
+      if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
+        const tip = OVERLAY_TIP.cloneNode(true);
+        tip.firstChild!.textContent = this.mimeType.split("/")[1].toUpperCase();
+        this.root?.appendChild(tip);
+        justThumbnail = true;
       }
-    } else {
-      this.imgElement.src = this.blobSrc || this.thumbnailSrc || DEFAULT_THUMBNAIL;
-    }
+      this.imgElement.onload = () => this.resize(onfailed);
+      this.imgElement.onerror = () => onfailed("img load error");
+      if (justThumbnail) {
+        const delaySRC = this.delaySRC;
+        this.delaySRC = undefined;
+        if (delaySRC) {
+          delaySRC.then(src => (this.thumbnailSrc = src) && this.render(onfailed)).catch(onfailed);
+        } else { // normally set src
+          this.imgElement.src = this.thumbnailSrc || this.blobSrc || DEFAULT_THUMBNAIL;
+        }
+      } else {
+        this.imgElement.src = this.blobSrc || this.thumbnailSrc || DEFAULT_THUMBNAIL;
+      }
+    }, 30);
   }
 
   unrender() {

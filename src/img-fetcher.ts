@@ -127,7 +127,10 @@ export class IMGFetcher implements VisualNode {
             }
             this.node.blobSrc = transient.imgSrcCSP ? this.node.originSrc : URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
             this.node.mimeType = this.contentType;
-            this.node.render(() => this.rendered = false);
+            this.node.render((reason) => {
+              evLog("error", "render image failed, " + reason);
+              this.rendered = false;
+            });
             this.stage = FetchState.DONE;
           case FetchState.DONE:
             return null;
@@ -167,7 +170,10 @@ export class IMGFetcher implements VisualNode {
     if (!this.rendered) {
       // evLog("info", `img node [${this.index}] rendered`);
       this.rendered = true;
-      this.node.render(() => this.rendered = false);
+      this.node.render((reason) => {
+        evLog("error", "render image failed, " + reason);
+        this.rendered = false;
+      });
       this.node.changeStyle(this.stage === FetchState.DONE ? "fetched" : undefined, this.failedReason);
     } else if (shouldChangeStyle) {
       let status: "fetching" | "fetched" | "failed" | "init" | undefined;

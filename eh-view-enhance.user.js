@@ -1326,7 +1326,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
               }
               this.node.blobSrc = transient.imgSrcCSP ? this.node.originSrc : URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.mimeType = this.contentType;
-              this.node.render(() => this.rendered = false);
+              this.node.render((reason) => {
+                evLog("error", "render image failed, " + reason);
+                this.rendered = false;
+              });
               this.stage = 3 /* DONE */;
             case 3 /* DONE */:
               return null;
@@ -1363,7 +1366,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.node.picked = picked;
       if (!this.rendered) {
         this.rendered = true;
-        this.node.render(() => this.rendered = false);
+        this.node.render((reason) => {
+          evLog("error", "render image failed, " + reason);
+          this.rendered = false;
+        });
         this.node.changeStyle(this.stage === 3 /* DONE */ ? "fetched" : void 0, this.failedReason);
       } else if (shouldChangeStyle) {
         let status;
@@ -2602,6 +2608,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     mimeType;
     downloadBar;
     picked = true;
+    debouncer = new Debouncer();
     constructor(thumbnailSrc, href, title, delaySRC, originSrc) {
       this.thumbnailSrc = thumbnailSrc;
       this.href = href;
@@ -2652,32 +2659,34 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
         this.imgElement.src = "";
       } else {
-        resizing(this.imgElement, this.canvasElement).then(() => this.imgElement.src = "").catch(() => this.imgElement.src = this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height) || "");
+        resizing(this.imgElement, this.canvasElement).then(() => window.setTimeout(() => this.imgElement.src = "", 100)).catch(() => this.imgElement.src = this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height) || "");
       }
     }
     render(onfailed) {
-      if (!this.imgElement)
-        return onfailed("element undefined");
-      let justThumbnail = !this.blobSrc;
-      if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
-        const tip = OVERLAY_TIP.cloneNode(true);
-        tip.firstChild.textContent = this.mimeType.split("/")[1].toUpperCase();
-        this.root?.appendChild(tip);
-        justThumbnail = true;
-      }
-      this.imgElement.onload = () => this.resize(onfailed);
-      this.imgElement.onerror = () => onfailed("img load error");
-      if (justThumbnail) {
-        const delaySRC = this.delaySRC;
-        this.delaySRC = void 0;
-        if (delaySRC) {
-          delaySRC.then((src) => (this.thumbnailSrc = src) && this.render(onfailed)).catch(onfailed);
-        } else {
-          this.imgElement.src = this.thumbnailSrc || this.blobSrc || DEFAULT_THUMBNAIL;
+      this.debouncer.addEvent("IMG-RENDER", () => {
+        if (!this.imgElement)
+          return onfailed("element undefined");
+        let justThumbnail = !this.blobSrc;
+        if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
+          const tip = OVERLAY_TIP.cloneNode(true);
+          tip.firstChild.textContent = this.mimeType.split("/")[1].toUpperCase();
+          this.root?.appendChild(tip);
+          justThumbnail = true;
         }
-      } else {
-        this.imgElement.src = this.blobSrc || this.thumbnailSrc || DEFAULT_THUMBNAIL;
-      }
+        this.imgElement.onload = () => this.resize(onfailed);
+        this.imgElement.onerror = () => onfailed("img load error");
+        if (justThumbnail) {
+          const delaySRC = this.delaySRC;
+          this.delaySRC = void 0;
+          if (delaySRC) {
+            delaySRC.then((src) => (this.thumbnailSrc = src) && this.render(onfailed)).catch(onfailed);
+          } else {
+            this.imgElement.src = this.thumbnailSrc || this.blobSrc || DEFAULT_THUMBNAIL;
+          }
+        } else {
+          this.imgElement.src = this.blobSrc || this.thumbnailSrc || DEFAULT_THUMBNAIL;
+        }
+      }, 30);
     }
     unrender() {
       if (!this.imgElement)

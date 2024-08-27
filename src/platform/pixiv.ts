@@ -118,12 +118,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     const pid = matches[1];
     const p = matches[2];
-    if (this.works[pid]?.illustType !== 2 || p !== "ugoira") {
+    if (this.works[pid]?.illustType === 2 || p === "ugoira") {
+      const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then(resp => resp.json()) as UgoiraMeta;
+      this.ugoiraMetas[meta.body.src] = meta;
+      return { url: meta.body.src }
+    } else {
       return { url: node.originSrc! };
     }
-    const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then(resp => resp.json()) as UgoiraMeta;
-    this.ugoiraMetas[meta.body.src] = meta;
-    return { url: meta.body.src }
   }
 
   private async fetchTagsByPids(pids: string[]): Promise<void> {
@@ -190,6 +191,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
     if (this.first) {
+      // TODO:
       yield JSON.stringify([this.first]);
       while (conf.pixivJustCurrPage) {
         yield "";
@@ -212,9 +214,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
     this.pidList = [...pidList];
     pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
-    // try to get current pid from href
+    // remove this.first from pidList
     if (this.first) {
-      // remove this.first from pidList
       const index = pidList.indexOf(this.first);
       if (index > -1) pidList.splice(index, 1);
     }

@@ -2480,6 +2480,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           this.abort(0, 10);
         }, 100);
       });
+      EBUS.subscribe("pf-on-appended", (_total, _nodes, _chapterIndex, done) => {
+        if (done || this.processingIndexList.length > 0)
+          return;
+        this.abort(this.queue.currIndex, 100);
+      });
     }
     onFailed(cb) {
       this.onFailedCallback = cb;
@@ -5249,12 +5254,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
       const pid = matches[1];
       const p = matches[2];
-      if (this.works[pid]?.illustType !== 2 || p !== "ugoira") {
+      if (this.works[pid]?.illustType === 2 || p === "ugoira") {
+        const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then((resp) => resp.json());
+        this.ugoiraMetas[meta.body.src] = meta;
+        return { url: meta.body.src };
+      } else {
         return { url: node.originSrc };
       }
-      const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then((resp) => resp.json());
-      this.ugoiraMetas[meta.body.src] = meta;
-      return { url: meta.body.src };
     }
     async fetchTagsByPids(pids) {
       try {

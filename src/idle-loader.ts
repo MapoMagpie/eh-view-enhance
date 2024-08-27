@@ -44,6 +44,10 @@ export class IdleLoader {
         this.abort(0, 10);
       }, 100);
     });
+    EBUS.subscribe("pf-on-appended", (_total, _nodes, _chapterIndex, done) => {
+      if (done || this.processingIndexList.length > 0) return;
+      this.abort(this.queue.currIndex, 100);
+    });
   }
 
   onFailed(cb: () => void) {

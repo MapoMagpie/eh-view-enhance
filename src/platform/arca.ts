@@ -4,7 +4,7 @@ import { BaseMatcher, OriginMeta } from './platform';
 
 export class ArcaMatcher extends BaseMatcher {
   name(): string {
-    return 'Arca';
+    return 'Arcalive';
   }
   async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     yield document;

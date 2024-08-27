@@ -69,7 +69,8 @@ Or contribute: [Contribution Guide](https://github.com/MapoMagpie/eh-view-enhanc
 ## <a name="operates">Operates</a>
 
 1. On the gallery or author homepage, click `<🎑>` at the bottom left to start browsing. You can drag this element to any position in the CONF panel.
-2. After a moment, the thumbnails will be displayed in a grid on the page. Click on any thumbnail to enter the big image viewing mode.
+1. After a moment, the thumbnails will be displayed in a grid on the page. Click on any thumbnail to enter the big image viewing mode.
+1. More information can be found in `CONF` -> `Help` or [here](HELP.md)
 
 ## <a name="feedback">Feedback</a>
 

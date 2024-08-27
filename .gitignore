@@ -17,6 +17,7 @@ dist
 !.vscode/extensions.json
 .idea
 .DS_Store
+.prettierignore
 *.suo
 *.ntvs*
 *.njsproj

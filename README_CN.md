@@ -4,14 +4,14 @@
 
 ## 目录
 
-1. [特性](#features)
-1. [多站点支持](#multi-site-support)
-1. [安装](#installation)
-1. [操作](#operates)
-1. [反馈](#feedback)
+- [特性](#features)
+- [多站点支持](#multi-site-support)
+- [安装](#installation)
+- [操作](#operates)
+- [反馈](#feedback)
 
 预览(如果无法看到图片点[此处](/.assets/preview.md)):
-![预览](.assets/eh-view-enhance-showcase3.avif "预览")
+![预览](.assets/eh-view-enhance-showcase3.avif '预览')
 
 ## <a name="features">特性</a>
 
@@ -27,23 +27,30 @@
   - 需要支持脚本管理器拓展的浏览器，如:Firefox Android、Kiwi Browser
 
 ## <a name="multi-site-support">多站点支持</a>
+
 现在支持:
+
 - [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](https://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
-- [pixiv.net](https://pixiv.net) (作者的插话与漫画，Ugoria转GIF)
+- [pixiv.net](https://pixiv.net) (作者的插话与漫画，Ugoria 转 GIF)
 - [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (支持多章节选择，注：无缩略图)
 - [nhentai.net](https://nhentai.net)
 - [hitomi.la](https://hitomi.la)
 - [rule34.xxx](https://rule34.xxx)
+- [imhentai.xxx](https://imhentai.xxx)
 - [danbooru.donmai.us](https://danbooru.donmai.us)
 - [gelbooru.com ](https://gelbooru.com)
 - [yande.re](https://yande.re)
-- [steam截图](https://steamcommunity.com/id/some/screenshots)
-- [twitter用户媒体](https://twitter.com/NASA/media)
+- [konachan.com](https://konachan.com)
+- [steam 截图](https://steamcommunity.com/id/some/screenshots)
+- [Twitter User Media](https://twitter.com/NASA/media) | [X User Media](https://x.com/NASA/media)
 - [wnacg.com](https://www.wnacg.com)
 - [hentainexus.com](https://hentainexus.com)
 - [koharu.to](https://koharu.to)
 - [漫画柜](https://www.manhuagui.com)
 - [拷贝漫画](https://www.mangacopy.com)
+- [copymanga.tv](https://www.copymanga.tv)
+- [e621.net](https://e621.net)
+- [arca.live](https://arca.live)
 
 你可以发起对某站点的支持请求：[https://github.com/MapoMagpie/eh-view-enhance/issues](https://github.com/MapoMagpie/eh-view-enhance/issues)
 
@@ -57,12 +64,13 @@
 1. **`安装地址1`**：[OpenUserJS](https://openuserjs.org/scripts/zsyjklive.cn/E_HENTAI_VIEW_ENHANCE)
 1. **`安装地址2`**：[GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)，需要登录
 1. **`安装地址3`**：[SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)，不需要登录
-1. **`安装地址3`**：直接访问此处进行安装[`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+1. **`安装地址4`**：直接访问此处进行安装[`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
 
 ## <a name="operates">操作</a>
 
 1. 在画廊或作者主页的左下角，点击`<🎑>`即可开始浏览，你可以在配置面板中拖动该元素到任意位置。
 1. 稍等片刻后，缩略图会全屏陈列在页面上，点击某一缩略图进入大图浏览模式。
+1. 更多信息可以在 `配置` -> `帮助` 或 [这里](HELP_CN.md) 找到。
 
 ## <a name="feedback">反馈</a>
 

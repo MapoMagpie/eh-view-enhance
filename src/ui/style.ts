@@ -328,10 +328,8 @@ export function styleCSS() {
 .big-img-frame-collapse {
   width: 0px !important;
 }
-.big-img-frame-collapse .img-land-left,
-.big-img-frame-collapse .img-land-right,
-.big-img-frame-collapse .img-land-top,
-.big-img-frame-collapse .img-land-bottom {
+.ehvp-root-collapse .img-land,
+.big-img-frame-collapse .img-land {
   display: none !important;
 }
 .download-bar {

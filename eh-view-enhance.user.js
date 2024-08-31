@@ -1954,7 +1954,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     needNumberTitle(queue) {
       let lastTitle = "";
       for (const fetcher of queue) {
-        if (fetcher.node.title < lastTitle) {
+        if (fetcher.node.title.localeCompare(lastTitle, void 0, { numeric: true, sensitivity: "base" }) > 0) {
           return true;
         }
         lastTitle = fetcher.node.title;

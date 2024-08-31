@@ -119,8 +119,8 @@ export class Downloader {
   needNumberTitle(queue: IMGFetcher[]): boolean {
     let lastTitle = "";
     for (const fetcher of queue) {
-      if (fetcher.node.title < lastTitle) {
-        return true
+      if (fetcher.node.title.localeCompare(lastTitle, undefined, { numeric: true, sensitivity: 'base' }) > 0) {
+        return true;
       }
       lastTitle = fetcher.node.title;
     }

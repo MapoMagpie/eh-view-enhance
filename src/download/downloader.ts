@@ -123,11 +123,11 @@ export class Downloader {
     if (conf.filenameOrder === "alphabetically") {
       comparer = (a: string, before: string) => a < before;
     } else {
-      comparer = (a: string, before: string) => a.localeCompare(before, undefined, { numeric: true, sensitivity: 'base' }) > 0;
+      comparer = (a: string, before: string) => a.localeCompare(before, undefined, { numeric: true, sensitivity: 'base' }) < 0;
     }
     let lastTitle = "";
     for (const fetcher of queue) {
-      if (comparer(fetcher.node.title, lastTitle)) {
+      if (lastTitle && comparer(fetcher.node.title, lastTitle)) {
         return true;
       }
       lastTitle = fetcher.node.title;

@@ -1992,11 +1992,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (conf.filenameOrder === "alphabetically") {
         comparer = (a, before) => a < before;
       } else {
-        comparer = (a, before) => a.localeCompare(before, void 0, { numeric: true, sensitivity: "base" }) > 0;
+        comparer = (a, before) => a.localeCompare(before, void 0, { numeric: true, sensitivity: "base" }) < 0;
       }
       let lastTitle = "";
       for (const fetcher of queue) {
-        if (comparer(fetcher.node.title, lastTitle)) {
+        if (lastTitle && comparer(fetcher.node.title, lastTitle)) {
           return true;
         }
         lastTitle = fetcher.node.title;

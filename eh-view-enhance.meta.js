@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name               E HENTAI VIEW ENHANCE
-// @name:zh-CN         E绅士阅读强化
-// @name:zh-TW         E紳士閱讀強化
-// @name:ja            E紳士閱讀強化
-// @name:ko            E-HENTAI 보기 향상
-// @name:ru            E-HENTAI VIEW ENHANCE
+// @name               ComicLooms
+// @name:zh-CN         漫画织机
+// @name:zh-TW         漫畫織機
+// @name:ja            コミック織機
+// @name:ko            만화 베틀
+// @name:ru            Комические ткацкие станки
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.8.0
+// @version            4.8.1
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live

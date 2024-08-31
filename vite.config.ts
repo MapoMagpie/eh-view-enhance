@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import monkey, { cdn } from 'vite-plugin-monkey';
 
-const VERSION = '4.8.0';
+const VERSION = '4.8.1';
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   let downloadURL: string | undefined;
@@ -67,12 +67,12 @@ export default defineConfig(({ command }) => {
             'https://arca.live/*',
           ],
           name: {
-            "": "E HENTAI VIEW ENHANCE",
-            "zh-CN": "E绅士阅读强化",
-            "zh-TW": "E紳士閱讀強化",
-            "ja": "E紳士閱讀強化",
-            "ko": "E-HENTAI 보기 향상",
-            "ru": "E-HENTAI VIEW ENHANCE",
+            "": "ComicLooms",
+            "zh-CN": "漫画织机",
+            "zh-TW": "漫畫織機",
+            "ja": "コミック織機",
+            "ko": "만화 베틀",
+            "ru": "Комические ткацкие станки",
           },
           license: 'MIT',
           author: 'MapoMagpie',

@@ -117,9 +117,17 @@ export class Downloader {
   }
 
   needNumberTitle(queue: IMGFetcher[]): boolean {
+    if (conf.filenameOrder === "numbers") return true;
+    if (conf.filenameOrder === "original") return false;
+    let comparer;
+    if (conf.filenameOrder === "alphabetically") {
+      comparer = (a: string, before: string) => a < before;
+    } else {
+      comparer = (a: string, before: string) => a.localeCompare(before, undefined, { numeric: true, sensitivity: 'base' }) > 0;
+    }
     let lastTitle = "";
     for (const fetcher of queue) {
-      if (fetcher.node.title.localeCompare(lastTitle, undefined, { numeric: true, sensitivity: 'base' }) > 0) {
+      if (comparer(fetcher.node.title, lastTitle)) {
         return true;
       }
       lastTitle = fetcher.node.title;
@@ -198,7 +206,11 @@ export class Downloader {
     const needNumberTitle = this.needNumberTitle(chapter.queue);
     if (needNumberTitle) {
       const digits = chapter.queue.length.toString().length;
-      checkTitle = (title: string, index: number) => `${index + 1}`.padStart(digits, "0") + "_" + title.replaceAll(FILENAME_INVALIDCHAR, "_");
+      if (conf.filenameOrder === "numbers") {
+        checkTitle = (title: string, index: number) => `${index + 1}`.padStart(digits, "0") + "." + title.split(".").pop();
+      } else {
+        checkTitle = (title: string, index: number) => `${index + 1}`.padStart(digits, "0") + "_" + title.replaceAll(FILENAME_INVALIDCHAR, "_");
+      }
     } else {
       this.filenames.clear();
       checkTitle = (title: string) => deduplicate(this.filenames, title.replaceAll(FILENAME_INVALIDCHAR, "_"));

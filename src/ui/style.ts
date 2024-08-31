@@ -367,19 +367,19 @@ export function styleCSS() {
 }
 .p-tooltip { }
 .p-tooltip .p-tooltiptext {
-  visibility: hidden;
-  max-width: 24em;
+  display: none;
+  max-width: 34em;
   background-color: #000000df;
   color: var(--ehvp-font-color);
   border-radius: 6px;
   position: fixed;
   z-index: 1;
-  font-size: medium;
+  font-size: small;
   white-space: normal;
   text-align: left;
   padding: 0.3em 1em;
   box-sizing: border-box;
-  display: block;
+  pointer-events: none;
 }
 .page-loading {
   width: 100vw;

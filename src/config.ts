@@ -101,6 +101,7 @@ export type Config = {
   /** directly enter into big image view */
   autoEnterBig: boolean,
   pixivJustCurrPage: boolean,
+  filenameOrder: "auto" | "numbers" | "original" | "alphabetically",
 };
 
 function defaultConf(): Config {
@@ -152,6 +153,7 @@ function defaultConf(): Config {
     magnifier: false,
     autoEnterBig: true,
     pixivJustCurrPage: false,
+    filenameOrder: "auto",
   };
 }
 
@@ -258,7 +260,7 @@ export function saveConf(c: Config) {
 
 export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageSpeed" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
 export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost" | "magnifier" | "autoEnterBig" | "pixivJustCurrPage";
-export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer";
+export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer" | "filenameOrder";
 export const conf = getConf();
 export const transient = { imgSrcCSP: false, originalPolicy: "" };
 
@@ -329,6 +331,14 @@ export const ConfigItems: ConfigItem[] = [
       { value: "english", display: "English" },
       { value: "japanese", display: "Japanese" },
     ], displayInSite: /e[-x]hentai(.*)?.(org|onion)\//
+  },
+  {
+    key: "filenameOrder", typ: "select", options: [
+      { value: "auto", display: "Auto" },
+      { value: "numbers", display: "Numbers" },
+      { value: "original", display: "Original" },
+      { value: "alphabetically", display: "Alphabetically" },
+    ]
   },
 ];
 

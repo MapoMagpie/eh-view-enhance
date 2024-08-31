@@ -495,6 +495,27 @@
       "反转推文图片顺序",
       "여러 이미지가 첨부된 포스트 내 이미지들의 순서를 역순으로 정렬합니다."
     ),
+    filenameOrder: new I18nValue(
+      "Filename Order",
+      "文件名排序"
+    ),
+    filenameOrderTooltip: new I18nValue(
+      `Filename Sorting Rules for Downloaded Files:
+<br>  Auto: Detect whether the original filenames are consistent with the reading order under natural sorting (Windows). If consistent, keep the original filenames; otherwise, prepend a number to the original filenames to ensure the correct order.
+<br>  Numbers: Ignore the original filenames and rename the files directly according to the reading order.
+<br>  Original: Keep only the original filenames without ensuring the reading order, which may result in overwriting files with the same name.
+<br>  Alphabetically: Detect whether the original filenames are consistent with the reading order under alphabetical sorting (Linux). If consistent, keep the original filenames; otherwise, prepend a number to the original filenames to ensure the correct order. `,
+      `下载文件内的文件名排序规则：
+<br>  Auto: 检测原文件名在自然排序(Windows)下是否与阅读顺序一致，如果一致保留原文件名，否则将在原文件名前添加序号以保证顺序。
+<br>  Numbers: 忽略原文件名，直接以阅读顺序为文件命名。
+<br>  Original: 只保留原文件名，不能保证阅读顺序以及同名文件覆盖。
+<br>  Alphabetically: 检测原文件名在字母排序下(Linux)是否与阅读顺序一致，如果一致保留原文件名，否则将在原文件名前添加序号以保证顺序。`,
+      `다운로드 파일의 파일명 정렬 규칙:
+<br>  Auto: 원본 파일명이 자연 정렬(Windows)에서 읽기 순서와 일치하는지 감지합니다. 일치하는 경우 원본 파일명을 유지하고, 그렇지 않으면 순서를 보장하기 위해 파일명 앞에 번호를 추가합니다.
+<br>  Numbers: 원본 파일명을 무시하고 읽기 순서에 따라 파일명을 직접 지정합니다.
+<br>  Original: 원본 파일명만 유지하며, 읽기 순서가 보장되지 않으며 동일한 이름의 파일이 덮어쓰일 수 있습니다.
+<br>  Alphabetically: 원본 파일명이 알파벳 정렬(Linux)에서 읽기 순서와 일치하는지 감지합니다. 일치하는 경우 원본 파일명을 유지하고, 그렇지 않으면 순서를 보장하기 위해 파일명 앞에 번호를 추가합니다. `
+    ),
     dragToMove: new I18nValue(
       "Drag to Move the control bar",
       "拖动移动",
@@ -935,7 +956,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       customStyle: "",
       magnifier: false,
       autoEnterBig: true,
-      pixivJustCurrPage: false
+      pixivJustCurrPage: false,
+      filenameOrder: "auto"
     };
   }
   const CONF_VERSION = "4.4.0";
@@ -1091,6 +1113,16 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         { value: "japanese", display: "Japanese" }
       ],
       displayInSite: /e[-x]hentai(.*)?.(org|onion)\//
+    },
+    {
+      key: "filenameOrder",
+      typ: "select",
+      options: [
+        { value: "auto", display: "Auto" },
+        { value: "numbers", display: "Numbers" },
+        { value: "original", display: "Original" },
+        { value: "alphabetically", display: "Alphabetically" }
+      ]
     }
   ];
   const DEFAULT_DISPLAY_TEXT = {
@@ -1952,9 +1984,19 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       });
     }
     needNumberTitle(queue) {
+      if (conf.filenameOrder === "numbers")
+        return true;
+      if (conf.filenameOrder === "original")
+        return false;
+      let comparer;
+      if (conf.filenameOrder === "alphabetically") {
+        comparer = (a, before) => a < before;
+      } else {
+        comparer = (a, before) => a.localeCompare(before, void 0, { numeric: true, sensitivity: "base" }) > 0;
+      }
       let lastTitle = "";
       for (const fetcher of queue) {
-        if (fetcher.node.title.localeCompare(lastTitle, void 0, { numeric: true, sensitivity: "base" }) > 0) {
+        if (comparer(fetcher.node.title, lastTitle)) {
           return true;
         }
         lastTitle = fetcher.node.title;
@@ -2025,7 +2067,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const needNumberTitle = this.needNumberTitle(chapter.queue);
       if (needNumberTitle) {
         const digits = chapter.queue.length.toString().length;
-        checkTitle = (title, index) => `${index + 1}`.padStart(digits, "0") + "_" + title.replaceAll(FILENAME_INVALIDCHAR, "_");
+        if (conf.filenameOrder === "numbers") {
+          checkTitle = (title, index) => `${index + 1}`.padStart(digits, "0") + "." + title.split(".").pop();
+        } else {
+          checkTitle = (title, index) => `${index + 1}`.padStart(digits, "0") + "_" + title.replaceAll(FILENAME_INVALIDCHAR, "_");
+        }
       } else {
         this.filenames.clear();
         checkTitle = (title) => deduplicate(this.filenames, title.replaceAll(FILENAME_INVALIDCHAR, "_"));
@@ -5988,10 +6034,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       if (!child)
         return;
       element.addEventListener("mouseenter", () => {
+        child.style.display = "block";
         relocateElement(child, element, root.offsetWidth, root.offsetHeight);
-        child.style.visibility = "visible";
       });
-      element.addEventListener("mouseleave", () => child.style.visibility = "hidden");
+      element.addEventListener("mouseleave", () => child.style.display = "none");
     });
   }
 
@@ -7346,19 +7392,19 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .p-tooltip { }
 .p-tooltip .p-tooltiptext {
-  visibility: hidden;
-  max-width: 24em;
+  display: none;
+  max-width: 34em;
   background-color: #000000df;
   color: var(--ehvp-font-color);
   border-radius: 6px;
   position: fixed;
   z-index: 1;
-  font-size: medium;
+  font-size: small;
   white-space: normal;
   text-align: left;
   padding: 0.3em 1em;
   box-sizing: border-box;
-  display: block;
+  pointer-events: none;
 }
 .page-loading {
   width: 100vw;
@@ -8051,10 +8097,10 @@ ${chapters.map((c, i) => `<div><label>
         if (!child)
           return;
         element.addEventListener("mouseenter", () => {
+          child.style.display = "block";
           relocateElement(child, element, root.offsetWidth, root.offsetHeight);
-          child.style.visibility = "visible";
         });
-        element.addEventListener("mouseleave", () => child.style.visibility = "hidden");
+        element.addEventListener("mouseleave", () => child.style.display = "none");
       });
     }
     initEvents(events) {

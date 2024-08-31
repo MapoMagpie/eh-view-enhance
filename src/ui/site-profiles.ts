@@ -160,9 +160,9 @@ export default function createSiteProfilePanel(root: HTMLElement) {
     const child = element.querySelector<HTMLElement>(".p-tooltiptext");
     if (!child) return;
     element.addEventListener("mouseenter", () => {
+      child.style.display = "block";
       relocateElement(child, element, root.offsetWidth, root.offsetHeight);
-      child.style.visibility = "visible";
     });
-    element.addEventListener("mouseleave", () => child.style.visibility = "hidden");
+    element.addEventListener("mouseleave", () => child.style.display = "none");
   });
 }

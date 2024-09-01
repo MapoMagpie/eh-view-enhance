@@ -61,7 +61,7 @@
 1. **`前置条件`**：现代浏览器(Firefox\Chrome\Edge...)
 1. **`前置条件`**：安装脚本管理器拓展 [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
 1. **`前置条件`**：通畅的网络，点击此处确认能否访问[jsdelivr.net](https://cdn.jsdelivr.net)，以确保脚本能正常运行。
-1. **`安装地址1`**：[OpenUserJS](https://openuserjs.org/scripts/zsyjklive.cn/E_HENTAI_VIEW_ENHANCE)
+1. **`安装地址1`**：[OpenUserJS](https://openuserjs.org/scripts/zsyjklive.cn/ComicLooms)
 1. **`安装地址2`**：[GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)，需要登录
 1. **`安装地址3`**：[SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)，不需要登录
 1. **`安装地址4`**：直接访问此处进行安装[`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)

@@ -61,7 +61,7 @@
 1. **`필수 조건`**: 신식 브라우저 (Firefox\Chrome\Edge...)
 1. **`필수 조건`**: 확장 프로그램 설치 [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
 1. **`필수 조건`**: 스크립트가 제대로 작동하는지 확인하려면 [jsdelivr.net](https://cdn.jsdelivr.net)에 접속할 수 있는지 확인하세요.
-1. **`설치 링크 1`**: [OpenUserJS](https://openuserjs.org/scripts/zsyjklive.cn/E_HENTAI_VIEW_ENHANCE)
+1. **`설치 링크 1`**: [OpenUserJS](https://openuserjs.org/scripts/zsyjklive.cn/ComicLooms)
 1. **`설치 링크 2`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), 로그인 필요
 1. **`설치 링크 3`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), 로그인 필요 없음
 1. **`설치 링크 4`**: [여기](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)에서 직접 설치

@@ -3084,9 +3084,19 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           });
         });
       } else {
-        const href = document.querySelector(".read-block > a")?.href;
-        if (href === void 0)
+        const first = document.querySelector(".visible-lg .read-block")?.firstElementChild;
+        if (first === void 0)
           throw new Error("No page found");
+        let href = "";
+        if (first instanceof HTMLAnchorElement) {
+          href = first.href;
+        } else {
+          href = first.getAttribute("href") || "";
+        }
+        if (!href || href.startsWith("javascript"))
+          throw new Error("未能找到阅读按钮！");
+        if (href.startsWith("#coinbuycomic"))
+          throw new Error("此漫画需要硬币解锁！请点击开始阅读按钮进行解锁。");
         ret.push({
           id: 0,
           title: "Default",

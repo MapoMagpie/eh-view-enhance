@@ -67,8 +67,16 @@ export class Comic18Matcher extends BaseMatcher {
 
       });
     } else {
-      const href = document.querySelector<HTMLAnchorElement>(".read-block > a")?.href;
-      if (href === undefined) throw new Error("No page found");
+      const first = document.querySelector(".visible-lg .read-block")?.firstElementChild as HTMLElement | undefined;
+      if (first === undefined) throw new Error("No page found");
+      let href = "";
+      if (first instanceof HTMLAnchorElement) {
+        href = first.href;
+      } else {
+        href = first.getAttribute("href") || "";
+      }
+      if (!href || href.startsWith("javascript")) throw new Error("未能找到阅读按钮！");
+      if (href.startsWith("#coinbuycomic")) throw new Error("此漫画需要硬币解锁！请点击开始阅读按钮进行解锁。");
       ret.push({
         id: 0,
         title: "Default",

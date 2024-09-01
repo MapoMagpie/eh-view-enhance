@@ -43,8 +43,8 @@
 // @match              https://hentainexus.com/*
 // @match              https://koharu.to/*
 // @match              https://*.manhuagui.com/*
-// @match              http*://*.mangacopy.com/*
-// @match              http*://*.copymanga.tv/*
+// @match              https://*.mangacopy.com/*
+// @match              https://*.copymanga.tv/*
 // @match              https://e621.net/*
 // @match              https://arca.live/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js

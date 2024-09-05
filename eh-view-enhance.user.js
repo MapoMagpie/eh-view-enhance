@@ -4670,7 +4670,18 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
+  function nhParseExt(str) {
+    switch (str.slice(0, 1)) {
+      case "j":
+        return "jpg";
+      case "g":
+        return "gif";
+      case "p":
+        return "png";
+      default:
+        throw new Error("cannot parse image extension from info: " + str);
+    }
+  }
   class NHMatcher extends BaseMatcher {
     meta;
     name() {
@@ -4679,76 +4690,53 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     workURL() {
       return /nhentai.net\/g\/\d+\/?$/;
     }
-    parseMeta() {
-      let title;
-      let originTitle;
-      document.querySelectorAll("#info .title").forEach((ele) => {
-        if (!title) {
-          title = ele.textContent || void 0;
-        } else {
-          originTitle = ele.textContent || void 0;
-        }
-      });
-      const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
-      meta.originTitle = originTitle;
-      const tagTrList = document.querySelectorAll(".tag-container");
-      const tags = {};
-      tagTrList.forEach((tr) => {
-        const cat = tr.firstChild?.textContent?.trim().replace(":", "");
-        if (cat) {
-          const list = [];
-          tr.querySelectorAll(".tag .name").forEach((tag) => {
-            const t = tag.textContent?.trim();
-            if (t) {
-              list.push(t);
-            }
-          });
-          if (list.length > 0) {
-            tags[cat] = list;
-          }
-        }
-      });
-      meta.tags = tags;
-      this.meta = meta;
-    }
     galleryMeta() {
       return this.meta;
     }
+    parseInfo() {
+      const mediaServer = Array.from(document.querySelectorAll("body > script")).find((ele) => ele.textContent?.trim()?.startsWith("window._n_app"))?.textContent?.match(/media_server:\s?(\d+)/)?.[1];
+      if (!mediaServer)
+        throw new Error("cannot find media server");
+      const raw = Array.from(document.querySelectorAll("body > script")).find((ele) => ele.textContent?.trim()?.startsWith("window._gallery"))?.textContent?.match(/parse\((.*)\);/)?.[1];
+      if (!raw)
+        throw new Error("cannot find images info");
+      const info = JSON.parse(JSON.parse(raw));
+      const meta = new GalleryMeta(window.location.href, info.title.english);
+      meta.originTitle = info.title.japanese;
+      meta.tags = info.tags.reduce((prev, curr) => {
+        if (!prev[curr.type]) {
+          prev[curr.type] = [];
+        }
+        prev[curr.type].push(curr.name);
+        return prev;
+      }, {});
+      this.meta = meta;
+      return { info, mediaServer };
+    }
     async fetchOriginMeta(node) {
-      let text = "";
-      try {
-        text = await window.fetch(node.href).then((resp) => resp.text());
-        if (!text)
-          throw new Error("[text] is empty");
-      } catch (error) {
-        throw new Error(`Fetch source page error, expected [text]！ ${error}`);
-      }
-      return { url: NH_IMG_URL_REGEX.exec(text)[1] };
+      return { url: node.originSrc };
     }
     async parseImgNodes(source) {
-      const list = [];
-      const nodes = source.querySelectorAll(".thumb-container > .gallerythumb");
-      if (!nodes || nodes.length == 0) {
-        throw new Error("warn: failed query image nodes!");
+      await sleep(200);
+      const nodes = Array.from(source.querySelectorAll(".thumb-container > .gallerythumb") ?? []);
+      if (nodes.length == 0)
+        throw new Error("cannot find image nodes");
+      const { info, mediaServer } = this.parseInfo();
+      const mediaID = info.media_id;
+      const digits = nodes.length.toString().length;
+      let ret = [];
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        const thumbSrc = node.querySelector("img")?.getAttribute("data-src") ?? "";
+        const title = (i + 1).toString().padStart(digits, "0");
+        const ext = nhParseExt(info.images.pages[i].t);
+        const href = location.origin + node.getAttribute("href");
+        const originSrc = `${window.location.origin.replace("//", "//i" + mediaServer + ".")}/galleries/${mediaID}/${i + 1}.${ext}`;
+        ret.push(new ImageNode(thumbSrc, href, title + "." + ext, void 0, originSrc));
       }
-      let i = 0;
-      for (const node of Array.from(nodes)) {
-        i++;
-        const imgNode = node.querySelector("img");
-        if (!imgNode) {
-          throw new Error("Cannot find Image");
-        }
-        const newNode = new ImageNode(
-          imgNode.getAttribute("data-src"),
-          location.origin + node.getAttribute("href"),
-          imgNode.getAttribute("title") || `${i}.jpg`
-        );
-        list.push(newNode);
-      }
-      return list;
+      return ret;
     }
     async *fetchPagesSource() {
-      this.parseMeta();
       yield document;
     }
   }
@@ -4795,10 +4783,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       for (let i = 0; i < files.length; i++) {
         const title = (i + 1).toString().padStart(digits, "0");
         const thumb = thumbs[i];
-        const thumbSrc = base + thumb[0] + "." + this.parseExt(thumb[1]);
+        const thumbSrc = base + thumb[0] + "." + nhParseExt(thumb[1]);
         const file = files[i];
-        const originSrc = base + file[0] + "." + this.parseExt(file[1]);
-        ret.push(new ImageNode(thumbSrc, href + "/" + (i + 1), title + "." + this.parseExt(file[1]), void 0, originSrc));
+        const originSrc = base + file[0] + "." + nhParseExt(file[1]);
+        ret.push(new ImageNode(thumbSrc, href + "/" + (i + 1), title + "." + nhParseExt(file[1]), void 0, originSrc));
       }
       return ret;
     }
@@ -4810,18 +4798,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const files = Object.entries(info.fl);
       const thumbs = Object.entries(info.th);
       return [files, thumbs];
-    }
-    parseExt(str) {
-      switch (str.slice(0, 1)) {
-        case "j":
-          return "jpg";
-        case "g":
-          return "gif";
-        case "p":
-          return "png";
-        default:
-          throw new Error("cannot parse image extension from info: " + str);
-      }
     }
     async fetchOriginMeta(node) {
       return { url: node.originSrc };

@@ -23,6 +23,7 @@
 // @match              https://e-hentai.org/*
 // @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://nhentai.net/*
+// @match              https://nhentai.xxx/*
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*
 // @match              https://*.pixiv.net/*
@@ -55,6 +56,7 @@
 // @connect            hath.network
 // @connect            exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion
 // @connect            nhentai.net
+// @connect            nhentaimg.com
 // @connect            hitomi.la
 // @connect            akamaihd.net
 // @connect            i.pximg.net
@@ -4664,18 +4666,23 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     return JSON.parse(dataStr);
   }
 
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
   class NHMatcher extends BaseMatcher {
+    meta;
     name() {
       return "nhentai";
     }
     workURL() {
       return /nhentai.net\/g\/\d+\/?$/;
     }
-    galleryMeta(doc) {
+    parseMeta() {
       let title;
       let originTitle;
-      doc.querySelectorAll("#info .title").forEach((ele) => {
+      document.querySelectorAll("#info .title").forEach((ele) => {
         if (!title) {
           title = ele.textContent || void 0;
         } else {
@@ -4684,7 +4691,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       });
       const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
       meta.originTitle = originTitle;
-      const tagTrList = doc.querySelectorAll(".tag-container");
+      const tagTrList = document.querySelectorAll(".tag-container");
       const tags = {};
       tagTrList.forEach((tr) => {
         const cat = tr.firstChild?.textContent?.trim().replace(":", "");
@@ -4702,7 +4709,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         }
       });
       meta.tags = tags;
-      return meta;
+      this.meta = meta;
+    }
+    galleryMeta() {
+      return this.meta;
     }
     async fetchOriginMeta(node) {
       let text = "";
@@ -4738,7 +4748,86 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return list;
     }
     async *fetchPagesSource() {
+      this.parseMeta();
       yield document;
+    }
+  }
+  class NHxxxMatcher extends BaseMatcher {
+    meta;
+    galleryMeta() {
+      return this.meta;
+    }
+    name() {
+      return "nhentai.xxx";
+    }
+    parseMeta() {
+      const title = document.querySelector(".info h1")?.textContent;
+      const originTItle = document.querySelector(".info h2")?.textContent;
+      const meta = new GalleryMeta(window.location.href, title ?? document.title);
+      meta.originTitle = originTItle ?? void 0;
+      Array.from(document.querySelectorAll(".info > ul > li.tags")).forEach((ele) => {
+        let cat = ele.querySelector("span.text")?.textContent ?? "misc";
+        cat = cat.trim().replace(":", "");
+        const tags = Array.from(ele.querySelectorAll("a.tag_btn > .tag_name")).map((t) => t.textContent?.trim()).filter(Boolean);
+        meta.tags[cat] = tags;
+      });
+      this.meta = meta;
+    }
+    async *fetchPagesSource() {
+      this.parseMeta();
+      yield document;
+    }
+    async parseImgNodes(page) {
+      const doc = page;
+      await sleep(200);
+      const [files, thumbs] = this.parseInfo(doc);
+      if (files.length !== thumbs.length)
+        throw new Error("thumbs length not eq images length");
+      const cover = doc.querySelector(".cover img")?.src;
+      if (!cover)
+        throw new Error("cannot find cover src");
+      const base = cover.slice(0, cover.lastIndexOf("/") + 1);
+      const ret = [];
+      const digits = files.length.toString().length;
+      let href = window.location.href;
+      if (href.endsWith("/"))
+        href = href.slice(0, -1);
+      for (let i = 0; i < files.length; i++) {
+        const title = (i + 1).toString().padStart(digits, "0");
+        const thumb = thumbs[i];
+        const thumbSrc = base + thumb[0] + "." + this.parseExt(thumb[1]);
+        const file = files[i];
+        const originSrc = base + file[0] + "." + this.parseExt(file[1]);
+        ret.push(new ImageNode(thumbSrc, href + "/" + (i + 1), title + "." + this.parseExt(file[1]), void 0, originSrc));
+      }
+      return ret;
+    }
+    parseInfo(doc) {
+      const matches = Array.from(doc.querySelectorAll("script[type]")).find((ele) => ele.textContent?.trimStart().startsWith("var g_th"))?.textContent?.match(/\('(.*)'\);/);
+      if (!matches || matches.length !== 2)
+        throw new Error("cannot find images info from script");
+      const info = JSON.parse(matches[1]);
+      const files = Object.entries(info.fl);
+      const thumbs = Object.entries(info.th);
+      return [files, thumbs];
+    }
+    parseExt(str) {
+      switch (str.slice(0, 1)) {
+        case "j":
+          return "jpg";
+        case "g":
+          return "gif";
+        case "p":
+          return "png";
+        default:
+          throw new Error("cannot parse image extension from info: " + str);
+      }
+    }
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
+    }
+    workURL() {
+      return /nhentai.xxx\/g\/\d+\/?$/;
     }
   }
 
@@ -5825,6 +5914,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return [
       new EHMatcher(),
       new NHMatcher(),
+      new NHxxxMatcher(),
       new HitomiMather(),
       new PixivMatcher(),
       new SteamMatcher(),
@@ -8543,10 +8633,6 @@ ${chapters.map((c, i) => `<div><label>
       const displayTexts = entryBTN.getAttribute("data-display-texts").split(",");
       entryBTN.textContent = stage === "exit" ? displayTexts[0] : displayTexts[1];
     }
-  }
-
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   function onMouse(ele, callback, signal) {

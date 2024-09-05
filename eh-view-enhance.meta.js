@@ -23,6 +23,7 @@
 // @match              https://e-hentai.org/*
 // @match              http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*
 // @match              https://nhentai.net/*
+// @match              https://nhentai.xxx/*
 // @match              https://steamcommunity.com/id/*/screenshots*
 // @match              https://hitomi.la/*
 // @match              https://*.pixiv.net/*
@@ -55,6 +56,7 @@
 // @connect            hath.network
 // @connect            exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion
 // @connect            nhentai.net
+// @connect            nhentaimg.com
 // @connect            hitomi.la
 // @connect            akamaihd.net
 // @connect            i.pximg.net

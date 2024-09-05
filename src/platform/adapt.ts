@@ -9,7 +9,7 @@ import { IMHentaiMatcher } from "./im-hentai";
 import { KoharuMatcher } from "./koharo";
 import { MangaCopyMatcher } from "./mangacopy";
 import { MHGMatcher } from "./manhuagui";
-import { NHMatcher } from "./nhentai";
+import { NHMatcher, NHxxxMatcher } from "./nhentai";
 import { PixivMatcher } from "./pixiv";
 import { Matcher } from "./platform";
 import { RokuHentaiMatcher } from "./rokuhentai";
@@ -21,6 +21,7 @@ export function getMatchers(): Matcher[] {
   return [
     new EHMatcher(),
     new NHMatcher(),
+    new NHxxxMatcher(),
     new HitomiMather(),
     new PixivMatcher(),
     new SteamMatcher(),

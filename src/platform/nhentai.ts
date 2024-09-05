@@ -1,10 +1,12 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { PagesSource } from "../page-fetcher";
+import { sleep } from "../utils/sleep";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 const NH_IMG_URL_REGEX = /<a\shref="\/g[^>]*?><img\ssrc="([^"]*)"/;
 export class NHMatcher extends BaseMatcher {
+  meta?: GalleryMeta;
   name(): string {
     return "nhentai";
   }
@@ -13,10 +15,10 @@ export class NHMatcher extends BaseMatcher {
     return /nhentai.net\/g\/\d+\/?$/;
   }
 
-  galleryMeta(doc: Document): GalleryMeta {
+  parseMeta() {
     let title: string | undefined;
     let originTitle: string | undefined;
-    doc.querySelectorAll("#info .title").forEach(ele => {
+    document.querySelectorAll("#info .title").forEach(ele => {
       if (!title) {
         title = ele.textContent || undefined;
       } else {
@@ -25,7 +27,7 @@ export class NHMatcher extends BaseMatcher {
     });
     const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
     meta.originTitle = originTitle;
-    const tagTrList = doc.querySelectorAll<HTMLElement>(".tag-container");
+    const tagTrList = document.querySelectorAll<HTMLElement>(".tag-container");
     const tags: Record<string, string[]> = {};
     tagTrList.forEach((tr) => {
       const cat = tr.firstChild?.textContent?.trim().replace(":", "");
@@ -43,7 +45,11 @@ export class NHMatcher extends BaseMatcher {
       }
     });
     meta.tags = tags;
-    return meta;
+    this.meta = meta;
+  }
+
+  galleryMeta(): GalleryMeta {
+    return this.meta!;
   }
 
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
@@ -83,7 +89,82 @@ export class NHMatcher extends BaseMatcher {
   }
 
   public async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+    this.parseMeta();
     yield document;
+  }
+
+}
+
+export class NHxxxMatcher extends BaseMatcher {
+  meta?: GalleryMeta;
+  galleryMeta(): GalleryMeta {
+    return this.meta!;
+  }
+  name(): string {
+    return "nhentai.xxx";
+  }
+  parseMeta() {
+    const title = document.querySelector(".info h1")?.textContent;
+    const originTItle = document.querySelector(".info h2")?.textContent;
+    const meta = new GalleryMeta(window.location.href, title ?? document.title);
+    meta.originTitle = originTItle ?? undefined;
+    Array.from(document.querySelectorAll(".info > ul > li.tags")).forEach(ele => {
+      let cat = ele.querySelector("span.text")?.textContent ?? "misc";
+      cat = cat.trim().replace(":", "");
+      const tags = Array.from(ele.querySelectorAll("a.tag_btn > .tag_name")).map(t => t.textContent?.trim()).filter(Boolean) as string[];
+      meta.tags[cat] = tags;
+    });
+    this.meta = meta;
+  }
+  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+    this.parseMeta();
+    yield document;
+  }
+  async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
+    const doc = page as Document;
+    await sleep(200);
+    const [files, thumbs] = this.parseInfo(doc);
+    if (files.length !== thumbs.length) throw new Error("thumbs length not eq images length");
+    const cover = doc.querySelector<HTMLImageElement>(".cover img")?.src;
+    if (!cover) throw new Error("cannot find cover src");
+    const base = cover.slice(0, cover.lastIndexOf("/") + 1);
+    const ret = [];
+    const digits = files.length.toString().length;
+    let href = window.location.href;
+    if (href.endsWith("/")) href = href.slice(0, -1);
+    for (let i = 0; i < files.length; i++) {
+      const title = (i + 1).toString().padStart(digits, "0");
+      const thumb = thumbs[i];
+      const thumbSrc = base + thumb[0] + "." + this.parseExt(thumb[1]);
+      const file = files[i];
+      const originSrc = base + file[0] + "." + this.parseExt(file[1]);
+      ret.push(new ImageNode(thumbSrc, href + "/" + (i + 1), title + "." + this.parseExt(file[1]), undefined, originSrc));
+    }
+    return ret;
+  }
+  parseInfo(doc: Document) {
+    const matches = Array.from(doc.querySelectorAll("script[type]"))
+      .find(ele => ele.textContent?.trimStart().startsWith("var g_th"))
+      ?.textContent?.match(/\('(.*)'\);/);
+    if (!matches || matches.length !== 2) throw new Error("cannot find images info from script");
+    const info = JSON.parse(matches[1]) as { fl: Record<string, string>, th: Record<string, string> };
+    const files = Object.entries(info.fl);
+    const thumbs = Object.entries(info.th);
+    return [files, thumbs];
+  }
+  parseExt(str: string): string {
+    switch (str.slice(0, 1)) {
+      case "j": return "jpg";
+      case "g": return "gif";
+      case "p": return "png";
+      default: throw new Error("cannot parse image extension from info: " + str);
+    }
+  }
+  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
+    return { url: node.originSrc! };
+  }
+  workURL(): RegExp {
+    return /nhentai.xxx\/g\/\d+\/?$/;
   }
 
 }

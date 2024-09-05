@@ -6,7 +6,7 @@
 // @name:ko            만화 베틀
 // @name:ru            Комические ткацкие станки
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.8.3
+// @version            4.8.4
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live
@@ -39,8 +39,7 @@
 // @match              https://twitter.com/*
 // @match              https://x.com/*
 // @match              https://*.wnacg.com/*
-// @match              https://*.wn01.cc/*
-// @match              https://*.wn02.cc/*
+// @match              https://*.wn**.cc/*
 // @match              https://hentainexus.com/*
 // @match              https://koharu.to/*
 // @match              https://*.manhuagui.com/*

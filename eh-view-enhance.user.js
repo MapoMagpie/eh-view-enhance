@@ -32,6 +32,7 @@
 // @match              https://rokuhentai.com/*
 // @match              https://18comic.org/*
 // @match              https://18comic.vip/*
+// @match              https://18comic-gura.me/*
 // @match              https://rule34.xxx/*
 // @match              https://imhentai.xxx/*
 // @match              https://danbooru.donmai.us/*
@@ -64,7 +65,7 @@
 // @connect            konachan.com
 // @connect            18comic.org
 // @connect            18comic.vip
-// @connect            18-comicfreedom.xyz
+// @connect            18comic-gura.me
 // @connect            rule34.xxx
 // @connect            imhentai.xxx
 // @connect            donmai.us
@@ -3156,7 +3157,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       );
     }
     workURL() {
-      return /18-?comic(freedom)?.(vip|org|xyz)\/album\/\d+/;
+      return /18comic(-gura)?.(vip|org|me)\/album\/\d+/;
     }
     galleryMeta(doc) {
       if (this.meta)

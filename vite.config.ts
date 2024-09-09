@@ -66,6 +66,7 @@ export default defineConfig(({ command }) => {
             'https://*.copymanga.tv/*',
             'https://e621.net/*',
             'https://arca.live/*',
+            'https://*.artstation.com/*',
             // '*://*/*',
           ],
           name: {
@@ -118,6 +119,7 @@ export default defineConfig(({ command }) => {
             'mangafuna.xyz',
             'e621.net',
             'namu.la',
+            'artstation.com',
             '*',
           ],
           grant: [

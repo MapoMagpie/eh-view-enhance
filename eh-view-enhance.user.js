@@ -48,6 +48,7 @@
 // @match              https://*.copymanga.tv/*
 // @match              https://e621.net/*
 // @match              https://arca.live/*
+// @match              https://*.artstation.com/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
@@ -82,6 +83,7 @@
 // @connect            mangafuna.xyz
 // @connect            e621.net
 // @connect            namu.la
+// @connect            artstation.com
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue
@@ -1257,6 +1259,31 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }, {}, 10 * 1e3);
     });
   }
+  async function batchFetch(urls, concurrency, respType = "text") {
+    const results = new Array(urls.length);
+    let i = 0;
+    while (i < urls.length) {
+      const batch = urls.slice(i, i + concurrency);
+      const batchPromises = batch.map(
+        (url, index) => window.fetch(url).then((resp) => {
+          if (resp.ok) {
+            switch (respType) {
+              case "text":
+                return resp.text();
+              case "json":
+                return resp.json();
+              case "arraybuffer":
+                return resp.arrayBuffer();
+            }
+          }
+          throw new Error(`failed to fetch ${url}: ${resp.status} ${resp.statusText}`);
+        }).then((raw) => results[index + i] = raw)
+      );
+      await Promise.all(batchPromises);
+      i += concurrency;
+    }
+    return results;
+  }
 
   var FetchState = /* @__PURE__ */ ((FetchState2) => {
     FetchState2[FetchState2["FAILED"] = 0] = "FAILED";
@@ -1352,11 +1379,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
               [this.data, this.contentType] = ret;
               [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.node.originSrc);
               if (this.contentType.startsWith("text")) {
-                if (this.data.byteLength < 1e5) {
-                  const str = new TextDecoder().decode(this.data);
-                  evLog("error", "unexpect content:\n", str);
-                  throw new Error(`expect image data, fetched wrong type: ${this.contentType}, the content is showing up in console(F12 open it).`);
-                }
+                const str = new TextDecoder().decode(this.data);
+                evLog("error", "unexpect content:\n", str);
+                throw new Error(`expect image data, fetched wrong type: ${this.contentType}, the content is showing up in console(F12 open it).`);
               }
               this.node.blobSrc = transient.imgSrcCSP ? this.node.originSrc : URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.mimeType = this.contentType;
@@ -3230,6 +3255,96 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     workURL() {
       return /arca.live\/b\/\w*\/\d+/;
+    }
+  }
+
+  class ArtStationMatcher extends BaseMatcher {
+    pageData = /* @__PURE__ */ new Map();
+    info = { username: "", projects: 0, assets: 0 };
+    tags = {};
+    name() {
+      return "Art Station";
+    }
+    galleryMeta() {
+      const meta = new GalleryMeta(window.location.href, `artstaion-${this.info.username}-w${this.info.projects}-p${this.info.assets}`);
+      meta.tags = this.tags;
+      return meta;
+    }
+    async *fetchPagesSource() {
+      const { id, username } = await this.fetchArtistInfo();
+      this.info.username = username;
+      let page = 0;
+      while (true) {
+        page++;
+        const projects = await this.fetchProjects(username, id.toString(), page);
+        if (!projects || projects.length === 0)
+          break;
+        this.pageData.set(page.toString(), projects);
+        yield page.toString();
+      }
+    }
+    async parseImgNodes(pageNo) {
+      const projects = this.pageData.get(pageNo);
+      if (!projects)
+        throw new Error("cannot get projects form page data");
+      const projectURLs = projects.map((p) => `https://www.artstation.com/projects/${p.hash_id}.json`);
+      const assets = await batchFetch(projectURLs, 10, "json");
+      let ret = [];
+      for (let asset of assets) {
+        this.info.projects++;
+        this.tags[asset.slug] = asset.tags;
+        for (let i = 0; i < asset.assets.length; i++) {
+          const a = asset.assets[i];
+          if (a.asset_type === "cover")
+            continue;
+          const thumb = a.image_url.replace("/large/", "/small/");
+          const ext = a.image_url.match(/\.(\w+)\?\d+$/)?.[1] ?? "jpg";
+          const title = `${asset.slug}-${i + 1}.${ext}`;
+          let originSrc = a.image_url;
+          if (a.has_embedded_player && a.player_embedded) {
+            if (a.player_embedded.includes("youtube"))
+              continue;
+            originSrc = a.player_embedded;
+          }
+          this.info.assets++;
+          ret.push(new ImageNode(thumb, asset.permalink, title, void 0, originSrc));
+        }
+      }
+      return ret;
+    }
+    async fetchOriginMeta(node) {
+      if (node.originSrc?.startsWith("<iframe")) {
+        const iframe = node.originSrc.match(/src=['"](.*?)['"]\s/)?.[1];
+        if (!iframe)
+          throw new Error("cannot match video clip url");
+        const doc = await window.fetch(iframe).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+        const source = doc.querySelector("video > source");
+        if (!source)
+          throw new Error("cannot find video element");
+        return { url: source.src };
+      }
+      return { url: node.originSrc };
+    }
+    async processData(data, contentType) {
+      if (contentType.startsWith("binary") || contentType.startsWith("text")) {
+        return [data, "video/mp4"];
+      }
+      return [data, contentType];
+    }
+    workURL() {
+      return /artstation.com\/[-\w]+(\/albums\/\d+)?$/;
+    }
+    async fetchArtistInfo() {
+      const user = window.location.pathname.slice(1).split("/").shift();
+      if (!user)
+        throw new Error("cannot match artist's username");
+      const info = await window.fetch(`https://www.artstation.com/users/${user}/quick.json`).then((res) => res.json());
+      return info;
+    }
+    async fetchProjects(user, id, page) {
+      const url = `https://www.artstation.com/users/${user}/projects.json?user_id=${id}&page=${page}`;
+      const project = await window.fetch(url).then((res) => res.json());
+      return project.data;
     }
   }
 
@@ -5423,10 +5538,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         return list;
       const pidList = JSON.parse(source);
       this.fetchTagsByPids(pidList);
-      const pageListData = await fetchUrls(pidList.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5);
+      const pageListData = await batchFetch(pidList.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
       for (let i = 0; i < pidList.length; i++) {
         const pid = pidList[i];
-        const data = JSON.parse(pageListData[i]);
+        const data = pageListData[i];
         if (data.error) {
           throw new Error(`Fetch page list error: ${data.message}`);
         }
@@ -5478,24 +5593,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         yield JSON.stringify(pids);
       }
     }
-  }
-  async function fetchUrls(urls, concurrency) {
-    const results = new Array(urls.length);
-    let i = 0;
-    while (i < urls.length) {
-      const batch = urls.slice(i, i + concurrency);
-      const batchPromises = batch.map(
-        (url, index) => window.fetch(url).then((resp) => {
-          if (resp.ok) {
-            return resp.text();
-          }
-          throw new Error(`Failed to fetch ${url}: ${resp.status} ${resp.statusText}`);
-        }).then((raw) => results[index + i] = raw)
-      );
-      await Promise.all(batchPromises);
-      i += concurrency;
-    }
-    return results;
   }
 
   class RokuHentaiMatcher extends BaseMatcher {
@@ -5909,7 +6006,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new MHGMatcher(),
       new MangaCopyMatcher(),
       new E621Matcher(),
-      new ArcaMatcher()
+      new ArcaMatcher(),
+      new ArtStationMatcher()
     ];
   }
   function adaptMatcher(url) {

@@ -6,6 +6,7 @@ import ImageNode from "../img-node";
 import { conf } from "../config";
 import { PagesSource } from "../page-fetcher";
 import * as zip_js from "@zip.js/zip.js";
+import { batchFetch } from "../utils/query";
 
 type Page = {
   urls: {
@@ -161,11 +162,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const pidList = JSON.parse(source as string) as string[];
     // async function but no await, it will fetch tags in background
     this.fetchTagsByPids(pidList);
-
-    const pageListData = await fetchUrls(pidList.map(p => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5);
+    type PageData = { error: boolean, message: string, body: Page[] };
+    const pageListData = await batchFetch<PageData>(pidList.map(p => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
     for (let i = 0; i < pidList.length; i++) {
       const pid = pidList[i];
-      const data = JSON.parse(pageListData[i]) as { error: boolean, message: string, body: Page[] };
+      const data = pageListData[i];
       if (data.error) {
         throw new Error(`Fetch page list error: ${data.message}`);
       }
@@ -223,27 +224,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const pids = pidList.splice(0, 20);
       yield JSON.stringify(pids);
     }
-
   }
 }
 
-async function fetchUrls(urls: string[], concurrency: number): Promise<string[]> {
-  const results = new Array(urls.length);
-  let i = 0;
-  while (i < urls.length) {
-    const batch = urls.slice(i, i + concurrency);
-    const batchPromises = batch.map((url, index) =>
-      window.fetch(url).then((resp) => {
-        if (resp.ok) {
-          return resp.text();
-        }
-        throw new Error(`Failed to fetch ${url}: ${resp.status} ${resp.statusText}`);
-      }).then(raw => results[index + i] = raw)
-    );
-
-    await Promise.all(batchPromises);
-    i += concurrency;
-  }
-  return results;
-}
 

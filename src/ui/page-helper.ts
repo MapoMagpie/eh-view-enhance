@@ -13,9 +13,11 @@ export class PageHelper {
   pageNumInChapter: Record<number, number> = {};
   lastStage: "bigImageFrame" | "fullViewGrid" | "exit" = "exit";
   chapters: () => Chapter[];
-  constructor(html: Elements, chapters: () => Chapter[]) {
+  downloading: () => boolean;
+  constructor(html: Elements, chapters: () => Chapter[], downloading: () => boolean) {
     this.html = html;
     this.chapters = chapters;
+    this.downloading = downloading;
     EBUS.subscribe("pf-change-chapter", (index) => {
       let current = 0;
       if (index === -1) { // index = -1 means back to chapters selection, so record the last chapter number
@@ -103,11 +105,11 @@ export class PageHelper {
           break;
       }
     }
-    function getPick(lvl: number) {
+    function getPick(lvl: number, downloading: boolean = false) {
       switch (lvl) {
         case 0:
           // default
-          return ["entry-btn"];
+          return downloading ? ["entry-btn", "page-status", "fin-status"] : ["entry-btn"];
         case 1:
           // hover in fullViewGrid
           return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-btn", "entry-btn"];
@@ -126,8 +128,8 @@ export class PageHelper {
       if (id === "pagination-adjust-bar") return conf.readMode === "pagination";
       return true;
     }
-    const pick = getPick(level[0]).filter(filter);
-    const notHidden = getPick(level[1]).filter(filter);
+    const pick = getPick(level[0], this.downloading()).filter(filter);
+    const notHidden = getPick(level[1], this.downloading()).filter(filter);
     const items = Array.from(this.html.pageHelper.querySelectorAll<HTMLElement>(".b-main > .b-main-item"));
     for (const item of items) {
       const index = pick.indexOf(item.id);

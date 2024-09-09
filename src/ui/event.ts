@@ -19,7 +19,7 @@ export type Events = ReturnType<typeof initEvents>;
 
 export type KeyboardInBigImageModeId = "step-image-prev" | "step-image-next" | "exit-big-image-mode" | "step-to-first-image" | "step-to-last-image" | "scale-image-increase" | "scale-image-decrease" | "scroll-image-up" | "scroll-image-down" | "toggle-auto-play";
 export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "back-chapters-selection" | "toggle-auto-play" | "retry-fetch-next-page";
-export type KeyboardInMainId = "open-full-view-grid";
+export type KeyboardInMainId = "open-full-view-grid" | "start-download";
 export type KeyboardEvents = {
   inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
   inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc>,
@@ -361,11 +361,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       ),
     };
     const inMain: Record<KeyboardInMainId, KeyboardDesc> = {
-      "open-full-view-grid": new KeyboardDesc(["Enter"], (_) => {
+      "open-full-view-grid": new KeyboardDesc(["Enter"], () => {
         // check focus element is not input Elements
         const activeElement = document.activeElement;
         if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
         EBUS.emit("toggle-main-view", true)
+      }, true),
+      "start-download": new KeyboardDesc(["Ctrl+Alt+d"], () => {
+        EBUS.emit("start-download", () => PH.minify("exit", false));
       }, true),
     };
     return { inBigImageMode, inFullViewGrid, inMain }

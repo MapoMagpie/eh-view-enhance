@@ -161,6 +161,10 @@ export class Downloader {
   }
 
   async start() {
+    // if (this.pageFetcher.chapters.length === 0) {
+    //   EBUS.emit("pf-init", () => this.start());
+    //   return;
+    // }
     if (this.downloading) return;
     this.panel.flushUI("downloading");
     this.downloading = true;

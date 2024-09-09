@@ -27,7 +27,7 @@ function main(MATCHER: Matcher, autoOpen: boolean): DestoryFunc {
   const DL: Downloader = new Downloader(HTML, IFQ, IL, PF, MATCHER);
 
   // UI Manager
-  const PH: PageHelper = new PageHelper(HTML, () => PF.chapters);
+  const PH: PageHelper = new PageHelper(HTML, () => PF.chapters, () => DL.downloading);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
   new FullViewGridManager(HTML, BIFM);
 
@@ -57,6 +57,18 @@ function main(MATCHER: Matcher, autoOpen: boolean): DestoryFunc {
     saveConf(conf);
   }
   // 入口Entry
+  EBUS.subscribe("start-download", (cb) => {
+    signal.first = false;
+    if (PF.chapters.length === 0) {
+      EBUS.emit("pf-init", () => {
+        DL.start();
+        cb();
+      });
+    } else {
+      DL.start();
+      sleep(20).then(cb);
+    }
+  });
   const signal = { first: true };
   function entry(expand?: boolean) {
     if (HTML.pageHelper) {

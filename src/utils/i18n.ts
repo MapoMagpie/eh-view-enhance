@@ -25,6 +25,7 @@ type KeyboardCustom = {
 const keyboardCustom: KeyboardCustom = {
   inMain: {
     'open-full-view-grid': new I18nValue('Enter Read Mode', '进入阅读模式', '읽기 모드 시작'),
+    'start-download': new I18nValue("Start Download", "开始下载", "다운로드 시작"),
   },
   inBigImageMode: {
     'step-image-prev': new I18nValue(

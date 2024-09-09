@@ -58,6 +58,7 @@ export interface Events {
   "pf-init": (cb: () => void) => void;
   "toggle-main-view": (open?: boolean) => void;
   "toggle-auto-play": () => void;
+  "start-download": (cb: () => void) => void;
 }
 
 export type EventID = keyof Events;

@@ -68,7 +68,7 @@ export class PageFetcher {
     if (this.chapters.length === 1) {
       this.beforeInit?.();
       EBUS.emit("pf-change-chapter", 0);
-      this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
+      await this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
     }
     if (this.chapters.length > 1) {
       this.backChaptersSelection();

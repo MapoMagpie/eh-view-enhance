@@ -137,7 +137,8 @@
   }
   const keyboardCustom = {
     inMain: {
-      "open-full-view-grid": new I18nValue("Enter Read Mode", "进入阅读模式", "읽기 모드 시작")
+      "open-full-view-grid": new I18nValue("Enter Read Mode", "进入阅读模式", "읽기 모드 시작"),
+      "start-download": new I18nValue("Start Download", "开始下载", "다운로드 시작")
     },
     inBigImageMode: {
       "step-image-prev": new I18nValue(
@@ -2914,7 +2915,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (this.chapters.length === 1) {
         this.beforeInit?.();
         EBUS.emit("pf-change-chapter", 0);
-        this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
+        await this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
       }
       if (this.chapters.length > 1) {
         this.backChaptersSelection();
@@ -6915,11 +6916,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         )
       };
       const inMain = {
-        "open-full-view-grid": new KeyboardDesc(["Enter"], (_) => {
+        "open-full-view-grid": new KeyboardDesc(["Enter"], () => {
           const activeElement = document.activeElement;
           if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement)
             return;
           EBUS.emit("toggle-main-view", true);
+        }, true),
+        "start-download": new KeyboardDesc(["Ctrl+Alt+d"], () => {
+          EBUS.emit("start-download", () => PH.minify("exit", false));
         }, true)
       };
       return { inBigImageMode, inFullViewGrid, inMain };
@@ -8578,9 +8582,11 @@ ${chapters.map((c, i) => `<div><label>
     pageNumInChapter = {};
     lastStage = "exit";
     chapters;
-    constructor(html, chapters) {
+    downloading;
+    constructor(html, chapters, downloading) {
       this.html = html;
       this.chapters = chapters;
+      this.downloading = downloading;
       EBUS.subscribe("pf-change-chapter", (index) => {
         let current = 0;
         if (index === -1) {
@@ -8672,10 +8678,10 @@ ${chapters.map((c, i) => `<div><label>
             break;
         }
       }
-      function getPick(lvl) {
+      function getPick(lvl, downloading = false) {
         switch (lvl) {
           case 0:
-            return ["entry-btn"];
+            return downloading ? ["entry-btn", "page-status", "fin-status"] : ["entry-btn"];
           case 1:
             return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-btn", "entry-btn"];
           case 2:
@@ -8694,8 +8700,8 @@ ${chapters.map((c, i) => `<div><label>
           return conf.readMode === "pagination";
         return true;
       };
-      const pick = getPick(level[0]).filter(filter);
-      const notHidden = getPick(level[1]).filter(filter);
+      const pick = getPick(level[0], this.downloading()).filter(filter);
+      const notHidden = getPick(level[1], this.downloading()).filter(filter);
       const items = Array.from(this.html.pageHelper.querySelectorAll(".b-main > .b-main-item"));
       for (const item of items) {
         const index = pick.indexOf(item.id);
@@ -9816,7 +9822,7 @@ ${chapters.map((c, i) => `<div><label>
     const IL = new IdleLoader(IFQ);
     const PF = new PageFetcher(IFQ, MATCHER);
     const DL = new Downloader(HTML, IFQ, IL, PF, MATCHER);
-    const PH = new PageHelper(HTML, () => PF.chapters);
+    const PH = new PageHelper(HTML, () => PF.chapters, () => DL.downloading);
     const BIFM = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
     new FullViewGridManager(HTML, BIFM);
     const events = initEvents(HTML, BIFM, IFQ, IL, PH);
@@ -9842,6 +9848,18 @@ ${chapters.map((c, i) => `<div><label>
       conf.first = false;
       saveConf(conf);
     }
+    EBUS.subscribe("start-download", (cb) => {
+      signal.first = false;
+      if (PF.chapters.length === 0) {
+        EBUS.emit("pf-init", () => {
+          DL.start();
+          cb();
+        });
+      } else {
+        DL.start();
+        sleep(20).then(cb);
+      }
+    });
     const signal = { first: true };
     function entry(expand) {
       if (HTML.pageHelper) {

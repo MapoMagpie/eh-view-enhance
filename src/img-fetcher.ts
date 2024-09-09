@@ -46,7 +46,7 @@ export class IMGFetcher implements VisualNode {
     this.index = index;
     this.node = root;
     this.node.onclick = (event) => {
-      if (event.ctrlKey) {
+      if (event.ctrlKey || event.metaKey) {
         EBUS.emit("add-cherry-pick-range", this.chapterIndex, this.index, true, event.shiftKey);
       } else if (event.altKey) {
         EBUS.emit("add-cherry-pick-range", this.chapterIndex, this.index, false, event.shiftKey);

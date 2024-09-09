@@ -1312,7 +1312,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.index = index;
       this.node = root;
       this.node.onclick = (event) => {
-        if (event.ctrlKey) {
+        if (event.ctrlKey || event.metaKey) {
           EBUS.emit("add-cherry-pick-range", this.chapterIndex, this.index, true, event.shiftKey);
         } else if (event.altKey) {
           EBUS.emit("add-cherry-pick-range", this.chapterIndex, this.index, false, event.shiftKey);
@@ -6033,6 +6033,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       keys.push("Shift");
     if (event.altKey)
       keys.push("Alt");
+    if (event.metaKey)
+      keys.push("Meta");
     let key = event.key;
     if (key === " ")
       key = "Space";

@@ -1,5 +1,6 @@
 import { conf } from "../config";
 import { Comic18Matcher } from "./18comic";
+import { AkumaMatcher } from "./akuma";
 import { ArcaMatcher } from "./arca";
 import { ArtStationMatcher } from "./artstation";
 import { DanbooruDonmaiMatcher, E621Matcher, GelBooruMatcher, KonachanMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
@@ -43,6 +44,7 @@ export function getMatchers(): Matcher[] {
     new E621Matcher(),
     new ArcaMatcher(),
     new ArtStationMatcher(),
+    new AkumaMatcher(),
   ];
 }
 

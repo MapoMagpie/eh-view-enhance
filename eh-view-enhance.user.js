@@ -49,6 +49,7 @@
 // @match              https://e621.net/*
 // @match              https://arca.live/*
 // @match              https://*.artstation.com/*
+// @match              https://akuma.moe/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
@@ -84,6 +85,7 @@
 // @connect            e621.net
 // @connect            namu.la
 // @connect            artstation.com
+// @connect            akuma.moe
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue
@@ -3211,6 +3213,93 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
   }
 
+  class AkumaMatcher extends BaseMatcher {
+    originImages;
+    index = 0;
+    meta;
+    name() {
+      return "Akuma.moe";
+    }
+    title() {
+      return this.galleryMeta(document).title;
+    }
+    galleryMeta(doc) {
+      if (!this.meta) {
+        this.meta = this.initGalleryMeta(doc);
+      }
+      return this.meta;
+    }
+    initGalleryMeta(doc) {
+      const title = doc.querySelector("header.entry-header > h1")?.textContent ?? doc.title;
+      const meta = new GalleryMeta(window.location.href, title);
+      meta.originTitle = doc.querySelector("header.entry-header > span")?.textContent || void 0;
+      meta.tags = Array.from(doc.querySelectorAll("ul.info-list > li.meta-data")).reduce((prev, curr) => {
+        const cat = curr.querySelector("span.data")?.textContent?.replace(":", "").toLowerCase().trim();
+        if (cat) {
+          prev[cat] = Array.from(curr.querySelectorAll("span.value")).map((v) => v.textContent?.trim()).filter(Boolean);
+        }
+        return prev;
+      }, {});
+      return meta;
+    }
+    async *fetchPagesSource() {
+      const csrf = document.querySelector("meta[name='csrf-token'][content]")?.content;
+      if (!csrf)
+        throw new Error("cannot get csrf token form this page");
+      this.originImages = await window.fetch(window.location.href, {
+        headers: { "X-CSRF-TOKEN": csrf, "X-Requested-With": "XMLHttpRequest", "Sec-Fetch-Dest": "empty" },
+        method: "POST"
+      }).then((res) => res.json());
+      const pagRaw = Array.from(document.querySelectorAll("body > script")).find((s) => s.textContent?.trimStart().startsWith("var ajx"))?.textContent?.match(/pag = (\{.*?\}),/s)?.[1];
+      if (!pagRaw)
+        throw new Error("cannot get page info");
+      const pag = JSON.parse(pagRaw.replaceAll(/(\w+) :/g, '"$1":'));
+      let idx = pag.idx;
+      yield document;
+      while (idx * pag.stp < pag.cnt) {
+        const res = await window.fetch(pag.act, {
+          headers: {
+            "X-CSRF-TOKEN": csrf,
+            "X-Requested-With": "XMLHttpRequest",
+            "Sec-Fetch-Dest": "empty",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+          },
+          method: "POST",
+          body: `index=${idx}`
+        });
+        if (!res.ok)
+          throw new Error(`fetch thumbnails failed, status: ${res.statusText}`);
+        idx++;
+        yield res.text().then((text) => new DOMParser().parseFromString(text, "text/html"));
+      }
+    }
+    async parseImgNodes(page) {
+      const doc = page;
+      const items = Array.from(doc.querySelectorAll("li > a.page-item"));
+      if (items.length === 0)
+        throw new Error("cannot find thumbnails");
+      let ret = [];
+      const digits = this.originImages.length.toString().length;
+      for (const item of items) {
+        const origin = this.originImages[this.index];
+        const href = item.href;
+        const thumb = item.firstElementChild.src;
+        const ext = origin.split(".").pop() ?? "jpg";
+        const originSrc = thumb.slice(0, thumb.indexOf("tbn")) + origin;
+        const title = (this.index + 1).toString().padStart(digits, "0");
+        ret.push(new ImageNode(thumb, href, `${title}.${ext}`, void 0, originSrc));
+        this.index++;
+      }
+      return ret;
+    }
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
+    }
+    workURL() {
+      return /akuma.moe\/g\/\w+\/?$/;
+    }
+  }
+
   class ArcaMatcher extends BaseMatcher {
     name() {
       return "Arcalive";
@@ -6009,7 +6098,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new MangaCopyMatcher(),
       new E621Matcher(),
       new ArcaMatcher(),
-      new ArtStationMatcher()
+      new ArtStationMatcher(),
+      new AkumaMatcher()
     ];
   }
   function adaptMatcher(url) {

@@ -67,6 +67,7 @@ export default defineConfig(({ command }) => {
             'https://e621.net/*',
             'https://arca.live/*',
             'https://*.artstation.com/*',
+            'https://akuma.moe/*',
             // '*://*/*',
           ],
           name: {
@@ -120,6 +121,7 @@ export default defineConfig(({ command }) => {
             'e621.net',
             'namu.la',
             'artstation.com',
+            'akuma.moe',
             '*',
           ],
           grant: [

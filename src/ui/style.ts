@@ -89,6 +89,21 @@ export function styleCSS() {
 .img-node:hover .ehvp-chapter-description {
   color: #ffe7f5;
 }
+.img-node-numtip {
+  position: absolute;
+  top: 0;
+  left: 0.5em;
+  font-size: 1.8em;
+  font-weight: 900;
+  height: 1.8em;
+  line-height: 1.8em;
+  text-shadow: 0px 0px 3px #000000;
+  color: var(--ehvp-font-color);
+  display: none;
+}
+.img-node:hover .img-node-numtip {
+  display: block;
+}
 .img-node > a {
   display: block;
   line-height: 0;

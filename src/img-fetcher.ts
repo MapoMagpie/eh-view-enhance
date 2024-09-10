@@ -61,7 +61,12 @@ export class IMGFetcher implements VisualNode {
   }
 
   create(): HTMLElement {
-    return this.node.create();
+    const element = this.node.create();
+    const noEle = document.createElement("div");
+    noEle.classList.add("img-node-numtip");
+    noEle.innerHTML = `<span>${this.index + 1}</span>`;
+    element.firstElementChild!.appendChild(noEle);
+    return element;
   }
 
   // 刷新下载状态

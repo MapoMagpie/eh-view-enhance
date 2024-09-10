@@ -1328,7 +1328,12 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.randomID = chapterIndex + Math.random().toString(16).slice(2) + this.node.href;
     }
     create() {
-      return this.node.create();
+      const element = this.node.create();
+      const noEle = document.createElement("div");
+      noEle.classList.add("img-node-numtip");
+      noEle.innerHTML = `<span>${this.index + 1}</span>`;
+      element.firstElementChild.appendChild(noEle);
+      return element;
     }
     // 刷新下载状态
     setDownloadState(newState) {
@@ -7384,6 +7389,21 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .img-node:hover .ehvp-chapter-description {
   color: #ffe7f5;
+}
+.img-node-numtip {
+  position: absolute;
+  top: 0;
+  left: 0.5em;
+  font-size: 1.8em;
+  font-weight: 900;
+  height: 1.8em;
+  line-height: 1.8em;
+  text-shadow: 0px 0px 3px #000000;
+  color: var(--ehvp-font-color);
+  display: none;
+}
+.img-node:hover .img-node-numtip {
+  display: block;
 }
 .img-node > a {
   display: block;

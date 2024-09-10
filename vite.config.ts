@@ -71,7 +71,7 @@ export default defineConfig(({ command }) => {
             // '*://*/*',
           ],
           name: {
-            "": "ComicLooms",
+            "": "Comic Looms",
             "zh-CN": "漫画织机",
             "zh-TW": "漫畫織機",
             "ja": "コミック織機",

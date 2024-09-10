@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name               ComicLooms
+// @name               Comic Looms
 // @name:zh-CN         漫画织机
 // @name:zh-TW         漫畫織機
 // @name:ja            コミック織機

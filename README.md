@@ -1,4 +1,4 @@
-# Comic Looms | [中文](./README_CN.md) | [한글](./README_KO.md)
+# Comic Looms | [中文](./assets/README_CN.md) | [한글](./assets/README_KO.md)
 
 **This Userscript enables quick and convenient browsing of galleries or artists' homepage on [certain sites](#multi-site-support), with batch download support, focusing on browsing experience and low site load.**
 
@@ -10,7 +10,7 @@
 - [Operates](#operates)
 - [Feedback](#feedback)
 
-Preview (if you can't see the image, click [here](/.assets/preview.md)):
+Preview (if you can't see the image, click [here](.assets/preview.md)):
 ![Preview](.assets/eh-view-enhance-showcase3.avif 'Preview')
 
 ## <a name="features">Features</a>
@@ -67,11 +67,11 @@ Currently supports:
 
 1. On the gallery or author homepage, click `<🎑>` at the bottom left to start browsing. You can drag this element to any position in the CONF panel.
 1. After a moment, the thumbnails will be displayed in a grid on the page. Click on any thumbnail to enter the big image viewing mode.
-1. More information can be found in `CONF` -> `Help` or [here](HELP.md)
+1. More information can be found in `CONF` -> `Help` or [here](./assets/HELP.md)
 
 ## <a name="feedback">Feedback</a>
 
-If you want to add support for certain sites, please refer to [this guide](CONTRIBUTING.md)
+If you want to add support for certain sites, please refer to [this guide](./assets/CONTRIBUTING.md)
 
 If you encounter some issues, please report them here and be sure to describe your environment: https://github.com/MapoMagpie/eh-view-enhance/issues
 

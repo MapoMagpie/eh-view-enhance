@@ -10,8 +10,8 @@
 - [操作](#operates)
 - [反馈](#feedback)
 
-预览(如果无法看到图片点[此处](/.assets/preview.md)):
-![预览](.assets/eh-view-enhance-showcase3.avif '预览')
+预览(如果无法看到图片点[此处](./preview.md)):
+![预览](./eh-view-enhance-showcase3.avif '预览')
 
 ## <a name="features">特性</a>
 
@@ -67,11 +67,11 @@
 
 1. 在画廊或作者主页的左下角，点击`<🎑>`即可开始浏览，你可以在配置面板中拖动该元素到任意位置。
 1. 稍等片刻后，缩略图会全屏陈列在页面上，点击某一缩略图进入大图浏览模式。
-1. 更多信息可以在 `配置` -> `帮助` 或 [这里](HELP_CN.md) 找到。
+1. 更多信息可以在 `配置` -> `帮助` 或 [这里](./HELP_CN.md) 找到。
 
 ## <a name="feedback">反馈</a>
 
-如果你想尝试为某个站点添加支持，可以参考[这里](CONTRIBUTING.md)
+如果你想尝试为某个站点添加支持，可以参考[这里](./CONTRIBUTING.md)
 
 如果你遇到了某些问题，请反馈至此，请务必描述你的使用环境: https://github.com/MapoMagpie/eh-view-enhance/issues
 

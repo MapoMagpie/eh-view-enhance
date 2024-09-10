@@ -51,20 +51,17 @@ Currently supports:
 - [copymanga.tv](https://www.copymanga.tv)
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
-
-You can request support for a site here: [https://github.com/MapoMagpie/eh-view-enhance/issues](https://github.com/MapoMagpie/eh-view-enhance/issues)
-
-Or contribute: [Contribution Guide](https://github.com/MapoMagpie/eh-view-enhance/blob/master/CONTRIBUTING.md)
+- [artstation.com](https://www.artstation.com)
+- [akuma.moe](https://akuma.moe)
 
 ## <a name="installation">Installation</a>
 
 1. **`Prerequisites`**: Modern browser (Firefox\Chrome\Edge...)
 1. **`Prerequisites`**: Installed extension [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
 1. **`Prerequisites`**: click here to check if you can access [jsdelivr.net](https://cdn.jsdelivr.net) to ensure the script runs properly.
-1. **`Installation Link 1`**: [OpenUserJS](https://openuserjs.org/scripts/zsyjklive.cn/ComicLooms)
-1. **`Installation Link 2`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), login required
-1. **`Installation Link 3`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), no login required
-1. **`Installation Link 4`**: Direct install [here](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+1. **`Installation Link 1`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), login required
+1. **`Installation Link 2`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), no login required
+1. **`Installation Link 3`**: Direct install [here](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
 
 ## <a name="operates">Operates</a>
 
@@ -74,6 +71,8 @@ Or contribute: [Contribution Guide](https://github.com/MapoMagpie/eh-view-enhanc
 
 ## <a name="feedback">Feedback</a>
 
-> Please submit feedback at: https://github.com/MapoMagpie/eh-view-enhance/issues
+If you want to add support for certain sites, please refer to [this guide](CONTRIBUTING.md)
+
+If you encounter some issues, please report them here and be sure to describe your environment: https://github.com/MapoMagpie/eh-view-enhance/issues
 
 If you like this script, please give it a `star`.

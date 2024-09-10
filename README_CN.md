@@ -51,20 +51,17 @@
 - [copymanga.tv](https://www.copymanga.tv)
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
-
-你可以发起对某站点的支持请求：[https://github.com/MapoMagpie/eh-view-enhance/issues](https://github.com/MapoMagpie/eh-view-enhance/issues)
-
-或者参与贡献: [贡献指南](https://github.com/MapoMagpie/eh-view-enhance/blob/master/CONTRIBUTING.md)
+- [artstation.com](https://www.artstation.com)
+- [akuma.moe](https://akuma.moe)
 
 ## <a name="installation">安装</a>
 
 1. **`前置条件`**：现代浏览器(Firefox\Chrome\Edge...)
 1. **`前置条件`**：安装脚本管理器拓展 [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
 1. **`前置条件`**：通畅的网络，点击此处确认能否访问[jsdelivr.net](https://cdn.jsdelivr.net)，以确保脚本能正常运行。
-1. **`安装地址1`**：[OpenUserJS](https://openuserjs.org/scripts/zsyjklive.cn/ComicLooms)
-1. **`安装地址2`**：[GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)，需要登录
-1. **`安装地址3`**：[SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)，不需要登录
-1. **`安装地址4`**：直接访问此处进行安装[`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+1. **`安装地址1`**：[GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)，需要登录
+1. **`安装地址2`**：[SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)，不需要登录
+1. **`安装地址3`**：直接访问此处进行安装[`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
 
 ## <a name="operates">操作</a>
 
@@ -74,6 +71,8 @@
 
 ## <a name="feedback">反馈</a>
 
-> 请反馈至: https://github.com/MapoMagpie/eh-view-enhance/issues
+如果你想尝试为某个站点添加支持，可以参考[这里](CONTRIBUTING.md)
+
+如果你遇到了某些问题，请反馈至此，请务必描述你的使用环境: https://github.com/MapoMagpie/eh-view-enhance/issues
 
 如果你喜欢这个脚本，请给我一个 `star`

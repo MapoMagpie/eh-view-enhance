@@ -51,20 +51,17 @@
 - [copymanga.tv](https://www.copymanga.tv)
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
-
-사이트 지원 요청: [https://github.com/MapoMagpie/eh-view-enhance/issues](https://github.com/MapoMagpie/eh-view-enhance/issues)
-
-기여하기: [기여 가이드](https://github.com/MapoMagpie/eh-view-enhance/blob/master/CONTRIBUTING.md)
+- [artstation.com](https://www.artstation.com)
+- [akuma.moe](https://akuma.moe)
 
 ## <a name="installation">설치</a>
 
 1. **`필수 조건`**: 신식 브라우저 (Firefox\Chrome\Edge...)
 1. **`필수 조건`**: 확장 프로그램 설치 [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
 1. **`필수 조건`**: 스크립트가 제대로 작동하는지 확인하려면 [jsdelivr.net](https://cdn.jsdelivr.net)에 접속할 수 있는지 확인하세요.
-1. **`설치 링크 1`**: [OpenUserJS](https://openuserjs.org/scripts/zsyjklive.cn/ComicLooms)
-1. **`설치 링크 2`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), 로그인 필요
-1. **`설치 링크 3`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), 로그인 필요 없음
-1. **`설치 링크 4`**: [여기](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)에서 직접 설치
+1. **`설치 링크 1`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), 로그인 필요
+1. **`설치 링크 2`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), 로그인 필요 없음
+1. **`설치 링크 3`**: [여기](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)에서 직접 설치
 
 ## <a name="operates">작동 방법</a>
 
@@ -74,6 +71,8 @@
 
 ## <a name="feedback">피드백</a>
 
-> 피드백 제출: https://github.com/MapoMagpie/eh-view-enhance/issues
+만약 특정 사이트에 대한 지원을 추가하고 싶다면 이 [가이드](CONTRIBUTING.md)를 참고하세요.
+
+문제가 발생하면 여기에 피드백을 남겨주세요. 사용 환경을 반드시 설명해 주시기 바랍니다: https://github.com/MapoMagpie/eh-view-enhance/issues
 
 이 스크립트를 좋아하신다면, `star`를 눌러주세요.

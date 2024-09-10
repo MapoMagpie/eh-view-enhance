@@ -1,4 +1,4 @@
-# Comic Looms | [中文](./assets/README_CN.md) | [한글](./.assets/README_KO.md)
+# Comic Looms | [中文](./.assets/README_CN.md) | [한글](./.assets/README_KO.md)
 
 **This Userscript enables quick and convenient browsing of galleries or artists' homepage on [certain sites](#multi-site-support), with batch download support, focusing on browsing experience and low site load.**
 

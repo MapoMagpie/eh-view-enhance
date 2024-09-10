@@ -71,7 +71,7 @@ Currently supports:
 
 ## <a name="feedback">Feedback</a>
 
-If you want to add support for certain sites, please refer to [this guide](./assets/CONTRIBUTING.md)
+If you want to add support for certain sites, please refer to [this guide](./.assets/CONTRIBUTING.md)
 
 If you encounter some issues, please report them here and be sure to describe your environment: https://github.com/MapoMagpie/eh-view-enhance/issues
 

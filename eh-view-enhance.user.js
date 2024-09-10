@@ -4459,9 +4459,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         throw detail;
       }
       this.createMeta(detail);
-      const dataID = conf.fetchOriginal ? 0 : Object.keys(detail.data).map(Number).sort((a, b) => b - a)[0];
-      const data = detail.data[dataID.toString()];
-      const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}?v=${detail.updated_at ?? detail.created_at}&w=${dataID}`;
+      const [w, data] = Object.entries(detail.data).sort((a, b) => b[1].size - a[1].size).find(([_, v]) => v.id !== void 0 && v.public_key !== void 0) ?? [void 0, void 0];
+      if (w === void 0 && data === void 0)
+        throw new Error("cannot find resolution from gallery detail");
+      const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}?v=${detail.updated_at ?? detail.created_at}&w=${w}`;
       const items = await window.fetch(dataAPI).then((res) => res.json()).then((j) => j).catch((reason) => new Error(reason.toString()));
       if (items instanceof Error) {
         throw new Error(`koharu updated their api, ${items.toString()}`);
@@ -4476,7 +4477,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return items.entries.map((item, i) => {
         const href = `${window.location.origin}/reader/${galleryID}/${i + 1}`;
         const title = (i + 1).toString().padStart(pad, "0") + "." + item.path.split(".").pop();
-        const src = itemBase + item.path + "?w=" + dataID;
+        const src = itemBase + item.path + "?w=" + w;
         return new ImageNode(thumbBase + thumbs[i].path, href, title, void 0, src);
       });
     }

@@ -144,14 +144,16 @@ export class HitomiMather extends BaseMatcher {
     const files = this.infoRecord[chapterID].files;
     const list: ImageNode[] = [];
     for (let i = 0; i < files.length; i++) {
-      const ext = this.formats.slice(this.formatIndex).find(format => ((files[i] as any)["has" + format] === 1));
+      const file = files[i];
+      const ext = this.formats.slice(this.formatIndex).find(format => ((file as any)["has" + format] === 1));
       if (!ext) {
         evLog("error", "no format found: ", files[i]);
         continue;
       }
-      let title = files[i].name.replace(/\.\w+$/, "");
-      const src = this.gg!.originURL(files[i].hash, ext);
-      list.push(new ImageNode(this.gg!.thumbURL(files[i].hash), src, title + "." + ext, undefined, src));
+      let title = file.name.replace(/\.\w+$/, "");
+      const src = this.gg!.originURL(file.hash, ext);
+      const { width, height } = file;
+      list.push(new ImageNode(this.gg!.thumbURL(files[i].hash), src, title + "." + ext, undefined, src, (width && height) ? { w: width, h: height } : undefined));
     }
     return list;
   }

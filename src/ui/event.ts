@@ -64,7 +64,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       inputElement.value = conf[key].toString();
     }
     if (key === "colCount") {
-      const rule = queryCSSRules(HTML.styleSheet, ".full-view-grid");
+      const rule = queryCSSRules(HTML.styleSheet, ".fvg-grid");
       if (rule) rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
     }
     if (key === "paginationIMGCount") {

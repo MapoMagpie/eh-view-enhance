@@ -17,7 +17,7 @@ import { sleep } from "./utils/sleep";
 
 type DestoryFunc = () => Promise<void>;
 
-function main(MATCHER: Matcher, autoOpen: boolean): DestoryFunc {
+function main(MATCHER: Matcher, autoOpen: boolean, flowVision: boolean): DestoryFunc {
   const HTML = createHTML();
   [HTML.fullViewGrid, HTML.bigImageFrame].forEach(e => revertMonkeyPatch(e));
 
@@ -29,7 +29,7 @@ function main(MATCHER: Matcher, autoOpen: boolean): DestoryFunc {
   // UI Manager
   const PH: PageHelper = new PageHelper(HTML, () => PF.chapters, () => DL.downloading);
   const BIFM: BigImageFrameManager = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
-  new FullViewGridManager(HTML, BIFM);
+  new FullViewGridManager(HTML, BIFM, flowVision);
 
   const events = initEvents(HTML, BIFM, IFQ, IL, PH);
   addEventListeners(events, HTML, BIFM, DL, PH);
@@ -108,9 +108,9 @@ function reMain() {
   debouncer.addEvent("LOCATION-CHANGE", () => {
     const newStart = () => {
       if (document.querySelector(".ehvp-base")) return;
-      const [matcher, autoOpen] = adaptMatcher(window.location.href);
+      const [matcher, autoOpen, flowVision] = adaptMatcher(window.location.href);
       if (matcher) {
-        destoryFunc = main(matcher, autoOpen)
+        destoryFunc = main(matcher, autoOpen, flowVision)
       }
     };
     if (destoryFunc) {

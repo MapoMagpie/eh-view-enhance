@@ -10,17 +10,23 @@ DEFAULT_NODE_TEMPLATE.classList.add("img-node");
 DEFAULT_NODE_TEMPLATE.innerHTML = `
 <a>
   <img decoding="async" loading="eager" title="untitle.jpg" src="" style="display: none;" />
-  <canvas id="sample-canvas" width="1" height="1"></canvas>
+  <canvas id="sample-canvas" width="100" height="100"></canvas>
 </a>`;
 
 const OVERLAY_TIP = document.createElement("div");
 OVERLAY_TIP.classList.add("overlay-tip");
 OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
 
+type Rect = {
+  w: number;
+  h: number;
+}
+
 export interface VisualNode {
   create(): HTMLElement;
   render(): void;
   isRender(): boolean;
+  ratio(): number | undefined;
 }
 
 type Onfailed = (reason: string, source?: string, error?: Error) => void;
@@ -42,12 +48,14 @@ export default class ImageNode {
   private downloadBar?: HTMLElement;
   picked: boolean = true;
   private debouncer: Debouncer = new Debouncer();
-  constructor(thumbnailSrc: string, href: string, title: string, delaySRC?: Promise<string>, originSrc?: string) {
+  rect?: Rect;
+  constructor(thumbnailSrc: string, href: string, title: string, delaySRC?: Promise<string>, originSrc?: string, wh?: { w: number, h: number }) {
     this.thumbnailSrc = thumbnailSrc;
     this.href = href;
     this.title = title;
     this.delaySRC = delaySRC;
     this.originSrc = originSrc;
+    this.rect = wh;
   }
 
   create(): HTMLElement {
@@ -59,9 +67,13 @@ export default class ImageNode {
     this.canvasElement = anchor.lastElementChild as HTMLCanvasElement;
     this.imgElement.setAttribute("title", this.title);
     this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
+    if (this.rect) {
+      this.canvasElement.width = 1000;
+      this.canvasElement.height = Math.floor(1000 * (this.rect.h / this.rect.w));
+    }
     this.canvasCtx = this.canvasElement.getContext("2d")!;
-    this.canvasCtx!.fillStyle = "#aaa";
-    this.canvasCtx!.fillRect(0, 0, 1, 1);
+    this.canvasCtx.fillStyle = "#aaa";
+    this.canvasCtx.fillRect(0, 0, this.canvasElement.width, this.canvasElement.height);
     if (this.onclick) {
       anchor.addEventListener("click", (event) => {
         event.preventDefault();
@@ -85,8 +97,13 @@ export default class ImageNode {
     }
     // TODO: maybe limit the ratio of the image, if it's too large
     if (!this.canvasSized) {
-      this.canvasElement.width = this.root.offsetWidth;
-      this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
+      if (this.root.parentElement?.classList.contains("fvg-sub-container")) {
+        this.canvasElement.height = this.root.offsetHeight;
+        this.canvasElement.width = Math.floor(this.root.offsetHeight / newRatio);
+      } else {
+        this.canvasElement.width = this.root.offsetWidth;
+        this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
+      }
       this.canvasSized = true;
     }
     if (this.imgElement.src === this.thumbnailSrc) {
@@ -210,6 +227,9 @@ export class ChapterNode implements VisualNode {
   constructor(chapter: Chapter, index: number) {
     this.chapter = chapter;
     this.index = index;
+  }
+  ratio(): number | undefined {
+    return undefined;
   }
 
   create(): HTMLElement {

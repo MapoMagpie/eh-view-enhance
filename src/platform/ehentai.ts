@@ -109,17 +109,21 @@ export class EHMatcher extends BaseMatcher {
       for (const match of matchs) {
         i++;
         // TODO: MPV query image url from https://s.exhentai.org/api.php
+        const src = match[3].replaceAll("\\", "");
         const node = new ImageNode(
-          match[3].replaceAll("\\", ""),
+          src,
           `${location.origin}/s/${match[2]}/${gid}-${i}`,
-          match[1].replace(/Page\s\d+[:_]\s*/, "")
+          match[1].replace(/Page\s\d+[:_]\s*/, ""),
+          undefined,
+          undefined,
+          extractRectFromSrc(src),
         );
         list.push(node);
       }
       return list;
     }
 
-    let urls: string[] = [];
+    let srcs: string[] = [];
     let delayURLs: (Promise<string> | undefined)[] = [];
 
     // sprite thumbnails
@@ -139,7 +143,7 @@ export class EHMatcher extends BaseMatcher {
         const resolvers: ((str: string | PromiseLike<string>) => void)[] = [];
         const rejects: ((reason?: any) => void)[] = [];
         for (let i = 0; i < range.length; i++) {
-          urls.push("");
+          srcs.push("");
           delayURLs.push(new Promise<string>((resolve, reject) => {
             resolvers.push(resolve);
             rejects.push(reject);
@@ -160,19 +164,29 @@ export class EHMatcher extends BaseMatcher {
     }
     // large thumbnails
     else {
-      if (urls.length == 0) {
-        urls = nodes.map(n => (n.firstElementChild!.firstElementChild as HTMLImageElement).src);
+      if (srcs.length == 0) {
+        srcs = nodes.map(n => (n.firstElementChild!.firstElementChild as HTMLImageElement).src);
       }
     }
 
     for (let i = 0; i < nodes.length; i++) {
-      const node = new ImageNode(
-        urls[i],
-        nodes[i].querySelector("a")!.href,
-        nodes[i].querySelector("img")!.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg",
-        delayURLs[i]
-      );
-      list.push(node);
+      const node = nodes[i];
+      const src = srcs[i];
+      const [w, h] = [node.style.width, node.style.height];
+      let wh = undefined;
+      if (w && h) {
+        wh = { w: parseInt(w), h: parseInt(h) };
+      } else {
+        wh = extractRectFromSrc(src);
+      }
+      list.push(new ImageNode(
+        src,
+        node.querySelector("a")!.href,
+        node.querySelector("img")!.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg",
+        delayURLs[i],
+        undefined,
+        wh,
+      ));
     }
     return list;
   }
@@ -265,3 +279,12 @@ export class EHMatcher extends BaseMatcher {
   }
 }
 
+function extractRectFromSrc(src?: string): { w: number, h: number } | undefined {
+  if (!src) return undefined;
+  const matches = src.match(/\/\w+-\d+-(\d+)-(\d+)-/);
+  if (matches && matches.length === 3) {
+    return ({ w: parseInt(matches[1]), h: parseInt(matches[2]) });
+  } else {
+    return undefined;
+  }
+}

@@ -7,8 +7,9 @@ import { uuid } from "./utils/random";
 export type Oriented = "prev" | "next";
 
 export type SiteProfile = {
-  disable: boolean,
-  disableAutoOpen: boolean,
+  enable: boolean,
+  enableAutoOpen: boolean,
+  enableFlowVision: boolean,
   workURLs: string[],
 }
 
@@ -242,10 +243,9 @@ function confHealthCheck(cf: Config): Config {
 }
 
 const PATCH_CONFIG: Partial<Config> = {
-  autoOpen: false,
   siteProfiles: {},
 }
-const CONFIG_PATCH_VERSION = 5;
+const CONFIG_PATCH_VERSION = 6;
 function patchConfig(cf: Config, patch: Partial<Config>): Config | null {
   if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
     return null;

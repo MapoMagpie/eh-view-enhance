@@ -181,7 +181,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           title = title.replace(/\.\w+$/, ".gif");
         }
         j++;
-        const node = new ImageNode(p.urls.small, p.urls.original, title, undefined, p.urls.original);
+        const node = new ImageNode(p.urls.small, p.urls.original, title, undefined, p.urls.original, { w: p.width, h: p.height });
         list.push(node);
       }
     }

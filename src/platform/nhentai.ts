@@ -9,6 +9,9 @@ function nhParseExt(str: string): string {
     case "j": return "jpg";
     case "g": return "gif";
     case "p": return "png";
+    case "w": return "webp";
+    case "a": return "avif";
+    case "m": return "mp4";
     default: throw new Error("cannot parse image extension from info: " + str);
   }
 }
@@ -65,7 +68,8 @@ export class NHMatcher extends BaseMatcher {
       const ext = nhParseExt(info.images.pages[i].t);
       const href = location.origin + node.getAttribute("href");
       const originSrc = `${window.location.origin.replace("//", "//i" + mediaServer + ".")}/galleries/${mediaID}/${i + 1}.${ext}`;
-      ret.push(new ImageNode(thumbSrc, href, title + "." + ext, undefined, originSrc));
+      const wh = { w: info.images.pages[i].w, h: info.images.pages[i].h };
+      ret.push(new ImageNode(thumbSrc, href, title + "." + ext, undefined, originSrc, wh));
     }
     return ret;
   }
@@ -118,7 +122,12 @@ export class NHxxxMatcher extends BaseMatcher {
       const thumbSrc = base + thumb[0] + "." + nhParseExt(thumb[1]);
       const file = files[i];
       const originSrc = base + file[0] + "." + nhParseExt(file[1]);
-      ret.push(new ImageNode(thumbSrc, href + "/" + (i + 1), title + "." + nhParseExt(file[1]), undefined, originSrc));
+      const splits = file[1].split(",");
+      let wh = undefined;
+      if (splits.length === 3) {
+        wh = { w: parseInt(splits[1].trim()), h: parseInt(splits[2].trim()) };
+      }
+      ret.push(new ImageNode(thumbSrc, href + "/" + (i + 1), title + "." + nhParseExt(file[1]), undefined, originSrc, wh));
     }
     return ret;
   }

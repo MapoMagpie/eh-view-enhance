@@ -48,10 +48,10 @@ export function getMatchers(): Matcher[] {
   ];
 }
 
-export function adaptMatcher(url: string): [Matcher | null, boolean] {
+export function adaptMatcher(url: string): [Matcher | null, boolean, boolean] {
   const matchers = getMatchers();
   const matcher = matchers
-    .filter(matcher => !conf.siteProfiles[matcher.name()]?.disable)
+    .filter(matcher => conf.siteProfiles[matcher.name()]?.enable ?? true)
     .find(matcher => {
       let workURLs = matcher.workURLs();
       if (conf.siteProfiles[matcher.name()] && conf.siteProfiles[matcher.name()].workURLs.length > 0) {
@@ -60,6 +60,10 @@ export function adaptMatcher(url: string): [Matcher | null, boolean] {
       return workURLs.find(regex => regex.test(url));
     });
 
-  if (!matcher) return [null, false];
-  return [matcher, !conf.siteProfiles[matcher.name()]?.disableAutoOpen];
+  if (!matcher) return [null, false, false];
+  return [
+    matcher,
+    conf.siteProfiles[matcher.name()]?.enableAutoOpen ?? true,
+    conf.siteProfiles[matcher.name()]?.enableFlowVision,
+  ];
 }

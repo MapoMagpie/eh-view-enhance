@@ -12,12 +12,13 @@ function createInputElement(root: HTMLElement, anchor: HTMLElement, callback: (v
   element.id = "input-element";
   element.innerHTML = `<input type="text" style="width:20em;height:2em;"><span class="ehvp-custom-btn ehvp-custom-btn-plain">&nbsp√&nbsp</button>`;
   root.appendChild(element);
-  const input = element.querySelector("input");
-  const button = element.querySelector("button");
-  button!.addEventListener("click", () => {
-    callback(input!.value);
+  const input = element.querySelector("input")!;
+  const button = element.querySelector("button")!;
+  button.addEventListener("click", () => {
+    callback(input.value);
     element.remove();
   });
+  // FIXME: not work
   relocateElement(element, anchor, root.offsetWidth, root.offsetHeight);
 }
 
@@ -42,9 +43,10 @@ export default function createSiteProfilePanel(root: HTMLElement) {
              <div class="ehvp-custom-panel-list-item-title">
                <div style="font-size: 1.2em;font-weight: 800;">${name}</div>
                <div>
-                 <label><span>${i18n.enable.get()}: </span><input id="${id}-enable-checkbox" ${!profile?.disable ? "checked" : ""} type="checkbox"></label>
-                 <label><span>${i18n.enableAutoOpen.get()}: </span><input id="${id}-enable-auto-open-checkbox" ${!profile?.disableAutoOpen ? "checked" : ""} type="checkbox"></label>
-                 <label><span>${i18n.addRegexp.get()}: </span><span id="${id}-add-workurl" class="ehvp-custom-btn ehvp-custom-btn-green">&nbsp+&nbsp</span></label>
+                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.enable.get()}: </span><input id="${id}-enable-checkbox" ${profile?.enable ?? true ? "checked" : ""} type="checkbox"></label>
+                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.enableAutoOpen.get()}: </span><input id="${id}-enable-auto-open-checkbox" ${profile?.enableAutoOpen ?? true ? "checked" : ""} type="checkbox"></label>
+                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.enableFlowVision.get()}: </span><input id="${id}-enable-flow-vision-checkbox" ${profile?.enableFlowVision ?? false ? "checked" : ""} type="checkbox"></label>
+                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.addRegexp.get()}: </span><span id="${id}-add-workurl" class="ehvp-custom-btn ehvp-custom-btn-green">&nbsp+&nbsp</span></label>
                </div>
              </div>
              <div id="${id}-workurls"></div>
@@ -58,6 +60,7 @@ export default function createSiteProfilePanel(root: HTMLElement) {
       <span style="font-size:0.5em;">
         <span class="p-tooltip"> ${i18n.enable.get()}? <span class="p-tooltiptext">${i18n.enableTooltips.get()}</span></span>
         <span class="p-tooltip"> ${i18n.enableAutoOpen.get()}? <span class="p-tooltiptext">${i18n.enableAutoOpenTooltips.get()}</span></span>
+        <span class="p-tooltip"> ${i18n.enableFlowVision.get()}? <span class="p-tooltiptext">${i18n.enableFlowVisionTooltips.get()}</span></span>
       </span>
     </span>
     <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
@@ -91,7 +94,7 @@ export default function createSiteProfilePanel(root: HTMLElement) {
     const getProfile = () => {
       let profile = siteProfiles[name];
       if (!profile) {
-        profile = { disable: false, disableAutoOpen: false, workURLs: [...defaultWorkURLs] };
+        profile = { enable: true, enableAutoOpen: true, enableFlowVision: false, workURLs: [...defaultWorkURLs] };
         siteProfiles[name] = profile;
       }
       return profile;
@@ -99,13 +102,19 @@ export default function createSiteProfilePanel(root: HTMLElement) {
     // enable script on this site;
     const enableCheckbox = q<HTMLInputElement>(`#${id}-enable-checkbox`, fullPanel);
     enableCheckbox.addEventListener("click", () => {
-      getProfile().disable = !enableCheckbox.checked;
+      getProfile().enable = enableCheckbox.checked;
       saveConf(conf);
     });
     // enable auto open on this site;
     const enableAutoOpenCheckbox = q<HTMLInputElement>(`#${id}-enable-auto-open-checkbox`, fullPanel);
     enableAutoOpenCheckbox.addEventListener("click", () => {
-      getProfile().disableAutoOpen = !enableAutoOpenCheckbox.checked;
+      getProfile().enableAutoOpen = enableAutoOpenCheckbox.checked;
+      saveConf(conf);
+    });
+    // enable flow vision on this site;
+    const enableFlowVisionCheckbox = q<HTMLInputElement>(`#${id}-enable-flow-vision-checkbox`, fullPanel);
+    enableFlowVisionCheckbox.addEventListener("click", () => {
+      getProfile().enableFlowVision = enableFlowVisionCheckbox.checked;
       saveConf(conf);
     });
     // add custom work url

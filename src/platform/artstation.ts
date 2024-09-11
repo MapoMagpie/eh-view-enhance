@@ -50,7 +50,7 @@ export class ArtStationMatcher extends BaseMatcher {
           originSrc = a.player_embedded;
         }
         this.info.assets++;
-        ret.push(new ImageNode(thumb, asset.permalink, title, undefined, originSrc));
+        ret.push(new ImageNode(thumb, asset.permalink, title, undefined, originSrc, { w: a.width, h: a.height }));
       }
     }
     return ret;

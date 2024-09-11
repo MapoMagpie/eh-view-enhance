@@ -42,7 +42,13 @@ export function styleCSS() {
 .ehvp-root-collapse {
   height: 0;
 }
-.full-view-grid {
+.fvg-flow {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden scroll;
+  background: var(--ehvp-fvg-background);
+}
+.fvg-grid {
   width: 100vw;
   height: 100vh;
   display: grid;
@@ -78,13 +84,35 @@ export function styleCSS() {
 .full-view-grid .img-node {
   position: relative;
 }
+.fvg-sub-container {
+  display: flex;
+  width: 100%;
+  contain: content;
+}
+.fvg-sub-container .img-node {
+  width: auto;
+  height: 100%;
+}
+.fvg-sub-container .img-node a {
+  height: 100%;
+}
 .img-node canvas, .img-node img {
   position: relative;
-  width: 100%;
-  height: auto;
   border: 3px solid var(--ehvp-img-init);
   box-sizing: border-box;
   box-shadow: var(--ehvp-img-box-shadow);
+}
+.fvg-grid .img-node canvas, 
+.fvg-grid .img-node img 
+{
+  width: 100%;
+  height: auto;
+}
+.fvg-flow .img-node canvas, 
+.fvg-flow .img-node img 
+{
+  width: auto;
+  height: 100%;
 }
 .img-node:hover .ehvp-chapter-description {
   color: #ffe7f5;
@@ -551,6 +579,9 @@ export function styleCSS() {
   line-height: 3em;
   margin-left: 0.5em;
   font-size: 1.4em;
+}
+.ehvp-custom-panel-checkbox:hover {
+  border: 1px solid var(--ehvp-font-color);
 }
 .ehvp-custom-panel-list-item-disable {
   text-decoration: line-through;

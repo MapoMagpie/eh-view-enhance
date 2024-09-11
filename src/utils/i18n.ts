@@ -534,6 +534,22 @@ export const i18n = {
     '当进入对应的生效页面后，自动打开本脚本界面。',
     '해당 페이지에 들어갈 때 이 스크립트의 인터페이스를 자동으로 엽니다.'
   ),
+  enableFlowVision: new I18nValue(
+    'Flow Vision',
+    '自适应视图',
+    'Flow Vision'
+  ),
+  enableFlowVisionTooltips: new I18nValue(
+    `Enable a new thumbnail list layout where the images in each row have uniform height, but the number of images per row is automatically adjusted. 
+    <br>The overall appearance is more compact and comfortable, suitable for illustration-based websites with irregular image aspect ratios.
+    <br>Note: Since some websites cannot retrieve image aspect ratio information, the effect may be impacted.`,
+    `启用一种新的缩略图列表布局，使每行的图片高度一致，但自动分配每行的图片数量。
+    <br>整体看起来更紧凑舒适，适合图片宽高比不规则的插画类站点。
+    <br>注意：由于一些站点无法提取得知图片的宽高比，因此效果可能会受到影响。`,
+    `Enable a new thumbnail list layout where the images in each row have uniform height, but the number of images per row is automatically adjusted. 
+    <br>The overall appearance is more compact and comfortable, suitable for illustration-based websites with irregular image aspect ratios.
+    <br>Note: Since some websites cannot retrieve image aspect ratio information, the effect may be impacted.`,
+  ),
   addRegexp: new I18nValue(
     'Add Work URL Regexp',
     '添加生效地址规则',

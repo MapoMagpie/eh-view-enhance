@@ -644,6 +644,22 @@
       "当进入对应的生效页面后，自动打开本脚本界面。",
       "해당 페이지에 들어갈 때 이 스크립트의 인터페이스를 자동으로 엽니다."
     ),
+    enableFlowVision: new I18nValue(
+      "Flow Vision",
+      "自适应视图",
+      "Flow Vision"
+    ),
+    enableFlowVisionTooltips: new I18nValue(
+      `Enable a new thumbnail list layout where the images in each row have uniform height, but the number of images per row is automatically adjusted. 
+    <br>The overall appearance is more compact and comfortable, suitable for illustration-based websites with irregular image aspect ratios.
+    <br>Note: Since some websites cannot retrieve image aspect ratio information, the effect may be impacted.`,
+      `启用一种新的缩略图列表布局，使每行的图片高度一致，但自动分配每行的图片数量。
+    <br>整体看起来更紧凑舒适，适合图片宽高比不规则的插画类站点。
+    <br>注意：由于一些站点无法提取得知图片的宽高比，因此效果可能会受到影响。`,
+      `Enable a new thumbnail list layout where the images in each row have uniform height, but the number of images per row is automatically adjusted. 
+    <br>The overall appearance is more compact and comfortable, suitable for illustration-based websites with irregular image aspect ratios.
+    <br>Note: Since some websites cannot retrieve image aspect ratio information, the effect may be impacted.`
+    ),
     addRegexp: new I18nValue(
       "Add Work URL Regexp",
       "添加生效地址规则",
@@ -1039,10 +1055,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     return cf;
   }
   const PATCH_CONFIG = {
-    autoOpen: false,
     siteProfiles: {}
   };
-  const CONFIG_PATCH_VERSION = 5;
+  const CONFIG_PATCH_VERSION = 6;
   function patchConfig(cf, patch) {
     if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
       return null;
@@ -1466,6 +1481,13 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.rendered = false;
       this.node.unrender();
       this.node.changeStyle("init");
+    }
+    ratio() {
+      if (this.node.rect) {
+        return this.node.rect.w / this.node.rect.h;
+      } else {
+        return void 0;
+      }
     }
     async fetchBigImage() {
       if (this.node.originSrc?.startsWith("blob:")) {
@@ -2668,7 +2690,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   DEFAULT_NODE_TEMPLATE.innerHTML = `
 <a>
   <img decoding="async" loading="eager" title="untitle.jpg" src="" style="display: none;" />
-  <canvas id="sample-canvas" width="1" height="1"></canvas>
+  <canvas id="sample-canvas" width="100" height="100"></canvas>
 </a>`;
   const OVERLAY_TIP = document.createElement("div");
   OVERLAY_TIP.classList.add("overlay-tip");
@@ -2690,12 +2712,14 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     downloadBar;
     picked = true;
     debouncer = new Debouncer();
-    constructor(thumbnailSrc, href, title, delaySRC, originSrc) {
+    rect;
+    constructor(thumbnailSrc, href, title, delaySRC, originSrc, wh) {
       this.thumbnailSrc = thumbnailSrc;
       this.href = href;
       this.title = title;
       this.delaySRC = delaySRC;
       this.originSrc = originSrc;
+      this.rect = wh;
     }
     create() {
       this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
@@ -2706,9 +2730,13 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.canvasElement = anchor.lastElementChild;
       this.imgElement.setAttribute("title", this.title);
       this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
+      if (this.rect) {
+        this.canvasElement.width = 1e3;
+        this.canvasElement.height = Math.floor(1e3 * (this.rect.h / this.rect.w));
+      }
       this.canvasCtx = this.canvasElement.getContext("2d");
       this.canvasCtx.fillStyle = "#aaa";
-      this.canvasCtx.fillRect(0, 0, 1, 1);
+      this.canvasCtx.fillRect(0, 0, this.canvasElement.width, this.canvasElement.height);
       if (this.onclick) {
         anchor.addEventListener("click", (event) => {
           event.preventDefault();
@@ -2732,8 +2760,13 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         this.canvasSized = this.canvasElement.height + this.canvasElement.width > 100 && Math.abs(newRatio - oldRatio) < 1.1;
       }
       if (!this.canvasSized) {
-        this.canvasElement.width = this.root.offsetWidth;
-        this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
+        if (this.root.parentElement?.classList.contains("fvg-sub-container")) {
+          this.canvasElement.height = this.root.offsetHeight;
+          this.canvasElement.width = Math.floor(this.root.offsetHeight / newRatio);
+        } else {
+          this.canvasElement.width = this.root.offsetWidth;
+          this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
+        }
         this.canvasSized = true;
       }
       if (this.imgElement.src === this.thumbnailSrc) {
@@ -2848,6 +2881,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     constructor(chapter, index) {
       this.chapter = chapter;
       this.index = index;
+    }
+    ratio() {
+      return void 0;
     }
     create() {
       const element = DEFAULT_NODE_TEMPLATE.cloneNode(true);
@@ -3402,7 +3438,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
             originSrc = a.player_embedded;
           }
           this.info.assets++;
-          ret.push(new ImageNode(thumb, asset.permalink, title, void 0, originSrc));
+          ret.push(new ImageNode(thumb, asset.permalink, title, void 0, originSrc, { w: a.width, h: a.height }));
         }
       }
       return ret;
@@ -3659,7 +3695,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           const info = JSON.parse(match[1]);
           this.infos[info.id.toString()] = info;
           this.count++;
-          ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${info.file_ext}`));
+          ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${info.file_ext}`, void 0, void 0, { w: info.width, h: info.height }));
         } catch (error) {
           evLog("error", "parse post info failed", error);
           continue;
@@ -3851,8 +3887,14 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const fileExt = ele.getAttribute("data-file-ext") || void 0;
       if (!normal || !original || !id)
         return [null, ""];
+      const width = ele.getAttribute("data-width");
+      const height = ele.getAttribute("data-height");
+      let wh = void 0;
+      if (width && height) {
+        wh = { w: parseInt(width), h: parseInt(height) };
+      }
       this.cache.set(href, { normal, original, id, fileExt });
-      return [new ImageNode(src, href, `${id}.jpg`), tags || ""];
+      return [new ImageNode(src, href, `${id}.jpg`, void 0, void 0, wh), tags || ""];
     }
     cachedOriginMeta(href) {
       const cached = this.cache.get(href);
@@ -4008,16 +4050,20 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         let i = 0;
         for (const match of matchs) {
           i++;
+          const src = match[3].replaceAll("\\", "");
           const node = new ImageNode(
-            match[3].replaceAll("\\", ""),
+            src,
             `${location.origin}/s/${match[2]}/${gid}-${i}`,
-            match[1].replace(/Page\s\d+[:_]\s*/, "")
+            match[1].replace(/Page\s\d+[:_]\s*/, ""),
+            void 0,
+            void 0,
+            extractRectFromSrc(src)
           );
           list.push(node);
         }
         return list;
       }
-      let urls = [];
+      let srcs = [];
       let delayURLs = [];
       if (isSprite) {
         let spriteURLs = [];
@@ -4036,7 +4082,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           const resolvers = [];
           const rejects = [];
           for (let i = 0; i < range.length; i++) {
-            urls.push("");
+            srcs.push("");
             delayURLs.push(new Promise((resolve, reject) => {
               resolvers.push(resolve);
               rejects.push(reject);
@@ -4054,18 +4100,28 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           });
         });
       } else {
-        if (urls.length == 0) {
-          urls = nodes.map((n) => n.firstElementChild.firstElementChild.src);
+        if (srcs.length == 0) {
+          srcs = nodes.map((n) => n.firstElementChild.firstElementChild.src);
         }
       }
       for (let i = 0; i < nodes.length; i++) {
-        const node = new ImageNode(
-          urls[i],
-          nodes[i].querySelector("a").href,
-          nodes[i].querySelector("img").getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg",
-          delayURLs[i]
-        );
-        list.push(node);
+        const node = nodes[i];
+        const src = srcs[i];
+        const [w, h] = [node.style.width, node.style.height];
+        let wh = void 0;
+        if (w && h) {
+          wh = { w: parseInt(w), h: parseInt(h) };
+        } else {
+          wh = extractRectFromSrc(src);
+        }
+        list.push(new ImageNode(
+          src,
+          node.querySelector("a").href,
+          node.querySelector("img").getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg",
+          delayURLs[i],
+          void 0,
+          wh
+        ));
       }
       return list;
     }
@@ -4145,6 +4201,16 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         contentType = "image/jpeg";
       }
       return [data, contentType];
+    }
+  }
+  function extractRectFromSrc(src) {
+    if (!src)
+      return void 0;
+    const matches = src.match(/\/\w+-\d+-(\d+)-(\d+)-/);
+    if (matches && matches.length === 3) {
+      return { w: parseInt(matches[1]), h: parseInt(matches[2]) };
+    } else {
+      return void 0;
     }
   }
 
@@ -4388,14 +4454,16 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const files = this.infoRecord[chapterID].files;
       const list = [];
       for (let i = 0; i < files.length; i++) {
-        const ext = this.formats.slice(this.formatIndex).find((format) => files[i]["has" + format] === 1);
+        const file = files[i];
+        const ext = this.formats.slice(this.formatIndex).find((format) => file["has" + format] === 1);
         if (!ext) {
           evLog("error", "no format found: ", files[i]);
           continue;
         }
-        let title = files[i].name.replace(/\.\w+$/, "");
-        const src = this.gg.originURL(files[i].hash, ext);
-        list.push(new ImageNode(this.gg.thumbURL(files[i].hash), src, title + "." + ext, void 0, src));
+        let title = file.name.replace(/\.\w+$/, "");
+        const src = this.gg.originURL(file.hash, ext);
+        const { width, height } = file;
+        list.push(new ImageNode(this.gg.thumbURL(files[i].hash), src, title + "." + ext, void 0, src, width && height ? { w: width, h: height } : void 0));
       }
       return list;
     }
@@ -4442,27 +4510,12 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return "im-hentai";
     }
     data;
+    gth;
     async fetchOriginMeta(node, _) {
-      const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-      const imgNode = doc.querySelector("#gimg");
-      if (!imgNode) {
-        throw new Error("cannot find image node from: " + node.href);
-      }
-      const src = imgNode.getAttribute("data-src");
-      if (!src) {
-        throw new Error("cannot find image src from: #gimg");
-      }
-      const ext = src.split(".").pop()?.match(/^\w+/)?.[0];
-      const num = node.href.match(/\/(\d+)\/?$/)?.[1];
-      let title;
-      if (ext && num) {
-        const digits = this.data.total.toString().length;
-        title = num.toString().padStart(digits, "0") + "." + ext;
-      }
-      return { url: src, title };
+      return { url: node.originSrc };
     }
     async parseImgNodes() {
-      if (!this.data) {
+      if (!this.data || !this.gth) {
         throw new Error("impossibility");
       }
       const ret = [];
@@ -4470,7 +4523,14 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       for (let i = 1; i <= this.data.total; i++) {
         const url = `https://m${this.data.server}.imhentai.xxx/${this.data.imgDir}/${this.data.gid}/${i}t.jpg`;
         const href = `https://imhentai.xxx/view/${this.data.uid}/${i}/`;
-        const node = new ImageNode(url, href, `${i.toString().padStart(digits, "0")}.jpg`);
+        const ext = imParseExt(this.gth[i.toString()]);
+        const originSrc = `https://m${this.data.server}.imhentai.xxx/${this.data.imgDir}/${this.data.gid}/${i}.${ext}`;
+        let wh = void 0;
+        const splits = this.gth[i.toString()].split(",");
+        if (splits.length === 3) {
+          wh = { w: parseInt(splits[1]), h: parseInt(splits[2]) };
+        }
+        const node = new ImageNode(url, href, `${i.toString().padStart(digits, "0")}.${ext}`, void 0, originSrc, wh);
         ret.push(node);
       }
       return ret;
@@ -4482,6 +4542,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const imgDir = q("#load_dir", document).value;
       const total = q("#load_pages", document).value;
       this.data = { server, uid, gid, imgDir, total: Number(total) };
+      const gthRaw = Array.from(document.querySelectorAll("script")).find((s) => s.textContent?.trimStart().startsWith("var g_th"))?.textContent?.match(/\('(\{.*?\})'\)/)?.[1];
+      if (!gthRaw)
+        throw new Error("cannot match gallery images info");
+      this.gth = JSON.parse(gthRaw);
       yield document;
     }
     galleryMeta(doc) {
@@ -4505,6 +4569,24 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     workURL() {
       return /imhentai.xxx\/gallery\/\d+\//;
+    }
+  }
+  function imParseExt(str) {
+    switch (str.slice(0, 1)) {
+      case "j":
+        return "jpg";
+      case "g":
+        return "gif";
+      case "p":
+        return "png";
+      case "w":
+        return "webp";
+      case "a":
+        return "avif";
+      case "m":
+        return "mp4";
+      default:
+        throw new Error("cannot parse image extension from info: " + str);
     }
   }
 
@@ -4572,7 +4654,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         const href = `${window.location.origin}/reader/${galleryID}/${i + 1}`;
         const title = (i + 1).toString().padStart(pad, "0") + "." + item.path.split(".").pop();
         const src = itemBase + item.path + "?w=" + w;
-        return new ImageNode(thumbBase + thumbs[i].path, href, title, void 0, src);
+        return new ImageNode(thumbBase + thumbs[i].path, href, title, void 0, src, { w: item.dimensions[0], h: item.dimensions[1] });
       });
     }
     async fetchOriginMeta(node) {
@@ -4889,6 +4971,12 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         return "gif";
       case "p":
         return "png";
+      case "w":
+        return "webp";
+      case "a":
+        return "avif";
+      case "m":
+        return "mp4";
       default:
         throw new Error("cannot parse image extension from info: " + str);
     }
@@ -4943,7 +5031,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         const ext = nhParseExt(info.images.pages[i].t);
         const href = location.origin + node.getAttribute("href");
         const originSrc = `${window.location.origin.replace("//", "//i" + mediaServer + ".")}/galleries/${mediaID}/${i + 1}.${ext}`;
-        ret.push(new ImageNode(thumbSrc, href, title + "." + ext, void 0, originSrc));
+        const wh = { w: info.images.pages[i].w, h: info.images.pages[i].h };
+        ret.push(new ImageNode(thumbSrc, href, title + "." + ext, void 0, originSrc, wh));
       }
       return ret;
     }
@@ -4997,7 +5086,12 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         const thumbSrc = base + thumb[0] + "." + nhParseExt(thumb[1]);
         const file = files[i];
         const originSrc = base + file[0] + "." + nhParseExt(file[1]);
-        ret.push(new ImageNode(thumbSrc, href + "/" + (i + 1), title + "." + nhParseExt(file[1]), void 0, originSrc));
+        const splits = file[1].split(",");
+        let wh = void 0;
+        if (splits.length === 3) {
+          wh = { w: parseInt(splits[1].trim()), h: parseInt(splits[2].trim()) };
+        }
+        ret.push(new ImageNode(thumbSrc, href + "/" + (i + 1), title + "." + nhParseExt(file[1]), void 0, originSrc, wh));
       }
       return ret;
     }
@@ -5652,7 +5746,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             title = title.replace(/\.\w+$/, ".gif");
           }
           j++;
-          const node = new ImageNode(p.urls.small, p.urls.original, title, void 0, p.urls.original);
+          const node = new ImageNode(p.urls.small, p.urls.original, title, void 0, p.urls.original, { w: p.width, h: p.height });
           list.push(node);
         }
       }
@@ -5969,7 +6063,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           href = `${href}/${media.type === "video" ? "video" : "photo"}/${i + 1}`;
           let largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`;
           const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`;
-          const node = new ImageNode(src, href, title, void 0, largeSrc);
+          const wh = { w: media.sizes.small.w, h: media.sizes.small.h };
+          const node = new ImageNode(src, href, title, void 0, largeSrc, wh);
           if (media.video_info) {
             let bitrate = 0;
             for (const variant of media.video_info.variants) {
@@ -6109,7 +6204,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
   function adaptMatcher(url) {
     const matchers = getMatchers();
-    const matcher = matchers.filter((matcher2) => !conf.siteProfiles[matcher2.name()]?.disable).find((matcher2) => {
+    const matcher = matchers.filter((matcher2) => conf.siteProfiles[matcher2.name()]?.enable ?? true).find((matcher2) => {
       let workURLs = matcher2.workURLs();
       if (conf.siteProfiles[matcher2.name()] && conf.siteProfiles[matcher2.name()].workURLs.length > 0) {
         workURLs = conf.siteProfiles[matcher2.name()].workURLs.map((regex) => new RegExp(regex));
@@ -6117,8 +6212,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return workURLs.find((regex) => regex.test(url));
     });
     if (!matcher)
-      return [null, false];
-    return [matcher, !conf.siteProfiles[matcher.name()]?.disableAutoOpen];
+      return [null, false, false];
+    return [
+      matcher,
+      conf.siteProfiles[matcher.name()]?.enableAutoOpen ?? true,
+      conf.siteProfiles[matcher.name()]?.enableFlowVision
+    ];
   }
 
   function parseKey(event) {
@@ -6192,9 +6291,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
              <div class="ehvp-custom-panel-list-item-title">
                <div style="font-size: 1.2em;font-weight: 800;">${name}</div>
                <div>
-                 <label><span>${i18n.enable.get()}: </span><input id="${id}-enable-checkbox" ${!profile?.disable ? "checked" : ""} type="checkbox"></label>
-                 <label><span>${i18n.enableAutoOpen.get()}: </span><input id="${id}-enable-auto-open-checkbox" ${!profile?.disableAutoOpen ? "checked" : ""} type="checkbox"></label>
-                 <label><span>${i18n.addRegexp.get()}: </span><span id="${id}-add-workurl" class="ehvp-custom-btn ehvp-custom-btn-green">&nbsp+&nbsp</span></label>
+                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.enable.get()}: </span><input id="${id}-enable-checkbox" ${profile?.enable ?? true ? "checked" : ""} type="checkbox"></label>
+                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.enableAutoOpen.get()}: </span><input id="${id}-enable-auto-open-checkbox" ${profile?.enableAutoOpen ?? true ? "checked" : ""} type="checkbox"></label>
+                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.enableFlowVision.get()}: </span><input id="${id}-enable-flow-vision-checkbox" ${profile?.enableFlowVision ?? false ? "checked" : ""} type="checkbox"></label>
+                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.addRegexp.get()}: </span><span id="${id}-add-workurl" class="ehvp-custom-btn ehvp-custom-btn-green">&nbsp+&nbsp</span></label>
                </div>
              </div>
              <div id="${id}-workurls"></div>
@@ -6208,6 +6308,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       <span style="font-size:0.5em;">
         <span class="p-tooltip"> ${i18n.enable.get()}? <span class="p-tooltiptext">${i18n.enableTooltips.get()}</span></span>
         <span class="p-tooltip"> ${i18n.enableAutoOpen.get()}? <span class="p-tooltiptext">${i18n.enableAutoOpenTooltips.get()}</span></span>
+        <span class="p-tooltip"> ${i18n.enableFlowVision.get()}? <span class="p-tooltiptext">${i18n.enableFlowVisionTooltips.get()}</span></span>
       </span>
     </span>
     <span id="ehvp-custom-panel-close" class="ehvp-custom-panel-close">✖</span>
@@ -6239,19 +6340,24 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const getProfile = () => {
         let profile = siteProfiles[name];
         if (!profile) {
-          profile = { disable: false, disableAutoOpen: false, workURLs: [...defaultWorkURLs] };
+          profile = { enable: true, enableAutoOpen: true, enableFlowVision: false, workURLs: [...defaultWorkURLs] };
           siteProfiles[name] = profile;
         }
         return profile;
       };
       const enableCheckbox = q(`#${id}-enable-checkbox`, fullPanel);
       enableCheckbox.addEventListener("click", () => {
-        getProfile().disable = !enableCheckbox.checked;
+        getProfile().enable = enableCheckbox.checked;
         saveConf(conf);
       });
       const enableAutoOpenCheckbox = q(`#${id}-enable-auto-open-checkbox`, fullPanel);
       enableAutoOpenCheckbox.addEventListener("click", () => {
-        getProfile().disableAutoOpen = !enableAutoOpenCheckbox.checked;
+        getProfile().enableAutoOpen = enableAutoOpenCheckbox.checked;
+        saveConf(conf);
+      });
+      const enableFlowVisionCheckbox = q(`#${id}-enable-flow-vision-checkbox`, fullPanel);
+      enableFlowVisionCheckbox.addEventListener("click", () => {
+        getProfile().enableFlowVision = enableFlowVisionCheckbox.checked;
         saveConf(conf);
       });
       const addWorkURL = q(`#${id}-add-workurl`, fullPanel);
@@ -6730,7 +6836,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         inputElement.value = conf[key].toString();
       }
       if (key === "colCount") {
-        const rule = queryRule(HTML.styleSheet, ".full-view-grid");
+        const rule = queryRule(HTML.styleSheet, ".fvg-grid");
         if (rule)
           rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
       }
@@ -7113,14 +7219,23 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     };
   }
 
+  const INTERSECTING_ATTR = "intersecting";
+  class Layout {
+  }
   class FullViewGridManager {
     root;
-    // renderRangeRecord: [number, number] = [0, 0];
     queue = [];
     done = false;
     chapterIndex = 0;
-    constructor(HTML, BIFM) {
+    layout;
+    observer;
+    constructor(HTML, BIFM, flowVision = false) {
       this.root = HTML.fullViewGrid;
+      if (flowVision) {
+        this.layout = new FlowVisionLayout(this.root);
+      } else {
+        this.layout = new GRIDLayout(this.root);
+      }
       EBUS.subscribe("pf-on-appended", (_total, nodes, chapterIndex, done) => {
         if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex)
           return;
@@ -7130,9 +7245,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       });
       EBUS.subscribe("pf-change-chapter", (index) => {
         this.chapterIndex = index;
-        this.root.innerHTML = "";
+        this.layout.reset();
         this.queue = [];
         this.done = false;
+        this.observer.disconnect();
+        this.observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => entry.target.setAttribute(INTERSECTING_ATTR, entry.isIntersecting ? "true" : "false"));
+        }, { root: this.root });
       });
       EBUS.subscribe("ifq-do", (_, imf) => {
         if (!BIFM.visible)
@@ -7141,7 +7260,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           return;
         if (!imf.node.root)
           return;
-        let scrollTo = imf.node.root.offsetTop - window.screen.availHeight / 3;
+        let scrollTo = 0;
+        if (flowVision) {
+          scrollTo = imf.node.root.parentElement.offsetTop - window.screen.availHeight / 3;
+        } else {
+          scrollTo = imf.node.root.offsetTop - window.screen.availHeight / 3;
+        }
         scrollTo = scrollTo <= 0 ? 0 : scrollTo >= this.root.scrollHeight ? this.root.scrollHeight : scrollTo;
         if (this.root.scrollTo.toString().includes("[native code]")) {
           this.root.scrollTo({ top: scrollTo, behavior: "smooth" });
@@ -7158,67 +7282,175 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         this.tryExtend();
       }, 400));
       this.root.addEventListener("click", (event) => {
-        if (event.target === HTML.fullViewGrid || event.target.classList.contains("img-node")) {
+        if (event.target === HTML.fullViewGrid || event.target.classList.contains("img-node") || event.target.classList.contains("fvg-sub-container")) {
           EBUS.emit("toggle-main-view", false);
         }
       });
+      this.observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => entry.target.setAttribute(INTERSECTING_ATTR, entry.isIntersecting ? "true" : "false"));
+      }, { root: this.root });
     }
     append(nodes) {
       if (nodes.length > 0) {
-        const list = nodes.map((n) => {
-          return {
-            node: n,
-            element: n.create()
-          };
-        });
+        const list = nodes.map((n) => ({ node: n, element: n.create(), ratio: n.ratio() }));
         this.queue.push(...list);
-        this.root.append(...list.map((l) => l.element));
+        this.layout.append(list);
+        list.forEach((l) => this.observer.observe(l.element));
       }
     }
     tryExtend() {
       if (this.done)
         return;
-      const nodes = Array.from(this.root.childNodes);
-      if (nodes.length === 0)
-        return;
-      const lastImgNode = nodes[nodes.length - 1];
-      const viewButtom = this.root.scrollTop + this.root.clientHeight;
-      if (viewButtom + this.root.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
-        return;
-      }
-      EBUS.emit("pf-try-extend");
+      if (this.layout.nearBottom())
+        EBUS.emit("pf-try-extend");
     }
     updateRender() {
       this.queue.forEach(({ node }) => node.isRender() && node.render());
     }
-    /**
-     *  当滚动停止时，检查当前显示的页面上的是什么元素，然后渲染图片
-     */
     renderCurrView() {
-      const [scrollTop, clientHeight] = [this.root.scrollTop, this.root.clientHeight];
-      const [start, end] = this.findOutsideRoundView(scrollTop, clientHeight);
-      this.queue.slice(start, end + 1 + conf.colCount).forEach((e) => e.node.render());
-    }
-    findOutsideRoundView(currTop, clientHeight) {
-      const viewButtom = currTop + clientHeight;
-      let outsideTop = 0;
-      let outsideBottom = 0;
-      for (let i = 0; i < this.queue.length; i += conf.colCount) {
-        const element = this.queue[i].element;
-        if (outsideBottom === 0) {
-          if (element.offsetTop + 2 >= currTop) {
-            outsideBottom = i + 1;
-          } else {
-            outsideTop = i;
-          }
-        } else {
-          outsideBottom = i;
-          if (element.offsetTop + element.offsetHeight > viewButtom) {
-            break;
-          }
+      let lastRender = 0;
+      let hasIntersected = false;
+      let lastTop = 0;
+      for (let i = 0; i < this.queue.length; i++) {
+        const e = this.queue[i];
+        if (e.element.getAttribute(INTERSECTING_ATTR) === "true") {
+          e.node.render();
+          lastRender = i;
+          hasIntersected = true;
+        } else if (hasIntersected) {
+          lastTop = e.element.getBoundingClientRect().top;
+          break;
         }
       }
-      return [outsideTop, Math.min(outsideBottom + conf.colCount, this.queue.length - 1)];
+      let rows = 0;
+      for (let i = lastRender + 1; i < this.queue.length; i++) {
+        const e = this.queue[i];
+        let top = e.element.getBoundingClientRect().top;
+        if (lastTop < top) {
+          rows++;
+          lastTop = top;
+        }
+        if (rows > 2)
+          break;
+        e.node.render();
+      }
+    }
+  }
+  class GRIDLayout extends Layout {
+    root;
+    constructor(root) {
+      super();
+      this.root = root;
+      this.root.classList.add("fvg-grid");
+      this.root.classList.remove("fvg-flow");
+    }
+    append(nodes) {
+      this.root.append(...nodes.map((l) => l.element));
+    }
+    nearBottom() {
+      const nodes = Array.from(this.root.childNodes);
+      if (nodes.length === 0)
+        return false;
+      const lastImgNode = nodes[nodes.length - 1];
+      const viewButtom = this.root.scrollTop + this.root.clientHeight;
+      if (viewButtom + this.root.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
+        return false;
+      }
+      return true;
+    }
+    reset() {
+      this.root.innerHTML = "";
+    }
+  }
+  class FlowVisionLayout extends Layout {
+    root;
+    lastRow;
+    count = 0;
+    defaultHeight;
+    resizeObserver;
+    lastRootWidth;
+    constructor(root) {
+      super();
+      this.root = root;
+      this.root.classList.add("fvg-flow");
+      this.root.classList.remove("fvg-grid");
+      this.defaultHeight = window.screen.availHeight / 3.4;
+      this.lastRootWidth = this.root.offsetWidth;
+      this.resizeObserver = new ResizeObserver((entries) => {
+        const root2 = entries[0];
+        const width = root2.contentRect.width;
+        if (this.lastRootWidth !== width) {
+          this.lastRootWidth = width;
+          Array.from(root2.target.querySelectorAll(".fvg-sub-container")).forEach((row) => this.resizeRow(row));
+        }
+      });
+      this.resizeObserver.observe(this.root);
+    }
+    createRow(_columns) {
+      const container = document.createElement("div");
+      container.classList.add("fvg-sub-container");
+      container.style.height = this.defaultHeight + "px";
+      container.style.marginTop = "10px";
+      this.root.appendChild(container);
+      return container;
+    }
+    append(nodes) {
+      for (const node of nodes) {
+        node.element.style.marginLeft = "10px";
+        if (!this.lastRow)
+          this.lastRow = this.createRow(conf.colCount);
+        const lastChild = this.lastRow.lastElementChild;
+        let isFirst = lastChild === null;
+        if (lastChild) {
+          const nodeWidth = this.lastRow.offsetHeight * (node.ratio ?? 1);
+          const gap = (this.lastRow.childElementCount + 1) * 10;
+          const ratios = this.childrenRatio(this.lastRow).concat([node.ratio ?? 1]);
+          const factor = ratios.reduce((prev, curr) => prev * Math.max(1, curr), 1);
+          if (this.childrenWidth(this.lastRow) + gap + nodeWidth * (0.5 / factor) > this.root.offsetWidth) {
+            isFirst = true;
+            this.resizeRow(this.lastRow);
+            this.lastRow = this.createRow(conf.colCount);
+          }
+        }
+        if (isFirst) {
+          if ((node.ratio ?? 1) > 1) {
+            this.lastRow.style.height = this.lastRow.offsetHeight / node.ratio + "px";
+          }
+        }
+        this.lastRow.appendChild(node.element);
+        this.count++;
+      }
+    }
+    childrenWidth(row) {
+      let width = 0;
+      row.childNodes.forEach((c) => width += c.offsetWidth);
+      return width;
+    }
+    childrenRatio(row) {
+      let ret = [];
+      row.childNodes.forEach((c) => ret.push(c.offsetWidth / c.offsetHeight));
+      return ret;
+    }
+    resizeRow(row) {
+      const gap = (row.childElementCount + 1) * 10;
+      const width = this.childrenWidth(row) + gap;
+      const scale = width / this.root.offsetWidth;
+      row.style.height = row.offsetHeight / scale + "px";
+      row.childNodes.forEach((c) => c.style.marginLeft = "");
+      row.style.justifyContent = "space-around";
+    }
+    nearBottom() {
+      const last = this.lastRow;
+      if (!last)
+        return false;
+      const viewButtom = this.root.scrollTop + this.root.clientHeight;
+      if (viewButtom + this.root.clientHeight * 2.5 < last.offsetTop + last.offsetHeight) {
+        return false;
+      }
+      return true;
+    }
+    reset() {
+      this.root.innerHTML = "";
     }
   }
 
@@ -7343,7 +7575,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .ehvp-root-collapse {
   height: 0;
 }
-.full-view-grid {
+.fvg-flow {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden scroll;
+  background: var(--ehvp-fvg-background);
+}
+.fvg-grid {
   width: 100vw;
   height: 100vh;
   display: grid;
@@ -7379,13 +7617,35 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .full-view-grid .img-node {
   position: relative;
 }
+.fvg-sub-container {
+  display: flex;
+  width: 100%;
+  contain: content;
+}
+.fvg-sub-container .img-node {
+  width: auto;
+  height: 100%;
+}
+.fvg-sub-container .img-node a {
+  height: 100%;
+}
 .img-node canvas, .img-node img {
   position: relative;
-  width: 100%;
-  height: auto;
   border: 3px solid var(--ehvp-img-init);
   box-sizing: border-box;
   box-shadow: var(--ehvp-img-box-shadow);
+}
+.fvg-grid .img-node canvas, 
+.fvg-grid .img-node img 
+{
+  width: 100%;
+  height: auto;
+}
+.fvg-flow .img-node canvas, 
+.fvg-flow .img-node img 
+{
+  width: auto;
+  height: 100%;
 }
 .img-node:hover .ehvp-chapter-description {
   color: #ffe7f5;
@@ -7852,6 +8112,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   line-height: 3em;
   margin-left: 0.5em;
   font-size: 1.4em;
+}
+.ehvp-custom-panel-checkbox:hover {
+  border: 1px solid var(--ehvp-font-color);
 }
 .ehvp-custom-panel-list-item-disable {
   text-decoration: line-through;
@@ -9928,7 +10191,7 @@ ${chapters.map((c, i) => `<div><label>
     });
   }
 
-  function main(MATCHER, autoOpen) {
+  function main(MATCHER, autoOpen, flowVision) {
     const HTML = createHTML();
     [HTML.fullViewGrid, HTML.bigImageFrame].forEach((e) => revertMonkeyPatch(e));
     const IFQ = IMGFetcherQueue.newQueue();
@@ -9937,7 +10200,7 @@ ${chapters.map((c, i) => `<div><label>
     const DL = new Downloader(HTML, IFQ, IL, PF, MATCHER);
     const PH = new PageHelper(HTML, () => PF.chapters, () => DL.downloading);
     const BIFM = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);
-    new FullViewGridManager(HTML, BIFM);
+    new FullViewGridManager(HTML, BIFM, flowVision);
     const events = initEvents(HTML, BIFM, IFQ, IL, PH);
     addEventListeners(events, HTML, BIFM, DL, PH);
     EBUS.subscribe("downloader-canvas-on-click", (index) => {
@@ -10012,9 +10275,9 @@ ${chapters.map((c, i) => `<div><label>
       const newStart = () => {
         if (document.querySelector(".ehvp-base"))
           return;
-        const [matcher, autoOpen] = adaptMatcher(window.location.href);
+        const [matcher, autoOpen, flowVision] = adaptMatcher(window.location.href);
         if (matcher) {
-          destoryFunc = main(matcher, autoOpen);
+          destoryFunc = main(matcher, autoOpen, flowVision);
         }
       };
       if (destoryFunc) {

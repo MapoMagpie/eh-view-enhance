@@ -207,6 +207,8 @@ type YandereKonachanPostInfo = {
   preview_url: string,
   sample_url: string,
   jpeg_url: string,
+  width: number,
+  height: number,
 }
 export class YandereMatcher extends BaseMatcher {
   name(): string {
@@ -252,7 +254,7 @@ export class YandereMatcher extends BaseMatcher {
         const info = JSON.parse(match[1]) as YandereKonachanPostInfo;
         this.infos[info.id.toString()] = info;
         this.count++;
-        ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${info.file_ext}`));
+        ret.push(new ImageNode(info.preview_url, `${window.location.origin}/post/show/${info.id}`, `${info.id}.${info.file_ext}`, undefined, undefined, { w: info.width, h: info.height }));
       } catch (error) {
         evLog("error", "parse post info failed", error);
         continue;
@@ -445,8 +447,14 @@ export class E621Matcher extends DanbooruMatcher {
     const original = ele.getAttribute("data-file-url");
     const fileExt = ele.getAttribute("data-file-ext") || undefined;
     if (!normal || !original || !id) return [null, ""];
+    const width = ele.getAttribute("data-width");
+    const height = ele.getAttribute("data-height");
+    let wh = undefined;
+    if (width && height) {
+      wh = { w: parseInt(width), h: parseInt(height) };
+    }
     this.cache.set(href, { normal, original, id, fileExt });
-    return [new ImageNode(src, href, `${id}.jpg`), tags || ""];
+    return [new ImageNode(src, href, `${id}.jpg`, undefined, undefined, wh), tags || ""];
   }
   cachedOriginMeta(href: string): OriginMeta | null {
     const cached = this.cache.get(href);

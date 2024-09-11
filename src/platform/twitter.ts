@@ -178,7 +178,8 @@ export class TwitterMatcher extends BaseMatcher {
         href = `${href}/${media.type === "video" ? "video" : "photo"}/${i + 1}`
         let largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`
         const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`
-        const node = new ImageNode(src, href, title, undefined, largeSrc);
+        const wh = { w: media.sizes.small.w, h: media.sizes.small.h };
+        const node = new ImageNode(src, href, title, undefined, largeSrc, wh);
         if (media.video_info) {
           let bitrate = 0;
           for (const variant of media.video_info.variants) {

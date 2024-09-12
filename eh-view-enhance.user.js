@@ -6261,7 +6261,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     element.style.position = "fixed";
     element.style.lineHeight = "2em";
     element.id = "input-element";
-    element.innerHTML = `<input type="text" style="width:20em;height:2em;"><span class="ehvp-custom-btn ehvp-custom-btn-plain">&nbsp√&nbsp</button>`;
+    element.innerHTML = `<input type="text" style="width:20em;height:2em;"><button class="ehvp-custom-btn ehvp-custom-btn-plain">&nbsp√&nbsp</button>`;
     root.appendChild(element);
     const input = element.querySelector("input");
     const button = element.querySelector("button");

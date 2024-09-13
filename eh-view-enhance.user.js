@@ -2733,6 +2733,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (this.rect) {
         this.canvasElement.width = 1e3;
         this.canvasElement.height = Math.floor(1e3 * (this.rect.h / this.rect.w));
+        this.canvasSized = true;
       }
       this.canvasCtx = this.canvasElement.getContext("2d");
       this.canvasCtx.fillStyle = "#aaa";
@@ -7374,7 +7375,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.root = root;
       this.root.classList.add("fvg-flow");
       this.root.classList.remove("fvg-grid");
-      this.defaultHeight = window.screen.availHeight / 3.4;
+      this.defaultHeight = window.screen.availHeight / 3;
       this.lastRootWidth = this.root.offsetWidth;
       this.resizeObserver = new ResizeObserver((entries) => {
         const root2 = entries[0];
@@ -7400,21 +7401,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         if (!this.lastRow)
           this.lastRow = this.createRow(conf.colCount);
         const lastChild = this.lastRow.lastElementChild;
-        let isFirst = lastChild === null;
         if (lastChild) {
           const nodeWidth = this.lastRow.offsetHeight * (node.ratio ?? 1);
           const gap = (this.lastRow.childElementCount + 1) * 10;
-          const ratios = this.childrenRatio(this.lastRow).concat([node.ratio ?? 1]);
-          const factor = ratios.reduce((prev, curr) => prev * Math.max(1, curr), 1);
-          if (this.childrenWidth(this.lastRow) + gap + nodeWidth * (0.5 / factor) > this.root.offsetWidth) {
-            isFirst = true;
-            this.resizeRow(this.lastRow);
-            this.lastRow = this.createRow(conf.colCount);
-          }
-        }
-        if (isFirst) {
-          if ((node.ratio ?? 1) > 1) {
-            this.lastRow.style.height = this.lastRow.offsetHeight / node.ratio + "px";
+          const factor = 0.5 / Math.max(1, node.ratio ?? 1);
+          if (this.lastRow.childElementCount > 7 || this.childrenWidth(this.lastRow) + gap + nodeWidth * factor > this.root.offsetWidth) {
+            if (this.resizeRow(this.lastRow, nodeWidth)) {
+              this.lastRow = this.createRow(conf.colCount);
+            }
           }
         }
         this.lastRow.appendChild(node.element);
@@ -7431,13 +7425,19 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       row.childNodes.forEach((c) => ret.push(c.offsetWidth / c.offsetHeight));
       return ret;
     }
-    resizeRow(row) {
+    resizeRow(row, _nextChildWidth) {
+      if (row.childElementCount < 4)
+        return false;
+      const ratios = this.childrenRatio(row).filter((r) => r >= 1);
+      if (ratios.length === row.childElementCount && row.childElementCount < 5)
+        return false;
       const gap = (row.childElementCount + 1) * 10;
       const width = this.childrenWidth(row) + gap;
       const scale = width / this.root.offsetWidth;
       row.style.height = row.offsetHeight / scale + "px";
       row.childNodes.forEach((c) => c.style.marginLeft = "");
       row.style.justifyContent = "space-around";
+      return true;
     }
     nearBottom() {
       const last = this.lastRow;

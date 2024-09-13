@@ -198,7 +198,7 @@ class FlowVisionLayout extends Layout {
         const nodeWidth = this.lastRow.offsetHeight * (node.ratio ?? 1);
         const gap = (this.lastRow.childElementCount + 1) * 10;
         const factor = 0.5 / Math.max(1, node.ratio ?? 1);
-        if (this.lastRow.childElementCount > 7
+        if (this.lastRow.childElementCount >= 6
           || this.childrenWidth(this.lastRow) + gap + (nodeWidth * factor) > this.root.offsetWidth) {
           if (this.resizeRow(this.lastRow, nodeWidth)) {
             this.lastRow = this.createRow(conf.colCount);

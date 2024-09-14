@@ -962,7 +962,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       autoCollapsePanel: true,
       minifyPageHelper: "inBigMode",
       keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
-      siteProfiles: {},
+      siteProfiles: defaultSiteProfiles(),
       muted: false,
       volume: 50,
       mcInSites: ["18comic"],
@@ -981,6 +981,33 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       autoEnterBig: true,
       pixivJustCurrPage: false,
       filenameOrder: "auto"
+    };
+  }
+  function defaultSiteProfiles() {
+    return {
+      "e-hentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+      "nhentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+      "nhentai.xxx": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+      "hitomi": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+      "Pixiv": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
+      "yande.re": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
+      "Twitter | X": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
+      "Koharu": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+      "Art Station": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
+      "Steam Screenshots": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+      "danbooru": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+      "rule34": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+      "gelbooru": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+      "漫画柜": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+      "拷贝漫画": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+      "e621": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+      "Arcalive": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+      "rokuhentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
+      "禁漫": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+      "konachan": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
+      "im-hentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+      "绅士漫画": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
+      "hentainexus": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] }
     };
   }
   const CONF_VERSION = "4.4.0";
@@ -1055,7 +1082,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     return cf;
   }
   const PATCH_CONFIG = {
-    siteProfiles: {}
+    siteProfiles: defaultSiteProfiles()
   };
   const CONFIG_PATCH_VERSION = 6;
   function patchConfig(cf, patch) {
@@ -2733,6 +2760,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (this.rect) {
         this.canvasElement.width = 1e3;
         this.canvasElement.height = Math.floor(1e3 * (this.rect.h / this.rect.w));
+        this.canvasSized = true;
       }
       this.canvasCtx = this.canvasElement.getContext("2d");
       this.canvasCtx.fillStyle = "#aaa";
@@ -6393,7 +6421,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             return;
           }
           background.remove();
-          getProfile().workURLs.push(value);
+          const profile = getProfile();
+          profile.workURLs.push(value);
           saveConf(conf);
           createWorkURLs(getProfile().workURLs, workURLContainer, (value2) => {
             removeWorkURL(value2, getProfile());
@@ -6401,8 +6430,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         });
       });
       let workURLs = defaultWorkURLs;
-      if (siteProfiles[name] && siteProfiles[name].workURLs.length > 0) {
-        workURLs = siteProfiles[name].workURLs;
+      if (siteProfiles[name]) {
+        if (siteProfiles[name].workURLs.length === 0) {
+          siteProfiles[name].workURLs.push(...defaultWorkURLs);
+        } else {
+          workURLs = siteProfiles[name].workURLs;
+        }
       }
       createWorkURLs(workURLs, workURLContainer, (value) => {
         removeWorkURL(value, getProfile());
@@ -7374,7 +7407,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.root = root;
       this.root.classList.add("fvg-flow");
       this.root.classList.remove("fvg-grid");
-      this.defaultHeight = window.screen.availHeight / 3.4;
+      this.defaultHeight = window.screen.availHeight / 3;
       this.lastRootWidth = this.root.offsetWidth;
       this.resizeObserver = new ResizeObserver((entries) => {
         const root2 = entries[0];
@@ -7400,21 +7433,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         if (!this.lastRow)
           this.lastRow = this.createRow(conf.colCount);
         const lastChild = this.lastRow.lastElementChild;
-        let isFirst = lastChild === null;
         if (lastChild) {
           const nodeWidth = this.lastRow.offsetHeight * (node.ratio ?? 1);
           const gap = (this.lastRow.childElementCount + 1) * 10;
-          const ratios = this.childrenRatio(this.lastRow).concat([node.ratio ?? 1]);
-          const factor = ratios.reduce((prev, curr) => prev * Math.max(1, curr), 1);
-          if (this.childrenWidth(this.lastRow) + gap + nodeWidth * (0.5 / factor) > this.root.offsetWidth) {
-            isFirst = true;
-            this.resizeRow(this.lastRow);
-            this.lastRow = this.createRow(conf.colCount);
-          }
-        }
-        if (isFirst) {
-          if ((node.ratio ?? 1) > 1) {
-            this.lastRow.style.height = this.lastRow.offsetHeight / node.ratio + "px";
+          const factor = 0.5 / Math.max(1, node.ratio ?? 1);
+          if (this.lastRow.childElementCount >= 6 || this.childrenWidth(this.lastRow) + gap + nodeWidth * factor > this.root.offsetWidth) {
+            if (this.resizeRow(this.lastRow, nodeWidth)) {
+              this.lastRow = this.createRow(conf.colCount);
+            }
           }
         }
         this.lastRow.appendChild(node.element);
@@ -7431,13 +7457,19 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       row.childNodes.forEach((c) => ret.push(c.offsetWidth / c.offsetHeight));
       return ret;
     }
-    resizeRow(row) {
+    resizeRow(row, _nextChildWidth) {
+      if (row.childElementCount < 4)
+        return false;
+      const ratios = this.childrenRatio(row).filter((r) => r >= 1);
+      if (ratios.length === row.childElementCount && row.childElementCount < 5)
+        return false;
       const gap = (row.childElementCount + 1) * 10;
       const width = this.childrenWidth(row) + gap;
       const scale = width / this.root.offsetWidth;
       row.style.height = row.offsetHeight / scale + "px";
       row.childNodes.forEach((c) => c.style.marginLeft = "");
       row.style.justifyContent = "space-around";
+      return true;
     }
     nearBottom() {
       const last = this.lastRow;

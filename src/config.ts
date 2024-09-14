@@ -136,7 +136,7 @@ function defaultConf(): Config {
     autoCollapsePanel: true,
     minifyPageHelper: "inBigMode",
     keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
-    siteProfiles: {},
+    siteProfiles: defaultSiteProfiles(),
     muted: false,
     volume: 50,
     mcInSites: ["18comic"],
@@ -155,6 +155,34 @@ function defaultConf(): Config {
     autoEnterBig: true,
     pixivJustCurrPage: false,
     filenameOrder: "auto",
+  };
+}
+
+function defaultSiteProfiles(): Record<string, SiteProfile> {
+  return {
+    "e-hentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+    "nhentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+    "nhentai.xxx": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+    "hitomi": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+    "Pixiv": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
+    "yande.re": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
+    "Twitter | X": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
+    "Koharu": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+    "Art Station": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
+    "Steam Screenshots": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+    "danbooru": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+    "rule34": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+    "gelbooru": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+    "漫画柜": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+    "拷贝漫画": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+    "e621": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+    "Arcalive": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+    "rokuhentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
+    "禁漫": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
+    "konachan": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
+    "im-hentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
+    "绅士漫画": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
+    "hentainexus": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] }
   };
 }
 
@@ -243,7 +271,7 @@ function confHealthCheck(cf: Config): Config {
 }
 
 const PATCH_CONFIG: Partial<Config> = {
-  siteProfiles: {},
+  siteProfiles: defaultSiteProfiles(),
 }
 const CONFIG_PATCH_VERSION = 6;
 function patchConfig(cf: Config, patch: Partial<Config>): Config | null {

@@ -127,7 +127,7 @@ export default function createSiteProfilePanel(root: HTMLElement) {
         profile.workURLs.splice(index, 1);
         changed = true;
       }
-      if (profile.workURLs.length === 0) {
+      if ((profile.workURLs.length) === 0) {
         profile.workURLs = [...defaultWorkURLs];
         changed = true;
         createWorkURLs(defaultWorkURLs, workURLContainer, (value) => {
@@ -149,7 +149,8 @@ export default function createSiteProfilePanel(root: HTMLElement) {
           return;
         }
         background.remove();
-        getProfile().workURLs.push(value);
+        const profile = getProfile();
+        profile.workURLs.push(value);
         saveConf(conf);
         createWorkURLs(getProfile().workURLs, workURLContainer, (value) => {
           removeWorkURL(value, getProfile());
@@ -158,8 +159,12 @@ export default function createSiteProfilePanel(root: HTMLElement) {
     });
     // init work urls to html
     let workURLs = defaultWorkURLs;
-    if (siteProfiles[name] && siteProfiles[name].workURLs.length > 0) {
-      workURLs = siteProfiles[name].workURLs;
+    if (siteProfiles[name]) {
+      if (siteProfiles[name].workURLs.length === 0) {
+        siteProfiles[name].workURLs.push(...defaultWorkURLs);
+      } else {
+        workURLs = siteProfiles[name].workURLs;
+      }
     }
     createWorkURLs(workURLs, workURLContainer, (value) => {
       removeWorkURL(value, getProfile());

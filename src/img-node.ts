@@ -70,6 +70,7 @@ export default class ImageNode {
     if (this.rect) {
       this.canvasElement.width = 1000;
       this.canvasElement.height = Math.floor(1000 * (this.rect.h / this.rect.w));
+      this.canvasSized = true;
     }
     this.canvasCtx = this.canvasElement.getContext("2d")!;
     this.canvasCtx.fillStyle = "#aaa";

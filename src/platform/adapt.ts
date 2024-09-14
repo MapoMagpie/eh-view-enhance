@@ -54,7 +54,7 @@ export function adaptMatcher(url: string): [Matcher | null, boolean, boolean] {
     .filter(matcher => conf.siteProfiles[matcher.name()]?.enable ?? true)
     .find(matcher => {
       let workURLs = matcher.workURLs();
-      if (conf.siteProfiles[matcher.name()] && conf.siteProfiles[matcher.name()].workURLs.length > 0) {
+      if (conf.siteProfiles[matcher.name()] && (conf.siteProfiles[matcher.name()].workURLs.length) > 0) {
         workURLs = conf.siteProfiles[matcher.name()].workURLs.map(regex => new RegExp(regex));
       }
       return workURLs.find(regex => regex.test(url));

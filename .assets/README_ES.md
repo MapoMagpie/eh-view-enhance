@@ -57,7 +57,7 @@ Actualmente soporta:
 ## <a name="instalación">Instalación</a>
 
 1. **`Requisitos Previos`**: Navegador moderno (Firefox\Chrome\Edge...)
-1. **`Requisitos Previos`**: Extensión instalada [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/
+1. **`Requisitos Previos`**: Extensión instalada [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
 1. **`Requisitos Previos`**: Haz clic aquí para verificar si puedes acceder a [jsdelivr.net](https://cdn.jsdelivr.net) para asegurar que el script funcione correctamente.
 1. **`Enlace de Instalación 1`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), se requiere inicio de sesión
 1. **`Enlace de Instalación 2`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), no se requiere inicio de sesión

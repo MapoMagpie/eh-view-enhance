@@ -1,4 +1,4 @@
-# Comic Looms | [中文](./.assets/README_CN.md) | [한글](./.assets/README_KO.md) | [Español](./.assets/README_ES.md)
+# Comic Looms | [中文](./README_CN.md) | [한글](./README_KO.md) | [Español](./README_ES.md)
 
 **Este Userscript permite una navegación rápida y conveniente por galerías o páginas principales de artistas en [ciertos sitios](#soporte-multi-sitio), con soporte para descargas por lotes, enfocándose en la experiencia de navegación y en una carga baja para el sitio.**
 
@@ -10,8 +10,8 @@
 - [Funcionamiento](#funcionamiento)
 - [Comentarios](#comentarios)
 
-Vista previa (si no puedes ver la imagen, haz clic [aqui](./.assets/preview.md)):
-![Preview](./.assets/eh-view-enhance-showcase3.avif 'Preview')
+Vista previa (si no puedes ver la imagen, haz clic [aqui](./preview.md)):
+![Preview](./eh-view-enhance-showcase3.avif 'Preview')
 
 ## <a name="características">Características</a>
 
@@ -67,11 +67,11 @@ Actualmente soporta:
 
 1. En la página de la galería o del autor, haz clic en `<🎑>` en la parte inferior izquierda para comenzar a navegar. Puedes arrastrar este elemento a cualquier posición en el panel de CONFIG.
 1. Después de un momento, las miniaturas se mostrarán en una cuadrícula en la página. Haz clic en cualquier miniatura para ingresar al modo de visualización de imágenes grandes.
-1. Más información se puede encontrar en `CONFIG` -> `Help` o [aquí](./.assets/HELP_ES.md).
+1. Más información se puede encontrar en `CONFIG` -> `Help` o [aquí](./HELP_ES.md).
 
 ## <a name="comentarios">Comentarios</a>
 
-Si quieres añadir soporte para ciertos sitios, por favor consulta [esta guía](./.assets/CONTRIBUTING.md).
+Si quieres añadir soporte para ciertos sitios, por favor consulta [esta guía](./CONTRIBUTING.md).
 
 Si encuentras algún problema, por favor repórtalo aquí y asegúrate de describir tu entorno: https://github.com/MapoMagpie/eh-view-enhance/issues
 

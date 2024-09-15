@@ -11,6 +11,7 @@ import queryCSSRules from "../utils/query-cssrules";
 import { DownloaderPanel } from "./downloader-panel";
 import { ConfigPanel } from "./config-panel";
 import EBUS from "../event-bus";
+import { ChaptersPanel } from "./chapters-panel";
 
 export type Elements = ReturnType<typeof createHTML>;
 
@@ -35,6 +36,7 @@ export function createHTML() {
     <div>
         ${ConfigPanel.html()}
         ${DownloaderPanel.html()}
+        ${ChaptersPanel.html()}
     </div>
     <div id="b-main" class="b-main">
         <a id="entry-btn" class="b-main-item clickable" data-display-texts="${dt.entry},${dt.collapse}">${dt.entry}</a>
@@ -50,7 +52,7 @@ export function createHTML() {
         </a>
         <a id="config-panel-btn" class="b-main-item clickable" hidden>${dt.config}</a>
         <a id="downloader-panel-btn" class="b-main-item clickable" hidden>${dt.download}</a>
-        <a id="chapters-btn" class="b-main-item clickable" hidden>${dt.chapters}</a>
+        <a id="chapters-panel-btn" class="b-main-item clickable" hidden>${dt.chapters}</a>
         <div id="read-mode-bar" class="b-main-item" hidden>
             <div id="read-mode-select"
             ><a class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">${dt.pagination}</a
@@ -97,6 +99,7 @@ export function createHTML() {
     pageHelper: q("#p-helper", root),
     configPanelBTN: q("#config-panel-btn", root),
     downloaderPanelBTN: q("#downloader-panel-btn", root),
+    chaptersPanelBTN: q("#chapters-panel-btn", root),
     entryBTN: q("#entry-btn", root),
     currPageElement: q("#p-curr-page", root),
     totalPageElement: q("#p-total", root),
@@ -112,6 +115,7 @@ export function createHTML() {
     messageBox: q("#message-box", root),
     config: new ConfigPanel(root),
     downloader: new DownloaderPanel(root),
+    chapters: new ChaptersPanel(root),
     readModeSelect: q<HTMLDivElement>("#read-mode-select", root),
     paginationAdjustBar: q<HTMLDivElement>("#pagination-adjust-bar", root),
     styleSheet: style.sheet!,
@@ -121,24 +125,30 @@ export function createHTML() {
 export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImageFrameManager, DL: Downloader, PH: PageHelper) {
   HTML.config.initEvents(events);
 
-  HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config", undefined, HTML.configPanelBTN));
-  HTML.downloaderPanelBTN.addEventListener("click", () => {
-    events.togglePanelEvent("downloader", undefined, HTML.downloaderPanelBTN);
-    DL.check();
-  });
-  function collapsePanel(key: "config" | "downloader") {
-    const elements = { "config": HTML.config.panel, "downloader": HTML.downloader.panel };
-    conf.autoCollapsePanel && events.collapsePanelEvent(elements[key], key)
+  const panelElements: Record<string, { panel: HTMLElement, btn: HTMLElement, cb?: () => void }> = {
+    "config": { panel: HTML.config.panel, btn: HTML.configPanelBTN },
+    "downloader": { panel: HTML.downloader.panel, btn: HTML.downloaderPanelBTN, cb: () => DL.check() },
+    "chapters": { panel: HTML.chapters.panel, btn: HTML.chaptersPanelBTN },
+  };
+
+  function collapsePanel(panel: HTMLElement) {
+    if (conf.autoCollapsePanel && !panel.classList.contains("p-collapse-deny")) {
+      events.collapsePanelEvent(panel, panel.id);
+    }
     if (BIFM.visible) {
       HTML.bigImageFrame.focus();
     } else {
       HTML.root.focus();
     }
   }
-  HTML.config.panel.addEventListener("mouseleave", () => collapsePanel("config"));
-  HTML.config.panel.addEventListener("blur", () => collapsePanel("config"));
-  HTML.downloader.panel.addEventListener("mouseleave", () => collapsePanel("downloader"));
-  HTML.downloader.panel.addEventListener("blur", () => collapsePanel("downloader"));
+  Object.entries(panelElements).forEach(([key, elements]) => {
+    elements.panel.addEventListener("mouseleave", () => collapsePanel(elements.panel));
+    elements.panel.addEventListener("blur", () => collapsePanel(elements.panel));
+    elements.btn.addEventListener("click", () => {
+      events.togglePanelEvent(key, undefined, elements.btn);
+      elements.cb?.()
+    });
+  })
 
   let hovering = false;
   HTML.pageHelper.addEventListener("mouseover", () => {
@@ -148,7 +158,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   });
   HTML.pageHelper.addEventListener("mouseleave", () => {
     hovering = false;
-    ["config", "downloader"].forEach(k => collapsePanel(k as "config" | "downloader"));
+    Object.values(panelElements).forEach((elements) => collapsePanel(elements.panel));
     setTimeout(() => !hovering && PH.minify(PH.lastStage, false), 700);
   });
 

@@ -1,9 +1,8 @@
 import { DownloadState } from "./img-fetcher";
-import { Chapter } from "./page-fetcher";
 import { Debouncer } from "./utils/debouncer";
 import { resizing } from "./utils/image-resizing";
 
-const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
+export const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
 
 const DEFAULT_NODE_TEMPLATE = document.createElement("div");
 DEFAULT_NODE_TEMPLATE.classList.add("img-node");
@@ -222,47 +221,3 @@ export default class ImageNode {
   }
 }
 
-export class ChapterNode implements VisualNode {
-  chapter: Chapter;
-  index: number;
-  constructor(chapter: Chapter, index: number) {
-    this.chapter = chapter;
-    this.index = index;
-  }
-  ratio(): number | undefined {
-    return undefined;
-  }
-
-  create(): HTMLElement {
-    const element = DEFAULT_NODE_TEMPLATE.cloneNode(true) as HTMLElement;
-    const anchor = element.firstElementChild as HTMLAnchorElement;
-    if (this.chapter.thumbimg) {
-      const img = anchor.firstElementChild as HTMLImageElement;
-      img.src = this.chapter.thumbimg;
-      img.title = this.chapter.title.toString();
-      img.style.display = "block";
-      img.nextElementSibling?.remove();
-    }
-    // create title element
-    const description = document.createElement("div");
-    description.classList.add("ehvp-chapter-description");
-    if (Array.isArray(this.chapter.title)) {
-      description.innerHTML = this.chapter.title.map((t) => `<span>${t}</span>`).join("<br>");
-    } else {
-      description.innerHTML = `<span>${this.chapter.title}</span>`;
-    }
-    anchor.appendChild(description);
-
-    anchor.onclick = (event) => {
-      event.preventDefault();
-      this.chapter.onclick?.(this.index);
-    };
-    return element;
-  }
-
-  render(): void { }
-
-  isRender(): boolean {
-    return true;
-  }
-}

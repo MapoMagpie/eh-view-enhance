@@ -220,11 +220,11 @@
         "减少每行数量",
         "열 수 줄이기"
       ),
-      "back-chapters-selection": new I18nValue(
-        "Back to Chapters Selection",
-        "返回章节选择",
-        "챕터 선택으로 돌아가기"
-      ),
+      // 'back-chapters-selection': new I18nValue(
+      //   'Back to Chapters Selection',
+      //   '返回章节选择',
+      //   '챕터 선택으로 돌아가기'
+      // ),
       "toggle-auto-play": new I18nValue(
         "Toggle Auto Play",
         "切换自动播放",
@@ -2705,6 +2705,159 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
   }
 
+  class PageFetcher {
+    chapters = [];
+    chapterIndex = 0;
+    queue;
+    matcher;
+    beforeInit;
+    afterInit;
+    appendPageLock = false;
+    abortb = false;
+    constructor(queue, matcher) {
+      this.queue = queue;
+      this.matcher = matcher;
+      const debouncer = new Debouncer();
+      EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
+      EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
+      EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
+    }
+    appendToView(total, nodes, chapterIndex, done) {
+      EBUS.emit("pf-on-appended", total, nodes, chapterIndex, done);
+    }
+    abort() {
+      this.abortb = true;
+    }
+    async init() {
+      this.chapters = await this.matcher.fetchChapters().catch((reason) => EBUS.emit("notify-message", "error", reason) || []);
+      this.chapters.forEach((c) => {
+        c.sourceIter = this.matcher.fetchPagesSource(c);
+        c.onclick = (index) => {
+          EBUS.emit("pf-change-chapter", index, c);
+          if (this.chapters[index].queue) {
+            this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
+          }
+          if (!this.queue.downloading?.()) {
+            this.beforeInit?.();
+            this.changeChapter(index).then(this.afterInit).catch(this.onFailed);
+          }
+        };
+      });
+      EBUS.emit("pf-update-chapters", this.chapters);
+      if (this.chapters.length === 1) {
+        this.beforeInit?.();
+        EBUS.emit("pf-change-chapter", 0, this.chapters[0]);
+        await this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
+      }
+    }
+    /// start the chapter by index
+    async changeChapter(index) {
+      this.chapterIndex = index;
+      const chapter = this.chapters[this.chapterIndex];
+      this.queue.restore(index, chapter.queue);
+      if (!chapter.sourceIter) {
+        evLog("error", "chapter sourceIter is not set!");
+        return;
+      }
+      let first = await chapter.sourceIter.next();
+      if (!first.done) {
+        await this.appendImages(first.value);
+      }
+      this.appendPages(this.queue.length);
+    }
+    // append next page until the queue length is 60 more than finished
+    async appendPages(appendedCount) {
+      while (true) {
+        if (appendedCount + 60 < this.queue.length)
+          break;
+        if (!await this.appendNextPage())
+          break;
+      }
+    }
+    async appendNextPage() {
+      if (this.appendPageLock)
+        return false;
+      try {
+        this.appendPageLock = true;
+        const chapter = this.chapters[this.chapterIndex];
+        if (chapter.done || this.abortb)
+          return false;
+        const next = await chapter.sourceIter.next();
+        if (next.done) {
+          chapter.done = true;
+          this.appendToView(this.queue.length, [], this.chapterIndex, true);
+          return false;
+        } else {
+          return await this.appendImages(next.value);
+        }
+      } catch (error) {
+        evLog("error", "PageFetcher:appendNextPage error: ", error);
+        this.onFailed?.(error);
+        return false;
+      } finally {
+        this.appendPageLock = false;
+      }
+    }
+    async appendImages(page) {
+      try {
+        const nodes = await this.obtainImageNodeList(page);
+        if (this.abortb)
+          return false;
+        if (nodes.length === 0)
+          return false;
+        const len = this.queue.length;
+        const IFs = nodes.map(
+          (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex)
+        );
+        this.queue.push(...IFs);
+        this.chapters[this.chapterIndex].queue.push(...IFs);
+        this.appendToView(this.queue.length, IFs, this.chapterIndex);
+        return true;
+      } catch (error) {
+        evLog("error", `page fetcher append images error: `, error);
+        this.onFailed?.(error);
+        return false;
+      }
+    }
+    //从文档的字符串中创建缩略图元素列表
+    async obtainImageNodeList(page) {
+      let tryTimes = 0;
+      let err;
+      while (tryTimes < 3) {
+        try {
+          return await this.matcher.parseImgNodes(page, this.chapters[this.chapterIndex].id);
+        } catch (error) {
+          evLog("error", "warn: parse image nodes failed, retrying: ", error);
+          tryTimes++;
+          err = error;
+        }
+      }
+      evLog("error", "warn: parse image nodes failed: reached max try times!");
+      throw err;
+    }
+    //通过地址请求该页的文档
+    async fetchDocument(pageURL) {
+      return await window.fetch(pageURL).then((response) => response.text());
+    }
+    onFailed(reason) {
+      EBUS.emit("notify-message", "error", reason.toString());
+    }
+  }
+
+  class GalleryMeta {
+    url;
+    title;
+    originTitle;
+    downloader;
+    tags;
+    constructor(url, title) {
+      this.url = url;
+      this.title = title;
+      this.tags = {};
+      this.downloader = "https://github.com/MapoMagpie/eh-view-enhance";
+    }
+  }
+
   const PICA = new pica({ features: ["js", "wasm"] });
   const PICA_OPTION = { filter: "box" };
   async function resizing(from, to) {
@@ -2901,206 +3054,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         return true;
       }
       return false;
-    }
-  }
-  class ChapterNode {
-    chapter;
-    index;
-    constructor(chapter, index) {
-      this.chapter = chapter;
-      this.index = index;
-    }
-    ratio() {
-      return void 0;
-    }
-    create() {
-      const element = DEFAULT_NODE_TEMPLATE.cloneNode(true);
-      const anchor = element.firstElementChild;
-      if (this.chapter.thumbimg) {
-        const img = anchor.firstElementChild;
-        img.src = this.chapter.thumbimg;
-        img.title = this.chapter.title.toString();
-        img.style.display = "block";
-        img.nextElementSibling?.remove();
-      }
-      const description = document.createElement("div");
-      description.classList.add("ehvp-chapter-description");
-      if (Array.isArray(this.chapter.title)) {
-        description.innerHTML = this.chapter.title.map((t) => `<span>${t}</span>`).join("<br>");
-      } else {
-        description.innerHTML = `<span>${this.chapter.title}</span>`;
-      }
-      anchor.appendChild(description);
-      anchor.onclick = (event) => {
-        event.preventDefault();
-        this.chapter.onclick?.(this.index);
-      };
-      return element;
-    }
-    render() {
-    }
-    isRender() {
-      return true;
-    }
-  }
-
-  class PageFetcher {
-    chapters = [];
-    chapterIndex = 0;
-    queue;
-    matcher;
-    beforeInit;
-    afterInit;
-    appendPageLock = false;
-    abortb = false;
-    constructor(queue, matcher) {
-      this.queue = queue;
-      this.matcher = matcher;
-      const debouncer = new Debouncer();
-      EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
-      EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
-      EBUS.subscribe("back-chapters-selection", () => this.backChaptersSelection());
-      EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
-    }
-    appendToView(total, nodes, chapterIndex, done) {
-      EBUS.emit("pf-on-appended", total, nodes, chapterIndex, done);
-    }
-    abort() {
-      this.abortb = true;
-    }
-    async init() {
-      this.chapters = await this.matcher.fetchChapters().catch((reason) => EBUS.emit("notify-message", "error", reason) || []);
-      this.chapters.forEach((c) => {
-        c.sourceIter = this.matcher.fetchPagesSource(c);
-        c.onclick = (index) => {
-          EBUS.emit("pf-change-chapter", index);
-          if (this.chapters[index].queue) {
-            this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
-          }
-          if (!this.queue.downloading?.()) {
-            this.beforeInit?.();
-            this.changeChapter(index).then(this.afterInit).catch(this.onFailed);
-          }
-        };
-      });
-      if (this.chapters.length === 1) {
-        this.beforeInit?.();
-        EBUS.emit("pf-change-chapter", 0);
-        await this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
-      }
-      if (this.chapters.length > 1) {
-        this.backChaptersSelection();
-      }
-    }
-    backChaptersSelection() {
-      EBUS.emit("pf-change-chapter", -1);
-      this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), -1, true);
-    }
-    /// start the chapter by index
-    async changeChapter(index) {
-      this.chapterIndex = index;
-      const chapter = this.chapters[this.chapterIndex];
-      this.queue.restore(index, chapter.queue);
-      if (!chapter.sourceIter) {
-        evLog("error", "chapter sourceIter is not set!");
-        return;
-      }
-      let first = await chapter.sourceIter.next();
-      if (!first.done) {
-        await this.appendImages(first.value);
-      }
-      this.appendPages(this.queue.length);
-    }
-    // append next page until the queue length is 60 more than finished
-    async appendPages(appendedCount) {
-      while (true) {
-        if (appendedCount + 60 < this.queue.length)
-          break;
-        if (!await this.appendNextPage())
-          break;
-      }
-    }
-    async appendNextPage() {
-      if (this.appendPageLock)
-        return false;
-      try {
-        this.appendPageLock = true;
-        const chapter = this.chapters[this.chapterIndex];
-        if (chapter.done || this.abortb)
-          return false;
-        const next = await chapter.sourceIter.next();
-        if (next.done) {
-          chapter.done = true;
-          this.appendToView(this.queue.length, [], this.chapterIndex, true);
-          return false;
-        } else {
-          return await this.appendImages(next.value);
-        }
-      } catch (error) {
-        evLog("error", "PageFetcher:appendNextPage error: ", error);
-        this.onFailed?.(error);
-        return false;
-      } finally {
-        this.appendPageLock = false;
-      }
-    }
-    async appendImages(page) {
-      try {
-        const nodes = await this.obtainImageNodeList(page);
-        if (this.abortb)
-          return false;
-        if (nodes.length === 0)
-          return false;
-        const len = this.queue.length;
-        const IFs = nodes.map(
-          (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex)
-        );
-        this.queue.push(...IFs);
-        this.chapters[this.chapterIndex].queue.push(...IFs);
-        this.appendToView(this.queue.length, IFs, this.chapterIndex);
-        return true;
-      } catch (error) {
-        evLog("error", `page fetcher append images error: `, error);
-        this.onFailed?.(error);
-        return false;
-      }
-    }
-    //从文档的字符串中创建缩略图元素列表
-    async obtainImageNodeList(page) {
-      let tryTimes = 0;
-      let err;
-      while (tryTimes < 3) {
-        try {
-          return await this.matcher.parseImgNodes(page, this.chapters[this.chapterIndex].id);
-        } catch (error) {
-          evLog("error", "warn: parse image nodes failed, retrying: ", error);
-          tryTimes++;
-          err = error;
-        }
-      }
-      evLog("error", "warn: parse image nodes failed: reached max try times!");
-      throw err;
-    }
-    //通过地址请求该页的文档
-    async fetchDocument(pageURL) {
-      return await window.fetch(pageURL).then((response) => response.text());
-    }
-    onFailed(reason) {
-      EBUS.emit("notify-message", "error", reason.toString());
-    }
-  }
-
-  class GalleryMeta {
-    url;
-    title;
-    originTitle;
-    downloader;
-    tags;
-    constructor(url, title) {
-      this.url = url;
-      this.title = title;
-      this.tags = {};
-      this.downloader = "https://github.com/MapoMagpie/eh-view-enhance";
     }
   }
 
@@ -6969,18 +6922,19 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         delete cancelIDContext[k];
       });
     }
-    function togglePanelEvent(id, collapse, target) {
-      let element = q(`#${id}-panel`, HTML.pageHelper);
+    function togglePanelEvent(idPrefix, collapse, target) {
+      const id = `${idPrefix}-panel`;
+      let element = q("#" + id, HTML.pageHelper);
       if (!element)
         return;
       if (collapse === void 0) {
-        togglePanelEvent(id, !element.classList.contains("p-collapse"), target);
+        togglePanelEvent(idPrefix, !element.classList.contains("p-collapse"), target);
         return;
       }
       if (collapse) {
         collapsePanelEvent(element, id);
       } else {
-        ["config", "downloader"].filter((k) => k !== id).forEach((id2) => togglePanelEvent(id2, true));
+        Array.from(HTML.root.querySelectorAll(".p-panel")).filter((ele) => ele !== element).forEach((ele) => collapsePanelEvent(ele, ele.id));
         element.classList.remove("p-collapse");
         if (target) {
           relocateElement(element, target, HTML.root.clientWidth, HTML.root.clientHeight);
@@ -7139,10 +7093,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           ["-"],
           () => modNumberConfigEvent("colCount", "minus")
         ),
-        "back-chapters-selection": new KeyboardDesc(
-          ["b"],
-          () => EBUS.emit("back-chapters-selection")
-        ),
+        // "back-chapters-selection": new KeyboardDesc(
+        //   ["b"],
+        //   () => EBUS.emit("back-chapters-selection")
+        // ),
         "toggle-auto-play": new KeyboardDesc(
           ["p"],
           () => EBUS.emit("toggle-auto-play")
@@ -7679,9 +7633,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   width: auto;
   height: 100%;
 }
-.img-node:hover .ehvp-chapter-description {
-  color: #ffe7f5;
-}
 .img-node-numtip {
   position: absolute;
   top: 0;
@@ -7705,12 +7656,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .ehvp-chapter-description, .img-node-error-hint {
   display: block;
   position: absolute;
-  bottom: 3px;
-  left: 3px;
+  bottom: 0px;
+  left: 0px;
   background-color: #708090e3;
   color: #ffe785;
-  width: calc(100% - 6px);
-  font-weight: 600;
+  width: 100%;
+  font-weight: 700;
   min-height: 3em;
   font-size: 0.8em;
   padding: 0.5em;
@@ -7719,6 +7670,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .img-node-error-hint {
   color: #8a0000;
+  bottom: 3px;
+  left: 3px;
+  width: calc(100% - 6px);
 }
 .img-fetched img, .img-fetched canvas {
   border: 3px solid var(--ehvp-img-fetched) !important;
@@ -7813,18 +7767,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   box-sizing: border-box;
   position: fixed;
   color: var(--ehvp-font-color);
-  overflow: auto scroll;
   padding: 3px;
-  scrollbar-width: none;
   border-radius: 4px;
   font-weight: 800;
+  overflow: hidden;
   width: 24em;
   height: 32em;
   border: var(--ehvp-panel-border);
   box-shadow: var(--ehvp-panel-box-shadow);
-}
-.p-panel::-webkit-scrollbar {
-  display: none;
 }
 .clickable {
   text-decoration-line: underline;
@@ -7881,11 +7831,60 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   width: 1.5em;
   cursor: ns-resize;
 }
+.chapter-thumbnail {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  position: relative;
+}
+.chapter-thumbnail > canvas {
+  width: 100%;
+  height: 100%;
+}
+.chapter-list {
+  height: 100%;
+  width: 100%;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+.chapter-list::-webkit-scrollbar {
+  display: none;
+}
+.chapter-list-item {
+  width: 100%;
+  margin-left: 1em;
+  white-space: nowrap;
+}
+.chapter-list-item:hover {
+  background-color: #cddee3ab;
+}
+.chapter-list-item-hl {
+  filter: brightness(150%);
+  background-color: #84c5ff6b;
+}
+.p-chapters {
+  width: 34em;
+  height: 18em;
+  display: flex;
+}
+.p-chapters-center {
+  width: 45em;
+  height: 25em;
+}
+.p-chapters-center .chapter-thumbnail {
+  width: auto;
+  height: 100%;
+}
 .p-config {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   align-content: start;
   line-height: 2em;
+  overflow: auto scroll;
+  scrollbar-width: none;
+}
+.p-config::-webkit-scrollbar {
+  display: none;
 }
 .p-config label {
   display: flex;
@@ -8372,6 +8371,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     width: 100vw;
     font-size: 5cqw;
   }
+  .p-chapters {
+    width: 100vw;
+  }
   .ehvp-custom-panel {
     max-width: 100vw;
   }
@@ -8766,6 +8768,119 @@ ${chapters.map((c, i) => `<div><label>
     return `<div style="grid-column-start: ${start}; grid-column-end: ${end}; padding-left: 5px;${display ? "" : " display: none;"}"><label class="p-label"><span><span>${i18nValue.get()}</span><span class="p-tooltip">${i18nValueTooltip ? " ?:" : " :"}<span class="p-tooltiptext">${i18nValueTooltip?.get() || ""}</span></span></span>${input}</label></div>`;
   }
 
+  class ChaptersPanel {
+    panel;
+    root;
+    thumbnail;
+    thumbnailImg;
+    thumbnailCanvas;
+    listContainer;
+    first = false;
+    constructor(root) {
+      this.root = root;
+      this.panel = q("#chapters-panel", root);
+      this.thumbnail = q("#chapter-thumbnail", root);
+      this.thumbnailImg = q("#chapter-thumbnail-image", root);
+      this.thumbnailCanvas = q("#chapter-thumbnail-canvas", root);
+      this.listContainer = q("#chapter-list", root);
+      EBUS.subscribe("pf-update-chapters", (chapters) => {
+        this.updateChapterList(chapters);
+        if (chapters.length > 1) {
+          this.relocateToCenter();
+        }
+      });
+      EBUS.subscribe("pf-change-chapter", (index, chapter) => this.updateHighlight(index, chapter));
+    }
+    updateChapterList(chapters) {
+      const ul = this.listContainer.firstElementChild;
+      chapters.forEach((ch, i) => {
+        const li = document.createElement("div");
+        let title = "";
+        if (ch.title instanceof Array) {
+          title = ch.title.join("	");
+        } else {
+          title = ch.title;
+        }
+        li.innerHTML = `<span>${title}</span>`;
+        li.setAttribute("id", "chapter-list-item-" + ch.id.toString());
+        li.classList.add("chapter-list-item");
+        li.addEventListener("click", () => {
+          ch.onclick?.(i);
+          if (this.first) {
+            this.first = false;
+            this.panel.classList.add("p-collapse");
+            this.panel.classList.remove("p-collapse-deny");
+            this.panel.classList.remove("p-chapters-center");
+          }
+        });
+        li.addEventListener("mouseenter", () => this.updateChapterThumbnail(ch));
+        ul.appendChild(li);
+      });
+      this.updateChapterThumbnail(chapters[0]);
+    }
+    relocateToCenter() {
+      this.first = true;
+      this.panel.classList.remove("p-collapse");
+      this.panel.classList.add("p-collapse-deny");
+      this.panel.classList.add("p-chapters-center");
+      const [w, h] = [this.root.offsetWidth, this.root.offsetHeight];
+      const [pw, ph] = [this.panel.offsetWidth, this.panel.offsetHeight];
+      const [left, top] = [w / 2 - pw / 2, h / 2 - ph / 2];
+      this.panel.style.left = left + "px";
+      this.panel.style.top = top + "px";
+    }
+    updateHighlight(index, chapter) {
+      Array.from(this.listContainer.querySelectorAll("div > .chapter-list-item")).forEach((li, i) => {
+        if (i === index) {
+          li.classList.add("chapter-list-item-hl");
+        } else {
+          li.classList.remove("chapter-list-item-hl");
+        }
+      });
+      this.updateChapterThumbnail(chapter);
+    }
+    updateChapterThumbnail(chapter) {
+      this.thumbnailImg.onload = () => {
+        const width = this.thumbnailImg.naturalWidth;
+        const height = this.thumbnailImg.naturalHeight;
+        let [sx, sw, sy, sh] = [0, width, 0, height];
+        if (width > height) {
+          sx = Math.floor((width - height) / 2);
+          sw = height;
+        } else if (width < height) {
+          sy = Math.floor((height - width) / 2);
+          sh = width;
+        }
+        this.thumbnailCanvas.width = sw;
+        this.thumbnailCanvas.height = sh;
+        const ctx = this.thumbnailCanvas.getContext("2d");
+        ctx.drawImage(this.thumbnailImg, sx, sy, sw, sh, 0, 0, width, height);
+      };
+      this.thumbnailImg.src = chapter.thumbimg ?? DEFAULT_THUMBNAIL;
+      this.thumbnail.querySelector(".ehvp-chapter-description")?.remove();
+      const description = document.createElement("div");
+      description.classList.add("ehvp-chapter-description");
+      if (Array.isArray(chapter.title)) {
+        description.innerHTML = chapter.title.map((t) => `<span>${t}</span>`).join("<br>");
+      } else {
+        description.innerHTML = `<span>${chapter.title}</span>`;
+      }
+      this.thumbnail.appendChild(description);
+    }
+    static html() {
+      return `
+<div id="chapters-panel" class="p-panel p-chapters p-collapse">
+    <div id="chapter-thumbnail" class="chapter-thumbnail">
+      <img id="chapter-thumbnail-image" src="${DEFAULT_THUMBNAIL}" alt="thumbnail" style="display:none;" />
+      <canvas id="chapter-thumbnail-canvas" width="100" height="100"></canvas>
+    </div>
+    <div id="chapter-list" class="chapter-list">
+      <div></div>
+    </div>
+</div>`;
+    }
+  }
+
   function createHTML() {
     const base = document.createElement("div");
     const dt = getDisplayText();
@@ -8787,6 +8902,7 @@ ${chapters.map((c, i) => `<div><label>
     <div>
         ${ConfigPanel.html()}
         ${DownloaderPanel.html()}
+        ${ChaptersPanel.html()}
     </div>
     <div id="b-main" class="b-main">
         <a id="entry-btn" class="b-main-item clickable" data-display-texts="${dt.entry},${dt.collapse}">${dt.entry}</a>
@@ -8802,7 +8918,7 @@ ${chapters.map((c, i) => `<div><label>
         </a>
         <a id="config-panel-btn" class="b-main-item clickable" hidden>${dt.config}</a>
         <a id="downloader-panel-btn" class="b-main-item clickable" hidden>${dt.download}</a>
-        <a id="chapters-btn" class="b-main-item clickable" hidden>${dt.chapters}</a>
+        <a id="chapters-panel-btn" class="b-main-item clickable" hidden>${dt.chapters}</a>
         <div id="read-mode-bar" class="b-main-item" hidden>
             <div id="read-mode-select"
             ><a class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">${dt.pagination}</a
@@ -8848,6 +8964,7 @@ ${chapters.map((c, i) => `<div><label>
       pageHelper: q("#p-helper", root),
       configPanelBTN: q("#config-panel-btn", root),
       downloaderPanelBTN: q("#downloader-panel-btn", root),
+      chaptersPanelBTN: q("#chapters-panel-btn", root),
       entryBTN: q("#entry-btn", root),
       currPageElement: q("#p-curr-page", root),
       totalPageElement: q("#p-total", root),
@@ -8863,6 +8980,7 @@ ${chapters.map((c, i) => `<div><label>
       messageBox: q("#message-box", root),
       config: new ConfigPanel(root),
       downloader: new DownloaderPanel(root),
+      chapters: new ChaptersPanel(root),
       readModeSelect: q("#read-mode-select", root),
       paginationAdjustBar: q("#pagination-adjust-bar", root),
       styleSheet: style.sheet
@@ -8870,24 +8988,29 @@ ${chapters.map((c, i) => `<div><label>
   }
   function addEventListeners(events, HTML, BIFM, DL, PH) {
     HTML.config.initEvents(events);
-    HTML.configPanelBTN.addEventListener("click", () => events.togglePanelEvent("config", void 0, HTML.configPanelBTN));
-    HTML.downloaderPanelBTN.addEventListener("click", () => {
-      events.togglePanelEvent("downloader", void 0, HTML.downloaderPanelBTN);
-      DL.check();
-    });
-    function collapsePanel(key) {
-      const elements = { "config": HTML.config.panel, "downloader": HTML.downloader.panel };
-      conf.autoCollapsePanel && events.collapsePanelEvent(elements[key], key);
+    const panelElements = {
+      "config": { panel: HTML.config.panel, btn: HTML.configPanelBTN },
+      "downloader": { panel: HTML.downloader.panel, btn: HTML.downloaderPanelBTN, cb: () => DL.check() },
+      "chapters": { panel: HTML.chapters.panel, btn: HTML.chaptersPanelBTN }
+    };
+    function collapsePanel(panel) {
+      if (conf.autoCollapsePanel && !panel.classList.contains("p-collapse-deny")) {
+        events.collapsePanelEvent(panel, panel.id);
+      }
       if (BIFM.visible) {
         HTML.bigImageFrame.focus();
       } else {
         HTML.root.focus();
       }
     }
-    HTML.config.panel.addEventListener("mouseleave", () => collapsePanel("config"));
-    HTML.config.panel.addEventListener("blur", () => collapsePanel("config"));
-    HTML.downloader.panel.addEventListener("mouseleave", () => collapsePanel("downloader"));
-    HTML.downloader.panel.addEventListener("blur", () => collapsePanel("downloader"));
+    Object.entries(panelElements).forEach(([key, elements]) => {
+      elements.panel.addEventListener("mouseleave", () => collapsePanel(elements.panel));
+      elements.panel.addEventListener("blur", () => collapsePanel(elements.panel));
+      elements.btn.addEventListener("click", () => {
+        events.togglePanelEvent(key, void 0, elements.btn);
+        elements.cb?.();
+      });
+    });
     let hovering = false;
     HTML.pageHelper.addEventListener("mouseover", () => {
       hovering = true;
@@ -8896,7 +9019,7 @@ ${chapters.map((c, i) => `<div><label>
     });
     HTML.pageHelper.addEventListener("mouseleave", () => {
       hovering = false;
-      ["config", "downloader"].forEach((k) => collapsePanel(k));
+      Object.values(panelElements).forEach((elements) => collapsePanel(elements.panel));
       setTimeout(() => !hovering && PH.minify(PH.lastStage, false), 700);
     });
     HTML.entryBTN.addEventListener("click", () => {
@@ -8986,7 +9109,6 @@ ${chapters.map((c, i) => `<div><label>
   class PageHelper {
     html;
     chapterIndex = -1;
-    lastChapterIndex = 0;
     pageNumInChapter = {};
     lastStage = "exit";
     chapters;
@@ -8997,10 +9119,7 @@ ${chapters.map((c, i) => `<div><label>
       this.downloading = downloading;
       EBUS.subscribe("pf-change-chapter", (index) => {
         let current = 0;
-        if (index === -1) {
-          current = this.lastChapterIndex;
-        } else {
-          this.lastChapterIndex = index;
+        if (index >= 0) {
           current = this.pageNumInChapter[index] || 0;
         }
         this.chapterIndex = index;
@@ -9039,17 +9158,13 @@ ${chapters.map((c, i) => `<div><label>
       html.currPageElement.addEventListener("click", (event) => {
         const ele = event.target;
         const index = parseInt(ele.textContent || "1") - 1;
-        if (this.chapterIndex === -1) {
-          this.chapters()[this.lastChapterIndex]?.onclick?.(this.lastChapterIndex);
-        } else {
+        if (this.chapterIndex >= 0) {
           const queue = this.chapters()[this.chapterIndex]?.queue;
           if (!queue || !queue[index])
             return;
           EBUS.emit("imf-on-click", queue[index]);
         }
       });
-      const chaptersSelectionElement = q("#chapters-btn", this.html.pageHelper);
-      chaptersSelectionElement.addEventListener("click", () => EBUS.emit("back-chapters-selection"));
     }
     setPageState({ total, current, finished }) {
       if (total !== void 0) {
@@ -9062,7 +9177,7 @@ ${chapters.map((c, i) => `<div><label>
         this.html.finishedElement.textContent = finished;
       }
     }
-    // const arr = ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-btn", "config-panel-btn", "downloader-panel-btn", "scale-bar", "read-mode-bar", "pagination-adjust-bar"];
+    // const arr = ["entry-btn", "auto-page-btn", "page-status", "fin-status", "chapters-panel-btn", "config-panel-btn", "downloader-panel-btn", "scale-bar", "read-mode-bar", "pagination-adjust-bar"];
     minify(stage, hover = false) {
       this.lastStage = stage;
       let level = [0, 0];
@@ -9091,7 +9206,7 @@ ${chapters.map((c, i) => `<div><label>
           case 0:
             return downloading ? ["entry-btn", "page-status", "fin-status"] : ["entry-btn"];
           case 1:
-            return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-btn", "entry-btn"];
+            return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "entry-btn"];
           case 2:
             return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn", "read-mode-bar", "pagination-adjust-bar", "scale-bar"];
           case 3:
@@ -9100,8 +9215,8 @@ ${chapters.map((c, i) => `<div><label>
         return [];
       }
       const filter = (id) => {
-        if (id === "chapters-btn")
-          return this.chapterIndex > -1 && this.chapters().length > 1;
+        if (id === "chapters-panel-btn")
+          return this.chapters().length > 1;
         if (id === "auto-page-btn" && level[0] === 3)
           return this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing";
         if (id === "pagination-adjust-bar")

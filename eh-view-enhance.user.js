@@ -7190,7 +7190,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     };
   }
 
-  const INTERSECTING_ATTR = "intersecting";
   class Layout {
   }
   class FullViewGridManager {
@@ -7199,7 +7198,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     done = false;
     chapterIndex = 0;
     layout;
-    observer;
     constructor(HTML, BIFM, flowVision = false) {
       this.root = HTML.fullViewGrid;
       if (flowVision) {
@@ -7219,10 +7217,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         this.layout.reset();
         this.queue = [];
         this.done = false;
-        this.observer.disconnect();
-        this.observer = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => entry.target.setAttribute(INTERSECTING_ATTR, entry.isIntersecting ? "true" : "false"));
-        }, { root: this.root });
       });
       EBUS.subscribe("ifq-do", (_, imf) => {
         if (!BIFM.visible)
@@ -7257,16 +7251,18 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           EBUS.emit("toggle-main-view", false);
         }
       });
-      this.observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => entry.target.setAttribute(INTERSECTING_ATTR, entry.isIntersecting ? "true" : "false"));
-      }, { root: this.root });
     }
     append(nodes) {
       if (nodes.length > 0) {
-        const list = nodes.map((n) => ({ node: n, element: n.create(), ratio: n.ratio() }));
+        let index = this.queue.length;
+        const list = nodes.map((n) => {
+          const ret = { node: n, element: n.create(), ratio: n.ratio() };
+          ret.element.setAttribute("data-index", index.toString());
+          index++;
+          return ret;
+        });
         this.queue.push(...list);
         this.layout.append(list);
-        list.forEach((l) => this.observer.observe(l.element));
       }
     }
     tryExtend() {
@@ -7279,31 +7275,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.queue.forEach(({ node }) => node.isRender() && node.render());
     }
     renderCurrView() {
-      let lastRender = 0;
-      let hasIntersected = false;
-      let lastTop = 0;
-      for (let i = 0; i < this.queue.length; i++) {
-        const e = this.queue[i];
-        if (e.element.getAttribute(INTERSECTING_ATTR) === "true") {
-          e.node.render();
-          lastRender = i;
-          hasIntersected = true;
-        } else if (hasIntersected) {
-          lastTop = e.element.getBoundingClientRect().top;
-          break;
-        }
-      }
-      let rows = 0;
-      for (let i = lastRender + 1; i < this.queue.length; i++) {
-        const e = this.queue[i];
-        let top = e.element.getBoundingClientRect().top;
-        if (lastTop < top) {
-          rows++;
-          lastTop = top;
-        }
-        if (rows > 2)
-          break;
-        e.node.render();
+      const [se, ee] = this.layout.visibleRange(this.root, this.queue.map((e) => e.element));
+      let [start, end] = [parseInt(se.getAttribute("data-index") ?? "-1"), parseInt(ee.getAttribute("data-index") ?? "-1")];
+      if (start < end && start > -1 && end < this.queue.length) {
+        this.queue.slice(start, end + 1).forEach((e) => e.node.render());
+        evLog("info", "render curr view, range: ", `[${start}-${end}]`);
+      } else {
+        evLog("error", "render curr view error, range: ", `[${start}-${end}]`);
       }
     }
   }
@@ -7331,6 +7309,32 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     reset() {
       this.root.innerHTML = "";
+    }
+    visibleRange(container, children) {
+      if (children.length === 0)
+        return [container, container];
+      const vh = container.offsetHeight;
+      let first;
+      let last;
+      let overRow = 0;
+      for (let i = 0; i < children.length; i += conf.colCount) {
+        const rect = children[i].getBoundingClientRect();
+        const visible = rect.top + rect.height >= 0 && rect.top <= vh;
+        if (visible) {
+          if (first === void 0) {
+            first = children[i];
+          }
+        }
+        if (first && !visible) {
+          overRow++;
+        }
+        if (overRow >= 2) {
+          last = children[Math.min(children.length - 1, i + conf.colCount)];
+          break;
+        }
+      }
+      last = last ?? children[children.length - 1];
+      return [first ?? last, last];
     }
   }
   class FlowVisionLayout extends Layout {
@@ -7421,6 +7425,33 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     reset() {
       this.root.innerHTML = "";
+    }
+    visibleRange() {
+      const children = Array.from(this.root.querySelectorAll(".fvg-sub-container"));
+      if (children.length === 0)
+        return [this.root, this.root];
+      const vh = this.root.offsetHeight;
+      let first;
+      let last;
+      let overRow = 0;
+      for (let i = 0; i < children.length; i++) {
+        const rect = children[i].getBoundingClientRect();
+        const visible = rect.top + rect.height >= 0 && rect.top <= vh;
+        if (visible) {
+          if (first === void 0) {
+            first = children[i].firstElementChild;
+          }
+        }
+        if (first && !visible) {
+          overRow++;
+        }
+        if (overRow >= 2) {
+          last = children[i].lastElementChild;
+          break;
+        }
+      }
+      last = last ?? children[children.length - 1].lastElementChild;
+      return [first ?? last, last];
     }
   }
 

@@ -1278,23 +1278,12 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       revalidate: false,
       // fetch: false,
       headers: {
-        // "Host": HOST_REGEX.exec(url)?.[1] || window.location.host,
-        // "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
-        // "Accept": "*/*",
-        // "Connection": "keep-alive",
         "Referer": window.location.href,
-        // "Origin": window.location.origin,
-        // "X-Alt-Referer": window.location.href,
         "Cache-Control": "public, max-age=2592000, immutable",
-        // "Accept-Language": "en-US,en;q=0.5",
-        // "Accept-Encoding": "gzip, deflate, br, zstd",
-        // "Sec-Fetch-Dest": "empty",
-        // "Sec-Fetch-Mode": "cors",
-        // "Sec-Fetch-Site": "cross-site",
         ...headers
       },
       ...cb
-    }).abort;
+    })?.abort;
   }
   function fetchImage(url) {
     return new Promise((resolve, reject) => {
@@ -1523,11 +1512,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const imgFetcher = this;
       return new Promise(async (resolve, reject) => {
         const debouncer = new Debouncer();
-        let abort;
+        let abort = void 0;
         const timeout = () => {
           debouncer.addEvent("XHR_TIMEOUT", () => {
             reject(new Error("timeout"));
-            abort();
+            abort?.();
           }, conf.timeout * 1e3);
         };
         abort = xhrWapper(imgFetcher.node.originSrc, "blob", {

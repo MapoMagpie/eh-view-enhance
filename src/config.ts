@@ -152,7 +152,7 @@ function defaultConf(): Config {
     displayText: {},
     customStyle: "",
     magnifier: false,
-    autoEnterBig: true,
+    autoEnterBig: false,
     pixivJustCurrPage: false,
     filenameOrder: "auto",
   };

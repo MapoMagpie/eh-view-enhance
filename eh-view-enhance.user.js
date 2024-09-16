@@ -978,7 +978,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       displayText: {},
       customStyle: "",
       magnifier: false,
-      autoEnterBig: true,
+      autoEnterBig: false,
       pixivJustCurrPage: false,
       filenameOrder: "auto"
     };
@@ -2873,7 +2873,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     imgElement;
     canvasElement;
     canvasCtx;
-    canvasSized = false;
     delaySRC;
     originSrc;
     blobSrc;
@@ -2900,9 +2899,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.imgElement.setAttribute("title", this.title);
       this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
       if (this.rect) {
-        this.canvasElement.width = 1e3;
-        this.canvasElement.height = Math.floor(1e3 * (this.rect.h / this.rect.w));
-        this.canvasSized = true;
+        this.canvasElement.width = 512;
+        this.canvasElement.height = Math.floor(512 * (this.rect.h / this.rect.w));
       }
       this.canvasCtx = this.canvasElement.getContext("2d");
       this.canvasCtx.fillStyle = "#aaa";
@@ -2926,18 +2924,16 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.imgElement.onerror = null;
       const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
       const oldRatio = this.canvasElement.height / this.canvasElement.width;
-      if (this.canvasSized) {
-        this.canvasSized = this.canvasElement.height + this.canvasElement.width > 100 && Math.abs(newRatio - oldRatio) < 1.1;
-      }
-      if (!this.canvasSized) {
-        if (this.root.parentElement?.classList.contains("fvg-sub-container")) {
+      const flowVision = this.root.parentElement?.classList.contains("fvg-sub-container");
+      let resize = flowVision ? this.root.offsetHeight !== this.canvasElement.height : this.root.offsetWidth !== this.canvasElement.width;
+      if (resize || Math.abs(newRatio - oldRatio) > 1.07) {
+        if (flowVision) {
           this.canvasElement.height = this.root.offsetHeight;
           this.canvasElement.width = Math.floor(this.root.offsetHeight / newRatio);
         } else {
           this.canvasElement.width = this.root.offsetWidth;
           this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
         }
-        this.canvasSized = true;
       }
       if (this.imgElement.src === this.thumbnailSrc) {
         this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
@@ -2976,7 +2972,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (!this.imgElement)
         return;
       this.imgElement.src = "";
-      this.canvasSized = false;
     }
     progress(state) {
       if (!this.root)

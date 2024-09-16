@@ -6,7 +6,7 @@
 // @name:ko            만화 베틀
 // @name:ru            Комические ткацкие станки
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.8.4
+// @version            4.9.0
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live
@@ -1084,7 +1084,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   const PATCH_CONFIG = {
     siteProfiles: defaultSiteProfiles()
   };
-  const CONFIG_PATCH_VERSION = 6;
+  const CONFIG_PATCH_VERSION = 7;
   function patchConfig(cf, patch) {
     if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
       return null;
@@ -7869,6 +7869,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   width: 100%;
   margin-left: 1em;
   white-space: nowrap;
+  line-hight: 1.8em;
 }
 .chapter-list-item:hover {
   background-color: #cddee3ab;

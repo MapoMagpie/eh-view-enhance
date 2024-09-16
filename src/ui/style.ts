@@ -335,6 +335,7 @@ export function styleCSS() {
   width: 100%;
   margin-left: 1em;
   white-space: nowrap;
+  line-hight: 1.8em;
 }
 .chapter-list-item:hover {
   background-color: #cddee3ab;

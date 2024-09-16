@@ -273,7 +273,7 @@ function confHealthCheck(cf: Config): Config {
 const PATCH_CONFIG: Partial<Config> = {
   siteProfiles: defaultSiteProfiles(),
 }
-const CONFIG_PATCH_VERSION = 6;
+const CONFIG_PATCH_VERSION = 7;
 function patchConfig(cf: Config, patch: Partial<Config>): Config | null {
   if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
     return null;

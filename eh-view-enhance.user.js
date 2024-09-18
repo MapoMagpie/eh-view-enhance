@@ -9015,7 +9015,7 @@ ${chapters.map((c, i) => `<div><label>
           case 1:
             return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "entry-btn"];
           case 2:
-            return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn", "read-mode-bar", "pagination-adjust-bar", "scale-bar"];
+            return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "entry-btn", "read-mode-bar", "pagination-adjust-bar", "scale-bar"];
           case 3:
             return ["page-status", "auto-page-btn"];
         }
@@ -10113,7 +10113,7 @@ ${chapters.map((c, i) => `<div><label>
       HTML.pageLoading.style.display = "none";
       IL.processingIndexList = [0];
       IL.start();
-      if (conf.autoEnterBig && PF.chapters.length === 1 && IFQ[0]) {
+      if (conf.autoEnterBig && PF.chapters.length >= 1 && IFQ[0]) {
         BIFM.show(IFQ[0]);
       }
     };

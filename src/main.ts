@@ -46,7 +46,7 @@ function main(MATCHER: Matcher, autoOpen: boolean, flowVision: boolean): Destory
     HTML.pageLoading.style.display = "none";
     IL.processingIndexList = [0];
     IL.start();
-    if (conf.autoEnterBig && PF.chapters.length === 1 && IFQ[0]) {
+    if (conf.autoEnterBig && PF.chapters.length >= 1 && IFQ[0]) {
       BIFM.show(IFQ[0]);
     }
   };

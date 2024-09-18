@@ -106,7 +106,7 @@ export class PageHelper {
           return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "entry-btn"];
         case 2:
           // hover in bigImageFrame
-          return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "entry-btn", "read-mode-bar", "pagination-adjust-bar", "scale-bar"];
+          return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "entry-btn", "read-mode-bar", "pagination-adjust-bar", "scale-bar"];
         case 3:
           // minify
           return ["page-status", "auto-page-btn"];

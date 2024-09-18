@@ -115,7 +115,9 @@ export class ChaptersPanel {
     return `
 <div id="chapters-panel" class="p-panel p-chapters p-collapse">
     <div id="chapter-thumbnail" class="chapter-thumbnail">
-      <img id="chapter-thumbnail-image" src="${DEFAULT_THUMBNAIL}" alt="thumbnail" style="display:none;" />
+      <div id="chapter-thumbnail-image-container" style="display:none;">
+        <img id="chapter-thumbnail-image" src="${DEFAULT_THUMBNAIL}" alt="thumbnail" />
+      </div>
       <canvas id="chapter-thumbnail-canvas" width="100" height="100"></canvas>
     </div>
     <div id="chapter-list" class="chapter-list">

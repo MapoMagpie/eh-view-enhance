@@ -7484,6 +7484,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   padding: 0.5em;
   box-sizing: border-box;
   line-height: 1.3em;
+  z-index: 10;
 }
 .img-node-error-hint {
   color: #8a0000;
@@ -7654,24 +7655,44 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   aspect-ratio: 1 / 1;
   position: relative;
 }
+.chapter-thumbnail > #chapter-thumbnail-image-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  just-content: center;
+  items-align: center;
+  z-index: 1;
+}
+.chapter-thumbnail > #chapter-thumbnail-image-container > img {
+  object-fit: contain;
+  display: block;
+  height: 100%;
+  min-width: 100%;
+}
 .chapter-thumbnail > canvas {
   width: 100%;
   height: 100%;
+  /**
+  filter: blur(3px) brightness(0.5);
+  */
 }
 .chapter-list {
   height: 100%;
   width: 100%;
   overflow: hidden auto;
   scrollbar-width: none;
+  border-left: 2px solid black;
 }
 .chapter-list::-webkit-scrollbar {
   display: none;
 }
 .chapter-list-item {
   width: 100%;
-  margin-left: 1em;
+  padding-left: 0.7em;
   white-space: nowrap;
-  line-hight: 1.8em;
+  line-height: 1.8em;
+  text-decoration: underline;
 }
 .chapter-list-item:hover {
   background-color: #cddee3ab;
@@ -8212,6 +8233,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   .ehvp-custom-panel-list-item-title {
     display: block;
   }
+  .chapter-thumbnail {
+    display: none;
+  }
 }
 `;
     return css;
@@ -8685,7 +8709,9 @@ ${chapters.map((c, i) => `<div><label>
       return `
 <div id="chapters-panel" class="p-panel p-chapters p-collapse">
     <div id="chapter-thumbnail" class="chapter-thumbnail">
-      <img id="chapter-thumbnail-image" src="${DEFAULT_THUMBNAIL}" alt="thumbnail" style="display:none;" />
+      <div id="chapter-thumbnail-image-container" style="display:none;">
+        <img id="chapter-thumbnail-image" src="${DEFAULT_THUMBNAIL}" alt="thumbnail" />
+      </div>
       <canvas id="chapter-thumbnail-canvas" width="100" height="100"></canvas>
     </div>
     <div id="chapter-list" class="chapter-list">

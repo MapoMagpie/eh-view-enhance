@@ -8,7 +8,7 @@ import { Elements } from "./html";
 export class PageHelper {
   html: Elements;
   chapterIndex: number = -1;
-  pageNumInChapter: Record<number, number> = {};
+  pageNumInChapter: number[] = [];
   lastStage: "bigImageFrame" | "fullViewGrid" | "exit" = "exit";
   chapters: () => Chapter[];
   downloading: () => boolean;

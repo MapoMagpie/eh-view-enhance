@@ -8948,7 +8948,7 @@ ${chapters.map((c, i) => `<div><label>
   class PageHelper {
     html;
     chapterIndex = -1;
-    pageNumInChapter = {};
+    pageNumInChapter = [];
     lastStage = "exit";
     chapters;
     downloading;
@@ -9379,6 +9379,7 @@ ${chapters.map((c, i) => `<div><label>
     currLoadingState = /* @__PURE__ */ new Map();
     scroller;
     lastMouse;
+    pageNumInChapter = [];
     constructor(HTML, getChapter) {
       this.html = HTML;
       this.frame = HTML.bigImageFrame;
@@ -9390,7 +9391,10 @@ ${chapters.map((c, i) => `<div><label>
       this.scroller = new Scroller(this.frame);
       this.initFrame();
       this.initImgScaleStyle();
-      EBUS.subscribe("pf-change-chapter", (index) => this.chapterIndex = Math.max(0, index));
+      EBUS.subscribe("pf-change-chapter", (index) => {
+        this.elements = { next: [], curr: [], prev: [] };
+        this.chapterIndex = Math.max(0, index);
+      });
       EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
       EBUS.subscribe("imf-on-finished", (index, success, imf) => {
         if (imf.chapterIndex !== this.chapterIndex) return;
@@ -9531,6 +9535,7 @@ ${chapters.map((c, i) => `<div><label>
         const queue = this.getChapter(this.chapterIndex).queue;
         const index = queue.indexOf(imf);
         if (index === -1) return;
+        this.pageNumInChapter[this.chapterIndex] = index;
         EBUS.emit("ifq-do", index, imf, oriented || "next");
       }
       this.lastMouse = void 0;
@@ -9552,6 +9557,7 @@ ${chapters.map((c, i) => `<div><label>
         this.placeElements();
         this.checkFrameOverflow();
       }
+      this.pageNumInChapter[this.chapterIndex] = index;
       EBUS.emit("ifq-do", index, imf, oriented);
       this.elements.curr[0]?.scrollIntoView();
     }
@@ -9733,6 +9739,7 @@ ${chapters.map((c, i) => `<div><label>
           const queue = this.getChapter(this.chapterIndex).queue;
           if (queue.length === 0 || newIndex < 0 || newIndex > queue.length - 1) return;
           const imf = queue[newIndex];
+          this.pageNumInChapter[this.chapterIndex] = newIndex;
           EBUS.emit("ifq-do", newIndex, imf, oriented);
           if (this.elements.curr[0] instanceof HTMLVideoElement) {
             this.elements.curr[0].pause();
@@ -9971,6 +9978,9 @@ ${chapters.map((c, i) => `<div><label>
         this.loadingHelper.textContent = `Loading ${ret.join(",")}`;
       }
     }
+    getPageNumber() {
+      return this.pageNumInChapter[this.chapterIndex] ?? 0;
+    }
   }
   class AutoPage {
     bifm;
@@ -10139,8 +10149,9 @@ ${chapters.map((c, i) => `<div><label>
       HTML.pageLoading.style.display = "none";
       IL.processingIndexList = [0];
       IL.start();
-      if (conf.autoEnterBig && PF.chapters.length >= 1 && IFQ[0]) {
-        BIFM.show(IFQ[0]);
+      if (conf.autoEnterBig || BIFM.visible) {
+        const imf = IFQ[BIFM.getPageNumber()];
+        if (imf) BIFM.show(imf);
       }
     };
     if (conf.first) {

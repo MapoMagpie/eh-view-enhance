@@ -121,10 +121,8 @@
   var _GM_xmlhttpRequest = /* @__PURE__ */ (() => typeof GM_xmlhttpRequest != "undefined" ? GM_xmlhttpRequest : void 0)();
 
   const getI18nIndex = (lang2) => {
-    if (lang2.startsWith("zh"))
-      return 1;
-    if (lang2.startsWith("ko"))
-      return 2;
+    if (lang2.startsWith("zh")) return 1;
+    if (lang2.startsWith("ko")) return 2;
     return 0;
   };
   const lang = navigator.language;
@@ -1205,8 +1203,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   }
 
   function evLog(level, msg, ...info) {
-    if (level === "debug" && !conf.debug)
-      return;
+    if (level === "debug" && !conf.debug) return;
     if (level === "error") {
       console.warn((/* @__PURE__ */ new Date()).toLocaleString(), "EHVP:" + msg, ...info);
     } else {
@@ -1373,8 +1370,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       EBUS.emit("imf-download-state-change", this);
     }
     async start(index) {
-      if (this.lock)
-        return;
+      if (this.lock) return;
       this.lock = true;
       try {
         this.node.changeStyle("fetching");
@@ -1441,8 +1437,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       let err;
       while (this.tryTimes < 3) {
         err = await fetchMachine();
-        if (err === null)
-          return;
+        if (err === null) return;
         this.tryTimes++;
         evLog("error", `fetch image error, try times: ${this.tryTimes}, error:`, err);
       }
@@ -1492,8 +1487,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return this.rendered;
     }
     unrender() {
-      if (!this.rendered)
-        return;
+      if (!this.rendered) return;
       this.rendered = false;
       this.node.unrender();
       this.node.changeStyle("init");
@@ -1667,8 +1661,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return false;
     }
     async writeHeader() {
-      if (!this.curr)
-        return;
+      if (!this.curr) return;
       const curr = this.curr;
       let data = new DataHelper(30 + curr.nameBuf.length);
       let header = curr.header;
@@ -1704,8 +1697,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       await pump();
     }
     async writeFooter() {
-      if (!this.curr)
-        return;
+      if (!this.curr) return;
       const curr = this.curr;
       var footer = new DataHelper(16);
       footer.view.setUint32(0, 1347094280);
@@ -1834,8 +1826,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (clientHeight > h) {
         deltaY = deltaY >> 1;
         this.scrollTop += deltaY;
-        if (this.scrollTop < 0)
-          this.scrollTop = 0;
+        if (this.scrollTop < 0) this.scrollTop = 0;
         if (this.scrollTop + h > clientHeight + 20)
           this.scrollTop = clientHeight - h + 20;
         this.draw();
@@ -2009,16 +2000,14 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         {
           btn: i18n.resetDownloaded.get(),
           cb: () => {
-            if (confirm(i18n.resetDownloadedConfirm.get()))
-              this.queue.forEach((imf) => imf.stage === FetchState.DONE && imf.resetStage());
+            if (confirm(i18n.resetDownloadedConfirm.get())) this.queue.forEach((imf) => imf.stage === FetchState.DONE && imf.resetStage());
           }
         },
         {
           btn: i18n.resetFailed.get(),
           cb: () => {
             this.queue.forEach((imf) => imf.stage === FetchState.FAILED && imf.resetStage());
-            if (!this.downloading)
-              this.idleLoader.abort(0, 100);
+            if (!this.downloading) this.idleLoader.abort(0, 100);
           }
         }
       ]);
@@ -2057,10 +2046,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       });
     }
     needNumberTitle(queue) {
-      if (conf.filenameOrder === "numbers")
-        return true;
-      if (conf.filenameOrder === "original")
-        return false;
+      if (conf.filenameOrder === "numbers") return true;
+      if (conf.filenameOrder === "original") return false;
       let comparer;
       if (conf.filenameOrder === "alphabetically") {
         comparer = (a, before) => a < before;
@@ -2078,8 +2065,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     // check > start > download
     check() {
-      if (this.downloading)
-        return;
+      if (this.downloading) return;
       setTimeout(() => EBUS.emit("downloader-canvas-resize"), 110);
       this.panel.createChapterSelectList(this.pageFetcher.chapters, this.selectedChapters);
       if (this.queue.length > 0) {
@@ -2099,16 +2085,14 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return this.selectedChapters;
     }
     async start() {
-      if (this.downloading)
-        return;
+      if (this.downloading) return;
       this.panel.flushUI("downloading");
       this.downloading = true;
       this.idleLoader.autoLoad = true;
       this.checkSelectedChapters();
       try {
         for (const sel of this.selectedChapters) {
-          if (!this.downloading)
-            return;
+          if (!this.downloading) return;
           await this.pageFetcher.changeChapter(sel.index);
           this.queue.forEach((imf) => imf.stage === FetchState.FAILED && imf.resetStage());
           if (this.queue.isFinished()) {
@@ -2122,11 +2106,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           }
           await sel.promise;
         }
-        if (this.downloading)
-          await this.download(this.selectedChapters.filter((sel) => sel.done).map((sel) => this.pageFetcher.chapters[sel.index]));
+        if (this.downloading) await this.download(this.selectedChapters.filter((sel) => sel.done).map((sel) => this.pageFetcher.chapters[sel.index]));
       } catch (error) {
-        if ("abort" === error)
-          return;
+        if ("abort" === error) return;
         this.abort("downloadFailed");
         evLog("error", "download failed: ", error);
       } finally {
@@ -2134,8 +2116,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }
     }
     mapToFileLikes(chapter, picked, directory) {
-      if (!chapter || chapter.queue.length === 0)
-        return [];
+      if (!chapter || chapter.queue.length === 0) return [];
       let checkTitle;
       const needNumberTitle = this.needNumberTitle(chapter.queue);
       if (needNumberTitle) {
@@ -2176,8 +2157,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           const chapter = chapters[i];
           const picked = this.cherryPicks[i] || new CherryPick();
           let directory = (() => {
-            if (singleChapter)
-              return "";
+            if (singleChapter) return "";
             if (chapter.title instanceof Array) {
               return chapter.title.join("_").replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
             } else {
@@ -2219,8 +2199,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     const encoder = new TextEncoder();
     const byteLen = (s) => encoder.encode(s).byteLength;
     const bLen = byteLen(str);
-    if (bLen <= limit)
-      return str;
+    if (bLen <= limit) return str;
     const sliceRange = [str.length >> 1, (str.length >> 1) + 1];
     let left = true;
     while (true) {
@@ -2294,8 +2273,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         return this.values;
       }
       const exists = this.values.find((v) => v.id === range.id);
-      if (exists)
-        return null;
+      if (exists) return null;
       const newR = range.range();
       const remIdSet = /* @__PURE__ */ new Set();
       const addIdSet = /* @__PURE__ */ new Set();
@@ -2357,8 +2335,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }
     }
     concat() {
-      if (this.values.length < 2)
-        return;
+      if (this.values.length < 2) return;
       this.values.sort((v1, v2) => v1.range()[0] - v2.range()[0]);
       let i = 0, j = 1;
       let skip = [];
@@ -2382,8 +2359,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     remove(id) {
       const index = this.values.findIndex((v) => v.id === id);
-      if (index === -1)
-        return;
+      if (index === -1) return;
       const range = this.values.splice(index, 1)[0];
       const r = range.range();
       for (let i = r[0] - 1; i < r[1]; i++) {
@@ -2428,8 +2404,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     static from(value) {
       value = value?.trim();
-      if (!value)
-        return null;
+      if (!value) return null;
       value = value.replace(/!+/, "!");
       const exclude = value.startsWith("!");
       if (/^!?\d+$/.test(value)) {
@@ -2469,8 +2444,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const queue = new IMGFetcherQueue();
       EBUS.subscribe("imf-on-finished", (index, success, imf) => queue.chapterIndex === imf.chapterIndex && queue.finishedReport(index, success, imf));
       EBUS.subscribe("ifq-do", (index, imf, oriented) => {
-        if (imf.chapterIndex !== queue.chapterIndex)
-          return;
+        if (imf.chapterIndex !== queue.chapterIndex) return;
         queue.do(index, oriented);
       });
       EBUS.subscribe("pf-change-chapter", () => queue.forEach((imf) => imf.unrender()));
@@ -2499,10 +2473,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       oriented = oriented || "next";
       this.currIndex = this.fixIndex(start);
       EBUS.emit("ifq-on-do", this.currIndex, this, this.downloading?.() || false);
-      if (this.downloading?.())
-        return;
-      if (!this.pushInExecutableQueue(oriented))
-        return;
+      if (this.downloading?.()) return;
+      if (!this.pushInExecutableQueue(oriented)) return;
       this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
         console.log("IFQ-EXECUTABLE: ", this.executableQueue);
         Promise.all(this.executableQueue.splice(0, conf.paginationIMGCount).map((imfIndex) => this[imfIndex].start(imfIndex))).then(() => {
@@ -2513,10 +2485,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     //等待图片获取器执行成功后的上报，如果该图片获取器上报自身所在的索引和执行队列的currIndex一致，则改变大图
     finishedReport(index, success, imf) {
-      if (this.length === 0)
-        return;
-      if (!success || imf.stage !== FetchState.DONE)
-        return;
+      if (this.length === 0) return;
+      if (!success || imf.stage !== FetchState.DONE) return;
       this.finishedIndex.add(index);
       if (this.dataSize < 1e9) {
         this.dataSize += imf.data?.byteLength || 0;
@@ -2538,8 +2508,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     pushInExecutableQueue(oriented) {
       this.executableQueue = [];
       for (let count = 0, index = this.currIndex; this.checkOutbounds(index, oriented, count); oriented === "next" ? ++index : --index) {
-        if (this[index].stage === FetchState.DONE)
-          continue;
+        if (this[index].stage === FetchState.DONE) continue;
         this.executableQueue.push(index);
         count++;
       }
@@ -2548,14 +2517,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     // 如果索引已到达边界且添加数量在配置最大同时获取数量的范围内
     checkOutbounds(index, oriented, count) {
       let ret = false;
-      if (oriented === "next")
-        ret = index < this.length;
-      if (oriented === "prev")
-        ret = index > -1;
-      if (!ret)
-        return false;
-      if (count < conf.threads + conf.paginationIMGCount - 1)
-        return true;
+      if (oriented === "next") ret = index < this.length;
+      if (oriented === "prev") ret = index > -1;
+      if (!ret) return false;
+      if (count < conf.threads + conf.paginationIMGCount - 1) return true;
       return false;
     }
     findImgIndex(ele) {
@@ -2587,8 +2552,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.debouncer = new Debouncer();
       EBUS.subscribe("ifq-on-do", (currIndex, _, downloading) => !downloading && this.abort(currIndex));
       EBUS.subscribe("imf-on-finished", (index) => {
-        if (!this.processingIndexList.includes(index))
-          return;
+        if (!this.processingIndexList.includes(index)) return;
         this.wait().then(() => {
           this.checkProcessingIndex();
           this.start();
@@ -2596,18 +2560,15 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       });
       EBUS.subscribe("pf-change-chapter", (index) => !this.queue.downloading?.() && this.abort(index > 0 ? 0 : void 0));
       window.addEventListener("focus", () => {
-        if (conf.autoLoadInBackground)
-          return;
+        if (conf.autoLoadInBackground) return;
         this.debouncer.addEvent("Idle-Load-on-focus", () => {
           console.log("[ IdleLoader ] window focus, document.hidden:", document.hidden);
-          if (document.hidden)
-            return;
+          if (document.hidden) return;
           this.abort(0, 10);
         }, 100);
       });
       EBUS.subscribe("pf-on-appended", (_total, _nodes, _chapterIndex, done) => {
-        if (done || this.processingIndexList.length > 0)
-          return;
+        if (done || this.processingIndexList.length > 0) return;
         this.abort(this.queue.currIndex, 100);
       });
     }
@@ -2615,14 +2576,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       this.onFailedCallback = cb;
     }
     start() {
-      if (!this.autoLoad)
-        return;
-      if (document.hidden && !conf.autoLoadInBackground)
-        return;
-      if (this.processingIndexList.length === 0)
-        return;
-      if (this.queue.length === 0)
-        return;
+      if (!this.autoLoad) return;
+      if (document.hidden && !conf.autoLoadInBackground) return;
+      if (this.processingIndexList.length === 0) return;
+      if (this.queue.length === 0) return;
       evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
       for (const processingIndex of this.processingIndexList) {
         this.queue[processingIndex].start(processingIndex);
@@ -2681,12 +2638,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     abort(newIndex, delayRestart) {
       this.processingIndexList = [];
       this.debouncer.addEvent("IDLE-LOAD-ABORT", () => {
-        if (!this.autoLoad)
-          return;
-        if (newIndex === void 0)
-          return;
-        if (this.queue.downloading?.())
-          return;
+        if (!this.autoLoad) return;
+        if (newIndex === void 0) return;
+        if (this.queue.downloading?.()) return;
         this.processingIndexList = [newIndex];
         this.checkProcessingIndex();
         this.start();
@@ -2757,20 +2711,16 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     // append next page until the queue length is 60 more than finished
     async appendPages(appendedCount) {
       while (true) {
-        if (appendedCount + 60 < this.queue.length)
-          break;
-        if (!await this.appendNextPage())
-          break;
+        if (appendedCount + 60 < this.queue.length) break;
+        if (!await this.appendNextPage()) break;
       }
     }
     async appendNextPage() {
-      if (this.appendPageLock)
-        return false;
+      if (this.appendPageLock) return false;
       try {
         this.appendPageLock = true;
         const chapter = this.chapters[this.chapterIndex];
-        if (chapter.done || this.abortb)
-          return false;
+        if (chapter.done || this.abortb) return false;
         const next = await chapter.sourceIter.next();
         if (next.done) {
           chapter.done = true;
@@ -2790,10 +2740,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     async appendImages(page) {
       try {
         const nodes = await this.obtainImageNodeList(page);
-        if (this.abortb)
-          return false;
-        if (nodes.length === 0)
-          return false;
+        if (this.abortb) return false;
+        if (nodes.length === 0) return false;
         const len = this.queue.length;
         const IFs = nodes.map(
           (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex)
@@ -2914,12 +2862,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return this.root;
     }
     resize(onfailed) {
-      if (!this.root || !this.imgElement || !this.canvasElement)
-        return onfailed("undefined elements");
-      if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL)
-        return onfailed("empty or default src");
-      if (this.root.offsetWidth <= 1)
-        return onfailed("element too small");
+      if (!this.root || !this.imgElement || !this.canvasElement) return onfailed("undefined elements");
+      if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL) return onfailed("empty or default src");
+      if (this.root.offsetWidth <= 1) return onfailed("element too small");
       this.imgElement.onload = null;
       this.imgElement.onerror = null;
       const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
@@ -2944,8 +2889,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     render(onfailed) {
       this.debouncer.addEvent("IMG-RENDER", () => {
-        if (!this.imgElement)
-          return onfailed("element undefined");
+        if (!this.imgElement) return onfailed("element undefined");
         let justThumbnail = !this.blobSrc;
         if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
           const tip = OVERLAY_TIP.cloneNode(true);
@@ -2969,13 +2913,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }, 30);
     }
     unrender() {
-      if (!this.imgElement)
-        return;
+      if (!this.imgElement) return;
       this.imgElement.src = "";
     }
     progress(state) {
-      if (!this.root)
-        return;
+      if (!this.root) return;
       if (state.readyState === 4) {
         if (this.downloadBar && this.downloadBar.parentNode) {
           this.downloadBar.parentNode.removeChild(this.downloadBar);
@@ -2994,8 +2936,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }
     }
     changeStyle(fetchStatus, failedReason) {
-      if (!this.root)
-        return;
+      if (!this.root) return;
       const clearClass = () => this.root.classList.forEach((cls) => ["img-excluded", "img-fetching", "img-fetched", "img-fetch-failed"].includes(cls) && this.root?.classList.remove(cls));
       if (!this.picked) {
         clearClass();
@@ -3121,18 +3062,15 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         });
       } else {
         const first = document.querySelector(".visible-lg .read-block")?.firstElementChild;
-        if (first === void 0)
-          throw new Error("No page found");
+        if (first === void 0) throw new Error("No page found");
         let href = "";
         if (first instanceof HTMLAnchorElement) {
           href = first.href;
         } else {
           href = first.getAttribute("href") || "";
         }
-        if (!href || href.startsWith("javascript"))
-          throw new Error("未能找到阅读按钮！");
-        if (href.startsWith("#coinbuycomic"))
-          throw new Error("此漫画需要硬币解锁！请点击开始阅读按钮进行解锁。");
+        if (!href || href.startsWith("javascript")) throw new Error("未能找到阅读按钮！");
+        if (href.startsWith("#coinbuycomic")) throw new Error("此漫画需要硬币解锁！请点击开始阅读按钮进行解锁。");
         ret.push({
           id: 0,
           title: "Default",
@@ -3171,12 +3109,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const matches = url.match(reg);
       const gid = matches[1];
       let scrambleID = 220980;
-      if (Number(gid) < scrambleID)
-        return [data, contentType];
+      if (Number(gid) < scrambleID) return [data, contentType];
       const page = matches[2];
       const ext = matches[3];
-      if (ext === "gif")
-        return [data, contentType];
+      if (ext === "gif") return [data, contentType];
       const img = await createImageBitmap(new Blob([data], { type: contentType }));
       const canvas = document.createElement("canvas");
       canvas.width = img.width;
@@ -3194,8 +3130,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       return /18comic(-gura)?.(vip|org|me)\/album\/\d+/;
     }
     galleryMeta(doc) {
-      if (this.meta)
-        return this.meta;
+      if (this.meta) return this.meta;
       const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
       this.meta = new GalleryMeta(window.location.href, title);
       this.meta.originTitle = title;
@@ -3250,15 +3185,13 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     async *fetchPagesSource() {
       const csrf = document.querySelector("meta[name='csrf-token'][content]")?.content;
-      if (!csrf)
-        throw new Error("cannot get csrf token form this page");
+      if (!csrf) throw new Error("cannot get csrf token form this page");
       this.originImages = await window.fetch(window.location.href, {
         headers: { "X-CSRF-TOKEN": csrf, "X-Requested-With": "XMLHttpRequest", "Sec-Fetch-Dest": "empty" },
         method: "POST"
       }).then((res) => res.json());
       const pagRaw = Array.from(document.querySelectorAll("body > script")).find((s) => s.textContent?.trimStart().startsWith("var ajx"))?.textContent?.match(/pag = (\{.*?\}),/s)?.[1];
-      if (!pagRaw)
-        throw new Error("cannot get page info");
+      if (!pagRaw) throw new Error("cannot get page info");
       const pag = JSON.parse(pagRaw.replaceAll(/(\w+) :/g, '"$1":'));
       let idx = pag.idx;
       yield document;
@@ -3273,8 +3206,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           method: "POST",
           body: `index=${idx}`
         });
-        if (!res.ok)
-          throw new Error(`fetch thumbnails failed, status: ${res.statusText}`);
+        if (!res.ok) throw new Error(`fetch thumbnails failed, status: ${res.statusText}`);
         idx++;
         yield res.text().then((text) => new DOMParser().parseFromString(text, "text/html"));
       }
@@ -3282,8 +3214,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     async parseImgNodes(page) {
       const doc = page;
       const items = Array.from(doc.querySelectorAll("li > a.page-item"));
-      if (items.length === 0)
-        throw new Error("cannot find thumbnails");
+      if (items.length === 0) throw new Error("cannot find thumbnails");
       let ret = [];
       const digits = this.originImages.length.toString().length;
       for (const item of items) {
@@ -3373,16 +3304,14 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       while (true) {
         page++;
         const projects = await this.fetchProjects(username, id.toString(), page);
-        if (!projects || projects.length === 0)
-          break;
+        if (!projects || projects.length === 0) break;
         this.pageData.set(page.toString(), projects);
         yield page.toString();
       }
     }
     async parseImgNodes(pageNo) {
       const projects = this.pageData.get(pageNo);
-      if (!projects)
-        throw new Error("cannot get projects form page data");
+      if (!projects) throw new Error("cannot get projects form page data");
       const projectURLs = projects.map((p) => `https://www.artstation.com/projects/${p.hash_id}.json`);
       const assets = await batchFetch(projectURLs, 10, "json");
       let ret = [];
@@ -3391,15 +3320,13 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         this.tags[asset.slug] = asset.tags;
         for (let i = 0; i < asset.assets.length; i++) {
           const a = asset.assets[i];
-          if (a.asset_type === "cover")
-            continue;
+          if (a.asset_type === "cover") continue;
           const thumb = a.image_url.replace("/large/", "/small/");
           const ext = a.image_url.match(/\.(\w+)\?\d+$/)?.[1] ?? "jpg";
           const title = `${asset.slug}-${i + 1}.${ext}`;
           let originSrc = a.image_url;
           if (a.has_embedded_player && a.player_embedded) {
-            if (a.player_embedded.includes("youtube"))
-              continue;
+            if (a.player_embedded.includes("youtube")) continue;
             originSrc = a.player_embedded;
           }
           this.info.assets++;
@@ -3411,12 +3338,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     async fetchOriginMeta(node) {
       if (node.originSrc?.startsWith("<iframe")) {
         const iframe = node.originSrc.match(/src=['"](.*?)['"]\s/)?.[1];
-        if (!iframe)
-          throw new Error("cannot match video clip url");
+        if (!iframe) throw new Error("cannot match video clip url");
         const doc = await window.fetch(iframe).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
         const source = doc.querySelector("video > source");
-        if (!source)
-          throw new Error("cannot find video element");
+        if (!source) throw new Error("cannot find video element");
         return { url: source.src };
       }
       return { url: node.originSrc };
@@ -3432,8 +3357,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     async fetchArtistInfo() {
       const user = window.location.pathname.slice(1).split("/").shift();
-      if (!user)
-        throw new Error("cannot match artist's username");
+      if (!user) throw new Error("cannot match artist's username");
       const info = await window.fetch(`https://www.artstation.com/users/${user}/quick.json`).then((res) => res.json());
       return info;
     }
@@ -3458,14 +3382,12 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       let tryTimes = 0;
       while (true) {
         const url = this.nextPage(doc);
-        if (!url)
-          break;
+        if (!url) break;
         try {
           doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
         } catch (e) {
           tryTimes++;
-          if (tryTimes > 3)
-            throw new Error(`fetch next page failed, ${e}`);
+          if (tryTimes > 3) throw new Error(`fetch next page failed, ${e}`);
           continue;
         }
         tryTimes = 0;
@@ -3474,8 +3396,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     async fetchOriginMeta(node) {
       let cached = this.cachedOriginMeta(node.href);
-      if (cached)
-        return cached;
+      if (cached) return cached;
       let url = null;
       const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       if (conf.fetchOriginal) {
@@ -3484,8 +3405,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (!url) {
         url = this.getNormalURL(doc);
       }
-      if (!url)
-        throw new Error("Cannot find origin image or video url");
+      if (!url) throw new Error("Cannot find origin image or video url");
       let title;
       const ext = url.split(".").pop()?.match(/^\w+/)?.[0];
       const id = this.extractIDFromHref(node.href);
@@ -3502,13 +3422,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const doc = source;
       this.queryList(doc).forEach((ele) => {
         const [imgNode, tags] = this.toImgNode(ele);
-        if (!imgNode)
-          return;
+        if (!imgNode) return;
         this.count++;
         if (tags !== "") {
           const tagList = tags.trim().replaceAll(": ", ":").split(" ").map((v) => v.trim()).filter((v) => v !== "");
-          if (this.blacklistTags.findIndex((t) => tagList.includes(t)) >= 0)
-            return;
+          if (this.blacklistTags.findIndex((t) => tagList.includes(t)) >= 0) return;
           this.tags[imgNode.title.split(".")[0]] = tagList;
         }
         list.push(imgNode);
@@ -3632,14 +3550,12 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       let tryTimes = 0;
       while (true) {
         const url = doc.querySelector("#paginator a.next_page")?.href;
-        if (!url)
-          break;
+        if (!url) break;
         try {
           doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
         } catch (e) {
           tryTimes++;
-          if (tryTimes > 3)
-            throw new Error(`fetch next page failed, ${e}`);
+          if (tryTimes > 3) throw new Error(`fetch next page failed, ${e}`);
           continue;
         }
         tryTimes = 0;
@@ -3649,13 +3565,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     async parseImgNodes(source) {
       const doc = source;
       const raw = doc.querySelector("body > form + script")?.textContent;
-      if (!raw)
-        throw new Error("cannot find post list from script");
+      if (!raw) throw new Error("cannot find post list from script");
       const matches = raw.matchAll(POST_INFO_REGEX);
       const ret = [];
       for (const match of matches) {
-        if (!match || match.length < 2)
-          continue;
+        if (!match || match.length < 2) continue;
         try {
           const info = JSON.parse(match[1]);
           this.infos[info.id.toString()] = info;
@@ -3707,14 +3621,12 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       let tryTimes = 0;
       while (true) {
         const url = doc.querySelector("#paginator a.next_page")?.href;
-        if (!url)
-          break;
+        if (!url) break;
         try {
           doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
         } catch (e) {
           tryTimes++;
-          if (tryTimes > 3)
-            throw new Error(`fetch next page failed, ${e}`);
+          if (tryTimes > 3) throw new Error(`fetch next page failed, ${e}`);
           continue;
         }
         tryTimes = 0;
@@ -3724,13 +3636,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     async parseImgNodes(source) {
       const doc = source;
       const raw = doc.querySelector("body > script + script")?.textContent;
-      if (!raw)
-        throw new Error("cannot find post list from script");
+      if (!raw) throw new Error("cannot find post list from script");
       const matches = raw.matchAll(POST_INFO_REGEX);
       const ret = [];
       for (const match of matches) {
-        if (!match || match.length < 2)
-          continue;
+        if (!match || match.length < 2) continue;
         try {
           const info = JSON.parse(match[1]);
           this.infos[info.id.toString()] = info;
@@ -3777,8 +3687,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     nextPage(doc) {
       let href = doc.querySelector("#paginator a[alt=next]")?.href;
-      if (href)
-        return href;
+      if (href) return href;
       return doc.querySelector("#paginator b + a")?.href || null;
     }
     queryList(doc) {
@@ -3805,11 +3714,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     getNormalURL(doc) {
       const img = doc.querySelector("#image");
-      if (img?.src)
-        return img.src;
+      if (img?.src) return img.src;
       const vidSources = Array.from(doc.querySelectorAll("#gelcomVideoPlayer > source"));
-      if (vidSources.length === 0)
-        return null;
+      if (vidSources.length === 0) return null;
       return vidSources.find((s) => s.type.endsWith("mp4"))?.src || vidSources[0].src;
     }
     extractIDFromHref(href) {
@@ -3832,8 +3739,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     getBlacklist(doc) {
       let content = doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content");
-      if (!content)
-        return [];
+      if (!content) return [];
       return content.slice(1, -1).split(",").map((s) => s.slice(1, -1));
     }
     queryList(doc) {
@@ -3842,16 +3748,14 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     toImgNode(ele) {
       let src = ele.getAttribute("data-preview-url");
-      if (!src)
-        return [null, ""];
+      if (!src) return [null, ""];
       const href = `${window.location.origin}/posts/${ele.getAttribute("data-id")}`;
       const tags = ele.getAttribute("data-tags");
       const id = ele.getAttribute("data-id");
       const normal = ele.getAttribute("data-large-url");
       const original = ele.getAttribute("data-file-url");
       const fileExt = ele.getAttribute("data-file-ext") || void 0;
-      if (!normal || !original || !id)
-        return [null, ""];
+      if (!normal || !original || !id) return [null, ""];
       const width = ele.getAttribute("data-width");
       const height = ele.getAttribute("data-height");
       let wh = void 0;
@@ -3863,8 +3767,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     cachedOriginMeta(href) {
       const cached = this.cache.get(href);
-      if (!cached)
-        throw new Error("miss origin meta: " + href);
+      if (!cached) throw new Error("miss origin meta: " + href);
       if (["webm", "webp", "mp4"].includes(cached.fileExt ?? "bbb") || conf.fetchOriginal) {
         return { url: cached.original, title: `${cached.id}.${cached.fileExt}` };
       }
@@ -3906,8 +3809,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       } catch (err) {
       }
     }
-    if (!data)
-      throw new Error("load sprite image error");
+    if (!data) throw new Error("load sprite image error");
     url = URL.createObjectURL(data);
     const img = await new Promise((resolve, reject) => {
       let img2 = new Image();
@@ -3951,8 +3853,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }
     }
     galleryMeta(doc) {
-      if (this.meta)
-        return this.meta;
+      if (this.meta) return this.meta;
       const titleList = doc.querySelectorAll("#gd2 h1");
       let title;
       let originTitle;
@@ -3972,8 +3873,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         if (cat) {
           const list = [];
           tds[1].childNodes.forEach((ele) => {
-            if (ele.textContent)
-              list.push(ele.textContent);
+            if (ele.textContent) list.push(ele.textContent);
           });
           tags[cat.replace(":", "")] = list;
         }
@@ -3988,8 +3888,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           return source;
         } else {
           const raw = await window.fetch(source).then((response) => response.text());
-          if (!raw)
-            return null;
+          if (!raw) return null;
           const domParser = new DOMParser();
           return domParser.parseFromString(raw, "text/html");
         }
@@ -4035,8 +3934,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
         for (let i = 0; i < nodes.length; i++) {
           const nodeStyles = nodes[i].style;
           const url = nodeStyles.background.match(regulars.sprite)?.[1]?.replaceAll('"', "");
-          if (!url)
-            break;
+          if (!url) break;
           if (spriteURLs.length === 0 || spriteURLs[spriteURLs.length - 1].url !== url) {
             spriteURLs.push({ url, range: [{ index: i, style: nodeStyles }] });
           } else {
@@ -4123,8 +4021,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     async fetchOriginMeta(node, retry) {
       let text = await window.fetch(node.href).then((resp) => resp.text()).catch((reason) => new Error(reason));
-      if (text instanceof Error || !text)
-        throw new Error(`fetch source page error, ${text.toString()}`);
+      if (text instanceof Error || !text) throw new Error(`fetch source page error, ${text.toString()}`);
       let src;
       if (conf.fetchOriginal) {
         src = regulars.original.exec(text)?.[1].replace(/&amp;/g, "&");
@@ -4133,8 +4030,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           src += "?" + nl;
         }
       }
-      if (!src)
-        src = regulars.normal.exec(text)?.[1];
+      if (!src) src = regulars.normal.exec(text)?.[1];
       if (retry) {
         const nlValue = regulars.nlValue.exec(text)?.[1];
         if (nlValue) {
@@ -4169,8 +4065,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
   }
   function extractRectFromSrc(src) {
-    if (!src)
-      return void 0;
+    if (!src) return void 0;
     const matches = src.match(/\/\w+-\d+-(\d+)-(\d+)-/);
     if (matches && matches.length === 3) {
       return { w: parseInt(matches[1]), h: parseInt(matches[2]) };
@@ -4199,8 +4094,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const list = Array.from(doc.querySelectorAll(".section .container + .container > .box > .columns > .column a"));
       list.forEach((li, i) => {
         const img = li.querySelector("img");
-        if (!img)
-          return;
+        if (!img) return;
         const num = li.href.split("/").pop() || i.toString();
         const ext = img.src.split(".").pop();
         const title = num + "." + ext;
@@ -4212,20 +4106,17 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       if (!this.readerData) {
         const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
         const args = doc.querySelector("body > script")?.textContent?.match(REGEXP_EXTRACT_INIT_ARGUMENTS)?.slice(1);
-        if (!args || args.length !== 3)
-          throw new Error("cannot find reader data");
+        if (!args || args.length !== 3) throw new Error("cannot find reader data");
         try {
           this.initReader(args[0], args[1]);
         } catch (_error) {
           throw new Error("hentainexus updated decryption function");
         }
       }
-      if (!this.readerData)
-        throw new Error("cannot find reader data");
+      if (!this.readerData) throw new Error("cannot find reader data");
       const hash = node.href.match(REGEXP_EXTRACT_HASH)?.[1] || "001";
       const url = this.readerData.find((d) => d.url_label === hash)?.image;
-      if (!url)
-        throw new Error("cannot find image url");
+      if (!url) throw new Error("cannot find image url");
       const ext = url.split(".").pop();
       return { url, title: hash + "." + ext };
     }
@@ -4240,11 +4131,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const meta = new GalleryMeta(this.baseURL || window.location.href, title);
       doc.querySelectorAll(".view-page-details tr").forEach((tr) => {
         const category = tr.querySelector(".viewcolumn")?.textContent?.trim();
-        if (!category)
-          return;
+        if (!category) return;
         let values = Array.from(tr.querySelector(".viewcolumn + td")?.childNodes || []).map((c) => c?.textContent?.trim()).filter(Boolean);
-        if (values.length === 0)
-          return;
+        if (values.length === 0) return;
         if (category === "Tags") {
           values = values.map((v) => v.replace(/\s?\([0-9,]*\)$/, ""));
         }
@@ -4414,8 +4303,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       yield doc;
     }
     async parseImgNodes(_page, chapterID) {
-      if (!this.infoRecord[chapterID])
-        throw new Error("warn: hitomi gallery info is null!");
+      if (!this.infoRecord[chapterID]) throw new Error("warn: hitomi gallery info is null!");
       const files = this.infoRecord[chapterID].files;
       const list = [];
       for (let i = 0; i < files.length; i++) {
@@ -4452,8 +4340,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     title() {
       const entries = Object.entries(this.infoRecord);
-      if (entries.length === 0)
-        return "hitomi-unknown";
+      if (entries.length === 0) return "hitomi-unknown";
       if (entries.length === 1) {
         return entries[0][1].japanese_title || entries[0][1].title || "hitomi-unknown";
       } else {
@@ -4508,8 +4395,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const total = q("#load_pages", document).value;
       this.data = { server, uid, gid, imgDir, total: Number(total) };
       const gthRaw = Array.from(document.querySelectorAll("script")).find((s) => s.textContent?.trimStart().startsWith("var g_th"))?.textContent?.match(/\('(\{.*?\})'\)/)?.[1];
-      if (!gthRaw)
-        throw new Error("cannot match gallery images info");
+      if (!gthRaw) throw new Error("cannot match gallery images info");
       this.gth = JSON.parse(gthRaw);
       yield document;
     }
@@ -4522,11 +4408,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const list = Array.from(doc.querySelectorAll(".galleries_info > li"));
       for (const li of list) {
         let cat = li.querySelector(".tags_text")?.textContent;
-        if (!cat)
-          continue;
+        if (!cat) continue;
         cat = cat.replace(":", "").trim();
-        if (!cat)
-          continue;
+        if (!cat) continue;
         const tags = Array.from(li.querySelectorAll("a.tag")).map((a) => a.firstChild?.textContent?.trim()).filter((v) => Boolean(v));
         meta.tags[cat] = tags;
       }
@@ -4580,8 +4464,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     createMeta(detail) {
       const tags = detail.tags.reduce((map, tag) => {
         const category = NAMESPACE_MAP[tag.namespace || 0] || "misc";
-        if (!map[category])
-          map[category] = [];
+        if (!map[category]) map[category] = [];
         map[category].push(tag.name);
         return map;
       }, {});
@@ -4601,8 +4484,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       }
       this.createMeta(detail);
       const [w, data] = Object.entries(detail.data).sort((a, b) => b[1].size - a[1].size).find(([_, v]) => v.id !== void 0 && v.public_key !== void 0) ?? [void 0, void 0];
-      if (w === void 0 && data === void 0)
-        throw new Error("cannot find resolution from gallery detail");
+      if (w === void 0 && data === void 0) throw new Error("cannot find resolution from gallery detail");
       const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}?v=${detail.updated_at ?? detail.created_at}&w=${w}`;
       const items = await window.fetch(dataAPI).then((res) => res.json()).then((j) => j).catch((reason) => new Error(reason.toString()));
       if (items instanceof Error) {
@@ -4645,8 +4527,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     chapterCount = 0;
     meta;
     galleryMeta() {
-      if (this.meta)
-        return this.meta;
+      if (this.meta) return this.meta;
       let title = document.querySelector(".comicParticulars-title-right > ul > li > h6")?.textContent ?? document.title;
       document.querySelectorAll(".comicParticulars-title-right > ul > li > span.comicParticulars-right-txt").forEach((ele) => {
         if (/^\d{4}-\d{2}-\d{2}$/.test(ele.textContent?.trim() || "")) {
@@ -4664,8 +4545,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const raw = await window.fetch(page).then((resp) => resp.text());
       const doc = new DOMParser().parseFromString(raw, "text/html");
       const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
-      if (!contentKey)
-        throw new Error("cannot find content key");
+      if (!contentKey) throw new Error("cannot find content key");
       try {
         const decryption = decrypt(contentKey);
         const images = JSON.parse(decryption);
@@ -4686,14 +4566,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     async fetchChapters() {
       const thumbimg = document.querySelector(".comicParticulars-left-img > img[data-src]")?.getAttribute("data-src") || void 0;
       const pathWord = window.location.href.match(PATH_WORD_REGEX)?.[1];
-      if (!pathWord)
-        throw new Error("cannot match comic id");
+      if (!pathWord) throw new Error("cannot match comic id");
       const url = `${window.location.origin}/comicdetail/${pathWord}/chapters`;
       const data = await window.fetch(url).then((res) => res.json()).catch((reason) => new Error(reason.toString()));
-      if (data instanceof Error)
-        throw new Error("fetch chapter detail error: " + data.toString());
-      if (data.code !== 200)
-        throw new Error("fetch chater detail error: " + data.message);
+      if (data instanceof Error) throw new Error("fetch chapter detail error: " + data.toString());
+      if (data.code !== 200) throw new Error("fetch chater detail error: " + data.message);
       let details;
       try {
         const decryption = decrypt(data.results);
@@ -4718,8 +4595,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
   function initCypto() {
     let c = [];
     function r(i) {
-      if (c[i])
-        return c[i].exports;
+      if (c[i]) return c[i].exports;
       c[i] = {
         i,
         l: false,
@@ -4758,8 +4634,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     meta;
     chapterCount = 0;
     galleryMeta() {
-      if (this.meta)
-        return this.meta;
+      if (this.meta) return this.meta;
       let title = document.querySelector(".book-title > h1")?.textContent ?? document.title;
       title += "-c" + this.chapterCount;
       const matches = document.querySelector(".detail-list .status")?.textContent?.match(STATUS_REGEX);
@@ -4776,8 +4651,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     async parseImgNodes(page, _chapterID) {
       const docRaw = await window.fetch(page).then((res) => res.text());
       const matches = docRaw.match(IMG_DATA_PARAM_REGEX);
-      if (!matches || matches.length < 5)
-        throw new Error("cannot match image data");
+      if (!matches || matches.length < 5) throw new Error("cannot match image data");
       let data;
       try {
         data = parseImgData(matches[1], parseInt(matches[2]), parseInt(matches[3]), matches[4]);
@@ -4821,11 +4695,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
   }
   function findSibling(element, dir, eq) {
-    const sibling = (e2) => dir === "prev" ? e2.previousElementSibling : e2.nextElementSibling;
+    const sibling = (e2) => e2.previousElementSibling ;
     let e = element;
     while (e = sibling(e)) {
-      if (eq(e))
-        return e;
+      if (eq(e)) return e;
     }
     return null;
   }
@@ -4959,11 +4832,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     parseInfo() {
       const mediaServer = Array.from(document.querySelectorAll("body > script")).find((ele) => ele.textContent?.trim()?.startsWith("window._n_app"))?.textContent?.match(/media_server:\s?(\d+)/)?.[1];
-      if (!mediaServer)
-        throw new Error("cannot find media server");
+      if (!mediaServer) throw new Error("cannot find media server");
       const raw = Array.from(document.querySelectorAll("body > script")).find((ele) => ele.textContent?.trim()?.startsWith("window._gallery"))?.textContent?.match(/parse\((.*)\);/)?.[1];
-      if (!raw)
-        throw new Error("cannot find images info");
+      if (!raw) throw new Error("cannot find images info");
       const info = JSON.parse(JSON.parse(raw));
       const meta = new GalleryMeta(window.location.href, info.title.english);
       meta.originTitle = info.title.japanese;
@@ -4983,8 +4854,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     async parseImgNodes(source) {
       await sleep(200);
       const nodes = Array.from(source.querySelectorAll(".thumb-container > .gallerythumb") ?? []);
-      if (nodes.length == 0)
-        throw new Error("cannot find image nodes");
+      if (nodes.length == 0) throw new Error("cannot find image nodes");
       const { info, mediaServer } = this.parseInfo();
       const mediaID = info.media_id;
       const digits = nodes.length.toString().length;
@@ -5034,17 +4904,14 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
       const doc = page;
       await sleep(200);
       const [files, thumbs] = this.parseInfo(doc);
-      if (files.length !== thumbs.length)
-        throw new Error("thumbs length not eq images length");
+      if (files.length !== thumbs.length) throw new Error("thumbs length not eq images length");
       const cover = doc.querySelector(".cover img")?.src;
-      if (!cover)
-        throw new Error("cannot find cover src");
+      if (!cover) throw new Error("cannot find cover src");
       const base = cover.slice(0, cover.lastIndexOf("/") + 1);
       const ret = [];
       const digits = files.length.toString().length;
       let href = window.location.href;
-      if (href.endsWith("/"))
-        href = href.slice(0, -1);
+      if (href.endsWith("/")) href = href.slice(0, -1);
       for (let i = 0; i < files.length; i++) {
         const title = (i + 1).toString().padStart(digits, "0");
         const thumb = thumbs[i];
@@ -5062,8 +4929,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
     }
     parseInfo(doc) {
       const matches = Array.from(doc.querySelectorAll("script[type]")).find((ele) => ele.textContent?.trimStart().startsWith("var g_th"))?.textContent?.match(/\('(.*)'\);/);
-      if (!matches || matches.length !== 2)
-        throw new Error("cannot find images info from script");
+      if (!matches || matches.length !== 2) throw new Error("cannot find images info from script");
       const info = JSON.parse(matches[1]);
       const files = Object.entries(info.fl);
       const thumbs = Object.entries(info.th);
@@ -5216,7 +5082,7 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
                   }) :
                   // We need to duplicated the code here to enable webpack
                   // to bundle worekr.js here.
-                  new Worker(new URL('' + "/worker-CRu_gK8D.js", (_documentCurrentScript && _documentCurrentScript.src || new URL('__entry.js', document.baseURI).href)), {
+                  new Worker(new URL(/* @vite-ignore */ "/assets/worker-CRu_gK8D-6gzAI2qN.js", (_documentCurrentScript && _documentCurrentScript.src || new URL('__entry.js', document.baseURI).href)), {
                       type: "module",
                   });
               this.#registerHandlers();
@@ -5433,14 +5299,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
           console.log(`failed to send download progress event: `, e);
           // Fetch arrayBuffer directly when it is not possible to get progress.
           buf = await resp.arrayBuffer();
-          cb &&
-              cb({
-                  url,
-                  total: buf.byteLength,
-                  received: buf.byteLength,
-                  delta: 0,
-                  done: true,
-              });
       }
       return buf;
   };
@@ -5603,12 +5461,10 @@ duration 0.04`).join("\n");
     }
     async processData(data, contentType, url) {
       const meta = this.ugoiraMetas[url];
-      if (!meta)
-        return [data, contentType];
+      if (!meta) return [data, contentType];
       const zipReader = new zip_js__namespace.ZipReader(new zip_js__namespace.Uint8ArrayReader(data));
       const start = performance.now();
-      if (!this.convertor)
-        this.convertor = await new FFmpegConvertor().init();
+      if (!this.convertor) this.convertor = await new FFmpegConvertor().init();
       const initConvertorEnd = performance.now();
       const promises = await zipReader.getEntries().then(
         (entries) => entries.map(
@@ -5689,8 +5545,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     async parseImgNodes(source) {
       const list = [];
-      if (source === "")
-        return list;
+      if (source === "") return list;
       const pidList = JSON.parse(source);
       this.fetchTagsByPids(pidList);
       const pageListData = await batchFetch(pidList.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
@@ -5740,8 +5595,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
       if (this.first) {
         const index = pidList.indexOf(this.first);
-        if (index > -1)
-          pidList.splice(index, 1);
+        if (index > -1) pidList.splice(index, 1);
       }
       while (pidList.length > 0) {
         const pids = pidList.splice(0, 20);
@@ -5769,11 +5623,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const tags = {};
       tagTrList.forEach((tr) => {
         const splits = tr.getAttribute("data-tag")?.trim().split(":");
-        if (splits === void 0 || splits.length === 0)
-          return;
+        if (splits === void 0 || splits.length === 0) return;
         const cat = splits[0];
-        if (tags[cat] === void 0)
-          tags[cat] = [];
+        if (tags[cat] === void 0) tags[cat] = [];
         tags[cat].push(splits[1].replaceAll('"', ""));
       });
       meta.tags = tags;
@@ -5859,8 +5711,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       let raw = "";
       try {
         raw = await window.fetch(node.href).then((resp) => resp.text());
-        if (!raw)
-          throw new Error("[text] is empty");
+        if (!raw) throw new Error("[text] is empty");
       } catch (error) {
         throw new Error(`Fetch source page error, expected [text]！ ${error}`);
       }
@@ -5939,8 +5790,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       if (!this.userID) {
         this.userID = getUserID();
       }
-      if (!this.userID)
-        throw new Error("Cannot obatained User ID");
+      if (!this.userID) throw new Error("Cannot obatained User ID");
       const variables = `{"userId":"${this.userID}","count":20,${cursor ? '"cursor":"' + cursor + '",' : ""}"includePromotedContent":false,"withClientEventToken":false,"withBirdwatchNotes":false,"withVoice":true,"withV2Timeline":true}`;
       const features = "&features=%7B%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_media_interstitial_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
       const url = `${window.location.origin}/i/api/graphql/aQQLnkexAl5z9ec_UgbEIA/UserMedia?variables=${encodeURIComponent(variables)}${features}`;
@@ -5958,8 +5808,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       headers.set("Sec-Fetch-Mode", "cors");
       headers.set("Sec-Fetch-Site", "same-origin");
       const csrfToken = document.cookie.match(/ct0=(\w+)/)?.[1];
-      if (!csrfToken)
-        throw new Error("Not found csrfToken");
+      if (!csrfToken) throw new Error("Not found csrfToken");
       headers.set("x-csrf-token", csrfToken);
       const res = await window.fetch(url, { headers });
       try {
@@ -5992,18 +5841,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       while (true) {
         const [mediaPage, nextCursor] = await this.fetchUserMedia(cursor);
         cursor = nextCursor || "last";
-        if (!mediaPage || mediaPage.length === 0)
-          break;
+        if (!mediaPage || mediaPage.length === 0) break;
         this.mediaPages.set(cursor, mediaPage);
         yield cursor;
-        if (!nextCursor)
-          break;
+        if (!nextCursor) break;
       }
     }
     async parseImgNodes(cursor) {
       const items = this.mediaPages.get(cursor);
-      if (!items)
-        throw new Error("warn: cannot find items");
+      if (!items) throw new Error("warn: cannot find items");
       const list = [];
       for (const item of items) {
         let mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
@@ -6061,8 +5907,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   function getUserID() {
     const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2] || "lililjiliijili";
     const followBTNs = Array.from(document.querySelectorAll("button[data-testid][aria-label]"));
-    if (followBTNs.length === 0)
-      return void 0;
+    if (followBTNs.length === 0) return void 0;
     const theBTN = followBTNs.find((btn) => (btn.getAttribute("aria-label") ?? "").toLowerCase().includes(`@${userName.toLowerCase()}`)) || followBTNs[0];
     return theBTN.getAttribute("data-testid").match(/(\d+)/)?.[1];
   }
@@ -6084,8 +5929,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       yield doc;
       while (true) {
         const next = doc.querySelector(".paginator > .next > a");
-        if (!next)
-          break;
+        if (!next) break;
         const url = next.href;
         doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
         yield doc;
@@ -6097,11 +5941,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const list = Array.from(doc.querySelectorAll(".grid > .gallary_wrap > .cc > li"));
       for (const li of list) {
         const anchor = li.querySelector(".pic_box > a");
-        if (!anchor)
-          continue;
+        if (!anchor) continue;
         const img = anchor.querySelector("img");
-        if (!img)
-          continue;
+        if (!img) continue;
         const title = li.querySelector(".title > .name")?.textContent || "unknown";
         result.push(new ImageNode(img.src, anchor.href, title));
       }
@@ -6110,8 +5952,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     async fetchOriginMeta(node) {
       const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       const img = doc.querySelector("#picarea");
-      if (!img)
-        throw new Error(`Cannot find #picarea from ${node.href}`);
+      if (!img) throw new Error(`Cannot find #picarea from ${node.href}`);
       const url = img.src;
       const title = url.split("/").pop();
       return { url, title };
@@ -6125,8 +5966,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     // https://www.hm19.lol/photos-index-page-1-aid-253297.html
     extractIDFromHref(href) {
       const match = href.match(/-(\d+).html$/);
-      if (!match)
-        return void 0;
+      if (!match) return void 0;
       return match[1];
     }
     pasrseGalleryMeta(doc) {
@@ -6176,8 +6016,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
       return workURLs.find((regex) => regex.test(url));
     });
-    if (!matcher)
-      return [null, false, false];
+    if (!matcher) return [null, false, false];
     return [
       matcher,
       conf.siteProfiles[matcher.name()]?.enableAutoOpen ?? true,
@@ -6187,17 +6026,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 
   function parseKey(event) {
     const keys = [];
-    if (event.ctrlKey)
-      keys.push("Ctrl");
-    if (event.shiftKey)
-      keys.push("Shift");
-    if (event.altKey)
-      keys.push("Alt");
-    if (event.metaKey)
-      keys.push("Meta");
+    if (event.ctrlKey) keys.push("Ctrl");
+    if (event.shiftKey) keys.push("Shift");
+    if (event.altKey) keys.push("Alt");
+    if (event.metaKey) keys.push("Meta");
     let key = event.key;
-    if (key === " ")
-      key = "Space";
+    if (key === " ") key = "Space";
     keys.push(key);
     return keys.join("+");
   }
@@ -6341,8 +6175,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             removeWorkURL(value2, getProfile());
           });
         }
-        if (changed)
-          saveConf(conf);
+        if (changed) saveConf(conf);
       };
       addWorkURL.addEventListener("click", () => {
         const background = document.createElement("div");
@@ -6350,8 +6183,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         background.setAttribute("style", "position:absolute;width:100%;height:100%;");
         fullPanel.appendChild(background);
         createInputElement(background, addWorkURL, (value) => {
-          if (!value)
-            return;
+          if (!value) return;
           try {
             new RegExp(value);
           } catch (_) {
@@ -6380,8 +6212,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     });
     fullPanel.querySelectorAll(".p-tooltip").forEach((element) => {
       const child = element.querySelector(".p-tooltiptext");
-      if (!child)
-        return;
+      if (!child) return;
       element.addEventListener("mouseenter", () => {
         child.style.display = "block";
         relocateElement(child, element, root.offsetWidth, root.offsetHeight);
@@ -6425,8 +6256,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         const keys = conf.keyboards[category][id];
         if (keys && keys.length > 0) {
           const index = keys.indexOf(key);
-          if (index !== -1)
-            keys.splice(index, 1);
+          if (index !== -1) keys.splice(index, 1);
           if (keys.length === 0) {
             delete conf.keyboards[category][id];
           }
@@ -6510,8 +6340,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       keys.forEach((key) => addKeyboardDescElement(button, category, id, key));
       const addKeyBoardDesc = (event) => {
         event.preventDefault();
-        if (event.key === "Alt" || event.key === "Shift" || event.key === "Control")
-          return;
+        if (event.key === "Alt" || event.key === "Shift" || event.key === "Control") return;
         const key = parseKey(event);
         if (conf.keyboards[category][id] !== void 0) {
           conf.keyboards[category][id].push(key);
@@ -6628,8 +6457,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         element.addEventListener("click", () => {
           pickedKey = element.getAttribute("data-key") || void 0;
           btnCustomInput.value = "";
-          if (pickedKey)
-            btnCustomInput.focus();
+          if (pickedKey) btnCustomInput.focus();
         });
       });
     };
@@ -6641,8 +6469,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const confirm = () => {
       const value = btnCustomInput.value;
       btnCustomInput.value = "";
-      if (!value || !pickedKey)
-        return;
+      if (!value || !pickedKey) return;
       conf.displayText[pickedKey] = value;
       saveConf(conf);
       controlBarContainer.innerHTML = createControlBar();
@@ -6807,13 +6634,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
       if (key === "colCount") {
         const rule = queryRule(HTML.styleSheet, ".fvg-grid");
-        if (rule)
-          rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
+        if (rule) rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
       }
       if (key === "paginationIMGCount") {
         const rule = queryRule(HTML.styleSheet, ".bifm-img");
-        if (rule)
-          rule.style.minWidth = conf[key] > 1 ? "" : "100vw";
+        if (rule) rule.style.minWidth = conf[key] > 1 ? "" : "100vw";
         q("#paginationInput", HTML.paginationAdjustBar).textContent = conf.paginationIMGCount.toString();
         BIFM.setNow(IFQ[IFQ.currIndex], "next");
       }
@@ -6909,8 +6734,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     function togglePanelEvent(idPrefix, collapse, target) {
       const id = `${idPrefix}-panel`;
       let element = q("#" + id, HTML.pageHelper);
-      if (!element)
-        return;
+      if (!element) return;
       if (collapse === void 0) {
         togglePanelEvent(idPrefix, !element.classList.contains("p-collapse"), target);
         return;
@@ -6950,8 +6774,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     function shouldStep(oriented, shouldPrevent) {
       if (BIFM.isReachedBoundary(oriented)) {
-        if (shouldPrevent && BIFM.tryPreventStep())
-          return false;
+        if (shouldPrevent && BIFM.tryPreventStep()) return false;
         return true;
       }
       return false;
@@ -7046,8 +6869,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             if (numberRecord && numberRecord.length > 0) {
               start = Number(numberRecord.join("")) - 1;
               numberRecord = null;
-              if (isNaN(start))
-                return;
+              if (isNaN(start)) return;
               start = Math.max(0, Math.min(start, IFQ.length - 1));
             }
             IFQ[start].node.root?.querySelector("a")?.dispatchEvent(new MouseEvent("click", { bubbles: false, cancelable: true }));
@@ -7093,8 +6915,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const inMain = {
         "open-full-view-grid": new KeyboardDesc(["Enter"], () => {
           const activeElement = document.activeElement;
-          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement)
-            return;
+          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
           EBUS.emit("toggle-main-view", true);
         }, true),
         "start-download": new KeyboardDesc(["Ctrl+Alt+d"], () => {
@@ -7106,8 +6927,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const keyboardEvents = initKeyboardEvent();
     let numberRecord = null;
     function bigImageFrameKeyBoardEvent(event) {
-      if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
-        return;
+      if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
       const key = parseKey(event);
       const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
         const override = conf.keyboards.inBigImageMode[id];
@@ -7122,8 +6942,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
     }
     function fullViewGridKeyBoardEvent(event) {
-      if (HTML.root.classList.contains("ehvp-root-collapse"))
-        return;
+      if (HTML.root.classList.contains("ehvp-root-collapse")) return;
       const key = parseKey(event);
       const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
         const override = conf.keyboards.inFullViewGrid[id];
@@ -7141,10 +6960,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
     }
     function keyboardEvent(event) {
-      if (!HTML.root.classList.contains("ehvp-root-collapse"))
-        return;
-      if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse"))
-        return;
+      if (!HTML.root.classList.contains("ehvp-root-collapse")) return;
+      if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
       const key = parseKey(event);
       const triggered = Object.entries(keyboardEvents.inMain).some(([id, desc]) => {
         const override = conf.keyboards.inMain[id];
@@ -7206,8 +7023,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         this.layout = new GRIDLayout(this.root);
       }
       EBUS.subscribe("pf-on-appended", (_total, nodes, chapterIndex, done) => {
-        if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex)
-          return;
+        if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex) return;
         this.append(nodes);
         this.done = done || false;
         setTimeout(() => this.renderCurrView(), 200);
@@ -7219,12 +7035,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         this.done = false;
       });
       EBUS.subscribe("ifq-do", (_, imf) => {
-        if (!BIFM.visible)
-          return;
-        if (imf.chapterIndex !== this.chapterIndex)
-          return;
-        if (!imf.node.root)
-          return;
+        if (!BIFM.visible) return;
+        if (imf.chapterIndex !== this.chapterIndex) return;
+        if (!imf.node.root) return;
         let scrollTo = 0;
         if (flowVision) {
           scrollTo = imf.node.root.parentElement.offsetTop - window.screen.availHeight / 3;
@@ -7241,8 +7054,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       EBUS.subscribe("cherry-pick-changed", (chapterIndex) => this.chapterIndex === chapterIndex && this.updateRender());
       const debouncer = new Debouncer();
       this.root.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", () => {
-        if (HTML.root.classList.contains("ehvp-root-collapse"))
-          return;
+        if (HTML.root.classList.contains("ehvp-root-collapse")) return;
         this.renderCurrView();
         this.tryExtend();
       }, 400));
@@ -7266,10 +7078,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
     }
     tryExtend() {
-      if (this.done)
-        return;
-      if (this.layout.nearBottom())
-        EBUS.emit("pf-try-extend");
+      if (this.done) return;
+      if (this.layout.nearBottom()) EBUS.emit("pf-try-extend");
     }
     updateRender() {
       this.queue.forEach(({ node }) => node.isRender() && node.render());
@@ -7298,8 +7108,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     nearBottom() {
       const nodes = Array.from(this.root.childNodes);
-      if (nodes.length === 0)
-        return false;
+      if (nodes.length === 0) return false;
       const lastImgNode = nodes[nodes.length - 1];
       const viewButtom = this.root.scrollTop + this.root.clientHeight;
       if (viewButtom + this.root.clientHeight * 2.5 < lastImgNode.offsetTop + lastImgNode.offsetHeight) {
@@ -7311,8 +7120,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.root.innerHTML = "";
     }
     visibleRange(container, children) {
-      if (children.length === 0)
-        return [container, container];
+      if (children.length === 0) return [container, container];
       const vh = container.offsetHeight;
       let first;
       let last;
@@ -7372,8 +7180,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     append(nodes) {
       for (const node of nodes) {
         node.element.style.marginLeft = "10px";
-        if (!this.lastRow)
-          this.lastRow = this.createRow(conf.colCount);
+        if (!this.lastRow) this.lastRow = this.createRow(conf.colCount);
         const lastChild = this.lastRow.lastElementChild;
         if (lastChild) {
           const nodeWidth = this.lastRow.offsetHeight * (node.ratio ?? 1);
@@ -7400,11 +7207,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return ret;
     }
     resizeRow(row, _nextChildWidth) {
-      if (row.childElementCount < 4)
-        return false;
+      if (row.childElementCount < 4) return false;
       const ratios = this.childrenRatio(row).filter((r) => r >= 1);
-      if (ratios.length === row.childElementCount && row.childElementCount < 5)
-        return false;
+      if (ratios.length === row.childElementCount && row.childElementCount < 5) return false;
       const gap = (row.childElementCount + 1) * 10;
       const width = this.childrenWidth(row) + gap;
       const scale = width / this.root.offsetWidth;
@@ -7415,8 +7220,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     nearBottom() {
       const last = this.lastRow;
-      if (!last)
-        return false;
+      if (!last) return false;
       const viewButtom = this.root.scrollTop + this.root.clientHeight;
       if (viewButtom + this.root.clientHeight * 2.5 < last.offsetTop + last.offsetHeight) {
         return false;
@@ -7428,8 +7232,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     visibleRange() {
       const children = Array.from(this.root.querySelectorAll(".fvg-sub-container"));
-      if (children.length === 0)
-        return [this.root, this.root];
+      if (children.length === 0) return [this.root, this.root];
       const vh = this.root.offsetHeight;
       let first;
       let last;
@@ -7486,8 +7289,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     });
   }
   function dragElementWithLine(event, element, lock, callback) {
-    if (event.buttons !== 1)
-      return;
+    if (event.buttons !== 1) return;
     document.querySelector("#drag-element-with-line")?.remove();
     const canvas = document.createElement("canvas");
     canvas.id = "drag-element-with-line";
@@ -7512,7 +7314,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     canvas.addEventListener("mousemove", (evt) => {
       let [endX, endY] = [
         lock.x ? startX : evt.clientX,
-        lock.y ? startY : evt.clientY
+        startY 
       ];
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.beginPath();
@@ -7952,7 +7754,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   width: 0px !important;
 }
 .ehvp-root-collapse .img-land,
-.big-img-frame-collapse .img-land {
+.big-img-frame-collapse .img-land,
+.ehvp-root-collapse .ehvp-message-box,
+.ehvp-root-collapse .p-panel
+ {
   display: none !important;
 }
 .download-bar {
@@ -8282,9 +8087,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .ehvp-p-tab-selected {
   color: rgb(120, 240, 80) !important;
 }
-.ehvp-root-collapse .ehvp-message-box {
-  display: none;
-}
 .ehvp-message-box {
   position: fixed;
   z-index: 4001;
@@ -8537,8 +8339,7 @@ ${chapters.map((c, i) => `<div><label>
           "click",
           () => chapters.forEach((c) => {
             const checkbox = this.chaptersElement.querySelector("#ch-" + c.id);
-            if (checkbox)
-              checkbox.checked = checked;
+            if (checkbox) checkbox.checked = checked;
           })
         )
       );
@@ -8578,8 +8379,7 @@ ${chapters.map((c, i) => `<div><label>
         if (rangeList.length > 0) {
           rangeList.forEach((range2) => {
             const newList = onAdd(chapterIndex, range2);
-            if (newList === null)
-              return;
+            if (newList === null) return;
             addRangeElements(this.cherryPickElement.firstElementChild, newList, (id) => onRemove(chapterIndex, id));
           });
         }
@@ -8617,8 +8417,7 @@ ${chapters.map((c, i) => `<div><label>
         addRangeElements(this.cherryPickElement.firstElementChild, onAdd(chIndex, range) || [], (id) => onRemove(chIndex, id));
       });
       EBUS.subscribe("pf-change-chapter", (index) => {
-        if (index === -1)
-          return;
+        if (index === -1) return;
         chapterIndex = index;
         addRangeElements(this.cherryPickElement.firstElementChild, getRangeList(chapterIndex) || [], (id) => onRemove(chapterIndex, id));
       });
@@ -8696,8 +8495,7 @@ ${chapters.map((c, i) => `<div><label>
       this.btn = q("#config-panel-btn", root);
       this.panel.querySelectorAll(".p-tooltip").forEach((element) => {
         const child = element.querySelector(".p-tooltiptext");
-        if (!child)
-          return;
+        if (!child) return;
         element.addEventListener("mouseenter", () => {
           child.style.display = "block";
           relocateElement(child, element, root.offsetWidth, root.offsetHeight);
@@ -9080,8 +8878,7 @@ ${chapters.map((c, i) => `<div><label>
         HTML.pageHelper.style.left = pos.left === void 0 ? "unset" : `${pos.left}px`;
         HTML.pageHelper.style.right = pos.right === void 0 ? "unset" : `${pos.right}px`;
         const rule = queryRule(HTML.styleSheet, ".b-main");
-        if (rule)
-          rule.style.flexDirection = pos.left === void 0 ? "row-reverse" : "row";
+        if (rule) rule.style.flexDirection = pos.left === void 0 ? "row-reverse" : "row";
       }
     }, q("#dragHub", HTML.pageHelper));
     HTML.readModeSelect.addEventListener("click", (event) => {
@@ -9141,8 +8938,7 @@ ${chapters.map((c, i) => `<div><label>
         this.chapterIndex = index;
         const [total, finished] = (() => {
           const queue = this.chapters()[index]?.queue;
-          if (!queue)
-            return [0, 0];
+          if (!queue) return [0, 0];
           const finished2 = queue.filter((imf) => imf.stage === FetchState.DONE).length;
           return [queue.length, finished2];
         })();
@@ -9152,23 +8948,19 @@ ${chapters.map((c, i) => `<div><label>
       EBUS.subscribe("bifm-on-show", () => this.minify("bigImageFrame"));
       EBUS.subscribe("bifm-on-hidden", () => this.minify("fullViewGrid"));
       EBUS.subscribe("ifq-do", (index, imf) => {
-        if (imf.chapterIndex !== this.chapterIndex)
-          return;
+        if (imf.chapterIndex !== this.chapterIndex) return;
         const queue = this.chapters()[this.chapterIndex]?.queue;
-        if (!queue)
-          return;
+        if (!queue) return;
         this.pageNumInChapter[this.chapterIndex] = index;
         this.setPageState({ current: (index + 1).toString() });
       });
       EBUS.subscribe("ifq-on-finished-report", (index, queue) => {
-        if (queue.chapterIndex !== this.chapterIndex)
-          return;
+        if (queue.chapterIndex !== this.chapterIndex) return;
         this.setPageState({ finished: queue.finishedIndex.size.toString() });
         evLog("info", `No.${index + 1} Finished，Current index at No.${queue.currIndex + 1}`);
       });
       EBUS.subscribe("pf-on-appended", (total, _ifs, chapterIndex, done) => {
-        if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex)
-          return;
+        if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex) return;
         this.setPageState({ total: `${total}${done ? "" : ".."}` });
       });
       html.currPageElement.addEventListener("click", (event) => {
@@ -9176,8 +8968,7 @@ ${chapters.map((c, i) => `<div><label>
         const index = parseInt(ele.textContent || "1") - 1;
         if (this.chapterIndex >= 0) {
           const queue = this.chapters()[this.chapterIndex]?.queue;
-          if (!queue || !queue[index])
-            return;
+          if (!queue || !queue[index]) return;
           EBUS.emit("imf-on-click", queue[index]);
         }
       });
@@ -9231,12 +9022,9 @@ ${chapters.map((c, i) => `<div><label>
         return [];
       }
       const filter = (id) => {
-        if (id === "chapters-panel-btn")
-          return this.chapters().length > 1;
-        if (id === "auto-page-btn" && level[0] === 3)
-          return this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing";
-        if (id === "pagination-adjust-bar")
-          return conf.readMode === "pagination";
+        if (id === "chapters-panel-btn") return this.chapters().length > 1;
+        if (id === "auto-page-btn" && level[0] === 3) return this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing";
+        if (id === "pagination-adjust-bar") return conf.readMode === "pagination";
         return true;
       };
       const pick = getPick(level[0], this.downloading()).filter(filter);
@@ -9331,8 +9119,7 @@ ${chapters.map((c, i) => `<div><label>
       this.ui.progress.firstElementChild.style.width = `${percent}%`;
       this.ui.time.textContent = secondsToTime(value);
       this.ui.duration.textContent = secondsToTime(max);
-      if (onlyState)
-        return;
+      if (onlyState) return;
       this.ui.playBTN.innerHTML = this.paused ? PLAY_ICON : PAUSE_ICON;
       this.ui.volumeBTN.innerHTML = conf.muted ? MUTED_ICON : VOLUME_ICON;
       this.ui.volumeProgress.firstElementChild.style.width = `${conf.volume || 30}%`;
@@ -9345,8 +9132,7 @@ ${chapters.map((c, i) => `<div><label>
       this.flushUI(state);
       element.addEventListener("timeupdate", (event) => {
         const ele = event.target;
-        if (!state)
-          return;
+        if (!state) return;
         state.time = ele.currentTime;
         this.flushUI(state, true);
       }, { signal: this.abortController.signal });
@@ -9448,19 +9234,15 @@ ${chapters.map((c, i) => `<div><label>
         resolve?.();
       };
       const doFrame = () => {
-        if (!this.scrolling)
-          return scrolled();
+        if (!this.scrolling) return scrolled();
         this.distance -= this.step + this.additional;
         let scrollTop = this.element.scrollTop + (this.step + this.additional) * sign;
         scrollTop = Math.max(scrollTop, 0);
         scrollTop = Math.min(scrollTop, this.element.scrollHeight - this.element.clientHeight);
         this.element.scrollTop = scrollTop;
-        if (this.distance <= 0)
-          return scrolled();
-        if (scrollTop === 0 || scrollTop === this.element.scrollHeight - this.element.clientHeight)
-          return scrolled();
-        if (this.directionChanged)
-          return scrolled();
+        if (this.distance <= 0) return scrolled();
+        if (scrollTop === 0 || scrollTop === this.element.scrollHeight - this.element.clientHeight) return scrolled();
+        if (this.directionChanged) return scrolled();
         window.requestAnimationFrame(doFrame);
       };
       window.requestAnimationFrame(doFrame);
@@ -9540,8 +9322,7 @@ ${chapters.map((c, i) => `<div><label>
           if (!direction) {
             direction = this.trail[i].direction(this.trail[j]);
           } else {
-            if (this.trail[i].direction(this.trail[j]) !== direction)
-              return;
+            if (this.trail[i].direction(this.trail[j]) !== direction) return;
           }
         }
         this.handlers.swipe?.(direction, ev);
@@ -9586,11 +9367,9 @@ ${chapters.map((c, i) => `<div><label>
       EBUS.subscribe("pf-change-chapter", (index) => this.chapterIndex = Math.max(0, index));
       EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
       EBUS.subscribe("imf-on-finished", (index, success, imf) => {
-        if (imf.chapterIndex !== this.chapterIndex)
-          return;
+        if (imf.chapterIndex !== this.chapterIndex) return;
         this.currLoadingState.delete(index);
-        if (!this.visible || !success)
-          return;
+        if (!this.visible || !success) return;
         const elements = [
           ...this.elements.curr.map((e, i) => ({ img: e, eleIndex: i, key: "curr" })),
           ...this.elements.prev.map((e, i) => ({ img: e, eleIndex: i, key: "prev" })),
@@ -9598,8 +9377,7 @@ ${chapters.map((c, i) => `<div><label>
           ...this.getMediaNodes().map((e, i) => ({ img: e, eleIndex: i, key: "" }))
         ];
         const ret = elements.find((o) => index === parseIndex(o.img));
-        if (!ret)
-          return;
+        if (!ret) return;
         let { img, eleIndex, key } = ret;
         if (imf.contentType?.startsWith("video")) {
           const vid = this.newMediaNode(index, imf);
@@ -9624,11 +9402,9 @@ ${chapters.map((c, i) => `<div><label>
       this.loadingHelper.style.left = "0px";
       this.frame.append(this.loadingHelper);
       EBUS.subscribe("imf-download-state-change", (imf) => {
-        if (imf.chapterIndex !== this.chapterIndex)
-          return;
+        if (imf.chapterIndex !== this.chapterIndex) return;
         const element = this.elements.curr.find((e) => e.getAttribute("d-random-id") === imf.randomID);
-        if (!element)
-          return;
+        if (!element) return;
         const index = parseIndex(element);
         this.currLoadingState.set(index, Math.floor(imf.downloadState.loaded / imf.downloadState.total * 100));
         this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
@@ -9640,8 +9416,7 @@ ${chapters.map((c, i) => `<div><label>
       this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
       const debouncer = new Debouncer("throttle");
       this.frame.addEventListener("mousemove", (mmevt) => {
-        if (conf.stickyMouse === "disable" || conf.readMode !== "pagination")
-          return;
+        if (conf.stickyMouse === "disable" || conf.readMode !== "pagination") return;
         debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
           if (this.lastMouse) {
             stickyMouse(this.frame, mmevt, this.lastMouse, conf.stickyMouse === "enable");
@@ -9650,10 +9425,8 @@ ${chapters.map((c, i) => `<div><label>
         }, 5);
       });
       this.frame.addEventListener("mousedown", (mdevt) => {
-        if (mdevt.button !== 0)
-          return;
-        if (mdevt.target.classList.contains("img-land"))
-          return;
+        if (mdevt.button !== 0) return;
+        if (mdevt.target.classList.contains("img-land")) return;
         let moved = false;
         let last = { x: mdevt.clientX, y: mdevt.clientY };
         const abort = new AbortController();
@@ -9666,8 +9439,7 @@ ${chapters.map((c, i) => `<div><label>
           }
         }, { once: true });
         this.frame.addEventListener("mousemove", (mmevt) => {
-          if ((!conf.magnifier || conf.readMode !== "pagination" || conf.stickyMouse !== "disable") && (moved = true))
-            return;
+          if ((!conf.magnifier || conf.readMode !== "pagination" || conf.stickyMouse !== "disable") && (moved = true)) return;
           if (!moved && conf.imgScale === 100) {
             this.scaleBigImages(1, 0, 150, false);
           }
@@ -9680,8 +9452,7 @@ ${chapters.map((c, i) => `<div><label>
       });
       new TouchManager(this.frame, {
         swipe: (direction) => {
-          if (conf.readMode === "continuous")
-            return;
+          if (conf.readMode === "continuous") return;
           let oriented = (() => {
             switch (direction) {
               case "L":
@@ -9710,8 +9481,7 @@ ${chapters.map((c, i) => `<div><label>
       this.scroller.scrolling = false;
     }
     hidden(event) {
-      if (event && event.target && event.target.tagName === "SPAN")
-        return;
+      if (event && event.target && event.target.tagName === "SPAN") return;
       this.visible = false;
       EBUS.emit("bifm-on-hidden");
       this.html.fullViewGrid.focus();
@@ -9734,8 +9504,7 @@ ${chapters.map((c, i) => `<div><label>
       } else {
         const queue = this.getChapter(this.chapterIndex).queue;
         const index = queue.indexOf(imf);
-        if (index === -1)
-          return;
+        if (index === -1) return;
         EBUS.emit("ifq-do", index, imf, oriented || "next");
       }
       this.lastMouse = void 0;
@@ -9746,8 +9515,7 @@ ${chapters.map((c, i) => `<div><label>
       this.resetPreventStep();
       const queue = this.getChapter(this.chapterIndex).queue;
       const index = queue.indexOf(imf);
-      if (index === -1)
-        return;
+      if (index === -1) return;
       if (conf.readMode === "continuous") {
         this.resetElements();
         this.elements.curr[0] = this.newMediaNode(index, imf);
@@ -9768,8 +9536,7 @@ ${chapters.map((c, i) => `<div><label>
       this.elements.next.forEach((element) => this.fragment.appendChild(element));
       const vid = this.elements.curr[0];
       if (vid && vid instanceof HTMLVideoElement) {
-        if (vid.paused)
-          this.tryPlayVideo(vid);
+        if (vid.paused) this.tryPlayVideo(vid);
       }
     }
     balanceElements(index, queue, oriented) {
@@ -9778,12 +9545,9 @@ ${chapters.map((c, i) => `<div><label>
         const prevIndex = i + index - conf.paginationIMGCount;
         const currIndex = i + index;
         const nextIndex = i + index + conf.paginationIMGCount;
-        if (prevIndex > -1)
-          indices.prev.push(prevIndex);
-        if (currIndex > -1 && currIndex < queue.length)
-          indices.curr.push(currIndex);
-        if (nextIndex < queue.length)
-          indices.next.push(nextIndex);
+        if (prevIndex > -1) indices.prev.push(prevIndex);
+        if (currIndex > -1 && currIndex < queue.length) indices.curr.push(currIndex);
+        if (nextIndex < queue.length) indices.next.push(nextIndex);
       }
       if (oriented === "next") {
         this.elements.prev = this.elements.curr;
@@ -9800,10 +9564,8 @@ ${chapters.map((c, i) => `<div><label>
           elements.splice(indexRange.length, elements.length - indexRange.length).forEach((ele) => ele.remove());
         }
         for (let j = 0; j < indexRange.length; j++) {
-          if (indexRange[j] === parseIndex(elements[j]))
-            continue;
-          if (elements[j])
-            elements[j].remove();
+          if (indexRange[j] === parseIndex(elements[j])) continue;
+          if (elements[j]) elements[j].remove();
           elements[j] = this.newMediaNode(indexRange[j], queue[indexRange[j]]);
         }
       });
@@ -9837,11 +9599,9 @@ ${chapters.map((c, i) => `<div><label>
     }
     stepNext(oriented, fixStep = 0, current) {
       let index = current !== void 0 ? current : this.elements.curr[0] ? parseInt(this.elements.curr[0].getAttribute("d-index")) : void 0;
-      if (index === void 0 || isNaN(index))
-        return;
+      if (index === void 0 || isNaN(index)) return;
       const queue = this.getChapter(this.chapterIndex)?.queue;
-      if (!queue || queue.length === 0)
-        return;
+      if (!queue || queue.length === 0) return;
       index = oriented === "next" ? index + conf.paginationIMGCount : index - conf.paginationIMGCount;
       if (conf.paginationIMGCount > 1) {
         index += fixStep;
@@ -9851,27 +9611,22 @@ ${chapters.map((c, i) => `<div><label>
       } else {
         index = Math.max(0, index);
       }
-      if (!queue[index])
-        return;
+      if (!queue[index]) return;
       this.setNow(queue[index], oriented);
     }
     // isMouse: onWheel triggered by mousewheel, if not, means by keyboard control
     onWheel(event, isMouse, preventCallback) {
-      if (!preventCallback)
-        this.callbackOnWheel?.(event);
+      if (!preventCallback) this.callbackOnWheel?.(event);
       if (event.buttons === 2) {
         event.preventDefault();
         this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
         return;
       }
-      if (conf.readMode === "continuous")
-        return;
+      if (conf.readMode === "continuous") return;
       const oriented = event.deltaY > 0 ? "next" : "prev";
       if (conf.stickyMouse === "disable") {
-        if (!this.isReachedBoundary(oriented))
-          return;
-        if (isMouse && this.tryPreventStep())
-          return;
+        if (!this.isReachedBoundary(oriented)) return;
+        if (isMouse && this.tryPreventStep()) return;
       }
       event.preventDefault();
       this.stepNext(oriented);
@@ -9936,8 +9691,7 @@ ${chapters.map((c, i) => `<div><label>
     consecutive() {
       this.throttler.addEvent("SCROLL", () => {
         this.debouncer.addEvent("REDUCE", () => {
-          if (!this.elements.curr[0])
-            return;
+          if (!this.elements.curr[0]) return;
           const distance2 = this.getRealOffsetTop(this.elements.curr[0]) - this.frame.scrollTop;
           if (this.tryReduce()) {
             this.restoreScrollTop(this.elements.curr[0], distance2);
@@ -9951,8 +9705,7 @@ ${chapters.map((c, i) => `<div><label>
           const newIndex = parseIndex(centerNode);
           const oriented = oldIndex < newIndex ? "next" : "prev";
           const queue = this.getChapter(this.chapterIndex).queue;
-          if (queue.length === 0 || newIndex < 0 || newIndex > queue.length - 1)
-            return;
+          if (queue.length === 0 || newIndex < 0 || newIndex > queue.length - 1) return;
           const imf = queue[newIndex];
           EBUS.emit("ifq-do", newIndex, imf, oriented);
           if (this.elements.curr[0] instanceof HTMLVideoElement) {
@@ -9996,8 +9749,7 @@ ${chapters.map((c, i) => `<div><label>
         mediaNodes = this.getMediaNodes();
         const last = mediaNodes[mediaNodes.length - 1];
         if (last.offsetTop < this.frame.scrollTop + this.frame.offsetHeight) {
-          if (this.extendImgNode(last, "next") === null)
-            break;
+          if (this.extendImgNode(last, "next") === null) break;
         } else {
           break;
         }
@@ -10024,8 +9776,7 @@ ${chapters.map((c, i) => `<div><label>
           shouldRemoveNodes.push(imgNode);
         }
       }
-      if (shouldRemoveNodes.length === 0)
-        return false;
+      if (shouldRemoveNodes.length === 0) return false;
       for (const imgNode of shouldRemoveNodes) {
         imgNode.remove();
       }
@@ -10038,24 +9789,20 @@ ${chapters.map((c, i) => `<div><label>
         throw new Error("BIFM: extendImgNode: media node index is NaN");
       }
       const queue = this.getChapter(this.chapterIndex).queue;
-      if (queue.length === 0)
-        return null;
+      if (queue.length === 0) return null;
       if (oriented === "prev") {
-        if (index === 0)
-          return null;
+        if (index === 0) return null;
         extendedNode = this.newMediaNode(index - 1, queue[index - 1]);
         mediaNode.before(extendedNode);
       } else {
-        if (index === queue.length - 1)
-          return null;
+        if (index === queue.length - 1) return null;
         extendedNode = this.newMediaNode(index + 1, queue[index + 1]);
         mediaNode.after(extendedNode);
       }
       return extendedNode;
     }
     newMediaNode(index, imf) {
-      if (!imf)
-        throw new Error("BIFM: newMediaNode: img fetcher is null");
+      if (!imf) throw new Error("BIFM: newMediaNode: img fetcher is null");
       if (imf.contentType?.startsWith("video")) {
         const vid = document.createElement("video");
         vid.classList.add("bifm-img");
@@ -10103,11 +9850,9 @@ ${chapters.map((c, i) => `<div><label>
      */
     scaleBigImages(fix, rate, _percent, syncConf) {
       const rule = queryRule(this.html.styleSheet, ".bifm-img");
-      if (!rule)
-        return 0;
+      if (!rule) return 0;
       let percent = _percent || parseInt(conf.readMode === "pagination" ? rule.style.height : rule.style.width);
-      if (isNaN(percent))
-        percent = 100;
+      if (isNaN(percent)) percent = 100;
       percent = percent + rate * fix;
       switch (conf.readMode) {
         case "pagination":
@@ -10124,8 +9869,7 @@ ${chapters.map((c, i) => `<div><label>
       if (conf.readMode === "pagination") {
         this.checkFrameOverflow();
         rule.style.minWidth = percent > 100 ? "" : "100vw";
-        if (percent === 100)
-          this.resetScaleBigImages(false);
+        if (percent === 100) this.resetScaleBigImages(false);
       }
       if (syncConf ?? true) {
         conf.imgScale = percent;
@@ -10146,8 +9890,7 @@ ${chapters.map((c, i) => `<div><label>
     }
     resetScaleBigImages(syncConf) {
       const rule = queryRule(this.html.styleSheet, ".bifm-img");
-      if (!rule)
-        return;
+      if (!rule) return;
       let percent = 100;
       rule.style.minWidth = "";
       rule.style.minHeight = "";
@@ -10159,8 +9902,7 @@ ${chapters.map((c, i) => `<div><label>
       if (conf.readMode === "pagination") {
         rule.style.height = "100vh";
         rule.style.margin = "0";
-        if (conf.paginationIMGCount === 1)
-          rule.style.minWidth = "100vw";
+        if (conf.paginationIMGCount === 1) rule.style.minWidth = "100vw";
       } else {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
         rule.style.maxWidth = "100vw";
@@ -10199,8 +9941,7 @@ ${chapters.map((c, i) => `<div><label>
           this.loadingHelper.style.display = "inline-block";
         }
         const ret = Array.from(this.currLoadingState).map(([k, v]) => `[P-${k + 1}: ${v}%]`);
-        if (conf.reversePages)
-          ret.reverse();
+        if (conf.reversePages) ret.reverse();
         this.loadingHelper.textContent = `Loading ${ret.join(",")}`;
       }
     }
@@ -10251,8 +9992,7 @@ ${chapters.map((c, i) => `<div><label>
       const frame = this.bifm.frame;
       if (!this.bifm.visible) {
         const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
-        if (queue.length === 0)
-          return;
+        if (queue.length === 0) return;
         const index = Math.max(parseIndex(this.bifm.elements.curr[0]), 0);
         this.bifm.show(queue[index]);
       }
@@ -10269,12 +10009,10 @@ ${chapters.map((c, i) => `<div><label>
         if (this.status !== "running") {
           break;
         }
-        if (this.bifm.elements.curr.length === 0)
-          break;
+        if (this.bifm.elements.curr.length === 0) break;
         const index = parseInt(this.bifm.elements.curr[0]?.getAttribute("d-index"));
         const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
-        if (index < 0 || index >= queue.length)
-          break;
+        if (index < 0 || index >= queue.length) break;
         if (conf.readMode === "pagination") {
           if (this.bifm.isReachedBoundary("next")) {
             const curr = this.bifm.elements.curr[0];
@@ -10312,16 +10050,14 @@ ${chapters.map((c, i) => `<div><label>
     }
   }
   function parseIndex(ele) {
-    if (!ele)
-      return -1;
+    if (!ele) return -1;
     const d = ele.getAttribute("d-index") || "";
     const i = parseInt(d);
     return isNaN(i) ? -1 : i;
   }
   function stickyMouse(element, event, lastMouse, reverse) {
     let [distanceY, distanceX] = [event.clientY - lastMouse.y, event.clientX - lastMouse.x];
-    if (reverse)
-      [distanceY, distanceX] = [-distanceY, -distanceX];
+    if (reverse) [distanceY, distanceX] = [-distanceY, -distanceX];
     const overflowY = element.scrollHeight - element.offsetHeight;
     if (overflowY > 0) {
       const rateY = overflowY / (element.offsetHeight / 4) * 3;
@@ -10368,8 +10104,7 @@ ${chapters.map((c, i) => `<div><label>
     addEventListeners(events, HTML, BIFM, DL, PH);
     EBUS.subscribe("downloader-canvas-on-click", (index) => {
       IFQ.currIndex = index;
-      if (IFQ.chapterIndex !== BIFM.chapterIndex)
-        return;
+      if (IFQ.chapterIndex !== BIFM.chapterIndex) return;
       BIFM.show(IFQ[index]);
     });
     EBUS.subscribe("notify-message", (level, msg, duration) => showMessage(HTML.messageBox, level, msg, duration));
@@ -10436,8 +10171,7 @@ ${chapters.map((c, i) => `<div><label>
   function reMain() {
     debouncer.addEvent("LOCATION-CHANGE", () => {
       const newStart = () => {
-        if (document.querySelector(".ehvp-base"))
-          return;
+        if (document.querySelector(".ehvp-base")) return;
         const [matcher, autoOpen, flowVision] = adaptMatcher(window.location.href);
         if (matcher) {
           destoryFunc = main(matcher, autoOpen, flowVision);

@@ -418,7 +418,10 @@ export function styleCSS() {
   width: 0px !important;
 }
 .ehvp-root-collapse .img-land,
-.big-img-frame-collapse .img-land {
+.big-img-frame-collapse .img-land,
+.ehvp-root-collapse .ehvp-message-box,
+.ehvp-root-collapse .p-panel
+ {
   display: none !important;
 }
 .download-bar {
@@ -747,9 +750,6 @@ export function styleCSS() {
 }
 .ehvp-p-tab-selected {
   color: rgb(120, 240, 80) !important;
-}
-.ehvp-root-collapse .ehvp-message-box {
-  display: none;
 }
 .ehvp-message-box {
   position: fixed;

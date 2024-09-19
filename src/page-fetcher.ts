@@ -1,7 +1,7 @@
 import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
-import ImageNode, { ChapterNode, VisualNode } from "./img-node";
+import ImageNode, { VisualNode } from "./img-node";
 import { Matcher } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
@@ -37,7 +37,6 @@ export class PageFetcher {
     EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
     // triggered when scrolling
     EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
-    EBUS.subscribe("back-chapters-selection", () => this.backChaptersSelection());
     EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
   }
 
@@ -54,7 +53,7 @@ export class PageFetcher {
     this.chapters.forEach(c => {
       c.sourceIter = this.matcher.fetchPagesSource(c);
       c.onclick = (index) => {
-        EBUS.emit("pf-change-chapter", index);
+        EBUS.emit("pf-change-chapter", index, c);
         if (this.chapters[index].queue) {
           this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
         }
@@ -64,20 +63,12 @@ export class PageFetcher {
         }
       };
     });
-
+    EBUS.emit("pf-update-chapters", this.chapters);
     if (this.chapters.length === 1) {
       this.beforeInit?.();
-      EBUS.emit("pf-change-chapter", 0);
+      EBUS.emit("pf-change-chapter", 0, this.chapters[0]);
       await this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
     }
-    if (this.chapters.length > 1) {
-      this.backChaptersSelection();
-    }
-  }
-
-  backChaptersSelection() {
-    EBUS.emit("pf-change-chapter", -1);
-    this.appendToView(this.chapters.length, this.chapters.map((c, i) => new ChapterNode(c, i)), -1, true);
   }
 
   /// start the chapter by index

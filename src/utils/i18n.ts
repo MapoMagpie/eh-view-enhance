@@ -105,11 +105,11 @@ const keyboardCustom: KeyboardCustom = {
       '减少每行数量',
       '열 수 줄이기'
     ),
-    'back-chapters-selection': new I18nValue(
-      'Back to Chapters Selection',
-      '返回章节选择',
-      '챕터 선택으로 돌아가기'
-    ),
+    // 'back-chapters-selection': new I18nValue(
+    //   'Back to Chapters Selection',
+    //   '返回章节选择',
+    //   '챕터 선택으로 돌아가기'
+    // ),
     'toggle-auto-play': new I18nValue(
       'Toggle Auto Play',
       '切换自动播放',

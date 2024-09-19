@@ -1,9 +1,8 @@
 import { DownloadState } from "./img-fetcher";
-import { Chapter } from "./page-fetcher";
 import { Debouncer } from "./utils/debouncer";
 import { resizing } from "./utils/image-resizing";
 
-const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
+export const DEFAULT_THUMBNAIL = "data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
 
 const DEFAULT_NODE_TEMPLATE = document.createElement("div");
 DEFAULT_NODE_TEMPLATE.classList.add("img-node");
@@ -40,7 +39,6 @@ export default class ImageNode {
   imgElement?: HTMLImageElement;
   canvasElement?: HTMLCanvasElement;
   canvasCtx?: CanvasRenderingContext2D;
-  canvasSized: boolean = false;
   delaySRC?: Promise<string>;
   originSrc?: string;
   blobSrc?: string;
@@ -68,9 +66,8 @@ export default class ImageNode {
     this.imgElement.setAttribute("title", this.title);
     this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
     if (this.rect) {
-      this.canvasElement.width = 1000;
-      this.canvasElement.height = Math.floor(1000 * (this.rect.h / this.rect.w));
-      this.canvasSized = true;
+      this.canvasElement.width = 512;
+      this.canvasElement.height = Math.floor(512 * (this.rect.h / this.rect.w));
     }
     this.canvasCtx = this.canvasElement.getContext("2d")!;
     this.canvasCtx.fillStyle = "#aaa";
@@ -92,20 +89,16 @@ export default class ImageNode {
     this.imgElement.onerror = null;
     const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
     const oldRatio = this.canvasElement.height / this.canvasElement.width;
-    if (this.canvasSized) {
-      // if newRatio is less than (or more than) the oldRatio by 10%, we don't need to resize
-      this.canvasSized = (this.canvasElement.height + this.canvasElement.width) > 100 && Math.abs(newRatio - oldRatio) < 1.1;
-    }
-    // TODO: maybe limit the ratio of the image, if it's too large
-    if (!this.canvasSized) {
-      if (this.root.parentElement?.classList.contains("fvg-sub-container")) {
+    const flowVision = this.root.parentElement?.classList.contains("fvg-sub-container");
+    let resize = flowVision ? this.root.offsetHeight !== this.canvasElement.height : this.root.offsetWidth !== this.canvasElement.width;
+    if (resize || Math.abs(newRatio - oldRatio) > 1.07) {
+      if (flowVision) {
         this.canvasElement.height = this.root.offsetHeight;
         this.canvasElement.width = Math.floor(this.root.offsetHeight / newRatio);
       } else {
         this.canvasElement.width = this.root.offsetWidth;
         this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
       }
-      this.canvasSized = true;
     }
     if (this.imgElement.src === this.thumbnailSrc) {
       // https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image
@@ -147,7 +140,6 @@ export default class ImageNode {
   unrender() {
     if (!this.imgElement) return;
     this.imgElement.src = "";
-    this.canvasSized = false;
   }
 
   progress(state: DownloadState) {
@@ -222,47 +214,3 @@ export default class ImageNode {
   }
 }
 
-export class ChapterNode implements VisualNode {
-  chapter: Chapter;
-  index: number;
-  constructor(chapter: Chapter, index: number) {
-    this.chapter = chapter;
-    this.index = index;
-  }
-  ratio(): number | undefined {
-    return undefined;
-  }
-
-  create(): HTMLElement {
-    const element = DEFAULT_NODE_TEMPLATE.cloneNode(true) as HTMLElement;
-    const anchor = element.firstElementChild as HTMLAnchorElement;
-    if (this.chapter.thumbimg) {
-      const img = anchor.firstElementChild as HTMLImageElement;
-      img.src = this.chapter.thumbimg;
-      img.title = this.chapter.title.toString();
-      img.style.display = "block";
-      img.nextElementSibling?.remove();
-    }
-    // create title element
-    const description = document.createElement("div");
-    description.classList.add("ehvp-chapter-description");
-    if (Array.isArray(this.chapter.title)) {
-      description.innerHTML = this.chapter.title.map((t) => `<span>${t}</span>`).join("<br>");
-    } else {
-      description.innerHTML = `<span>${this.chapter.title}</span>`;
-    }
-    anchor.appendChild(description);
-
-    anchor.onclick = (event) => {
-      event.preventDefault();
-      this.chapter.onclick?.(this.index);
-    };
-    return element;
-  }
-
-  render(): void { }
-
-  isRender(): boolean {
-    return true;
-  }
-}

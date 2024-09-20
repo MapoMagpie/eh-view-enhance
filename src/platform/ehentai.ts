@@ -73,7 +73,7 @@ export class EHMatcher extends BaseMatcher {
 
   async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
-    let doc = await (async (): Promise<Document | null> => {
+    const doc = await (async (): Promise<Document | null> => {
       if (source instanceof Document) {
         return source;
       } else {
@@ -124,11 +124,11 @@ export class EHMatcher extends BaseMatcher {
     }
 
     let srcs: string[] = [];
-    let delayURLs: (Promise<string> | undefined)[] = [];
+    const delayURLs: (Promise<string> | undefined)[] = [];
 
     // sprite thumbnails
     if (isSprite) {
-      let spriteURLs: { url: string, range: { index: number, style: CSSStyleDeclaration }[] }[] = [];
+      const spriteURLs: { url: string, range: { index: number, style: CSSStyleDeclaration }[] }[] = [];
       for (let i = 0; i < nodes.length; i++) {
         const nodeStyles = nodes[i].style;
         const url = nodeStyles.background.match(regulars.sprite)?.[1]?.replaceAll("\"", "");
@@ -194,14 +194,14 @@ export class EHMatcher extends BaseMatcher {
   async *fetchPagesSource(): AsyncGenerator<PagesSource> {
     // const doc = await window.fetch(chapter.source).then((resp) => resp.text()).then(raw => new DOMParser().parseFromString(raw, "text/html"));
     const doc = document;
-    let fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
+    const fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
     // MPV
     if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
       yield window.location.href;
       return;
     }
     // Normal
-    let pages = Array.from(doc.querySelectorAll(".gtb td a")).filter(a => a.getAttribute("href")).map(a => a.getAttribute("href")!);
+    const pages = Array.from(doc.querySelectorAll(".gtb td a")).filter(a => a.getAttribute("href")).map(a => a.getAttribute("href")!);
     if (pages.length === 0) {
       throw new Error("未获取到分页元素！");
     }
@@ -227,7 +227,7 @@ export class EHMatcher extends BaseMatcher {
   }
 
   async fetchOriginMeta(node: ImageNode, retry: boolean): Promise<OriginMeta> {
-    let text: string | Error = await window.fetch(node.href).then(resp => resp.text()).catch(reason => new Error(reason));
+    const text: string | Error = await window.fetch(node.href).then(resp => resp.text()).catch(reason => new Error(reason));
     if (text instanceof Error || !text) throw new Error(`fetch source page error, ${text.toString()}`);
 
     // TODO: Your IP address has been temporarily banned for excessive pageloads which indicates that you are using automated mirroring/harvesting software. The ban expires in 2 days and 23 hours

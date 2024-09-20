@@ -63,7 +63,7 @@ export class BigImageFrameManager {
       ];
       const ret = elements.find((o) => index === parseIndex(o.img));
       if (!ret) return;
-      let { img, eleIndex, key } = ret;
+      const { img, eleIndex, key } = ret;
       // if is video, then replace img with video
       if (imf.contentType?.startsWith("video")) {
         const vid = this.newMediaNode(index, imf) as HTMLVideoElement;
@@ -151,7 +151,7 @@ export class BigImageFrameManager {
     new TouchManager(this.frame, {
       swipe: (direction) => {
         if (conf.readMode === "continuous") return;
-        let oriented: Oriented = (() => {
+        const oriented: Oriented = (() => {
           switch (direction) {
             case "L":
               return conf.reversePages ? "next" : "prev";
@@ -425,8 +425,8 @@ export class BigImageFrameManager {
           this.restoreScrollTop(this.elements.curr[0], distance);
         }
       }, 500);
-      let mediaNodes = this.getMediaNodes();
-      let index = this.findMediaNodeIndexOnCenter(mediaNodes);
+      const mediaNodes = this.getMediaNodes();
+      const index = this.findMediaNodeIndexOnCenter(mediaNodes);
       const centerNode = mediaNodes[index];
 
       if (this.elements.curr[0] !== centerNode) {

@@ -81,7 +81,7 @@ export class PageFetcher {
       evLog("error", "chapter sourceIter is not set!");
       return;
     }
-    let first = await chapter.sourceIter.next();
+    const first = await chapter.sourceIter.next();
     if (!first.done) {
       await this.appendImages(first.value);
     }

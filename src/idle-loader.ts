@@ -74,10 +74,10 @@ export class IdleLoader {
     }
     // Skip found Fetcher
     const picked = this.cherryPick?.() || new CherryPick();
-    let foundFetcherIndex = new Set<Number>();
+    const foundFetcherIndex = new Set<number>();
     let hasFailed = false;
     for (let i = 0; i < this.processingIndexList.length; i++) {
-      let processingIndex = this.processingIndexList[i];
+      const processingIndex = this.processingIndexList[i];
       const imf = this.queue[processingIndex];
       if (imf.stage === FetchState.FAILED) {
         hasFailed = true;

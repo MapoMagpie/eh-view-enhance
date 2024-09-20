@@ -7,7 +7,7 @@ class Crc32 {
     let i: number;
     let j: number;
     let t: number;
-    let table = []
+    const table = []
     for (i = 0; i < 256; i++) {
       t = i
       for (j = 0; j < 8; j++) {
@@ -21,7 +21,7 @@ class Crc32 {
   }
   append(data: Uint8Array) {
     let crc = this.crc | 0;
-    let table = this.table
+    const table = this.table
     for (let offset = 0, len = data.length | 0; offset < len; offset++) {
       crc = (crc >>> 8) ^ table[(crc ^ data[offset]) & 0xFF]
     }
@@ -71,7 +71,7 @@ class DataHelper {
   array: Uint8Array;
   view: DataView;
   constructor(byteLength: number) {
-    let uint8 = new Uint8Array(byteLength)
+    const uint8 = new Uint8Array(byteLength)
     this.array = uint8;
     this.view = new DataView(uint8.buffer)
   }
@@ -140,8 +140,8 @@ export class Zip {
   private async writeHeader() {
     if (!this.curr) return;
     const curr = this.curr;
-    let data = new DataHelper(30 + curr.nameBuf.length);
-    let header = curr.header;
+    const data = new DataHelper(30 + curr.nameBuf.length);
+    const header = curr.header;
     if (curr.level !== 0 && !curr.directory) {
       header.view.setUint16(4, 0x0800);
     }
@@ -182,7 +182,7 @@ export class Zip {
   private async writeFooter() {
     if (!this.curr) return;
     const curr = this.curr;
-    var footer = new DataHelper(16);
+    const footer = new DataHelper(16);
     footer.view.setUint32(0, 0x504b0708);
 
     if (curr.crc) {
@@ -202,7 +202,7 @@ export class Zip {
   }
 
   private async closeZip() {
-    const fileCount = this.files.length;;
+    const fileCount = this.files.length;
     // Central directory size 
     let centralDirLength = 0;
     let idx = 0;

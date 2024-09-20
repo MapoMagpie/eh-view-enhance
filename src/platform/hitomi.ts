@@ -22,17 +22,17 @@ class HitomiGG {
     return parseInt(m[2] + m[1], 16).toString(10);
   }
   subdomain_from_url(url: string, base: string) {
-    var retval = 'b';
+    let retval = 'b';
     if (base) {
       retval = base;
     }
-    var b = 16;
-    var r = /\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])/;
-    var m = r.exec(url);
+    const b = 16;
+    const r = /\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])/;
+    const m = r.exec(url);
     if (!m) {
       return 'a';
     }
-    let g = parseInt(m[2] + m[1], b);
+    const g = parseInt(m[2] + m[1], b);
     if (!isNaN(g)) {
       retval = String.fromCharCode(97 + this.m(g)) + retval;
     }
@@ -41,7 +41,7 @@ class HitomiGG {
 
   thumbURL(hash: string): string {
     hash = hash.replace(/^.*(..)(.)$/, '$2/$1/' + hash);
-    let url = 'https://a.hitomi.la/' + 'webpsmalltn' + '/' + hash + '.' + 'webp';
+    const url = 'https://a.hitomi.la/' + 'webpsmalltn' + '/' + hash + '.' + 'webp';
     return url.replace(/\/\/..?\.hitomi\.la\//, '//' + this.subdomain_from_url(url, 'tn') + '.hitomi.la/');
   }
 
@@ -150,7 +150,7 @@ export class HitomiMather extends BaseMatcher {
         evLog("error", "no format found: ", files[i]);
         continue;
       }
-      let title = file.name.replace(/\.\w+$/, "");
+      const title = file.name.replace(/\.\w+$/, "");
       const src = this.gg!.originURL(file.hash, ext);
       const { width, height } = file;
       list.push(new ImageNode(this.gg!.thumbURL(files[i].hash), src, title + "." + ext, undefined, src, (width && height) ? { w: width, h: height } : undefined));

@@ -69,7 +69,7 @@ export class AkumaMatcher extends BaseMatcher {
     const doc = page as Document;
     const items = Array.from(doc.querySelectorAll<HTMLAnchorElement>("li > a.page-item"));
     if (items.length === 0) throw new Error("cannot find thumbnails");
-    let ret: ImageNode[] = [];
+    const ret: ImageNode[] = [];
     const digits = this.originImages!.length.toString().length;
     for (const item of items) {
       const origin = this.originImages![this.index];

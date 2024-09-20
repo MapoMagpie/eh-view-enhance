@@ -90,7 +90,7 @@ export default class ImageNode {
     const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
     const oldRatio = this.canvasElement.height / this.canvasElement.width;
     const flowVision = this.root.parentElement?.classList.contains("fvg-sub-container");
-    let resize = flowVision ? this.root.offsetHeight !== this.canvasElement.height : this.root.offsetWidth !== this.canvasElement.width;
+    const resize = flowVision ? this.root.offsetHeight !== this.canvasElement.height : this.root.offsetWidth !== this.canvasElement.width;
     if (resize || Math.abs(newRatio - oldRatio) > 1.07) {
       if (flowVision) {
         this.canvasElement.height = this.root.offsetHeight;

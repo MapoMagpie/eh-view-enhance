@@ -78,7 +78,7 @@ export class VideoControl {
   }
 
   private flushUI(state?: VideoState, onlyState?: boolean) {
-    let { value, max } = state ? { value: state.time, max: state.duration } : { value: 0, max: 10 };
+    const { value, max } = state ? { value: state.time, max: state.duration } : { value: 0, max: 10 };
     const percent = (value / max) * 100;
     (this.ui.progress.firstElementChild as HTMLElement).style.width = `${percent}%`;
     this.ui.time.textContent = secondsToTime(value);

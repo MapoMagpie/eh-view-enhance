@@ -107,7 +107,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         this.meta.title = `pixiv_${title}`
       }
     }
-    let tags = Object.values(this.works).map(w => w.tags).flat();
+    const tags = Object.values(this.works).map(w => w.tags).flat();
     this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
     return this.meta;
   }
@@ -171,7 +171,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         throw new Error(`Fetch page list error: ${data.message}`);
       }
       this.pageCount += data.body.length;
-      let digits = data.body.length.toString().length;
+      const digits = data.body.length.toString().length;
       let j = -1;
       for (const p of data.body) {
         this.pageSize[p.urls.original] = [p.width, p.height];
@@ -199,7 +199,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
     }
     // find author eg. https://www.pixiv.net/en/users/xxx
-    let u = document.querySelector<HTMLAnchorElement>("a[data-gtm-value][href*='/users/']")?.href
+    const u = document.querySelector<HTMLAnchorElement>("a[data-gtm-value][href*='/users/']")?.href
       || document.querySelector<HTMLAnchorElement>("a.user-details-icon[href*='/users/']")?.href
       || window.location.href;
     const author = /users\/(\d+)/.exec(u)?.[1];

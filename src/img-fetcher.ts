@@ -235,7 +235,7 @@ export class IMGFetcher implements VisualNode {
       };
       abort = xhrWapper(imgFetcher.node.originSrc!, "blob", {
         onload: function(response) {
-          let data = response.response;
+          const data = response.response;
           try {
             imgFetcher.setDownloadState({ readyState: response.readyState });
           } catch (error) {

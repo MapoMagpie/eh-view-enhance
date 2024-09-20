@@ -156,7 +156,7 @@ export class TwitterMatcher extends BaseMatcher {
     if (!items) throw new Error("warn: cannot find items");
     const list: ImageNode[] = [];
     for (const item of items) {
-      let mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
+      const mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
       if (mediaList === undefined) {
         evLog("error", "Not found mediaList: ", item);
         continue;
@@ -176,7 +176,7 @@ export class TwitterMatcher extends BaseMatcher {
         const src = `${baseSrc}?format=${ext}&name=${media.sizes.small ? "small" : "thumb"}`;
         let href = media.expanded_url.replace(/\/(photo|video)\/\d+/, "");
         href = `${href}/${media.type === "video" ? "video" : "photo"}/${i + 1}`
-        let largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`
+        const largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`
         const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`
         const wh = { w: media.sizes.small.w, h: media.sizes.small.h };
         const node = new ImageNode(src, href, title, undefined, largeSrc, wh);

@@ -229,7 +229,7 @@ export class Downloader {
         }
       });
     // gallery meta
-    let meta = new TextEncoder().encode(JSON.stringify(this.meta(chapter), null, 2));
+    const meta = new TextEncoder().encode(JSON.stringify(this.meta(chapter), null, 2));
     ret.push({
       stream: () => Promise.resolve(uint8ArrayToReadableStream(meta)),
       size: () => meta.byteLength,
@@ -240,9 +240,9 @@ export class Downloader {
 
   async download(chapters: Chapter[]) {
     try {
-      let archiveName = this.title().replaceAll(FILENAME_INVALIDCHAR, "_");
-      let separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
-      let singleChapter = chapters.length === 1;
+      const archiveName = this.title().replaceAll(FILENAME_INVALIDCHAR, "_");
+      const separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
+      const singleChapter = chapters.length === 1;
       this.panel.flushUI("packaging");
       const dirnameSet = new Set<string>();
       const files: FileLike[] = [];
@@ -264,11 +264,11 @@ export class Downloader {
       }
       const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
       files.forEach((file) => zip.add(file));
-      let save = async () => {
+      const save = async () => {
         let readable;
         while (readable = zip.nextReadableStream()) {
           const blob = await new Response(readable).blob();
-          let ext = zip.currVolumeNo === zip.volumes - 1 ?
+          const ext = zip.currVolumeNo === zip.volumes - 1 ?
             "zip" :
             "z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
           // TODO: chromium support writeableStream https://developer.chrome.com/docs/capabilities/web-apis/file-system-access#write-file
@@ -283,7 +283,7 @@ export class Downloader {
     } finally {
       this.abort(this.done ? "downloaded" : "downloadFailed");
     }
-  };
+  }
 
   abort(stage: "downloadFailed" | "downloaded" | "downloadStart") {
     this.downloading = false;
@@ -322,7 +322,7 @@ function shrinkFilename(str: string, limit: number): string {
 function deduplicate(set: Set<string>, title: string): string {
   let newTitle = title;
   if (set.has(newTitle)) {
-    let splits = newTitle.split(".");
+    const splits = newTitle.split(".");
     const ext = splits.pop();
     const prefix = splits.join(".");
     const num = parseInt(prefix.match(/_(\d+)$/)?.[1] || "");
@@ -458,7 +458,7 @@ export class CherryPick {
     if (this.values.length < 2) return;
     this.values.sort((v1, v2) => v1.range()[0] - v2.range()[0]);
     let i = 0, j = 1;
-    let skip: number[] = [];
+    const skip: number[] = [];
     while (i < this.values.length && j < this.values.length) {
       const r1 = this.values[i];
       const r2 = this.values[j];

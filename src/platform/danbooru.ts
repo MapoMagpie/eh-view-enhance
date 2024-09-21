@@ -44,7 +44,7 @@ abstract class DanbooruMatcher extends BaseMatcher {
   abstract getBlacklist(doc: Document): string[];
 
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
-    let cached = this.cachedOriginMeta(node.href);
+    const cached = this.cachedOriginMeta(node.href);
     if (cached) return cached;
     let url: string | null = null;
     const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
@@ -264,7 +264,7 @@ export class YandereMatcher extends BaseMatcher {
   }
 
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
-    let id = node.href.split("/").pop();
+    const id = node.href.split("/").pop();
     if (!id) {
       throw new Error(`cannot find id from ${node.href}`);
     }
@@ -342,7 +342,7 @@ export class KonachanMatcher extends BaseMatcher {
     return ret;
   }
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
-    let id = node.href.split("/").pop();
+    const id = node.href.split("/").pop();
     if (!id) {
       throw new Error(`cannot find id from ${node.href}`);
     }
@@ -376,7 +376,7 @@ export class GelBooruMatcher extends DanbooruMatcher {
     return /gelbooru.com\/index.php\?page=post&s=list/;
   }
   nextPage(doc: Document): string | null {
-    let href = doc.querySelector<HTMLAnchorElement>("#paginator a[alt=next]")?.href;
+    const href = doc.querySelector<HTMLAnchorElement>("#paginator a[alt=next]")?.href;
     if (href) return href;
     return doc.querySelector<HTMLAnchorElement>("#paginator b + a")?.href || null;
   }
@@ -429,7 +429,7 @@ export class E621Matcher extends DanbooruMatcher {
     throw new Error("Method not implemented.");
   }
   getBlacklist(doc: Document): string[] {
-    let content = doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content");
+    const content = doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content");
     if (!content) return [];
     return content.slice(1, -1).split(",").map(s => s.slice(1, -1))
   }
@@ -438,7 +438,7 @@ export class E621Matcher extends DanbooruMatcher {
     return Array.from(doc.querySelectorAll<HTMLElement>("#posts-container > article"));
   }
   toImgNode(ele: HTMLElement): [ImageNode | null, string] {
-    let src = ele.getAttribute("data-preview-url");
+    const src = ele.getAttribute("data-preview-url");
     if (!src) return [null, ""];
     const href = `${window.location.origin}/posts/${ele.getAttribute("data-id")}`;
     const tags = ele.getAttribute("data-tags");

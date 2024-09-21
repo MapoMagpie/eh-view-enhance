@@ -36,7 +36,7 @@ function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, p
   for (let m = 0; m < s; m++) {
     let c = Math.floor(height / s);
     let g = c * m;
-    let w = height - c * (m + 1) - l;
+    const w = height - c * (m + 1) - l;
     0 == m ? c += l : g += l,
       ctx.drawImage(e, 0, w, r, c, 0, g, r, c)
   }
@@ -118,7 +118,7 @@ export class Comic18Matcher extends BaseMatcher {
     const matches = url.match(reg);
     const gid = matches![1];
     // let scrambleID: number = scramble_id;
-    let scrambleID = 220980;
+    const scrambleID = 220980;
     if (Number(gid) < scrambleID) return [data, contentType];
     const page = matches![2];
     const ext = matches![3];

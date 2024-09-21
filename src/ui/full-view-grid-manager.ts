@@ -99,7 +99,7 @@ export class FullViewGridManager {
   }
   renderCurrView() {
     const [se, ee] = this.layout.visibleRange(this.root, this.queue.map(e => e.element));
-    let [start, end] = [parseInt(se.getAttribute("data-index") ?? "-1"), parseInt(ee.getAttribute("data-index") ?? "-1")];
+    const [start, end] = [parseInt(se.getAttribute("data-index") ?? "-1"), parseInt(ee.getAttribute("data-index") ?? "-1")];
     if (start < end && start > -1 && end < this.queue.length) {
       this.queue.slice(start, end + 1).forEach(e => e.node.render());
       evLog("info", "render curr view, range: ", `[${start}-${end}]`);
@@ -219,7 +219,7 @@ class FlowVisionLayout extends Layout {
     return width;
   }
   childrenRatio(row: HTMLElement): number[] {
-    let ret: number[] = [];
+    const ret: number[] = [];
     row.childNodes.forEach(c => ret.push((c as HTMLElement).offsetWidth / (c as HTMLElement).offsetHeight));
     return ret;
   }

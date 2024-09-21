@@ -79,7 +79,7 @@ export class MangaCopyMatcher extends BaseMatcher {
 const PATH_WORD_REGEX = /\/comic\/(\w*)/;
 
 function initCypto(): any {
-  let c: { exports: any, i: number, l: boolean }[] = [];
+  const c: { exports: any, i: number, l: boolean }[] = [];
   function r(i: number) {
     if (c[i]) return c[i].exports;
     c[i] = {
@@ -87,7 +87,7 @@ function initCypto(): any {
       l: false,
       exports: {}
     };
-    let e = c[i];
+    const e = c[i];
     // @ts-ignore
     const wj = webpackJsonp;
     return wj[0][1][i].call(e.exports, e, e.exports, r), e.l = true, e.exports;
@@ -96,16 +96,16 @@ function initCypto(): any {
 }
 
 function decrypt(raw: string): string {
-  let dio = "xxxmanga.woo.key";
-  let cypto: any = initCypto();
-  let str = raw;
-  let header = str.substring(0x0, 0x10);
-  let body = str.substring(0x10, str.length);
-  let dioEn = cypto.enc.Utf8["parse"](dio);
-  let headerEn = cypto.enc.Utf8["parse"](header);
-  let bodyDe = (function(b: string) {
-    let bHex = cypto.enc.Hex.parse(b);
-    let b64 = cypto.enc.Base64.stringify(bHex);
+  const dio = "xxxmanga.woo.key";
+  const cypto: any = initCypto();
+  const str = raw;
+  const header = str.substring(0x0, 0x10);
+  const body = str.substring(0x10, str.length);
+  const dioEn = cypto.enc.Utf8["parse"](dio);
+  const headerEn = cypto.enc.Utf8["parse"](header);
+  const bodyDe = (function(b: string) {
+    const bHex = cypto.enc.Hex.parse(b);
+    const b64 = cypto.enc.Base64.stringify(bHex);
     return cypto.AES.decrypt(b64, dioEn, {
       iv: headerEn,
       mode: cypto.mode["CBC"],

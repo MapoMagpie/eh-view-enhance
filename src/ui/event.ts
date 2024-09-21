@@ -49,7 +49,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       paginationIMGCount: [1, 5],
       scrollingSpeed: [1, 100],
     };
-    let mod = key === "preventScrollPageTime" ? 10 : 1;
+    const mod = key === "preventScrollPageTime" ? 10 : 1;
     if (data === "add") {
       if (conf[key] < range[key][1]) {
         conf[key] += mod;
@@ -173,7 +173,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
 
   function togglePanelEvent(idPrefix: string, collapse?: boolean, target?: HTMLElement) {
     const id = `${idPrefix}-panel`;
-    let element = q("#" + id, HTML.pageHelper);
+    const element = q("#" + id, HTML.pageHelper);
     if (!element) return;
 
     // collapse not specified, toggle
@@ -195,7 +195,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     // PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
   }
 
-  let bodyOverflow = document.body.style.overflow;
+  const bodyOverflow = document.body.style.overflow;
   function showFullViewGrid() {
     HTML.root.classList.remove("ehvp-root-collapse");
     if (BIFM.visible) {
@@ -206,7 +206,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       PH.minify("fullViewGrid");
     }
     document.body.style.overflow = "hidden";
-  };
+  }
 
 
   function hiddenFullViewGrid() {
@@ -220,7 +220,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     }
     document.body.style.overflow = bodyOverflow;
     // document.body.focus();
-  };
+  }
 
   // keyboardEvents
   function shouldStep(oriented: Oriented, shouldPrevent: boolean): boolean {
@@ -431,12 +431,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     if (triggered) {
       event.preventDefault();
     }
-  };
+  }
 
   // 显示简易指南事件
   function showGuideEvent() {
     createHelpPanel(HTML.root);
-  };
+  }
 
   function showKeyboardCustomEvent() {
     createKeyboardCustomPanel(keyboardEvents, HTML.root);

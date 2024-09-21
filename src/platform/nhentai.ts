@@ -60,7 +60,7 @@ export class NHMatcher extends BaseMatcher {
     const { info, mediaServer } = this.parseInfo();
     const mediaID = info.media_id;
     const digits = nodes.length.toString().length;
-    let ret = [];
+    const ret = [];
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
       const thumbSrc = node.querySelector<HTMLImageElement>("img")?.getAttribute("data-src") ?? "";

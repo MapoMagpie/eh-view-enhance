@@ -66,7 +66,7 @@ export class TouchManager {
   move(ev: TouchEvent) {
     if (this.tpCache.length === 1) {
       const last = this.trail[this.trail.length - 1];
-      let tp = TouchPoint.from(ev.targetTouches[0]);
+      const tp = TouchPoint.from(ev.targetTouches[0]);
       const distance = last.distance(tp);
       if (distance > 30) {
         this.trail.push(tp);

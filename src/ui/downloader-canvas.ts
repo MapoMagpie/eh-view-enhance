@@ -176,7 +176,7 @@ export class DownloaderCanvas {
   computeStartX(): number {
     const [w, _] = this.getWH();
     const drawW = (this.rectSize + this.rectGap) * this.columns - this.rectGap;
-    let startX = (w - drawW) >> 1;
+    const startX = (w - drawW) >> 1;
     return startX;
   }
 

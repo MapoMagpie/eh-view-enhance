@@ -34,8 +34,8 @@ export class ArtStationMatcher extends BaseMatcher {
     if (!projects) throw new Error("cannot get projects form page data");
     const projectURLs = projects.map(p => `https://www.artstation.com/projects/${p.hash_id}.json`)
     const assets = await batchFetch<ArtStationAsset>(projectURLs, 10, "json");
-    let ret: ImageNode[] = [];
-    for (let asset of assets) {
+    const ret: ImageNode[] = [];
+    for (const asset of assets) {
       this.info.projects++;
       this.tags[asset.slug] = asset.tags;
       for (let i = 0; i < asset.assets.length; i++) {

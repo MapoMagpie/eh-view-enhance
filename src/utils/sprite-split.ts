@@ -39,7 +39,7 @@ export async function splitImagesFromUrl(url: string, positions: ImagePosition[]
   if (!data) throw new Error("load sprite image error");
   url = URL.createObjectURL(data);
   const img: HTMLImageElement = await new Promise((resolve, reject) => {
-    let img = new Image();
+    const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error("load sprite image error"));
     img.src = url;

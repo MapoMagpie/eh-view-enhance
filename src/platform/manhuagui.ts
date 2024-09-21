@@ -187,10 +187,10 @@ function parseImgData(tamplate: string, a: number, c: number, raw: string): MHGI
   const keys = decompressFromBase64(raw).split("|");
   const d: Record<string, string> = {};
   function e(n: number): string {
-    let aa = n < a ? "" : e(Math.floor(n / a)).toString();
-    let bb = (n = n % a) > 35 ? String.fromCharCode(n + 29) : n.toString(36);
+    const aa = n < a ? "" : e(Math.floor(n / a)).toString();
+    const bb = (n = n % a) > 35 ? String.fromCharCode(n + 29) : n.toString(36);
     return aa + bb;
-  };
+  }
   while (c--) {
     d[e(c)] = keys[c] || e(c);
   }

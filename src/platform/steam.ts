@@ -23,7 +23,7 @@ export class SteamMatcher extends BaseMatcher {
     }
     const domParser = new DOMParser();
     const doc = domParser.parseFromString(raw, "text/html");
-    let imgURL = doc.querySelector(".actualmediactn > a")?.getAttribute("href");
+    const imgURL = doc.querySelector(".actualmediactn > a")?.getAttribute("href");
     if (!imgURL) {
       throw new Error("Cannot Query Steam original Image URL");
     }
@@ -60,7 +60,7 @@ export class SteamMatcher extends BaseMatcher {
     document.querySelectorAll(".pagingPageLink").forEach(ele => {
       totalPages = Number(ele.textContent);
     });
-    let url = new URL(window.location.href);
+    const url = new URL(window.location.href);
     url.searchParams.set("view", "grid");
     if (totalPages === -1) {
       const doc = await window.fetch(url.href).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
@@ -81,7 +81,7 @@ export class SteamMatcher extends BaseMatcher {
 
   parseGalleryMeta(): GalleryMeta {
     const url = new URL(window.location.href);
-    let appid = url.searchParams.get("appid");
+    const appid = url.searchParams.get("appid");
     return new GalleryMeta(window.location.href, "steam-" + appid || "all");
   }
 

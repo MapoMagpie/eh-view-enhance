@@ -121,17 +121,9 @@
   var _GM_xmlhttpRequest = /* @__PURE__ */ (() => typeof GM_xmlhttpRequest != "undefined" ? GM_xmlhttpRequest : void 0)();
 
   const getI18nIndex = (lang2) => {
-<<<<<<< HEAD
-    if (lang2.startsWith("zh"))
-      return 1;
-    if (lang2.startsWith("ko"))
-      return 2;
-    if (lang2.startsWith("es"))
-      return 3;
-=======
     if (lang2.startsWith("zh")) return 1;
     if (lang2.startsWith("ko")) return 2;
->>>>>>> b9c94f3981902d2ecc74e33aea3f32f27dbb8054
+    if (lang2.startsWith("es")) return 3;
     return 0;
   };
   const lang = navigator.language;
@@ -242,20 +234,6 @@
         "열 수 줄이기",
         "Disminuir columnas"
       ),
-<<<<<<< HEAD
-      "back-chapters-selection": new I18nValue(
-        "Back to Chapters Selection",
-        "返回章节选择",
-        "챕터 선택으로 돌아가기",
-        "Volver a la selección de capítulos"
-      ),
-=======
-      // 'back-chapters-selection': new I18nValue(
-      //   'Back to Chapters Selection',
-      //   '返回章节选择',
-      //   '챕터 선택으로 돌아가기'
-      // ),
->>>>>>> b9c94f3981902d2ecc74e33aea3f32f27dbb8054
       "toggle-auto-play": new I18nValue(
         "Toggle Auto Play",
         "切换自动播放",
@@ -510,8 +488,8 @@
     pixivJustCurrPageTooltip: new I18nValue(
       `In Pixiv, if the current page is on a artwork page, only load the images from current page. Disable this option or the current page is on the artist's homepage, all images by that author will be loaded. <br>Note: You can continue loading all the remaining images by the author by scrolling on the page or pressing "Try Fetch Next Page" key after disabling this option.`,
       "在Pixiv中，如果当前页是作品页则只加载当前页中的图片，如果该选项禁用或者当前页是作者主页，则加载该作者所有的作品。<br>注：你可以禁用该选项后，然后通过页面滚动或按下Shift+n来继续加载该作者所有的图片。",
-      'Pixiv에서 현재 페이지가 작품 페이지일 경우, 해당 페이지의 이미지들만 로드합니다. 이 옵션을 비활성화하거나 현재 페이지가 작가의 홈 페이지일 경우, 해당 작가의 모든 이미지를 로드합니다.<br>참고: 이 옵션을 비활성화한 후, 페이지를 스크롤하거나 "다음 페이지 로딩 재시도" 키를 눌러 작가의 나머지 이미지를 계속 로드할 수 있습니다.',
-      `En Pixiv, si la página actual está en una página de una obra, solo se cargarán las imágenes de la página actual. Desactive esta opción si la página actual está en la página de inicio del artista; en ese caso, se cargarán todas las imágenes de ese autor.<br>Nota: Puedes continuar cargando todas las imágenes restantes del autor desplazándote por la página o presionando la tecla "Intentar cargar la siguiente página" después de desactivar esta opción.`
+      'Pixiv에서 현재 페이지가 작품 페이지일 경우, 해당 페이지의 이미지들만 로드합니다. 이 옵션을 비활성화하거나 현재 페이지가 작가의 홈 페이지일 경우, 해당 작가의 모든 이미지를 로드합니다. <br>참고: 이 옵션을 비활성화한 후, 페이지를 스크롤하거나 "다음 페이지 로딩 재시도" 키를 눌러 작가의 나머지 이미지를 계속 로드할 수 있습니다.',
+      'En Pixiv, si la página actual está en una página de una obra, solo se cargarán las imágenes de la página actual. Desactive esta opción si la página actual está en la página de inicio del artista; en ese caso, se cargarán todas las imágenes de ese autor. <br>Nota: Puedes continuar cargando todas las imágenes restantes del autor desplazándote por la página o presionando la tecla "Intentar cargar la siguiente página" después de desactivar esta opción.'
     ),
     // config panel select option
     readMode: new I18nValue(
@@ -572,7 +550,7 @@
       "Many galleries have both an English/Romanized title and a title in Japanese script. <br>Which one do you want to use as the archive filename?",
       "许多图库都同时拥有英文/罗马音标题和日文标题，<br>您希望下载时哪个作为文件名？",
       "많은 갤러리가 영어/로마자 제목과 일본어 제목을 모두 가지고 있습니다. <br>어떤 것을 아카이브 파일 이름으로 사용할지 선택할 수 있습니다.",
-      "Muchas galerías tienen tanto un título en inglés/romanizado como un título en script japonés.<br>¿Cuál quieres usar como nombre de archivo del archivo?"
+      "Muchas galerías tienen tanto un título en inglés/romanizado como un título en script japonés.<br>¿Cuál quieres usar como nombre de archivo?"
     ),
     reverseMultipleImagesPost: new I18nValue(
       "Descending Images In Post",
@@ -606,12 +584,12 @@
 <br>  Auto: 원본 파일명이 자연 정렬(Windows)에서 읽기 순서와 일치하는지 감지합니다. 일치하는 경우 원본 파일명을 유지하고, 그렇지 않으면 순서를 보장하기 위해 파일명 앞에 번호를 추가합니다.
 <br>  Numbers: 원본 파일명을 무시하고 읽기 순서에 따라 파일명을 직접 지정합니다.
 <br>  Original: 원본 파일명만 유지하며, 읽기 순서가 보장되지 않으며 동일한 이름의 파일이 덮어쓰일 수 있습니다.
-<br>  Alphabetically: 원본 파일명이 알파벳 정렬(Linux)에서 읽기 순서와 일치하는지 감지합니다. 일치하는 경우 원본 파일명을 유지하고, 그렇지 않으면 순서를 보장하기 위해 파일명 앞에 번호를 추가합니다. `
+<br>  Alphabetically: 원본 파일명이 알파벳 정렬(Linux)에서 읽기 순서와 일치하는지 감지합니다. 일치하는 경우 원본 파일명을 유지하고, 그렇지 않으면 순서를 보장하기 위해 파일명 앞에 번호를 추가합니다. `,
       `Reglas de ordenamiento de nombres de archivos para archivos descargados:
 <br>  Auto: Detecta si los nombres de archivo originales son consistentes con el orden de lectura bajo el ordenamiento natural (Windows). Si son consistentes, conserva los nombres de archivo originales; de lo contrario, antepone un número a los nombres originales para garantizar el orden correcto.
 <br>  Numbers: Ignora los nombres de archivo originales y renombra los archivos directamente según el orden de lectura.
 <br>  Original: Conserva únicamente los nombres de archivo originales sin garantizar el orden de lectura, lo que puede resultar en sobrescribir archivos con el mismo nombre.
-<br>  Alphabetically: Detecta si los nombres de archivo originales son consistentes con el orden de lectura bajo el orden alfabético (Linux). Si son consistentes, conserva los nombres de archivo originales; de lo contrario, antepone un número a los nombres originales para garantizar el orden correcto. `,
+<br>  Alphabetically: Detecta si los nombres de archivo originales son consistentes con el orden de lectura bajo el orden alfabético (Linux). Si son consistentes, conserva los nombres de archivo originales; de lo contrario, antepone un número a los nombres originales para garantizar el orden correcto. `
     ),
     dragToMove: new I18nValue(
       "Drag to Move the control bar",
@@ -664,14 +642,13 @@
     controlBarStyleTooltip: new I18nValue(
       "Click on an item to modify its display text, such as emoji or personalized text. Changes will take effect after restarting.",
       "点击某项后修改其显示文本，比如emoji或个性文字，也许svg，重启后生效。",
-      "아이템을 클릭하여 이모티콘이나 텍스트 등을 수정할 수 있습니다. 변경 사항은 재시작 후 적용됩니다.",
-      "Haz clic en un elemento para modificar su texto de visualización, como emojis o texto personalizado. Los cambios surtirán efecto después de reiniciar."
+      "아이템을 클릭하여 이모티콘이나 텍스트 등을 수정할 수 있습니다. 변경 사항은 재시작 후 적용됩니다."
     ),
     letUsStar: new I18nValue(
       "Let's Star",
       "点星",
       "별 눌러줘",
-      "Presiona la estrella" 
+      "Presiona la estrella"
     ),
     // download panel
     download: new I18nValue(
@@ -1076,9 +1053,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <p>Hay un botón de <strong>Perfiles de Sitio</strong> en la parte inferior del panel de configuración para excluir sitios específicos. Una vez excluidos, el script ya no se activará en esos sitios.</p>
 <p>Para volver a habilitar un sitio, necesitas hacerlo desde un sitio que no haya sido excluido.</p>
 <h2>[¿Cómo apoyar al autor?]</h2>
-<p>Déjame una estrella en <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance">Github</a> o una buena reseña en <a target="_blank" href="https://greasyfork.org/scripts/397848-e-hentai-view-enhance">Greasyfork</a>.</p>
+<p>Déjame una estrella en <a target='_blank' href='https://github.com/MapoMagpie/eh-view-enhance'>Github</a> o una buena reseña en <a target='_blank' href='https://greasyfork.org/scripts/397848-e-hentai-view-enhance'>Greasyfork</a>.</p>
 <p>Por favor, no dejes reseñas en Greasyfork, ya que su sistema de notificaciones no puede rastrear comentarios posteriores. Muchas personas dejan un problema y nunca vuelven.
-Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/issues">issue</a></p>
+Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/eh-view-enhance/issues'>issue</a></p>
 <h2>[¿Cómo reabrir la guía?]</h2>
 <p>Haz clic en el botón de <strong>Ayuda</strong> en la parte inferior del panel de configuración.</p>
 <h2>[Algunos problemas no resueltos]</h2>
@@ -1106,7 +1083,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
 
   function uuid() {
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16 | 0, v = c == "x" ? r : r & 3 | 8;
+      const r = Math.random() * 16 | 0, v = c == "x" ? r : r & 3 | 8;
       return v.toString(16);
     });
   }
@@ -1218,14 +1195,14 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
   }
   const storage = getStorageMethod();
   function getConf() {
-    let cfgStr = storage.getItem(CONFIG_KEY);
+    const cfgStr = storage.getItem(CONFIG_KEY);
     if (cfgStr) {
-      let cfg2 = JSON.parse(cfgStr);
+      const cfg2 = JSON.parse(cfgStr);
       if (cfg2.version === CONF_VERSION) {
         return confHealthCheck(cfg2);
       }
     }
-    let cfg = defaultConf();
+    const cfg = defaultConf();
     saveConf(cfg);
     return cfg;
   }
@@ -1248,7 +1225,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     }
     ["pageHelperAbTop", "pageHelperAbLeft", "pageHelperAbBottom", "pageHelperAbRight"].forEach((key) => {
       if (cf[key] !== "unset") {
-        let pos = parseInt(cf[key]);
+        const pos = parseInt(cf[key]);
         const screenLimit = key.endsWith("Right") || key.endsWith("Left") ? window.screen.width : window.screen.height;
         if (isNaN(pos) || pos < 5 || pos > screenLimit) {
           cf[key] = "5px";
@@ -1706,7 +1683,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
         };
         abort = xhrWapper(imgFetcher.node.originSrc, "blob", {
           onload: function(response) {
-            let data = response.response;
+            const data = response.response;
             try {
               imgFetcher.setDownloadState({ readyState: response.readyState });
             } catch (error) {
@@ -1737,7 +1714,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       let i;
       let j;
       let t;
-      let table = [];
+      const table = [];
       for (i = 0; i < 256; i++) {
         t = i;
         for (j = 0; j < 8; j++) {
@@ -1749,7 +1726,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     }
     append(data) {
       let crc = this.crc | 0;
-      let table = this.table;
+      const table = this.table;
       for (let offset = 0, len = data.length | 0; offset < len; offset++) {
         crc = crc >>> 8 ^ table[(crc ^ data[offset]) & 255];
       }
@@ -1790,7 +1767,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     array;
     view;
     constructor(byteLength) {
-      let uint8 = new Uint8Array(byteLength);
+      const uint8 = new Uint8Array(byteLength);
       this.array = uint8;
       this.view = new DataView(uint8.buffer);
     }
@@ -1854,8 +1831,8 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     async writeHeader() {
       if (!this.curr) return;
       const curr = this.curr;
-      let data = new DataHelper(30 + curr.nameBuf.length);
-      let header = curr.header;
+      const data = new DataHelper(30 + curr.nameBuf.length);
+      const header = curr.header;
       if (curr.level !== 0 && !curr.directory) {
         header.view.setUint16(4, 2048);
       }
@@ -1890,7 +1867,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     async writeFooter() {
       if (!this.curr) return;
       const curr = this.curr;
-      var footer = new DataHelper(16);
+      const footer = new DataHelper(16);
       footer.view.setUint32(0, 1347094280);
       if (curr.crc) {
         curr.header.view.setUint32(10, curr.crc.get(), true);
@@ -2096,7 +2073,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     computeStartX() {
       const [w, _] = this.getWH();
       const drawW = (this.rectSize + this.rectGap) * this.columns - this.rectGap;
-      let startX = w - drawW >> 1;
+      const startX = w - drawW >> 1;
       return startX;
     }
     drawSmallRect(x, y, imgFetcher, isCurr, isSelected, disabled) {
@@ -2328,7 +2305,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
           name: directory + checkTitle(imf.node.title, index)
         };
       });
-      let meta = new TextEncoder().encode(JSON.stringify(this.meta(chapter), null, 2));
+      const meta = new TextEncoder().encode(JSON.stringify(this.meta(chapter), null, 2));
       ret.push({
         stream: () => Promise.resolve(uint8ArrayToReadableStream(meta)),
         size: () => meta.byteLength,
@@ -2338,9 +2315,9 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     }
     async download(chapters) {
       try {
-        let archiveName = this.title().replaceAll(FILENAME_INVALIDCHAR, "_");
-        let separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
-        let singleChapter = chapters.length === 1;
+        const archiveName = this.title().replaceAll(FILENAME_INVALIDCHAR, "_");
+        const separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
+        const singleChapter = chapters.length === 1;
         this.panel.flushUI("packaging");
         const dirnameSet = /* @__PURE__ */ new Set();
         const files = [];
@@ -2362,11 +2339,11 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
         }
         const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
         files.forEach((file) => zip.add(file));
-        let save = async () => {
+        const save = async () => {
           let readable;
           while (readable = zip.nextReadableStream()) {
             const blob = await new Response(readable).blob();
-            let ext = zip.currVolumeNo === zip.volumes - 1 ? "zip" : "z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
+            const ext = zip.currVolumeNo === zip.volumes - 1 ? "zip" : "z" + (zip.currVolumeNo + 1).toString().padStart(2, "0");
             fileSaver.saveAs(blob, `${archiveName}.${ext}`);
           }
         };
@@ -2414,7 +2391,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
   function deduplicate(set, title) {
     let newTitle = title;
     if (set.has(newTitle)) {
-      let splits = newTitle.split(".");
+      const splits = newTitle.split(".");
       const ext = splits.pop();
       const prefix = splits.join(".");
       const num = parseInt(prefix.match(/_(\d+)$/)?.[1] || "");
@@ -2529,7 +2506,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       if (this.values.length < 2) return;
       this.values.sort((v1, v2) => v1.range()[0] - v2.range()[0]);
       let i = 0, j = 1;
-      let skip = [];
+      const skip = [];
       while (i < this.values.length && j < this.values.length) {
         const r1 = this.values[i];
         const r2 = this.values[j];
@@ -2781,10 +2758,10 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
         return;
       }
       const picked = this.cherryPick?.() || new CherryPick();
-      let foundFetcherIndex = /* @__PURE__ */ new Set();
+      const foundFetcherIndex = /* @__PURE__ */ new Set();
       let hasFailed = false;
       for (let i = 0; i < this.processingIndexList.length; i++) {
-        let processingIndex = this.processingIndexList[i];
+        const processingIndex = this.processingIndexList[i];
         const imf = this.queue[processingIndex];
         if (imf.stage === FetchState.FAILED) {
           hasFailed = true;
@@ -2893,7 +2870,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
         evLog("error", "chapter sourceIter is not set!");
         return;
       }
-      let first = await chapter.sourceIter.next();
+      const first = await chapter.sourceIter.next();
       if (!first.done) {
         await this.appendImages(first.value);
       }
@@ -3061,7 +3038,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
       const oldRatio = this.canvasElement.height / this.canvasElement.width;
       const flowVision = this.root.parentElement?.classList.contains("fvg-sub-container");
-      let resize = flowVision ? this.root.offsetHeight !== this.canvasElement.height : this.root.offsetWidth !== this.canvasElement.width;
+      const resize = flowVision ? this.root.offsetHeight !== this.canvasElement.height : this.root.offsetWidth !== this.canvasElement.width;
       if (resize || Math.abs(newRatio - oldRatio) > 1.07) {
         if (flowVision) {
           this.canvasElement.height = this.root.offsetHeight;
@@ -3227,7 +3204,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     for (let m = 0; m < s; m++) {
       let c = Math.floor(height / s);
       let g = c * m;
-      let w = height - c * (m + 1) - l;
+      const w = height - c * (m + 1) - l;
       0 == m ? c += l : g += l, ctx.drawImage(e, 0, w, r, c, 0, g, r, c);
     }
   }
@@ -3243,10 +3220,12 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       if (chapters.length > 0) {
         chapters.forEach((ch, i) => {
           const title = Array.from(ch.querySelector("li")?.childNodes || []).map((n) => n.textContent?.trim()).filter(Boolean).map((n) => n);
+          const url = new URL(ch.href);
+          url.searchParams.set("read_mode", "read-by-page");
           ret.push({
             id: i,
             title,
-            source: ch.href,
+            source: url.href,
             queue: [],
             thumbimg: thumb?.src
           });
@@ -3262,10 +3241,12 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
         }
         if (!href || href.startsWith("javascript")) throw new Error("未能找到阅读按钮！");
         if (href.startsWith("#coinbuycomic")) throw new Error("此漫画需要硬币解锁！请点击开始阅读按钮进行解锁。");
+        const url = new URL(href);
+        url.searchParams.set("read_mode", "read-by-page");
         ret.push({
           id: 0,
           title: "Default",
-          source: href,
+          source: url.href,
           queue: []
         });
       }
@@ -3278,19 +3259,14 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       const list = [];
       const raw = await window.fetch(source).then((resp) => resp.text());
       const document2 = new DOMParser().parseFromString(raw, "text/html");
-      const elements = Array.from(document2.querySelectorAll(".scramble-page:not(.thewayhome)"));
+      const elements = Array.from(document2.querySelectorAll(".owl-carousel-page > .center > img"));
       for (const element of elements) {
-        const title = element.id;
-        const img = element.querySelector("img");
-        if (!img) {
-          evLog("error", "warn: cannot find img element", element);
-          continue;
-        }
-        const src = img.getAttribute("data-original");
+        const src = element.getAttribute("data-src");
         if (!src) {
-          evLog("error", "warn: cannot find data-original", element);
+          evLog("error", "warn: cannot find img src", element);
           continue;
         }
+        const title = src.split("/").pop();
         list.push(new ImageNode("", src, title, void 0, src));
       }
       return list;
@@ -3299,7 +3275,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       const reg = /(\d+)\/(\d+)\.(\w+)/;
       const matches = url.match(reg);
       const gid = matches[1];
-      let scrambleID = 220980;
+      const scrambleID = 220980;
       if (Number(gid) < scrambleID) return [data, contentType];
       const page = matches[2];
       const ext = matches[3];
@@ -3406,7 +3382,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       const doc = page;
       const items = Array.from(doc.querySelectorAll("li > a.page-item"));
       if (items.length === 0) throw new Error("cannot find thumbnails");
-      let ret = [];
+      const ret = [];
       const digits = this.originImages.length.toString().length;
       for (const item of items) {
         const origin = this.originImages[this.index];
@@ -3505,8 +3481,8 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       if (!projects) throw new Error("cannot get projects form page data");
       const projectURLs = projects.map((p) => `https://www.artstation.com/projects/${p.hash_id}.json`);
       const assets = await batchFetch(projectURLs, 10, "json");
-      let ret = [];
-      for (let asset of assets) {
+      const ret = [];
+      for (const asset of assets) {
         this.info.projects++;
         this.tags[asset.slug] = asset.tags;
         for (let i = 0; i < asset.assets.length; i++) {
@@ -3586,7 +3562,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       }
     }
     async fetchOriginMeta(node) {
-      let cached = this.cachedOriginMeta(node.href);
+      const cached = this.cachedOriginMeta(node.href);
       if (cached) return cached;
       let url = null;
       const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
@@ -3774,7 +3750,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       return ret;
     }
     async fetchOriginMeta(node) {
-      let id = node.href.split("/").pop();
+      const id = node.href.split("/").pop();
       if (!id) {
         throw new Error(`cannot find id from ${node.href}`);
       }
@@ -3846,7 +3822,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       return ret;
     }
     async fetchOriginMeta(node) {
-      let id = node.href.split("/").pop();
+      const id = node.href.split("/").pop();
       if (!id) {
         throw new Error(`cannot find id from ${node.href}`);
       }
@@ -3877,7 +3853,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       return /gelbooru.com\/index.php\?page=post&s=list/;
     }
     nextPage(doc) {
-      let href = doc.querySelector("#paginator a[alt=next]")?.href;
+      const href = doc.querySelector("#paginator a[alt=next]")?.href;
       if (href) return href;
       return doc.querySelector("#paginator b + a")?.href || null;
     }
@@ -3929,7 +3905,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       throw new Error("Method not implemented.");
     }
     getBlacklist(doc) {
-      let content = doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content");
+      const content = doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content");
       if (!content) return [];
       return content.slice(1, -1).split(",").map((s) => s.slice(1, -1));
     }
@@ -3938,7 +3914,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       return Array.from(doc.querySelectorAll("#posts-container > article"));
     }
     toImgNode(ele) {
-      let src = ele.getAttribute("data-preview-url");
+      const src = ele.getAttribute("data-preview-url");
       if (!src) return [null, ""];
       const href = `${window.location.origin}/posts/${ele.getAttribute("data-id")}`;
       const tags = ele.getAttribute("data-tags");
@@ -4003,7 +3979,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     if (!data) throw new Error("load sprite image error");
     url = URL.createObjectURL(data);
     const img = await new Promise((resolve, reject) => {
-      let img2 = new Image();
+      const img2 = new Image();
       img2.onload = () => resolve(img2);
       img2.onerror = () => reject(new Error("load sprite image error"));
       img2.src = url;
@@ -4074,7 +4050,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     }
     async parseImgNodes(source) {
       const list = [];
-      let doc = await (async () => {
+      const doc = await (async () => {
         if (source instanceof Document) {
           return source;
         } else {
@@ -4119,9 +4095,9 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
         return list;
       }
       let srcs = [];
-      let delayURLs = [];
+      const delayURLs = [];
       if (isSprite) {
-        let spriteURLs = [];
+        const spriteURLs = [];
         for (let i = 0; i < nodes.length; i++) {
           const nodeStyles = nodes[i].style;
           const url = nodeStyles.background.match(regulars.sprite)?.[1]?.replaceAll('"', "");
@@ -4181,12 +4157,12 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     }
     async *fetchPagesSource() {
       const doc = document;
-      let fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
+      const fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
       if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
         yield window.location.href;
         return;
       }
-      let pages = Array.from(doc.querySelectorAll(".gtb td a")).filter((a) => a.getAttribute("href")).map((a) => a.getAttribute("href"));
+      const pages = Array.from(doc.querySelectorAll(".gtb td a")).filter((a) => a.getAttribute("href")).map((a) => a.getAttribute("href"));
       if (pages.length === 0) {
         throw new Error("未获取到分页元素！");
       }
@@ -4211,7 +4187,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       }
     }
     async fetchOriginMeta(node, retry) {
-      let text = await window.fetch(node.href).then((resp) => resp.text()).catch((reason) => new Error(reason));
+      const text = await window.fetch(node.href).then((resp) => resp.text()).catch((reason) => new Error(reason));
       if (text instanceof Error || !text) throw new Error(`fetch source page error, ${text.toString()}`);
       let src;
       if (conf.fetchOriginal) {
@@ -4345,8 +4321,8 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
         );
       }
       const decoded = rawSplits.join("");
-      let poses = [];
-      let list = [];
+      const poses = [];
+      const list = [];
       for (let step2 = 2; list.length < 16; ++step2) {
         if (!poses[step2]) {
           list.push(step2);
@@ -4363,7 +4339,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
         }
       }
       a = a & 7;
-      let step = new Uint8Array(256);
+      const step = new Uint8Array(256);
       for (let i = 0; i < 256; i++) {
         step[i] = i;
       }
@@ -4405,17 +4381,17 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       return parseInt(m[2] + m[1], 16).toString(10);
     }
     subdomain_from_url(url, base) {
-      var retval = "b";
+      let retval = "b";
       if (base) {
         retval = base;
       }
-      var b = 16;
-      var r = /\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])/;
-      var m = r.exec(url);
+      const b = 16;
+      const r = /\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])/;
+      const m = r.exec(url);
       if (!m) {
         return "a";
       }
-      let g = parseInt(m[2] + m[1], b);
+      const g = parseInt(m[2] + m[1], b);
       if (!isNaN(g)) {
         retval = String.fromCharCode(97 + this.m(g)) + retval;
       }
@@ -4423,7 +4399,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     }
     thumbURL(hash) {
       hash = hash.replace(/^.*(..)(.)$/, "$2/$1/" + hash);
-      let url = "https://a.hitomi.la/webpsmalltn/" + hash + ".webp";
+      const url = "https://a.hitomi.la/webpsmalltn/" + hash + ".webp";
       return url.replace(/\/\/..?\.hitomi\.la\//, "//" + this.subdomain_from_url(url, "tn") + ".hitomi.la/");
     }
     originURL(hash, ext) {
@@ -4504,7 +4480,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
           evLog("error", "no format found: ", files[i]);
           continue;
         }
-        let title = file.name.replace(/\.\w+$/, "");
+        const title = file.name.replace(/\.\w+$/, "");
         const src = this.gg.originURL(file.hash, ext);
         const { width, height } = file;
         list.push(new ImageNode(this.gg.thumbURL(files[i].hash), src, title + "." + ext, void 0, src, width && height ? { w: width, h: height } : void 0));
@@ -4784,7 +4760,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
   }
   const PATH_WORD_REGEX = /\/comic\/(\w*)/;
   function initCypto() {
-    let c = [];
+    const c = [];
     function r(i) {
       if (c[i]) return c[i].exports;
       c[i] = {
@@ -4792,23 +4768,23 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
         l: false,
         exports: {}
       };
-      let e = c[i];
+      const e = c[i];
       const wj = webpackJsonp;
       return wj[0][1][i].call(e.exports, e, e.exports, r), e.l = true, e.exports;
     }
     return r(6);
   }
   function decrypt(raw) {
-    let dio = "xxxmanga.woo.key";
-    let cypto = initCypto();
-    let str = raw;
-    let header = str.substring(0, 16);
-    let body = str.substring(16, str.length);
-    let dioEn = cypto.enc.Utf8["parse"](dio);
-    let headerEn = cypto.enc.Utf8["parse"](header);
-    let bodyDe = function(b) {
-      let bHex = cypto.enc.Hex.parse(b);
-      let b64 = cypto.enc.Base64.stringify(bHex);
+    const dio = "xxxmanga.woo.key";
+    const cypto = initCypto();
+    const str = raw;
+    const header = str.substring(0, 16);
+    const body = str.substring(16, str.length);
+    const dioEn = cypto.enc.Utf8["parse"](dio);
+    const headerEn = cypto.enc.Utf8["parse"](header);
+    const bodyDe = function(b) {
+      const bHex = cypto.enc.Hex.parse(b);
+      const b64 = cypto.enc.Base64.stringify(bHex);
       return cypto.AES.decrypt(b64, dioEn, {
         iv: headerEn,
         mode: cypto.mode["CBC"],
@@ -4977,8 +4953,8 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
     const keys = decompressFromBase64(raw).split("|");
     const d = {};
     function e(n) {
-      let aa = n < a ? "" : e(Math.floor(n / a)).toString();
-      let bb = (n = n % a) > 35 ? String.fromCharCode(n + 29) : n.toString(36);
+      const aa = n < a ? "" : e(Math.floor(n / a)).toString();
+      const bb = (n = n % a) > 35 ? String.fromCharCode(n + 29) : n.toString(36);
       return aa + bb;
     }
     while (c--) {
@@ -5049,7 +5025,7 @@ Reporta problemas aquí: <a target="_blank" href="https://github.com/MapoMagpie/
       const { info, mediaServer } = this.parseInfo();
       const mediaID = info.media_id;
       const digits = nodes.length.toString().length;
-      let ret = [];
+      const ret = [];
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         const thumbSrc = node.querySelector("img")?.getAttribute("data-src") ?? "";
@@ -5690,7 +5666,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           this.meta.title = `pixiv_${title}`;
         }
       }
-      let tags = Object.values(this.works).map((w) => w.tags).flat();
+      const tags = Object.values(this.works).map((w) => w.tags).flat();
       this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
       return this.meta;
     }
@@ -5747,7 +5723,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           throw new Error(`Fetch page list error: ${data.message}`);
         }
         this.pageCount += data.body.length;
-        let digits = data.body.length.toString().length;
+        const digits = data.body.length.toString().length;
         let j = -1;
         for (const p of data.body) {
           this.pageSize[p.urls.original] = [p.width, p.height];
@@ -5771,7 +5747,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           yield "";
         }
       }
-      let u = document.querySelector("a[data-gtm-value][href*='/users/']")?.href || document.querySelector("a.user-details-icon[href*='/users/']")?.href || window.location.href;
+      const u = document.querySelector("a[data-gtm-value][href*='/users/']")?.href || document.querySelector("a.user-details-icon[href*='/users/']")?.href || window.location.href;
       const author = /users\/(\d+)/.exec(u)?.[1];
       if (!author) {
         throw new Error("Cannot find author id!");
@@ -5908,7 +5884,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
       const domParser = new DOMParser();
       const doc = domParser.parseFromString(raw, "text/html");
-      let imgURL = doc.querySelector(".actualmediactn > a")?.getAttribute("href");
+      const imgURL = doc.querySelector(".actualmediactn > a")?.getAttribute("href");
       if (!imgURL) {
         throw new Error("Cannot Query Steam original Image URL");
       }
@@ -5943,7 +5919,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       document.querySelectorAll(".pagingPageLink").forEach((ele) => {
         totalPages = Number(ele.textContent);
       });
-      let url = new URL(window.location.href);
+      const url = new URL(window.location.href);
       url.searchParams.set("view", "grid");
       if (totalPages === -1) {
         const doc = await window.fetch(url.href).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
@@ -5963,7 +5939,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     parseGalleryMeta() {
       const url = new URL(window.location.href);
-      let appid = url.searchParams.get("appid");
+      const appid = url.searchParams.get("appid");
       return new GalleryMeta(window.location.href, "steam-" + appid || "all");
     }
   }
@@ -6043,7 +6019,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       if (!items) throw new Error("warn: cannot find items");
       const list = [];
       for (const item of items) {
-        let mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
+        const mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
         if (mediaList === void 0) {
           evLog("error", "Not found mediaList: ", item);
           continue;
@@ -6063,7 +6039,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           const src = `${baseSrc}?format=${ext}&name=${media.sizes.small ? "small" : "thumb"}`;
           let href = media.expanded_url.replace(/\/(photo|video)\/\d+/, "");
           href = `${href}/${media.type === "video" ? "video" : "photo"}/${i + 1}`;
-          let largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`;
+          const largeSrc = `${baseSrc}?format=${ext}&name=${media.sizes.large ? "large" : media.sizes.medium ? "medium" : "small"}`;
           const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`;
           const wh = { w: media.sizes.small.w, h: media.sizes.small.h };
           const node = new ImageNode(src, href, title, void 0, largeSrc, wh);
@@ -6809,7 +6785,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         paginationIMGCount: [1, 5],
         scrollingSpeed: [1, 100]
       };
-      let mod = key === "preventScrollPageTime" ? 10 : 1;
+      const mod = key === "preventScrollPageTime" ? 10 : 1;
       if (data === "add") {
         if (conf[key] < range[key][1]) {
           conf[key] += mod;
@@ -6924,7 +6900,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     function togglePanelEvent(idPrefix, collapse, target) {
       const id = `${idPrefix}-panel`;
-      let element = q("#" + id, HTML.pageHelper);
+      const element = q("#" + id, HTML.pageHelper);
       if (!element) return;
       if (collapse === void 0) {
         togglePanelEvent(idPrefix, !element.classList.contains("p-collapse"), target);
@@ -6940,7 +6916,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         }
       }
     }
-    let bodyOverflow = document.body.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
     function showFullViewGrid() {
       HTML.root.classList.remove("ehvp-root-collapse");
       if (BIFM.visible) {
@@ -7277,7 +7253,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     renderCurrView() {
       const [se, ee] = this.layout.visibleRange(this.root, this.queue.map((e) => e.element));
-      let [start, end] = [parseInt(se.getAttribute("data-index") ?? "-1"), parseInt(ee.getAttribute("data-index") ?? "-1")];
+      const [start, end] = [parseInt(se.getAttribute("data-index") ?? "-1"), parseInt(ee.getAttribute("data-index") ?? "-1")];
       if (start < end && start > -1 && end < this.queue.length) {
         this.queue.slice(start, end + 1).forEach((e) => e.node.render());
         evLog("info", "render curr view, range: ", `[${start}-${end}]`);
@@ -7393,7 +7369,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return width;
     }
     childrenRatio(row) {
-      let ret = [];
+      const ret = [];
       row.childNodes.forEach((c) => ret.push(c.offsetWidth / c.offsetHeight));
       return ret;
     }
@@ -7450,7 +7426,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 
   function toPositions(vw, vh, mouseX, mouseY) {
-    let pos = { vw, vh };
+    const pos = { vw, vh };
     if (mouseX <= vw / 2) {
       pos.left = Math.max(mouseX, 5);
     } else {
@@ -7503,7 +7479,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       abort.abort();
     }, { once: true });
     canvas.addEventListener("mousemove", (evt) => {
-      let [endX, endY] = [
+      const [endX, endY] = [
         lock.x ? startX : evt.clientX,
         startY 
       ];
@@ -9331,7 +9307,7 @@ ${chapters.map((c, i) => `<div><label>
       };
     }
     flushUI(state, onlyState) {
-      let { value, max } = state ? { value: state.time, max: state.duration } : { value: 0, max: 10 };
+      const { value, max } = state ? { value: state.time, max: state.duration } : { value: 0, max: 10 };
       const percent = value / max * 100;
       this.ui.progress.firstElementChild.style.width = `${percent}%`;
       this.ui.time.textContent = secondsToTime(value);
@@ -9518,7 +9494,7 @@ ${chapters.map((c, i) => `<div><label>
     move(ev) {
       if (this.tpCache.length === 1) {
         const last = this.trail[this.trail.length - 1];
-        let tp = TouchPoint.from(ev.targetTouches[0]);
+        const tp = TouchPoint.from(ev.targetTouches[0]);
         const distance = last.distance(tp);
         if (distance > 30) {
           this.trail.push(tp);
@@ -9599,7 +9575,7 @@ ${chapters.map((c, i) => `<div><label>
         ];
         const ret = elements.find((o) => index === parseIndex(o.img));
         if (!ret) return;
-        let { img, eleIndex, key } = ret;
+        const { img, eleIndex, key } = ret;
         if (imf.contentType?.startsWith("video")) {
           const vid = this.newMediaNode(index, imf);
           if (["curr", "prev", "next"].includes(key)) {
@@ -9674,7 +9650,7 @@ ${chapters.map((c, i) => `<div><label>
       new TouchManager(this.frame, {
         swipe: (direction) => {
           if (conf.readMode === "continuous") return;
-          let oriented = (() => {
+          const oriented = (() => {
             switch (direction) {
               case "L":
                 return conf.reversePages ? "next" : "prev";
@@ -9920,8 +9896,8 @@ ${chapters.map((c, i) => `<div><label>
             this.restoreScrollTop(this.elements.curr[0], distance2);
           }
         }, 500);
-        let mediaNodes = this.getMediaNodes();
-        let index = this.findMediaNodeIndexOnCenter(mediaNodes);
+        const mediaNodes = this.getMediaNodes();
+        const index = this.findMediaNodeIndexOnCenter(mediaNodes);
         const centerNode = mediaNodes[index];
         if (this.elements.curr[0] !== centerNode) {
           const oldIndex = parseIndex(this.elements.curr[0]);

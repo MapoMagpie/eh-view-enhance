@@ -52,15 +52,16 @@ export class Comic18Matcher extends BaseMatcher {
   async fetchChapters(): Promise<Chapter[]> {
     const ret: Chapter[] = [];
     const thumb = document.querySelector<HTMLImageElement>(".thumb-overlay > img");
-    // const toDoc = async (url: string) => await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(() => null);
     const chapters = Array.from(document.querySelectorAll<HTMLAnchorElement>(".visible-lg .episode > ul > a"));
     if (chapters.length > 0) {
       chapters.forEach((ch, i) => {
         const title = Array.from(ch.querySelector("li")?.childNodes || []).map(n => n.textContent?.trim()).filter(Boolean).map(n => n!);
+        const url = new URL(ch.href);
+        url.searchParams.set("read_mode", "read-by-page");
         ret.push({
           id: i,
           title,
-          source: ch.href,
+          source: url.href,
           queue: [],
           thumbimg: thumb?.src,
         });
@@ -77,10 +78,12 @@ export class Comic18Matcher extends BaseMatcher {
       }
       if (!href || href.startsWith("javascript")) throw new Error("未能找到阅读按钮！");
       if (href.startsWith("#coinbuycomic")) throw new Error("此漫画需要硬币解锁！请点击开始阅读按钮进行解锁。");
+      const url = new URL(href);
+      url.searchParams.set("read_mode", "read-by-page");
       ret.push({
         id: 0,
         title: "Default",
-        source: href,
+        source: url.href,
         queue: [],
       });
     }
@@ -95,19 +98,14 @@ export class Comic18Matcher extends BaseMatcher {
     const list: ImageNode[] = [];
     const raw = await window.fetch(source as string).then(resp => resp.text());
     const document = new DOMParser().parseFromString(raw, "text/html");
-    const elements = Array.from(document.querySelectorAll<HTMLDivElement>(".scramble-page:not(.thewayhome)"));
+    const elements = Array.from(document.querySelectorAll<HTMLImageElement>(".owl-carousel-page > .center > img"));
     for (const element of elements) {
-      const title = element.id;
-      const img = element.querySelector("img");
-      if (!img) {
-        evLog("error", "warn: cannot find img element", element);
-        continue;
-      }
-      const src = img.getAttribute("data-original");
+      const src = element.getAttribute("data-src");
       if (!src) {
-        evLog("error", "warn: cannot find data-original", element);
+        evLog("error", "warn: cannot find img src", element);
         continue;
       }
+      const title = src.split("/").pop()!;
       list.push(new ImageNode("", src, title, undefined, src));
     }
     return list;

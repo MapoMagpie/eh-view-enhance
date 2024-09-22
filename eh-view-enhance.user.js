@@ -391,7 +391,7 @@
       "Carga automática"
     ),
     autoLoadTooltip: new I18nValue(
-      "",
+      "Automatically start loading images after entering this script's view",
       "进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。",
       "보기 모드에 진입하면, 사용자가 탐색 중이 아닐 때도 이미지가 하나씩 자동으로 로드됩니다. 모든 이미지가 로드될 때까지 계속됩니다."
     ),
@@ -7583,6 +7583,20 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .p-label {
   cursor: pointer;
+  height: 2em;
+}
+.p-label > span {
+  white-space: nowrap;
+}
+.p-label > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  padding-right: 1.5em;
+}
+.p-label > span:first-child > .p-tooltip {
+  position: absolute;
+  right: 0.2em;
 }
 .full-view-grid .img-node {
   position: relative;

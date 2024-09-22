@@ -80,6 +80,20 @@ export function styleCSS() {
 }
 .p-label {
   cursor: pointer;
+  height: 2em;
+}
+.p-label > span {
+  white-space: nowrap;
+}
+.p-label > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  padding-right: 1.5em;
+}
+.p-label > span:first-child > .p-tooltip {
+  position: absolute;
+  right: 0.2em;
 }
 .full-view-grid .img-node {
   position: relative;

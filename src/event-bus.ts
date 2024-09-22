@@ -3,6 +3,7 @@ import { CherryPick } from "./download/downloader";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
 import { VisualNode } from "./img-node";
+import { Chapter } from "./page-fetcher";
 import { evLog } from "./utils/ev-log";
 
 export class EventManager {
@@ -41,20 +42,20 @@ export interface Events {
   "bifm-on-show": () => void;
   "bifm-on-hidden": () => void;
   "pf-on-appended": (total: number, nodes: VisualNode[], chapterIndex: number, done?: boolean) => void;
-  "pf-change-chapter": (index: number) => void;
+  "pf-update-chapters": (chapters: Chapter[]) => void;
+  "pf-change-chapter": (index: number, chapter: Chapter) => void;
+  "pf-try-extend": () => void;
   "imf-on-finished": (index: number, success: boolean, imf: IMGFetcher) => void;
   "imf-on-click": (imf: IMGFetcher) => void;
   "imf-download-state-change": (imf: IMGFetcher) => void;
   "ifq-do": (index: number, imf: IMGFetcher, oriented: Oriented) => void;
   "ifq-on-do": (index: number, queue: IMGFetcherQueue, downloading: boolean) => void;
   "ifq-on-finished-report": (index: number, queue: IMGFetcherQueue) => void;
-  "pf-try-extend": () => void;
   "downloader-canvas-resize": () => void;
   "notify-message": (level: "error" | "info", message: string, duration?: number) => void;
   "cherry-pick-changed": (chapaterIndex: number, cherryPick: CherryPick) => void;
   "add-cherry-pick-range": (chapterIndex: number, index: number, positive: boolean, shiftKey: boolean) => void;
   "imf-check-picked": (chapterIndex: number, index: number) => boolean;
-  "back-chapters-selection": () => void;
   "pf-init": (cb: () => void) => void;
   "toggle-main-view": (open?: boolean) => void;
   "toggle-auto-play": () => void;

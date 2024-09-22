@@ -226,16 +226,16 @@ export class IMGFetcher implements VisualNode {
     const imgFetcher = this;
     return new Promise(async (resolve, reject) => {
       const debouncer = new Debouncer();
-      let abort: () => void;
+      let abort: (() => void) | undefined = undefined;
       const timeout = () => {
         debouncer.addEvent("XHR_TIMEOUT", () => {
           reject(new Error("timeout"));
-          abort();
+          abort?.();
         }, conf.timeout * 1000);
       };
       abort = xhrWapper(imgFetcher.node.originSrc!, "blob", {
         onload: function(response) {
-          let data = response.response;
+          const data = response.response;
           try {
             imgFetcher.setDownloadState({ readyState: response.readyState });
           } catch (error) {

@@ -101,8 +101,8 @@ export class HentaiNexusMatcher extends BaseMatcher {
     }
     const decoded = rawSplits.join("");
 
-    let poses: boolean[] = [];
-    let list: number[] = [];
+    const poses: boolean[] = [];
+    const list: number[] = [];
     for (let step = 2; list.length < 16; ++step) {
       if (!poses[step]) {
         list.push(step);
@@ -119,7 +119,7 @@ export class HentaiNexusMatcher extends BaseMatcher {
       }
     }
     a = a & 7;
-    let step = new Uint8Array(256);
+    const step = new Uint8Array(256);
     for (let i = 0; i < 256; i++) {
       step[i] = i;
     }

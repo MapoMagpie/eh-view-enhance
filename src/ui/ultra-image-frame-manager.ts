@@ -33,6 +33,7 @@ export class BigImageFrameManager {
   currLoadingState: Map<number, number> = new Map();
   scroller: Scroller;
   lastMouse?: { x: number, y: number };
+  private pageNumInChapter: number[] = [];
 
   constructor(HTML: Elements, getChapter: (index: number) => Chapter) {
     this.html = HTML;
@@ -45,7 +46,10 @@ export class BigImageFrameManager {
     this.scroller = new Scroller(this.frame);
     this.initFrame();
     this.initImgScaleStyle();
-    EBUS.subscribe("pf-change-chapter", index => this.chapterIndex = Math.max(0, index));
+    EBUS.subscribe("pf-change-chapter", index => {
+      this.elements = { next: [], curr: [], prev: [] };
+      this.chapterIndex = Math.max(0, index);
+    });
     EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
     EBUS.subscribe("imf-on-finished", (index, success, imf) => {
       if (imf.chapterIndex !== this.chapterIndex) return;
@@ -59,7 +63,7 @@ export class BigImageFrameManager {
       ];
       const ret = elements.find((o) => index === parseIndex(o.img));
       if (!ret) return;
-      let { img, eleIndex, key } = ret;
+      const { img, eleIndex, key } = ret;
       // if is video, then replace img with video
       if (imf.contentType?.startsWith("video")) {
         const vid = this.newMediaNode(index, imf) as HTMLVideoElement;
@@ -147,7 +151,7 @@ export class BigImageFrameManager {
     new TouchManager(this.frame, {
       swipe: (direction) => {
         if (conf.readMode === "continuous") return;
-        let oriented: Oriented = (() => {
+        const oriented: Oriented = (() => {
           switch (direction) {
             case "L":
               return conf.reversePages ? "next" : "prev";
@@ -205,6 +209,7 @@ export class BigImageFrameManager {
       const queue = this.getChapter(this.chapterIndex).queue;
       const index = queue.indexOf(imf);
       if (index === -1) return;
+      this.pageNumInChapter[this.chapterIndex] = index;
       EBUS.emit("ifq-do", index, imf, oriented || "next");
     }
     this.lastMouse = undefined;
@@ -222,13 +227,12 @@ export class BigImageFrameManager {
       this.elements.curr[0] = this.newMediaNode(index, imf);
       this.frame.appendChild(this.elements.curr[0]);
       this.tryExtend();
-      // this.hammer?.get("swipe").set({ enable: false });
     } else {
       this.balanceElements(index, queue, oriented);
       this.placeElements();
       this.checkFrameOverflow();
-      // this.hammer?.get("swipe").set({ enable: true });
     }
+    this.pageNumInChapter[this.chapterIndex] = index;
     EBUS.emit("ifq-do", index, imf, oriented);
     this.elements.curr[0]?.scrollIntoView();
   }
@@ -421,8 +425,8 @@ export class BigImageFrameManager {
           this.restoreScrollTop(this.elements.curr[0], distance);
         }
       }, 500);
-      let mediaNodes = this.getMediaNodes();
-      let index = this.findMediaNodeIndexOnCenter(mediaNodes);
+      const mediaNodes = this.getMediaNodes();
+      const index = this.findMediaNodeIndexOnCenter(mediaNodes);
       const centerNode = mediaNodes[index];
 
       if (this.elements.curr[0] !== centerNode) {
@@ -432,6 +436,7 @@ export class BigImageFrameManager {
         const queue = this.getChapter(this.chapterIndex).queue;
         if (queue.length === 0 || newIndex < 0 || newIndex > queue.length - 1) return;
         const imf = queue[newIndex];
+        this.pageNumInChapter[this.chapterIndex] = newIndex;
         EBUS.emit("ifq-do", newIndex, imf, oriented);
         // play new current video
         if (this.elements.curr[0] instanceof HTMLVideoElement) {
@@ -691,6 +696,10 @@ export class BigImageFrameManager {
       if (conf.reversePages) ret.reverse();
       this.loadingHelper.textContent = `Loading ${ret.join(",")}`;
     }
+  }
+
+  getPageNumber() {
+    return this.pageNumInChapter[this.chapterIndex] ?? 0;
   }
 }
 

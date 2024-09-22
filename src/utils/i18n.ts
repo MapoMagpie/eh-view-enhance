@@ -121,12 +121,20 @@ const keyboardCustom: KeyboardCustom = {
       '열 수 줄이기',
       'Disminuir columnas'
     ),
+<<<<<<< HEAD
     'back-chapters-selection': new I18nValue(
       'Back to Chapters Selection',
       '返回章节选择',
       '챕터 선택으로 돌아가기',
       'Volver a la selección de capítulos'
     ),
+=======
+    // 'back-chapters-selection': new I18nValue(
+    //   'Back to Chapters Selection',
+    //   '返回章节选择',
+    //   '챕터 선택으로 돌아가기'
+    // ),
+>>>>>>> b9c94f3981902d2ecc74e33aea3f32f27dbb8054
     'toggle-auto-play': new I18nValue(
       'Toggle Auto Play',
       '切换自动播放',

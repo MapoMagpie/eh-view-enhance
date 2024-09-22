@@ -14,7 +14,7 @@ export type AbsolutePosition = {
 }
 
 function toPositions(vw: number, vh: number, mouseX: number, mouseY: number): AbsolutePosition {
-  let pos: AbsolutePosition = { vw, vh };
+  const pos: AbsolutePosition = { vw, vh };
   if (mouseX <= vw / 2) {
     pos.left = Math.max(mouseX, 5)
   } else {
@@ -81,7 +81,7 @@ export function dragElementWithLine(event: MouseEvent, element: HTMLElement, loc
     abort.abort();
   }, { once: true });
   canvas.addEventListener("mousemove", (evt) => {
-    let [endX, endY] = [
+    const [endX, endY] = [
       lock.x ? startX : evt.clientX,
       lock.y ? startY : evt.clientY,
     ];

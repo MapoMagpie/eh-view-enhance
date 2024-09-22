@@ -152,7 +152,7 @@ function defaultConf(): Config {
     displayText: {},
     customStyle: "",
     magnifier: false,
-    autoEnterBig: true,
+    autoEnterBig: false,
     pixivJustCurrPage: false,
     filenameOrder: "auto",
   };
@@ -213,14 +213,14 @@ function getStorageMethod() {
 const storage = getStorageMethod();
 
 function getConf(): Config {
-  let cfgStr = storage.getItem(CONFIG_KEY);
+  const cfgStr = storage.getItem(CONFIG_KEY);
   if (cfgStr) {
-    let cfg: Config = JSON.parse(cfgStr);
+    const cfg: Config = JSON.parse(cfgStr);
     if (cfg.version === CONF_VERSION) {
       return confHealthCheck(cfg);
     }
   }
-  let cfg = defaultConf();
+  const cfg = defaultConf();
   saveConf(cfg);
   return cfg;
 }
@@ -246,7 +246,7 @@ function confHealthCheck(cf: Config): Config {
   }
   (["pageHelperAbTop", "pageHelperAbLeft", "pageHelperAbBottom", "pageHelperAbRight"] as (keyof Config)[]).forEach((key) => {
     if ((cf[key]) !== "unset") {
-      let pos = parseInt(cf[key] as string);
+      const pos = parseInt(cf[key] as string);
       const screenLimit = key.endsWith("Right") || key.endsWith("Left") ? window.screen.width : window.screen.height;
       if (isNaN(pos) || pos < 5 || pos > screenLimit) {
         (cf[key] as any) = 5 + "px";
@@ -273,7 +273,7 @@ function confHealthCheck(cf: Config): Config {
 const PATCH_CONFIG: Partial<Config> = {
   siteProfiles: defaultSiteProfiles(),
 }
-const CONFIG_PATCH_VERSION = 6;
+const CONFIG_PATCH_VERSION = 7;
 function patchConfig(cf: Config, patch: Partial<Config>): Config | null {
   if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
     return null;

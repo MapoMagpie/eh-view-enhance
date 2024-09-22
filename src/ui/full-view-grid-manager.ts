@@ -2,10 +2,10 @@ import { conf } from "../config";
 import EBUS from "../event-bus";
 import { VisualNode } from "../img-node";
 import { Debouncer } from "../utils/debouncer";
+import { evLog } from "../utils/ev-log";
 import { Elements } from "./html";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
 
-const INTERSECTING_ATTR = "intersecting";
 type E = {
   node: VisualNode,
   element: HTMLElement
@@ -15,6 +15,7 @@ abstract class Layout {
   abstract append(nodes: E[]): void;
   abstract nearBottom(): boolean;
   abstract reset(): void;
+  abstract visibleRange(container: HTMLElement, children: HTMLElement[]): [HTMLElement, HTMLElement];
 }
 
 export class FullViewGridManager {
@@ -23,7 +24,6 @@ export class FullViewGridManager {
   done: boolean = false;
   chapterIndex: number = 0;
   layout: Layout;
-  observer: IntersectionObserver;
   constructor(HTML: Elements, BIFM: BigImageFrameManager, flowVision: boolean = false) {
     this.root = HTML.fullViewGrid;
     if (flowVision) {
@@ -42,10 +42,6 @@ export class FullViewGridManager {
       this.layout.reset();
       this.queue = [];
       this.done = false;
-      this.observer.disconnect();
-      this.observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => entry.target.setAttribute(INTERSECTING_ATTR, entry.isIntersecting ? "true" : "false"));
-      }, { root: this.root });
     });
     // scroll to the element that is in full view grid
     EBUS.subscribe("ifq-do", (_, imf) => {
@@ -80,17 +76,18 @@ export class FullViewGridManager {
         EBUS.emit("toggle-main-view", false);
       }
     });
-    // will init again at pf-change-chapter triggered, so here is do nothing
-    this.observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => entry.target.setAttribute(INTERSECTING_ATTR, entry.isIntersecting ? "true" : "false"));
-    }, { root: this.root });
   }
   append(nodes: VisualNode[]) {
     if (nodes.length > 0) {
-      const list = nodes.map(n => ({ node: n, element: n.create(), ratio: n.ratio() }));
+      let index = this.queue.length;
+      const list = nodes.map(n => {
+        const ret = { node: n, element: n.create(), ratio: n.ratio() };
+        ret.element.setAttribute("data-index", index.toString());
+        index++;
+        return ret;
+      });
       this.queue.push(...list);
       this.layout.append(list);
-      list.forEach(l => this.observer.observe(l.element)); // observer element;
     }
   }
   tryExtend() {
@@ -101,31 +98,13 @@ export class FullViewGridManager {
     this.queue.forEach(({ node }) => node.isRender() && node.render());
   }
   renderCurrView() {
-    let lastRender = 0;
-    let hasIntersected = false;
-    let lastTop = 0;
-    for (let i = 0; i < this.queue.length; i++) {
-      const e = this.queue[i];
-      if (e.element.getAttribute(INTERSECTING_ATTR) === "true") {
-        e.node.render();
-        lastRender = i;
-        hasIntersected = true;
-      } else if (hasIntersected) {
-        lastTop = e.element.getBoundingClientRect().top;
-        break;
-      }
-    }
-    // extend 3 rows
-    let rows = 0;
-    for (let i = lastRender + 1; i < this.queue.length; i++) {
-      const e = this.queue[i];
-      let top = e.element.getBoundingClientRect().top;
-      if (lastTop < top) {
-        rows++;
-        lastTop = top;
-      }
-      if (rows > 2) break;
-      e.node.render();
+    const [se, ee] = this.layout.visibleRange(this.root, this.queue.map(e => e.element));
+    const [start, end] = [parseInt(se.getAttribute("data-index") ?? "-1"), parseInt(ee.getAttribute("data-index") ?? "-1")];
+    if (start < end && start > -1 && end < this.queue.length) {
+      this.queue.slice(start, end + 1).forEach(e => e.node.render());
+      evLog("info", "render curr view, range: ", `[${start}-${end}]`);
+    } else {
+      evLog("error", "render curr view error, range: ", `[${start}-${end}]`);
     }
   }
 }
@@ -154,6 +133,31 @@ class GRIDLayout extends Layout {
   }
   reset(): void {
     this.root.innerHTML = "";
+  }
+  visibleRange(container: HTMLElement, children: HTMLElement[]): [HTMLElement, HTMLElement] {
+    if (children.length === 0) return [container, container]; // throw error
+    const vh = container.offsetHeight;
+    let first: HTMLElement | undefined;
+    let last: HTMLElement | undefined;
+    let overRow = 0;
+    for (let i = 0; i < children.length; i += conf.colCount) {
+      const rect = children[i].getBoundingClientRect();
+      const visible = rect.top + rect.height >= 0 && rect.top <= vh;
+      if (visible) {
+        if (first === undefined) {
+          first = children[i];
+        }
+      }
+      if (first && !visible) {
+        overRow++;
+      }
+      if (overRow >= 2) {
+        last = children[Math.min(children.length - 1, i + conf.colCount)];
+        break;
+      }
+    }
+    last = last ?? children[children.length - 1];
+    return [first ?? last, last];
   }
 }
 
@@ -215,7 +219,7 @@ class FlowVisionLayout extends Layout {
     return width;
   }
   childrenRatio(row: HTMLElement): number[] {
-    let ret: number[] = [];
+    const ret: number[] = [];
     row.childNodes.forEach(c => ret.push((c as HTMLElement).offsetWidth / (c as HTMLElement).offsetHeight));
     return ret;
   }
@@ -246,5 +250,31 @@ class FlowVisionLayout extends Layout {
   }
   reset(): void {
     this.root.innerHTML = "";
+  }
+  visibleRange(): [HTMLElement, HTMLElement] {
+    const children = Array.from(this.root.querySelectorAll<HTMLElement>(".fvg-sub-container"));
+    if (children.length === 0) return [this.root, this.root]; // throw error
+    const vh = this.root.offsetHeight;
+    let first: HTMLElement | undefined;
+    let last: HTMLElement | undefined;
+    let overRow = 0;
+    for (let i = 0; i < children.length; i++) {
+      const rect = children[i].getBoundingClientRect();
+      const visible = rect.top + rect.height >= 0 && rect.top <= vh;
+      if (visible) {
+        if (first === undefined) {
+          first = children[i].firstElementChild as HTMLElement;
+        }
+      }
+      if (first && !visible) {
+        overRow++;
+      }
+      if (overRow >= 2) {
+        last = children[i].lastElementChild as HTMLElement;
+        break;
+      }
+    }
+    last = last ?? children[children.length - 1].lastElementChild as HTMLElement;
+    return [first ?? last, last];
   }
 }

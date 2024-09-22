@@ -18,7 +18,7 @@ import { createStyleCustomPanel } from "./style-custom-panel";
 export type Events = ReturnType<typeof initEvents>;
 
 export type KeyboardInBigImageModeId = "step-image-prev" | "step-image-next" | "exit-big-image-mode" | "step-to-first-image" | "step-to-last-image" | "scale-image-increase" | "scale-image-decrease" | "scroll-image-up" | "scroll-image-down" | "toggle-auto-play";
-export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "back-chapters-selection" | "toggle-auto-play" | "retry-fetch-next-page";
+export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "toggle-auto-play" | "retry-fetch-next-page"; // "back-chapters-selection" 
 export type KeyboardInMainId = "open-full-view-grid" | "start-download";
 export type KeyboardEvents = {
   inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
@@ -49,7 +49,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       paginationIMGCount: [1, 5],
       scrollingSpeed: [1, 100],
     };
-    let mod = key === "preventScrollPageTime" ? 10 : 1;
+    const mod = key === "preventScrollPageTime" ? 10 : 1;
     if (data === "add") {
       if (conf[key] < range[key][1]) {
         conf[key] += mod;
@@ -171,20 +171,21 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     });
   }
 
-  function togglePanelEvent(id: string, collapse?: boolean, target?: HTMLElement) {
-    let element = q(`#${id}-panel`, HTML.pageHelper);
+  function togglePanelEvent(idPrefix: string, collapse?: boolean, target?: HTMLElement) {
+    const id = `${idPrefix}-panel`;
+    const element = q("#" + id, HTML.pageHelper);
     if (!element) return;
 
     // collapse not specified, toggle
     if (collapse === undefined) {
-      togglePanelEvent(id, !element.classList.contains("p-collapse"), target);
+      togglePanelEvent(idPrefix, !element.classList.contains("p-collapse"), target);
       return;
     }
     if (collapse) {
       collapsePanelEvent(element, id);
     } else {
-      // close other panel
-      ["config", "downloader"].filter(k => k !== id).forEach(id => togglePanelEvent(id, true));
+      Array.from(HTML.root.querySelectorAll<HTMLElement>(".p-panel"))
+        .filter(ele => ele !== element).forEach(ele => collapsePanelEvent(ele, ele.id));
       // extend
       element.classList.remove("p-collapse");
       if (target) {
@@ -194,7 +195,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     // PH.minify(true, BIFM.visible ? "bigImageFrame" : "fullViewGrid");
   }
 
-  let bodyOverflow = document.body.style.overflow;
+  const bodyOverflow = document.body.style.overflow;
   function showFullViewGrid() {
     HTML.root.classList.remove("ehvp-root-collapse");
     if (BIFM.visible) {
@@ -205,7 +206,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       PH.minify("fullViewGrid");
     }
     document.body.style.overflow = "hidden";
-  };
+  }
 
 
   function hiddenFullViewGrid() {
@@ -219,7 +220,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     }
     document.body.style.overflow = bodyOverflow;
     // document.body.focus();
-  };
+  }
 
   // keyboardEvents
   function shouldStep(oriented: Oriented, shouldPrevent: boolean): boolean {
@@ -347,10 +348,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         ["-"],
         () => modNumberConfigEvent("colCount", "minus")
       ),
-      "back-chapters-selection": new KeyboardDesc(
-        ["b"],
-        () => EBUS.emit("back-chapters-selection")
-      ),
+      // "back-chapters-selection": new KeyboardDesc(
+      //   ["b"],
+      //   () => EBUS.emit("back-chapters-selection")
+      // ),
       "toggle-auto-play": new KeyboardDesc(
         ["p"],
         () => EBUS.emit("toggle-auto-play")
@@ -430,12 +431,12 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     if (triggered) {
       event.preventDefault();
     }
-  };
+  }
 
   // 显示简易指南事件
   function showGuideEvent() {
     createHelpPanel(HTML.root);
-  };
+  }
 
   function showKeyboardCustomEvent() {
     createKeyboardCustomPanel(keyboardEvents, HTML.root);

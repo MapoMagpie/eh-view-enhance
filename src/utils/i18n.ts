@@ -121,20 +121,6 @@ const keyboardCustom: KeyboardCustom = {
       '열 수 줄이기',
       'Disminuir columnas'
     ),
-<<<<<<< HEAD
-    'back-chapters-selection': new I18nValue(
-      'Back to Chapters Selection',
-      '返回章节选择',
-      '챕터 선택으로 돌아가기',
-      'Volver a la selección de capítulos'
-    ),
-=======
-    // 'back-chapters-selection': new I18nValue(
-    //   'Back to Chapters Selection',
-    //   '返回章节选择',
-    //   '챕터 선택으로 돌아가기'
-    // ),
->>>>>>> b9c94f3981902d2ecc74e33aea3f32f27dbb8054
     'toggle-auto-play': new I18nValue(
       'Toggle Auto Play',
       '切换自动播放',
@@ -393,7 +379,7 @@ export const i18n = {
     '注：你可以禁用该选项后，然后通过页面滚动或按下Shift+n来继续加载该作者所有的图片。',
     'Pixiv에서 현재 페이지가 작품 페이지일 경우, 해당 페이지의 이미지들만 로드합니다. 이 옵션을 비활성화하거나 현재 페이지가 작가의 홈 페이지일 경우, 해당 작가의 모든 이미지를 로드합니다. <br>' +
     '참고: 이 옵션을 비활성화한 후, 페이지를 스크롤하거나 "다음 페이지 로딩 재시도" 키를 눌러 작가의 나머지 이미지를 계속 로드할 수 있습니다.',
-    'En Pixiv, si la página actual está en una página de una obra, solo se cargarán las imágenes de la página actual. Desactive esta opción si la página actual está en la página de inicio del artista; en ese caso, se cargarán todas las imágenes de ese autor. <br>' + 
+    'En Pixiv, si la página actual está en una página de una obra, solo se cargarán las imágenes de la página actual. Desactive esta opción si la página actual está en la página de inicio del artista; en ese caso, se cargarán todas las imágenes de ese autor. <br>' +
     'Nota: Puedes continuar cargando todas las imágenes restantes del autor desplazándote por la página o presionando la tecla "Intentar cargar la siguiente página" después de desactivar esta opción.'
   ),
   // config panel select option
@@ -554,7 +540,7 @@ export const i18n = {
     "Let's Star",
     '点星',
     '별 눌러줘',
-    'Presiona la estrella' 
+    'Presiona la estrella'
   ),
 
   // download panel

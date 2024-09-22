@@ -7873,11 +7873,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   height: 18em;
   display: flex;
 }
-.p-chapters-center {
+.p-chapters-large {
   width: 45em;
   height: 25em;
 }
-.p-chapters-center .chapter-thumbnail {
+.p-chapters-large .chapter-thumbnail {
   width: auto;
   height: 100%;
 }
@@ -8814,8 +8814,8 @@ ${chapters.map((c, i) => `<div><label>
           if (this.first) {
             this.first = false;
             this.panel.classList.add("p-collapse");
-            this.panel.classList.remove("p-collapse-deny");
-            this.panel.classList.remove("p-chapters-center");
+            this.panel.classList.remove("p-panel-large");
+            this.panel.classList.remove("p-chapters-large");
           }
         });
         li.addEventListener("mouseenter", () => this.updateChapterThumbnail(ch));
@@ -8826,8 +8826,8 @@ ${chapters.map((c, i) => `<div><label>
     relocateToCenter() {
       this.first = true;
       this.panel.classList.remove("p-collapse");
-      this.panel.classList.add("p-collapse-deny");
-      this.panel.classList.add("p-chapters-center");
+      this.panel.classList.add("p-panel-large");
+      this.panel.classList.add("p-chapters-large");
       const [w, h] = [this.root.offsetWidth, this.root.offsetHeight];
       const [pw, ph] = [this.panel.offsetWidth, this.panel.offsetHeight];
       const [left, top] = [w / 2 - pw / 2, h / 2 - ph / 2];
@@ -9001,7 +9001,7 @@ ${chapters.map((c, i) => `<div><label>
       "chapters": { panel: HTML.chapters.panel, btn: HTML.chaptersPanelBTN }
     };
     function collapsePanel(panel) {
-      if (conf.autoCollapsePanel && !panel.classList.contains("p-collapse-deny")) {
+      if (conf.autoCollapsePanel && !panel.classList.contains("p-panel-large")) {
         events.collapsePanelEvent(panel, panel.id);
       }
       if (BIFM.visible) {

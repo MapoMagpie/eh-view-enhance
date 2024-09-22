@@ -48,8 +48,8 @@ export class ChaptersPanel {
         if (this.first) {
           this.first = false;
           this.panel.classList.add("p-collapse");
-          this.panel.classList.remove("p-collapse-deny");
-          this.panel.classList.remove("p-chapters-center");
+          this.panel.classList.remove("p-panel-large");
+          this.panel.classList.remove("p-chapters-large");
         }
       });
       li.addEventListener("mouseenter", () => this.updateChapterThumbnail(ch))
@@ -61,8 +61,8 @@ export class ChaptersPanel {
   relocateToCenter() {
     this.first = true;
     this.panel.classList.remove("p-collapse");
-    this.panel.classList.add("p-collapse-deny");
-    this.panel.classList.add("p-chapters-center");
+    this.panel.classList.add("p-panel-large");
+    this.panel.classList.add("p-chapters-large");
     const [w, h] = [this.root.offsetWidth, this.root.offsetHeight];
     const [pw, ph] = [this.panel.offsetWidth, this.panel.offsetHeight];
     const [left, top] = [(w / 2) - (pw / 2), (h / 2) - (ph / 2)];

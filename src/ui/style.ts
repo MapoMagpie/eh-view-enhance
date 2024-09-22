@@ -370,11 +370,11 @@ export function styleCSS() {
   height: 18em;
   display: flex;
 }
-.p-chapters-center {
+.p-chapters-large {
   width: 45em;
   height: 25em;
 }
-.p-chapters-center .chapter-thumbnail {
+.p-chapters-large .chapter-thumbnail {
   width: auto;
   height: 100%;
 }

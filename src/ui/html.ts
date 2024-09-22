@@ -132,7 +132,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   };
 
   function collapsePanel(panel: HTMLElement) {
-    if (conf.autoCollapsePanel && !panel.classList.contains("p-collapse-deny")) {
+    if (conf.autoCollapsePanel && !panel.classList.contains("p-panel-large")) {
       events.collapsePanelEvent(panel, panel.id);
     }
     if (BIFM.visible) {

@@ -71,7 +71,7 @@ Actualmente soporta:
 
 ## <a name="comentarios">Comentarios</a>
 
-Si quieres añadir soporte para ciertos sitios, por favor consulta [esta guía](./CONTRIBUTING.md).
+Si quieres añadir soporte para ciertos sitios, por favor consulta [esta guía](./CONTRIBUTING_ES.md).
 
 Si encuentras algún problema, por favor repórtalo aquí y asegúrate de describir tu entorno: https://github.com/MapoMagpie/eh-view-enhance/issues
 

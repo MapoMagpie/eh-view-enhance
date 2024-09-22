@@ -69,7 +69,7 @@ En la lista de miniaturas, puedes usar algunas teclas de acceso rápido para sel
 - **Alt + Clic Izquierdo:** Excluye la imagen. La primera exclusión seleccionará todas las demás imágenes.
 - **Alt + Shift + Clic Izquierdo:** Excluye el rango de imágenes entre esta imagen y la última imagen excluida.
 
-Además, hay varios otros métodos:
+Además, hay otros métodos:
 
 - Haz clic en el botón del medio en una miniatura para abrir la URL de la imagen original, luego haz clic derecho para guardar la imagen.
 - Establece el rango de descarga en 1 en el panel de descargas. Esto excluirá todas las imágenes excepto la primera. Luego, haz clic en las miniaturas de interés en la lista, lo que cargará las imágenes grandes correspondientes. Después de seleccionar, borra el rango de descarga y haz clic en **Tomar Cargadas** para empaquetar y descargar tus imágenes seleccionadas.
@@ -91,7 +91,7 @@ Hay un botón de **Perfiles de Sitio** en la parte inferior del panel de configu
 
 Para volver a habilitar un sitio, necesitas hacerlo desde un sitio que no haya sido excluido.
 
-## ¿Cómo apoyar al autor?]
+## [¿Cómo apoyar al autor?]
 
 Déjame una estrella en [Github](https://github.com/MapoMagpie/eh-view-enhance) o una buena reseña en [Greasyfork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance).
 

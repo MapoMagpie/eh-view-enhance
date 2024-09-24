@@ -1,10 +1,9 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
 import { batchFetch } from "../utils/query";
 import { BaseMatcher, OriginMeta } from "./platform";
 
-export class ArtStationMatcher extends BaseMatcher {
+export class ArtStationMatcher extends BaseMatcher<ArtStationProject[]> {
   pageData: Map<string, ArtStationProject[]> = new Map();
   info: { username: string, projects: number, assets: number } = { username: "", projects: 0, assets: 0 };
   tags: Record<string, string[]> = {};
@@ -16,7 +15,7 @@ export class ArtStationMatcher extends BaseMatcher {
     meta.tags = this.tags;
     return meta;
   }
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<ArtStationProject[]> {
     // find artist id;
     const { id, username } = await this.fetchArtistInfo();
     this.info.username = username;
@@ -25,13 +24,10 @@ export class ArtStationMatcher extends BaseMatcher {
       page++;
       const projects = await this.fetchProjects(username, id.toString(), page);
       if (!projects || projects.length === 0) break;
-      this.pageData.set(page.toString(), projects);
-      yield page.toString();
+      yield projects;
     }
   }
-  async parseImgNodes(pageNo: PagesSource): Promise<ImageNode[]> {
-    const projects = this.pageData.get(pageNo as string);
-    if (!projects) throw new Error("cannot get projects form page data");
+  async parseImgNodes(projects: ArtStationProject[]): Promise<ImageNode[]> {
     const projectURLs = projects.map(p => `https://www.artstation.com/projects/${p.hash_id}.json`)
     const assets = await batchFetch<ArtStationAsset>(projectURLs, 10, "json");
     const ret: ImageNode[] = [];

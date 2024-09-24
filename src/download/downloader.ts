@@ -29,7 +29,7 @@ export class Downloader {
   canvas: DownloaderCanvas;
   cherryPicks: CherryPick[] = [new CherryPick()];
 
-  constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, pageFetcher: PageFetcher, matcher: Matcher) {
+  constructor(HTML: Elements, queue: IMGFetcherQueue, idleLoader: IdleLoader, pageFetcher: PageFetcher, matcher: Matcher<any>) {
     this.panel = HTML.downloader;
     this.panel.initTabs();
     this.initEvents(this.panel);

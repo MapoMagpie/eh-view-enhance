@@ -4,7 +4,6 @@ import { BaseMatcher, OriginMeta } from "./platform";
 import { FFmpegConvertor } from "../utils/ffmpeg";
 import ImageNode from "../img-node";
 import { conf } from "../config";
-import { PagesSource } from "../page-fetcher";
 import * as zip_js from "@zip.js/zip.js";
 import { batchFetch } from "../utils/query";
 
@@ -43,7 +42,7 @@ type UgoiraMeta = {
 }
 
 const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
-export class PixivMatcher extends BaseMatcher {
+export class PixivMatcher extends BaseMatcher<string[]> {
   name(): string {
     return "Pixiv"
   }
@@ -156,16 +155,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
-  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
+  async parseImgNodes(pids: string[]): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
-    if (source === "") return list;
-    const pidList = JSON.parse(source as string) as string[];
+    if (pids.length === 0) return list;
     // async function but no await, it will fetch tags in background
-    this.fetchTagsByPids(pidList);
+    this.fetchTagsByPids(pids);
     type PageData = { error: boolean, message: string, body: Page[] };
-    const pageListData = await batchFetch<PageData>(pidList.map(p => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
-    for (let i = 0; i < pidList.length; i++) {
-      const pid = pidList[i];
+    const pageListData = await batchFetch<PageData>(pids.map(p => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
+    for (let i = 0; i < pids.length; i++) {
+      const pid = pids[i];
       const data = pageListData[i];
       if (data.error) {
         throw new Error(`Fetch page list error: ${data.message}`);
@@ -189,13 +187,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return list;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<string[]> {
     this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
     if (this.first) {
       // TODO:
-      yield JSON.stringify([this.first]);
+      yield [this.first];
       while (conf.pixivJustCurrPage) {
-        yield "";
+        yield [];
       }
     }
     // find author eg. https://www.pixiv.net/en/users/xxx
@@ -222,7 +220,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     while (pidList.length > 0) {
       const pids = pidList.splice(0, 20);
-      yield JSON.stringify(pids);
+      yield pids;
     }
   }
 }

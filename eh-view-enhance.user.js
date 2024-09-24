@@ -3378,8 +3378,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         yield res.text().then((text) => new DOMParser().parseFromString(text, "text/html"));
       }
     }
-    async parseImgNodes(page) {
-      const doc = page;
+    async parseImgNodes(doc) {
       const items = Array.from(doc.querySelectorAll("li > a.page-item"));
       if (items.length === 0) throw new Error("cannot find thumbnails");
       const ret = [];
@@ -3411,8 +3410,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     async *fetchPagesSource() {
       yield document;
     }
-    async parseImgNodes(page) {
-      const doc = page;
+    async parseImgNodes(doc) {
       const imageString = ".article-content img:not(.arca-emoticon):not(.twemoji)";
       const videoString = ".article-content video:not(.arca-emoticon)";
       const elements = Array.from(doc.querySelectorAll(`${imageString}, ${videoString}`));
@@ -3472,13 +3470,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         page++;
         const projects = await this.fetchProjects(username, id.toString(), page);
         if (!projects || projects.length === 0) break;
-        this.pageData.set(page.toString(), projects);
-        yield page.toString();
+        yield projects;
       }
     }
-    async parseImgNodes(pageNo) {
-      const projects = this.pageData.get(pageNo);
-      if (!projects) throw new Error("cannot get projects form page data");
+    async parseImgNodes(projects) {
       const projectURLs = projects.map((p) => `https://www.artstation.com/projects/${p.hash_id}.json`);
       const assets = await batchFetch(projectURLs, 10, "json");
       const ret = [];
@@ -3584,9 +3579,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     cachedOriginMeta(_href) {
       return null;
     }
-    async parseImgNodes(source) {
+    async parseImgNodes(doc) {
       const list = [];
-      const doc = source;
       this.queryList(doc).forEach((ele) => {
         const [imgNode, tags] = this.toImgNode(ele);
         if (!imgNode) return;
@@ -3729,8 +3723,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         yield doc;
       }
     }
-    async parseImgNodes(source) {
-      const doc = source;
+    async parseImgNodes(doc) {
       const raw = doc.querySelector("body > form + script")?.textContent;
       if (!raw) throw new Error("cannot find post list from script");
       const matches = raw.matchAll(POST_INFO_REGEX);
@@ -3800,8 +3793,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         yield doc;
       }
     }
-    async parseImgNodes(source) {
-      const doc = source;
+    async parseImgNodes(doc) {
       const raw = doc.querySelector("body > script + script")?.textContent;
       if (!raw) throw new Error("cannot find post list from script");
       const matches = raw.matchAll(POST_INFO_REGEX);
@@ -4050,16 +4042,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     async parseImgNodes(source) {
       const list = [];
-      const doc = await (async () => {
-        if (source instanceof Document) {
-          return source;
-        } else {
-          const raw = await window.fetch(source).then((response) => response.text());
-          if (!raw) return null;
-          const domParser = new DOMParser();
-          return domParser.parseFromString(raw, "text/html");
-        }
-      })();
+      const doc = await window.fetch(source).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       if (!doc) {
         throw new Error("warn: eh matcher failed to get document from source page!");
       }
@@ -4255,8 +4238,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.meta = this.pasrseGalleryMeta(document);
       yield document;
     }
-    async parseImgNodes(page) {
-      const doc = page;
+    async parseImgNodes(doc) {
       const result = [];
       const list = Array.from(doc.querySelectorAll(".section .container + .container > .box > .columns > .column a"));
       list.forEach((li, i) => {
@@ -4466,12 +4448,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
       const info = JSON.parse(infoRaw);
       this.setGalleryMeta(info, galleryID, chapter);
-      const doc = await window.fetch(url).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-      yield doc;
+      yield info;
     }
-    async parseImgNodes(_page, chapterID) {
-      if (!this.infoRecord[chapterID]) throw new Error("warn: hitomi gallery info is null!");
-      const files = this.infoRecord[chapterID].files;
+    async parseImgNodes(info) {
+      const files = info.files;
       const list = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -4564,7 +4544,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const gthRaw = Array.from(document.querySelectorAll("script")).find((s) => s.textContent?.trimStart().startsWith("var g_th"))?.textContent?.match(/\('(\{.*?\})'\)/)?.[1];
       if (!gthRaw) throw new Error("cannot match gallery images info");
       this.gth = JSON.parse(gthRaw);
-      yield document;
+      yield null;
     }
     galleryMeta(doc) {
       const title = doc.querySelector(".right_details > h1")?.textContent || void 0;
@@ -4638,10 +4618,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.meta = new GalleryMeta(window.location.href, detail.title);
       this.meta.tags = tags;
     }
-    async parseImgNodes(page) {
-      const matches = page.match(REGEXP_EXTRACT_GALLERY_ID);
+    async parseImgNodes(source) {
+      const matches = source.match(REGEXP_EXTRACT_GALLERY_ID);
       if (!matches || matches.length < 2) {
-        throw new Error("invaild url: " + page);
+        throw new Error("invaild url: " + source);
       }
       const galleryID = matches[1];
       const detailAPI = `https://api.koharu.to/books/detail/${galleryID}`;
@@ -4708,8 +4688,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     async *fetchPagesSource(source) {
       yield source.source;
     }
-    async parseImgNodes(page) {
-      const raw = await window.fetch(page).then((resp) => resp.text());
+    async parseImgNodes(source) {
+      const raw = await window.fetch(source).then((resp) => resp.text());
       const doc = new DOMParser().parseFromString(raw, "text/html");
       const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
       if (!contentKey) throw new Error("cannot find content key");
@@ -4718,7 +4698,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         const images = JSON.parse(decryption);
         const digits = images.length.toString().length;
         return images.map((img, i) => {
-          return new ImageNode("", page, (i + 1).toString().padStart(digits, "0") + ".webp", void 0, img.url);
+          return new ImageNode("", source, (i + 1).toString().padStart(digits, "0") + ".webp", void 0, img.url);
         });
       } catch (error) {
         throw new Error("cannot decrypt contentKey: " + error.toString() + "\n" + contentKey);
@@ -4815,8 +4795,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     async *fetchPagesSource(source) {
       yield source.source;
     }
-    async parseImgNodes(page, _chapterID) {
-      const docRaw = await window.fetch(page).then((res) => res.text());
+    async parseImgNodes(source) {
+      const docRaw = await window.fetch(source).then((res) => res.text());
       const matches = docRaw.match(IMG_DATA_PARAM_REGEX);
       if (!matches || matches.length < 5) throw new Error("cannot match image data");
       let data;
@@ -5018,9 +4998,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     async fetchOriginMeta(node) {
       return { url: node.originSrc };
     }
-    async parseImgNodes(source) {
+    async parseImgNodes(doc) {
       await sleep(200);
-      const nodes = Array.from(source.querySelectorAll(".thumb-container > .gallerythumb") ?? []);
+      const nodes = Array.from(doc.querySelectorAll(".thumb-container > .gallerythumb") ?? []);
       if (nodes.length == 0) throw new Error("cannot find image nodes");
       const { info, mediaServer } = this.parseInfo();
       const mediaID = info.media_id;
@@ -5710,14 +5690,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         evLog("error", "ERROR: fetch tags by pids error: ", error);
       }
     }
-    async parseImgNodes(source) {
+    async parseImgNodes(pids) {
       const list = [];
-      if (source === "") return list;
-      const pidList = JSON.parse(source);
-      this.fetchTagsByPids(pidList);
-      const pageListData = await batchFetch(pidList.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
-      for (let i = 0; i < pidList.length; i++) {
-        const pid = pidList[i];
+      if (pids.length === 0) return list;
+      this.fetchTagsByPids(pids);
+      const pageListData = await batchFetch(pids.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
+      for (let i = 0; i < pids.length; i++) {
+        const pid = pids[i];
         const data = pageListData[i];
         if (data.error) {
           throw new Error(`Fetch page list error: ${data.message}`);
@@ -5742,9 +5721,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     async *fetchPagesSource() {
       this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
       if (this.first) {
-        yield JSON.stringify([this.first]);
+        yield [this.first];
         while (conf.pixivJustCurrPage) {
-          yield "";
+          yield [];
         }
       }
       const u = document.querySelector("a[data-gtm-value][href*='/users/']")?.href || document.querySelector("a.user-details-icon[href*='/users/']")?.href || window.location.href;
@@ -5766,7 +5745,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
       while (pidList.length > 0) {
         const pids = pidList.splice(0, 20);
-        yield JSON.stringify(pids);
+        yield pids;
       }
     }
   }
@@ -5801,8 +5780,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     async fetchOriginMeta(node) {
       return { url: node.originSrc };
     }
-    async parseImgNodes(source) {
-      const range = source.split("-").map(Number);
+    async parseImgNodes(range) {
       const list = [];
       const digits = this.imgCount.toString().length;
       for (let i = range[0]; i < range[1]; i++) {
@@ -5838,7 +5816,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         this.sprites.push({ src, pos: { x, y, width, height } });
       }
       for (let i = 0; i < this.imgCount; i += 20) {
-        yield `${i}-${Math.min(i + 20, this.imgCount)}`;
+        yield [i, Math.min(i + 20, this.imgCount)];
       }
     }
     async fetchThumbnail(index) {
@@ -5948,7 +5926,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     name() {
       return "Twitter | X";
     }
-    mediaPages = /* @__PURE__ */ new Map();
     uuid = uuid();
     postCount = 0;
     mediaCount = 0;
@@ -6009,13 +5986,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         const [mediaPage, nextCursor] = await this.fetchUserMedia(cursor);
         cursor = nextCursor || "last";
         if (!mediaPage || mediaPage.length === 0) break;
-        this.mediaPages.set(cursor, mediaPage);
-        yield cursor;
+        yield mediaPage;
         if (!nextCursor) break;
       }
     }
-    async parseImgNodes(cursor) {
-      const items = this.mediaPages.get(cursor);
+    async parseImgNodes(items) {
       if (!items) throw new Error("warn: cannot find items");
       const list = [];
       for (const item of items) {
@@ -6102,8 +6077,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         yield doc;
       }
     }
-    async parseImgNodes(page) {
-      const doc = page;
+    async parseImgNodes(doc) {
       const result = [];
       const list = Array.from(doc.querySelectorAll(".grid > .gallary_wrap > .cc > li"));
       for (const li of list) {

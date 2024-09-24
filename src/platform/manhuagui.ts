@@ -1,9 +1,9 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Chapter, PagesSource } from "../page-fetcher";
+import { Chapter, } from "../page-fetcher";
 import { BaseMatcher, OriginMeta } from "./platform";
 
-export class MHGMatcher extends BaseMatcher {
+export class MHGMatcher extends BaseMatcher<string> {
   name(): string {
     return "漫画柜";
   }
@@ -21,11 +21,11 @@ export class MHGMatcher extends BaseMatcher {
     this.meta = new GalleryMeta(window.location.href, title);
     return this.meta;
   }
-  async *fetchPagesSource(source: Chapter): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(source: Chapter): AsyncGenerator<string> {
     yield source.source;
   }
-  async parseImgNodes(page: PagesSource, _chapterID?: number | undefined): Promise<ImageNode[]> {
-    const docRaw = await window.fetch(page as string).then(res => res.text());
+  async parseImgNodes(source: string): Promise<ImageNode[]> {
+    const docRaw = await window.fetch(source).then(res => res.text());
     const matches = docRaw.match(IMG_DATA_PARAM_REGEX);
     if (!matches || matches.length < 5) throw new Error("cannot match image data");
     let data: MHGImgData;

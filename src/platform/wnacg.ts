@@ -1,9 +1,8 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
 import { BaseMatcher, OriginMeta } from "./platform";
 
-export class WnacgMatcher extends BaseMatcher {
+export class WnacgMatcher extends BaseMatcher<Document> {
   name(): string {
     return "绅士漫画"
   }
@@ -11,7 +10,7 @@ export class WnacgMatcher extends BaseMatcher {
   meta?: GalleryMeta;
   baseURL?: string;
 
-  async *fetchPagesSource(): AsyncGenerator<PagesSource, any, unknown> {
+  async *fetchPagesSource(): AsyncGenerator<Document> {
     const id = this.extractIDFromHref(window.location.href);
     if (!id) {
       throw new Error("Cannot find gallery ID");
@@ -29,8 +28,7 @@ export class WnacgMatcher extends BaseMatcher {
     }
   }
 
-  async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
-    const doc = page as Document;
+  async parseImgNodes(doc: Document): Promise<ImageNode[]> {
     const result: ImageNode[] = [];
     const list = Array.from(doc.querySelectorAll(".grid > .gallary_wrap > .cc > li"));
     for (const li of list) {

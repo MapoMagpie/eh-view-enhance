@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Chapter, PagesSource } from "../page-fetcher";
+import { Chapter } from "../page-fetcher";
 
 
 export type OriginMeta = {
@@ -9,7 +9,7 @@ export type OriginMeta = {
   href?: string,
 }
 
-export interface Matcher {
+export interface Matcher<P> {
   name(): string;
   /**
    * step 0: in some site, the gallery is divided into chapters
@@ -18,11 +18,11 @@ export interface Matcher {
   /**
    * step 1: fetch page source
    */
-  fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource>;
+  fetchPagesSource(chapter: Chapter): AsyncGenerator<P>;
   /**
    * step 2: parse img nodes from page source
    */
-  parseImgNodes(page: PagesSource, chapterID?: number): Promise<ImageNode[] | never>;
+  parseImgNodes(page: P, chapterID?: number): Promise<ImageNode[] | never>;
   /**
    * step 3: fetch origin img url from every single image node's href
    */
@@ -35,7 +35,7 @@ export interface Matcher {
   headers(): Record<string, string>;
 }
 
-export abstract class BaseMatcher implements Matcher {
+export abstract class BaseMatcher<P> implements Matcher<P> {
 
   async fetchChapters(): Promise<Chapter[]> {
     return [{
@@ -47,8 +47,8 @@ export abstract class BaseMatcher implements Matcher {
   }
 
   abstract name(): string;
-  abstract fetchPagesSource(source: Chapter): AsyncGenerator<PagesSource>;
-  abstract parseImgNodes(page: PagesSource, chapterID?: number): Promise<ImageNode[]>;
+  abstract fetchPagesSource(source: Chapter): AsyncGenerator<P>;
+  abstract parseImgNodes(page: P, chapterID?: number): Promise<ImageNode[]>;
   abstract fetchOriginMeta(node: ImageNode, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
   title(doc: Document): string {

@@ -6,15 +6,13 @@ import { Matcher } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
 
-export type PagesSource = string | Document;
-
 export type Chapter = {
   id: number;
   title: string | string[];
   source: string; // url
   queue: IMGFetcher[];
   thumbimg?: string;
-  sourceIter?: AsyncGenerator<PagesSource>;
+  sourceIter?: AsyncGenerator<any>;
   done?: boolean;
   onclick?: (index: number) => void;
 }
@@ -23,13 +21,13 @@ export class PageFetcher {
   chapters: Chapter[] = [];
   chapterIndex: number = 0;
   queue: IMGFetcherQueue;
-  matcher: Matcher;
+  matcher: Matcher<any>;
   beforeInit?: () => void;
   afterInit?: () => void;
   private appendPageLock: boolean = false;
   private abortb: boolean = false;
 
-  constructor(queue: IMGFetcherQueue, matcher: Matcher) {
+  constructor(queue: IMGFetcherQueue, matcher: Matcher<any>) {
     this.queue = queue;
     this.matcher = matcher;
     const debouncer = new Debouncer();
@@ -119,7 +117,7 @@ export class PageFetcher {
     }
   }
 
-  async appendImages(page: PagesSource): Promise<boolean> {
+  async appendImages(page: any): Promise<boolean> {
     try {
       const nodes = await this.obtainImageNodeList(page);
       if (this.abortb) return false;
@@ -140,7 +138,7 @@ export class PageFetcher {
   }
 
   //从文档的字符串中创建缩略图元素列表
-  async obtainImageNodeList(page: PagesSource): Promise<ImageNode[]> {
+  async obtainImageNodeList(page: any): Promise<ImageNode[]> {
     let tryTimes = 0;
     let err: any;
     while (tryTimes < 3) {

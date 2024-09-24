@@ -1,12 +1,11 @@
 import { conf, transient } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 
-abstract class DanbooruMatcher extends BaseMatcher {
+abstract class DanbooruMatcher extends BaseMatcher<Document> {
   tags: Record<string, string[]> = {};
   blacklistTags: string[] = [];
   count: number = 0;
@@ -17,7 +16,7 @@ abstract class DanbooruMatcher extends BaseMatcher {
 
   abstract nextPage(doc: Document): string | null;
 
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<Document> {
     let doc = document;
     this.blacklistTags = this.getBlacklist(doc);
     yield doc;
@@ -73,9 +72,8 @@ abstract class DanbooruMatcher extends BaseMatcher {
   abstract queryList(doc: Document): HTMLElement[];
   abstract toImgNode(ele: HTMLElement): [ImageNode | null, string];
 
-  async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
+  async parseImgNodes(doc: Document): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
-    const doc = source as Document;
     this.queryList(doc).forEach(ele => {
       const [imgNode, tags] = this.toImgNode(ele);
       if (!imgNode) return;
@@ -210,7 +208,7 @@ type YandereKonachanPostInfo = {
   width: number,
   height: number,
 }
-export class YandereMatcher extends BaseMatcher {
+export class YandereMatcher extends BaseMatcher<Document> {
   name(): string {
     return "yande.re";
   }
@@ -222,7 +220,7 @@ export class YandereMatcher extends BaseMatcher {
     return /yande.re\/post(?!\/show\/.*)/;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<PagesSource, any, unknown> {
+  async *fetchPagesSource(): AsyncGenerator<Document> {
     let doc = document;
     yield doc;
     // find next page
@@ -242,8 +240,7 @@ export class YandereMatcher extends BaseMatcher {
     }
   }
 
-  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
-    const doc = source as Document;
+  async parseImgNodes(doc: Document): Promise<ImageNode[]> {
     const raw = doc.querySelector("body > form + script")?.textContent;
     if (!raw) throw new Error("cannot find post list from script");
     const matches = raw.matchAll(POST_INFO_REGEX);
@@ -289,7 +286,7 @@ export class YandereMatcher extends BaseMatcher {
   }
 }
 
-export class KonachanMatcher extends BaseMatcher {
+export class KonachanMatcher extends BaseMatcher<Document> {
   name(): string {
     return "konachan";
   }
@@ -301,7 +298,7 @@ export class KonachanMatcher extends BaseMatcher {
     return /konachan.com\/post(?!\/show\/.*)/;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<PagesSource, any, unknown> {
+  async *fetchPagesSource(): AsyncGenerator<Document> {
     let doc = document;
     yield doc;
     // find next page
@@ -320,8 +317,7 @@ export class KonachanMatcher extends BaseMatcher {
       yield doc;
     }
   }
-  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
-    const doc = source as Document;
+  async parseImgNodes(doc: Document): Promise<ImageNode[]> {
     const raw = doc.querySelector("body > script + script")?.textContent;
     if (!raw) throw new Error("cannot find post list from script");
     const matches = raw.matchAll(POST_INFO_REGEX);

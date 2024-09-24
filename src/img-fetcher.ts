@@ -37,12 +37,12 @@ export class IMGFetcher implements VisualNode {
   contentType?: string;
   downloadState: DownloadState;
   timeoutId?: number;
-  matcher: Matcher;
+  matcher: Matcher<any>;
   chapterIndex: number;
   randomID: string;
   failedReason?: string;
 
-  constructor(index: number, root: ImageNode, matcher: Matcher, chapterIndex: number) {
+  constructor(index: number, root: ImageNode, matcher: Matcher<any>, chapterIndex: number) {
     this.index = index;
     this.node = root;
     this.node.onclick = (event) => {

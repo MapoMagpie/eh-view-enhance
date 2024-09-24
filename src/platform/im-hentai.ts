@@ -1,10 +1,9 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
 import q from "../utils/query-element";
 import { BaseMatcher, OriginMeta } from "./platform";
 
-export class IMHentaiMatcher extends BaseMatcher {
+export class IMHentaiMatcher extends BaseMatcher<null> {
   name(): string {
     return "im-hentai";
   }
@@ -37,7 +36,7 @@ export class IMHentaiMatcher extends BaseMatcher {
     return ret;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<null> {
     const server = q<HTMLInputElement>("#load_server", document).value;
     const uid = q<HTMLInputElement>("#gallery_id", document).value;
     const gid = q<HTMLInputElement>("#load_id", document).value;
@@ -49,7 +48,7 @@ export class IMHentaiMatcher extends BaseMatcher {
       ?.textContent?.match(/\('(\{.*?\})'\)/)?.[1];
     if (!gthRaw) throw new Error("cannot match gallery images info");
     this.gth = JSON.parse(gthRaw) as Record<string, string>;
-    yield document;
+    yield null;
   }
 
   galleryMeta(doc: Document): GalleryMeta {

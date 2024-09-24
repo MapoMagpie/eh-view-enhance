@@ -1,7 +1,7 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Chapter, PagesSource } from "../page-fetcher";
+import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta } from "./platform";
 
@@ -71,7 +71,7 @@ type GalleryInfo = {
 // const HASH_REGEX = /#(\d*)$/;
 const GG_M_REGEX = /m:\sfunction\(g\)\s{(.*?return.*?;)/s;
 const GG_B_REGEX = /b:\s'(\d*\/)'/;
-export class HitomiMather extends BaseMatcher {
+export class HitomiMather extends BaseMatcher<GalleryInfo> {
   name(): string {
     return "hitomi"
   }
@@ -120,28 +120,23 @@ export class HitomiMather extends BaseMatcher {
     return ret;
   }
 
-  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<GalleryInfo> {
     const url = chapter.source;
     const galleryID = url.match(/([0-9]+)(?:\.html)/)?.[1];
     if (!galleryID) {
       throw new Error("cannot query hitomi gallery id");
     }
     const infoRaw = await window.fetch(`https://ltn.hitomi.la/galleries/${galleryID}.js`).then(resp => resp.text()).then(text => text.replace("var galleryinfo = ", ""));
-
     if (!infoRaw) {
       throw new Error("cannot query hitomi gallery info");
     }
-
     const info: GalleryInfo = JSON.parse(infoRaw);
     this.setGalleryMeta(info, galleryID, chapter);
-    const doc = await window.fetch(url).then(resp => resp.text()).then(text => new DOMParser().parseFromString(text, "text/html"));
-    yield doc;
+    yield info;
   }
 
-  async parseImgNodes(_page: PagesSource, chapterID: number): Promise<ImageNode[]> {
-    if (!this.infoRecord[chapterID]) throw new Error("warn: hitomi gallery info is null!")
-
-    const files = this.infoRecord[chapterID].files;
+  async parseImgNodes(info: GalleryInfo): Promise<ImageNode[]> {
+    const files = info.files;
     const list: ImageNode[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];

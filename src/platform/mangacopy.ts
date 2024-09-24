@@ -1,9 +1,9 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Chapter, PagesSource } from "../page-fetcher";
+import { Chapter } from "../page-fetcher";
 import { BaseMatcher, OriginMeta } from "./platform";
 
-export class MangaCopyMatcher extends BaseMatcher {
+export class MangaCopyMatcher extends BaseMatcher<string> {
   name(): string {
     return "拷贝漫画";
   }
@@ -22,11 +22,11 @@ export class MangaCopyMatcher extends BaseMatcher {
     this.meta = new GalleryMeta(window.location.href, title);
     return this.meta;
   }
-  async *fetchPagesSource(source: Chapter): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(source: Chapter): AsyncGenerator<string> {
     yield source.source;
   }
-  async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
-    const raw = await window.fetch(page as string).then(resp => resp.text());
+  async parseImgNodes(source: string): Promise<ImageNode[]> {
+    const raw = await window.fetch(source).then(resp => resp.text());
     const doc = new DOMParser().parseFromString(raw, "text/html");
     const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
     if (!contentKey) throw new Error("cannot find content key");
@@ -35,7 +35,7 @@ export class MangaCopyMatcher extends BaseMatcher {
       const images = JSON.parse(decryption) as { url: string }[];
       const digits = images.length.toString().length;
       return images.map((img, i) => {
-        return new ImageNode("", page as string, (i + 1).toString().padStart(digits, "0") + ".webp", undefined, img.url);
+        return new ImageNode("", source as string, (i + 1).toString().padStart(digits, "0") + ".webp", undefined, img.url);
       })
     } catch (error) {
       throw new Error("cannot decrypt contentKey: " + (error as any).toString() + "\n" + contentKey);

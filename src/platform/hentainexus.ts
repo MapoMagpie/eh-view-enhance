@@ -1,6 +1,5 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 type HNImageInfo = {
@@ -11,7 +10,7 @@ type HNImageInfo = {
 }
 const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?(.*?)\)/;
 const REGEXP_EXTRACT_HASH = /read\/\d+\/(\d+)$/;
-export class HentaiNexusMatcher extends BaseMatcher {
+export class HentaiNexusMatcher extends BaseMatcher<Document> {
   name(): string {
     return "hentainexus";
   }
@@ -21,13 +20,12 @@ export class HentaiNexusMatcher extends BaseMatcher {
   readerData?: HNImageInfo[];
   // readDirection?: string;
 
-  async *fetchPagesSource(): AsyncGenerator<PagesSource, any, unknown> {
+  async *fetchPagesSource(): AsyncGenerator<Document> {
     this.meta = this.pasrseGalleryMeta(document);
     yield document
   }
 
-  async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
-    const doc = page as Document;
+  async parseImgNodes(doc: Document): Promise<ImageNode[]> {
     const result: ImageNode[] = [];
     const list = Array.from(doc.querySelectorAll<HTMLAnchorElement>(".section .container + .container > .box > .columns > .column a"));
     list.forEach((li, i) => {

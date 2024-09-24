@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Chapter, PagesSource } from "../page-fetcher";
+import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta } from "./platform";
 
@@ -42,7 +42,7 @@ function drawImage(ctx: CanvasRenderingContext2D, e: ImageBitmap, gid: string, p
   }
 }
 
-export class Comic18Matcher extends BaseMatcher {
+export class Comic18Matcher extends BaseMatcher<string> {
   name(): string {
     return "禁漫";
   }
@@ -90,11 +90,11 @@ export class Comic18Matcher extends BaseMatcher {
     return ret;
   }
 
-  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<string> {
     yield chapter.source;
   }
 
-  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
+  async parseImgNodes(source: string): Promise<ImageNode[]> {
     const list: ImageNode[] = [];
     const raw = await window.fetch(source as string).then(resp => resp.text());
     const document = new DOMParser().parseFromString(raw, "text/html");

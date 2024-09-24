@@ -1,7 +1,6 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { transactionId, uuid } from "../utils/random";
 import { BaseMatcher, OriginMeta } from "./platform";
@@ -75,11 +74,10 @@ type TimelineAddEntries = {
 }
 type Instructions = [TimelineAddToModule, TimelineAddEntries];
 
-export class TwitterMatcher extends BaseMatcher {
+export class TwitterMatcher extends BaseMatcher<Item[]> {
   name(): string {
     return "Twitter | X";
   }
-  mediaPages: Map<string, Item[]> = new Map();
   uuid = uuid();
   postCount: number = 0;
   mediaCount: number = 0;
@@ -139,20 +137,18 @@ export class TwitterMatcher extends BaseMatcher {
     }
   }
 
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<Item[]> {
     let cursor: string | undefined;
     while (true) {
       const [mediaPage, nextCursor] = await this.fetchUserMedia(cursor);
       cursor = nextCursor || "last";
       if (!mediaPage || mediaPage.length === 0) break;
-      this.mediaPages.set(cursor, mediaPage);
-      yield cursor;
+      yield mediaPage;
       if (!nextCursor) break;
     }
   }
 
-  async parseImgNodes(cursor: PagesSource): Promise<ImageNode[]> {
-    const items = this.mediaPages.get(cursor as string);
+  async parseImgNodes(items: Item[]): Promise<ImageNode[]> {
     if (!items) throw new Error("warn: cannot find items");
     const list: ImageNode[] = [];
     for (const item of items) {

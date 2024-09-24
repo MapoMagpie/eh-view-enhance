@@ -1,6 +1,5 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
 import { sleep } from "../utils/sleep";
 import { BaseMatcher, OriginMeta } from "./platform";
 
@@ -16,7 +15,7 @@ function nhParseExt(str: string): string {
   }
 }
 
-export class NHMatcher extends BaseMatcher {
+export class NHMatcher extends BaseMatcher<Document> {
   meta?: GalleryMeta;
   name(): string {
     return "nhentai";
@@ -53,9 +52,9 @@ export class NHMatcher extends BaseMatcher {
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
     return { url: node.originSrc! };
   }
-  async parseImgNodes(source: PagesSource): Promise<ImageNode[]> {
+  async parseImgNodes(doc: Document): Promise<ImageNode[]> {
     await sleep(200);
-    const nodes = Array.from((source as Document).querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb") ?? []);
+    const nodes = Array.from((doc).querySelectorAll<HTMLElement>(".thumb-container > .gallerythumb") ?? []);
     if (nodes.length == 0) throw new Error("cannot find image nodes")
     const { info, mediaServer } = this.parseInfo();
     const mediaID = info.media_id;
@@ -73,13 +72,13 @@ export class NHMatcher extends BaseMatcher {
     }
     return ret;
   }
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<Document> {
     yield document;
   }
 
 }
 
-export class NHxxxMatcher extends BaseMatcher {
+export class NHxxxMatcher extends BaseMatcher<Document> {
   meta?: GalleryMeta;
   galleryMeta(): GalleryMeta {
     return this.meta!;
@@ -100,11 +99,11 @@ export class NHxxxMatcher extends BaseMatcher {
     });
     this.meta = meta;
   }
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<Document> {
     this.parseMeta();
     yield document;
   }
-  async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
+  async parseImgNodes(page: Document): Promise<ImageNode[]> {
     const doc = page as Document;
     await sleep(200);
     const [files, thumbs] = this.parseInfo(doc);

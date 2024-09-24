@@ -1,16 +1,14 @@
 import ImageNode from '../img-node';
-import { PagesSource } from '../page-fetcher';
 import { BaseMatcher, OriginMeta } from './platform';
 
-export class ArcaMatcher extends BaseMatcher {
+export class ArcaMatcher extends BaseMatcher<Document> {
   name(): string {
     return 'Arcalive';
   }
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<Document> {
     yield document;
   }
-  async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
-    const doc = page as Document;
+  async parseImgNodes(doc: Document): Promise<ImageNode[]> {
     const imageString = '.article-content img:not(.arca-emoticon):not(.twemoji)';
     const videoString = '.article-content video:not(.arca-emoticon)';
 

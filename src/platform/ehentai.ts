@@ -1,7 +1,6 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { parseImagePositions, splitImagesFromUrl } from "../utils/sprite-split";
 import { BaseMatcher, OriginMeta, } from "./platform";
@@ -22,7 +21,7 @@ const regulars = {
   sprite: /url\((.*?)\)/,
 }
 
-export class EHMatcher extends BaseMatcher {
+export class EHMatcher extends BaseMatcher<string> {
   name(): string {
     return "e-hentai"
   }
@@ -71,19 +70,9 @@ export class EHMatcher extends BaseMatcher {
     return this.meta;
   }
 
-  async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
+  async parseImgNodes(source: string): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
-    const doc = await (async (): Promise<Document | null> => {
-      if (source instanceof Document) {
-        return source;
-      } else {
-        const raw = await window.fetch(source as string).then((response) => response.text());
-        if (!raw) return null;
-        const domParser = new DOMParser();
-        return domParser.parseFromString(raw, "text/html");
-      }
-    })();
-
+    const doc = await window.fetch(source).then((response) => response.text()).then(text => new DOMParser().parseFromString(text, "text/html"));
     if (!doc) {
       throw new Error("warn: eh matcher failed to get document from source page!")
     }
@@ -191,7 +180,7 @@ export class EHMatcher extends BaseMatcher {
     return list;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<string> {
     // const doc = await window.fetch(chapter.source).then((resp) => resp.text()).then(raw => new DOMParser().parseFromString(raw, "text/html"));
     const doc = document;
     const fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");

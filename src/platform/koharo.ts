@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { Chapter, PagesSource } from "../page-fetcher";
+import { Chapter } from "../page-fetcher";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 const REGEXP_EXTRACT_GALLERY_ID = /koharu.to\/\w+\/(\d+\/\w+)/;
@@ -47,7 +47,7 @@ const NAMESPACE_MAP: Record<number, string> = {
   11: "language",
 };
 
-export class KoharuMatcher extends BaseMatcher {
+export class KoharuMatcher extends BaseMatcher<string> {
   name(): string {
     return "Koharu";
   }
@@ -58,7 +58,7 @@ export class KoharuMatcher extends BaseMatcher {
     return this.meta || new GalleryMeta(window.location.href, "koharu-unknows");
   }
 
-  async *fetchPagesSource(source: Chapter): AsyncGenerator<PagesSource, any, unknown> {
+  async *fetchPagesSource(source: Chapter): AsyncGenerator<string> {
     yield source.source;
   }
 
@@ -73,10 +73,10 @@ export class KoharuMatcher extends BaseMatcher {
     this.meta.tags = tags;
   }
 
-  async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
-    const matches = (page as string).match(REGEXP_EXTRACT_GALLERY_ID)
+  async parseImgNodes(source: string): Promise<ImageNode[]> {
+    const matches = source.match(REGEXP_EXTRACT_GALLERY_ID)
     if (!matches || matches.length < 2) {
-      throw new Error("invaild url: " + page);
+      throw new Error("invaild url: " + source);
     }
     const galleryID = matches[1];
     const detailAPI = `https://api.koharu.to/books/detail/${galleryID}`;

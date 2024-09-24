@@ -1,9 +1,8 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
 import { BaseMatcher, OriginMeta } from "./platform";
 
-export class AkumaMatcher extends BaseMatcher {
+export class AkumaMatcher extends BaseMatcher<Document> {
   originImages?: string[];
   index: number = 0;
   meta?: GalleryMeta;
@@ -33,7 +32,7 @@ export class AkumaMatcher extends BaseMatcher {
       }, {});
     return meta;
   }
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<Document> {
     // fetch origin images;
     const csrf = document.querySelector<HTMLMetaElement>("meta[name='csrf-token'][content]")?.content;
     if (!csrf) throw new Error("cannot get csrf token form this page");
@@ -65,8 +64,7 @@ export class AkumaMatcher extends BaseMatcher {
       yield res.text().then(text => new DOMParser().parseFromString(text, "text/html"));
     }
   }
-  async parseImgNodes(page: PagesSource): Promise<ImageNode[]> {
-    const doc = page as Document;
+  async parseImgNodes(doc: Document): Promise<ImageNode[]> {
     const items = Array.from(doc.querySelectorAll<HTMLAnchorElement>("li > a.page-item"));
     if (items.length === 0) throw new Error("cannot find thumbnails");
     const ret: ImageNode[] = [];

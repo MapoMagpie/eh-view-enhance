@@ -1,10 +1,9 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { PagesSource } from "../page-fetcher";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
-export class SteamMatcher extends BaseMatcher {
+export class SteamMatcher extends BaseMatcher<string> {
   name(): string {
     return "Steam Screenshots";
   }
@@ -30,9 +29,9 @@ export class SteamMatcher extends BaseMatcher {
     return { url: imgURL };
   }
 
-  async parseImgNodes(source: PagesSource): Promise<ImageNode[] | never> {
+  async parseImgNodes(source: string): Promise<ImageNode[] | never> {
     const list: ImageNode[] = [];
-    const doc = await window.fetch(source as string).then((resp) => resp.text()).then(raw => new DOMParser().parseFromString(raw, "text/html"));
+    const doc = await window.fetch(source).then((resp) => resp.text()).then(raw => new DOMParser().parseFromString(raw, "text/html"));
     if (!doc) {
       throw new Error("warn: steam matcher failed to get document from source page!")
     }
@@ -55,7 +54,7 @@ export class SteamMatcher extends BaseMatcher {
     return list;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<PagesSource> {
+  async *fetchPagesSource(): AsyncGenerator<string> {
     let totalPages = -1;
     document.querySelectorAll(".pagingPageLink").forEach(ele => {
       totalPages = Number(ele.textContent);

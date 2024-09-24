@@ -17,7 +17,7 @@ import { sleep } from "./utils/sleep";
 
 type DestoryFunc = () => Promise<void>;
 
-function main(MATCHER: Matcher, autoOpen: boolean, flowVision: boolean): DestoryFunc {
+function main(MATCHER: Matcher<any>, autoOpen: boolean, flowVision: boolean): DestoryFunc {
   const HTML = createHTML();
   [HTML.fullViewGrid, HTML.bigImageFrame].forEach(e => revertMonkeyPatch(e));
 

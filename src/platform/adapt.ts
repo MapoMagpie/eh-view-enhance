@@ -19,7 +19,7 @@ import { SteamMatcher } from "./steam";
 import { TwitterMatcher } from "./twitter";
 import { WnacgMatcher } from "./wnacg";
 
-export function getMatchers(): Matcher[] {
+export function getMatchers(): Matcher<any>[] {
   return [
     new EHMatcher(),
     new NHMatcher(),
@@ -48,7 +48,7 @@ export function getMatchers(): Matcher[] {
   ];
 }
 
-export function adaptMatcher(url: string): [Matcher | null, boolean, boolean] {
+export function adaptMatcher(url: string): [Matcher<any> | null, boolean, boolean] {
   const matchers = getMatchers();
   const matcher = matchers
     .filter(matcher => conf.siteProfiles[matcher.name()]?.enable ?? true)

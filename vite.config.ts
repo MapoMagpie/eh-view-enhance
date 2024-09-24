@@ -68,6 +68,7 @@ export default defineConfig(({ command }) => {
             'https://arca.live/*',
             'https://*.artstation.com/*',
             'https://akuma.moe/*',
+            'https://*.instagram.com/*',
             // '*://*/*',
           ],
           name: {
@@ -122,6 +123,7 @@ export default defineConfig(({ command }) => {
             'namu.la',
             'artstation.com',
             'akuma.moe',
+            'cdninstagram.com',
             '*',
           ],
           grant: [

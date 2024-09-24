@@ -50,6 +50,7 @@
 // @match              https://arca.live/*
 // @match              https://*.artstation.com/*
 // @match              https://akuma.moe/*
+// @match              https://*.instagram.com/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
@@ -86,6 +87,7 @@
 // @connect            namu.la
 // @connect            artstation.com
 // @connect            akuma.moe
+// @connect            cdninstagram.com
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue
@@ -4586,6 +4588,158 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
   }
 
+  class InstagramMatcher extends BaseMatcher {
+    config;
+    name() {
+      return "Instagram";
+    }
+    async *fetchPagesSource() {
+      this.config = parseConfig();
+      let cursor = null;
+      while (true) {
+        const [nodes, pageInfo] = await this.fetchPosts(cursor);
+        cursor = pageInfo.end_cursor;
+        yield nodes;
+        if (!pageInfo.has_next_page) break;
+      }
+    }
+    async parseImgNodes(nodes) {
+      const ret = [];
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        const videos = node.video_versions;
+        const images = !videos && node.carousel_media && node.carousel_media.length > 0 ? node.carousel_media.map((n) => n.image_versions2) : [node.image_versions2];
+        const digits = images.length.toString().length;
+        for (let j = 0; j < images.length; j++) {
+          const img = images[j];
+          const title = images.length > 1 ? `${node.pk}-${(j + 1).toString().padStart(digits, "0")}` : node.pk;
+          const ext = videos ? "mp4" : "jpeg";
+          const [thumb, origin] = this.getThumbAndOrigin(img.candidates, videos);
+          ret.push(new ImageNode(thumb?.url ?? "", `${window.location.origin}/p/${node.code}`, `${title}.${ext}`, void 0, origin.url, { w: origin.width, h: origin.height }));
+        }
+      }
+      return ret;
+    }
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
+    }
+    workURL() {
+      return /instagram.com\/(?!(home|explore|direct|reels|stories))\w+/;
+    }
+    async fetchPosts(cursor) {
+      if (!this.config) throw new Error("instagram config null");
+      const config = this.config;
+      const headers = new Headers();
+      headers.append("x-fb-friendly-name", config.apiName);
+      headers.append("x-bloks-version-id", config.bloksVersionID);
+      headers.append("x-csrftoken", config.csrfToken);
+      headers.append("x-ig-app-id", config.appID);
+      headers.append("x-fb-lsd", config.lsd);
+      headers.append("x-asbd-id", "129477");
+      let variables = {
+        "username": config.username,
+        "__relay_internal__pv__PolarisIsLoggedInrelayprovider": true,
+        "__relay_internal__pv__PolarisFeedShareMenurelayprovider": true,
+        "data": { "count": 12, "include_relationship_info": true, "latest_besties_reel_media": true, "latest_reel_media": true }
+      };
+      if (cursor) {
+        variables.after = cursor;
+        variables.before = null;
+        variables.first = 12;
+        variables.last = null;
+      }
+      const body = new URLSearchParams();
+      body.append("av", config.userID);
+      body.append("__d", "www");
+      body.append("__user", "0");
+      body.append("__a", "1");
+      body.append("__req", "x");
+      body.append("__hs", config.hasteSession);
+      body.append("dpr", "1");
+      body.append("__ccg", "UNKNOWN");
+      body.append("__rev", config.clientVersion);
+      body.append("__hsi", config.hsi);
+      body.append("__dyn", config.dyn);
+      body.append("__comet_req", "7");
+      body.append("fb_dtsg", config.dtsg);
+      body.append("lsd", config.lsd);
+      body.append("__spin_r", config.spinR);
+      body.append("__spin_b", config.spinB);
+      body.append("__spin_t", config.spinT);
+      body.append("fb_api_caller_class", "RelayModern");
+      body.append("fb_api_req_friendly_name", config.apiName);
+      body.append("variables", JSON.stringify(variables));
+      body.append("server_timestamps", "true");
+      body.append("doc_id", config.docID);
+      const res = await window.fetch("https://www.instagram.com/graphql/query", { headers, body, method: "POST" }).then((res2) => res2.json());
+      const data = res?.data?.xdt_api__v1__feed__user_timeline_graphql_connection;
+      if (!data) throw new Error("failed fetch user's posts by API");
+      return [data.edges.map((e) => e.node), data.page_info];
+    }
+    getThumbAndOrigin(candidates, videos) {
+      const origin = videos?.[0] ?? candidates[0];
+      let lastThumb = void 0;
+      for (const ca of candidates) {
+        if (!lastThumb) {
+          lastThumb = ca;
+          continue;
+        }
+        if (lastThumb.width < ca.width || ca.width <= 240) {
+          break;
+        }
+        lastThumb = ca;
+      }
+      return [lastThumb, origin];
+    }
+  }
+  function parseConfig() {
+    const err = new Error("cannot find instagram config from script[data-sjs]");
+    const raw = Array.from(document.querySelectorAll("script[data-sjs]")).find((s) => s.textContent?.trimStart().startsWith(`{"require":[["ScheduledServerJS","handle",null,[{"__bbox":{"define":`))?.textContent;
+    if (!raw) throw err;
+    const data = JSON.parse(raw);
+    const arr = data.require?.[0]?.[3]?.[0]?.__bbox?.define;
+    const map = arr.reduce((prev, curr) => {
+      prev[curr[0]] = curr[2];
+      return prev;
+    }, {});
+    if (!map) throw err;
+    let csrfToken = map["InstagramSecurityConfig"]?.csrf_token;
+    let lsd = map["LSD"]?.token;
+    let bloksVersionID = map["WebBloksVersioningID"]?.versioningID;
+    let appID = map["CurrentUserInitialData"]?.APP_ID;
+    let userID = map["CurrentUserInitialData"]?.NON_FACEBOOK_USER_ID;
+    let hasteSession = map["SiteData"]?.haste_session;
+    let clientVersion = map["SiteData"]?.client_revision;
+    let hsi = map["SiteData"]?.hsi;
+    let spinR = map["SiteData"]?.__spin_r;
+    let spinB = map["SiteData"]?.__spin_b;
+    let spinT = map["SiteData"]?.__spin_t;
+    let dtsg = map["DTSGInitData"]?.token;
+    const username = window.location.pathname.split("/")?.[1];
+    if (!csrfToken || !lsd || !bloksVersionID || !appID || !userID || !hasteSession || !clientVersion || !hsi || !spinR || !spinB || !spinT || !dtsg || !username) throw err;
+    const docID = "8363144743749214";
+    const apiName = "PolarisProfilePostsTabContentQuery_connection";
+    const dyn = "7xeUjG1mxu1syUbFp41twpUnwgU7SbzEdF8aUco2qwJxS0k24o0B-q1ew65xO0FE2awgo9oO0n24oaEnxO1ywOwv89k2C1Fwc60D87u3ifK0EUjwGzEaE2iwNwmE2eUlwhEe87q7U1mVEbUGdG1QwTU9UaQ0Lo6-3u2WE5B08-269wr86C1mwPwUQp1yUb9UK6V8aUuwm9EO6UaU4W";
+    return {
+      csrfToken,
+      lsd,
+      bloksVersionID,
+      appID,
+      userID,
+      hasteSession,
+      clientVersion,
+      hsi,
+      spinR,
+      spinB,
+      spinT,
+      dtsg,
+      docID,
+      apiName,
+      dyn,
+      username
+    };
+  }
+
   const REGEXP_EXTRACT_GALLERY_ID = /koharu.to\/\w+\/(\d+\/\w+)/;
   const NAMESPACE_MAP = {
     0: "misc",
@@ -6145,7 +6299,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new E621Matcher(),
       new ArcaMatcher(),
       new ArtStationMatcher(),
-      new AkumaMatcher()
+      new AkumaMatcher(),
+      new InstagramMatcher()
     ];
   }
   function adaptMatcher(url) {

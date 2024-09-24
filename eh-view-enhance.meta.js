@@ -50,6 +50,7 @@
 // @match              https://arca.live/*
 // @match              https://*.artstation.com/*
 // @match              https://akuma.moe/*
+// @match              https://*.instagram.com/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.44/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
@@ -86,6 +87,7 @@
 // @connect            namu.la
 // @connect            artstation.com
 // @connect            akuma.moe
+// @connect            cdninstagram.com
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue

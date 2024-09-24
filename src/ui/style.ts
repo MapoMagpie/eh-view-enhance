@@ -101,7 +101,9 @@ export function styleCSS() {
 .fvg-sub-container {
   display: flex;
   width: 100%;
+  /**
   contain: content;
+  */
 }
 .fvg-sub-container .img-node {
   width: auto;
@@ -463,7 +465,7 @@ export function styleCSS() {
   background-color: #333333c0;
   height: 0.3em;
   width: 100%;
-  bottom: -0.3em;
+  bottom: -0.4em;
   position: absolute;
   border-left: 3px solid #00000000;
   border-right: 3px solid #00000000;

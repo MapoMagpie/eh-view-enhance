@@ -4,7 +4,8 @@
 // @name:zh-TW         漫畫織機
 // @name:ja            コミック織機
 // @name:ko            만화 베틀
-// @name:ru            Комические ткацкие станки
+// @name:eo            Comic Looms
+// @name:ka            Comic Looms
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
 // @version            4.9.2
 // @author             MapoMagpie

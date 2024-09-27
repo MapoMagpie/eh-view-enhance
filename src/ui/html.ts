@@ -19,7 +19,7 @@ export function createHTML() {
   const base = document.createElement("div");
   const dt = getDisplayText();
   base.id = "ehvp-base";
-  base.setAttribute("tabindex", "0");
+  // base.setAttribute("tabindex", "5");
   base.setAttribute("style", "all: initial");
   document.body.after(base);
   const HTML_STRINGS = `

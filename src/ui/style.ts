@@ -95,6 +95,9 @@ export function styleCSS() {
   position: absolute;
   right: 0.2em;
 }
+.full-view-grid, .big-img-frame {
+  outline: none !important;
+}
 .full-view-grid .img-node {
   position: relative;
 }

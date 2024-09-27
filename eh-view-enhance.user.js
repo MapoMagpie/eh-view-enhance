@@ -7732,6 +7732,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   position: absolute;
   right: 0.2em;
 }
+.full-view-grid, .big-img-frame {
+  outline: none !important;
+}
 .full-view-grid .img-node {
   position: relative;
 }
@@ -9038,7 +9041,6 @@ ${chapters.map((c, i) => `<div><label>
     const base = document.createElement("div");
     const dt = getDisplayText();
     base.id = "ehvp-base";
-    base.setAttribute("tabindex", "0");
     base.setAttribute("style", "all: initial");
     document.body.after(base);
     const HTML_STRINGS = `

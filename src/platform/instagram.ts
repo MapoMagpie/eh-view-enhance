@@ -28,7 +28,7 @@ export class InstagramMatcher extends BaseMatcher<EdgeNode[]> {
         const title = images.length > 1 ? `${node.pk}-${(j + 1).toString().padStart(digits, "0")}` : node.pk;
         const ext = videos ? "mp4" : "jpeg";
         const [thumb, origin] = this.getThumbAndOrigin(img.candidates, videos);
-        ret.push(new ImageNode(thumb?.url ?? "", `${window.location.origin}/p/${node.code}`, `${title}.${ext}`, undefined, origin.url, { w: origin.width, h: origin.height }));
+        ret.push(new ImageNode(thumb?.url ?? "", `${window.location.origin}/p/${node.code}`, `${title}.${ext}`, undefined, origin.url, { w: thumb.width, h: thumb.height }));
       }
     }
     return ret;
@@ -92,7 +92,7 @@ export class InstagramMatcher extends BaseMatcher<EdgeNode[]> {
     return [data.edges.map(e => e.node), data.page_info];
   }
 
-  getThumbAndOrigin(candidates: MediaInfo[], videos: MediaInfo[] | null): [MediaInfo | undefined, MediaInfo] {
+  getThumbAndOrigin(candidates: MediaInfo[], videos: MediaInfo[] | null): [MediaInfo, MediaInfo] {
     const origin = videos?.[0] ?? candidates[0];
     let lastThumb: MediaInfo | undefined = undefined;
     for (const ca of candidates) {
@@ -106,7 +106,7 @@ export class InstagramMatcher extends BaseMatcher<EdgeNode[]> {
       }
       lastThumb = ca;
     }
-    return [lastThumb, origin];
+    return [lastThumb!, origin];
   }
 }
 

@@ -2832,6 +2832,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.matcher = matcher;
       const debouncer = new Debouncer();
       EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
+      EBUS.subscribe("imf-on-finished", (index, success, imf) => {
+        if (index === 0 && success) {
+          this.chapters[imf.chapterIndex].thumbimg = imf.node.blobSrc;
+        }
+      });
       EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
       EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
     }
@@ -4615,7 +4620,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           const title = images.length > 1 ? `${node.pk}-${(j + 1).toString().padStart(digits, "0")}` : node.pk;
           const ext = videos ? "mp4" : "jpeg";
           const [thumb, origin] = this.getThumbAndOrigin(img.candidates, videos);
-          ret.push(new ImageNode(thumb?.url ?? "", `${window.location.origin}/p/${node.code}`, `${title}.${ext}`, void 0, origin.url, { w: origin.width, h: origin.height }));
+          ret.push(new ImageNode(thumb?.url ?? "", `${window.location.origin}/p/${node.code}`, `${title}.${ext}`, void 0, origin.url, { w: thumb.width, h: thumb.height }));
         }
       }
       return ret;
@@ -8184,16 +8189,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .overlay-tip {
   position: absolute;
-  top: 3px;
-  right: 3px;
   z-index: 10;
-  height: 1em;
-  border-radius: 10%;
-  border: 1px solid #333;
-  color: var(--ehvp-font-color);
-  background-color: #959595d1;
-  text-align: center;
   font-weight: 800;
+  top: 0.3em;
+  right: 0.3em;
+  font-size: 0.8em;
+  text-shadow: 0px 0px 3px #000000;
 }
 .lightgreen { color: #90ea90; }
 .ehvp-full-panel {

@@ -552,16 +552,12 @@ export function styleCSS() {
 }
 .overlay-tip {
   position: absolute;
-  top: 3px;
-  right: 3px;
   z-index: 10;
-  height: 1em;
-  border-radius: 10%;
-  border: 1px solid #333;
-  color: var(--ehvp-font-color);
-  background-color: #959595d1;
-  text-align: center;
   font-weight: 800;
+  top: 0.3em;
+  right: 0.3em;
+  font-size: 0.8em;
+  text-shadow: 0px 0px 3px #000000;
 }
 .lightgreen { color: #90ea90; }
 .ehvp-full-panel {

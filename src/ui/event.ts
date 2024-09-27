@@ -27,9 +27,9 @@ export type KeyboardEvents = {
 }
 export class KeyboardDesc {
   defaultKeys: string[];
-  cb: (event: KeyboardEvent) => void;
+  cb: (event: KeyboardEvent | MouseEvent) => void;
   noPreventDefault?: boolean = false;
-  constructor(defaultKeys: string[], cb: (event: KeyboardEvent) => void, noPreventDefault?: boolean) {
+  constructor(defaultKeys: string[], cb: (event: KeyboardEvent | MouseEvent) => void, noPreventDefault?: boolean) {
     this.defaultKeys = defaultKeys;
     this.cb = cb;
     this.noPreventDefault = noPreventDefault || false;
@@ -222,7 +222,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     // document.body.focus();
   }
 
-  // keyboardEvents
   function shouldStep(oriented: Oriented, shouldPrevent: boolean): boolean {
     if (BIFM.isReachedBoundary(oriented)) {
       if (shouldPrevent && BIFM.tryPreventStep()) return false;
@@ -379,7 +378,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   // use keyboardEvents
   let numberRecord: number[] | null = null;
 
-  function bigImageFrameKeyBoardEvent(event: KeyboardEvent) {
+  function bigImageFrameKeyBoardEvent(event: KeyboardEvent | MouseEvent) {
     if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
     const key = parseKey(event);
     const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
@@ -397,7 +396,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     }
   }
 
-  function fullViewGridKeyBoardEvent(event: KeyboardEvent) {
+  function fullViewGridKeyBoardEvent(event: KeyboardEvent | MouseEvent) {
     if (HTML.root.classList.contains("ehvp-root-collapse")) return;
     const key = parseKey(event);
     const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
@@ -410,13 +409,13 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     });
     if (triggered) {
       event.preventDefault();
-    } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+    } else if (event instanceof KeyboardEvent && event.key.length === 1 && event.key >= "0" && event.key <= "9") {
       numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
       event.preventDefault();
     }
   }
 
-  function keyboardEvent(event: KeyboardEvent) {
+  function keyboardEvent(event: KeyboardEvent | MouseEvent) {
     if (!HTML.root.classList.contains("ehvp-root-collapse")) return;
     if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
     const key = parseKey(event);

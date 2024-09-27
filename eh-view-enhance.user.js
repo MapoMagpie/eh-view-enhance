@@ -6331,9 +6331,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     if (event.shiftKey) keys.push("Shift");
     if (event.altKey) keys.push("Alt");
     if (event.metaKey) keys.push("Meta");
-    let key = event.key;
-    if (key === " ") key = "Space";
-    keys.push(key);
+    if (event instanceof KeyboardEvent) {
+      let key = event.key;
+      if (key === " ") key = "Space";
+      keys.push(key);
+    }
+    if (event instanceof MouseEvent) {
+      let key = "M" + event.button;
+      keys.push(key);
+    }
     return keys.join("+");
   }
 
@@ -6641,7 +6647,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       keys.forEach((key) => addKeyboardDescElement(button, category, id, key));
       const addKeyBoardDesc = (event) => {
         event.preventDefault();
-        if (event.key === "Alt" || event.key === "Shift" || event.key === "Control") return;
+        if (event instanceof KeyboardEvent) {
+          if (event.key === "Alt" || event.key === "Shift" || event.key === "Control") return;
+        }
         const key = parseKey(event);
         if (conf.keyboards[category][id] !== void 0) {
           conf.keyboards[category][id].push(key);
@@ -6655,6 +6663,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       button.addEventListener("click", () => {
         button.textContent = "Press Key";
         button.addEventListener("keydown", addKeyBoardDesc);
+        button.addEventListener("mousedown", addKeyBoardDesc);
       });
       button.addEventListener("mouseleave", () => {
         button.textContent = "+";
@@ -7255,7 +7264,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       });
       if (triggered) {
         event.preventDefault();
-      } else if (event.key.length === 1 && event.key >= "0" && event.key <= "9") {
+      } else if (event instanceof KeyboardEvent && event.key.length === 1 && event.key >= "0" && event.key <= "9") {
         numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
         event.preventDefault();
       }
@@ -9184,12 +9193,21 @@ ${chapters.map((c, i) => `<div><label>
       EBUS.emit("toggle-main-view", stage === "open");
     });
     HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", event.deltaY > 0 ? -1 : 1, parseInt(HTML.currPageElement.textContent) - 1));
-    document.addEventListener("keydown", (event) => events.keyboardEvent(event));
-    HTML.fullViewGrid.addEventListener("keydown", (event) => {
+    document.addEventListener("keyup", (event) => events.keyboardEvent(event));
+    document.addEventListener("mouseup", (event) => events.keyboardEvent(event));
+    HTML.fullViewGrid.addEventListener("keyup", (event) => {
       events.fullViewGridKeyBoardEvent(event);
       event.stopPropagation();
     });
-    HTML.bigImageFrame.addEventListener("keydown", (event) => {
+    HTML.fullViewGrid.addEventListener("mouseup", (event) => {
+      events.fullViewGridKeyBoardEvent(event);
+      event.stopPropagation();
+    });
+    HTML.bigImageFrame.addEventListener("keyup", (event) => {
+      events.bigImageFrameKeyBoardEvent(event);
+      event.stopPropagation();
+    });
+    HTML.bigImageFrame.addEventListener("mouseup", (event) => {
       events.bigImageFrameKeyBoardEvent(event);
       event.stopPropagation();
     });

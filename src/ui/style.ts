@@ -249,7 +249,7 @@ export function styleCSS() {
 }
 .bifm-flex {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   flex-direction: ${conf.reversePages ? "row-reverse" : "row"};
 }
 .bifm-img { }

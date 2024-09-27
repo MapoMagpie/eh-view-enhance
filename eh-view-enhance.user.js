@@ -7895,7 +7895,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .bifm-flex {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   flex-direction: ${conf.reversePages ? "row-reverse" : "row"};
 }
 .bifm-img { }
@@ -9778,8 +9778,10 @@ ${chapters.map((c, i) => `<div><label>
       this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
       this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
       const debouncer = new Debouncer("throttle");
+      let magnifying = true;
       this.frame.addEventListener("mousemove", (mmevt) => {
         if (conf.stickyMouse === "disable" || conf.readMode !== "pagination") return;
+        if (magnifying) return;
         debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
           if (this.lastMouse) {
             stickyMouse(this.frame, mmevt, this.lastMouse, conf.stickyMouse === "enable");
@@ -9790,6 +9792,7 @@ ${chapters.map((c, i) => `<div><label>
       this.frame.addEventListener("mousedown", (mdevt) => {
         if (mdevt.button !== 0) return;
         if (mdevt.target.classList.contains("img-land")) return;
+        magnifying = true;
         let moved = false;
         let last = { x: mdevt.clientX, y: mdevt.clientY };
         const abort = new AbortController();
@@ -9800,9 +9803,11 @@ ${chapters.map((c, i) => `<div><label>
           } else if (conf.imgScale === 100) {
             this.scaleBigImages(1, 0, conf.imgScale, false);
           }
+          moved = false;
+          magnifying = false;
         }, { once: true });
         this.frame.addEventListener("mousemove", (mmevt) => {
-          if ((!conf.magnifier || conf.readMode !== "pagination" || conf.stickyMouse !== "disable") && (moved = true)) return;
+          if (!conf.magnifier || conf.readMode !== "pagination") return;
           if (!moved && conf.imgScale === 100) {
             this.scaleBigImages(1, 0, 150, false);
           }
@@ -10233,9 +10238,9 @@ ${chapters.map((c, i) => `<div><label>
           break;
       }
       if (conf.readMode === "pagination") {
-        this.checkFrameOverflow();
         rule.style.minWidth = percent > 100 ? "" : "100vw";
         if (percent === 100) this.resetScaleBigImages(false);
+        this.checkFrameOverflow();
       }
       if (syncConf ?? true) {
         conf.imgScale = percent;
@@ -10247,7 +10252,8 @@ ${chapters.map((c, i) => `<div><label>
     checkFrameOverflow() {
       const flexRule = queryRule(this.html.styleSheet, ".bifm-flex");
       if (flexRule) {
-        if (this.frame.offsetWidth < this.frame.scrollWidth) {
+        const width = Array.from(this.frame.querySelectorAll(".bifm-img")).reduce((width2, img) => width2 + img.offsetWidth, 0);
+        if (width > this.frame.offsetWidth) {
           flexRule.style.justifyContent = "flex-start";
         } else {
           flexRule.style.justifyContent = "center";

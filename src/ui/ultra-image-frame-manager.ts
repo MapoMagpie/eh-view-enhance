@@ -106,9 +106,11 @@ export class BigImageFrameManager {
     this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
     this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
     const debouncer = new Debouncer("throttle");
-    // stick mouse
+    let magnifying = true;
+    // for stick mouse
     this.frame.addEventListener("mousemove", (mmevt) => {
       if (conf.stickyMouse === "disable" || conf.readMode !== "pagination") return;
+      if (magnifying) return;
       debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
         if (this.lastMouse) {
           stickyMouse(this.frame, mmevt, this.lastMouse, conf.stickyMouse === "enable");
@@ -116,10 +118,11 @@ export class BigImageFrameManager {
         this.lastMouse = { x: mmevt.clientX, y: mmevt.clientY };
       }, 5);
     });
-    // click
+    // for click
     this.frame.addEventListener("mousedown", (mdevt) => {
       if (mdevt.button !== 0) return;
       if ((mdevt.target as HTMLElement).classList.contains("img-land")) return;
+      magnifying = true;
       let moved = false;
       let last = { x: mdevt.clientX, y: mdevt.clientY };
       const abort = new AbortController();
@@ -131,13 +134,13 @@ export class BigImageFrameManager {
         } else if (conf.imgScale === 100) {
           this.scaleBigImages(1, 0, conf.imgScale, false);
         }
+        moved = false;
+        magnifying = false;
       }, { once: true });
-      // mousemove
+      // for magnifier, mouse move
       this.frame.addEventListener("mousemove", (mmevt) => {
-        if (
-          (!conf.magnifier || conf.readMode !== "pagination" || conf.stickyMouse !== "disable")
-          && (moved = true)) return; // we set moved = true
-        if (!moved && conf.imgScale === 100) {
+        if (!conf.magnifier || conf.readMode !== "pagination") return;
+        if (!moved && conf.imgScale === 100) { // temporarily zoom if img not scale
           this.scaleBigImages(1, 0, 150, false);
         }
         moved = true;
@@ -614,9 +617,9 @@ export class BigImageFrameManager {
         break;
     }
     if (conf.readMode === "pagination") {
-      this.checkFrameOverflow();
       rule.style.minWidth = percent > 100 ? "" : "100vw";
       if (percent === 100) this.resetScaleBigImages(false);
+      this.checkFrameOverflow();
     }
     if (syncConf ?? true) {
       conf.imgScale = percent;
@@ -629,7 +632,8 @@ export class BigImageFrameManager {
   checkFrameOverflow() {
     const flexRule = queryCSSRules(this.html.styleSheet, ".bifm-flex");
     if (flexRule) {
-      if (this.frame.offsetWidth < this.frame.scrollWidth) {
+      const width = Array.from(this.frame.querySelectorAll<HTMLImageElement>(".bifm-img")).reduce((width, img) => width + img.offsetWidth, 0);
+      if (width > this.frame.offsetWidth) {
         flexRule.style.justifyContent = "flex-start";
       } else {
         flexRule.style.justifyContent = "center";

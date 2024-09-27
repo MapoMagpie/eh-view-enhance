@@ -6,14 +6,15 @@
 // @name:ko            만화 베틀
 // @name:ru            Комические ткацкие станки
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.9.1
+// @version            4.9.2
 // @author             MapoMagpie
-// @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live
-// @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持：Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live
-// @description:zh-TW  漫畫閱讀 + 下載器，注重體驗和對站點的負載控制。支持：Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live
-// @description:ja     サイトのエクスペリエンスと負荷制御に重点を置いたコミック閲覧 + ダウンローダー。サポート：Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live
-// @description:ko     만화 읽기 + 다운로더, 유저 경험 및 낮은 사이트 부하에 중점을 둡니다. 지원: Support: e-hentai.org | exhentai.org | pixiv.net | 18comic.vip | nhentai.net | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | twitter.com | wnacg.com | manhuagui.com | mangacopy.com | yande.re | hentainexus.com | koharu.to | arca.live
-// @description:ru     Manga Viewer + Downloader, Focus on experience and low load on the site. Support: e-hentai | exhentai | pixiv | 18comic | nhentai | hitomi | rule34 | danbooru | gelbooru | twitter | x | wnacg | manhuagui | mangacopy | yande | hentainexus | koharu | arca
+// @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support you in finding the site you are searching for.
+// @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持你正在搜索的站点。
+// @description:zh-TW  漫畫閱讀 + 下載器，注重體驗和對站點的負載控制。支持你正在搜索的站點。
+// @description:ja     サイトのエクスペリエンスと負荷制御に重点を置いたコミック閲覧 + ダウンローダー。あなたが探しているサイトを見つけるのをサポートします。
+// @description:ko     만화 읽기 + 다운로더, 유저 경험 및 낮은 사이트 부하에 중점을 둡니다. 당신이 검색하고 있는 사이트를 찾는 것을 지원합니다.
+// @description:eo     Manga Viewer + Downloader, Focus on experience and low load on the site. Support:  e-hentai | exhentai | E绅士 | twitter | x | 推特 | instagram | artstation | pixiv | 18comic | 禁漫 | nhentai | hitomi | rule34 | danbooru | gelbooru | yande | wnacg | 绅士漫画 | manhuagui | 漫画柜 | mangacopy | 拷贝漫画 | hentainexus | koharu | arca
+// @description:ka     Manga Viewer + Downloader, Focus on experience and low load on the site. Support:  e-hentai.org | exhentai.org | twitter.com | x.com | instagram.com | artstation.com | pixiv.net | 18comic.vip | nhentai.net | nhentai.xxx | hitomi.la | rule34.xxx | danbooru.donmai.us | gelbooru.com | yande.re | wnacg.com | manhuagui.com | mangacopy.com | hentainexus.com | koharu.to | arca.live
 // @license            MIT
 // @icon               https://exhentai.org/favicon.ico
 // @supportURL         https://github.com/MapoMagpie/eh-view-enhance/issues

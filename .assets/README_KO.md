@@ -31,6 +31,9 @@
 현재 지원하는 사이트:
 
 - [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
+- [Twitter|X 사용자 미디어](https://x.com/NASA/media)
+- [Instagram User POSTS](https://www.instagram.com/nasa)
+- [ArtStation User Portfolio](https://www.artstation.com)
 - [pixiv.net](https://pixiv.net) (작가의 일러스트, 만화, Ugoria to GIF)
 - [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (다중 챕터 선택 지원, 썸네일 없음)
 - [nhentai.net](https://nhentai.net)
@@ -42,7 +45,6 @@
 - [yande.re](https://yande.re)
 - [konachan.com](https://konachan.com)
 - [Steam 스크린샷](https://steamcommunity.com/id/some/screenshots)
-- [Twitter 사용자 미디어](https://twitter.com/NASA/media) | [X 사용자 미디어](https://x.com/NASA/media)
 - [wnacg.com](https://www.wnacg.com)
 - [hentainexus.com](https://hentainexus.com)
 - [koharu.to](https://koharu.to)
@@ -51,7 +53,6 @@
 - [copymanga.tv](https://www.copymanga.tv)
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
-- [artstation.com](https://www.artstation.com)
 - [akuma.moe](https://akuma.moe)
 
 ## <a name="installation">설치</a>

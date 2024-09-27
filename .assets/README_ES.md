@@ -31,6 +31,9 @@ Vista previa (si no puedes ver la imagen, haz clic [aqui](./preview.md)):
 Actualmente soporta:
 
 - [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
+- [Twitter|X User Media](https://x.com/NASA/media)
+- [Instagram User POSTS](https://www.instagram.com/nasa)
+- [ArtStation User Portfolio](https://www.artstation.com)
 - [pixiv.net](https://pixiv.net) (Ilustraciones de artistas, manga, Ugoria a GIF)
 - [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (soporta selección de múltiples capítulos, nota: sin miniaturas)
 - [nhentai.net](https://nhentai.net)
@@ -42,7 +45,6 @@ Actualmente soporta:
 - [yande.re](https://yande.re)
 - [konachan.com](https://konachan.com)
 - [Steam Screenshots](https://steamcommunity.com/id/some/screenshots)
-- [Twitter User Media](https://twitter.com/NASA/media) | [Medios del Usuario X](https://x.com/NASA/media)
 - [wnacg.com](https://www.wnacg.com)
 - [hentainexus.com](https://hentainexus.com)
 - [koharu.to](https://koharu.to)
@@ -51,7 +53,6 @@ Actualmente soporta:
 - [copymanga.tv](https://www.copymanga.tv)
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
-- [artstation.com](https://www.artstation.com)
 - [akuma.moe](https://akuma.moe)
 
 ## <a name="instalación">Instalación</a>

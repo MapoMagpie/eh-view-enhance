@@ -33,6 +33,11 @@ export class PageFetcher {
     const debouncer = new Debouncer();
     // triggered then ifq finished
     EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
+    EBUS.subscribe("imf-on-finished", (index, success, imf) => {
+      if (index === 0 && success) {
+        this.chapters[imf.chapterIndex].thumbimg = imf.node.blobSrc;
+      }
+    });
     // triggered when scrolling
     EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
     EBUS.subscribe("pf-init", (cb) => this.init().then(cb));

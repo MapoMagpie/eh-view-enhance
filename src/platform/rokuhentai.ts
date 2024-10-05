@@ -41,12 +41,15 @@ export class RokuHentaiMatcher extends BaseMatcher<[number, number]> {
     const list: ImageNode[] = [];
     const digits = this.imgCount.toString().length;
     for (let i = range[0]; i < range[1]; i++) {
-      let thumbnail = `https://rokuhentai.com/_images/page-thumbnails/${this.galleryId}/${i}.jpg`;
+      let thumbnail = "";
+      let thumbnailAsync = undefined;
       if (this.sprites[i]) {
-        thumbnail = await this.fetchThumbnail(i);
+        thumbnailAsync = this.fetchThumbnail(i);
+      } else {
+        thumbnail = `https://rokuhentai.com/_images/page-thumbnails/${this.galleryId}/${i}.jpg`;
       }
       const src = `https://rokuhentai.com/_images/pages/${this.galleryId}/${i}.jpg`;
-      list.push(new ImageNode(thumbnail, src, i.toString().padStart(digits, "0") + ".jpg", undefined, src));
+      list.push(new ImageNode(thumbnail, src, i.toString().padStart(digits, "0") + ".jpg", thumbnailAsync, src));
     }
     return list;
   }
@@ -83,22 +86,21 @@ export class RokuHentaiMatcher extends BaseMatcher<[number, number]> {
   private async fetchThumbnail(index: number): Promise<string> {
     if (this.fetchedThumbnail[index]) {
       return this.fetchedThumbnail[index]!;
-    } else {
-      const src = this.sprites[index]!.src;
-      const positions = [];
-      for (let i = index; i < this.imgCount; i++) {
-        if (src === this.sprites[i]?.src) {
-          positions.push(this.sprites[i]!.pos);
-        } else {
-          break;
-        }
-      }
-      const urls = await splitImagesFromUrl(src, positions);
-      for (let i = index; i < index + urls.length; i++) {
-        this.fetchedThumbnail[i] = urls[i - index];
-      }
-      return this.fetchedThumbnail[index]!;
     }
+    const src = this.sprites[index]!.src;
+    const positions = [];
+    for (let i = index; i < this.imgCount; i++) {
+      if (src === this.sprites[i]?.src) {
+        positions.push(this.sprites[i]!.pos);
+      } else {
+        break;
+      }
+    }
+    const urls = await splitImagesFromUrl(src, positions);
+    for (let i = index; i < index + urls.length; i++) {
+      this.fetchedThumbnail[i] = urls[i - index];
+    }
+    return this.fetchedThumbnail[index]!;
   }
   async processData(data: Uint8Array): Promise<[Uint8Array, string]> {
     // rokuhentai response no content-type, just set image/jpeg

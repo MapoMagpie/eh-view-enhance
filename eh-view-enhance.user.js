@@ -5880,12 +5880,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const list = [];
       const digits = this.imgCount.toString().length;
       for (let i = range[0]; i < range[1]; i++) {
-        let thumbnail = `https://rokuhentai.com/_images/page-thumbnails/${this.galleryId}/${i}.jpg`;
+        let thumbnail = "";
+        let thumbnailAsync = void 0;
         if (this.sprites[i]) {
-          thumbnail = await this.fetchThumbnail(i);
+          thumbnailAsync = this.fetchThumbnail(i);
+        } else {
+          thumbnail = `https://rokuhentai.com/_images/page-thumbnails/${this.galleryId}/${i}.jpg`;
         }
         const src = `https://rokuhentai.com/_images/pages/${this.galleryId}/${i}.jpg`;
-        list.push(new ImageNode(thumbnail, src, i.toString().padStart(digits, "0") + ".jpg", void 0, src));
+        list.push(new ImageNode(thumbnail, src, i.toString().padStart(digits, "0") + ".jpg", thumbnailAsync, src));
       }
       return list;
     }
@@ -5918,22 +5921,21 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     async fetchThumbnail(index) {
       if (this.fetchedThumbnail[index]) {
         return this.fetchedThumbnail[index];
-      } else {
-        const src = this.sprites[index].src;
-        const positions = [];
-        for (let i = index; i < this.imgCount; i++) {
-          if (src === this.sprites[i]?.src) {
-            positions.push(this.sprites[i].pos);
-          } else {
-            break;
-          }
-        }
-        const urls = await splitImagesFromUrl(src, positions);
-        for (let i = index; i < index + urls.length; i++) {
-          this.fetchedThumbnail[i] = urls[i - index];
-        }
-        return this.fetchedThumbnail[index];
       }
+      const src = this.sprites[index].src;
+      const positions = [];
+      for (let i = index; i < this.imgCount; i++) {
+        if (src === this.sprites[i]?.src) {
+          positions.push(this.sprites[i].pos);
+        } else {
+          break;
+        }
+      }
+      const urls = await splitImagesFromUrl(src, positions);
+      for (let i = index; i < index + urls.length; i++) {
+        this.fetchedThumbnail[i] = urls[i - index];
+      }
+      return this.fetchedThumbnail[index];
     }
     async processData(data) {
       return [data, "image/jpeg"];

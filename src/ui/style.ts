@@ -560,6 +560,7 @@ export function styleCSS() {
   top: 0.3em;
   right: 0.3em;
   font-size: 0.8em;
+  color: var(--ehvp-font-color);
   text-shadow: 0px 0px 3px #000000;
 }
 .lightgreen { color: #90ea90; }

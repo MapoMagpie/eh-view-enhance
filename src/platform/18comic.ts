@@ -136,7 +136,7 @@ export class Comic18Matcher extends BaseMatcher<string> {
   }
 
   workURL(): RegExp {
-    return /18comic(-gura)?.(vip|org|me)\/album\/\d+/;
+    return /(18|jm)comic.*?\/album\/\d+/;
   }
 
   galleryMeta(doc: Document): GalleryMeta {

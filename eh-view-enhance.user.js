@@ -3238,7 +3238,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       );
     }
     workURL() {
-      return /18comic(-gura)?.(vip|org|me)\/album\/\d+/;
+      return /(18|jm)comic.*?\/album\/\d+/;
     }
     galleryMeta(doc) {
       if (this.meta) return this.meta;

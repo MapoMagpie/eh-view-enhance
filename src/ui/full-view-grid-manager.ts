@@ -9,12 +9,13 @@ import { BigImageFrameManager } from "./ultra-image-frame-manager";
 type E = {
   node: VisualNode,
   element: HTMLElement
-  ratio?: number;
+  ratio: number;
 }
 abstract class Layout {
   abstract append(nodes: E[]): void;
   abstract nearBottom(): boolean;
   abstract reset(): void;
+  abstract resize(allNodes: E[]): void;
   abstract visibleRange(container: HTMLElement, children: HTMLElement[]): [HTMLElement, HTMLElement];
 }
 
@@ -76,6 +77,7 @@ export class FullViewGridManager {
         EBUS.emit("toggle-main-view", false);
       }
     });
+    EBUS.subscribe("fvg-flow-vision-resize", () => this.layout.resize(this.queue));
   }
   append(nodes: VisualNode[]) {
     if (nodes.length > 0) {
@@ -134,6 +136,9 @@ class GRIDLayout extends Layout {
   reset(): void {
     this.root.innerHTML = "";
   }
+  resize(): void {
+    throw new Error("Method not implemented.");
+  }
   visibleRange(container: HTMLElement, children: HTMLElement[]): [HTMLElement, HTMLElement] {
     if (children.length === 0) return [container, container]; // throw error
     const vh = container.offsetHeight;
@@ -165,16 +170,17 @@ class FlowVisionLayout extends Layout {
   root: HTMLElement;
   lastRow?: HTMLElement;
   count: number = 0;
-  defaultHeight: number;
   resizeObserver: ResizeObserver;
   lastRootWidth: number;
+  // baseline
+  base: { height: number, columns: number, gap: number };
   constructor(root: HTMLElement) {
     super();
     this.root = root;
     this.root.classList.add("fvg-flow");
     this.root.classList.remove("fvg-grid");
-    this.defaultHeight = window.screen.availHeight / 3;
     this.lastRootWidth = this.root.offsetWidth;
+    this.base = this.initBaseline(this.root);
     this.resizeObserver = new ResizeObserver((entries) => {
       const root = entries[0];
       const width = root.contentRect.width;
@@ -185,57 +191,76 @@ class FlowVisionLayout extends Layout {
     });
     this.resizeObserver.observe(this.root);
   }
-  createRow(_columns: number): HTMLElement {
+  initBaseline(root: HTMLElement) {
+    const vh = window.screen.availHeight;
+    const vw = root.offsetWidth;
+    let columns = 3;
+    if (vw > 720) {
+      columns = 4
+    }
+    if (vw >= 1900) {
+      columns = 5
+    }
+    if (vw >= 2400) {
+      columns = 6
+    }
+    return { height: Math.floor(vh / 3), columns, gap: 8, };
+  }
+  createRow(lastRowHeight?: number): HTMLElement {
     const container = document.createElement("div");
     container.classList.add("fvg-sub-container");
-    container.style.height = this.defaultHeight + "px";
-    container.style.marginTop = "10px";
+    container.style.height = (lastRowHeight ?? this.base.height) + "px";
+    container.style.marginTop = this.base.gap + "px";
     this.root.appendChild(container);
     return container;
   }
   append(nodes: E[]): void {
+    let resize = false;
     for (const node of nodes) {
-      node.element.style.marginLeft = "10px";
-      if (!this.lastRow) this.lastRow = this.createRow(conf.colCount);
-      const lastChild = this.lastRow.lastElementChild as HTMLElement | null;
-      if (lastChild) {
-        const nodeWidth = this.lastRow.offsetHeight * (node.ratio ?? 1);
-        const gap = (this.lastRow.childElementCount + 1) * 10;
-        const factor = 0.5 / Math.max(1, node.ratio ?? 1);
-        if (this.lastRow.childElementCount >= 6
-          || this.childrenWidth(this.lastRow) + gap + (nodeWidth * factor) > this.root.offsetWidth) {
-          if (this.resizeRow(this.lastRow, nodeWidth)) {
-            this.lastRow = this.createRow(conf.colCount);
-          }
+      node.element.style.marginLeft = this.base.gap + "px";
+      if (!this.lastRow) this.lastRow = this.createRow();
+      if (this.lastRow.childElementCount > 0) {
+        // max columns
+        resize = this.lastRow.childElementCount >= this.base.columns;
+        // check total width
+        if (!resize) {
+          let nodeWidth = this.base.height * node.ratio;
+          const allGap = (this.lastRow.childElementCount * this.base.gap) + this.base.gap;
+          const factor = 0.4 / Math.max(1, node.ratio); // If the ratio (w/h) is greater than 1, then set its height smaller.
+          nodeWidth = nodeWidth * factor;
+          const childrenWidth = this.childrenRatio(this.lastRow).reduce((width, curr) => width + (curr * this.base.height), 0);
+          resize = childrenWidth + allGap + nodeWidth >= this.root.offsetWidth;
+        }
+        if (resize) {
+          this.resizeRow(this.lastRow);
+          this.lastRow = this.createRow(this.lastRow?.offsetHeight);
         }
       }
       this.lastRow.appendChild(node.element);
       this.count++;
     }
   }
-  childrenWidth(row: HTMLElement): number {
-    let width = 0;
-    row.childNodes.forEach(c => width += (c as HTMLElement).offsetWidth);
-    return width;
-  }
   childrenRatio(row: HTMLElement): number[] {
     const ret: number[] = [];
-    row.childNodes.forEach(c => ret.push((c as HTMLElement).offsetWidth / (c as HTMLElement).offsetHeight));
+    const ratio = (c: HTMLElement) => {
+      let ratio = parseFloat(c.getAttribute("data-ratio") ?? "1")
+      ratio = isNaN(ratio) ? 1 : ratio;
+      return ratio;
+    }
+    row.childNodes.forEach(c => ret.push(ratio(c as HTMLElement)));
     return ret;
   }
-  resizeRow(row: HTMLElement, _nextChildWidth?: number): boolean {
-    if (row.childElementCount < 4) return false;
-
-    const ratios = this.childrenRatio(row).filter(r => r >= 1);
-    if (ratios.length === row.childElementCount && row.childElementCount < 5) return false;
-
-    const gap = (row.childElementCount + 1) * 10;
-    const width = this.childrenWidth(row) + gap;
-    const scale = width / this.root.offsetWidth;
-    row.style.height = (row.offsetHeight / scale) + "px";
-    row.childNodes.forEach(c => (c as HTMLElement).style.marginLeft = "");
-    row.style.justifyContent = "space-around";
-    return true;
+  resizeRow(row: HTMLElement) {
+    const ratio = this.childrenRatio(row).reduce((sum, cur) => sum + cur, 0);
+    const allGap = row.childElementCount * this.base.gap + this.base.gap;
+    const vw = this.root.offsetWidth;
+    const rowHeight = (vw - allGap) / ratio;
+    row.style.height = rowHeight + "px";
+  }
+  resize(allNodes: E[]) {
+    this.root.innerHTML = "";
+    this.append(allNodes);
+    // this.root.querySelectorAll<HTMLElement>(".fvg-sub-container").forEach(row => this.resizeRow(row));
   }
   nearBottom(): boolean {
     // return false;

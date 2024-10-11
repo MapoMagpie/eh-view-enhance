@@ -211,12 +211,8 @@ export class IMGFetcher implements VisualNode {
     this.node.changeStyle("init");
   }
 
-  ratio(): number | undefined {
-    if (this.node.rect) {
-      return this.node.rect.w / this.node.rect.h;
-    } else {
-      return undefined;
-    }
+  ratio(): number {
+    return this.node.ratio();
   }
 
   async fetchBigImage(): Promise<Blob | null> {

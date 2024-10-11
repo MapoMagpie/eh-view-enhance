@@ -25,7 +25,7 @@ export interface VisualNode {
   create(): HTMLElement;
   render(): void;
   isRender(): boolean;
-  ratio(): number | undefined;
+  ratio(): number;
 }
 
 type Onfailed = (reason: string, source?: string, error?: Error) => void;
@@ -58,6 +58,9 @@ export default class ImageNode {
 
   create(): HTMLElement {
     this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true) as HTMLElement;
+    const ratio = this.ratio().toString();
+    this.root.style.aspectRatio = ratio;
+    this.root.setAttribute("data-ratio", ratio)
     const anchor = this.root.firstElementChild as HTMLAnchorElement;
     anchor.href = this.href;
     anchor.target = "_blank";
@@ -92,6 +95,7 @@ export default class ImageNode {
     const flowVision = this.root.parentElement?.classList.contains("fvg-sub-container");
     const resize = flowVision ? this.root.offsetHeight !== this.canvasElement.height : this.root.offsetWidth !== this.canvasElement.width;
     if (resize || Math.abs(newRatio - oldRatio) > 1.07) {
+      this.root.style.aspectRatio = this.ratio().toString();
       if (flowVision) {
         this.canvasElement.height = this.root.offsetHeight;
         this.canvasElement.width = Math.floor(this.root.offsetHeight / newRatio);
@@ -100,6 +104,8 @@ export default class ImageNode {
         this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
       }
     }
+    // this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
+    // this.imgElement!.src = "";
     if (this.imgElement.src === this.thumbnailSrc) {
       // https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image
       this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
@@ -109,6 +115,13 @@ export default class ImageNode {
         .then(() => window.setTimeout(() => this.imgElement!.src = "", 100))
         .catch(() => this.imgElement!.src = this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height) || "");
     }
+  }
+
+  ratio(): number {
+    if (this.rect) {
+      return Math.floor((this.rect.w / this.rect.h) * 1000) / 1000;
+    }
+    return 1;
   }
 
   render(onfailed: Onfailed) {

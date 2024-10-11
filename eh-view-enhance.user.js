@@ -184,6 +184,12 @@
         "重新加载下一分页",
         "다음 페이지 로딩 재시도",
         "Intentar cargar la siguiente página"
+      ),
+      "resize-flow-vision": new I18nValue(
+        "Resize Thumbnail Grid Layout",
+        "Resize Thumbnail Grid Layout",
+        "Resize Thumbnail Grid Layout",
+        "Resize Thumbnail Grid Layout"
       )
     }
   };
@@ -1600,11 +1606,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.node.changeStyle("init");
     }
     ratio() {
-      if (this.node.rect) {
-        return this.node.rect.w / this.node.rect.h;
-      } else {
-        return void 0;
-      }
+      return this.node.ratio();
     }
     async fetchBigImage() {
       if (this.node.originSrc?.startsWith("blob:")) {
@@ -2907,7 +2909,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
   }
 
-  const PICA = new pica({ features: ["js", "wasm"] });
+  const PICA = new pica({ features: ["wasm"] });
   const PICA_OPTION = { filter: "box" };
   async function resizing(from, to) {
     return PICA.resize(from, to, PICA_OPTION).then();
@@ -2951,6 +2953,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     create() {
       this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
+      const ratio = this.ratio().toString();
+      this.root.style.aspectRatio = ratio;
+      this.root.setAttribute("data-ratio", ratio);
       const anchor = this.root.firstElementChild;
       anchor.href = this.href;
       anchor.target = "_blank";
@@ -2984,6 +2989,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const flowVision = this.root.parentElement?.classList.contains("fvg-sub-container");
       const resize = flowVision ? this.root.offsetHeight !== this.canvasElement.height : this.root.offsetWidth !== this.canvasElement.width;
       if (resize || Math.abs(newRatio - oldRatio) > 1.07) {
+        this.root.style.aspectRatio = this.ratio().toString();
         if (flowVision) {
           this.canvasElement.height = this.root.offsetHeight;
           this.canvasElement.width = Math.floor(this.root.offsetHeight / newRatio);
@@ -2998,6 +3004,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       } else {
         resizing(this.imgElement, this.canvasElement).then(() => window.setTimeout(() => this.imgElement.src = "", 100)).catch(() => this.imgElement.src = this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height) || "");
       }
+    }
+    ratio() {
+      if (this.rect) {
+        return Math.floor(this.rect.w / this.rect.h * 1e3) / 1e3;
+      }
+      return 1;
     }
     render(onfailed) {
       this.debouncer.addEvent("IMG-RENDER", () => {
@@ -6266,20 +6278,20 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 
   function parseKey(event) {
     const keys = [];
-    if (event.ctrlKey) keys.push("Ctrl");
-    if (event.shiftKey) keys.push("Shift");
-    if (event.altKey) keys.push("Alt");
-    if (event.metaKey) keys.push("Meta");
+    if (event.ctrlKey) keys.push("ctrl");
+    if (event.shiftKey) keys.push("shift");
+    if (event.altKey) keys.push("alt");
+    if (event.metaKey) keys.push("meta");
     if (event instanceof KeyboardEvent) {
       let key = event.key;
-      if (key === " ") key = "Space";
+      if (key === " ") key = "space";
       keys.push(key);
     }
     if (event instanceof MouseEvent) {
-      let key = "M" + event.button;
+      let key = "m" + event.button;
       keys.push(key);
     }
-    return keys.join("+");
+    return keys.join("+").toLowerCase();
   }
 
   function queryRule(root, selector) {
@@ -7032,23 +7044,23 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     function initKeyboardEvent() {
       const inBigImageMode = {
         "exit-big-image-mode": new KeyboardDesc(
-          ["Escape", "Enter"],
+          ["escape", "enter"],
           () => BIFM.hidden()
         ),
         "step-image-prev": new KeyboardDesc(
-          ["ArrowLeft"],
+          ["arrowleft"],
           () => BIFM.stepNext(conf.reversePages ? "next" : "prev")
         ),
         "step-image-next": new KeyboardDesc(
-          ["ArrowRight"],
+          ["arrowright"],
           () => BIFM.stepNext(conf.reversePages ? "prev" : "next")
         ),
         "step-to-first-image": new KeyboardDesc(
-          ["Home"],
+          ["home"],
           () => BIFM.stepNext("next", 0, -1)
         ),
         "step-to-last-image": new KeyboardDesc(
-          ["End"],
+          ["end"],
           () => BIFM.stepNext("prev", 0, -1)
         ),
         "scale-image-increase": new KeyboardDesc(
@@ -7060,14 +7072,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           () => BIFM.scaleBigImages(-1, 5)
         ),
         "scroll-image-up": new KeyboardDesc(
-          ["PageUp", "ArrowUp", "Shift+Space"],
+          ["pageup", "arrowup", "shift+space"],
           (event) => {
             const key = parseKey(event);
-            const customKey = !["PageUp", "ArrowUp", "Shift+Space"].includes(key);
+            const customKey = !["pageup", "arrowup", "shift+space"].includes(key);
             if (customKey) {
               BIFM.scroll(BIFM.frame.offsetHeight / 8 * -1);
             }
-            const shouldPrevent = !["PageUp", "Shift+Space"].includes(key);
+            const shouldPrevent = !["pageup", "shift+space"].includes(key);
             if (shouldPrevent) {
               if (!customKey) {
                 scrollEventDebouncer.addEvent("SCROLL-IMAGE-UP", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
@@ -7083,14 +7095,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           true
         ),
         "scroll-image-down": new KeyboardDesc(
-          ["PageDown", "ArrowDown", "Space"],
+          ["pagedown", "arrowdown", "space"],
           (event) => {
             const key = parseKey(event);
-            const customKey = !["PageDown", "ArrowDown", "Space"].includes(key);
+            const customKey = !["pagedown", "arrowdown", "space"].includes(key);
             if (customKey) {
               BIFM.scroll(BIFM.frame.offsetHeight / 8);
             }
-            const shouldPrevent = !["PageDown", "Space"].includes(key);
+            const shouldPrevent = !["pagedown", "space"].includes(key);
             if (shouldPrevent) {
               if (!customKey) {
                 scrollEventDebouncer.addEvent("SCROLL-IMAGE-DOWN", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
@@ -7112,7 +7124,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       };
       const inFullViewGrid = {
         "open-big-image-mode": new KeyboardDesc(
-          ["Enter"],
+          ["enter"],
           () => {
             let start = IFQ.currIndex;
             if (numberRecord && numberRecord.length > 0) {
@@ -7125,7 +7137,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           }
         ),
         "pause-auto-load-temporarily": new KeyboardDesc(
-          ["Ctrl+p"],
+          ["ctrl+p"],
           () => {
             IL.autoLoad = !IL.autoLoad;
             if (IL.autoLoad) {
@@ -7137,7 +7149,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           }
         ),
         "exit-full-view-grid": new KeyboardDesc(
-          ["Escape"],
+          ["escape"],
           () => EBUS.emit("toggle-main-view", false)
         ),
         "columns-increase": new KeyboardDesc(
@@ -7148,26 +7160,26 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           ["-"],
           () => modNumberConfigEvent("colCount", "minus")
         ),
-        // "back-chapters-selection": new KeyboardDesc(
-        //   ["b"],
-        //   () => EBUS.emit("back-chapters-selection")
-        // ),
         "toggle-auto-play": new KeyboardDesc(
           ["p"],
           () => EBUS.emit("toggle-auto-play")
         ),
         "retry-fetch-next-page": new KeyboardDesc(
-          ["Shift+n"],
+          ["shift+n"],
           () => EBUS.emit("pf-try-extend")
+        ),
+        "resize-flow-vision": new KeyboardDesc(
+          ["shift+v"],
+          () => EBUS.emit("fvg-flow-vision-resize")
         )
       };
       const inMain = {
-        "open-full-view-grid": new KeyboardDesc(["Enter"], () => {
+        "open-full-view-grid": new KeyboardDesc(["enter"], () => {
           const activeElement = document.activeElement;
           if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
           EBUS.emit("toggle-main-view", true);
         }, true),
-        "start-download": new KeyboardDesc(["Ctrl+Alt+d"], () => {
+        "start-download": new KeyboardDesc(["ctrl+alt+d"], () => {
           EBUS.emit("start-download", () => PH.minify("exit", false));
         }, true)
       };
@@ -7312,6 +7324,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           EBUS.emit("toggle-main-view", false);
         }
       });
+      EBUS.subscribe("fvg-flow-vision-resize", () => this.layout.resize(this.queue));
     }
     append(nodes) {
       if (nodes.length > 0) {
@@ -7368,6 +7381,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     reset() {
       this.root.innerHTML = "";
     }
+    resize() {
+      throw new Error("Method not implemented.");
+    }
     visibleRange(container, children) {
       if (children.length === 0) return [container, container];
       const vh = container.offsetHeight;
@@ -7398,16 +7414,17 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     root;
     lastRow;
     count = 0;
-    defaultHeight;
     resizeObserver;
     lastRootWidth;
+    // baseline
+    base;
     constructor(root) {
       super();
       this.root = root;
       this.root.classList.add("fvg-flow");
       this.root.classList.remove("fvg-grid");
-      this.defaultHeight = window.screen.availHeight / 3;
       this.lastRootWidth = this.root.offsetWidth;
+      this.base = this.initBaseline(this.root);
       this.resizeObserver = new ResizeObserver((entries) => {
         const root2 = entries[0];
         const width = root2.contentRect.width;
@@ -7418,54 +7435,73 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       });
       this.resizeObserver.observe(this.root);
     }
-    createRow(_columns) {
+    initBaseline(root) {
+      const vh = window.screen.availHeight;
+      const vw = root.offsetWidth;
+      let columns = 3;
+      if (vw > 720) {
+        columns = 4;
+      }
+      if (vw >= 1900) {
+        columns = 5;
+      }
+      if (vw >= 2400) {
+        columns = 6;
+      }
+      return { height: Math.floor(vh / 3), columns, gap: 8 };
+    }
+    createRow(lastRowHeight) {
       const container = document.createElement("div");
       container.classList.add("fvg-sub-container");
-      container.style.height = this.defaultHeight + "px";
-      container.style.marginTop = "10px";
+      container.style.height = (lastRowHeight ?? this.base.height) + "px";
+      container.style.marginTop = this.base.gap + "px";
       this.root.appendChild(container);
       return container;
     }
     append(nodes) {
+      let resize = false;
       for (const node of nodes) {
-        node.element.style.marginLeft = "10px";
-        if (!this.lastRow) this.lastRow = this.createRow(conf.colCount);
-        const lastChild = this.lastRow.lastElementChild;
-        if (lastChild) {
-          const nodeWidth = this.lastRow.offsetHeight * (node.ratio ?? 1);
-          const gap = (this.lastRow.childElementCount + 1) * 10;
-          const factor = 0.5 / Math.max(1, node.ratio ?? 1);
-          if (this.lastRow.childElementCount >= 6 || this.childrenWidth(this.lastRow) + gap + nodeWidth * factor > this.root.offsetWidth) {
-            if (this.resizeRow(this.lastRow, nodeWidth)) {
-              this.lastRow = this.createRow(conf.colCount);
-            }
+        node.element.style.marginLeft = this.base.gap + "px";
+        if (!this.lastRow) this.lastRow = this.createRow();
+        if (this.lastRow.childElementCount > 0) {
+          resize = this.lastRow.childElementCount >= this.base.columns;
+          if (!resize) {
+            let nodeWidth = this.base.height * node.ratio;
+            const allGap = this.lastRow.childElementCount * this.base.gap + this.base.gap;
+            const factor = 0.4 / Math.max(1, node.ratio);
+            nodeWidth = nodeWidth * factor;
+            const childrenWidth = this.childrenRatio(this.lastRow).reduce((width, curr) => width + curr * this.base.height, 0);
+            resize = childrenWidth + allGap + nodeWidth >= this.root.offsetWidth;
+          }
+          if (resize) {
+            this.resizeRow(this.lastRow);
+            this.lastRow = this.createRow(this.lastRow?.offsetHeight);
           }
         }
         this.lastRow.appendChild(node.element);
         this.count++;
       }
     }
-    childrenWidth(row) {
-      let width = 0;
-      row.childNodes.forEach((c) => width += c.offsetWidth);
-      return width;
-    }
     childrenRatio(row) {
       const ret = [];
-      row.childNodes.forEach((c) => ret.push(c.offsetWidth / c.offsetHeight));
+      const ratio = (c) => {
+        let ratio2 = parseFloat(c.getAttribute("data-ratio") ?? "1");
+        ratio2 = isNaN(ratio2) ? 1 : ratio2;
+        return ratio2;
+      };
+      row.childNodes.forEach((c) => ret.push(ratio(c)));
       return ret;
     }
-    resizeRow(row, _nextChildWidth) {
-      if (row.childElementCount < 4) return false;
-      const ratios = this.childrenRatio(row).filter((r) => r >= 1);
-      if (ratios.length === row.childElementCount && row.childElementCount < 5) return false;
-      const gap = (row.childElementCount + 1) * 10;
-      const width = this.childrenWidth(row) + gap;
-      const scale = width / this.root.offsetWidth;
-      row.style.height = row.offsetHeight / scale + "px";
-      row.childNodes.forEach((c) => c.style.marginLeft = "");
-      row.style.justifyContent = "space-around";
-      return true;
+    resizeRow(row) {
+      const ratio = this.childrenRatio(row).reduce((sum, cur) => sum + cur, 0);
+      const allGap = row.childElementCount * this.base.gap + this.base.gap;
+      const vw = this.root.offsetWidth;
+      const rowHeight = (vw - allGap) / ratio;
+      row.style.height = rowHeight + "px";
+    }
+    resize(allNodes) {
+      this.root.innerHTML = "";
+      this.append(allNodes);
     }
     nearBottom() {
       const last = this.lastRow;
@@ -7596,6 +7632,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   --ehvp-img-fetched: #90ffae;
   --ehvp-img-failed: red;
   --ehvp-img-init: #fff;
+  --ehvp-img-fetching: #ffffff70;
+  --ehvp-img-node-border-radius: 5px;
   --ehvp-img-box-shadow: -3px 4px 4px 0px #3d243d;
   --ehvp-panel-border: none;
   --ehvp-panel-box-shadow: none;
@@ -7683,40 +7721,38 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .full-view-grid, .big-img-frame {
   outline: none !important;
 }
-.full-view-grid .img-node {
+.img-node {
   position: relative;
+  padding: 3px;
+  box-sizing: border-box;
+  background-color: var(--ehvp-img-init);
+  border-radius: var(--ehvp-img-node-border-radius);
 }
 .fvg-sub-container {
   display: flex;
   width: 100%;
+  flex-wrap: nowrap;
   /**
   contain: content;
+  scollbar-width: none;
   */
 }
+/**
+.full-view-grid::-webkit-scrollbar {
+  display: none;
+}
+*/
 .fvg-sub-container .img-node {
-  width: auto;
   height: 100%;
 }
 .fvg-sub-container .img-node a {
+  width: 100%;
   height: 100%;
 }
 .img-node canvas, .img-node img {
-  position: relative;
-  border: 3px solid var(--ehvp-img-init);
-  box-sizing: border-box;
-  box-shadow: var(--ehvp-img-box-shadow);
-}
-.fvg-grid .img-node canvas, 
-.fvg-grid .img-node img 
-{
   width: 100%;
-  height: auto;
-}
-.fvg-flow .img-node canvas, 
-.fvg-flow .img-node img 
-{
-  width: auto;
   height: 100%;
+  border-radius: var(--ehvp-img-node-border-radius);
 }
 .img-node-numtip {
   position: absolute;
@@ -7737,6 +7773,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   display: block;
   line-height: 0;
   position: relative;
+  z-index: 1;
 }
 .ehvp-chapter-description, .img-node-error-hint {
   display: block;
@@ -7760,15 +7797,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   left: 3px;
   width: calc(100% - 6px);
 }
-.img-fetched img, .img-fetched canvas {
-  border: 3px solid var(--ehvp-img-fetched) !important;
+.img-fetched {
+  background-color: var(--ehvp-img-fetched);
 }
-.img-fetch-failed img, .img-fetch-failed canvas {
-  border: 3px solid var(--ehvp-img-failed) !important;
+.img-fetch-failed {
+  background-color: var(--ehvp-img-failed);
 }
-.img-fetching img, .img-fetching canvas {
-  border: 3px solid #00000000 !important;
-  z-index: 1;
+.img-fetching {
+  background-color: var(--ehvp-img-fetching);
 }
 .img-excluded img, .img-excluded canvas {
   border: 3px solid #777 !important;
@@ -7784,7 +7820,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   /**aspect-ratio: 1;*/
   background-color: #333333b0;
 }
-.img-fetching a::after {
+.img-fetching::after {
   content: '';
   position: absolute;
   top: 0%;
@@ -8031,6 +8067,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   border: 1px solid #000000;
   border-radius: 4px;
 }
+/**
 @keyframes main-progress {
   from {
     width: 0%;
@@ -8039,6 +8076,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     width: 100%;
   }
 }
+*/
 .big-img-frame-collapse {
   width: 0px !important;
 }
@@ -8050,18 +8088,16 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   display: none !important;
 }
 .download-bar {
-  background-color: #333333c0;
+  background-color: #33333310;
   height: 0.3em;
   width: 100%;
-  bottom: -0.4em;
+  bottom: -0.5em;
   position: absolute;
-  border-left: 3px solid #00000000;
-  border-right: 3px solid #00000000;
   box-sizing: border-box;
-  z-index: 1;
+  z-index: 2;
 }
 .download-bar > div {
-  background-color: #f0fff0;
+  background-color: var(--ehvp-img-fetched);
   height: 100%;
   border: none;
 }

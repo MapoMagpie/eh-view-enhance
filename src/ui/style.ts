@@ -11,6 +11,8 @@ export function styleCSS() {
   --ehvp-img-fetched: #90ffae;
   --ehvp-img-failed: red;
   --ehvp-img-init: #fff;
+  --ehvp-img-fetching: #ffffff70;
+  --ehvp-img-node-border-radius: 5px;
   --ehvp-img-box-shadow: -3px 4px 4px 0px #3d243d;
   --ehvp-panel-border: none;
   --ehvp-panel-box-shadow: none;
@@ -98,40 +100,38 @@ export function styleCSS() {
 .full-view-grid, .big-img-frame {
   outline: none !important;
 }
-.full-view-grid .img-node {
+.img-node {
   position: relative;
+  padding: 3px;
+  box-sizing: border-box;
+  background-color: var(--ehvp-img-init);
+  border-radius: var(--ehvp-img-node-border-radius);
 }
 .fvg-sub-container {
   display: flex;
   width: 100%;
+  flex-wrap: nowrap;
   /**
   contain: content;
+  scollbar-width: none;
   */
 }
+/**
+.full-view-grid::-webkit-scrollbar {
+  display: none;
+}
+*/
 .fvg-sub-container .img-node {
-  width: auto;
   height: 100%;
 }
 .fvg-sub-container .img-node a {
+  width: 100%;
   height: 100%;
 }
 .img-node canvas, .img-node img {
-  position: relative;
-  border: 3px solid var(--ehvp-img-init);
-  box-sizing: border-box;
-  box-shadow: var(--ehvp-img-box-shadow);
-}
-.fvg-grid .img-node canvas, 
-.fvg-grid .img-node img 
-{
   width: 100%;
-  height: auto;
-}
-.fvg-flow .img-node canvas, 
-.fvg-flow .img-node img 
-{
-  width: auto;
   height: 100%;
+  border-radius: var(--ehvp-img-node-border-radius);
 }
 .img-node-numtip {
   position: absolute;
@@ -152,6 +152,7 @@ export function styleCSS() {
   display: block;
   line-height: 0;
   position: relative;
+  z-index: 1;
 }
 .ehvp-chapter-description, .img-node-error-hint {
   display: block;
@@ -175,15 +176,14 @@ export function styleCSS() {
   left: 3px;
   width: calc(100% - 6px);
 }
-.img-fetched img, .img-fetched canvas {
-  border: 3px solid var(--ehvp-img-fetched) !important;
+.img-fetched {
+  background-color: var(--ehvp-img-fetched);
 }
-.img-fetch-failed img, .img-fetch-failed canvas {
-  border: 3px solid var(--ehvp-img-failed) !important;
+.img-fetch-failed {
+  background-color: var(--ehvp-img-failed);
 }
-.img-fetching img, .img-fetching canvas {
-  border: 3px solid #00000000 !important;
-  z-index: 1;
+.img-fetching {
+  background-color: var(--ehvp-img-fetching);
 }
 .img-excluded img, .img-excluded canvas {
   border: 3px solid #777 !important;
@@ -199,7 +199,7 @@ export function styleCSS() {
   /**aspect-ratio: 1;*/
   background-color: #333333b0;
 }
-.img-fetching a::after {
+.img-fetching::after {
   content: '';
   position: absolute;
   top: 0%;
@@ -446,6 +446,7 @@ export function styleCSS() {
   border: 1px solid #000000;
   border-radius: 4px;
 }
+/**
 @keyframes main-progress {
   from {
     width: 0%;
@@ -454,6 +455,7 @@ export function styleCSS() {
     width: 100%;
   }
 }
+*/
 .big-img-frame-collapse {
   width: 0px !important;
 }
@@ -465,18 +467,16 @@ export function styleCSS() {
   display: none !important;
 }
 .download-bar {
-  background-color: #333333c0;
+  background-color: #33333310;
   height: 0.3em;
   width: 100%;
-  bottom: -0.4em;
+  bottom: -0.5em;
   position: absolute;
-  border-left: 3px solid #00000000;
-  border-right: 3px solid #00000000;
   box-sizing: border-box;
-  z-index: 1;
+  z-index: 2;
 }
 .download-bar > div {
-  background-color: #f0fff0;
+  background-color: var(--ehvp-img-fetched);
   height: 100%;
   border: none;
 }

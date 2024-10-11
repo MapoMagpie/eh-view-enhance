@@ -60,6 +60,7 @@ export interface Events {
   "toggle-main-view": (open?: boolean) => void;
   "toggle-auto-play": () => void;
   "start-download": (cb: () => void) => void;
+  "fvg-flow-vision-resize": () => void;
 }
 
 export type EventID = keyof Events;

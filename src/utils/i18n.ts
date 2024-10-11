@@ -133,6 +133,12 @@ const keyboardCustom: KeyboardCustom = {
       '다음 페이지 로딩 재시도',
       'Intentar cargar la siguiente página'
     ),
+    'resize-flow-vision': new I18nValue(
+      'Resize Thumbnail Grid Layout',
+      'Resize Thumbnail Grid Layout',
+      'Resize Thumbnail Grid Layout',
+      'Resize Thumbnail Grid Layout'
+    ),
   },
 };
 export const i18n = {

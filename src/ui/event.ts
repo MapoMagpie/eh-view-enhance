@@ -18,7 +18,7 @@ import { createStyleCustomPanel } from "./style-custom-panel";
 export type Events = ReturnType<typeof initEvents>;
 
 export type KeyboardInBigImageModeId = "step-image-prev" | "step-image-next" | "exit-big-image-mode" | "step-to-first-image" | "step-to-last-image" | "scale-image-increase" | "scale-image-decrease" | "scroll-image-up" | "scroll-image-down" | "toggle-auto-play";
-export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "toggle-auto-play" | "retry-fetch-next-page"; // "back-chapters-selection" 
+export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "toggle-auto-play" | "retry-fetch-next-page" | "resize-flow-vision";
 export type KeyboardInMainId = "open-full-view-grid" | "start-download";
 export type KeyboardEvents = {
   inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
@@ -234,23 +234,23 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   function initKeyboardEvent(): KeyboardEvents {
     const inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc> = {
       "exit-big-image-mode": new KeyboardDesc(
-        ["Escape", "Enter"],
+        ["escape", "enter"],
         () => BIFM.hidden()
       ),
       "step-image-prev": new KeyboardDesc(
-        ["ArrowLeft"],
+        ["arrowleft"],
         () => BIFM.stepNext(conf.reversePages ? "next" : "prev")
       ),
       "step-image-next": new KeyboardDesc(
-        ["ArrowRight"],
+        ["arrowright"],
         () => BIFM.stepNext(conf.reversePages ? "prev" : "next")
       ),
       "step-to-first-image": new KeyboardDesc(
-        ["Home"],
+        ["home"],
         () => BIFM.stepNext("next", 0, -1)
       ),
       "step-to-last-image": new KeyboardDesc(
-        ["End"],
+        ["end"],
         () => BIFM.stepNext("prev", 0, -1)
       ),
       "scale-image-increase": new KeyboardDesc(
@@ -262,14 +262,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         () => BIFM.scaleBigImages(-1, 5)
       ),
       "scroll-image-up": new KeyboardDesc(
-        ["PageUp", "ArrowUp", "Shift+Space"],
+        ["pageup", "arrowup", "shift+space"],
         (event) => {
           const key = parseKey(event);
-          const customKey = !["PageUp", "ArrowUp", "Shift+Space"].includes(key);
+          const customKey = !["pageup", "arrowup", "shift+space"].includes(key);
           if (customKey) {
             BIFM.scroll(BIFM.frame.offsetHeight / 8 * -1);
           }
-          const shouldPrevent = !["PageUp", "Shift+Space"].includes(key);
+          const shouldPrevent = !["pageup", "shift+space"].includes(key);
           if (shouldPrevent) {
             if (!customKey) {
               scrollEventDebouncer.addEvent("SCROLL-IMAGE-UP", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
@@ -284,14 +284,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         }, true
       ),
       "scroll-image-down": new KeyboardDesc(
-        ["PageDown", "ArrowDown", "Space"],
+        ["pagedown", "arrowdown", "space"],
         (event) => {
           const key = parseKey(event);
-          const customKey = !["PageDown", "ArrowDown", "Space"].includes(key);
+          const customKey = !["pagedown", "arrowdown", "space"].includes(key);
           if (customKey) {
             BIFM.scroll(BIFM.frame.offsetHeight / 8);
           }
-          const shouldPrevent = !["PageDown", "Space"].includes(key);
+          const shouldPrevent = !["pagedown", "space"].includes(key);
           if (shouldPrevent) {
             if (!customKey) {
               scrollEventDebouncer.addEvent("SCROLL-IMAGE-DOWN", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
@@ -312,7 +312,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     };
     const inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc> = {
       "open-big-image-mode": new KeyboardDesc(
-        ["Enter"], () => {
+        ["enter"], () => {
           let start = IFQ.currIndex;
           if (numberRecord && numberRecord.length > 0) {
             start = Number(numberRecord.join("")) - 1;
@@ -324,7 +324,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         }
       ),
       "pause-auto-load-temporarily": new KeyboardDesc(
-        ["Ctrl+p"],
+        ["ctrl+p"],
         () => {
           IL.autoLoad = !IL.autoLoad;
           if (IL.autoLoad) {
@@ -336,7 +336,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         }
       ),
       "exit-full-view-grid": new KeyboardDesc(
-        ["Escape"],
+        ["escape"],
         () => EBUS.emit("toggle-main-view", false)
       ),
       "columns-increase": new KeyboardDesc(
@@ -347,27 +347,27 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         ["-"],
         () => modNumberConfigEvent("colCount", "minus")
       ),
-      // "back-chapters-selection": new KeyboardDesc(
-      //   ["b"],
-      //   () => EBUS.emit("back-chapters-selection")
-      // ),
       "toggle-auto-play": new KeyboardDesc(
         ["p"],
         () => EBUS.emit("toggle-auto-play")
       ),
       "retry-fetch-next-page": new KeyboardDesc(
-        ["Shift+n"],
+        ["shift+n"],
         () => EBUS.emit("pf-try-extend")
+      ),
+      "resize-flow-vision": new KeyboardDesc(
+        ["shift+v"],
+        () => EBUS.emit("fvg-flow-vision-resize")
       ),
     };
     const inMain: Record<KeyboardInMainId, KeyboardDesc> = {
-      "open-full-view-grid": new KeyboardDesc(["Enter"], () => {
+      "open-full-view-grid": new KeyboardDesc(["enter"], () => {
         // check focus element is not input Elements
         const activeElement = document.activeElement;
         if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
         EBUS.emit("toggle-main-view", true)
       }, true),
-      "start-download": new KeyboardDesc(["Ctrl+Alt+d"], () => {
+      "start-download": new KeyboardDesc(["ctrl+alt+d"], () => {
         EBUS.emit("start-download", () => PH.minify("exit", false));
       }, true),
     };

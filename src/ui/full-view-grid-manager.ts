@@ -158,7 +158,7 @@ class GRIDLayout extends Layout {
   }
   resize(): void {
     const rule = queryCSSRules(this.style, ".fvg-grid");
-    if (rule) rule.style.gridTemplateColumns = `repeat(${conf.colCount}, 1fr)`;
+    if (rule) rule.style.gridTemplateColumns = `repeat(${conf.colCount}, minmax(10px, 1fr))`;
   }
   resizedNode(_node: HTMLElement, pending: HTMLElement[]): number[] {
     return pending.map((_, i) => i);

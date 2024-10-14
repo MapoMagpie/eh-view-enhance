@@ -56,7 +56,7 @@ export function styleCSS() {
   display: grid;
   align-content: start;
   grid-gap: 0.7em;
-  grid-template-columns: repeat(${conf.colCount}, 1fr);
+  grid-template-columns: repeat(${conf.colCount}, minmax(10px, 1fr));
   overflow: hidden scroll;
   padding: 0.3em;
   box-sizing: border-box;

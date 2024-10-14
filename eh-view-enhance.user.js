@@ -2953,9 +2953,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     create() {
       this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
-      const ratio = this.ratio().toString();
-      this.root.style.aspectRatio = ratio;
-      this.root.setAttribute("data-ratio", ratio);
       const anchor = this.root.firstElementChild;
       anchor.href = this.href;
       anchor.target = "_blank";
@@ -2963,10 +2960,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.canvasElement = anchor.lastElementChild;
       this.imgElement.setAttribute("title", this.title);
       this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
-      if (this.rect) {
-        this.canvasElement.width = 512;
-        this.canvasElement.height = Math.floor(512 * (this.rect.h / this.rect.w));
-      }
+      const ratio = this.ratio();
+      this.root.style.aspectRatio = ratio.toString();
+      this.root.setAttribute("data-ratio", ratio.toString());
+      this.canvasElement.width = 512;
+      this.canvasElement.height = Math.floor(512 / ratio);
       this.canvasCtx = this.canvasElement.getContext("2d");
       this.canvasCtx.fillStyle = "#aaa";
       this.canvasCtx.fillRect(0, 0, this.canvasElement.width, this.canvasElement.height);
@@ -2984,12 +2982,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       if (this.root.offsetWidth <= 1) return onfailed("element too small");
       this.imgElement.onload = null;
       this.imgElement.onerror = null;
-      const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
-      const oldRatio = this.canvasElement.height / this.canvasElement.width;
+      const oldRatio = this.ratio();
+      this.rect = { w: this.imgElement.naturalWidth, h: this.imgElement.naturalHeight };
+      const newRatio = this.ratio();
       const flowVision = this.root.parentElement?.classList.contains("fvg-sub-container");
-      const resize = flowVision ? this.root.offsetHeight !== this.canvasElement.height : this.root.offsetWidth !== this.canvasElement.width;
-      if (resize || Math.abs(newRatio - oldRatio) > 1.07) {
-        this.root.style.aspectRatio = this.ratio().toString();
+      if (Math.abs(newRatio - oldRatio) > 0.07) {
+        this.root.style.aspectRatio = newRatio.toString();
+        this.root.setAttribute("data-ratio", newRatio.toString());
         if (flowVision) {
           this.canvasElement.height = this.root.offsetHeight;
           this.canvasElement.width = Math.floor(this.root.offsetHeight / newRatio);
@@ -2997,6 +2996,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           this.canvasElement.width = this.root.offsetWidth;
           this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
         }
+        EBUS.emit("imn-resize", this);
       }
       if (this.imgElement.src === this.thumbnailSrc) {
         this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
@@ -7276,8 +7276,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     done = false;
     chapterIndex = 0;
     layout;
+    resizedNodesPending = [];
+    debouncer;
     constructor(HTML, BIFM, flowVision = false) {
       this.root = HTML.fullViewGrid;
+      this.debouncer = new Debouncer();
       if (flowVision) {
         this.layout = new FlowVisionLayout(this.root);
       } else {
@@ -7313,8 +7316,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         }
       });
       EBUS.subscribe("cherry-pick-changed", (chapterIndex) => this.chapterIndex === chapterIndex && this.updateRender());
-      const debouncer = new Debouncer();
-      this.root.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", () => {
+      this.root.addEventListener("scroll", () => this.debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", () => {
         if (HTML.root.classList.contains("ehvp-root-collapse")) return;
         this.renderCurrView();
         this.tryExtend();
@@ -7325,6 +7327,20 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         }
       });
       EBUS.subscribe("fvg-flow-vision-resize", () => this.layout.resize(this.queue));
+      EBUS.subscribe("imn-resize", (node) => this.resizedNodes(node));
+    }
+    resizedNodes(node) {
+      if (node.root) {
+        this.resizedNodesPending.push(node.root);
+      }
+      this.debouncer.addEvent("RESIZED-NODES", () => {
+        if (this.resizedNodesPending.length === 0) return;
+        let node2 = null;
+        while (node2 = this.resizedNodesPending.shift()) {
+          const remove = this.layout.resizedNode(node2, this.resizedNodesPending);
+          this.resizedNodesPending = this.resizedNodesPending.filter((_, i) => !remove.includes(i));
+        }
+      }, 50);
     }
     append(nodes) {
       if (nodes.length > 0) {
@@ -7382,7 +7398,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.root.innerHTML = "";
     }
     resize() {
-      throw new Error("Method not implemented.");
+    }
+    resizedNode(_node, pending) {
+      return pending.map((_, i) => i);
     }
     visibleRange(container, children) {
       if (children.length === 0) return [container, container];
@@ -7459,28 +7477,29 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return container;
     }
     append(nodes) {
-      let resize = false;
       for (const node of nodes) {
         node.element.style.marginLeft = this.base.gap + "px";
         if (!this.lastRow) this.lastRow = this.createRow();
-        if (this.lastRow.childElementCount > 0) {
-          resize = this.lastRow.childElementCount >= this.base.columns;
-          if (!resize) {
-            let nodeWidth = this.base.height * node.ratio;
-            const allGap = this.lastRow.childElementCount * this.base.gap + this.base.gap;
-            const factor = 0.4 / Math.max(1, node.ratio);
-            nodeWidth = nodeWidth * factor;
-            const childrenWidth = this.childrenRatio(this.lastRow).reduce((width, curr) => width + curr * this.base.height, 0);
-            resize = childrenWidth + allGap + nodeWidth >= this.root.offsetWidth;
-          }
-          if (resize) {
-            this.resizeRow(this.lastRow);
-            this.lastRow = this.createRow(this.lastRow?.offsetHeight);
-          }
+        if (this.checkRowFilled(this.lastRow, node.ratio)) {
+          this.resizeRow(this.lastRow);
+          this.lastRow = this.createRow(this.lastRow?.offsetHeight);
         }
         this.lastRow.appendChild(node.element);
         this.count++;
       }
+    }
+    checkRowFilled(row, newNodeRatio) {
+      if (row.childElementCount === 0) return false;
+      let filled = row.childElementCount >= this.base.columns;
+      if (!filled) {
+        let nodeWidth = this.base.height * newNodeRatio;
+        const allGap = row.childElementCount * this.base.gap + this.base.gap;
+        const factor = 0.4 / Math.max(1, newNodeRatio);
+        nodeWidth = nodeWidth * factor;
+        const childrenWidth = this.childrenRatio(row).reduce((width, curr) => width + curr * this.base.height, 0);
+        filled = childrenWidth + allGap + nodeWidth >= this.root.offsetWidth;
+      }
+      return filled;
     }
     childrenRatio(row) {
       const ret = [];
@@ -7502,6 +7521,54 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     resize(allNodes) {
       this.root.innerHTML = "";
       this.append(allNodes);
+    }
+    resizedNode(node, pending) {
+      let row = node.parentElement;
+      if (!row) return [];
+      const fragment = document.createDocumentFragment();
+      let children = [];
+      function* next() {
+        fragment.append(...children);
+        if (row.childElementCount > 0) {
+          const newChildren = Array.from(row.childNodes).map((child2) => child2);
+          fragment.append(...newChildren);
+          children.push(...newChildren);
+        }
+        let child = null;
+        while (child = children.shift()) {
+          yield child;
+        }
+        const nextRow = row?.nextElementSibling;
+        if (nextRow) {
+          children = Array.from(nextRow.childNodes).map((child2) => child2);
+          while (child = children.shift()) {
+            yield child;
+          }
+        }
+      }
+      let remove = [];
+      while (true) {
+        for (const child of next()) {
+          const ratio = parseFloat(child.getAttribute("data-ratio") ?? "1");
+          if (this.checkRowFilled(row, ratio)) {
+            children.unshift(child);
+            this.resizeRow(row);
+            break;
+          }
+          const index = pending.indexOf(child);
+          if (index >= 0) remove.push(index);
+          row.appendChild(child);
+        }
+        row = row?.nextElementSibling;
+        if (row === null) {
+          row = this.createRow();
+        }
+        if (children.length === 0) {
+          if (row.childElementCount === 0) row.remove();
+          break;
+        }
+      }
+      return remove;
     }
     nearBottom() {
       const last = this.lastRow;
@@ -7774,6 +7841,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   line-height: 0;
   position: relative;
   z-index: 1;
+  width: 100%;
+  height: 100%;
 }
 .ehvp-chapter-description, .img-node-error-hint {
   display: block;

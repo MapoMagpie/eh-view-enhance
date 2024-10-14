@@ -153,6 +153,8 @@ export function styleCSS() {
   line-height: 0;
   position: relative;
   z-index: 1;
+  width: 100%;
+  height: 100%;
 }
 .ehvp-chapter-description, .img-node-error-hint {
   display: block;

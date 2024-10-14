@@ -1,6 +1,6 @@
 import { conf } from "../config";
 import EBUS from "../event-bus";
-import { VisualNode } from "../img-node";
+import ImageNode, { VisualNode } from "../img-node";
 import { Debouncer } from "../utils/debouncer";
 import { evLog } from "../utils/ev-log";
 import { Elements } from "./html";
@@ -16,6 +16,7 @@ abstract class Layout {
   abstract nearBottom(): boolean;
   abstract reset(): void;
   abstract resize(allNodes: E[]): void;
+  abstract resizedNode(node: HTMLElement, pending: HTMLElement[]): number[];
   abstract visibleRange(container: HTMLElement, children: HTMLElement[]): [HTMLElement, HTMLElement];
 }
 
@@ -25,8 +26,11 @@ export class FullViewGridManager {
   done: boolean = false;
   chapterIndex: number = 0;
   layout: Layout;
+  resizedNodesPending: HTMLElement[] = [];
+  debouncer: Debouncer;
   constructor(HTML: Elements, BIFM: BigImageFrameManager, flowVision: boolean = false) {
     this.root = HTML.fullViewGrid;
+    this.debouncer = new Debouncer();
     if (flowVision) {
       this.layout = new FlowVisionLayout(this.root);
     } else {
@@ -63,8 +67,7 @@ export class FullViewGridManager {
       }
     });
     EBUS.subscribe("cherry-pick-changed", (chapterIndex) => this.chapterIndex === chapterIndex && this.updateRender());
-    const debouncer = new Debouncer();
-    this.root.addEventListener("scroll", () => debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", () => {
+    this.root.addEventListener("scroll", () => this.debouncer.addEvent("FULL-VIEW-SCROLL-EVENT", () => {
       if (HTML.root.classList.contains("ehvp-root-collapse")) return;
       this.renderCurrView();
       this.tryExtend();
@@ -78,6 +81,20 @@ export class FullViewGridManager {
       }
     });
     EBUS.subscribe("fvg-flow-vision-resize", () => this.layout.resize(this.queue));
+    EBUS.subscribe("imn-resize", (node) => this.resizedNodes(node));
+  }
+  resizedNodes(node: ImageNode) {
+    if (node.root) {
+      this.resizedNodesPending.push(node.root);
+    }
+    this.debouncer.addEvent("RESIZED-NODES", () => {
+      if (this.resizedNodesPending.length === 0) return;
+      let node = null;
+      while (node = this.resizedNodesPending.shift()) {
+        const remove = this.layout.resizedNode(node, this.resizedNodesPending);
+        this.resizedNodesPending = this.resizedNodesPending.filter((_, i) => !remove.includes(i));
+      }
+    }, 50);
   }
   append(nodes: VisualNode[]) {
     if (nodes.length > 0) {
@@ -136,8 +153,9 @@ class GRIDLayout extends Layout {
   reset(): void {
     this.root.innerHTML = "";
   }
-  resize(): void {
-    throw new Error("Method not implemented.");
+  resize(): void { }
+  resizedNode(_node: HTMLElement, pending: HTMLElement[]): number[] {
+    return pending.map((_, i) => i);
   }
   visibleRange(container: HTMLElement, children: HTMLElement[]): [HTMLElement, HTMLElement] {
     if (children.length === 0) return [container, container]; // throw error
@@ -215,30 +233,31 @@ class FlowVisionLayout extends Layout {
     return container;
   }
   append(nodes: E[]): void {
-    let resize = false;
     for (const node of nodes) {
       node.element.style.marginLeft = this.base.gap + "px";
       if (!this.lastRow) this.lastRow = this.createRow();
-      if (this.lastRow.childElementCount > 0) {
-        // max columns
-        resize = this.lastRow.childElementCount >= this.base.columns;
-        // check total width
-        if (!resize) {
-          let nodeWidth = this.base.height * node.ratio;
-          const allGap = (this.lastRow.childElementCount * this.base.gap) + this.base.gap;
-          const factor = 0.4 / Math.max(1, node.ratio); // If the ratio (w/h) is greater than 1, then set its height smaller.
-          nodeWidth = nodeWidth * factor;
-          const childrenWidth = this.childrenRatio(this.lastRow).reduce((width, curr) => width + (curr * this.base.height), 0);
-          resize = childrenWidth + allGap + nodeWidth >= this.root.offsetWidth;
-        }
-        if (resize) {
-          this.resizeRow(this.lastRow);
-          this.lastRow = this.createRow(this.lastRow?.offsetHeight);
-        }
+      if (this.checkRowFilled(this.lastRow, node.ratio)) {
+        this.resizeRow(this.lastRow);
+        this.lastRow = this.createRow(this.lastRow?.offsetHeight);
       }
       this.lastRow.appendChild(node.element);
       this.count++;
     }
+  }
+  checkRowFilled(row: HTMLElement, newNodeRatio: number) {
+    if (row.childElementCount === 0) return false;
+    // max columns
+    let filled = row.childElementCount >= this.base.columns;
+    // check total width
+    if (!filled) {
+      let nodeWidth = this.base.height * newNodeRatio;
+      const allGap = (row.childElementCount * this.base.gap) + this.base.gap;
+      const factor = 0.4 / Math.max(1, newNodeRatio); // If the ratio (w/h) is greater than 1, then set its height smaller.
+      nodeWidth = nodeWidth * factor;
+      const childrenWidth = this.childrenRatio(row).reduce((width, curr) => width + (curr * this.base.height), 0);
+      filled = childrenWidth + allGap + nodeWidth >= this.root.offsetWidth;
+    }
+    return filled;
   }
   childrenRatio(row: HTMLElement): number[] {
     const ret: number[] = [];
@@ -260,11 +279,56 @@ class FlowVisionLayout extends Layout {
   resize(allNodes: E[]) {
     this.root.innerHTML = "";
     this.append(allNodes);
-    // this.root.querySelectorAll<HTMLElement>(".fvg-sub-container").forEach(row => this.resizeRow(row));
+  }
+  resizedNode(node: HTMLElement, pending: HTMLElement[]): number[] {
+    let row = node.parentElement as HTMLElement | null;
+    if (!row) return [];
+    const fragment = document.createDocumentFragment();
+    let children: HTMLElement[] = [];
+    function* next(): Generator<HTMLElement> {
+      fragment.append(...children); // if chindren remain elements, move to fragment first, then check row children
+      if (row!.childElementCount > 0) {
+        const newChildren = Array.from(row!.childNodes).map(child => child as HTMLElement);
+        fragment.append(...newChildren); // if chindren remain elements, move to fragment first, then check row children
+        children.push(...newChildren);
+      }
+      let child = null;
+      while (child = children.shift()) {
+        yield child;
+      }
+      const nextRow = row?.nextElementSibling as HTMLElement | null;
+      if (nextRow) {
+        children = Array.from(nextRow.childNodes).map(child => child as HTMLElement);
+        while (child = children.shift()) {
+          yield child;
+        }
+      }
+    }
+    let remove = [];
+    while (true) {
+      for (const child of next()) {
+        const ratio = parseFloat(child.getAttribute("data-ratio") ?? "1");
+        if (this.checkRowFilled(row, ratio)) {
+          children.unshift(child);
+          this.resizeRow(row);
+          break;
+        }
+        const index = pending.indexOf(child);
+        if (index >= 0) remove.push(index);
+        row.appendChild(child);
+      }
+      row = row?.nextElementSibling as HTMLElement | null; // next row
+      if (row === null) {
+        row = this.createRow();
+      }
+      if (children.length === 0) {
+        if (row.childElementCount === 0) row.remove();
+        break;
+      }
+    }
+    return remove;
   }
   nearBottom(): boolean {
-    // return false;
-    // find the last node in this.root;
     const last = this.lastRow;
     if (!last) return false;
     const viewButtom = this.root.scrollTop + this.root.clientHeight;

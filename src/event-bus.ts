@@ -2,7 +2,7 @@ import { Oriented } from "./config";
 import { CherryPick } from "./download/downloader";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
-import { VisualNode } from "./img-node";
+import ImageNode, { VisualNode } from "./img-node";
 import { Chapter } from "./page-fetcher";
 import { evLog } from "./utils/ev-log";
 
@@ -61,6 +61,7 @@ export interface Events {
   "toggle-auto-play": () => void;
   "start-download": (cb: () => void) => void;
   "fvg-flow-vision-resize": () => void;
+  "imn-resize": (imn: ImageNode) => void;
 }
 
 export type EventID = keyof Events;

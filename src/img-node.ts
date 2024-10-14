@@ -1,3 +1,4 @@
+import EBUS from "./event-bus";
 import { DownloadState } from "./img-fetcher";
 import { Debouncer } from "./utils/debouncer";
 import { resizing } from "./utils/image-resizing";
@@ -58,9 +59,6 @@ export default class ImageNode {
 
   create(): HTMLElement {
     this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true) as HTMLElement;
-    const ratio = this.ratio().toString();
-    this.root.style.aspectRatio = ratio;
-    this.root.setAttribute("data-ratio", ratio)
     const anchor = this.root.firstElementChild as HTMLAnchorElement;
     anchor.href = this.href;
     anchor.target = "_blank";
@@ -68,10 +66,13 @@ export default class ImageNode {
     this.canvasElement = anchor.lastElementChild as HTMLCanvasElement;
     this.imgElement.setAttribute("title", this.title);
     this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
-    if (this.rect) {
-      this.canvasElement.width = 512;
-      this.canvasElement.height = Math.floor(512 * (this.rect.h / this.rect.w));
-    }
+
+    const ratio = this.ratio();
+    this.root.style.aspectRatio = ratio.toString();
+    this.root.setAttribute("data-ratio", ratio.toString());
+    this.canvasElement.width = 512;
+    this.canvasElement.height = Math.floor(512 / ratio);
+
     this.canvasCtx = this.canvasElement.getContext("2d")!;
     this.canvasCtx.fillStyle = "#aaa";
     this.canvasCtx.fillRect(0, 0, this.canvasElement.width, this.canvasElement.height);
@@ -90,12 +91,16 @@ export default class ImageNode {
     if (this.root.offsetWidth <= 1) return onfailed("element too small");
     this.imgElement.onload = null;
     this.imgElement.onerror = null;
-    const newRatio = this.imgElement.naturalHeight / this.imgElement.naturalWidth;
-    const oldRatio = this.canvasElement.height / this.canvasElement.width;
+
+    const oldRatio = this.ratio();
+    this.rect = { w: this.imgElement.naturalWidth, h: this.imgElement.naturalHeight };
+    const newRatio = this.ratio();
+
     const flowVision = this.root.parentElement?.classList.contains("fvg-sub-container");
-    const resize = flowVision ? this.root.offsetHeight !== this.canvasElement.height : this.root.offsetWidth !== this.canvasElement.width;
-    if (resize || Math.abs(newRatio - oldRatio) > 1.07) {
-      this.root.style.aspectRatio = this.ratio().toString();
+    // console.log("ratio diff: ", Math.abs(newRatio - oldRatio));
+    if (Math.abs(newRatio - oldRatio) > 0.07) {
+      this.root.style.aspectRatio = newRatio.toString();
+      this.root.setAttribute("data-ratio", newRatio.toString());
       if (flowVision) {
         this.canvasElement.height = this.root.offsetHeight;
         this.canvasElement.width = Math.floor(this.root.offsetHeight / newRatio);
@@ -103,9 +108,8 @@ export default class ImageNode {
         this.canvasElement.width = this.root.offsetWidth;
         this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
       }
+      EBUS.emit("imn-resize", this);
     }
-    // this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
-    // this.imgElement!.src = "";
     if (this.imgElement.src === this.thumbnailSrc) {
       // https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image
       this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);

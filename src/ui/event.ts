@@ -41,6 +41,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   function modNumberConfigEvent(key: ConfigNumberType, data?: "add" | "minus") {
     const range = {
       colCount: [1, 12],
+      rowHeight: [50, 4096],
       threads: [1, 10],
       downloadThreads: [1, 10],
       timeout: [8, 40],
@@ -49,7 +50,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       paginationIMGCount: [1, 5],
       scrollingSpeed: [1, 100],
     };
-    const mod = key === "preventScrollPageTime" ? 10 : 1;
+    const mod = (key === "preventScrollPageTime" || key === "rowHeight") ? 10 : 1;
     if (data === "add") {
       if (conf[key] < range[key][1]) {
         conf[key] += mod;
@@ -63,9 +64,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     if (inputElement) {
       inputElement.value = conf[key].toString();
     }
-    if (key === "colCount") {
-      const rule = queryCSSRules(HTML.styleSheet, ".fvg-grid");
-      if (rule) rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
+    if (key === "colCount" || key === "rowHeight") {
+      EBUS.emit("fvg-flow-vision-resize");
     }
     if (key === "paginationIMGCount") {
       const rule = queryCSSRules(HTML.styleSheet, ".bifm-img");

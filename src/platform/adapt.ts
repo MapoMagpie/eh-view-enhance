@@ -66,6 +66,6 @@ export function adaptMatcher(url: string): [Matcher<any> | null, boolean, boolea
   return [
     matcher,
     conf.siteProfiles[matcher.name()]?.enableAutoOpen ?? true,
-    conf.siteProfiles[matcher.name()]?.enableFlowVision,
+    conf.siteProfiles[matcher.name()]?.enableFlowVision ?? true,
   ];
 }

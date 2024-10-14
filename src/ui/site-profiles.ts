@@ -45,7 +45,7 @@ export default function createSiteProfilePanel(root: HTMLElement) {
                <div>
                  <label class="ehvp-custom-panel-checkbox"><span>${i18n.enable.get()}: </span><input id="${id}-enable-checkbox" ${profile?.enable ?? true ? "checked" : ""} type="checkbox"></label>
                  <label class="ehvp-custom-panel-checkbox"><span>${i18n.enableAutoOpen.get()}: </span><input id="${id}-enable-auto-open-checkbox" ${profile?.enableAutoOpen ?? true ? "checked" : ""} type="checkbox"></label>
-                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.enableFlowVision.get()}: </span><input id="${id}-enable-flow-vision-checkbox" ${profile?.enableFlowVision ?? false ? "checked" : ""} type="checkbox"></label>
+                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.enableFlowVision.get()}: </span><input id="${id}-enable-flow-vision-checkbox" ${profile?.enableFlowVision ?? true ? "checked" : ""} type="checkbox"></label>
                  <label class="ehvp-custom-panel-checkbox"><span>${i18n.addRegexp.get()}: </span><span id="${id}-add-workurl" class="ehvp-custom-btn ehvp-custom-btn-green">&nbsp+&nbsp</span></label>
                </div>
              </div>
@@ -94,7 +94,7 @@ export default function createSiteProfilePanel(root: HTMLElement) {
     const getProfile = () => {
       let profile = siteProfiles[name];
       if (!profile) {
-        profile = { enable: true, enableAutoOpen: true, enableFlowVision: false, workURLs: [...defaultWorkURLs] };
+        profile = { enable: true, enableAutoOpen: true, enableFlowVision: true, workURLs: [...defaultWorkURLs] };
         siteProfiles[name] = profile;
       }
       return profile;

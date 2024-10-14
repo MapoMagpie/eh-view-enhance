@@ -2,6 +2,7 @@ import { conf } from "../config";
 import EBUS from "../event-bus";
 import ImageNode, { VisualNode } from "../img-node";
 import { Debouncer } from "../utils/debouncer";
+import queryCSSRules from "../utils/query-cssrules";
 import { evLog } from "../utils/ev-log";
 import { Elements } from "./html";
 import { BigImageFrameManager } from "./ultra-image-frame-manager";
@@ -34,7 +35,7 @@ export class FullViewGridManager {
     if (flowVision) {
       this.layout = new FlowVisionLayout(this.root);
     } else {
-      this.layout = new GRIDLayout(this.root);
+      this.layout = new GRIDLayout(this.root, HTML.styleSheet);
     }
     EBUS.subscribe("pf-on-appended", (_total, nodes, chapterIndex, done) => {
       if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex) return;
@@ -130,9 +131,11 @@ export class FullViewGridManager {
 
 class GRIDLayout extends Layout {
   root: HTMLElement;
-  constructor(root: HTMLElement) {
+  style: CSSStyleSheet
+  constructor(root: HTMLElement, style: CSSStyleSheet) {
     super();
     this.root = root;
+    this.style = style;
     this.root.classList.add("fvg-grid");
     this.root.classList.remove("fvg-flow");
   }
@@ -153,7 +156,10 @@ class GRIDLayout extends Layout {
   reset(): void {
     this.root.innerHTML = "";
   }
-  resize(): void { }
+  resize(): void {
+    const rule = queryCSSRules(this.style, ".fvg-grid");
+    if (rule) rule.style.gridTemplateColumns = `repeat(${conf.colCount}, 1fr)`;
+  }
   resizedNode(_node: HTMLElement, pending: HTMLElement[]): number[] {
     return pending.map((_, i) => i);
   }
@@ -198,7 +204,7 @@ class FlowVisionLayout extends Layout {
     this.root.classList.add("fvg-flow");
     this.root.classList.remove("fvg-grid");
     this.lastRootWidth = this.root.offsetWidth;
-    this.base = this.initBaseline(this.root);
+    this.base = this.initBaseline();
     this.resizeObserver = new ResizeObserver((entries) => {
       const root = entries[0];
       const width = root.contentRect.width;
@@ -209,20 +215,8 @@ class FlowVisionLayout extends Layout {
     });
     this.resizeObserver.observe(this.root);
   }
-  initBaseline(root: HTMLElement) {
-    const vh = window.screen.availHeight;
-    const vw = root.offsetWidth;
-    let columns = 3;
-    if (vw > 720) {
-      columns = 4
-    }
-    if (vw >= 1900) {
-      columns = 5
-    }
-    if (vw >= 2400) {
-      columns = 6
-    }
-    return { height: Math.floor(vh / 3), columns, gap: 8, };
+  initBaseline() {
+    return { height: conf.rowHeight, columns: conf.colCount, gap: 8, };
   }
   createRow(lastRowHeight?: number): HTMLElement {
     const container = document.createElement("div");
@@ -277,7 +271,9 @@ class FlowVisionLayout extends Layout {
     row.style.height = rowHeight + "px";
   }
   resize(allNodes: E[]) {
+    this.base = this.initBaseline();
     this.root.innerHTML = "";
+    this.lastRow = undefined;
     this.append(allNodes);
   }
   resizedNode(node: HTMLElement, pending: HTMLElement[]): number[] {

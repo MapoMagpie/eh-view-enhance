@@ -16,6 +16,8 @@ export type SiteProfile = {
 export type Config = {
   /** 每行显示的数量 */
   colCount: number,
+  /** 每行显示的数量 */
+  rowHeight: number,
   /** 滚动换页 */
   readMode: "pagination" | "continuous",
   /** 是否启用空闲加载器 */
@@ -105,11 +107,20 @@ export type Config = {
   filenameOrder: "auto" | "numbers" | "original" | "alphabetically",
 };
 
-function defaultConf(): Config {
+function defaultColumns() {
   const screenWidth = window.screen.width;
-  const colCount = screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : 5;
+  return screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : screenWidth > 700 ? 5 : 3;
+}
+
+function defaultRowHeight() {
+  const vh = window.screen.availHeight;
+  return Math.floor(vh / 3.4);
+}
+
+function defaultConf(): Config {
   return {
-    colCount: colCount,
+    colCount: defaultColumns(),
+    rowHeight: defaultRowHeight(),
     readMode: "pagination",
     autoLoad: true,
     fetchOriginal: false,
@@ -136,7 +147,7 @@ function defaultConf(): Config {
     autoCollapsePanel: true,
     minifyPageHelper: "inBigMode",
     keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
-    siteProfiles: defaultSiteProfiles(),
+    siteProfiles: {},
     muted: false,
     volume: 50,
     mcInSites: ["18comic"],
@@ -155,34 +166,6 @@ function defaultConf(): Config {
     autoEnterBig: false,
     pixivJustCurrPage: false,
     filenameOrder: "auto",
-  };
-}
-
-function defaultSiteProfiles(): Record<string, SiteProfile> {
-  return {
-    "e-hentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-    "nhentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-    "nhentai.xxx": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-    "hitomi": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-    "Pixiv": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
-    "yande.re": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
-    "Twitter | X": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
-    "Koharu": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-    "Art Station": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
-    "Steam Screenshots": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-    "danbooru": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-    "rule34": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-    "gelbooru": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-    "漫画柜": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-    "拷贝漫画": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-    "e621": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-    "Arcalive": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-    "rokuhentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
-    "禁漫": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-    "konachan": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
-    "im-hentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-    "绅士漫画": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
-    "hentainexus": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] }
   };
 }
 
@@ -259,7 +242,7 @@ function confHealthCheck(cf: Config): Config {
     cf.readMode = "pagination";
     changed = true;
   }
-  const newCf = patchConfig(cf, PATCH_CONFIG);
+  const newCf = patchConfig(cf);
   if (newCf) {
     cf = newCf;
     changed = true;
@@ -270,23 +253,22 @@ function confHealthCheck(cf: Config): Config {
   return cf;
 }
 
-const PATCH_CONFIG: Partial<Config> = {
-  siteProfiles: defaultSiteProfiles(),
-}
-const CONFIG_PATCH_VERSION = 7;
-function patchConfig(cf: Config, patch: Partial<Config>): Config | null {
-  if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
-    return null;
+function patchConfig(cf: Config): Config | null {
+  let changed = false;
+  if (cf.configPatchVersion < 8) {
+    cf.siteProfiles = {};
+    cf.configPatchVersion = 8;
+    cf.colCount = defaultColumns();
+    changed = true;
   }
-  cf.configPatchVersion = CONFIG_PATCH_VERSION;
-  return { ...cf, ...patch };
+  return changed ? cf : null;
 }
 
 export function saveConf(c: Config) {
   storage.setItem(CONFIG_KEY, JSON.stringify(c));
 }
 
-export type ConfigNumberType = "colCount" | "threads" | "downloadThreads" | "timeout" | "autoPageSpeed" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
+export type ConfigNumberType = "colCount" | "rowHeight" | "threads" | "downloadThreads" | "timeout" | "autoPageSpeed" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
 export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost" | "magnifier" | "autoEnterBig" | "pixivJustCurrPage";
 export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer" | "filenameOrder";
 export const conf = getConf();
@@ -308,6 +290,7 @@ export type ConfigItem = {
 
 export const ConfigItems: ConfigItem[] = [
   { key: "colCount", typ: "number" },
+  { key: "rowHeight", typ: "number" },
   { key: "threads", typ: "number" },
   { key: "downloadThreads", typ: "number" },
   { key: "paginationIMGCount", typ: "number" },

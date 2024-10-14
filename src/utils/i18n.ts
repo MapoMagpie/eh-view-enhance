@@ -186,6 +186,24 @@ export const i18n = {
     '열 수',
     'Columnas'
   ),
+  colCountTooltip: new I18nValue(
+    'The number of images per row in the thumbnail list. If the layout is Flow Vision, the final number of images per row will be influenced by the specific aspect ratio of the images.',
+    '缩略图列表的每行图片数量。如果布局为自适应视图，最终每行图片数量受图片的具体宽高比影响。',
+    '썸네일 목록에서 한 줄에 표시되는 이미지의 개수입니다. 레이아웃이 반응형인 경우, 최종 한 줄에 표시되는 이미지의 개수는 이미지의 구체적인 가로세로 비율에 영향을 받습니다.',
+    'El número de imágenes por fila en la lista de miniaturas. Si el diseño es adaptable, el número final de imágenes por fila estará influenciado por la proporción de aspecto específica de las imágenes.'
+  ),
+  rowHeight: new I18nValue(
+    'Row Height',
+    '每行高度',
+    '행 높이',
+    'Altura de fila'
+  ),
+  rowHeightTooltip: new I18nValue(
+    'This option is only effective when the layout of the thumbnail list is Flow Vision. The reference height per row, along with the number of images per row, jointly influences the final display effect.',
+    '此项仅在缩略图列表的布局为自适应视图时有效。每行的参考高度，和每行数量共同影响最终的展示效果。',
+    '이 옵션은 썸네일 목록의 레이아웃이 반응형일 때만 유효합니다. 각 행의 기준 높이는 행당 이미지 개수와 함께 최종 표시 결과에 영향을 미칩니다.',
+    'Esta opción solo es efectiva cuando el diseño de la lista de miniaturas es adaptable. La altura de referencia por fila, junto con el número de imágenes por fila, influye en el efecto final de la visualización.'
+  ),
   threads: new I18nValue(
     'Preload Threads',
     '最大同时加载',

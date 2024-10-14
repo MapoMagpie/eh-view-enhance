@@ -238,6 +238,24 @@
       "열 수",
       "Columnas"
     ),
+    colCountTooltip: new I18nValue(
+      "The number of images per row in the thumbnail list. If the layout is Flow Vision, the final number of images per row will be influenced by the specific aspect ratio of the images.",
+      "缩略图列表的每行图片数量。如果布局为自适应视图，最终每行图片数量受图片的具体宽高比影响。",
+      "썸네일 목록에서 한 줄에 표시되는 이미지의 개수입니다. 레이아웃이 반응형인 경우, 최종 한 줄에 표시되는 이미지의 개수는 이미지의 구체적인 가로세로 비율에 영향을 받습니다.",
+      "El número de imágenes por fila en la lista de miniaturas. Si el diseño es adaptable, el número final de imágenes por fila estará influenciado por la proporción de aspecto específica de las imágenes."
+    ),
+    rowHeight: new I18nValue(
+      "Row Height",
+      "每行高度",
+      "행 높이",
+      "Altura de fila"
+    ),
+    rowHeightTooltip: new I18nValue(
+      "This option is only effective when the layout of the thumbnail list is Flow Vision. The reference height per row, along with the number of images per row, jointly influences the final display effect.",
+      "此项仅在缩略图列表的布局为自适应视图时有效。每行的参考高度，和每行数量共同影响最终的展示效果。",
+      "이 옵션은 썸네일 목록의 레이아웃이 반응형일 때만 유효합니다. 각 행의 기준 높이는 행당 이미지 개수와 함께 최종 표시 결과에 영향을 미칩니다.",
+      "Esta opción solo es efectiva cuando el diseño de la lista de miniaturas es adaptable. La altura de referencia por fila, junto con el número de imágenes por fila, influye en el efecto final de la visualización."
+    ),
     threads: new I18nValue(
       "Preload Threads",
       "最大同时加载",
@@ -1041,11 +1059,18 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }));
   }
 
-  function defaultConf() {
+  function defaultColumns() {
     const screenWidth = window.screen.width;
-    const colCount = screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : 5;
+    return screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : screenWidth > 700 ? 5 : 3;
+  }
+  function defaultRowHeight() {
+    const vh = window.screen.availHeight;
+    return Math.floor(vh / 3.4);
+  }
+  function defaultConf() {
     return {
-      colCount,
+      colCount: defaultColumns(),
+      rowHeight: defaultRowHeight(),
       readMode: "pagination",
       autoLoad: true,
       fetchOriginal: false,
@@ -1073,7 +1098,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       autoCollapsePanel: true,
       minifyPageHelper: "inBigMode",
       keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
-      siteProfiles: defaultSiteProfiles(),
+      siteProfiles: {},
       muted: false,
       volume: 50,
       mcInSites: ["18comic"],
@@ -1092,33 +1117,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       autoEnterBig: false,
       pixivJustCurrPage: false,
       filenameOrder: "auto"
-    };
-  }
-  function defaultSiteProfiles() {
-    return {
-      "e-hentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-      "nhentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-      "nhentai.xxx": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-      "hitomi": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-      "Pixiv": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
-      "yande.re": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
-      "Twitter | X": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
-      "Koharu": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-      "Art Station": { "enable": true, "enableAutoOpen": false, "enableFlowVision": true, workURLs: [] },
-      "Steam Screenshots": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-      "danbooru": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-      "rule34": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-      "gelbooru": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-      "漫画柜": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-      "拷贝漫画": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-      "e621": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-      "Arcalive": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-      "rokuhentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
-      "禁漫": { "enable": true, "enableAutoOpen": false, "enableFlowVision": false, workURLs: [] },
-      "konachan": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
-      "im-hentai": { "enable": true, "enableAutoOpen": true, "enableFlowVision": true, workURLs: [] },
-      "绅士漫画": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] },
-      "hentainexus": { "enable": true, "enableAutoOpen": true, "enableFlowVision": false, workURLs: [] }
     };
   }
   const CONF_VERSION = "4.4.0";
@@ -1182,7 +1180,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       cf.readMode = "pagination";
       changed = true;
     }
-    const newCf = patchConfig(cf, PATCH_CONFIG);
+    const newCf = patchConfig(cf);
     if (newCf) {
       cf = newCf;
       changed = true;
@@ -1192,16 +1190,15 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     return cf;
   }
-  const PATCH_CONFIG = {
-    siteProfiles: defaultSiteProfiles()
-  };
-  const CONFIG_PATCH_VERSION = 7;
-  function patchConfig(cf, patch) {
-    if (cf.configPatchVersion === CONFIG_PATCH_VERSION) {
-      return null;
+  function patchConfig(cf) {
+    let changed = false;
+    if (cf.configPatchVersion < 8) {
+      cf.siteProfiles = {};
+      cf.configPatchVersion = 8;
+      cf.colCount = defaultColumns();
+      changed = true;
     }
-    cf.configPatchVersion = CONFIG_PATCH_VERSION;
-    return { ...cf, ...patch };
+    return changed ? cf : null;
   }
   function saveConf(c) {
     storage.setItem(CONFIG_KEY, JSON.stringify(c));
@@ -1210,6 +1207,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   const transient = { imgSrcCSP: false, originalPolicy: "" };
   const ConfigItems = [
     { key: "colCount", typ: "number" },
+    { key: "rowHeight", typ: "number" },
     { key: "threads", typ: "number" },
     { key: "downloadThreads", typ: "number" },
     { key: "paginationIMGCount", typ: "number" },
@@ -6272,7 +6270,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return [
       matcher,
       conf.siteProfiles[matcher.name()]?.enableAutoOpen ?? true,
-      conf.siteProfiles[matcher.name()]?.enableFlowVision
+      conf.siteProfiles[matcher.name()]?.enableFlowVision ?? true
     ];
   }
 
@@ -6350,7 +6348,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
                <div>
                  <label class="ehvp-custom-panel-checkbox"><span>${i18n.enable.get()}: </span><input id="${id}-enable-checkbox" ${profile?.enable ?? true ? "checked" : ""} type="checkbox"></label>
                  <label class="ehvp-custom-panel-checkbox"><span>${i18n.enableAutoOpen.get()}: </span><input id="${id}-enable-auto-open-checkbox" ${profile?.enableAutoOpen ?? true ? "checked" : ""} type="checkbox"></label>
-                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.enableFlowVision.get()}: </span><input id="${id}-enable-flow-vision-checkbox" ${profile?.enableFlowVision ?? false ? "checked" : ""} type="checkbox"></label>
+                 <label class="ehvp-custom-panel-checkbox"><span>${i18n.enableFlowVision.get()}: </span><input id="${id}-enable-flow-vision-checkbox" ${profile?.enableFlowVision ?? true ? "checked" : ""} type="checkbox"></label>
                  <label class="ehvp-custom-panel-checkbox"><span>${i18n.addRegexp.get()}: </span><span id="${id}-add-workurl" class="ehvp-custom-btn ehvp-custom-btn-green">&nbsp+&nbsp</span></label>
                </div>
              </div>
@@ -6397,7 +6395,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const getProfile = () => {
         let profile = siteProfiles[name];
         if (!profile) {
-          profile = { enable: true, enableAutoOpen: true, enableFlowVision: false, workURLs: [...defaultWorkURLs] };
+          profile = { enable: true, enableAutoOpen: true, enableFlowVision: true, workURLs: [...defaultWorkURLs] };
           siteProfiles[name] = profile;
         }
         return profile;
@@ -6871,6 +6869,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     function modNumberConfigEvent(key, data) {
       const range = {
         colCount: [1, 12],
+        rowHeight: [50, 4096],
         threads: [1, 10],
         downloadThreads: [1, 10],
         timeout: [8, 40],
@@ -6879,7 +6878,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         paginationIMGCount: [1, 5],
         scrollingSpeed: [1, 100]
       };
-      const mod = key === "preventScrollPageTime" ? 10 : 1;
+      const mod = key === "preventScrollPageTime" || key === "rowHeight" ? 10 : 1;
       if (data === "add") {
         if (conf[key] < range[key][1]) {
           conf[key] += mod;
@@ -6893,9 +6892,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       if (inputElement) {
         inputElement.value = conf[key].toString();
       }
-      if (key === "colCount") {
-        const rule = queryRule(HTML.styleSheet, ".fvg-grid");
-        if (rule) rule.style.gridTemplateColumns = `repeat(${conf[key]}, 1fr)`;
+      if (key === "colCount" || key === "rowHeight") {
+        EBUS.emit("fvg-flow-vision-resize");
       }
       if (key === "paginationIMGCount") {
         const rule = queryRule(HTML.styleSheet, ".bifm-img");
@@ -7284,7 +7282,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       if (flowVision) {
         this.layout = new FlowVisionLayout(this.root);
       } else {
-        this.layout = new GRIDLayout(this.root);
+        this.layout = new GRIDLayout(this.root, HTML.styleSheet);
       }
       EBUS.subscribe("pf-on-appended", (_total, nodes, chapterIndex, done) => {
         if (this.chapterIndex > -1 && chapterIndex !== this.chapterIndex) return;
@@ -7375,9 +7373,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
   class GRIDLayout extends Layout {
     root;
-    constructor(root) {
+    style;
+    constructor(root, style) {
       super();
       this.root = root;
+      this.style = style;
       this.root.classList.add("fvg-grid");
       this.root.classList.remove("fvg-flow");
     }
@@ -7398,6 +7398,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.root.innerHTML = "";
     }
     resize() {
+      const rule = queryRule(this.style, ".fvg-grid");
+      if (rule) rule.style.gridTemplateColumns = `repeat(${conf.colCount}, 1fr)`;
     }
     resizedNode(_node, pending) {
       return pending.map((_, i) => i);
@@ -7442,7 +7444,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.root.classList.add("fvg-flow");
       this.root.classList.remove("fvg-grid");
       this.lastRootWidth = this.root.offsetWidth;
-      this.base = this.initBaseline(this.root);
+      this.base = this.initBaseline();
       this.resizeObserver = new ResizeObserver((entries) => {
         const root2 = entries[0];
         const width = root2.contentRect.width;
@@ -7453,20 +7455,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       });
       this.resizeObserver.observe(this.root);
     }
-    initBaseline(root) {
-      const vh = window.screen.availHeight;
-      const vw = root.offsetWidth;
-      let columns = 3;
-      if (vw > 720) {
-        columns = 4;
-      }
-      if (vw >= 1900) {
-        columns = 5;
-      }
-      if (vw >= 2400) {
-        columns = 6;
-      }
-      return { height: Math.floor(vh / 3), columns, gap: 8 };
+    initBaseline() {
+      return { height: conf.rowHeight, columns: conf.colCount, gap: 8 };
     }
     createRow(lastRowHeight) {
       const container = document.createElement("div");
@@ -7519,7 +7509,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       row.style.height = rowHeight + "px";
     }
     resize(allNodes) {
+      this.base = this.initBaseline();
       this.root.innerHTML = "";
+      this.lastRow = void 0;
       this.append(allNodes);
     }
     resizedNode(node, pending) {

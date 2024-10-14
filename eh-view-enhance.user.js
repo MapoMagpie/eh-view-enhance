@@ -1196,6 +1196,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       cf.siteProfiles = {};
       cf.configPatchVersion = 8;
       cf.colCount = defaultColumns();
+      cf.keyboards = { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} };
       changed = true;
     }
     return changed ? cf : null;

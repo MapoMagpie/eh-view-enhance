@@ -259,6 +259,7 @@ function patchConfig(cf: Config): Config | null {
     cf.siteProfiles = {};
     cf.configPatchVersion = 8;
     cf.colCount = defaultColumns();
+    cf.keyboards = { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} };
     changed = true;
   }
   return changed ? cf : null;

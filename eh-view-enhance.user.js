@@ -530,6 +530,7 @@
     filenameOrder: new I18nValue(
       "Filename Order",
       "文件名排序",
+      "파일명 순서",
       "Orden de nombres de archivo"
     ),
     filenameOrderTooltip: new I18nValue(
@@ -544,7 +545,7 @@
 <br>  Original: 只保留原文件名，不能保证阅读顺序以及同名文件覆盖。
 <br>  Alphabetically: 检测原文件名在字母排序下(Linux)是否与阅读顺序一致，如果一致保留原文件名，否则将在原文件名前添加序号以保证顺序。`,
       `다운로드 파일의 파일명 정렬 규칙:
-<br>  Auto: 원본 파일명이 자연 정렬(Windows)에서 읽기 순서와 일치하는지 감지합니다. 일치하는 경우 원본 파일명을 유지하고, 그렇지 않으면 순서를 보장하기 위해 파일명 앞에 번호를 추가합니다.
+<br>  Auto: 원본 파일명이 기본 정렬(Windows)에서 읽기 순서와 일치하는지 감지합니다. 일치하는 경우 원본 파일명을 유지하고, 그렇지 않으면 순서를 보장하기 위해 파일명 앞에 번호를 추가합니다.
 <br>  Numbers: 원본 파일명을 무시하고 읽기 순서에 따라 파일명을 직접 지정합니다.
 <br>  Original: 원본 파일명만 유지하며, 읽기 순서가 보장되지 않으며 동일한 이름의 파일이 덮어쓰일 수 있습니다.
 <br>  Alphabetically: 원본 파일명이 알파벳 정렬(Linux)에서 읽기 순서와 일치하는지 감지합니다. 일치하는 경우 원본 파일명을 유지하고, 그렇지 않으면 순서를 보장하기 위해 파일명 앞에 번호를 추가합니다. `,
@@ -711,9 +712,9 @@
       `启用一种新的缩略图列表布局，使每行的图片高度一致，但自动分配每行的图片数量。
     <br>整体看起来更紧凑舒适，适合图片宽高比不规则的插画类站点。
     <br>注意：由于一些站点无法提取得知图片的宽高比，因此效果可能会受到影响。`,
-      `Enable a new thumbnail list layout where the images in each row have uniform height, but the number of images per row is automatically adjusted. 
-    <br>The overall appearance is more compact and comfortable, suitable for illustration-based websites with irregular image aspect ratios.
-    <br>Note: Since some websites cannot retrieve image aspect ratio information, the effect may be impacted.`,
+      `새로운 썸네일 리스트 레이아웃을 활성화하여 각각의 행에 있는 이미지들이 동일한 높이를 가지도록 합니다. 대신 행당 이미지의 수는 자동으로 조정됩니다. 
+    <br>전체적인 외관은 더 간결하고 편안하며, 불규칙한 이미지 비율을 가진 일러스트 기반 웹사이트에 적합합니다. 
+    <br>참고: 일부 웹사이트는 이미지 비율 정보를 가져올 수 없으므로, 이로 인해 효과에 영향을 받을 수 있습니다.`,
       `Activar un nuevo diseño de lista de miniaturas donde las imágenes en cada fila tienen altura uniforme, pero el número de imágenes por fila se ajusta automáticamente. 
     <br>La apariencia general es más compacta y cómoda, adecuada para sitios web basados en ilustraciones con relaciones de aspecto de imagen irregulares.
     <br>Nota: Dado que algunos sitios web no pueden recuperar la información de la relación de aspecto de las imágenes, el efecto puede verse afectado.`
@@ -6597,7 +6598,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       keys.forEach((key) => addKeyboardDescElement(button, category, id, key));
       const addKeyBoardDesc = (event) => {
         event.preventDefault();
-        event.stopPropagation();
         if (event instanceof KeyboardEvent) {
           if (event.key === "alt" || event.key === "shift" || event.key === "control") return;
         }

@@ -109,7 +109,7 @@ export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents
     const addKeyBoardDesc = (event: KeyboardEvent | MouseEvent) => {
       event.preventDefault();
       if (event instanceof KeyboardEvent) {
-        if (event.key === "Alt" || event.key === "Shift" || event.key === "Control") return;
+        if (event.key === "alt" || event.key === "shift" || event.key === "control") return;
       }
       const key = parseKey(event);
       if ((conf.keyboards[category] as IDKeys)[id] !== undefined) {
@@ -121,14 +121,16 @@ export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents
       addKeyboardDescElement(button, category, id, key);
       button.textContent = "+";
     };
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
       button.textContent = "Press Key";
-      button.addEventListener("keydown", addKeyBoardDesc);
-      button.addEventListener("mousedown", addKeyBoardDesc);
+      button.addEventListener("keydown", addKeyBoardDesc, { once: true });
+      button.addEventListener("mousedown", addKeyBoardDesc, { once: true });
     });
     button.addEventListener("mouseleave", () => {
       button.textContent = "+";
       button.removeEventListener("keydown", addKeyBoardDesc)
+      button.removeEventListener("mousedown", addKeyBoardDesc);
     });
   });
 }

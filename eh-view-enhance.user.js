@@ -6597,8 +6597,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       keys.forEach((key) => addKeyboardDescElement(button, category, id, key));
       const addKeyBoardDesc = (event) => {
         event.preventDefault();
+        event.stopPropagation();
         if (event instanceof KeyboardEvent) {
-          if (event.key === "Alt" || event.key === "Shift" || event.key === "Control") return;
+          if (event.key === "alt" || event.key === "shift" || event.key === "control") return;
         }
         const key = parseKey(event);
         if (conf.keyboards[category][id] !== void 0) {
@@ -6610,14 +6611,16 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         addKeyboardDescElement(button, category, id, key);
         button.textContent = "+";
       };
-      button.addEventListener("click", () => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
         button.textContent = "Press Key";
-        button.addEventListener("keydown", addKeyBoardDesc);
-        button.addEventListener("mousedown", addKeyBoardDesc);
+        button.addEventListener("keydown", addKeyBoardDesc, { once: true });
+        button.addEventListener("mousedown", addKeyBoardDesc, { once: true });
       });
       button.addEventListener("mouseleave", () => {
         button.textContent = "+";
         button.removeEventListener("keydown", addKeyBoardDesc);
+        button.removeEventListener("mousedown", addKeyBoardDesc);
       });
     });
   }

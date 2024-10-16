@@ -105,7 +105,7 @@ export class HentaiNexusMatcher extends BaseMatcher<Document> {
       if (!poses[step]) {
         list.push(step);
         for (let j = step << 1; j <= 256; j += step) {
-          poses[j] = !![];
+          poses[j] = true;
         }
       }
     }

@@ -1,5 +1,3 @@
-import class_worker_raw from "../utils/ffmpeg-worker/worker.js?raw"
-import core_raw from "../utils/ffmpeg-worker/ffmpeg-core.js?raw"
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { toBlobURL } from "@ffmpeg/util";
 import { evLog } from "./ev-log";
@@ -11,10 +9,8 @@ export type FileData = {
 export type FrameMeta = { file: string, delay: number }[];
 
 export class FFmpegConvertor {
-
   coreURL?: string;
   wasmURL?: string;
-  classWorkerURL?: string;
   ffmpeg?: FFmpeg;
   size: number = 0;
   /// 140MB, don't know why, but it's the limit, if execced, ffmpeg throw index out of bounds error
@@ -23,10 +19,9 @@ export class FFmpegConvertor {
   reloadLock: boolean = false;
 
   async init(): Promise<FFmpegConvertor> {
-    const en = new TextEncoder();
-    this.coreURL = URL.createObjectURL(new Blob([en.encode(core_raw)], { type: 'text/javascript' }));
-    this.classWorkerURL = URL.createObjectURL(new Blob([en.encode(class_worker_raw)], { type: 'text/javascript' }));
-    this.wasmURL = await toBlobURL("https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm", "application/wasm");
+    const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+    this.coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript");
+    this.wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm");
     this.ffmpeg = new FFmpeg();
     await this.load();
     return this;
@@ -37,13 +32,13 @@ export class FFmpegConvertor {
       {
         coreURL: this.coreURL,
         wasmURL: this.wasmURL,
-        classWorkerURL: this.classWorkerURL,
+        // classWorkerURL: this.classWorkerURL,
       }
     );
   }
 
   async check() {
-    if (!this.coreURL || !this.wasmURL || !this.classWorkerURL || !this.ffmpeg) {
+    if (!this.coreURL || !this.wasmURL || !this.ffmpeg) {
       throw new Error("FFmpegConvertor not init");
     }
     if (this.size > this.maxSize) {

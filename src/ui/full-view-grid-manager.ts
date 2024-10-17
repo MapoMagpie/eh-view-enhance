@@ -301,6 +301,7 @@ class FlowVisionLayout extends Layout {
       }
     }
     let remove = [];
+    let movedImgNode = 0, changedRows = 1;
     while (true) {
       for (const child of next()) {
         const ratio = parseFloat(child.getAttribute("data-ratio") ?? "1");
@@ -311,17 +312,23 @@ class FlowVisionLayout extends Layout {
         }
         const index = pending.indexOf(child);
         if (index >= 0) remove.push(index);
+        movedImgNode++;
         row.appendChild(child);
       }
       row = row?.nextElementSibling as HTMLElement | null; // next row
       if (row === null) {
         row = this.createRow();
       }
-      if (children.length === 0) {
+      if (children.length === 0) { // TODO
         if (row.childElementCount === 0) row.remove();
         break;
       }
+      if (children.length === row.childElementCount && children[0] === row.firstElementChild) {
+        break;
+      }
+      changedRows++;
     }
+    // evLog("info", `resizedNode moved img-nodes [${movedImgNode}], changed rows [${changedRows}], resized [${remove.length}]`);
     return remove;
   }
   nearBottom(): boolean {

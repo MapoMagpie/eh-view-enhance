@@ -7559,6 +7559,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           if (row.childElementCount === 0) row.remove();
           break;
         }
+        if (children.length === row.childElementCount && children[0] === row.firstElementChild) {
+          break;
+        }
       }
       return remove;
     }

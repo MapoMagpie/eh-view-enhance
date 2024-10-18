@@ -7539,6 +7539,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         }
       }
       let remove = [];
+      let movedImgNode = 0, changedRows = 1;
       while (true) {
         for (const child of next()) {
           const ratio = parseFloat(child.getAttribute("data-ratio") ?? "1");
@@ -7549,6 +7550,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           }
           const index = pending.indexOf(child);
           if (index >= 0) remove.push(index);
+          movedImgNode++;
           row.appendChild(child);
         }
         row = row?.nextElementSibling;
@@ -7562,7 +7564,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         if (children.length === row.childElementCount && children[0] === row.firstElementChild) {
           break;
         }
+        changedRows++;
       }
+      evLog("info", `resizedNode moved img-nodes [${movedImgNode}], changed rows [${changedRows}], resized [${remove.length}]`);
       return remove;
     }
     nearBottom() {
@@ -8131,7 +8135,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   border: 1px solid #000000;
   border-radius: 4px;
 }
-/**
 @keyframes main-progress {
   from {
     width: 0%;
@@ -8140,7 +8143,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     width: 100%;
   }
 }
-*/
 .big-img-frame-collapse {
   width: 0px !important;
 }

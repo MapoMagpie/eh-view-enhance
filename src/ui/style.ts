@@ -448,7 +448,6 @@ export function styleCSS() {
   border: 1px solid #000000;
   border-radius: 4px;
 }
-/**
 @keyframes main-progress {
   from {
     width: 0%;
@@ -457,7 +456,6 @@ export function styleCSS() {
     width: 100%;
   }
 }
-*/
 .big-img-frame-collapse {
   width: 0px !important;
 }

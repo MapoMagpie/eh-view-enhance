@@ -285,7 +285,7 @@ class FlowVisionLayout extends Layout {
       fragment.append(...children); // if chindren remain elements, move to fragment first, then check row children
       if (row!.childElementCount > 0) {
         const newChildren = Array.from(row!.childNodes).map(child => child as HTMLElement);
-        fragment.append(...newChildren); // if chindren remain elements, move to fragment first, then check row children
+        fragment.append(...newChildren);
         children.push(...newChildren);
       }
       let child = null;
@@ -319,7 +319,7 @@ class FlowVisionLayout extends Layout {
       if (row === null) {
         row = this.createRow();
       }
-      if (children.length === 0) { // TODO
+      if (children.length === 0) {
         if (row.childElementCount === 0) row.remove();
         break;
       }
@@ -328,7 +328,7 @@ class FlowVisionLayout extends Layout {
       }
       changedRows++;
     }
-    // evLog("info", `resizedNode moved img-nodes [${movedImgNode}], changed rows [${changedRows}], resized [${remove.length}]`);
+    evLog("info", `resizedNode moved img-nodes [${movedImgNode}], changed rows [${changedRows}], resized [${remove.length}]`);
     return remove;
   }
   nearBottom(): boolean {

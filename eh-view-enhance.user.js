@@ -4078,15 +4078,18 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         isSprite = query?.length > 0;
         getNodeInfo = (node) => {
           const anchor = node;
-          const image = anchor.firstElementChild;
-          const title = image.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg";
-          const backgroundImage = image.style.background.match(regulars.sprite)?.[1]?.replaceAll('"', "") || null;
+          let div = anchor.firstElementChild;
+          if (!div.style.background || div.childElementCount > 0) {
+            div = div.firstElementChild;
+          }
+          const title = div.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg";
+          const backgroundImage = div.style.background.match(regulars.sprite)?.[1]?.replaceAll('"', "") || null;
           const ret = {
             backgroundImage,
             title,
             href: anchor.getAttribute("href"),
-            wh: extractRectFromStyle(image.style) ?? { w: 100, h: 100 },
-            style: image.style,
+            wh: extractRectFromStyle(div.style) ?? { w: 100, h: 100 },
+            style: div.style,
             thumbnailImage: "",
             delaySrc: void 0
           };
@@ -4121,20 +4124,21 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const nodeInfos = [];
       if (isSprite) {
         const spriteURLs = [];
-        for (let i = 0; i < nodes.length; i++) {
-          const info = getNodeInfo(nodes[i]);
+        for (const node of nodes) {
+          const info = getNodeInfo(node);
+          if (!info.backgroundImage) {
+            evLog("error", "e-hentai miss node, ", info);
+            continue;
+          }
           nodeInfos.push(info);
-          if (!info.backgroundImage) break;
           if (spriteURLs.length === 0 || spriteURLs[spriteURLs.length - 1].url !== info.backgroundImage) {
-            spriteURLs.push({ url: info.backgroundImage, range: [{ index: i, style: info.style }] });
+            spriteURLs.push({ url: info.backgroundImage, range: [{ index: nodeInfos.length - 1, style: info.style }] });
           } else {
-            spriteURLs[spriteURLs.length - 1].range.push({ index: i, style: info.style });
+            spriteURLs[spriteURLs.length - 1].range.push({ index: nodeInfos.length - 1, style: info.style });
           }
         }
         spriteURLs.forEach(({ url, range }) => {
-          if (!url.startsWith("http")) {
-            url = window.location.origin + url;
-          }
+          url = url.startsWith("http") ? url : window.location.origin + url;
           if (range.length === 1) {
             nodeInfos[range[0].index].thumbnailImage = url;
           } else {

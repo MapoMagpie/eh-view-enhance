@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import monkey, { cdn } from 'vite-plugin-monkey';
 
-const VERSION = '4.9.2';
+const VERSION = '4.9.3';
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   let downloadURL: string | undefined;
@@ -104,7 +104,43 @@ const _classWorkerURL = URL.createObjectURL(new Blob([decodeBase64(encodedJs)], 
               "arca.live",].join(" | ")}
  `,
           },
-          connect: ['*'],
+          connect: [
+            'exhentai.org',
+            'e-hentai.org',
+            'hath.network',
+            "exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion",
+            'nhentai.net',
+            'nhentaimg.com',
+            'hitomi.la',
+            'akamaihd.net',
+            'i.pximg.net',
+            'ehgt.org',
+            'yande.re',
+            'konachan.com',
+            '18comic.org',
+            '18comic.vip',
+            '18comic-gura.me',
+            'rule34.xxx',
+            'imhentai.xxx',
+            'donmai.us',
+            'gelbooru.com',
+            'twimg.com',
+            'qy0.ru',
+            'wnimg.ru',
+            'hentainexus.com',
+            'koharu.to',
+            'kisakisexo.xyz',
+            'koharusexo.xyz',
+            'aronasexo.xyz',
+            'hamreus.com',
+            'mangafuna.xyz',
+            'e621.net',
+            'namu.la',
+            'artstation.com',
+            'akuma.moe',
+            'cdninstagram.com',
+            '*',
+          ],
           grant: [
             'GM_xmlhttpRequest',
             'GM_setValue',

@@ -7,7 +7,7 @@
 // @name:eo            Comic Looms
 // @name:ka            Comic Looms
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.9.2
+// @version            4.9.3
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support you in finding the site you are searching for.
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持你正在搜索的站点。
@@ -25,6 +25,40 @@
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.52/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
+// @connect            exhentai.org
+// @connect            e-hentai.org
+// @connect            hath.network
+// @connect            exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion
+// @connect            nhentai.net
+// @connect            nhentaimg.com
+// @connect            hitomi.la
+// @connect            akamaihd.net
+// @connect            i.pximg.net
+// @connect            ehgt.org
+// @connect            yande.re
+// @connect            konachan.com
+// @connect            18comic.org
+// @connect            18comic.vip
+// @connect            18comic-gura.me
+// @connect            rule34.xxx
+// @connect            imhentai.xxx
+// @connect            donmai.us
+// @connect            gelbooru.com
+// @connect            twimg.com
+// @connect            qy0.ru
+// @connect            wnimg.ru
+// @connect            hentainexus.com
+// @connect            koharu.to
+// @connect            kisakisexo.xyz
+// @connect            koharusexo.xyz
+// @connect            aronasexo.xyz
+// @connect            hamreus.com
+// @connect            mangafuna.xyz
+// @connect            e621.net
+// @connect            namu.la
+// @connect            artstation.com
+// @connect            akuma.moe
+// @connect            cdninstagram.com
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue

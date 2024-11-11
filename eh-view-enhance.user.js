@@ -3174,9 +3174,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     gid = window.atob(gid);
     page = window.atob(page);
     let n = toMD5(gid + page).slice(-1).charCodeAt(0);
-    if (gid >= window.atob("MjY4ODUw") && gid <= window.atob("NDIxOTI1")) {
+    if (parseInt(gid) >= 268850 && parseInt(gid) <= 421925) {
       n %= 10;
-    } else if (gid >= window.atob("NDIxOTI2")) {
+    } else if (parseInt(gid) >= 421926) {
       n %= 8;
     }
     if (n < 10) {
@@ -3195,7 +3195,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       let c = Math.floor(height / s);
       let g = c * m;
       const w = height - c * (m + 1) - l;
-      0 == m ? c += l : g += l, ctx.drawImage(e, 0, w, r, c, 0, g, r, c);
+      0 == m ? c += l : g += l;
+      ctx.drawImage(e, 0, w, r, c, 0, g, r, c);
     }
   }
   class Comic18Matcher extends BaseMatcher {

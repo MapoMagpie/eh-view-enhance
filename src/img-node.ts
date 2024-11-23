@@ -110,11 +110,12 @@ export default class ImageNode {
       }
       EBUS.emit("imn-resize", this);
     }
-    if (this.imgElement.src === this.thumbnailSrc) {
+    if (this.imgElement.src === this.thumbnailSrc || newRatio < 0.1) {
       // https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image
       this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
       this.imgElement!.src = "";
     } else {
+      // FIXME: pica wasm resizing image lagging if images ratio very low, so if newRatio < 0.1(1/10) use navite
       resizing(this.imgElement, this.canvasElement)
         .then(() => window.setTimeout(() => this.imgElement!.src = "", 100))
         .catch(() => this.imgElement!.src = this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height) || "");

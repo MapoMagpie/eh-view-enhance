@@ -3032,7 +3032,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         }
         EBUS.emit("imn-resize", this);
       }
-      if (this.imgElement.src === this.thumbnailSrc) {
+      if (this.imgElement.src === this.thumbnailSrc || newRatio < 0.1) {
         this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
         this.imgElement.src = "";
       } else {

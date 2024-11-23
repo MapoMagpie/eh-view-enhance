@@ -150,13 +150,22 @@ export class Rule34Matcher extends DanbooruMatcher {
     return "rule34";
   }
   workURL(): RegExp {
-    return /rule34.xxx\/index.php\?page=post&s=list/;
+    return /rule34.xxx\/index.php\?page=(post&s=list|favorites&s=view)/;
   }
   nextPage(doc: Document): string | null {
-    return doc.querySelector<HTMLAnchorElement>(".pagination a[alt=next]")?.href || null;
+    if (window.location.search.includes("page=favorites")) {
+      const u = doc.querySelector<HTMLAnchorElement>("#paginator a[name=next]")?.getAttribute("onclick")?.match(/location='(.*)?'/)?.[1] || null;
+      return u ? window.location.origin + "/" + u : u;
+    } else {
+      return doc.querySelector<HTMLAnchorElement>(".pagination a[alt=next]")?.href || null;
+    }
   }
   queryList(doc: Document): HTMLElement[] {
-    return Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
+    if (window.location.search.includes("page=favorites")) {
+      return Array.from(doc.querySelectorAll("#content > .thumb > a"));
+    } else {
+      return Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
+    }
   }
   getBlacklist(doc: Document): string[] {
     return doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content")?.split(",") || [];

@@ -3934,6 +3934,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   function parseImagePositions(styles) {
     return styles.map((st) => {
       const [x, y] = st.backgroundPosition.split(" ").map((v) => Math.abs(parseInt(v)));
+      if (isNaN(x)) throw new Error("invalid background position");
       return { x, y, width: parseInt(st.width), height: parseInt(st.height) };
     });
   }
@@ -3981,7 +3982,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     /** 是否开启自动多页查看器 */
     isMPV: /https?:\/\/e[-x]hentai(55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad)?\.(org|onion)\/mpv\/\w+\/\w+\/#page\w/,
     /** 多页查看器图片列表提取 */
-    mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g,
+    mpvImageList: /imagelist\s=\s(\[.*?\])/,
     /** 精灵图地址提取 */
     sprite: /url\((.*?)\)/
   };
@@ -4100,42 +4101,45 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       if (!query || query.length == 0) {
         throw new Error("warn: failed query image nodes!");
       }
+      const nodeInfos = [];
       const nodes = Array.from(query);
       const n0 = getNodeInfo(nodes[0]);
       if (regulars.isMPV.test(n0.href)) {
-        const mpvDoc = await window.fetch(n0.href).then((response) => response.text());
-        const matchs = mpvDoc.matchAll(regulars.mpvImageList);
+        isSprite = true;
+        const mpvDoc = await window.fetch(n0.href).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+        const imageList = JSON.parse(mpvDoc.querySelector("#pane_outer + script")?.innerHTML.match(regulars.mpvImageList)?.[1] ?? "[]");
+        const thumbnails = Array.from(mpvDoc.querySelectorAll("#pane_thumbs > a > div"));
         const gid = location.pathname.split("/")[2];
-        let i = 0;
-        for (const match of matchs) {
-          i++;
-          const src = match[3].replaceAll("\\", "").replaceAll(/(^\(|\).*$)/g, "");
-          const node = new ImageNode(
-            src,
-            `${location.origin}/s/${match[2]}/${gid}-${i}`,
-            match[1].replace(/Page\s\d+[:_]\s*/, ""),
-            void 0,
-            void 0,
-            extractRectFromSrc(src)
-          );
-          list.push(node);
+        for (let i = 0; i < imageList.length; i++) {
+          const info = imageList[i];
+          const backgroundImage = info.t.match(/\((http.*)\)/)?.[1] || null;
+          thumbnails[i].style.background = "url" + info.t;
+          const ni = {
+            backgroundImage,
+            title: info.n,
+            href: `${location.origin}/s/${info.k}/${gid}-${i + 1}`,
+            wh: extractRectFromStyle(thumbnails[i].style) ?? { w: 100, h: 100 },
+            style: thumbnails[i].style,
+            thumbnailImage: "",
+            delaySrc: void 0
+          };
+          nodeInfos.push(ni);
         }
-        return list;
+      } else {
+        nodes.forEach((node) => nodeInfos.push(getNodeInfo(node)));
       }
-      const nodeInfos = [];
       if (isSprite) {
         const spriteURLs = [];
-        for (const node of nodes) {
-          const info = getNodeInfo(node);
+        for (let i = 0; i < nodeInfos.length; i++) {
+          const info = nodeInfos[i];
           if (!info.backgroundImage) {
             evLog("error", "e-hentai miss node, ", info);
             continue;
           }
-          nodeInfos.push(info);
           if (spriteURLs.length === 0 || spriteURLs[spriteURLs.length - 1].url !== info.backgroundImage) {
-            spriteURLs.push({ url: info.backgroundImage, range: [{ index: nodeInfos.length - 1, style: info.style }] });
+            spriteURLs.push({ url: info.backgroundImage, range: [{ index: i, style: info.style }] });
           } else {
-            spriteURLs[spriteURLs.length - 1].range.push({ index: nodeInfos.length - 1, style: info.style });
+            spriteURLs[spriteURLs.length - 1].range.push({ index: i, style: info.style });
           }
         }
         spriteURLs.forEach(({ url, range }) => {
@@ -4154,8 +4158,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
             }).catch((err) => reso.forEach((r) => r.reject(err)));
           }
         });
-      } else {
-        nodes.forEach((node) => nodeInfos.push(getNodeInfo(node)));
       }
       for (let i = 0; i < nodeInfos.length; i++) {
         const info = nodeInfos[i];

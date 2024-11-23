@@ -16,9 +16,14 @@ const regulars = {
   /** 是否开启自动多页查看器 */
   isMPV: /https?:\/\/e[-x]hentai(55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad)?\.(org|onion)\/mpv\/\w+\/\w+\/#page\w/,
   /** 多页查看器图片列表提取 */
-  mpvImageList: /\{"n":"(.*?)","k":"(\w+)","t":"(.*?)".*?\}/g,
+  mpvImageList: /imagelist\s=\s(\[.*?\])/,
   /** 精灵图地址提取 */
   sprite: /url\((.*?)\)/,
+}
+type MPVImgInfo = {
+  n: string,
+  k: string,
+  t: string,
 }
 
 type NodeInfo = {
@@ -88,7 +93,6 @@ export class EHMatcher extends BaseMatcher<string> {
     if (!doc) {
       throw new Error("warn: eh matcher failed to get document from source page!")
     }
-
     let isSprite = false;
     let getNodeInfo: GetNodeInfo = (node) => {
       const anchor = node.firstElementChild as HTMLAnchorElement;
@@ -152,47 +156,49 @@ export class EHMatcher extends BaseMatcher<string> {
     if (!query || query.length == 0) {
       throw new Error("warn: failed query image nodes!")
     }
-    const nodes = Array.from(query);
+    const nodeInfos: NodeInfo[] = [];
 
     // Multi-page viewer
+    const nodes = Array.from(query);
     const n0 = getNodeInfo(nodes[0]);
     if (regulars.isMPV.test(n0.href)) {
-      const mpvDoc = await window.fetch(n0.href).then((response) => response.text());
-      const matchs = mpvDoc.matchAll(regulars.mpvImageList);
+      isSprite = true;
+      const mpvDoc = await window.fetch(n0.href).then((response) => response.text()).then(text => new DOMParser().parseFromString(text, "text/html"));
+      const imageList = JSON.parse(mpvDoc.querySelector("#pane_outer + script")?.innerHTML.match(regulars.mpvImageList)?.[1] ?? "[]") as MPVImgInfo[];
+      const thumbnails = Array.from(mpvDoc.querySelectorAll<HTMLElement>("#pane_thumbs > a > div"));
       const gid = location.pathname.split("/")[2];
-      let i = 0;
-      for (const match of matchs) {
-        i++;
-        // TODO: MPV query image url from https://s.exhentai.org/api.php
-        const src = match[3].replaceAll("\\", "").replaceAll(/(^\(|\).*$)/g, "");
-        const node = new ImageNode(
-          src,
-          `${location.origin}/s/${match[2]}/${gid}-${i}`,
-          match[1].replace(/Page\s\d+[:_]\s*/, ""),
-          undefined,
-          undefined,
-          extractRectFromSrc(src),
-        );
-        list.push(node);
+      // TODO: MPV query image url from https://s.exhentai.org/api.php
+      for (let i = 0; i < imageList.length; i++) {
+        const info = imageList[i];
+        const backgroundImage = info.t.match(/\((http.*)\)/)?.[1] || null;
+        thumbnails[i].style.background = "url" + info.t;
+        const ni = {
+          backgroundImage,
+          title: info.n,
+          href: `${location.origin}/s/${info.k}/${gid}-${i + 1}`,
+          wh: extractRectFromStyle(thumbnails[i].style) ?? { w: 100, h: 100 },
+          style: thumbnails[i].style,
+          thumbnailImage: "",
+          delaySrc: undefined,
+        };
+        nodeInfos.push(ni);
       }
-      return list;
+    } else {
+      nodes.forEach(node => nodeInfos.push(getNodeInfo(node)));
     }
-
-    const nodeInfos: NodeInfo[] = [];
     // sprite thumbnails
     if (isSprite) {
       const spriteURLs: { url: string, range: { index: number, style: CSSStyleDeclaration }[] }[] = [];
-      for (const node of nodes) {
-        const info = getNodeInfo(node);
+      for (let i = 0; i < nodeInfos.length; i++) {
+        const info = nodeInfos[i];
         if (!info.backgroundImage) {
           evLog("error", "e-hentai miss node, ", info);
           continue;
         }
-        nodeInfos.push(info);
         if (spriteURLs.length === 0 || spriteURLs[spriteURLs.length - 1].url !== info.backgroundImage) {
-          spriteURLs.push({ url: info.backgroundImage, range: [{ index: nodeInfos.length - 1, style: info.style }] });
+          spriteURLs.push({ url: info.backgroundImage, range: [{ index: i, style: info.style }] });
         } else {
-          spriteURLs[spriteURLs.length - 1].range.push({ index: nodeInfos.length - 1, style: info.style });
+          spriteURLs[spriteURLs.length - 1].range.push({ index: i, style: info.style });
         }
       }
       spriteURLs.forEach(({ url, range }) => {
@@ -212,11 +218,6 @@ export class EHMatcher extends BaseMatcher<string> {
         }
       });
     }
-    // large thumbnails
-    else {
-      nodes.forEach(node => nodeInfos.push(getNodeInfo(node)));
-    }
-
     for (let i = 0; i < nodeInfos.length; i++) {
       const info = nodeInfos[i];
       list.push(new ImageNode(info.thumbnailImage, info.href, info.title, info.delaySrc, undefined, info.wh));

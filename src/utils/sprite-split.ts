@@ -10,6 +10,7 @@ export type ImagePosition = {
 export function parseImagePositions(styles: CSSStyleDeclaration[]): ImagePosition[] {
   return styles.map((st) => {
     const [x, y] = st.backgroundPosition.split(" ").map((v) => Math.abs(parseInt(v)));
+    if (isNaN(x)) throw new Error("invalid background position");
     return { x, y, width: parseInt(st.width), height: parseInt(st.height) };
   });
 }

@@ -262,6 +262,11 @@ function patchConfig(cf: Config): Config | null {
     cf.keyboards = { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} };
     changed = true;
   }
+  if (cf.configPatchVersion < 9) {
+    delete cf.siteProfiles["rule34"];
+    cf.configPatchVersion = 9;
+    changed = true;
+  }
   return changed ? cf : null;
 }
 

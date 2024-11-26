@@ -440,7 +440,7 @@ export class E621Matcher extends DanbooruMatcher {
   }
   queryList(doc: Document): HTMLElement[] {
     transient.imgSrcCSP = true;
-    return Array.from(doc.querySelectorAll<HTMLElement>("#posts-container > article"));
+    return Array.from(doc.querySelectorAll<HTMLElement>(".posts-container > article"));
   }
   toImgNode(ele: HTMLElement): [ImageNode | null, string] {
     const src = ele.getAttribute("data-preview-url");

@@ -3882,7 +3882,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     queryList(doc) {
       transient.imgSrcCSP = true;
-      return Array.from(doc.querySelectorAll("#posts-container > article"));
+      const list = doc.querySelectorAll(".posts-container > article");
+      console.log("queryList", list);
+      return Array.from(list);
     }
     toImgNode(ele) {
       const src = ele.getAttribute("data-preview-url");

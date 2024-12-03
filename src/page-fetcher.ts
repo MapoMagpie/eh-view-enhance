@@ -1,7 +1,7 @@
 import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
-import ImageNode, { VisualNode } from "./img-node";
+import ImageNode from "./img-node";
 import { Matcher } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
@@ -43,7 +43,7 @@ export class PageFetcher {
     EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
   }
 
-  appendToView(total: number, nodes: VisualNode[], chapterIndex: number, done?: boolean) {
+  appendToView(total: number, nodes: IMGFetcher[], chapterIndex: number, done?: boolean) {
     EBUS.emit("pf-on-appended", total, nodes, chapterIndex, done);
   }
 

@@ -390,6 +390,18 @@ export const i18n = {
     '이미지 뷰어가 열리면 즉시 큰 이미지 보기 모드로 전환됩니다.',
     'Entrar directamente en la vista de imagen grande cuando se haga clic en la entrada del script o se abra automáticamente'
   ),
+  hdThumbnails: new I18nValue(
+    "HD Thumbnails",
+    "高清缩略图",
+    "HD 썸네일",
+    "Miniaturas HD",
+  ),
+  hdThumbnailsTooltip: new I18nValue(
+    "When the large image is loaded, whether to resample a clearer image from the large image as a thumbnail, will affect performance.",
+    "当图片加载完毕后，是否从源图重新采样更加清晰的图片作为缩略图，此项会影响性能。",
+    "큰 이미지가 로드될 때 큰 이미지에서 보다 선명한 이미지를 썸네일로 리샘플링할지 여부가 성능에 영향을 미칩니다.",
+    "Cuando se carga la imagen grande, el hecho de volver a muestrear una imagen más clara de la imagen grande como miniatura afectará el rendimiento.",
+  ),
   pixivJustCurrPage: new I18nValue(
     'Pixiv Only Load Current Page',
     'Pixiv仅加载当前作品页',

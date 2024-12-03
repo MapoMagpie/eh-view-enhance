@@ -19,7 +19,7 @@ export type Config = {
   /** 每行显示的数量 */
   rowHeight: number,
   /** 滚动换页 */
-  readMode: "pagination" | "continuous",
+  readMode: "pagination" | "continuous" | "horizontal",
   /** 是否启用空闲加载器 */
   autoLoad: boolean,
   /** 是否获取最佳质量的图片 */
@@ -40,22 +40,22 @@ export type Config = {
   first: boolean,
   /** 逆转左右翻页，无论使用那种翻页方式，上下侧都代表上下 */
   reversePages: boolean
-  /** 页码指示器位置 */
+  /** 控制栏位置 */
   pageHelperAbTop: string
-  /** 页码指示器位置 */
+  /** 控制栏位置 */
   pageHelperAbLeft: string
-  /** 页码指示器位置 */
+  /** 控制栏位置 */
   pageHelperAbBottom: string
-  /** 页码指示器位置 */
+  /** 控制栏位置 */
   pageHelperAbRight: string
   /** 图片缩放比例 eg: 80, means 80% */
   imgScale: number
-  /** 图片缩放比例 */
-  stickyMouse: "enable" | "disable" | "reverse"
   /** 自动翻页间隔 */
   autoPageSpeed: number
   /** 自动开始 */
   autoPlay: boolean
+  /** 高清晰度的缩略图 */
+  hdThumbnails: boolean
   /** 图片名模板 */
   filenameTemplate: string
   /** 阻止滚动翻页时间 */
@@ -137,9 +137,9 @@ function defaultConf(): Config {
     pageHelperAbBottom: "20px",
     pageHelperAbRight: "unset",
     imgScale: 100,
-    stickyMouse: "disable",
     autoPageSpeed: 5, // pagination readmode = 5, continuous readmode = 1
     autoPlay: false,
+    hdThumbnails: false,
     filenameTemplate: "{number}-{title}",
     preventScrollPageTime: 100,
     archiveVolumeSize: 1200,
@@ -238,7 +238,7 @@ function confHealthCheck(cf: Config): Config {
     }
   });
   // check enum
-  if (!["pagination", "continuous"].includes(cf.readMode)) {
+  if (!["pagination", "continuous", "horizontal"].includes(cf.readMode)) {
     cf.readMode = "pagination";
     changed = true;
   }
@@ -275,8 +275,8 @@ export function saveConf(c: Config) {
 }
 
 export type ConfigNumberType = "colCount" | "rowHeight" | "threads" | "downloadThreads" | "timeout" | "autoPageSpeed" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost" | "magnifier" | "autoEnterBig" | "pixivJustCurrPage";
-export type ConfigSelectType = "readMode" | "stickyMouse" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer" | "filenameOrder";
+export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost" | "magnifier" | "autoEnterBig" | "pixivJustCurrPage" | "hdThumbnails";
+export type ConfigSelectType = "readMode" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer" | "filenameOrder";
 export const conf = getConf();
 export const transient = { imgSrcCSP: false, originalPolicy: "" };
 
@@ -312,19 +312,14 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "magnifier", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoEnterBig", typ: "boolean", gridColumnRange: [6, 11] },
+  { key: "hdThumbnails", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "pixivJustCurrPage", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
   {
     key: "readMode", typ: "select", options: [
       { value: "pagination", display: "Pagination" },
       { value: "continuous", display: "Continuous" },
-    ]
-  },
-  {
-    key: "stickyMouse", typ: "select", options: [
-      { value: "enable", display: "Enable" },
-      { value: "reverse", display: "Reverse" },
-      { value: "disable", display: "Disable" },
+      { value: "horizontal", display: "Horizontal" },
     ]
   },
   {
@@ -370,6 +365,7 @@ export type DisplayText = {
   chapters: string,
   pagination: string,
   continuous: string,
+  horizontal: string,
 }
 
 const DEFAULT_DISPLAY_TEXT: DisplayText = {
@@ -382,7 +378,8 @@ const DEFAULT_DISPLAY_TEXT: DisplayText = {
   download: i18n.download.get(),
   chapters: i18n.chapters.get(),
   pagination: "PAGE",
-  continuous: "CONT"
+  continuous: "CONT",
+  horizontal: "HORI"
 };
 
 export function getDisplayText(): DisplayText {
@@ -400,6 +397,7 @@ export function presetDisplayText(): DisplayText {
     autoPagePlay: "▶",
     fin: "⑇",
     pagination: "🗐",
-    continuous: "🗏⭭"
+    continuous: "🗏⭭",
+    horizontal: "⭭🗏"
   };
 }

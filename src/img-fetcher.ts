@@ -1,6 +1,6 @@
 import { conf, transient } from "./config";
 import EBUS from "./event-bus";
-import ImageNode, { VisualNode } from "./img-node";
+import ImageNode from "./img-node";
 import { Matcher, OriginMeta } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
@@ -26,7 +26,7 @@ export enum FetchState {
   DONE = 3,
 }
 
-export class IMGFetcher implements VisualNode {
+export class IMGFetcher {
   index: number;
   node: ImageNode;
   stage: FetchState = FetchState.URL;

@@ -269,7 +269,7 @@ export class EHMatcher extends BaseMatcher<string> {
 
     if (conf.fetchOriginal) {
       src = regulars.original.exec(text)?.[1].replace(/&amp;/g, "&");
-      const nl = node.href.split("?").pop();
+      const nl = node.href.includes("?") ? node.href.split("?").pop() : undefined;
       if (src && nl) {
         src += "?" + nl;
       }
@@ -307,7 +307,6 @@ export class EHMatcher extends BaseMatcher<string> {
       if (data.byteLength === 1329) {
         throw new Error("fetching the raw image requires being logged in, please try logging in or disable \"raw image\"");
       }
-      contentType = "image/jpeg";
     }
     return [data, contentType];
   }

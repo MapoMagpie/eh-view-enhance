@@ -5,7 +5,7 @@ import q from "../utils/query-element";
 import { Events } from "./event";
 import { PageHelper } from "./page-helper";
 import { styleCSS } from "./style";
-import { BigImageFrameManager } from "./ultra-image-frame-manager";
+import { BigImageFrameManager } from "./big-image-frame-manager";
 import icons from "../utils/icons";
 import queryCSSRules from "../utils/query-cssrules";
 import { DownloaderPanel } from "./downloader-panel";
@@ -28,7 +28,7 @@ export function createHTML() {
 </div>
 <div id="message-box" class="ehvp-message-box"></div>
 <div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
-<div id="big-img-frame" class="big-img-frame big-img-frame-collapse${conf.readMode === "pagination" ? " bifm-flex" : ""}" tabindex="7">
+<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="7">
    <a id="img-land-left" class="img-land img-land-left"></a>
    <a id="img-land-right" class="img-land img-land-right"></a>
 </div>
@@ -56,7 +56,8 @@ export function createHTML() {
         <div id="read-mode-bar" class="b-main-item" hidden>
             <div id="read-mode-select"
             ><a class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">${dt.pagination}</a
-            ><a class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">${dt.continuous}</a></div>
+            ><a class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">${dt.continuous}</a
+            ><a class="b-main-option clickable ${conf.readMode === "horizontal" ? "b-main-option-selected" : ""}" data-value="horizontal">${dt.horizontal}</a></div>
         </div>
         <div id="pagination-adjust-bar" class="b-main-item" hidden>
             <span>

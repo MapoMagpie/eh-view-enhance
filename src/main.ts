@@ -10,7 +10,7 @@ import { initEvents } from "./ui/event";
 import { FullViewGridManager } from "./ui/full-view-grid-manager";
 import { createHTML, addEventListeners, showMessage } from "./ui/html";
 import { PageHelper } from "./ui/page-helper";
-import { BigImageFrameManager } from "./ui/ultra-image-frame-manager";
+import { BigImageFrameManager } from "./ui/big-image-frame-manager";
 import { Debouncer } from "./utils/debouncer";
 import revertMonkeyPatch from "./utils/revert-monkey-patch";
 import { sleep } from "./utils/sleep";

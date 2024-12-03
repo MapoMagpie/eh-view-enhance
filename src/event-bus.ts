@@ -2,7 +2,7 @@ import { Oriented } from "./config";
 import { CherryPick } from "./download/downloader";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
-import ImageNode, { VisualNode } from "./img-node";
+import ImageNode from "./img-node";
 import { Chapter } from "./page-fetcher";
 import { evLog } from "./utils/ev-log";
 
@@ -41,7 +41,7 @@ export interface Events {
   "downloader-canvas-on-click": (index: number) => void;
   "bifm-on-show": () => void;
   "bifm-on-hidden": () => void;
-  "pf-on-appended": (total: number, nodes: VisualNode[], chapterIndex: number, done?: boolean) => void;
+  "pf-on-appended": (total: number, nodes: IMGFetcher[], chapterIndex: number, done?: boolean) => void;
   "pf-update-chapters": (chapters: Chapter[]) => void;
   "pf-change-chapter": (index: number, chapter: Chapter) => void;
   "pf-try-extend": () => void;

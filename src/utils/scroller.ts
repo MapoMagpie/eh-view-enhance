@@ -1,46 +1,39 @@
-// function scrollSmoothly(element: HTMLElement, speed: number, y: number): void {
-//   let scroller = TASKS.get(element);
-//   if (!scroller) {
-//     scroller = new Scroller(element);
-//     TASKS.set(element, scroller);
-//     // if element is removed
-//   }
-//   scroller.step = speed;
-//   scroller.scroll(y).then(() => element.dispatchEvent(new CustomEvent("smoothlyscrollend")));
-// }
-
-// function scrollTerminate(element: HTMLElement): void {
-//   const scroller = TASKS.get(element);
-//   if (scroller) {
-//     scroller.scrolling = false;
-//   }
-// }
-
-// const TASKS = new WeakMap<HTMLElement, Scroller>();
-
 export class Scroller {
-  element: HTMLElement;
+  private element: HTMLElement;
   scrolling: boolean = false;
   step: number; // [1, 100]
-  distance: number = 0;
-  additional: number = 0;
-  lastDirection: "up" | "down" | undefined;
-  directionChanged: boolean = false;
-  constructor(element: HTMLElement, step?: number) {
+  private distance: number = 0;
+  private additional: number = 0;
+  private lastDirection: "up" | "down" | undefined;
+  private directionChanged: boolean = false;
+  private scrollMargin: () => number;
+  private maxScrollMargin: () => number;
+  private setScrollMargin: (margin: number) => void;
+  constructor(element: HTMLElement, step?: number, mode?: "y" | "x") {
     this.element = element;
     this.step = step || 1;
+    if (mode && mode === "x") {
+      this.scrollMargin = () => this.element.scrollLeft;
+      this.maxScrollMargin = () => this.element.scrollWidth - this.element.clientWidth;
+      this.setScrollMargin = (margin) => this.element.scrollLeft = margin;
+    } else {
+      this.scrollMargin = () => this.element.scrollTop;
+      this.maxScrollMargin = () => this.element.scrollHeight - this.element.clientHeight;
+      this.setScrollMargin = (margin) => this.element.scrollTop = margin;
+    }
   }
 
-  scroll(y: number): Promise<void> {
+  scroll(delta: number, step?: number): Promise<void> {
+    if (step) this.step = step;
     let resolve: () => void;
     const promise = new Promise<void>((r) => resolve = r);
-    this.distance = Math.abs(y);
+    this.distance = Math.abs(delta);
     if (this.scrolling || this.distance <= 0) {
       this.additional = 0; // disable additional temporary
       return promise;
     }
-    const sign = y / this.distance;
-    const direction = y < 0 ? "up" : "down";
+    const sign = delta / this.distance;
+    const direction = delta < 0 ? "up" : "down";
     this.directionChanged = this.lastDirection !== undefined && this.lastDirection !== direction;
     this.lastDirection = direction;
     this.additional = 0;
@@ -55,12 +48,12 @@ export class Scroller {
     const doFrame = () => {
       if (!this.scrolling) return scrolled();
       this.distance -= this.step + this.additional;
-      let scrollTop = this.element.scrollTop + ((this.step + this.additional) * sign);
-      scrollTop = Math.max(scrollTop, 0);
-      scrollTop = Math.min(scrollTop, this.element.scrollHeight - this.element.clientHeight);
-      this.element.scrollTop = scrollTop;
+      let scrollMargin = this.scrollMargin() + ((this.step + this.additional) * sign);
+      scrollMargin = Math.max(scrollMargin, 0);
+      scrollMargin = Math.min(scrollMargin, this.maxScrollMargin());
+      this.setScrollMargin(scrollMargin);
       if (this.distance <= 0) return scrolled();
-      if (scrollTop === 0 || scrollTop === this.element.scrollHeight - this.element.clientHeight) return scrolled();
+      if (scrollMargin === 0 || scrollMargin === this.maxScrollMargin()) return scrolled();
       if (this.directionChanged) return scrolled();
       window.requestAnimationFrame(doFrame);
     }
@@ -68,34 +61,6 @@ export class Scroller {
     return promise;
   }
 }
-
-// class Timer {
-//   interval: number = 1;
-//   last: number;
-//   endAt: number;
-//   constructor(duration: number, interval?: number) {
-//     const now = Date.now();
-//     if (interval) {
-//       this.interval = interval;
-//     }
-//     this.last = now;
-//     this.endAt = now + duration;
-//   }
-
-//   tick(): [boolean, boolean] {
-//     const now = Date.now();
-//     let ok = now >= this.last + this.interval;
-//     if (ok) {
-//       this.last = now;
-//     }
-//     let finished = now >= this.endAt;
-//     return [ok, finished]
-//   }
-
-//   extend(duration: number) {
-//     this.endAt = this.last + duration;
-//   }
-// }
 
 export default {
   Scroller,

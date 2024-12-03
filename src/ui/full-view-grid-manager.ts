@@ -1,14 +1,15 @@
 import { conf } from "../config";
 import EBUS from "../event-bus";
-import ImageNode, { VisualNode } from "../img-node";
+import ImageNode from "../img-node";
 import { Debouncer } from "../utils/debouncer";
 import queryCSSRules from "../utils/query-cssrules";
 import { evLog } from "../utils/ev-log";
 import { Elements } from "./html";
-import { BigImageFrameManager } from "./ultra-image-frame-manager";
+import { BigImageFrameManager } from "./big-image-frame-manager";
+import { IMGFetcher } from "../img-fetcher";
 
 type E = {
-  node: VisualNode,
+  node: IMGFetcher,
   element: HTMLElement
   ratio: number;
 }
@@ -97,7 +98,7 @@ export class FullViewGridManager {
       }
     }, 50);
   }
-  append(nodes: VisualNode[]) {
+  append(nodes: IMGFetcher[]) {
     if (nodes.length > 0) {
       let index = this.queue.length;
       const list = nodes.map(n => {

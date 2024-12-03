@@ -1,3 +1,4 @@
+import { conf } from "./config";
 import EBUS from "./event-bus";
 import { DownloadState } from "./img-fetcher";
 import { Debouncer } from "./utils/debouncer";
@@ -20,13 +21,6 @@ OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
 type Rect = {
   w: number;
   h: number;
-}
-
-export interface VisualNode {
-  create(): HTMLElement;
-  render(): void;
-  isRender(): boolean;
-  ratio(): number;
 }
 
 type Onfailed = (reason: string, source?: string, error?: Error) => void;
@@ -89,6 +83,7 @@ export default class ImageNode {
     if (!this.root || !this.imgElement || !this.canvasElement) return onfailed("undefined elements");
     if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL) return onfailed("empty or default src");
     if (this.root.offsetWidth <= 1) return onfailed("element too small");
+    if (this.imgElement.src === this.imgElement.getAttribute("data-rendered")) return; // already resized image from this src to canvas
     this.imgElement.onload = null;
     this.imgElement.onerror = null;
 
@@ -110,15 +105,19 @@ export default class ImageNode {
       }
       EBUS.emit("imn-resize", this);
     }
+    const resized = (src: string) => {
+      this.imgElement!.src = "";
+      this.imgElement!.setAttribute("data-rendered", src);
+    }
     if (this.imgElement.src === this.thumbnailSrc || newRatio < 0.1) {
       // https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image
       this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
-      this.imgElement!.src = "";
+      resized(this.imgElement.src);
     } else {
-      // FIXME: pica wasm resizing image lagging if images ratio very low, so if newRatio < 0.1(1/10) use navite
+      // FIXME: pica wasm resizing image lagging if images ratio very low, so if newRatio < 0.1(1/10) use native
       resizing(this.imgElement, this.canvasElement)
-        .then(() => window.setTimeout(() => this.imgElement!.src = "", 100))
-        .catch(() => this.imgElement!.src = this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height) || "");
+        .then(() => window.setTimeout(() => resized(this.imgElement!.src), 100))
+        .catch(() => resized(this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height) || ""));
     }
   }
 
@@ -132,7 +131,7 @@ export default class ImageNode {
   render(onfailed: Onfailed) {
     this.debouncer.addEvent("IMG-RENDER", () => {
       if (!this.imgElement) return onfailed("element undefined");
-      let justThumbnail = !this.blobSrc;
+      let justThumbnail = !conf.hdThumbnails || !this.blobSrc;
       if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
         const tip = OVERLAY_TIP.cloneNode(true);
         tip.firstChild!.textContent = this.mimeType.split("/")[1].toUpperCase();

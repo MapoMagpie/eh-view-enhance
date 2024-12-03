@@ -12,7 +12,7 @@ import createHelpPanel from "./help";
 import { Elements } from "./html";
 import createKeyboardCustomPanel from "./keyboard-custom";
 import { PageHelper } from "./page-helper";
-import { BigImageFrameManager } from "./ultra-image-frame-manager";
+import { BigImageFrameManager } from "./big-image-frame-manager";
 import { createStyleCustomPanel } from "./style-custom-panel";
 
 export type Events = ReturnType<typeof initEvents>;
@@ -47,7 +47,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       timeout: [8, 40],
       autoPageSpeed: [1, 100],
       preventScrollPageTime: [-1, 90000],
-      paginationIMGCount: [1, 5],
+      paginationIMGCount: [1, 3],
       scrollingSpeed: [1, 100],
     };
     const mod = (key === "preventScrollPageTime" || key === "rowHeight") ? 10 : 1;
@@ -68,8 +68,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       EBUS.emit("fvg-flow-vision-resize");
     }
     if (key === "paginationIMGCount") {
-      const rule = queryCSSRules(HTML.styleSheet, ".bifm-img");
-      if (rule) rule.style.minWidth = conf[key] > 1 ? "" : "100vw";
       q("#paginationInput", HTML.paginationAdjustBar).textContent = conf.paginationIMGCount.toString();
       BIFM.setNow(IFQ[IFQ.currIndex], "next");
     }
@@ -91,9 +89,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         rule.style.flexDirection = conf.reversePages ? "row-reverse" : "row";
       }
     }
-    if (key === "magnifier") {
-      BIFM.elements.curr.forEach(ele => ele.draggable = !(conf.magnifier && conf.readMode === "pagination"));
-    }
+    // TODO
+    // if (key === "magnifier") {
+    //   BIFM.elements.curr.forEach(ele => ele.draggable = !(conf.magnifier && conf.readMode === "pagination"));
+    // }
   }
 
   function changeReadModeEvent(value?: string) {
@@ -101,19 +100,9 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       conf.readMode = value as any;
       saveConf(conf);
     }
+    BIFM.changeLayout();
     conf.autoPageSpeed = conf.readMode === "pagination" ? 5 : 1;
     q<HTMLInputElement>("#autoPageSpeedInput", HTML.config.panel).value = conf.autoPageSpeed.toString();
-    BIFM.resetScaleBigImages(true);
-    if (conf.readMode === "pagination") {
-      BIFM.frame.classList.add("bifm-flex")
-      if (BIFM.visible) {
-        const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
-        const index = parseInt(BIFM.elements.curr[0]?.getAttribute("d-index") || "0");
-        BIFM.initElements(queue[index]);
-      }
-    } else {
-      BIFM.frame.classList.remove("bifm-flex");
-    }
     Array.from(HTML.readModeSelect.querySelectorAll(".b-main-option")).forEach((element) => {
       if (element.getAttribute("data-value") === conf.readMode) {
         element.classList.add("b-main-option-selected");
@@ -199,7 +188,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   function showFullViewGrid() {
     HTML.root.classList.remove("ehvp-root-collapse");
     if (BIFM.visible) {
-      BIFM.frame.focus();
+      BIFM.root.focus();
       PH.minify("bigImageFrame");
     } else {
       HTML.fullViewGrid.focus();
@@ -214,7 +203,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     HTML.entryBTN.setAttribute("data-stage", "exit");
     HTML.root.classList.add("ehvp-root-collapse");
     if (BIFM.visible) {
-      BIFM.frame.blur();
+      BIFM.root.blur();
     } else {
       HTML.fullViewGrid.blur();
     }
@@ -222,8 +211,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     // document.body.focus();
   }
 
-  function shouldStep(oriented: Oriented, shouldPrevent: boolean): boolean {
-    if (BIFM.isReachedBoundary(oriented)) {
+  function shouldStep(_oriented: Oriented, shouldPrevent: boolean): boolean {
+    if (BIFM.checkOverflow()) {
       if (shouldPrevent && BIFM.tryPreventStep()) return false;
       return true;
     }
@@ -267,14 +256,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
           const key = parseKey(event);
           const customKey = !["pageup", "arrowup", "shift+space"].includes(key);
           if (customKey) {
-            BIFM.scroll(BIFM.frame.offsetHeight / 8 * -1);
+            BIFM.scroll(BIFM.root.offsetHeight / 8 * -1);
           }
           const shouldPrevent = !["pageup", "shift+space"].includes(key);
           if (shouldPrevent) {
             if (!customKey) {
-              scrollEventDebouncer.addEvent("SCROLL-IMAGE-UP", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
+              scrollEventDebouncer.addEvent("SCROLL-IMAGE-UP", () => BIFM.root.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
             }
-            BIFM.frame.addEventListener("smoothlyscrollend", () => shouldStep("prev", true), { once: true });
+            BIFM.root.addEventListener("smoothlyscrollend", () => shouldStep("prev", true), { once: true });
           }
           if (shouldStep("prev", shouldPrevent)) {
             event.preventDefault();
@@ -289,14 +278,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
           const key = parseKey(event);
           const customKey = !["pagedown", "arrowdown", "space"].includes(key);
           if (customKey) {
-            BIFM.scroll(BIFM.frame.offsetHeight / 8);
+            BIFM.scroll(BIFM.root.offsetHeight / 8);
           }
           const shouldPrevent = !["pagedown", "space"].includes(key);
           if (shouldPrevent) {
             if (!customKey) {
-              scrollEventDebouncer.addEvent("SCROLL-IMAGE-DOWN", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
+              scrollEventDebouncer.addEvent("SCROLL-IMAGE-DOWN", () => BIFM.root.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
             }
-            BIFM.frame.addEventListener("smoothlyscrollend", () => shouldStep("next", true), { once: true });
+            BIFM.root.addEventListener("smoothlyscrollend", () => shouldStep("next", true), { once: true });
           }
           if (shouldStep("next", shouldPrevent)) {
             event.preventDefault();

@@ -40,7 +40,7 @@
  | |-html.ts                     // Interfaz del script.
  | |-style.ts                    // Estilo de la interfaz del script.
  | |-full-view-grid-manager.ts   // Interfaz de la cuadrícula de miniaturas.
- | |-ultra-image-frame-manager.ts// Interfaz de visualización de imágenes grandes.
+ | |-big-image-frame-manager.ts  // Interfaz de visualización de imágenes grandes.
  | |-config-panel.ts             // Panel de configuración.
  | |-event.ts                    // Eventos de los elementos en algunas interfaces de scripts, incluyendo eventos de teclado.
  |-utils/                        // 

@@ -17,6 +17,7 @@ export function styleCSS() {
   --ehvp-panel-border: none;
   --ehvp-panel-box-shadow: none;
   font-size: 16px;
+  font-family: Poppins,sans-serif;
 }
 .ehvp-root {
   width: 100vw;
@@ -233,28 +234,45 @@ export function styleCSS() {
 }
 .big-img-frame {
   position: fixed;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   top: 0;
   right: 0;
   overflow: auto;
   scrollbar-width: none;
   z-index: 2001;
   background-color: #000000d6;
+  display: flex;
+}
+.bifm-container { }
+.bifm-container-vert {
+  width: ${conf.imgScale}%;
+  height: fit-content;
+  margin: 0 auto;
+}
+.bifm-container-hori {
+  width: fit-content;
+  height: ${conf.imgScale}%;
+  margin: auto 0;
+  display: flex;
+  flex-wrap: nowrap;
+}
+/**
+.bifm-container > div {
+  border: 1px solid red;
+}
+.bifm-container > div:hover {
+  border: 1px solid green;
+}
+*/
+.bifm-img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .ehvp-root-collapse .big-img-frame {
   position: unset;
 }
-.big-img-frame > img, .big-img-frame > video {
-  object-fit: contain;
-  display: block;
-}
-.bifm-flex {
-  display: flex;
-  justify-content: center;
-  flex-direction: ${conf.reversePages ? "row-reverse" : "row"};
-}
-.bifm-img { }
 .p-helper {
   position: fixed;
   z-index: 2011 !important;
@@ -457,7 +475,7 @@ export function styleCSS() {
   }
 }
 .big-img-frame-collapse {
-  width: 0px !important;
+  display: none;
 }
 .ehvp-root-collapse .img-land,
 .big-img-frame-collapse .img-land,
@@ -882,9 +900,6 @@ export function styleCSS() {
   }
   #pagination-adjust-bar {
     display: none;
-  }
-  .bifm-img {
-    min-weight: 100vw !important;
   }
   .p-panel {
     width: 100vw;

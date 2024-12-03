@@ -21,18 +21,6 @@
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.52/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
-// @connect            hath.network
-// @connect            akamaihd.net
-// @connect            i.pximg.net
-// @connect            twimg.com
-// @connect            qy0.ru
-// @connect            wnimg.ru
-// @connect            hamreus.com
-// @connect            mangafuna.xyz
-// @connect            namu.la
-// @connect            artstation.com
-// @connect            akuma.moe
-// @connect            cdninstagram.com
 // @connect            *
 // @grant              GM_getValue
 // @grant              GM_setValue
@@ -449,6 +437,18 @@
       "点击脚本入口或自动打开脚本后直接进入大图阅读视图。",
       "이미지 뷰어가 열리면 즉시 큰 이미지 보기 모드로 전환됩니다.",
       "Entrar directamente en la vista de imagen grande cuando se haga clic en la entrada del script o se abra automáticamente"
+    ),
+    hdThumbnails: new I18nValue(
+      "HD Thumbnails",
+      "高清缩略图",
+      "HD 썸네일",
+      "Miniaturas HD"
+    ),
+    hdThumbnailsTooltip: new I18nValue(
+      "When the large image is loaded, whether to resample a clearer image from the large image as a thumbnail, will affect performance.",
+      "当图片加载完毕后，是否从源图重新采样更加清晰的图片作为缩略图，此项会影响性能。",
+      "큰 이미지가 로드될 때 큰 이미지에서 보다 선명한 이미지를 썸네일로 리샘플링할지 여부가 성능에 영향을 미칩니다.",
+      "Cuando se carga la imagen grande, el hecho de volver a muestrear una imagen más clara de la imagen grande como miniatura afectará el rendimiento."
     ),
     pixivJustCurrPage: new I18nValue(
       "Pixiv Only Load Current Page",
@@ -1096,10 +1096,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       pageHelperAbBottom: "20px",
       pageHelperAbRight: "unset",
       imgScale: 100,
-      stickyMouse: "disable",
       autoPageSpeed: 5,
       // pagination readmode = 5, continuous readmode = 1
       autoPlay: false,
+      hdThumbnails: false,
       filenameTemplate: "{number}-{title}",
       preventScrollPageTime: 100,
       archiveVolumeSize: 1200,
@@ -1185,7 +1185,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         }
       }
     });
-    if (!["pagination", "continuous"].includes(cf.readMode)) {
+    if (!["pagination", "continuous", "horizontal"].includes(cf.readMode)) {
       cf.readMode = "pagination";
       changed = true;
     }
@@ -1238,6 +1238,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
     { key: "magnifier", typ: "boolean", gridColumnRange: [1, 6] },
     { key: "autoEnterBig", typ: "boolean", gridColumnRange: [6, 11] },
+    { key: "hdThumbnails", typ: "boolean", gridColumnRange: [1, 11] },
     { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
     { key: "pixivJustCurrPage", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
     {
@@ -1245,16 +1246,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       typ: "select",
       options: [
         { value: "pagination", display: "Pagination" },
-        { value: "continuous", display: "Continuous" }
-      ]
-    },
-    {
-      key: "stickyMouse",
-      typ: "select",
-      options: [
-        { value: "enable", display: "Enable" },
-        { value: "reverse", display: "Reverse" },
-        { value: "disable", display: "Disable" }
+        { value: "continuous", display: "Continuous" },
+        { value: "horizontal", display: "Horizontal" }
       ]
     },
     {
@@ -1308,7 +1301,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     download: i18n.download.get(),
     chapters: i18n.chapters.get(),
     pagination: "PAGE",
-    continuous: "CONT"
+    continuous: "CONT",
+    horizontal: "HORI"
   };
   function getDisplayText() {
     return { ...DEFAULT_DISPLAY_TEXT, ...conf.displayText };
@@ -1324,7 +1318,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       autoPagePlay: "▶",
       fin: "⑇",
       pagination: "🗐",
-      continuous: "🗏⭭"
+      continuous: "🗏⭭",
+      horizontal: "⭭🗏"
     };
   }
 
@@ -2993,6 +2988,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       if (!this.root || !this.imgElement || !this.canvasElement) return onfailed("undefined elements");
       if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL) return onfailed("empty or default src");
       if (this.root.offsetWidth <= 1) return onfailed("element too small");
+      if (this.imgElement.src === this.imgElement.getAttribute("data-rendered")) return;
       this.imgElement.onload = null;
       this.imgElement.onerror = null;
       const oldRatio = this.ratio();
@@ -3011,11 +3007,15 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         }
         EBUS.emit("imn-resize", this);
       }
+      const resized = (src) => {
+        this.imgElement.src = "";
+        this.imgElement.setAttribute("data-rendered", src);
+      };
       if (this.imgElement.src === this.thumbnailSrc || newRatio < 0.1) {
         this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
-        this.imgElement.src = "";
+        resized(this.imgElement.src);
       } else {
-        resizing(this.imgElement, this.canvasElement).then(() => window.setTimeout(() => this.imgElement.src = "", 100)).catch(() => this.imgElement.src = this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height) || "");
+        resizing(this.imgElement, this.canvasElement).then(() => window.setTimeout(() => resized(this.imgElement.src), 100)).catch(() => resized(this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height) || ""));
       }
     }
     ratio() {
@@ -3027,7 +3027,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     render(onfailed) {
       this.debouncer.addEvent("IMG-RENDER", () => {
         if (!this.imgElement) return onfailed("element undefined");
-        let justThumbnail = !this.blobSrc;
+        let justThumbnail = !conf.hdThumbnails || !this.blobSrc;
         if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
           const tip = OVERLAY_TIP.cloneNode(true);
           tip.firstChild.textContent = this.mimeType.split("/")[1].toUpperCase();
@@ -4190,7 +4190,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       let src;
       if (conf.fetchOriginal) {
         src = regulars.original.exec(text)?.[1].replace(/&amp;/g, "&");
-        const nl = node.href.split("?").pop();
+        const nl = node.href.includes("?") ? node.href.split("?").pop() : void 0;
         if (src && nl) {
           src += "?" + nl;
         }
@@ -4224,7 +4224,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         if (data.byteLength === 1329) {
           throw new Error('fetching the raw image requires being logged in, please try logging in or disable "raw image"');
         }
-        contentType = "image/jpeg";
       }
       return [data, contentType];
     }
@@ -6939,7 +6938,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         timeout: [8, 40],
         autoPageSpeed: [1, 100],
         preventScrollPageTime: [-1, 9e4],
-        paginationIMGCount: [1, 5],
+        paginationIMGCount: [1, 3],
         scrollingSpeed: [1, 100]
       };
       const mod = key === "preventScrollPageTime" || key === "rowHeight" ? 10 : 1;
@@ -6960,8 +6959,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         EBUS.emit("fvg-flow-vision-resize");
       }
       if (key === "paginationIMGCount") {
-        const rule = queryRule(HTML.styleSheet, ".bifm-img");
-        if (rule) rule.style.minWidth = conf[key] > 1 ? "" : "100vw";
         q("#paginationInput", HTML.paginationAdjustBar).textContent = conf.paginationIMGCount.toString();
         BIFM.setNow(IFQ[IFQ.currIndex], "next");
       }
@@ -6981,28 +6978,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           rule.style.flexDirection = conf.reversePages ? "row-reverse" : "row";
         }
       }
-      if (key === "magnifier") {
-        BIFM.elements.curr.forEach((ele) => ele.draggable = !(conf.magnifier && conf.readMode === "pagination"));
-      }
     }
     function changeReadModeEvent(value) {
       if (value) {
         conf.readMode = value;
         saveConf(conf);
       }
+      BIFM.changeLayout();
       conf.autoPageSpeed = conf.readMode === "pagination" ? 5 : 1;
       q("#autoPageSpeedInput", HTML.config.panel).value = conf.autoPageSpeed.toString();
-      BIFM.resetScaleBigImages(true);
-      if (conf.readMode === "pagination") {
-        BIFM.frame.classList.add("bifm-flex");
-        if (BIFM.visible) {
-          const queue = BIFM.getChapter(BIFM.chapterIndex).queue;
-          const index = parseInt(BIFM.elements.curr[0]?.getAttribute("d-index") || "0");
-          BIFM.initElements(queue[index]);
-        }
-      } else {
-        BIFM.frame.classList.remove("bifm-flex");
-      }
       Array.from(HTML.readModeSelect.querySelectorAll(".b-main-option")).forEach((element) => {
         if (element.getAttribute("data-value") === conf.readMode) {
           element.classList.add("b-main-option-selected");
@@ -7076,7 +7060,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     function showFullViewGrid() {
       HTML.root.classList.remove("ehvp-root-collapse");
       if (BIFM.visible) {
-        BIFM.frame.focus();
+        BIFM.root.focus();
         PH.minify("bigImageFrame");
       } else {
         HTML.fullViewGrid.focus();
@@ -7089,14 +7073,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       HTML.entryBTN.setAttribute("data-stage", "exit");
       HTML.root.classList.add("ehvp-root-collapse");
       if (BIFM.visible) {
-        BIFM.frame.blur();
+        BIFM.root.blur();
       } else {
         HTML.fullViewGrid.blur();
       }
       document.body.style.overflow = bodyOverflow;
     }
-    function shouldStep(oriented, shouldPrevent) {
-      if (BIFM.isReachedBoundary(oriented)) {
+    function shouldStep(_oriented, shouldPrevent) {
+      if (BIFM.checkOverflow()) {
         if (shouldPrevent && BIFM.tryPreventStep()) return false;
         return true;
       }
@@ -7139,14 +7123,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             const key = parseKey(event);
             const customKey = !["pageup", "arrowup", "shift+space"].includes(key);
             if (customKey) {
-              BIFM.scroll(BIFM.frame.offsetHeight / 8 * -1);
+              BIFM.scroll(BIFM.root.offsetHeight / 8 * -1);
             }
             const shouldPrevent = !["pageup", "shift+space"].includes(key);
             if (shouldPrevent) {
               if (!customKey) {
-                scrollEventDebouncer.addEvent("SCROLL-IMAGE-UP", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
+                scrollEventDebouncer.addEvent("SCROLL-IMAGE-UP", () => BIFM.root.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
               }
-              BIFM.frame.addEventListener("smoothlyscrollend", () => shouldStep("prev", true), { once: true });
+              BIFM.root.addEventListener("smoothlyscrollend", () => shouldStep("prev", true), { once: true });
             }
             if (shouldStep("prev", shouldPrevent)) {
               event.preventDefault();
@@ -7162,14 +7146,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
             const key = parseKey(event);
             const customKey = !["pagedown", "arrowdown", "space"].includes(key);
             if (customKey) {
-              BIFM.scroll(BIFM.frame.offsetHeight / 8);
+              BIFM.scroll(BIFM.root.offsetHeight / 8);
             }
             const shouldPrevent = !["pagedown", "space"].includes(key);
             if (shouldPrevent) {
               if (!customKey) {
-                scrollEventDebouncer.addEvent("SCROLL-IMAGE-DOWN", () => BIFM.frame.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
+                scrollEventDebouncer.addEvent("SCROLL-IMAGE-DOWN", () => BIFM.root.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
               }
-              BIFM.frame.addEventListener("smoothlyscrollend", () => shouldStep("next", true), { once: true });
+              BIFM.root.addEventListener("smoothlyscrollend", () => shouldStep("next", true), { once: true });
             }
             if (shouldStep("next", shouldPrevent)) {
               event.preventDefault();
@@ -7768,6 +7752,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   --ehvp-panel-border: none;
   --ehvp-panel-box-shadow: none;
   font-size: 16px;
+  font-family: Poppins,sans-serif;
 }
 .ehvp-root {
   width: 100vw;
@@ -7984,28 +7969,45 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .big-img-frame {
   position: fixed;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   top: 0;
   right: 0;
   overflow: auto;
   scrollbar-width: none;
   z-index: 2001;
   background-color: #000000d6;
+  display: flex;
+}
+.bifm-container { }
+.bifm-container-vert {
+  width: ${conf.imgScale}%;
+  height: fit-content;
+  margin: 0 auto;
+}
+.bifm-container-hori {
+  width: fit-content;
+  height: ${conf.imgScale}%;
+  margin: auto 0;
+  display: flex;
+  flex-wrap: nowrap;
+}
+/**
+.bifm-container > div {
+  border: 1px solid red;
+}
+.bifm-container > div:hover {
+  border: 1px solid green;
+}
+*/
+.bifm-img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .ehvp-root-collapse .big-img-frame {
   position: unset;
 }
-.big-img-frame > img, .big-img-frame > video {
-  object-fit: contain;
-  display: block;
-}
-.bifm-flex {
-  display: flex;
-  justify-content: center;
-  flex-direction: ${conf.reversePages ? "row-reverse" : "row"};
-}
-.bifm-img { }
 .p-helper {
   position: fixed;
   z-index: 2011 !important;
@@ -8208,7 +8210,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 }
 .big-img-frame-collapse {
-  width: 0px !important;
+  display: none;
 }
 .ehvp-root-collapse .img-land,
 .big-img-frame-collapse .img-land,
@@ -8633,9 +8635,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
   #pagination-adjust-bar {
     display: none;
-  }
-  .bifm-img {
-    min-weight: 100vw !important;
   }
   .p-panel {
     width: 100vw;
@@ -9164,7 +9163,7 @@ ${chapters.map((c, i) => `<div><label>
 </div>
 <div id="message-box" class="ehvp-message-box"></div>
 <div id="ehvp-nodes-container" class="full-view-grid" tabindex="6"></div>
-<div id="big-img-frame" class="big-img-frame big-img-frame-collapse${conf.readMode === "pagination" ? " bifm-flex" : ""}" tabindex="7">
+<div id="big-img-frame" class="big-img-frame big-img-frame-collapse" tabindex="7">
    <a id="img-land-left" class="img-land img-land-left"></a>
    <a id="img-land-right" class="img-land img-land-right"></a>
 </div>
@@ -9192,7 +9191,8 @@ ${chapters.map((c, i) => `<div><label>
         <div id="read-mode-bar" class="b-main-item" hidden>
             <div id="read-mode-select"
             ><a class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">${dt.pagination}</a
-            ><a class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">${dt.continuous}</a></div>
+            ><a class="b-main-option clickable ${conf.readMode === "continuous" ? "b-main-option-selected" : ""}" data-value="continuous">${dt.continuous}</a
+            ><a class="b-main-option clickable ${conf.readMode === "horizontal" ? "b-main-option-selected" : ""}" data-value="horizontal">${dt.horizontal}</a></div>
         </div>
         <div id="pagination-adjust-bar" class="b-main-item" hidden>
             <span>
@@ -9507,163 +9507,6 @@ ${chapters.map((c, i) => `<div><label>
     }
   }
 
-  function onMouse(ele, callback, signal) {
-    ele.addEventListener("mousedown", (event) => {
-      const { left } = ele.getBoundingClientRect();
-      const mouseMove = (event2) => {
-        const xInProgress = event2.clientX - left;
-        const percent = Math.round(xInProgress / ele.clientWidth * 100);
-        callback(percent);
-      };
-      mouseMove(event);
-      ele.addEventListener("mousemove", mouseMove);
-      ele.addEventListener("mouseup", () => {
-        ele.removeEventListener("mousemove", mouseMove);
-      }, { once: true });
-      ele.addEventListener("mouseleave", () => {
-        ele.removeEventListener("mousemove", mouseMove);
-      }, { once: true });
-    }, { signal });
-  }
-
-  const PLAY_ICON = `<svg width="1.4rem" height="1.4rem" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M106.854 106.002a26.003 26.003 0 0 0-25.64 29.326c16 124 16 117.344 0 241.344a26.003 26.003 0 0 0 35.776 27.332l298-124a26.003 26.003 0 0 0 0-48.008l-298-124a26.003 26.003 0 0 0-10.136-1.994z"/></svg>`;
-  const PAUSE_ICON = `<svg width="1.4rem" height="1.4rem" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M120.16 45A20.162 20.162 0 0 0 100 65.16v381.68A20.162 20.162 0 0 0 120.16 467h65.68A20.162 20.162 0 0 0 206 446.84V65.16A20.162 20.162 0 0 0 185.84 45h-65.68zm206 0A20.162 20.162 0 0 0 306 65.16v381.68A20.162 20.162 0 0 0 326.16 467h65.68A20.162 20.162 0 0 0 412 446.84V65.16A20.162 20.162 0 0 0 391.84 45h-65.68z"/></svg>`;
-  const VOLUME_ICON = `<svg width="1.4rem" height="1.4rem" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"> <path fill="#fff" d="M10.0012 8.99984H9.1C8.53995 8.99984 8.25992 8.99984 8.04601 9.10883C7.85785 9.20471 7.70487 9.35769 7.60899 9.54585C7.5 9.75976 7.5 10.0398 7.5 10.5998V13.3998C7.5 13.9599 7.5 14.2399 7.60899 14.4538C7.70487 14.642 7.85785 14.795 8.04601 14.8908C8.25992 14.9998 8.53995 14.9998 9.1 14.9998H10.0012C10.5521 14.9998 10.8276 14.9998 11.0829 15.0685C11.309 15.1294 11.5228 15.2295 11.7143 15.3643C11.9305 15.5164 12.1068 15.728 12.4595 16.1512L15.0854 19.3023C15.5211 19.8252 15.739 20.0866 15.9292 20.1138C16.094 20.1373 16.2597 20.0774 16.3712 19.9538C16.5 19.811 16.5 19.4708 16.5 18.7902V5.20948C16.5 4.52892 16.5 4.18864 16.3712 4.04592C16.2597 3.92233 16.094 3.86234 15.9292 3.8859C15.7389 3.9131 15.5211 4.17451 15.0854 4.69733L12.4595 7.84843C12.1068 8.27166 11.9305 8.48328 11.7143 8.63542C11.5228 8.77021 11.309 8.87032 11.0829 8.93116C10.8276 8.99984 10.5521 8.99984 10.0012 8.99984Z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  const MUTED_ICON = `<svg width="1.4rem" height="1.4rem" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M16 9.50009L21 14.5001M21 9.50009L16 14.5001M4.6 9.00009H5.5012C6.05213 9.00009 6.32759 9.00009 6.58285 8.93141C6.80903 8.87056 7.02275 8.77046 7.21429 8.63566C7.43047 8.48353 7.60681 8.27191 7.95951 7.84868L10.5854 4.69758C11.0211 4.17476 11.2389 3.91335 11.4292 3.88614C11.594 3.86258 11.7597 3.92258 11.8712 4.04617C12 4.18889 12 4.52917 12 5.20973V18.7904C12 19.471 12 19.8113 11.8712 19.954C11.7597 20.0776 11.594 20.1376 11.4292 20.114C11.239 20.0868 11.0211 19.8254 10.5854 19.3026L7.95951 16.1515C7.60681 15.7283 7.43047 15.5166 7.21429 15.3645C7.02275 15.2297 6.80903 15.1296 6.58285 15.0688C6.32759 15.0001 6.05213 15.0001 5.5012 15.0001H4.6C4.03995 15.0001 3.75992 15.0001 3.54601 14.8911C3.35785 14.7952 3.20487 14.6422 3.10899 14.4541C3 14.2402 3 13.9601 3 13.4001V10.6001C3 10.04 3 9.76001 3.10899 9.54609C3.20487 9.35793 3.35785 9.20495 3.54601 9.10908C3.75992 9.00009 4.03995 9.00009 4.6 9.00009Z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  class VideoControl {
-    ui;
-    paused = false;
-    abortController;
-    root;
-    constructor(root) {
-      this.root = root;
-      this.ui = this.create(this.root);
-      this.flushUI();
-    }
-    show() {
-      this.ui.root.hidden = false;
-    }
-    hidden() {
-      this.ui.root.hidden = true;
-    }
-    create(root) {
-      const ui = document.createElement("div");
-      ui.classList.add("bifm-vid-ctl");
-      ui.innerHTML = `
-<div>
-  <button id="bifm-vid-ctl-play" class="bifm-vid-ctl-btn">${PLAY_ICON}</button>
-  <button id="bifm-vid-ctl-mute" class="bifm-vid-ctl-btn">${MUTED_ICON}</button>
-    <div id="bifm-vid-ctl-volume" class="bifm-vid-ctl-pg">
-      <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
-    </div>
-  <span id="bifm-vid-ctl-time" class="bifm-vid-ctl-span">00:00</span>
-  <span class="bifm-vid-ctl-span">/</span>
-  <span id="bifm-vid-ctl-duration" class="bifm-vid-ctl-span">10:00</span>
-  <!-- <span id = "bifm-vid-ctl-drag" class="bifm-vid-ctl-span" style = "cursor: grab;">✠</span> -->
-</div>
-<div>
-    <div id="bifm-vid-ctl-pg" class="bifm-vid-ctl-pg">
-      <div class="bifm-vid-ctl-pg-inner" style="width: 30%"></div>
-    </div>
-</div>
-`;
-      root.appendChild(ui);
-      return {
-        root: ui,
-        playBTN: q("#bifm-vid-ctl-play", ui),
-        volumeBTN: q("#bifm-vid-ctl-mute", ui),
-        volumeProgress: q("#bifm-vid-ctl-volume", ui),
-        progress: q("#bifm-vid-ctl-pg", ui),
-        time: q("#bifm-vid-ctl-time", ui),
-        duration: q("#bifm-vid-ctl-duration", ui)
-      };
-    }
-    flushUI(state, onlyState) {
-      const { value, max } = state ? { value: state.time, max: state.duration } : { value: 0, max: 10 };
-      const percent = value / max * 100;
-      this.ui.progress.firstElementChild.style.width = `${percent}%`;
-      this.ui.time.textContent = secondsToTime(value);
-      this.ui.duration.textContent = secondsToTime(max);
-      if (onlyState) return;
-      this.ui.playBTN.innerHTML = this.paused ? PLAY_ICON : PAUSE_ICON;
-      this.ui.volumeBTN.innerHTML = conf.muted ? MUTED_ICON : VOLUME_ICON;
-      this.ui.volumeProgress.firstElementChild.style.width = `${conf.volume || 30}%`;
-    }
-    attach(element) {
-      this.detach();
-      this.show();
-      this.abortController = new AbortController();
-      const state = { time: element.currentTime, duration: element.duration };
-      this.flushUI(state);
-      element.addEventListener("timeupdate", (event) => {
-        const ele = event.target;
-        if (!state) return;
-        state.time = ele.currentTime;
-        this.flushUI(state, true);
-      }, { signal: this.abortController.signal });
-      element.onwaiting = () => evLog("debug", "onwaiting");
-      element.loop = true;
-      element.muted = conf.muted || false;
-      element.volume = (conf.volume || 30) / 100;
-      if (!this.paused) {
-        element.play();
-      }
-      let elementID = element.id;
-      if (!elementID) {
-        elementID = "vid-" + Math.random().toString(36).slice(2);
-        element.id = elementID;
-      }
-      this.ui.playBTN.addEventListener("click", () => {
-        const vid = this.root.querySelector(`#${elementID}`);
-        if (vid) {
-          this.paused = !this.paused;
-          if (this.paused) {
-            vid.pause();
-          } else {
-            vid.play();
-          }
-          this.flushUI(state);
-        }
-      }, { signal: this.abortController.signal });
-      this.ui.volumeBTN.addEventListener("click", () => {
-        const vid = this.root.querySelector(`#${elementID}`);
-        if (vid) {
-          conf.muted = !conf.muted;
-          vid.muted = conf.muted;
-          saveConf(conf);
-          this.flushUI(state);
-        }
-      }, { signal: this.abortController.signal });
-      onMouse(this.ui.progress, (percent) => {
-        const vid = this.root.querySelector(`#${elementID}`);
-        if (vid) {
-          vid.currentTime = vid.duration * (percent / 100);
-          state.time = vid.currentTime;
-          this.flushUI(state);
-        }
-      }, this.abortController.signal);
-      onMouse(this.ui.volumeProgress, (percent) => {
-        const vid = this.root.querySelector(`#${elementID}`);
-        if (vid) {
-          conf.volume = percent;
-          saveConf(conf);
-          vid.volume = conf.volume / 100;
-          this.flushUI(state);
-        }
-      }, this.abortController.signal);
-    }
-    detach() {
-      this.abortController?.abort();
-      this.abortController = void 0;
-      this.flushUI();
-    }
-  }
-  function secondsToTime(seconds) {
-    const min = Math.floor(seconds / 60).toString().padStart(2, "0");
-    const sec = Math.floor(seconds % 60).toString().padStart(2, "0");
-    return `${min}:${sec}`;
-  }
-
   class Scroller {
     element;
     scrolling = false;
@@ -9673,20 +9516,33 @@ ${chapters.map((c, i) => `<div><label>
     additional = 0;
     lastDirection;
     directionChanged = false;
-    constructor(element, step) {
+    scrollMargin;
+    maxScrollMargin;
+    setScrollMargin;
+    constructor(element, step, mode) {
       this.element = element;
       this.step = step || 1;
+      if (mode && mode === "x") {
+        this.scrollMargin = () => this.element.scrollLeft;
+        this.maxScrollMargin = () => this.element.scrollWidth - this.element.clientWidth;
+        this.setScrollMargin = (margin) => this.element.scrollLeft = margin;
+      } else {
+        this.scrollMargin = () => this.element.scrollTop;
+        this.maxScrollMargin = () => this.element.scrollHeight - this.element.clientHeight;
+        this.setScrollMargin = (margin) => this.element.scrollTop = margin;
+      }
     }
-    scroll(y) {
+    scroll(delta, step) {
+      if (step) this.step = step;
       let resolve;
       const promise = new Promise((r) => resolve = r);
-      this.distance = Math.abs(y);
+      this.distance = Math.abs(delta);
       if (this.scrolling || this.distance <= 0) {
         this.additional = 0;
         return promise;
       }
-      const sign = y / this.distance;
-      const direction = y < 0 ? "up" : "down";
+      const sign = delta / this.distance;
+      const direction = delta < 0 ? "up" : "down";
       this.directionChanged = this.lastDirection !== void 0 && this.lastDirection !== direction;
       this.lastDirection = direction;
       this.additional = 0;
@@ -9701,12 +9557,12 @@ ${chapters.map((c, i) => `<div><label>
       const doFrame = () => {
         if (!this.scrolling) return scrolled();
         this.distance -= this.step + this.additional;
-        let scrollTop = this.element.scrollTop + (this.step + this.additional) * sign;
-        scrollTop = Math.max(scrollTop, 0);
-        scrollTop = Math.min(scrollTop, this.element.scrollHeight - this.element.clientHeight);
-        this.element.scrollTop = scrollTop;
+        let scrollMargin = this.scrollMargin() + (this.step + this.additional) * sign;
+        scrollMargin = Math.max(scrollMargin, 0);
+        scrollMargin = Math.min(scrollMargin, this.maxScrollMargin());
+        this.setScrollMargin(scrollMargin);
         if (this.distance <= 0) return scrolled();
-        if (scrollTop === 0 || scrollTop === this.element.scrollHeight - this.element.clientHeight) return scrolled();
+        if (scrollMargin === 0 || scrollMargin === this.maxScrollMargin()) return scrolled();
         if (this.directionChanged) return scrolled();
         window.requestAnimationFrame(doFrame);
       };
@@ -9799,15 +9655,17 @@ ${chapters.map((c, i) => `<div><label>
   }
 
   class BigImageFrameManager {
-    frame;
+    root;
+    container;
+    observer;
+    intersectingElements = [];
+    renderingElements = [];
+    currentIndex = 0;
     lockInit;
-    fragment;
-    // image decode will take a while, so cache it to fragment
-    elements = { next: [], curr: [], prev: [] };
+    preventStep = { currentPreventFinished: false };
     debouncer;
     throttler;
     callbackOnWheel;
-    preventStep = { currentPreventFinished: false };
     visible = false;
     html;
     frameScrollAbort;
@@ -9816,49 +9674,52 @@ ${chapters.map((c, i) => `<div><label>
     getChapter;
     loadingHelper;
     currLoadingState = /* @__PURE__ */ new Map();
-    scroller;
+    scrollerY;
+    scrollerX;
     lastMouse;
     pageNumInChapter = [];
     constructor(HTML, getChapter) {
       this.html = HTML;
-      this.frame = HTML.bigImageFrame;
-      this.fragment = new DocumentFragment();
+      this.root = HTML.bigImageFrame;
+      this.lockInit = false;
       this.debouncer = new Debouncer();
       this.throttler = new Debouncer("throttle");
-      this.lockInit = false;
       this.getChapter = getChapter;
-      this.scroller = new Scroller(this.frame);
-      this.initFrame();
-      this.initImgScaleStyle();
+      this.scrollerY = new Scroller(this.root);
+      this.scrollerX = new Scroller(this.root, void 0, "x");
+      this.container = document.createElement("div");
+      this.container.classList.add("bifm-container");
+      switch (conf.readMode) {
+        case "continuous":
+          this.container.classList.add("bifm-container-vert");
+          break;
+        case "pagination":
+        case "horizontal":
+          this.container.classList.add("bifm-container-hori");
+          break;
+      }
+      this.observer = new IntersectionObserver((entries) => this.intersecting(entries), { root: this.root });
+      this.root.appendChild(this.container);
+      this.initEvent();
+      EBUS.subscribe("pf-on-appended", (_total, nodes, chapterIndex) => {
+        if (chapterIndex !== this.chapterIndex) return;
+        this.append(nodes);
+      });
       EBUS.subscribe("pf-change-chapter", (index) => {
-        this.elements = { next: [], curr: [], prev: [] };
         this.chapterIndex = Math.max(0, index);
+        this.container.innerHTML = "";
       });
       EBUS.subscribe("imf-on-click", (imf) => this.show(imf));
       EBUS.subscribe("imf-on-finished", (index, success, imf) => {
         if (imf.chapterIndex !== this.chapterIndex) return;
         this.currLoadingState.delete(index);
-        if (!this.visible || !success) return;
-        const elements = [
-          ...this.elements.curr.map((e, i) => ({ img: e, eleIndex: i, key: "curr" })),
-          ...this.elements.prev.map((e, i) => ({ img: e, eleIndex: i, key: "prev" })),
-          ...this.elements.next.map((e, i) => ({ img: e, eleIndex: i, key: "next" })),
-          ...this.getMediaNodes().map((e, i) => ({ img: e, eleIndex: i, key: "" }))
-        ];
-        const ret = elements.find((o) => index === parseIndex(o.img));
-        if (!ret) return;
-        const { img, eleIndex, key } = ret;
-        if (imf.contentType?.startsWith("video")) {
-          const vid = this.newMediaNode(index, imf);
-          if (["curr", "prev", "next"].includes(key)) {
-            this.elements[key][eleIndex] = vid;
-          }
-          img.replaceWith(vid);
-          img.remove();
-          return;
-        }
-        img.setAttribute("src", imf.node.blobSrc);
         this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
+        if (!this.visible || !success) return;
+        const current = this.renderingElements.find((element) => parseIndex(element) === index);
+        if (current) {
+          current.innerHTML = "";
+          current.appendChild(this.newMediaNode(imf));
+        }
       });
       this.loadingHelper = document.createElement("span");
       this.loadingHelper.id = "bifm-loading-helper";
@@ -9869,64 +9730,98 @@ ${chapters.map((c, i) => `<div><label>
       this.loadingHelper.style.backgroundColor = "#ffffff90";
       this.loadingHelper.style.fontWeight = "bold";
       this.loadingHelper.style.left = "0px";
-      this.frame.append(this.loadingHelper);
+      this.root.appendChild(this.loadingHelper);
       EBUS.subscribe("imf-download-state-change", (imf) => {
         if (imf.chapterIndex !== this.chapterIndex) return;
-        const element = this.elements.curr.find((e) => e.getAttribute("d-random-id") === imf.randomID);
-        if (!element) return;
-        const index = parseIndex(element);
-        this.currLoadingState.set(index, Math.floor(imf.downloadState.loaded / imf.downloadState.total * 100));
+        this.currLoadingState.set(imf.index, Math.floor(imf.downloadState.loaded / imf.downloadState.total * 100));
         this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
       });
-      new AutoPage(this, this.scroller, HTML.autoPageBTN);
+      new AutoPage(this, this.scrollerY, HTML.autoPageBTN);
     }
-    initFrame() {
-      this.frame.addEventListener("wheel", (event) => this.onWheel(event, true));
-      this.frame.addEventListener("contextmenu", (event) => event.preventDefault());
-      const debouncer = new Debouncer("throttle");
-      let magnifying = true;
-      this.frame.addEventListener("mousemove", (mmevt) => {
-        if (conf.stickyMouse === "disable" || conf.readMode !== "pagination") return;
-        if (magnifying) return;
-        debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
-          if (this.lastMouse) {
-            stickyMouse(this.frame, mmevt, this.lastMouse, conf.stickyMouse === "enable");
+    intersecting(entries) {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const element = entry.target;
+          const index = parseIndex(element);
+          if (index === -1) continue;
+          this.intersectingElements.push(element);
+        } else {
+          const index = this.intersectingElements.indexOf(entry.target);
+          if (index > -1) this.intersectingElements.splice(index, 1);
+        }
+      }
+      this.debouncer.addEvent("rendering-images", () => this.rendering(), 50);
+    }
+    rendering() {
+      const sorting = this.intersectingElements.map((elem) => ({ index: parseIndex(elem), elem }));
+      sorting.filter((e) => e.index > -1).sort((a, b) => a.index - b.index);
+      const intersecting = sorting.map((e) => e.elem);
+      if (intersecting.length === 0) return;
+      const prevElem = intersecting[0]?.previousElementSibling;
+      if (prevElem) intersecting.unshift(prevElem);
+      const nextElem = intersecting[intersecting.length - 1]?.nextElementSibling;
+      if (nextElem) intersecting.push(nextElem);
+      const unrender = [];
+      const rendered = [];
+      for (const elem of this.renderingElements) {
+        if (intersecting.includes(elem)) {
+          rendered.push(elem);
+        } else {
+          unrender.push(elem);
+        }
+      }
+      unrender.forEach((ele) => ele.innerHTML = "");
+      for (const elem of intersecting) {
+        if (!rendered.includes(elem)) {
+          elem.innerHTML = "";
+          const imf = this.getIMF(elem);
+          if (imf) {
+            elem.appendChild(this.newMediaNode(imf));
           }
-          this.lastMouse = { x: mmevt.clientX, y: mmevt.clientY };
-        }, 5);
-      });
-      this.frame.addEventListener("mousedown", (mdevt) => {
+        }
+      }
+      this.renderingElements = intersecting;
+    }
+    getIMF(element) {
+      const index = parseIndex(element);
+      if (index === -1 || isNaN(index)) return null;
+      const queue = this.getChapter(this.chapterIndex).queue;
+      return queue[index] ?? null;
+    }
+    initEvent() {
+      this.root.addEventListener("wheel", (event) => this.onWheel(event, true));
+      this.root.addEventListener("scroll", () => this.onScroll());
+      this.root.addEventListener("contextmenu", (event) => event.preventDefault());
+      this.root.addEventListener("mousedown", (mdevt) => {
         if (mdevt.button !== 0) return;
         if (mdevt.target.classList.contains("img-land")) return;
-        magnifying = true;
         let moved = false;
         let last = { x: mdevt.clientX, y: mdevt.clientY };
         const abort = new AbortController();
-        this.frame.addEventListener("mouseup", (muevt) => {
+        this.root.addEventListener("mouseup", (muevt) => {
           abort.abort();
           if (!moved) {
             this.hidden(muevt);
-          } else if (conf.imgScale === 100) {
+          } else if (conf.magnifier && conf.imgScale === 100) {
             this.scaleBigImages(1, 0, conf.imgScale, false);
           }
           moved = false;
-          magnifying = false;
         }, { once: true });
-        this.frame.addEventListener("mousemove", (mmevt) => {
-          if (!conf.magnifier || conf.readMode !== "pagination") return;
-          if (!moved && conf.imgScale === 100) {
-            this.scaleBigImages(1, 0, 150, false);
+        this.root.addEventListener("mousemove", (mmevt) => {
+          if (!moved && conf.magnifier && conf.imgScale === 100) {
+            this.scaleBigImages(5, 0, 150, false);
           }
           moved = true;
-          debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
-            stickyMouse(this.frame, mmevt, last, true);
+          if (conf.imgScale < 100) return;
+          this.debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
+            stickyMouse(this.root, mmevt, last);
             last = { x: mmevt.clientX, y: mmevt.clientY };
           }, 5);
         }, { signal: abort.signal });
       });
-      new TouchManager(this.frame, {
+      new TouchManager(this.root, {
         swipe: (direction) => {
-          if (conf.readMode === "continuous") return;
+          if (conf.readMode === "continuous" || conf.readMode === "horizontal") return;
           const oriented = (() => {
             switch (direction) {
               case "L":
@@ -9941,18 +9836,17 @@ ${chapters.map((c, i) => `<div><label>
           })();
           if (conf.imgScale === 100) {
             this.stepNext(oriented);
-          } else if (this.isReachedBoundary(oriented, direction === "L" || direction === "R") && !this.tryPreventStep()) {
+          } else if (this.checkOverflow() && !this.tryPreventStep()) {
             this.stepNext(oriented);
           }
         }
       });
     }
     scroll(y) {
-      this.scroller.step = conf.scrollingSpeed;
-      this.scroller.scroll(y);
+      this.scrollerY.scroll(y, conf.scrollingSpeed);
     }
     scrollStop() {
-      this.scroller.scrolling = false;
+      this.scrollerY.scrolling = false;
     }
     hidden(event) {
       if (event && event.target && event.target.tagName === "SPAN") return;
@@ -9960,121 +9854,128 @@ ${chapters.map((c, i) => `<div><label>
       EBUS.emit("bifm-on-hidden");
       this.html.fullViewGrid.focus();
       this.frameScrollAbort?.abort();
-      this.frame.classList.add("big-img-frame-collapse");
-      this.debouncer.addEvent("TOGGLE-CHILDREN", () => this.resetElements(), 200);
+      this.root.classList.add("big-img-frame-collapse");
     }
     show(imf) {
       this.visible = true;
-      this.frame.classList.remove("big-img-frame-collapse");
-      this.frame.focus();
+      this.root.classList.remove("big-img-frame-collapse");
+      this.root.focus();
       this.frameScrollAbort = new AbortController();
-      this.frame.addEventListener("scroll", () => this.onScroll(), { signal: this.frameScrollAbort.signal });
       this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => imf.chapterIndex === this.chapterIndex && this.setNow(imf), 100);
       EBUS.emit("bifm-on-show");
     }
     setNow(imf, oriented) {
       if (this.visible) {
-        this.initElements(imf, oriented);
-      } else {
-        const queue = this.getChapter(this.chapterIndex).queue;
-        const index = queue.indexOf(imf);
-        if (index === -1) return;
-        this.pageNumInChapter[this.chapterIndex] = index;
-        EBUS.emit("ifq-do", index, imf, oriented || "next");
+        this.jumpTo(imf.index);
       }
+      this.pageNumInChapter[this.chapterIndex] = imf.index;
+      this.currentIndex = imf.index;
+      EBUS.emit("ifq-do", imf.index, imf, oriented ?? "next");
       this.lastMouse = void 0;
       this.currLoadingState.clear();
       this.flushLoadingHelper();
     }
-    initElements(imf, oriented = "next") {
-      this.resetPreventStep();
-      const queue = this.getChapter(this.chapterIndex).queue;
-      const index = queue.indexOf(imf);
-      if (index === -1) return;
-      if (conf.readMode === "continuous") {
-        this.resetElements();
-        this.elements.curr[0] = this.newMediaNode(index, imf);
-        this.frame.appendChild(this.elements.curr[0]);
-        this.tryExtend();
+    append(nodes) {
+      const elements = [];
+      for (const node of nodes) {
+        const div = document.createElement("div");
+        div.style.aspectRatio = node.ratio().toString();
+        div.setAttribute("d-index", node.index.toString());
+        elements.push(div);
+        this.observer.observe(div);
+      }
+      if (this.container.childElementCount === 0) {
+        const paddingRatio = window.innerWidth / 2 / window.innerHeight;
+        const start = document.createElement("div");
+        start.style.aspectRatio = paddingRatio.toString();
+        start.setAttribute("d-index", "-1");
+        elements.unshift(start);
+        const end = document.createElement("div");
+        end.style.aspectRatio = paddingRatio.toString();
+        end.setAttribute("d-index", "-1");
+        elements.push(end);
       } else {
-        this.balanceElements(index, queue, oriented);
-        this.placeElements();
-        this.checkFrameOverflow();
+        elements.push(this.container.lastElementChild);
       }
-      this.pageNumInChapter[this.chapterIndex] = index;
-      EBUS.emit("ifq-do", index, imf, oriented);
-      this.elements.curr[0]?.scrollIntoView();
+      this.container.append(...elements);
     }
-    placeElements() {
-      this.removeMediaNode();
-      this.elements.curr.forEach((element) => this.frame.appendChild(element));
-      this.elements.prev.forEach((element) => this.fragment.appendChild(element));
-      this.elements.next.forEach((element) => this.fragment.appendChild(element));
-      const vid = this.elements.curr[0];
-      if (vid && vid instanceof HTMLVideoElement) {
-        if (vid.paused) this.tryPlayVideo(vid);
+    changeLayout() {
+      this.resetScaleBigImages(true);
+      switch (conf.readMode) {
+        case "continuous":
+          this.container.classList.add("bifm-container-vert");
+          this.container.classList.remove("bifm-container-hori");
+          break;
+        case "pagination":
+        case "horizontal":
+          this.container.classList.add("bifm-container-hori");
+          this.container.classList.remove("bifm-container-vert");
+          break;
       }
+      for (const elem of Array.from(this.container.children)) {
+        elem.style.opacity = "";
+      }
+      this.jumpTo(this.currentIndex);
     }
-    balanceElements(index, queue, oriented) {
-      const indices = { prev: [], curr: [], next: [] };
-      for (let i = 0; i < conf.paginationIMGCount; i++) {
-        const prevIndex = i + index - conf.paginationIMGCount;
-        const currIndex = i + index;
-        const nextIndex = i + index + conf.paginationIMGCount;
-        if (prevIndex > -1) indices.prev.push(prevIndex);
-        if (currIndex > -1 && currIndex < queue.length) indices.curr.push(currIndex);
-        if (nextIndex < queue.length) indices.next.push(nextIndex);
-      }
-      if (oriented === "next") {
-        this.elements.prev = this.elements.curr;
-        this.elements.curr = this.elements.next;
-        this.elements.next = [];
-      } else {
-        this.elements.next = this.elements.curr;
-        this.elements.curr = this.elements.prev;
-        this.elements.prev = [];
-      }
-      Object.entries(indices).forEach(([k, indexRange]) => {
-        const elements = this.elements[k];
-        if (elements.length > indexRange.length) {
-          elements.splice(indexRange.length, elements.length - indexRange.length).forEach((ele) => ele.remove());
+    jumpTo(index) {
+      const node = this.container.querySelector(`div[d-index="${index}"]`);
+      if (!node) return;
+      switch (conf.readMode) {
+        case "pagination": {
+          node.style.opacity = "1";
+          let sibling = node;
+          let t = 0;
+          while (t < 5) {
+            sibling = sibling.previousElementSibling;
+            if (!sibling) break;
+            sibling.style.opacity = "0";
+            t++;
+          }
+          sibling = node;
+          t = 0;
+          let nodes = [node];
+          while (t < 5) {
+            sibling = sibling.nextElementSibling;
+            if (!sibling) break;
+            if (t < conf.paginationIMGCount - 1) {
+              sibling.style.opacity = "1";
+              nodes.push(sibling);
+            } else {
+              sibling.style.opacity = "0";
+            }
+            t++;
+          }
+          const rootW = this.root.offsetWidth;
+          const width = nodes.reduce((w, elem) => w + elem.offsetWidth, 0);
+          let marginL = Math.floor((rootW - width) / 2);
+          marginL = Math.max(0, marginL);
+          this.root.scrollLeft = node.offsetLeft - marginL;
+          this.root.scrollTop = 0;
+          break;
         }
-        for (let j = 0; j < indexRange.length; j++) {
-          if (indexRange[j] === parseIndex(elements[j])) continue;
-          if (elements[j]) elements[j].remove();
-          elements[j] = this.newMediaNode(indexRange[j], queue[indexRange[j]]);
+        case "horizontal": {
+          const rootW = this.root.offsetWidth;
+          const width = node.offsetWidth;
+          let marginL = index === 0 ? 0 : Math.floor((rootW - width) / 2);
+          marginL = Math.max(0, marginL);
+          this.root.scrollLeft = node.offsetLeft - marginL;
+          break;
         }
-      });
-    }
-    resetElements() {
-      this.elements = { prev: [], curr: [], next: [] };
-      this.fragment.childNodes.forEach((child) => child.remove());
-      this.removeMediaNode();
-    }
-    removeMediaNode() {
-      this.vidController?.detach();
-      this.vidController?.hidden();
-      this.getMediaNodes().forEach((ele) => {
-        if (ele instanceof HTMLVideoElement) {
-          ele.pause();
+        case "continuous": {
+          const rootH = this.root.offsetHeight;
+          const height = node.offsetHeight;
+          let marginT = index === 0 ? 0 : Math.floor((rootH - height) / 2);
+          marginT = Math.max(0, marginT);
+          this.root.scrollTop = marginT + node.offsetTop;
+          break;
         }
-        ele.remove();
-      });
-    }
-    getMediaNodes() {
-      const list = Array.from(this.frame.querySelectorAll("img, video"));
-      let last = 0;
-      for (const ele of list) {
-        const index = parseIndex(ele);
-        if (index < last) {
-          throw new Error("BIFM: getMediaNodes: list is not ordered by d-index");
-        }
-        last = index;
       }
-      return list;
+    }
+    current() {
+      return this.intersectingElements.find((element) => this.currentIndex === parseIndex(element));
     }
     stepNext(oriented, fixStep = 0, current) {
-      let index = current !== void 0 ? current : this.elements.curr[0] ? parseInt(this.elements.curr[0].getAttribute("d-index")) : void 0;
+      let index = current || this.currentIndex;
       if (index === void 0 || isNaN(index)) return;
       const queue = this.getChapter(this.chapterIndex)?.queue;
       if (!queue || queue.length === 0) return;
@@ -10090,26 +9991,83 @@ ${chapters.map((c, i) => `<div><label>
       if (!queue[index]) return;
       this.setNow(queue[index], oriented);
     }
+    checkCurrent(oriented = "next") {
+      const rootRect = this.root.getBoundingClientRect();
+      const isCenter = (() => {
+        if (conf.readMode === "continuous") {
+          return (rect, rootRect2) => rect.top <= rootRect2.height / 2 && rect.bottom >= rootRect2.height / 2;
+        } else {
+          return (rect, rootRect2) => rect.left <= rootRect2.width / 2 && rect.right >= rootRect2.width / 2;
+        }
+      })();
+      for (const element of this.intersectingElements) {
+        const rect = element.getBoundingClientRect();
+        if (isCenter(rect, rootRect)) {
+          const imf = this.getIMF(element);
+          if (imf === null) continue;
+          if (imf.index === this.currentIndex) continue;
+          EBUS.emit("ifq-do", imf.index, imf, oriented);
+          this.currentIndex = imf.index;
+          break;
+        }
+      }
+    }
+    // limit scrollTop or scrollLeft
+    onScroll() {
+      switch (conf.readMode) {
+        case "pagination": {
+          break;
+        }
+        case "continuous": {
+          const offsetTop = this.container.children.item(1)?.offsetTop ?? 0;
+          if (this.root.scrollTop < offsetTop) {
+            this.root.scrollTop = offsetTop;
+          }
+          break;
+        }
+        case "horizontal": {
+          const offsetLeft = this.container.children.item(1)?.offsetLeft ?? 0;
+          if (this.root.scrollLeft < offsetLeft) {
+            this.root.scrollLeft = offsetLeft;
+          }
+          break;
+        }
+      }
+    }
     // isMouse: onWheel triggered by mousewheel, if not, means by keyboard control
-    onWheel(event, isMouse, preventCallback) {
-      if (!preventCallback) this.callbackOnWheel?.(event);
+    onWheel(event, _isMouse, _preventCallback) {
       if (event.buttons === 2) {
         event.preventDefault();
         this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
         return;
       }
-      if (conf.readMode === "continuous") return;
       const oriented = event.deltaY > 0 ? "next" : "prev";
-      if (conf.stickyMouse === "disable") {
-        if (!this.isReachedBoundary(oriented)) return;
-        if (isMouse && this.tryPreventStep()) return;
+      switch (conf.readMode) {
+        case "pagination": {
+          const over = this.checkOverflow()[oriented];
+          if (over.overY - 1 <= 0 && over.overX - 1 <= 0) {
+            event.preventDefault();
+            if (conf.imgScale === 100 || !this.tryPreventStep()) {
+              this.stepNext(oriented);
+            }
+            break;
+          }
+          if (over.overY - 1 <= 0 && over.overX > 0) {
+            this.scrollerX.scroll(Math.min(over.overX, Math.abs(event.deltaY * 3)) * (oriented === "next" ? 1 : -1), Math.abs(Math.ceil(event.deltaY / 4)));
+          }
+          break;
+        }
+        case "continuous": {
+          break;
+        }
+        case "horizontal": {
+          event.preventDefault();
+          this.scrollerX.scroll(event.deltaY * 3, Math.abs(Math.ceil(event.deltaY / 4)));
+          break;
+        }
       }
-      event.preventDefault();
-      this.stepNext(oriented);
-    }
-    onScroll() {
-      if (conf.readMode === "continuous") {
-        this.consecutive();
+      if (conf.readMode !== "pagination") {
+        this.debouncer.addEvent("bifm-on-wheel", () => this.checkCurrent(oriented), 100);
       }
     }
     resetPreventStep(fin) {
@@ -10119,9 +10077,7 @@ ${chapters.map((c, i) => `<div><label>
     }
     // prevent scroll to next page while mouse scrolling;
     tryPreventStep() {
-      if (!conf.imgScale || conf.imgScale === 100 || conf.preventScrollPageTime === 0) {
-        return false;
-      }
+      if (conf.preventScrollPageTime === 0) return false;
       if (this.preventStep.currentPreventFinished) {
         this.resetPreventStep();
         return false;
@@ -10134,7 +10090,7 @@ ${chapters.map((c, i) => `<div><label>
           lockEle.style.justifyContent = "center";
           lockEle.style.bottom = "0px";
           lockEle.innerHTML = `<div style="width: 30vw;height: 0.1rem;background-color: #1b00ff59;text-align: center;font-size: 0.8rem;position: relative;font-weight: 800;color: gray;border-radius: 7px;border: 1px solid #510000;"><span style="position: absolute;bottom: -3px;"></span></div>`;
-          this.frame.appendChild(lockEle);
+          this.root.appendChild(lockEle);
           this.preventStep.ele = lockEle;
           if (conf.preventScrollPageTime > 0) {
             const ani = lockEle.children[0].animate([{ width: "30vw" }, { width: "0vw" }], { duration: conf.preventScrollPageTime });
@@ -10146,161 +10102,50 @@ ${chapters.map((c, i) => `<div><label>
         return true;
       }
     }
-    isReachedBoundary(oriented, side = false) {
-      if (!side) {
-        if (oriented === "prev") {
-          return this.frame.scrollTop <= 0;
-        }
-        if (oriented === "next") {
-          return this.frame.scrollTop >= this.frame.scrollHeight - this.frame.offsetHeight;
-        }
-      } else {
-        if (oriented === "prev") {
-          return this.frame.scrollLeft <= 0;
-        }
-        if (oriented === "next") {
-          return this.frame.scrollLeft >= this.frame.scrollWidth - this.frame.offsetWidth;
-        }
+    checkOverflow() {
+      const node = this.container.querySelector(`div[d-index="${this.currentIndex}"]`);
+      if (!node) return { "prev": { overX: 0, overY: 0 }, "next": { overX: 0, overY: 0 }, elements: [] };
+      const elements = [node];
+      let sibling = node;
+      for (let i = 1; i < conf.paginationIMGCount; i++) {
+        sibling = sibling.nextElementSibling;
+        if (!sibling) break;
+        elements.push(sibling);
       }
-      return false;
-    }
-    consecutive() {
-      this.throttler.addEvent("SCROLL", () => {
-        this.debouncer.addEvent("REDUCE", () => {
-          if (!this.elements.curr[0]) return;
-          const distance2 = this.getRealOffsetTop(this.elements.curr[0]) - this.frame.scrollTop;
-          if (this.tryReduce()) {
-            this.restoreScrollTop(this.elements.curr[0], distance2);
-          }
-        }, 500);
-        const mediaNodes = this.getMediaNodes();
-        const index = this.findMediaNodeIndexOnCenter(mediaNodes);
-        const centerNode = mediaNodes[index];
-        if (this.elements.curr[0] !== centerNode) {
-          const oldIndex = parseIndex(this.elements.curr[0]);
-          const newIndex = parseIndex(centerNode);
-          const oriented = oldIndex < newIndex ? "next" : "prev";
-          const queue = this.getChapter(this.chapterIndex).queue;
-          if (queue.length === 0 || newIndex < 0 || newIndex > queue.length - 1) return;
-          const imf = queue[newIndex];
-          this.pageNumInChapter[this.chapterIndex] = newIndex;
-          EBUS.emit("ifq-do", newIndex, imf, oriented);
-          if (this.elements.curr[0] instanceof HTMLVideoElement) {
-            this.elements.curr[0].pause();
-          }
-          this.tryPlayVideo(centerNode);
-        }
-        this.elements.curr[0] = centerNode;
-        const distance = this.getRealOffsetTop(this.elements.curr[0]) - this.frame.scrollTop;
-        if (this.tryExtend() > 0) {
-          this.restoreScrollTop(this.elements.curr[0], distance);
-        }
-      }, 60);
+      const rectL = node.getBoundingClientRect();
+      const rectR = elements[elements.length - 1].getBoundingClientRect();
+      return {
+        "prev": {
+          overX: Math.round(rectL.left) * -1,
+          overY: Math.round(rectL.top) * -1
+        },
+        "next": {
+          overX: Math.round(rectR.right) - this.root.offsetWidth,
+          overY: Math.round(rectL.bottom) - this.root.offsetHeight
+        },
+        elements
+      };
     }
     restoreScrollTop(imgNode, distance) {
-      this.frame.scrollTop = this.getRealOffsetTop(imgNode) - distance;
+      this.root.scrollTop = this.getRealOffsetTop(imgNode) - distance;
     }
     getRealOffsetTop(imgNode) {
       return imgNode.offsetTop;
     }
-    tryExtend() {
-      let indexOffset = 0;
-      let mediaNodes = [];
-      let scrollTopFix = 0;
-      while (true) {
-        mediaNodes = this.getMediaNodes();
-        const frist = mediaNodes[0];
-        if (frist.offsetTop + frist.offsetHeight > this.frame.scrollTop + scrollTopFix) {
-          const extended = this.extendImgNode(frist, "prev");
-          if (extended === null) {
-            break;
-          } else {
-            scrollTopFix += extended.offsetHeight;
-          }
-          indexOffset++;
-        } else {
-          break;
-        }
-      }
-      while (true) {
-        mediaNodes = this.getMediaNodes();
-        const last = mediaNodes[mediaNodes.length - 1];
-        if (last.offsetTop < this.frame.scrollTop + this.frame.offsetHeight) {
-          if (this.extendImgNode(last, "next") === null) break;
-        } else {
-          break;
-        }
-      }
-      return indexOffset;
-    }
-    tryReduce() {
-      const imgNodes = this.getMediaNodes();
-      const shouldRemoveNodes = [];
-      let oriented = "prev";
-      for (const imgNode of imgNodes) {
-        if (oriented === "prev") {
-          if (imgNode.offsetTop + imgNode.offsetHeight < this.frame.scrollTop) {
-            shouldRemoveNodes.push(imgNode);
-          } else {
-            oriented = "next";
-            shouldRemoveNodes.pop();
-          }
-        } else if (oriented === "next") {
-          if (imgNode.offsetTop > this.frame.scrollTop + this.frame.offsetHeight) {
-            oriented = "remove";
-          }
-        } else {
-          shouldRemoveNodes.push(imgNode);
-        }
-      }
-      if (shouldRemoveNodes.length === 0) return false;
-      for (const imgNode of shouldRemoveNodes) {
-        imgNode.remove();
-      }
-      return true;
-    }
-    extendImgNode(mediaNode, oriented) {
-      let extendedNode;
-      const index = parseIndex(mediaNode);
-      if (index === -1) {
-        throw new Error("BIFM: extendImgNode: media node index is NaN");
-      }
-      const queue = this.getChapter(this.chapterIndex).queue;
-      if (queue.length === 0) return null;
-      if (oriented === "prev") {
-        if (index === 0) return null;
-        extendedNode = this.newMediaNode(index - 1, queue[index - 1]);
-        mediaNode.before(extendedNode);
-      } else {
-        if (index === queue.length - 1) return null;
-        extendedNode = this.newMediaNode(index + 1, queue[index + 1]);
-        mediaNode.after(extendedNode);
-      }
-      return extendedNode;
-    }
-    newMediaNode(index, imf) {
-      if (!imf) throw new Error("BIFM: newMediaNode: img fetcher is null");
+    newMediaNode(imf) {
       if (imf.contentType?.startsWith("video")) {
         const vid = document.createElement("video");
         vid.classList.add("bifm-img");
         vid.classList.add("bifm-vid");
-        vid.draggable = !(conf.magnifier && conf.readMode === "pagination");
-        vid.setAttribute("d-index", index.toString());
-        vid.setAttribute("d-random-id", imf.randomID);
-        vid.onloadeddata = () => {
-          if (this.visible && vid === this.elements.curr[0]) {
-            this.tryPlayVideo(vid);
-          }
-        };
+        vid.draggable = !(conf.magnifier && conf.readMode !== "continuous");
+        vid.draggable = false;
         vid.src = imf.node.blobSrc;
         return vid;
       } else {
         const img = document.createElement("img");
         img.decoding = "sync";
         img.classList.add("bifm-img");
-        img.draggable = !(conf.magnifier && conf.readMode === "pagination");
-        img.setAttribute("d-index", index.toString());
-        img.setAttribute("d-random-id", imf.randomID);
+        img.draggable = false;
         if (imf.stage === FetchState.DONE) {
           img.src = imf.node.blobSrc;
         } else {
@@ -10309,107 +10154,69 @@ ${chapters.map((c, i) => `<div><label>
         return img;
       }
     }
-    tryPlayVideo(vid) {
-      if (vid instanceof HTMLVideoElement) {
-        if (!this.vidController) {
-          this.vidController = new VideoControl(this.html.root);
-        }
-        this.vidController.attach(vid);
-      } else {
-        this.vidController?.hidden();
-      }
-    }
+    // tryPlayVideo(vid: HTMLElement) {
+    //   if (vid instanceof HTMLVideoElement) {
+    //     if (!this.vidController) {
+    //       this.vidController = new VideoControl(this.html.root);
+    //     }
+    //     this.vidController.attach(vid);
+    //   } else {
+    //     this.vidController?.hidden();
+    //   }
+    // }
     /**
      * @param fix: 1 or -1, means scale up or down
      * @param rate: step of scale, eg: current scale is 80, rate is 10, then new scale is 90
-     * @param _percent: directly set width percent 
+     * @param specifiedPercent: directly set width percent 
      * @param syncConf: sync to config, default = true 
      */
-    scaleBigImages(fix, rate, _percent, syncConf) {
-      const rule = queryRule(this.html.styleSheet, ".bifm-img");
-      if (!rule) return 0;
-      let percent = _percent || parseInt(conf.readMode === "pagination" ? rule.style.height : rule.style.width);
-      if (isNaN(percent)) percent = 100;
-      percent = percent + rate * fix;
+    scaleBigImages(fix, rate, specifiedPercent, syncConf) {
+      let oldPercent = conf.imgScale;
+      let newPercent = specifiedPercent ?? oldPercent + rate * fix;
       switch (conf.readMode) {
         case "pagination":
-          percent = Math.max(percent, 100);
-          percent = Math.min(percent, 300);
-          rule.style.height = `${percent}vh`;
+          {
+            const scrollLeft = this.root.scrollLeft;
+            const rule = queryRule(this.html.styleSheet, ".bifm-container-hori");
+            newPercent = Math.max(newPercent, 100);
+            newPercent = Math.min(newPercent, 300);
+            if (rule) rule.style.height = `${newPercent}%`;
+            this.root.scrollLeft = scrollLeft * (newPercent / oldPercent);
+            this.jumpTo(this.currentIndex);
+          }
+          break;
+        case "horizontal":
+          {
+            const scrollLeft = this.root.scrollLeft;
+            const rule = queryRule(this.html.styleSheet, ".bifm-container-hori");
+            newPercent = Math.max(newPercent, 80);
+            newPercent = Math.min(newPercent, 300);
+            if (rule) rule.style.height = `${newPercent}%`;
+            this.root.scrollLeft = scrollLeft * (newPercent / oldPercent);
+          }
           break;
         case "continuous":
-          percent = Math.max(percent, 20);
-          percent = Math.min(percent, 100);
-          rule.style.width = `${percent}vw`;
+          {
+            const scrollTop = this.root.scrollTop;
+            const rule = queryRule(this.html.styleSheet, ".bifm-container-vert");
+            newPercent = Math.max(newPercent, 20);
+            newPercent = Math.min(newPercent, 100);
+            if (rule) rule.style.width = `${newPercent}%`;
+            this.root.scrollTop = scrollTop * (newPercent / oldPercent);
+          }
           break;
       }
-      if (conf.readMode === "pagination") {
-        rule.style.minWidth = percent > 100 ? "" : "100vw";
-        if (percent === 100) this.resetScaleBigImages(false);
-        this.checkFrameOverflow();
-      }
       if (syncConf ?? true) {
-        conf.imgScale = percent;
+        conf.imgScale = newPercent;
         saveConf(conf);
       }
-      q("#scaleInput", this.html.pageHelper).textContent = `${percent}`;
-      return percent;
-    }
-    checkFrameOverflow() {
-      const flexRule = queryRule(this.html.styleSheet, ".bifm-flex");
-      if (flexRule) {
-        const width = Array.from(this.frame.querySelectorAll(".bifm-img")).reduce((width2, img) => width2 + img.offsetWidth, 0);
-        if (width > this.frame.offsetWidth) {
-          flexRule.style.justifyContent = "flex-start";
-        } else {
-          flexRule.style.justifyContent = "center";
-        }
-      }
+      q("#scaleInput", this.html.pageHelper).textContent = `${newPercent}`;
+      return newPercent;
     }
     resetScaleBigImages(syncConf) {
-      const rule = queryRule(this.html.styleSheet, ".bifm-img");
-      if (!rule) return;
-      let percent = 100;
-      rule.style.minWidth = "";
-      rule.style.minHeight = "";
-      rule.style.maxWidth = "";
-      rule.style.maxHeight = "";
-      rule.style.height = "";
-      rule.style.width = "";
-      rule.style.margin = "";
-      if (conf.readMode === "pagination") {
-        rule.style.height = "100vh";
-        rule.style.margin = "0";
-        if (conf.paginationIMGCount === 1) rule.style.minWidth = "100vw";
-      } else {
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-        rule.style.maxWidth = "100vw";
-        rule.style.width = isMobile ? "100vw" : "80vw";
-        rule.style.margin = "0 auto";
-        percent = isMobile ? 100 : 80;
-      }
-      if (syncConf) {
-        conf.imgScale = percent;
-        saveConf(conf);
-        q("#scaleInput", this.html.pageHelper).textContent = `${conf.imgScale}`;
-      }
-    }
-    initImgScaleStyle() {
-      this.resetScaleBigImages(false);
-      if (conf.imgScale && conf.imgScale > 0) {
-        this.scaleBigImages(1, 0, conf.imgScale);
-      }
-    }
-    findMediaNodeIndexOnCenter(imgNodes) {
-      const centerLine = this.frame.offsetHeight / 2;
-      for (let i = 0; i < imgNodes.length; i++) {
-        const imgNode = imgNodes[i];
-        const realOffsetTop = imgNode.offsetTop - this.frame.scrollTop;
-        if (realOffsetTop < centerLine && realOffsetTop + imgNode.offsetHeight >= centerLine) {
-          return i;
-        }
-      }
-      return 0;
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+      const percent = conf.readMode !== "continuous" || isMobile ? 100 : 80;
+      this.scaleBigImages(1, 0, percent, syncConf);
     }
     flushLoadingHelper() {
       if (this.currLoadingState.size === 0) {
@@ -10470,11 +10277,11 @@ ${chapters.map((c, i) => `<div><label>
       this.button.setAttribute("data-status", "playing");
       const displayTexts = this.button.getAttribute("data-display-texts").split(",");
       this.button.firstElementChild.innerText = displayTexts[1];
-      const frame = this.bifm.frame;
+      const frame = this.bifm.root;
       if (!this.bifm.visible) {
         const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
         if (queue.length === 0) return;
-        const index = Math.max(parseIndex(this.bifm.elements.curr[0]), 0);
+        const index = Math.max(parseIndex(this.bifm.current() || this.bifm.root), 0);
         this.bifm.show(queue[index]);
       }
       const progress = q("#auto-page-progress", this.button);
@@ -10490,13 +10297,12 @@ ${chapters.map((c, i) => `<div><label>
         if (this.status !== "running") {
           break;
         }
-        if (this.bifm.elements.curr.length === 0) break;
-        const index = parseInt(this.bifm.elements.curr[0]?.getAttribute("d-index"));
+        const index = parseIndex(this.bifm.current() || this.bifm.root);
         const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
         if (index < 0 || index >= queue.length) break;
         if (conf.readMode === "pagination") {
-          if (this.bifm.isReachedBoundary("next")) {
-            const curr = this.bifm.elements.curr[0];
+          if (this.bifm.checkOverflow()) {
+            const curr = this.bifm.current();
             if (curr instanceof HTMLVideoElement) {
               let resolve;
               const promise = new Promise((r) => resolve = r);
@@ -10509,12 +10315,12 @@ ${chapters.map((c, i) => `<div><label>
             }
             this.bifm.onWheel(new WheelEvent("wheel", { deltaY: 1 }), false, true);
           } else {
-            const deltaY = this.bifm.frame.offsetHeight / 2;
+            const deltaY = this.bifm.root.offsetHeight / 2;
             frame.scrollBy({ top: deltaY, behavior: "smooth" });
           }
         } else {
           this.scroller.step = conf.autoPageSpeed;
-          this.scroller.scroll(this.bifm.frame.offsetHeight);
+          this.scroller.scroll(this.bifm.root.offsetHeight);
         }
       }
       this.stop();
@@ -10536,12 +10342,12 @@ ${chapters.map((c, i) => `<div><label>
     const i = parseInt(d);
     return isNaN(i) ? -1 : i;
   }
-  function stickyMouse(element, event, lastMouse, reverse) {
+  function stickyMouse(element, event, lastMouse) {
     let [distanceY, distanceX] = [event.clientY - lastMouse.y, event.clientX - lastMouse.x];
-    if (reverse) [distanceY, distanceX] = [-distanceY, -distanceX];
+    [distanceY, distanceX] = [-distanceY, -distanceX];
     const overflowY = element.scrollHeight - element.offsetHeight;
     if (overflowY > 0) {
-      const rateY = overflowY / (element.offsetHeight / 4) * 3;
+      const rateY = conf.readMode !== "continuous" ? 1 : overflowY / (element.offsetHeight / 4) * 3;
       let scrollTop = element.scrollTop + distanceY * rateY;
       scrollTop = Math.max(scrollTop, 0);
       scrollTop = Math.min(scrollTop, overflowY);
@@ -10549,15 +10355,10 @@ ${chapters.map((c, i) => `<div><label>
     }
     const overflowX = element.scrollWidth - element.offsetWidth;
     if (overflowX > 0) {
-      const rateX = overflowX / (element.offsetWidth / 4) * 3;
+      const rateX = conf.readMode !== "continuous" ? 1 : overflowX / (element.offsetWidth / 4) * 3;
       let scrollLeft = element.scrollLeft + distanceX * rateX;
-      if (conf.reversePages) {
-        scrollLeft = Math.min(scrollLeft, 0);
-        scrollLeft = Math.max(scrollLeft, -overflowX);
-      } else {
-        scrollLeft = Math.max(scrollLeft, 0);
-        scrollLeft = Math.min(scrollLeft, overflowX);
-      }
+      scrollLeft = Math.max(scrollLeft, 0);
+      scrollLeft = Math.min(scrollLeft, overflowX);
       element.scrollLeft = scrollLeft;
     }
   }

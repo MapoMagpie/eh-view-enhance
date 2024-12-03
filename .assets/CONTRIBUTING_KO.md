@@ -29,7 +29,7 @@
  | |-html.ts                     // 스크립트의 UI.
  | |-style.ts                    // 스크립트 UI 스타일.
  | |-full-view-grid-manager.ts   // 썸네일 그리드 UI.
- | |-ultra-image-frame-manager.ts// 고화질 이미지 뷰어 UI.
+ | |-big-image-frame-manager.ts  // 고화질 이미지 뷰어 UI.
  | |-config-panel.ts             // 설정 패널.
  | |-event.ts                    // 일부 스크립트 UI 요소의 이벤트. 키보드 이벤트 포함.
  |-utils/                        //

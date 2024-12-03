@@ -29,7 +29,7 @@
  | |-html.ts                     // 脚本的界面。
  | |-style.ts                    // 脚本界面的样式。
  | |-full-view-grid-manager.ts   // 缩略图陈列网格界面。
- | |-ultra-image-frame-manager.ts// 大图阅读界面。
+ | |-big-image-frame-manager.ts  // 大图阅读界面。
  | |-config-panel.ts             // 配置面板。
  | |-event.ts                    // 部分脚本界面中元素的事件。包括键盘事件。
  |-utils/                        // 

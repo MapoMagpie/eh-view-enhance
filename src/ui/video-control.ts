@@ -27,7 +27,8 @@ export class VideoControl {
 
   ui: UI;
   paused: boolean = false;
-  abortController?: AbortController;
+  abort?: AbortController;
+  elementID?: string;
   root: HTMLElement;
 
   constructor(root: HTMLElement) {
@@ -36,11 +37,11 @@ export class VideoControl {
     this.flushUI();
   }
 
-  show() {
+  private show() {
     this.ui.root.hidden = false;
   }
 
-  hidden() {
+  private hidden() {
     this.ui.root.hidden = true;
   }
 
@@ -93,7 +94,7 @@ export class VideoControl {
     // evLog("info", "attach video control, src: ", element.src)
     this.detach();
     this.show();
-    this.abortController = new AbortController();
+    this.abort = new AbortController();
     const state = { time: element.currentTime, duration: element.duration };
     this.flushUI(state);
     element.addEventListener("timeupdate", (event) => {
@@ -101,7 +102,7 @@ export class VideoControl {
       if (!state) return;
       state.time = ele.currentTime;
       this.flushUI(state, true);
-    }, { signal: this.abortController.signal });
+    }, { signal: this.abort.signal });
     // why onwaiting triggered when approaching the end of video?
     element.onwaiting = () => evLog("debug", "onwaiting");
     element.loop = true;
@@ -112,57 +113,61 @@ export class VideoControl {
       element.play();
     }
 
-    let elementID = element.id;
-    if (!elementID) {
-      elementID = "vid-" + Math.random().toString(36).slice(2);
-      element.id = elementID;
+    this.elementID = element.id;
+    if (!this.elementID) {
+      this.elementID = "vid-" + Math.random().toString(36).slice(2);
+      element.id = this.elementID;
     }
     this.ui.playBTN.addEventListener("click", () => {
-      const vid = this.root.querySelector<HTMLVideoElement>(`#${elementID}`);
-      if (vid) {
-        this.paused = !this.paused;
-        if (this.paused) {
-          vid.pause();
-        } else {
-          vid.play();
-        }
-        this.flushUI(state);
+      const vid = this.getVideoElement();
+      if (!vid) return;
+      this.paused = !this.paused;
+      if (this.paused) {
+        vid.pause();
+      } else {
+        vid.play();
       }
-    }, { signal: this.abortController.signal });
+      this.flushUI(state);
+    }, { signal: this.abort.signal });
     this.ui.volumeBTN.addEventListener("click", () => {
-      const vid = this.root.querySelector<HTMLVideoElement>(`#${elementID}`);
-      if (vid) {
-        conf.muted = !conf.muted;
-        vid.muted = conf.muted;
-        saveConf(conf);
-        this.flushUI(state);
-      }
-    }, { signal: this.abortController.signal });
+      const vid = this.getVideoElement();
+      if (!vid) return;
+      conf.muted = !conf.muted;
+      vid.muted = conf.muted;
+      saveConf(conf);
+      this.flushUI(state);
+    }, { signal: this.abort.signal });
 
     onMouse(this.ui.progress, (percent) => {
-      const vid = this.root.querySelector<HTMLVideoElement>(`#${elementID}`);
-      if (vid) {
-        vid.currentTime = vid.duration * (percent / 100);
-        state.time = vid.currentTime;
-        this.flushUI(state);
-      }
-    }, this.abortController.signal);
+      const vid = this.getVideoElement();
+      if (!vid) return;
+      vid.currentTime = vid.duration * (percent / 100);
+      state.time = vid.currentTime;
+      this.flushUI(state);
+    }, this.abort.signal);
 
     onMouse(this.ui.volumeProgress, (percent) => {
-      const vid = this.root.querySelector<HTMLVideoElement>(`#${elementID}`);
-      if (vid) {
-        conf.volume = percent;
-        saveConf(conf);
-        vid.volume = conf.volume / 100;
-        this.flushUI(state);
-      }
-    }, this.abortController.signal);
+      const vid = this.getVideoElement();
+      if (!vid) return;
+      conf.volume = percent;
+      saveConf(conf);
+      vid.volume = conf.volume / 100;
+      this.flushUI(state);
+    }, this.abort.signal);
   }
 
   public detach() {
-    this.abortController?.abort();
-    this.abortController = undefined;
+    const vid = this.getVideoElement();
+    if (vid) vid.pause();
+    this.elementID = undefined;
+    this.abort?.abort();
+    this.abort = undefined;
     this.flushUI();
+    this.hidden();
+  }
+
+  private getVideoElement(): HTMLVideoElement | null {
+    return this.root.querySelector<HTMLVideoElement>(`#${this.elementID}`);
   }
 
 }

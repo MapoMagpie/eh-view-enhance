@@ -320,19 +320,15 @@ export class BigImageFrameManager {
       (elem as HTMLElement).style.opacity = "";
     }
     this.jumpTo(this.currentIndex);
-    // this.container.innerHTML = "";
-    // this.append(this.getChapter(this.chapterIndex).queue);
-    // TODO: currentElements;
   }
 
   jumpTo(index: number) {
-    // this.resetPreventStep(); // TODO
-    const node = this.container.querySelector<HTMLElement>(`div[d-index="${index}"]`);
-    if (!node) return;
+    const element = this.container.querySelector<HTMLElement>(`div[d-index="${index}"]`);
+    if (!element) return;
     switch (conf.readMode) {
       case "pagination": {
-        node.style.opacity = "1";
-        let sibling: HTMLElement | null = node;
+        element.style.opacity = "1";
+        let sibling: HTMLElement | null = element;
         let t = 0;
         while (t < 5) {
           sibling = sibling.previousElementSibling as HTMLElement | null;
@@ -340,9 +336,9 @@ export class BigImageFrameManager {
           sibling.style.opacity = "0";
           t++;
         }
-        sibling = node;
+        sibling = element;
         t = 0;
-        let nodes = [node];
+        let nodes = [element];
         while (t < 5) {
           sibling = sibling.nextElementSibling as HTMLElement | null;
           if (!sibling) break;
@@ -358,24 +354,27 @@ export class BigImageFrameManager {
         const width = nodes.reduce((w, elem) => w + elem.offsetWidth, 0);
         let marginL = Math.floor((rootW - width) / 2);
         marginL = Math.max(0, marginL);
-        this.root.scrollLeft = node.offsetLeft - marginL;
+        this.root.scrollLeft = element.offsetLeft - marginL;
         this.root.scrollTop = 0;
+        if (element.firstElementChild) {
+          this.tryPlayVideo(element.firstElementChild as HTMLElement);
+        }
         break;
       }
       case "horizontal": {
         const rootW = this.root.offsetWidth;
-        const width = node.offsetWidth;
+        const width = element.offsetWidth;
         let marginL = index === 0 ? 0 : Math.floor((rootW - width) / 2);
         marginL = Math.max(0, marginL);
-        this.root.scrollLeft = node.offsetLeft - marginL;
+        this.root.scrollLeft = element.offsetLeft - marginL;
         break;
       }
       case "continuous": {
         const rootH = this.root.offsetHeight;
-        const height = node.offsetHeight;
+        const height = element.offsetHeight;
         let marginT = index === 0 ? 0 : Math.floor((rootH - height) / 2);
         marginT = Math.max(0, marginT);
-        this.root.scrollTop = marginT + node.offsetTop;
+        this.root.scrollTop = marginT + element.offsetTop;
         break;
       }
     }
@@ -401,6 +400,7 @@ export class BigImageFrameManager {
       index = Math.max(0, index);
     }
     if (!queue[index]) return
+    this.resetPreventStep();
     this.setNow(queue[index], oriented);
   }
 
@@ -422,6 +422,9 @@ export class BigImageFrameManager {
         if (imf.index === this.currentIndex) continue;
         EBUS.emit("ifq-do", imf.index, imf, oriented);
         this.currentIndex = imf.index;
+        if (element.firstElementChild) {
+          this.tryPlayVideo(element.firstElementChild as HTMLElement);
+        }
         break;
       }
     }
@@ -431,13 +434,6 @@ export class BigImageFrameManager {
   onScroll() {
     switch (conf.readMode) {
       case "pagination": {
-        // const { prev, next, elements } = this.checkOverflow();
-        // if (prev.overX > 0 && next.overX < 0) {
-        //   this.root.scrollLeft = elements[0].offsetLeft;
-        // } else if (prev.overX < 0 && next.overX > 0) {
-        //   const last = elements[elements.length - 1];
-        //   this.root.scrollLeft = this.root.offsetWidth + last.offsetLeft - last.offsetWidth;
-        // }
         break;
       }
       case "continuous": {
@@ -467,16 +463,18 @@ export class BigImageFrameManager {
     const oriented = event.deltaY > 0 ? "next" : "prev";
     switch (conf.readMode) {
       case "pagination": {
-        const over = this.checkOverflow()[oriented];
-        if (over.overY - 1 <= 0 && over.overX - 1 <= 0) { // reached boundary, step next
+        const over = this.checkOverflow();
+        if (over[oriented].overY - 1 <= 0 && over[oriented].overX - 1 <= 0) { // reached boundary, step next
           event.preventDefault();
-          if (conf.imgScale === 100 || !this.tryPreventStep()) {
-            this.stepNext(oriented);
+          const negative = oriented === "next" ? "prev" : "next";
+          if (over[negative].overX > 0 || over[negative].overY > 0) {
+            if (this.tryPreventStep()) break;
           }
+          this.stepNext(oriented);
           break;
         }
-        if (over.overY - 1 <= 0 && over.overX > 0) { // should scroll
-          this.scrollerX.scroll(Math.min(over.overX, Math.abs(event.deltaY * 3)) * (oriented === "next" ? 1 : -1), Math.abs(Math.ceil(event.deltaY / 4)));
+        if (over[oriented].overY - 1 <= 0 && over[oriented].overX > 0) { // should scroll
+          this.scrollerX.scroll(Math.min(over[oriented].overX, Math.abs(event.deltaY * 3)) * (oriented === "next" ? 1 : -1), Math.abs(Math.ceil(event.deltaY / 4)));
         }
         break;
       }
@@ -583,11 +581,11 @@ export class BigImageFrameManager {
       vid.classList.add("bifm-vid");
       vid.draggable = !(conf.magnifier && conf.readMode !== "continuous");
       vid.draggable = false;
-      // vid.onloadeddata = () => {
-      //   if (this.visible && vid === this.elements.curr[0]) {
-      //     this.tryPlayVideo(vid);
-      //   }
-      // };
+      vid.onloadeddata = () => {
+        if (this.visible && imf.index === this.currentIndex) {
+          this.tryPlayVideo(vid);
+        }
+      };
       vid.src = imf.node.blobSrc!;
       return vid;
     } else {
@@ -605,16 +603,17 @@ export class BigImageFrameManager {
     }
   }
 
-  // tryPlayVideo(vid: HTMLElement) {
-  //   if (vid instanceof HTMLVideoElement) {
-  //     if (!this.vidController) {
-  //       this.vidController = new VideoControl(this.html.root);
-  //     }
-  //     this.vidController.attach(vid);
-  //   } else {
-  //     this.vidController?.hidden();
-  //   }
-  // }
+  // if element is not HTMLVideoElement, video controller will pause(detach) the last one which is HTMLVideoElement;
+  tryPlayVideo(element: HTMLElement) {
+    if (element instanceof HTMLVideoElement) {
+      if (!this.vidController) {
+        this.vidController = new VideoControl(this.html.root);
+      }
+      this.vidController.attach(element);
+    } else {
+      this.vidController?.detach();
+    }
+  }
 
   /**
    * @param fix: 1 or -1, means scale up or down

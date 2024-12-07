@@ -1,8 +1,7 @@
-import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, conf, saveConf, Oriented } from "../config";
+import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, conf, saveConf } from "../config";
 import EBUS from "../event-bus";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
-import { Debouncer } from "../utils/debouncer";
 import parseKey from "../utils/keyboard";
 import queryCSSRules from "../utils/query-cssrules";
 import q from "../utils/query-element";
@@ -25,9 +24,10 @@ export type KeyboardEvents = {
   inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc>,
   inMain: Record<KeyboardInMainId, KeyboardDesc>,
 }
+type KBCallback = (event: KeyboardEvent | MouseEvent) => void;
 export class KeyboardDesc {
   defaultKeys: string[];
-  cb: (event: KeyboardEvent | MouseEvent) => void;
+  cb: KBCallback;
   noPreventDefault?: boolean = false;
   constructor(defaultKeys: string[], cb: (event: KeyboardEvent | MouseEvent) => void, noPreventDefault?: boolean) {
     this.defaultKeys = defaultKeys;
@@ -211,15 +211,6 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     // document.body.focus();
   }
 
-  function shouldStep(_oriented: Oriented, shouldPrevent: boolean): boolean {
-    if (BIFM.checkOverflow()) {
-      if (shouldPrevent && BIFM.tryPreventStep()) return false;
-      return true;
-    }
-    return false;
-  }
-
-  const scrollEventDebouncer = new Debouncer();
   function initKeyboardEvent(): KeyboardEvents {
     const inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc> = {
       "exit-big-image-mode": new KeyboardDesc(
@@ -236,7 +227,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       ),
       "step-to-first-image": new KeyboardDesc(
         ["home"],
-        () => BIFM.stepNext("next", 0, -1)
+        () => BIFM.stepNext("next", 0, 1)
       ),
       "step-to-last-image": new KeyboardDesc(
         ["end"],
@@ -256,20 +247,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
           const key = parseKey(event);
           const customKey = !["pageup", "arrowup", "shift+space"].includes(key);
           if (customKey) {
-            BIFM.scroll(BIFM.root.offsetHeight / 8 * -1);
-          }
-          const shouldPrevent = !["pageup", "shift+space"].includes(key);
-          if (shouldPrevent) {
-            if (!customKey) {
-              scrollEventDebouncer.addEvent("SCROLL-IMAGE-UP", () => BIFM.root.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
+            if (conf.readMode === "continuous") {
+              BIFM.scroll(BIFM.root.offsetHeight / 5 * -1);
             }
-            BIFM.root.addEventListener("smoothlyscrollend", () => shouldStep("prev", true), { once: true });
           }
-          if (shouldStep("prev", shouldPrevent)) {
-            event.preventDefault();
-            BIFM.scrollStop();
-            BIFM.onWheel(new WheelEvent("wheel", { deltaY: -1 }), false);
-          }
+          BIFM.onWheel(new WheelEvent("wheel", { deltaY: BIFM.root.offsetHeight / 5 * -1 }), true, true);
         }, true
       ),
       "scroll-image-down": new KeyboardDesc(
@@ -278,20 +260,11 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
           const key = parseKey(event);
           const customKey = !["pagedown", "arrowdown", "space"].includes(key);
           if (customKey) {
-            BIFM.scroll(BIFM.root.offsetHeight / 8);
-          }
-          const shouldPrevent = !["pagedown", "space"].includes(key);
-          if (shouldPrevent) {
-            if (!customKey) {
-              scrollEventDebouncer.addEvent("SCROLL-IMAGE-DOWN", () => BIFM.root.dispatchEvent(new CustomEvent("smoothlyscrollend")), 100);
+            if (conf.readMode === "continuous") {
+              BIFM.scroll(BIFM.root.offsetHeight / 5);
             }
-            BIFM.root.addEventListener("smoothlyscrollend", () => shouldStep("next", true), { once: true });
           }
-          if (shouldStep("next", shouldPrevent)) {
-            event.preventDefault();
-            BIFM.scrollStop();
-            BIFM.onWheel(new WheelEvent("wheel", { deltaY: 1 }), false);
-          }
+          BIFM.onWheel(new WheelEvent("wheel", { deltaY: BIFM.root.offsetHeight / 5 }), true, true);
         }, true
       ),
       "toggle-auto-play": new KeyboardDesc(
@@ -370,34 +343,27 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   function bigImageFrameKeyBoardEvent(event: KeyboardEvent | MouseEvent) {
     if (HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
     const key = parseKey(event);
-    const triggered = Object.entries(keyboardEvents.inBigImageMode).some(([id, desc]) => {
+    const found = Object.entries(keyboardEvents.inBigImageMode).find(([id, desc]) => {
       const override = conf.keyboards.inBigImageMode[id as KeyboardInBigImageModeId];
-      // override !== undefined never check defaultKeys
-      if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
-        desc.cb(event);
-        return !desc.noPreventDefault;
-
-      }
-      return false;
+      return ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key));
     });
-    if (triggered) {
-      event.preventDefault();
-    }
+    if (!found) return;
+    const [_, desc] = found;
+    if (!desc.noPreventDefault) event.preventDefault();
+    desc.cb(event);
   }
 
   function fullViewGridKeyBoardEvent(event: KeyboardEvent | MouseEvent) {
     if (HTML.root.classList.contains("ehvp-root-collapse")) return;
     const key = parseKey(event);
-    const triggered = Object.entries(keyboardEvents.inFullViewGrid).some(([id, desc]) => {
+    const found = Object.entries(keyboardEvents.inFullViewGrid).find(([id, desc]) => {
       const override = conf.keyboards.inFullViewGrid[id as KeyboardInFullViewGridId];
-      if ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key)) {
-        desc.cb(event);
-        return !desc.noPreventDefault;
-      }
-      return false;
+      return ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key));
     });
-    if (triggered) {
-      event.preventDefault();
+    if (found) {
+      const [_, desc] = found;
+      if (!desc.noPreventDefault) event.preventDefault();
+      desc.cb(event);
     } else if (event instanceof KeyboardEvent && event.key.length === 1 && event.key >= "0" && event.key <= "9") {
       numberRecord = numberRecord ? [...numberRecord, Number(event.key)] : [Number(event.key)];
       event.preventDefault();
@@ -408,17 +374,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     if (!HTML.root.classList.contains("ehvp-root-collapse")) return;
     if (!HTML.bigImageFrame.classList.contains("big-img-frame-collapse")) return;
     const key = parseKey(event);
-    const triggered = Object.entries(keyboardEvents.inMain).some(([id, desc]) => {
+    const found = Object.entries(keyboardEvents.inMain).find(([id, desc]) => {
       const override = conf.keyboards.inMain[id as KeyboardInMainId];
-      if (override !== undefined ? override.includes(key) : desc.defaultKeys.includes(key)) {
-        desc.cb(event);
-        return !desc.noPreventDefault;
-      }
-      return false;
+      return ((override !== undefined && override.length > 0) ? override.includes(key) : desc.defaultKeys.includes(key));
     });
-    if (triggered) {
-      event.preventDefault();
-    }
+    if (!found) return;
+    const [_, desc] = found;
+    if (!desc.noPreventDefault) event.preventDefault();
+    desc.cb(event);
   }
 
   // 显示简易指南事件

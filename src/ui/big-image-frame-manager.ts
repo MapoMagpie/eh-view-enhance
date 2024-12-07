@@ -166,7 +166,7 @@ export class BigImageFrameManager {
   }
 
   initEvent() {
-    this.root.addEventListener("wheel", (event) => this.onWheel(event, true));
+    this.root.addEventListener("wheel", (event) => this.onWheel(event, false));
     this.root.addEventListener("scroll", () => this.onScroll());
     this.root.addEventListener("contextmenu", (event) => event.preventDefault());
     // const debouncer = new Debouncer("throttle");
@@ -189,7 +189,9 @@ export class BigImageFrameManager {
       // magnifying = true;
       let moved = false;
       let last = { x: mdevt.clientX, y: mdevt.clientY };
+      let elementsWidth: number | undefined = undefined;
       const abort = new AbortController();
+      const [scrollTop, scrollLeft] = [this.root.scrollTop, this.root.scrollLeft];
       // mouseup 
       this.root.addEventListener("mouseup", (muevt) => {
         abort.abort();
@@ -197,19 +199,27 @@ export class BigImageFrameManager {
           this.hidden(muevt);
         } else if (conf.magnifier && conf.imgScale === 100) { // restore scale
           this.scaleBigImages(1, 0, conf.imgScale, false);
+          [this.root.scrollTop, this.root.scrollLeft] = [scrollTop, scrollLeft];
         }
         moved = false;
         // magnifying = false;
       }, { once: true });
       // for magnifier, mouse move
       this.root.addEventListener("mousemove", (mmevt) => {
-        if (!moved && conf.magnifier && conf.imgScale === 100) { // temporarily zoom if img not scale
-          this.scaleBigImages(5, 0, 150, false);
+        if (!moved) { // first move
+          if (conf.magnifier && conf.imgScale === 100) { // temporarily zoom if img not scale
+            this.scaleBigImages(5, 0, 150, false);
+          }
+          if (conf.readMode === "pagination") {
+            const { showing } = this.getElements();
+            if (showing.length > 0) {
+              elementsWidth = showing[showing.length - 1].offsetLeft + showing[showing.length - 1].offsetWidth - showing[0].offsetLeft;
+            }
+          }
         }
         moved = true;
-        if (conf.imgScale < 100) return;
         this.debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
-          stickyMouse(this.root, mmevt, last);
+          stickyMouse(this.root, mmevt, last, elementsWidth);
           last = { x: mmevt.clientX, y: mmevt.clientY };
         }, 5);
       }, { signal: abort.signal });
@@ -327,31 +337,12 @@ export class BigImageFrameManager {
     if (!element) return;
     switch (conf.readMode) {
       case "pagination": {
-        element.style.opacity = "1";
-        let sibling: HTMLElement | null = element;
-        let t = 0;
-        while (t < 5) {
-          sibling = sibling.previousElementSibling as HTMLElement | null;
-          if (!sibling) break;
-          sibling.style.opacity = "0";
-          t++;
-        }
-        sibling = element;
-        t = 0;
-        let nodes = [element];
-        while (t < 5) {
-          sibling = sibling.nextElementSibling as HTMLElement | null;
-          if (!sibling) break;
-          if (t < conf.paginationIMGCount - 1) {
-            sibling.style.opacity = "1";
-            nodes.push(sibling);
-          } else {
-            sibling.style.opacity = "0";
-          }
-          t++;
-        }
+        const { showing, hiding } = this.getElements(element);
+        showing.forEach(elem => elem.style.opacity = "1");
+        hiding.forEach(elem => elem.style.opacity = "0");
         const rootW = this.root.offsetWidth;
-        const width = nodes.reduce((w, elem) => w + elem.offsetWidth, 0);
+        const last = showing[showing.length - 1];
+        const width = last.offsetLeft + last.offsetWidth - showing[0].offsetLeft;
         let marginL = Math.floor((rootW - width) / 2);
         marginL = Math.max(0, marginL);
         this.root.scrollLeft = element.offsetLeft - marginL;
@@ -362,11 +353,11 @@ export class BigImageFrameManager {
         break;
       }
       case "horizontal": {
-        const rootW = this.root.offsetWidth;
-        const width = element.offsetWidth;
-        let marginL = index === 0 ? 0 : Math.floor((rootW - width) / 2);
-        marginL = Math.max(0, marginL);
-        this.root.scrollLeft = element.offsetLeft - marginL;
+        // const rootW = this.root.offsetWidth;
+        // const width = element.offsetWidth;
+        // let marginL = index === 0 ? 0 : Math.floor((rootW - width) / 2);
+        // marginL = Math.max(0, marginL);
+        this.root.scrollLeft = element.offsetLeft - 0;
         break;
       }
       case "continuous": {
@@ -433,20 +424,49 @@ export class BigImageFrameManager {
   // limit scrollTop or scrollLeft
   onScroll() {
     switch (conf.readMode) {
-      case "pagination": {
+      case "continuous": {
+        const [first, last] = [
+          this.container.children.item(1) as HTMLElement,
+          this.container.children.item(this.container.children.length - 2) as HTMLElement,
+        ];
+        let offsetTop = first.offsetTop ?? 0;
+        if (this.root.scrollTop < offsetTop - 3) {
+          this.root.scrollTop = offsetTop - 2;
+        } else {
+          offsetTop = last ? last.offsetTop + last.offsetHeight - this.root.offsetHeight : this.root.scrollHeight;
+          if (this.root.scrollTop > offsetTop + 3) {
+            this.root.scrollTop = offsetTop + 2;
+          }
+        }
         break;
       }
-      case "continuous": {
-        const offsetTop = (this.container.children.item(1) as HTMLElement | null)?.offsetTop ?? 0;
-        if (this.root.scrollTop < offsetTop) {
-          this.root.scrollTop = offsetTop;
+      case "pagination": {
+        const { showing } = this.getElements();
+        const [first, last] = [showing[0] ?? null, showing[showing.length - 1] ?? null];
+        const width = last.offsetLeft + last.offsetWidth - first.offsetLeft;
+        let offsetLeft = first?.offsetLeft ?? 0;
+        const maxLeft = offsetLeft + Math.max(width - this.root.offsetWidth, 0);
+        const minLeft = offsetLeft + Math.min(width - this.root.offsetWidth, 0);
+        if (this.root.scrollLeft > maxLeft) {
+          this.root.scrollLeft = maxLeft;
+        } else if (this.root.scrollLeft < minLeft) {
+          this.root.scrollLeft = minLeft;
         }
         break;
       }
       case "horizontal": {
-        const offsetLeft = (this.container.children.item(1) as HTMLElement | null)?.offsetLeft ?? 0;
-        if (this.root.scrollLeft < offsetLeft) {
-          this.root.scrollLeft = offsetLeft;
+        const [first, last] = [
+          this.container.children.item(1) as HTMLElement,
+          this.container.children.item(this.container.children.length - 2) as HTMLElement,
+        ];
+        let offsetLeft = first?.offsetLeft ?? 0;
+        if (this.root.scrollLeft < offsetLeft - 3) {
+          this.root.scrollLeft = offsetLeft - 2;
+        } else {
+          offsetLeft = last ? last.offsetLeft + last.offsetWidth - this.root.offsetWidth : this.root.scrollWidth;
+          if (this.root.scrollLeft > offsetLeft + 3) {
+            this.root.scrollLeft = offsetLeft + 2;
+          }
         }
         break;
       }
@@ -454,7 +474,7 @@ export class BigImageFrameManager {
   }
 
   // isMouse: onWheel triggered by mousewheel, if not, means by keyboard control
-  onWheel(event: WheelEvent, _isMouse?: boolean, _preventCallback?: boolean) {
+  onWheel(event: WheelEvent, noPrevent?: boolean, customScrolling?: boolean) {
     if (event.buttons === 2) {
       event.preventDefault();
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
@@ -466,12 +486,17 @@ export class BigImageFrameManager {
         const over = this.checkOverflow();
         if (over[oriented].overY - 1 <= 0 && over[oriented].overX - 1 <= 0) { // reached boundary, step next
           event.preventDefault();
-          const negative = oriented === "next" ? "prev" : "next";
-          if (over[negative].overX > 0 || over[negative].overY > 0) {
-            if (this.tryPreventStep()) break;
+          if (!noPrevent) {
+            const negative = oriented === "next" ? "prev" : "next";
+            if (over[negative].overX > 0 || over[negative].overY > 0) {
+              if (this.tryPreventStep()) break;
+            }
           }
           this.stepNext(oriented);
           break;
+        }
+        if (customScrolling && over[oriented].overY > 0) {
+          this.scrollerY.scroll(Math.min(over[oriented].overY, Math.abs(event.deltaY * 3)) * (oriented === "next" ? 1 : -1), Math.abs(Math.ceil(event.deltaY / 4)));
         }
         if (over[oriented].overY - 1 <= 0 && over[oriented].overX > 0) { // should scroll
           this.scrollerX.scroll(Math.min(over[oriented].overX, Math.abs(event.deltaY * 3)) * (oriented === "next" ? 1 : -1), Math.abs(Math.ceil(event.deltaY / 4)));
@@ -684,6 +709,36 @@ export class BigImageFrameManager {
   getPageNumber() {
     return this.pageNumInChapter[this.chapterIndex] ?? 0;
   }
+
+  // in read mode "pagination", get elements, showing will set opacity to 1, hiding will set opacity to 0;
+  getElements(element?: HTMLElement): { showing: HTMLElement[], hiding: HTMLElement[] } {
+    element = element || this.container.querySelector<HTMLElement>(`div[d-index="${this.currentIndex}"]`) || undefined;
+    if (!element) return { showing: [], hiding: [] };
+    const showing = [element];
+    const hiding = [];
+    let sibling: HTMLElement | null = element;
+    let t = 0;
+    while (t < 5) {
+      sibling = sibling.previousElementSibling as HTMLElement | null;
+      if (!sibling) break;
+      hiding.push(sibling);
+      t++;
+    }
+    sibling = element;
+    t = 0;
+    while (t < 5) {
+      sibling = sibling.nextElementSibling as HTMLElement | null;
+      if (!sibling) break;
+      if (t < conf.paginationIMGCount - 1 && sibling.getAttribute("d-index") !== "-1") {
+        showing.push(sibling);
+      } else {
+        hiding.push(sibling);
+      }
+      t++;
+    }
+    return { showing, hiding };
+  }
+
 }
 
 // 自动翻页
@@ -773,7 +828,7 @@ class AutoPage {
             });
             await promise;
           }
-          this.bifm.onWheel(new WheelEvent("wheel", { deltaY: 1 }), false, true);
+          this.bifm.onWheel(new WheelEvent("wheel", { deltaY: 1 }));
         } else {
           const deltaY = this.bifm.root.offsetHeight / 2;
           frame.scrollBy({ top: deltaY, behavior: "smooth" });
@@ -805,24 +860,23 @@ function parseIndex(ele: HTMLElement): number {
   return isNaN(i) ? -1 : i;
 }
 
-function stickyMouse(element: HTMLElement, event: MouseEvent, lastMouse: { x: number, y: number }) {
+function stickyMouse(element: HTMLElement, event: MouseEvent, lastMouse: { x: number, y: number }, elementsWidth?: number) {
   let [distanceY, distanceX] = [event.clientY - lastMouse.y, event.clientX - lastMouse.x];
   [distanceY, distanceX] = [-distanceY, -distanceX];
 
   const overflowY = element.scrollHeight - element.offsetHeight;
   if (overflowY > 0) {
-    const rateY = (conf.readMode !== "continuous") ? 1 : overflowY / (element.offsetHeight / 4) * 3;
+    const rateY = (conf.readMode === "continuous") ? 1 : overflowY / (element.offsetHeight / 4) * 3;
     let scrollTop = element.scrollTop + distanceY * rateY;
     scrollTop = Math.max(scrollTop, 0);
     scrollTop = Math.min(scrollTop, overflowY);
     element.scrollTop = scrollTop;
   }
-  const overflowX = element.scrollWidth - element.offsetWidth;
+  const overflowX = (elementsWidth ?? element.scrollWidth) - element.offsetWidth;
   if (overflowX > 0) {
-    const rateX = (conf.readMode !== "continuous") ? 1 : overflowX / (element.offsetWidth / 4) * 3;
+    const rateX = (conf.readMode !== "pagination") ? 1 : overflowX / (element.offsetWidth / 4) * 3;
     let scrollLeft = element.scrollLeft + distanceX * rateX;
-    scrollLeft = Math.max(scrollLeft, 0);
-    scrollLeft = Math.min(scrollLeft, overflowX);
+    console.log(`overflow ${overflowX}, element.offsetWidth / 4: ${element.offsetWidth / 4}, rateX: ${rateX}, scrollLeft: ${scrollLeft}, distanceX: ${distanceX}`);
     element.scrollLeft = scrollLeft;
   }
 }

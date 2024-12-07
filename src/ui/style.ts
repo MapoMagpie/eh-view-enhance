@@ -257,6 +257,12 @@ export function styleCSS() {
   display: flex;
   flex-wrap: nowrap;
 }
+.bifm-container-vert > div {
+  margin: 2px 0px;
+}
+.bifm-container-hori > div {
+  margin: 0px 2px;
+}
 /**
 .bifm-container > div {
   border: 1px solid red;

@@ -128,9 +128,12 @@ export class BigImageFrameManager {
   }
   rendering() {
     const sorting = this.intersectingElements.map((elem) => ({ index: parseIndex(elem), elem }));
+    // make sure intersectingElements in order in the document flow
     sorting.filter(e => e.index > -1).sort((a, b) => a.index - b.index);
+    if (conf.reversePages) sorting.reverse();
     const intersecting = sorting.map(e => e.elem);
     if (intersecting.length === 0) return;
+    // extend the renderingElements array to pre-decode the image
     const prevElem = intersecting[0]?.previousElementSibling as HTMLElement | null;
     if (prevElem) intersecting.unshift(prevElem);
     const nextElem = intersecting[intersecting.length - 1]?.nextElementSibling as HTMLElement | null;
@@ -166,7 +169,7 @@ export class BigImageFrameManager {
   }
 
   initEvent() {
-    this.root.addEventListener("wheel", (event) => this.onWheel(event, false));
+    this.root.addEventListener("wheel", (event) => this.onWheel(event));
     this.root.addEventListener("scroll", () => this.onScroll());
     this.root.addEventListener("contextmenu", (event) => event.preventDefault());
     // const debouncer = new Debouncer("throttle");
@@ -297,6 +300,7 @@ export class BigImageFrameManager {
       elements.push(div);
       this.observer.observe(div);
     }
+    const reverse = conf.readMode !== "continuous" && conf.reversePages;
     if (this.container.childElementCount === 0) {
       const paddingRatio = (window.innerWidth / 2) / window.innerHeight;
       const start = document.createElement("div");
@@ -308,26 +312,38 @@ export class BigImageFrameManager {
       end.setAttribute("d-index", "-1");
       elements.push(end);
     } else {
-      elements.push(this.container.lastElementChild as HTMLElement);
+      elements.push((reverse ? this.container.firstElementChild : this.container.lastElementChild) as HTMLElement);
+    }
+    if (reverse) {
+      elements.reverse();
     }
     this.container.append(...elements);
   }
 
   changeLayout() {
     this.resetScaleBigImages(true);
+    let reAppend = false;
     switch (conf.readMode) {
       case "continuous":
+        reAppend = this.container.classList.contains("bifm-container-hori") && conf.reversePages;
         this.container.classList.add("bifm-container-vert");
         this.container.classList.remove("bifm-container-hori");
         break;
       case "pagination":
       case "horizontal":
+        reAppend = this.container.classList.contains("bifm-container-vert") && conf.reversePages;
         this.container.classList.add("bifm-container-hori");
         this.container.classList.remove("bifm-container-vert");
         break;
     }
-    for (const elem of Array.from(this.container.children)) {
-      (elem as HTMLElement).style.opacity = "";
+    if (reAppend) {
+      this.container.innerHTML = "";
+      const queue = this.getChapter(this.chapterIndex).queue;
+      this.append(queue);
+    } else {
+      for (const elem of Array.from(this.container.children)) {
+        (elem as HTMLElement).style.opacity = "";
+      }
     }
     this.jumpTo(this.currentIndex);
   }
@@ -341,11 +357,15 @@ export class BigImageFrameManager {
         showing.forEach(elem => elem.style.opacity = "1");
         hiding.forEach(elem => elem.style.opacity = "0");
         const rootW = this.root.offsetWidth;
-        const last = showing[showing.length - 1];
-        const width = last.offsetLeft + last.offsetWidth - showing[0].offsetLeft;
-        let marginL = Math.floor((rootW - width) / 2);
-        marginL = Math.max(0, marginL);
-        this.root.scrollLeft = element.offsetLeft - marginL;
+        const [first, last] = [showing[0], showing[showing.length - 1]];
+        const width = last.offsetLeft + last.offsetWidth - first.offsetLeft;
+        let margin = Math.floor((rootW - width) / 2);
+        margin = Math.max(0, margin);
+        if (conf.reversePages) {
+          this.root.scrollLeft = element.offsetLeft - this.root.offsetWidth + element.offsetWidth + margin;
+        } else {
+          this.root.scrollLeft = element.offsetLeft - margin;
+        }
         this.root.scrollTop = 0;
         if (element.firstElementChild) {
           this.tryPlayVideo(element.firstElementChild as HTMLElement);
@@ -353,11 +373,11 @@ export class BigImageFrameManager {
         break;
       }
       case "horizontal": {
-        // const rootW = this.root.offsetWidth;
-        // const width = element.offsetWidth;
-        // let marginL = index === 0 ? 0 : Math.floor((rootW - width) / 2);
-        // marginL = Math.max(0, marginL);
-        this.root.scrollLeft = element.offsetLeft - 0;
+        if (conf.reversePages) {
+          this.root.scrollLeft = element.offsetLeft - this.root.offsetWidth + element.offsetWidth;
+        } else {
+          this.root.scrollLeft = element.offsetLeft;
+        }
         break;
       }
       case "continuous": {
@@ -480,37 +500,37 @@ export class BigImageFrameManager {
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
       return;
     }
-    const oriented = event.deltaY > 0 ? "next" : "prev";
+    const [oriented, negative]: [Oriented, Oriented] = event.deltaY > 0 ? ["next", "prev"] : ["prev", "next"];
     switch (conf.readMode) {
       case "pagination": {
         const over = this.checkOverflow();
-        if (over[oriented].overY - 1 <= 0 && over[oriented].overX - 1 <= 0) { // reached boundary, step next
+        const [$ori, $neg] = conf.reversePages ? [negative, oriented] : [oriented, negative];
+        if (over[oriented].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) { // reached boundary, step next
           event.preventDefault();
           if (!noPrevent) {
-            const negative = oriented === "next" ? "prev" : "next";
-            if (over[negative].overX > 0 || over[negative].overY > 0) {
+            if (over[$neg].overX > 0 || over[negative].overY > 0) {
               if (this.tryPreventStep()) break;
             }
           }
           this.stepNext(oriented);
           break;
         }
+        let fix = oriented === "next" ? 1 : -1;
         if (customScrolling && over[oriented].overY > 0) {
-          this.scrollerY.scroll(Math.min(over[oriented].overY, Math.abs(event.deltaY * 3)) * (oriented === "next" ? 1 : -1), Math.abs(Math.ceil(event.deltaY / 4)));
+          this.scrollerY.scroll(Math.min(over[oriented].overY, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
         }
-        if (over[oriented].overY - 1 <= 0 && over[oriented].overX > 0) { // should scroll
-          this.scrollerX.scroll(Math.min(over[oriented].overX, Math.abs(event.deltaY * 3)) * (oriented === "next" ? 1 : -1), Math.abs(Math.ceil(event.deltaY / 4)));
+        fix = fix * (conf.reversePages ? -1 : 1);
+        if (over[oriented].overY - 1 <= 0 && over[$ori].overX > 0) { // should scroll
+          this.scrollerX.scroll(Math.min(over[oriented].overX, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
         }
-        break;
-      }
-      case "continuous": {
         break;
       }
       case "horizontal": {
         event.preventDefault();
-        this.scrollerX.scroll(event.deltaY * 3, Math.abs(Math.ceil(event.deltaY / 4)));
+        this.scrollerX.scroll(event.deltaY * 3 * (conf.reversePages ? -1 : 1), Math.abs(Math.ceil(event.deltaY / 4)));
         break;
       }
+      case "continuous": break;
     }
     if (conf.readMode !== "pagination") {
       this.debouncer.addEvent("bifm-on-wheel", () => this.checkCurrent(oriented), 100);
@@ -567,17 +587,10 @@ export class BigImageFrameManager {
   }
 
   checkOverflow(): { "prev": { overX: number, overY: number }, "next": { overX: number, overY: number }, elements: HTMLElement[] } {
-    const node = this.container.querySelector<HTMLElement>(`div[d-index="${this.currentIndex}"]`);
-    if (!node) return { "prev": { overX: 0, overY: 0 }, "next": { overX: 0, overY: 0 }, elements: [] };
-    const elements = [node];
-    let sibling: HTMLElement | null = node;
-    for (let i = 1; i < conf.paginationIMGCount; i++) {
-      sibling = sibling.nextElementSibling as HTMLElement | null;
-      if (!sibling) break;
-      elements.push(sibling);
-    }
-    const rectL = node.getBoundingClientRect();
-    const rectR = elements[elements.length - 1].getBoundingClientRect();
+    const { showing } = this.getElements();
+    if (showing.length === 0) return { "prev": { overX: 0, overY: 0 }, "next": { overX: 0, overY: 0 }, elements: [] };
+    const rectL = showing[0].getBoundingClientRect();
+    const rectR = showing[showing.length - 1].getBoundingClientRect();
     return {
       "prev": {
         overX: Math.round(rectL.left) * -1,
@@ -587,7 +600,7 @@ export class BigImageFrameManager {
         overX: Math.round(rectR.right) - this.root.offsetWidth,
         overY: Math.round(rectL.bottom) - this.root.offsetHeight,
       },
-      elements
+      elements: showing,
     }
   }
 
@@ -710,16 +723,24 @@ export class BigImageFrameManager {
     return this.pageNumInChapter[this.chapterIndex] ?? 0;
   }
 
-  // in read mode "pagination", get elements, showing will set opacity to 1, hiding will set opacity to 0;
+  /**
+  * This method will only be called when readmode is not continuous
+  * get elements, showing will set opacity to 1, hiding will set opacity to 0;
+  * If conf.reversePages is true, the elements in the showing array are still kept in order in the document flow. [31, 30, 29(current)]
+  */
   getElements(element?: HTMLElement): { showing: HTMLElement[], hiding: HTMLElement[] } {
     element = element || this.container.querySelector<HTMLElement>(`div[d-index="${this.currentIndex}"]`) || undefined;
     if (!element) return { showing: [], hiding: [] };
     const showing = [element];
     const hiding = [];
     let sibling: HTMLElement | null = element;
+    const getSibling = (next: boolean) => {
+      next = conf.reversePages ? !next : next;
+      return (next ? sibling?.nextElementSibling : sibling?.previousElementSibling) as HTMLElement | null;
+    };
     let t = 0;
     while (t < 5) {
-      sibling = sibling.previousElementSibling as HTMLElement | null;
+      sibling = getSibling(false);
       if (!sibling) break;
       hiding.push(sibling);
       t++;
@@ -727,7 +748,7 @@ export class BigImageFrameManager {
     sibling = element;
     t = 0;
     while (t < 5) {
-      sibling = sibling.nextElementSibling as HTMLElement | null;
+      sibling = getSibling(true);
       if (!sibling) break;
       if (t < conf.paginationIMGCount - 1 && sibling.getAttribute("d-index") !== "-1") {
         showing.push(sibling);
@@ -736,6 +757,7 @@ export class BigImageFrameManager {
       }
       t++;
     }
+    if (conf.reversePages) showing.reverse();
     return { showing, hiding };
   }
 

@@ -245,13 +245,8 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         ["pageup", "arrowup", "shift+space"],
         (event) => {
           const key = parseKey(event);
-          const customKey = !["pageup", "arrowup", "shift+space"].includes(key);
-          if (customKey) {
-            if (conf.readMode === "continuous") {
-              BIFM.scroll(BIFM.root.offsetHeight / 5 * -1);
-            }
-          }
-          BIFM.onWheel(new WheelEvent("wheel", { deltaY: BIFM.root.offsetHeight / 5 * -1 }), true, true);
+          let customKey = !["pageup", "arrowup", "shift+space"].includes(key);
+          BIFM.onWheel(new WheelEvent("wheel", { deltaY: BIFM.root.offsetHeight / 5 * -1 }), true, customKey);
         }, true
       ),
       "scroll-image-down": new KeyboardDesc(
@@ -259,12 +254,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         (event) => {
           const key = parseKey(event);
           const customKey = !["pagedown", "arrowdown", "space"].includes(key);
-          if (customKey) {
-            if (conf.readMode === "continuous") {
-              BIFM.scroll(BIFM.root.offsetHeight / 5);
-            }
-          }
-          BIFM.onWheel(new WheelEvent("wheel", { deltaY: BIFM.root.offsetHeight / 5 }), true, true);
+          BIFM.onWheel(new WheelEvent("wheel", { deltaY: BIFM.root.offsetHeight / 5 }), true, customKey);
         }, true
       ),
       "toggle-auto-play": new KeyboardDesc(

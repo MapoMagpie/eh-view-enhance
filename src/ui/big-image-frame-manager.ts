@@ -109,7 +109,7 @@ export class BigImageFrameManager {
       this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
     });
     // enable auto page
-    new AutoPage(this, this.scrollerY, HTML.autoPageBTN);
+    new AutoPage(this, HTML.autoPageBTN);
   }
 
   intersecting(entries: IntersectionObserverEntry[]) {
@@ -258,6 +258,7 @@ export class BigImageFrameManager {
 
   scrollStop() {
     this.scrollerY.scrolling = false;
+    this.scrollerX.scrolling = false;
   }
 
   hidden(event?: MouseEvent) {
@@ -391,10 +392,6 @@ export class BigImageFrameManager {
     }
   }
 
-  current(): HTMLElement | undefined {
-    return this.intersectingElements.find(element => this.currentIndex === parseIndex(element));
-  }
-
   stepNext(oriented: Oriented, fixStep: number = 0, current?: number) {
     let index = current || this.currentIndex;
     if (index === undefined || isNaN(index)) return;
@@ -493,8 +490,8 @@ export class BigImageFrameManager {
     }
   }
 
-  // isMouse: onWheel triggered by mousewheel, if not, means by keyboard control
-  onWheel(event: WheelEvent, noPrevent?: boolean, customScrolling?: boolean) {
+  onWheel(event: WheelEvent, noPrevent?: boolean, customScrolling?: boolean, noCallback?: boolean) {
+    if (!noCallback) this.callbackOnWheel?.(event);
     if (event.buttons === 2) {
       event.preventDefault();
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
@@ -530,25 +527,16 @@ export class BigImageFrameManager {
         this.scrollerX.scroll(event.deltaY * 3 * (conf.reversePages ? -1 : 1), Math.abs(Math.ceil(event.deltaY / 4)));
         break;
       }
-      case "continuous": break;
+      case "continuous": {
+        if (customScrolling) {
+          this.scrollerY.scroll(event.deltaY, conf.scrollingSpeed);
+        }
+        break;
+      }
     }
     if (conf.readMode !== "pagination") {
       this.debouncer.addEvent("bifm-on-wheel", () => this.checkCurrent(oriented), 100);
     }
-    // if (!preventCallback) this.callbackOnWheel?.(event);
-    // // right click + scroll
-    // // consecutively will proceed by onScroll
-    // if (conf.readMode === "continuous") return;
-
-    // const oriented: Oriented = event.deltaY > 0 ? "next" : "prev";
-
-    // // if sticky mouse is enabled, just simplely scroll to next page;
-    // if (conf.stickyMouse === "disable") {
-    //   if (!this.isReachedBoundary(oriented)) return;
-    //   if (isMouse && this.tryPreventStep()) return;
-    // }
-    // event.preventDefault();
-    // this.stepNext(oriented);
   }
 
   resetPreventStep(fin?: boolean) {
@@ -769,12 +757,10 @@ class AutoPage {
   status: 'stop' | 'running';
   button: HTMLElement;
   lockVer: number;
-  scroller: Scroller;
-  constructor(BIFM: BigImageFrameManager, scroller: Scroller, root: HTMLElement) {
+  constructor(BIFM: BigImageFrameManager, button: HTMLElement) {
     this.bifm = BIFM;
-    this.scroller = scroller;
     this.status = "stop";
-    this.button = root;
+    this.button = button;
     this.lockVer = 0;
     this.bifm.callbackOnWheel = () => {
       if (this.status === "running") {
@@ -809,12 +795,10 @@ class AutoPage {
     this.button.setAttribute("data-status", "playing");
     const displayTexts = this.button.getAttribute("data-display-texts")!.split(",");
     (this.button.firstElementChild as HTMLSpanElement).innerText = displayTexts[1];
-    const frame = this.bifm.root;
     if (!this.bifm.visible) {
       const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
       if (queue.length === 0) return;
-      const index = Math.max(parseIndex(this.bifm.current() || this.bifm.root), 0);
-      this.bifm.show(queue[index]);
+      this.bifm.show(queue[this.bifm.currentIndex]);
     }
     const progress = q("#auto-page-progress", this.button);
     const interval = () => conf.readMode === "pagination" ? conf.autoPageSpeed : 1;
@@ -833,32 +817,22 @@ class AutoPage {
 
       // if (this.bifm.elements.curr.length === 0) break;
       // check boundary
-      const index = parseIndex(this.bifm.current() || this.bifm.root);
       const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
-      if (index < 0 || index >= queue.length) break;
+      if (this.bifm.currentIndex < 0 || this.bifm.currentIndex >= queue.length) break;
 
       if (conf.readMode === "pagination") {
-        if (this.bifm.checkOverflow()) {
-          const curr = this.bifm.current();
-          if (curr instanceof HTMLVideoElement) {
-            let resolve: () => void;
-            const promise = new Promise<void>(r => resolve = r);
-            curr.addEventListener("timeupdate", () => {
-              if (curr.currentTime >= curr.duration - 1) {
-                sleep(1000).then(resolve);
-              }
-            });
-            await promise;
-          }
-          this.bifm.onWheel(new WheelEvent("wheel", { deltaY: 1 }));
-        } else {
-          const deltaY = this.bifm.root.offsetHeight / 2;
-          frame.scrollBy({ top: deltaY, behavior: "smooth" });
+        const curr = this.bifm.container.querySelector<HTMLElement>(`div[d-index="${this.bifm.currentIndex}"]`)?.firstElementChild;
+        if (curr instanceof HTMLVideoElement) {
+          let resolve: () => void;
+          const promise = new Promise<void>(r => resolve = r);
+          curr.addEventListener("timeupdate", () => {
+            if (curr.currentTime >= curr.duration - 1) sleep(1000).then(resolve);
+          });
+          await promise;
         }
-      } else {
-        this.scroller.step = conf.autoPageSpeed;
-        this.scroller.scroll(this.bifm.root.offsetHeight);
       }
+      const deltaY = this.bifm.root.offsetHeight / 2;
+      this.bifm.onWheel(new WheelEvent("wheel", { deltaY: deltaY }), true, true, true);
     }
     this.stop();
   }
@@ -871,7 +845,7 @@ class AutoPage {
     this.lockVer += 1;
     const displayTexts = this.button.getAttribute("data-display-texts")!.split(",");
     (this.button.firstElementChild as HTMLSpanElement).innerText = displayTexts[0];
-    this.scroller.scroll(-1);
+    this.bifm.scrollStop();
   }
 }
 

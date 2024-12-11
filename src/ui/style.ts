@@ -276,6 +276,15 @@ export function styleCSS() {
   height: 100%;
   display: block;
 }
+#bifm-loading-helper {
+  position: fixed;
+  z-index: 3000;
+  display: none;
+  padding: 0px 3px;
+  background-color: #ffffff90;
+  font-weight: blod;
+  left: 0px;
+}
 .ehvp-root-collapse .big-img-frame {
   position: unset;
 }

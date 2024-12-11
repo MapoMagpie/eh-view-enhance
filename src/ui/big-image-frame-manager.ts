@@ -92,21 +92,19 @@ export class BigImageFrameManager {
         current.appendChild(this.newMediaNode(imf));
       }
     });
-    EBUS.subscribe("imf-resize", (imf) => this.onResize(imf));
+    EBUS.subscribe("imf-resize", (imf) => {
+      if (imf.chapterIndex !== this.chapterIndex) return;
+      this.onResize(imf);
+    });
 
     this.loadingHelper = document.createElement("span");
     this.loadingHelper.id = "bifm-loading-helper";
-    this.loadingHelper.style.position = "absolute";
-    this.loadingHelper.style.zIndex = "3000";
-    this.loadingHelper.style.display = "none";
-    this.loadingHelper.style.padding = "0px 3px";
-    this.loadingHelper.style.backgroundColor = "#ffffff90";
-    this.loadingHelper.style.fontWeight = "bold";
-    this.loadingHelper.style.left = "0px";
     this.root.appendChild(this.loadingHelper);
 
     EBUS.subscribe("imf-download-state-change", (imf) => {
       if (imf.chapterIndex !== this.chapterIndex) return;
+      const [start, end] = [this.currentIndex, this.currentIndex + (conf.readMode !== "pagination" ? 1 : conf.paginationIMGCount)];
+      if (imf.index < start || imf.index >= end) return;
       this.currLoadingState.set(imf.index, Math.floor(imf.downloadState.loaded / imf.downloadState.total * 100));
       this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
     });

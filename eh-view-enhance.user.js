@@ -10012,6 +10012,7 @@ ${chapters.map((c, i) => `<div><label>
     }
     append(nodes) {
       const elements = [];
+      const scrollWidth = this.root.scrollWidth;
       for (const node of nodes) {
         const div = document.createElement("div");
         div.style.aspectRatio = node.ratio().toString();
@@ -10035,8 +10036,11 @@ ${chapters.map((c, i) => `<div><label>
       }
       if (reverse) {
         elements.reverse();
+        this.container.prepend(...elements);
+        this.root.scrollLeft = this.root.scrollLeft + this.root.scrollWidth - scrollWidth;
+      } else {
+        this.container.append(...elements);
       }
-      this.container.append(...elements);
     }
     changeLayout() {
       this.resetScaleBigImages(true);

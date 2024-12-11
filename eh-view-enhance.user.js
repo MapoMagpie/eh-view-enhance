@@ -10134,7 +10134,7 @@ ${chapters.map((c, i) => `<div><label>
           const height = element.offsetHeight;
           let marginT = index === 0 ? 0 : Math.floor((rootH - height) / 2);
           marginT = Math.max(0, marginT);
-          this.root.scrollTop = marginT + element.offsetTop;
+          this.root.scrollTop = element.offsetTop - marginT;
           break;
         }
       }

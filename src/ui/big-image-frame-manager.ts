@@ -543,7 +543,7 @@ export class BigImageFrameManager {
         }
         fix = fix * (conf.reversePages ? -1 : 1);
         if (over[oriented].overY - 1 <= 0 && over[$ori].overX > 0) { // should scroll
-          this.scrollerX.scroll(Math.min(over[oriented].overX, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
+          this.scrollerX.scroll(Math.min(over[$ori].overX, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
         }
         break;
       }

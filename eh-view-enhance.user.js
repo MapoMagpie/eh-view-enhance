@@ -9885,14 +9885,14 @@ ${chapters.map((c, i) => `<div><label>
         const currScrollTop = this.root.scrollTop;
         element.style.aspectRatio = imf.ratio().toString();
         if (currOffsetTop !== current.offsetTop) {
-          this.root.scrollTop = current.offsetTop + currOffsetTop - currScrollTop;
+          this.root.scrollTop = current.offsetTop + (currOffsetTop - currScrollTop);
         }
       } else {
         const currOffsetLeft = current.offsetLeft;
         const currScrollLeft = this.root.scrollLeft;
         element.style.aspectRatio = imf.ratio().toString();
         if (currOffsetLeft !== current.offsetLeft) {
-          this.root.scrollLeft = current.offsetLeft + currOffsetLeft - currScrollLeft;
+          this.root.scrollLeft = current.offsetLeft - (currOffsetLeft - currScrollLeft);
         }
       }
     }

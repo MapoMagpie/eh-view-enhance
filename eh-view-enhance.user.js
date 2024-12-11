@@ -1541,10 +1541,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
               }
               this.node.blobSrc = transient.imgSrcCSP ? this.node.originSrc : URL.createObjectURL(new Blob([this.data], { type: this.contentType }));
               this.node.mimeType = this.contentType;
-              this.node.render((reason) => {
-                evLog("error", "render image failed, " + reason);
-                this.rendered = false;
-              });
+              this.node.render(
+                (reason) => {
+                  evLog("error", "render image failed, " + reason);
+                  this.rendered = false;
+                },
+                () => EBUS.emit("imf-resize", this)
+              );
               this.stage = 3 /* DONE */;
             case 3 /* DONE */:
               return null;
@@ -1580,10 +1583,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.node.picked = picked;
       if (!this.rendered) {
         this.rendered = true;
-        this.node.render((reason) => {
-          evLog("error", "render image failed, " + reason);
-          this.rendered = false;
-        });
+        this.node.render(
+          (reason) => {
+            evLog("error", "render image failed, " + reason);
+            this.rendered = false;
+          },
+          () => EBUS.emit("imf-resize", this)
+        );
         this.node.changeStyle(this.stage === 3 /* DONE */ ? "fetched" : void 0, this.failedReason);
       } else if (shouldChangeStyle) {
         let status;
@@ -2984,7 +2990,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
       return this.root;
     }
-    resize(onfailed) {
+    resize(onfailed, onResize) {
       if (!this.root || !this.imgElement || !this.canvasElement) return onfailed("undefined elements");
       if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL) return onfailed("empty or default src");
       if (this.root.offsetWidth <= 1) return onfailed("element too small");
@@ -3005,7 +3011,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           this.canvasElement.width = this.root.offsetWidth;
           this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
         }
-        EBUS.emit("imn-resize", this);
+        onResize();
       }
       const resized = (src) => {
         this.imgElement.src = "";
@@ -3024,7 +3030,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
       return 1;
     }
-    render(onfailed) {
+    render(onfailed, onResize) {
       this.debouncer.addEvent("IMG-RENDER", () => {
         if (!this.imgElement) return onfailed("element undefined");
         let justThumbnail = !conf.hdThumbnails || !this.blobSrc;
@@ -3034,13 +3040,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           this.root?.appendChild(tip);
           justThumbnail = true;
         }
-        this.imgElement.onload = () => this.resize(onfailed);
+        this.imgElement.onload = () => this.resize(onfailed, onResize);
         this.imgElement.onerror = () => onfailed("img load error");
         if (justThumbnail) {
           const delaySRC = this.delaySRC;
           this.delaySRC = void 0;
           if (delaySRC) {
-            delaySRC.then((src) => (this.thumbnailSrc = src) && this.render(onfailed)).catch(onfailed);
+            delaySRC.then((src) => (this.thumbnailSrc = src) && this.render(onfailed, onResize)).catch(onfailed);
           } else {
             this.imgElement.src = this.thumbnailSrc || this.blobSrc || DEFAULT_THUMBNAIL;
           }
@@ -7329,9 +7335,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         }
       });
       EBUS.subscribe("fvg-flow-vision-resize", () => this.layout.resize(this.queue));
-      EBUS.subscribe("imn-resize", (node) => this.resizedNodes(node));
+      EBUS.subscribe("imf-resize", (imf) => this.resizedNodes(imf));
     }
-    resizedNodes(node) {
+    resizedNodes(imf) {
+      const node = imf.node;
       if (node.root) {
         this.resizedNodesPending.push(node.root);
       }
@@ -9844,6 +9851,7 @@ ${chapters.map((c, i) => `<div><label>
           current.appendChild(this.newMediaNode(imf));
         }
       });
+      EBUS.subscribe("imf-resize", (imf) => this.onResize(imf));
       this.loadingHelper = document.createElement("span");
       this.loadingHelper.id = "bifm-loading-helper";
       this.loadingHelper.style.position = "absolute";
@@ -9860,6 +9868,26 @@ ${chapters.map((c, i) => `<div><label>
         this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
       });
       new AutoPage(this, HTML.autoPageBTN);
+    }
+    onResize(imf) {
+      const element = this.container.querySelector(`div[d-index="${imf.index}"]`);
+      const current = this.container.querySelector(`div[d-index="${this.currentIndex}"]`);
+      if (!element || !current) return;
+      if (conf.readMode === "continuous") {
+        const currOffsetTop = current.offsetTop;
+        const currScrollTop = this.root.scrollTop;
+        element.style.aspectRatio = imf.ratio().toString();
+        if (currOffsetTop !== current.offsetTop) {
+          this.root.scrollTop = current.offsetTop + currOffsetTop - currScrollTop;
+        }
+      } else {
+        const currOffsetLeft = current.offsetLeft;
+        const currScrollLeft = this.root.scrollLeft;
+        element.style.aspectRatio = imf.ratio().toString();
+        if (currOffsetLeft !== current.offsetLeft) {
+          this.root.scrollLeft = current.offsetLeft + currOffsetLeft - currScrollLeft;
+        }
+      }
     }
     intersecting(entries) {
       for (const entry of entries) {
@@ -10328,8 +10356,10 @@ ${chapters.map((c, i) => `<div><label>
         img.draggable = false;
         if (imf.stage === FetchState.DONE) {
           img.src = imf.node.blobSrc;
-        } else {
+        } else if (imf.node.thumbnailSrc) {
           img.src = imf.node.thumbnailSrc;
+        } else {
+          img.src = DEFAULT_THUMBNAIL;
         }
         return img;
       }

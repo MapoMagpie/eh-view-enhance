@@ -1,5 +1,4 @@
 import { conf } from "./config";
-import EBUS from "./event-bus";
 import { DownloadState } from "./img-fetcher";
 import { Debouncer } from "./utils/debouncer";
 import { resizing } from "./utils/image-resizing";
@@ -24,6 +23,7 @@ type Rect = {
 }
 
 type Onfailed = (reason: string, source?: string, error?: Error) => void;
+type OnResize = () => void;
 
 export default class ImageNode {
   root?: HTMLElement;
@@ -79,7 +79,7 @@ export default class ImageNode {
     return this.root;
   }
 
-  resize(onfailed: Onfailed) {
+  resize(onfailed: Onfailed, onResize: OnResize) {
     if (!this.root || !this.imgElement || !this.canvasElement) return onfailed("undefined elements");
     if (!this.imgElement.src || this.imgElement.src === DEFAULT_THUMBNAIL) return onfailed("empty or default src");
     if (this.root.offsetWidth <= 1) return onfailed("element too small");
@@ -103,7 +103,7 @@ export default class ImageNode {
         this.canvasElement.width = this.root.offsetWidth;
         this.canvasElement.height = Math.floor(this.root.offsetWidth * newRatio);
       }
-      EBUS.emit("imn-resize", this);
+      onResize();
     }
     const resized = (src: string) => {
       this.imgElement!.src = "";
@@ -128,7 +128,7 @@ export default class ImageNode {
     return 1;
   }
 
-  render(onfailed: Onfailed) {
+  render(onfailed: Onfailed, onResize: OnResize) {
     this.debouncer.addEvent("IMG-RENDER", () => {
       if (!this.imgElement) return onfailed("element undefined");
       let justThumbnail = !conf.hdThumbnails || !this.blobSrc;
@@ -138,13 +138,13 @@ export default class ImageNode {
         this.root?.appendChild(tip);
         justThumbnail = true;
       }
-      this.imgElement.onload = () => this.resize(onfailed);
+      this.imgElement.onload = () => this.resize(onfailed, onResize);
       this.imgElement.onerror = () => onfailed("img load error");
       if (justThumbnail) {
         const delaySRC = this.delaySRC;
         this.delaySRC = undefined;
         if (delaySRC) {
-          delaySRC.then(src => (this.thumbnailSrc = src) && this.render(onfailed)).catch(onfailed);
+          delaySRC.then(src => (this.thumbnailSrc = src) && this.render(onfailed, onResize)).catch(onfailed);
         } else { // normally set src
           this.imgElement.src = this.thumbnailSrc || this.blobSrc || DEFAULT_THUMBNAIL;
         }

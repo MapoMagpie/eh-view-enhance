@@ -1,6 +1,5 @@
 import { conf } from "../config";
 import EBUS from "../event-bus";
-import ImageNode from "../img-node";
 import { Debouncer } from "../utils/debouncer";
 import queryCSSRules from "../utils/query-cssrules";
 import { evLog } from "../utils/ev-log";
@@ -83,9 +82,10 @@ export class FullViewGridManager {
       }
     });
     EBUS.subscribe("fvg-flow-vision-resize", () => this.layout.resize(this.queue));
-    EBUS.subscribe("imn-resize", (node) => this.resizedNodes(node));
+    EBUS.subscribe("imf-resize", (imf) => this.resizedNodes(imf));
   }
-  resizedNodes(node: ImageNode) {
+  resizedNodes(imf: IMGFetcher) {
+    const node = imf.node;
     if (node.root) {
       this.resizedNodesPending.push(node.root);
     }

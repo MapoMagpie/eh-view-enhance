@@ -135,7 +135,9 @@ export class IMGFetcher {
             this.node.render((reason) => {
               evLog("error", "render image failed, " + reason);
               this.rendered = false;
-            });
+            },
+              () => EBUS.emit("imf-resize", this)
+            );
             this.stage = FetchState.DONE;
           case FetchState.DONE:
             return null;
@@ -178,7 +180,9 @@ export class IMGFetcher {
       this.node.render((reason) => {
         evLog("error", "render image failed, " + reason);
         this.rendered = false;
-      });
+      },
+        () => EBUS.emit("imf-resize", this)
+      );
       this.node.changeStyle(this.stage === FetchState.DONE ? "fetched" : undefined, this.failedReason);
     } else if (shouldChangeStyle) {
       let status: "fetching" | "fetched" | "failed" | "init" | undefined;

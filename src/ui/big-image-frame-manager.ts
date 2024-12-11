@@ -10,6 +10,7 @@ import { Chapter } from "../page-fetcher";
 import queryCSSRules from "../utils/query-cssrules";
 import { Scroller } from "../utils/scroller";
 import { TouchManager } from "../utils/touch";
+import { DEFAULT_THUMBNAIL } from "../img-node";
 
 type MediaElement = HTMLImageElement | HTMLVideoElement;
 
@@ -91,6 +92,7 @@ export class BigImageFrameManager {
         current.appendChild(this.newMediaNode(imf));
       }
     });
+    EBUS.subscribe("imf-resize", (imf) => this.onResize(imf));
 
     this.loadingHelper = document.createElement("span");
     this.loadingHelper.id = "bifm-loading-helper";
@@ -110,6 +112,27 @@ export class BigImageFrameManager {
     });
     // enable auto page
     new AutoPage(this, HTML.autoPageBTN);
+  }
+
+  onResize(imf: IMGFetcher) {
+    const element = this.container.querySelector<HTMLElement>(`div[d-index="${imf.index}"]`);
+    const current = this.container.querySelector<HTMLElement>(`div[d-index="${this.currentIndex}"]`);
+    if (!element || !current) return;
+    if (conf.readMode === "continuous") {
+      const currOffsetTop = current.offsetTop;
+      const currScrollTop = this.root.scrollTop;
+      element.style.aspectRatio = imf.ratio().toString();
+      if (currOffsetTop !== current.offsetTop) {
+        this.root.scrollTop = current.offsetTop + currOffsetTop - currScrollTop;
+      }
+    } else {
+      const currOffsetLeft = current.offsetLeft;
+      const currScrollLeft = this.root.scrollLeft;
+      element.style.aspectRatio = imf.ratio().toString();
+      if (currOffsetLeft !== current.offsetLeft) {
+        this.root.scrollLeft = current.offsetLeft + currOffsetLeft - currScrollLeft;
+      }
+    }
   }
 
   intersecting(entries: IntersectionObserverEntry[]) {
@@ -626,8 +649,10 @@ export class BigImageFrameManager {
       img.draggable = false;
       if (imf.stage === FetchState.DONE) {
         img.src = imf.node.blobSrc!;
-      } else {
+      } else if (imf.node.thumbnailSrc) {
         img.src = imf.node.thumbnailSrc;
+      } else { // maybe delaySRC
+        img.src = DEFAULT_THUMBNAIL;
       }
       return img;
     }

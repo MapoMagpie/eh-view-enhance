@@ -106,6 +106,7 @@ export type Config = {
   autoEnterBig: boolean,
   pixivJustCurrPage: boolean,
   filenameOrder: "auto" | "numbers" | "original" | "alphabetically",
+  dragImageOut: boolean,
 };
 
 function defaultColumns() {
@@ -167,6 +168,7 @@ function defaultConf(): Config {
     autoEnterBig: false,
     pixivJustCurrPage: false,
     filenameOrder: "auto",
+    dragImageOut: false,
   };
 }
 
@@ -275,9 +277,36 @@ export function saveConf(c: Config) {
   storage.setItem(CONFIG_KEY, JSON.stringify(c));
 }
 
-export type ConfigNumberType = "colCount" | "rowHeight" | "threads" | "downloadThreads" | "timeout" | "autoPageSpeed" | "preventScrollPageTime" | "paginationIMGCount" | "scrollingSpeed";
-export type ConfigBooleanType = "fetchOriginal" | "autoLoad" | "reversePages" | "autoPlay" | "autoCollapsePanel" | "autoOpen" | "autoLoadInBackground" | "reverseMultipleImagesPost" | "magnifier" | "autoEnterBig" | "pixivJustCurrPage" | "hdThumbnails";
-export type ConfigSelectType = "readMode" | "minifyPageHelper" | "hitomiFormat" | "ehentaiTitlePrefer" | "filenameOrder";
+export type ConfigNumberType = "colCount"
+  | "rowHeight"
+  | "threads"
+  | "downloadThreads"
+  | "timeout"
+  | "autoPageSpeed"
+  | "preventScrollPageTime"
+  | "paginationIMGCount"
+  | "scrollingSpeed"
+  ;
+export type ConfigBooleanType = "fetchOriginal"
+  | "autoLoad"
+  | "reversePages"
+  | "autoPlay"
+  | "autoCollapsePanel"
+  | "autoOpen"
+  | "autoLoadInBackground"
+  | "reverseMultipleImagesPost"
+  | "magnifier"
+  | "autoEnterBig"
+  | "pixivJustCurrPage"
+  | "hdThumbnails"
+  | "dragImageOut"
+  ;
+export type ConfigSelectType = "readMode"
+  | "minifyPageHelper"
+  | "hitomiFormat"
+  | "ehentaiTitlePrefer"
+  | "filenameOrder"
+  ;
 export const conf = getConf();
 export const transient = { imgSrcCSP: false, originalPolicy: "" };
 
@@ -313,7 +342,8 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoOpen", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "magnifier", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoEnterBig", typ: "boolean", gridColumnRange: [6, 11] },
-  { key: "hdThumbnails", typ: "boolean", gridColumnRange: [1, 11] },
+  { key: "dragImageOut", typ: "boolean", gridColumnRange: [1, 6] },
+  { key: "hdThumbnails", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "pixivJustCurrPage", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
   {

@@ -202,24 +202,10 @@ export class BigImageFrameManager {
     this.root.addEventListener("wheel", (event) => this.onWheel(event));
     this.root.addEventListener("scroll", () => this.onScroll());
     this.root.addEventListener("contextmenu", (event) => event.preventDefault());
-    // const debouncer = new Debouncer("throttle");
-    // let magnifying = true;
-    // for stick mouse
-    // this.root.addEventListener("mousemove", (mmevt) => {
-    //   if (conf.stickyMouse === "disable" || conf.readMode !== "pagination") return;
-    //   if (magnifying) return;
-    //   debouncer.addEvent("BIG-IMG-MOUSE-MOVE", () => {
-    //     if (this.lastMouse) {
-    //       stickyMouse(this.root, mmevt, this.lastMouse, conf.stickyMouse === "enable");
-    //     }
-    //     this.lastMouse = { x: mmevt.clientX, y: mmevt.clientY };
-    //   }, 5);
-    // });
     // for click
     this.root.addEventListener("mousedown", (mdevt) => {
       if (mdevt.button !== 0) return;
       if ((mdevt.target as HTMLElement).classList.contains("img-land")) return;
-      // magnifying = true;
       let moved = false;
       let last = { x: mdevt.clientX, y: mdevt.clientY };
       let elementsWidth: number | undefined = undefined;
@@ -235,14 +221,20 @@ export class BigImageFrameManager {
           [this.root.scrollTop, this.root.scrollLeft] = [scrollTop, scrollLeft];
         }
         moved = false;
-        // magnifying = false;
       }, { once: true });
-      // for magnifier, mouse move
+
+      // for mouse move, magnifier
       this.root.addEventListener("mousemove", (mmevt) => {
+        if (conf.dragImageOut) {
+          moved = true;
+          return;
+        };
         if (!moved) { // first move
-          if (conf.magnifier && conf.imgScale === 100) { // temporarily zoom if img not scale
+          // temporarily zoom if img not scale
+          if (conf.magnifier && conf.imgScale === 100) {
             this.scaleBigImages(5, 0, 150, false);
           }
+          // calculate current elements total width, for stickyMouse limit
           if (conf.readMode === "pagination") {
             const { showing } = this.getElements();
             if (showing.length > 0) {
@@ -641,8 +633,7 @@ export class BigImageFrameManager {
       const vid = document.createElement("video");
       vid.classList.add("bifm-img");
       vid.classList.add("bifm-vid");
-      vid.draggable = !(conf.magnifier && conf.readMode !== "continuous");
-      vid.draggable = false;
+      vid.draggable = conf.dragImageOut;
       vid.onloadeddata = () => {
         if (this.visible && imf.index === this.currentIndex) {
           this.tryPlayVideo(vid);
@@ -655,7 +646,7 @@ export class BigImageFrameManager {
       img.decoding = "sync";
       img.classList.add("bifm-img");
       // img.draggable = !(conf.magnifier && conf.readMode !== "continuous");
-      img.draggable = false;
+      img.draggable = conf.dragImageOut;
       if (imf.stage === FetchState.DONE) {
         img.src = imf.node.blobSrc!;
       } else if (imf.node.thumbnailSrc) {

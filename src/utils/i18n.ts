@@ -265,6 +265,21 @@ const i18nData = {
     '이미지 바로 보기',
     'Auto Grande'
   ],
+  dragImageOut: [
+    'Drag Image Out',
+    '拖拽图片到外部',
+    '이미지를 밖으로 드래그',
+    'Arrastrar imagen hacia afuera',
+  ],
+  dragImageOutTooltip: [
+    `Enabling this option will restore the browser's default dragging behavior for images (saving the image to the directory where it was dragged), 
+but will disable the magnifier and the ability to drag and move images.`,
+    `启用此项将恢复浏览器默认对图片的拖拽行为(保存图片到所拖拽到的目录)，但会禁用放大镜功能以及拖拽移动图片位置的功能。`,
+    `이 옵션을 활성화하면 이미지에 대한 브라우저의 기본 드래그 동작(이미지를 드래그한 디렉토리에 이미지 저장)이 복원됩니다. 
+하지만 돋보기와 이미지 드래그 및 이동 기능은 비활성화됩니다.`,
+    `Habilitar esta opción restaurará el comportamiento de arrastre predeterminado del navegador para imágenes (guardando la imagen en el directorio donde fue arrastrada). 
+pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
+  ],
   autoEnterBigTooltip: [
     "Directly enter the Big image view when the script's entry is clicked or auto-opened",
     '点击脚本入口或自动打开脚本后直接进入大图阅读视图。',

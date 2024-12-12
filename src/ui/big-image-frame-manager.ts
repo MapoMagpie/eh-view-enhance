@@ -156,10 +156,18 @@ export class BigImageFrameManager {
     const intersecting = sorting.map(e => e.elem);
     if (intersecting.length === 0) return;
     // extend the renderingElements array to pre-decode the image
-    const prevElem = intersecting[0]?.previousElementSibling as HTMLElement | null;
-    if (prevElem) intersecting.unshift(prevElem);
-    const nextElem = intersecting[intersecting.length - 1]?.nextElementSibling as HTMLElement | null;
-    if (nextElem) intersecting.push(nextElem);
+    let sibling: HTMLElement | null = intersecting[0];
+    let [count, limit] = [0, conf.paginationIMGCount];
+    while ((sibling = sibling.previousElementSibling as HTMLElement | null) && count < limit) {
+      intersecting.unshift(sibling);
+      count++;
+    }
+    sibling = intersecting[intersecting.length - 1];
+    count = 0;
+    while ((sibling = sibling.nextElementSibling as HTMLElement | null) && count < limit) {
+      intersecting.push(sibling);
+      count++;
+    }
 
     const unrender = [];
     const rendered = [];

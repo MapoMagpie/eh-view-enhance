@@ -9916,10 +9916,18 @@ ${chapters.map((c, i) => `<div><label>
       if (conf.reversePages) sorting.reverse();
       const intersecting = sorting.map((e) => e.elem);
       if (intersecting.length === 0) return;
-      const prevElem = intersecting[0]?.previousElementSibling;
-      if (prevElem) intersecting.unshift(prevElem);
-      const nextElem = intersecting[intersecting.length - 1]?.nextElementSibling;
-      if (nextElem) intersecting.push(nextElem);
+      let sibling = intersecting[0];
+      let [count, limit] = [0, conf.paginationIMGCount];
+      while ((sibling = sibling.previousElementSibling) && count < limit) {
+        intersecting.unshift(sibling);
+        count++;
+      }
+      sibling = intersecting[intersecting.length - 1];
+      count = 0;
+      while ((sibling = sibling.nextElementSibling) && count < limit) {
+        intersecting.push(sibling);
+        count++;
+      }
       const unrender = [];
       const rendered = [];
       for (const elem of this.renderingElements) {

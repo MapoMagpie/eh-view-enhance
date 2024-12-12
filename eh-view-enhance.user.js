@@ -6943,32 +6943,34 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
   function initEvents(HTML, BIFM, IFQ, IL, PH) {
-    function modNumberConfigEvent(key, data) {
-      const range = {
-        colCount: [1, 12],
-        rowHeight: [50, 4096],
-        threads: [1, 10],
-        downloadThreads: [1, 10],
-        timeout: [8, 40],
-        autoPageSpeed: [1, 100],
-        preventScrollPageTime: [-1, 9e4],
-        paginationIMGCount: [1, 3],
-        scrollingSpeed: [1, 100]
-      };
-      const mod = key === "preventScrollPageTime" || key === "rowHeight" ? 10 : 1;
-      if (data === "add") {
-        if (conf[key] < range[key][1]) {
-          conf[key] += mod;
-        }
-      } else if (data === "minus") {
-        if (conf[key] > range[key][0]) {
-          conf[key] -= mod;
+    function modNumberConfigEvent(key, data, value) {
+      if (!value) {
+        const range = {
+          colCount: [1, 12],
+          rowHeight: [50, 4096],
+          threads: [1, 10],
+          downloadThreads: [1, 10],
+          timeout: [8, 40],
+          autoPageSpeed: [1, 100],
+          preventScrollPageTime: [-1, 9e4],
+          paginationIMGCount: [1, 3],
+          scrollingSpeed: [1, 100]
+        };
+        const mod = key === "preventScrollPageTime" || key === "rowHeight" ? 10 : 1;
+        if (data === "add") {
+          if (conf[key] < range[key][1]) {
+            value = conf[key] + mod;
+          }
+        } else if (data === "minus") {
+          if (conf[key] > range[key][0]) {
+            value = conf[key] - mod;
+          }
         }
       }
+      if (!value) return;
+      conf[key] = value;
       const inputElement = q(`#${key}Input`, HTML.config.panel);
-      if (inputElement) {
-        inputElement.value = conf[key].toString();
-      }
+      inputElement.value = conf[key].toString();
       if (key === "colCount" || key === "rowHeight") {
         EBUS.emit("fvg-flow-vision-resize");
       }
@@ -6978,9 +6980,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
       saveConf(conf);
     }
-    function modBooleanConfigEvent(key) {
+    function modBooleanConfigEvent(key, value) {
       const inputElement = q(`#${key}Checkbox`, HTML.config.panel);
-      conf[key] = inputElement?.checked || false;
+      if (value !== void 0) {
+        inputElement.checked = value;
+      } else {
+        value = inputElement.checked || false;
+      }
+      if (value === void 0) return;
+      conf[key] = value;
       saveConf(conf);
       if (key === "autoLoad") {
         IL.autoLoad = conf.autoLoad;
@@ -7011,13 +7019,16 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         HTML.root.querySelectorAll(".img-land").forEach((element) => element.style.display = "none");
       }
     }
-    function modSelectConfigEvent(key) {
+    function modSelectConfigEvent(key, value) {
       const inputElement = q(`#${key}Select`, HTML.config.panel);
-      const value = inputElement?.value;
       if (value) {
-        conf[key] = value;
-        saveConf(conf);
+        inputElement.value = value;
+      } else {
+        value = inputElement.value;
       }
+      if (!value) return;
+      conf[key] = value;
+      saveConf(conf);
       if (key === "readMode") {
         changeReadModeEvent();
       }
@@ -7147,19 +7158,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           () => {
             const readModeList = ["pagination", "continuous", "horizontal"];
             const index = (readModeList.indexOf(conf.readMode) + 1) % readModeList.length;
-            conf.readMode = readModeList[index];
-            saveConf(conf);
-            BIFM.changeLayout();
+            modSelectConfigEvent("readMode", readModeList[index]);
           },
           true
         ),
         "toggle-reverse-pages": new KeyboardDesc(
           ["alt+r"],
-          () => {
-            conf.reversePages = !conf.reversePages;
-            saveConf(conf);
-            BIFM.changeLayout(true);
-          },
+          () => modBooleanConfigEvent("reversePages", !conf.reversePages),
           true
         )
       };

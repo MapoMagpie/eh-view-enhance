@@ -12,6 +12,7 @@ export type SiteProfile = {
   enableFlowVision: boolean,
   workURLs: string[],
 }
+export type ReadMode = "pagination" | "continuous" | "horizontal";
 
 export type Config = {
   /** 每行显示的数量 */
@@ -19,7 +20,7 @@ export type Config = {
   /** 每行显示的数量 */
   rowHeight: number,
   /** 滚动换页 */
-  readMode: "pagination" | "continuous" | "horizontal",
+  readMode: ReadMode,
   /** 是否启用空闲加载器 */
   autoLoad: boolean,
   /** 是否获取最佳质量的图片 */

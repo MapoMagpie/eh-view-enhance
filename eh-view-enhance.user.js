@@ -136,6 +136,18 @@
         "切换自动播放",
         "자동 재생 시작/중지",
         "Alternar reproducción automática"
+      ),
+      "round-read-mode": new I18nValue(
+        "Switch Reading mode (Loop)",
+        "切换阅读模式(循环)",
+        "읽기 모드 전환(루프)",
+        "Cambiar modo de lectura (bucle)"
+      ),
+      "toggle-reverse-pages": new I18nValue(
+        "Toggle Pages Reverse",
+        "切换阅读方向",
+        "페이지 반전 전환",
+        "Alternar páginas hacia atrás"
       )
     },
     inFullViewGrid: {
@@ -6359,10 +6371,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return keys.join("+").toLowerCase();
   }
 
-  function queryRule(root, selector) {
-    return Array.from(root.cssRules).find((rule) => rule.selectorText === selector);
-  }
-
   function relocateElement(element, anchor, vw, vh) {
     const rect = anchor.getBoundingClientRect();
     let left = rect.left + rect.width / 2 - element.offsetWidth / 2;
@@ -6979,10 +6987,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         IL.abort(0, conf.restartIdleLoader / 3);
       }
       if (key === "reversePages") {
-        const rule = queryRule(HTML.styleSheet, ".bifm-flex");
-        if (rule) {
-          rule.style.flexDirection = conf.reversePages ? "row-reverse" : "row";
-        }
+        BIFM.changeLayout(true);
       }
     }
     function changeReadModeEvent(value) {
@@ -7136,6 +7141,26 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         "toggle-auto-play": new KeyboardDesc(
           ["p"],
           () => EBUS.emit("toggle-auto-play")
+        ),
+        "round-read-mode": new KeyboardDesc(
+          ["alt+t"],
+          () => {
+            const readModeList = ["pagination", "continuous", "horizontal"];
+            const index = (readModeList.indexOf(conf.readMode) + 1) % readModeList.length;
+            conf.readMode = readModeList[index];
+            saveConf(conf);
+            BIFM.changeLayout();
+          },
+          true
+        ),
+        "toggle-reverse-pages": new KeyboardDesc(
+          ["alt+r"],
+          () => {
+            conf.reversePages = !conf.reversePages;
+            saveConf(conf);
+            BIFM.changeLayout(true);
+          },
+          true
         )
       };
       const inFullViewGrid = {
@@ -7274,6 +7299,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       showStyleCustomEvent,
       changeReadModeEvent
     };
+  }
+
+  function queryRule(root, selector) {
+    return Array.from(root.cssRules).find((rule) => rule.selectorText === selector);
   }
 
   class Layout {
@@ -10085,24 +10114,26 @@ ${chapters.map((c, i) => `<div><label>
         this.container.append(...elements);
       }
     }
-    changeLayout() {
+    changeLayout($reAppend) {
       this.resetScaleBigImages(true);
-      let reAppend = false;
+      let reAppend = $reAppend ?? false;
       switch (conf.readMode) {
         case "continuous":
-          reAppend = this.container.classList.contains("bifm-container-hori") && conf.reversePages;
+          if (!reAppend) reAppend = this.container.classList.contains("bifm-container-hori") && conf.reversePages;
           this.container.classList.add("bifm-container-vert");
           this.container.classList.remove("bifm-container-hori");
           break;
         case "pagination":
         case "horizontal":
-          reAppend = this.container.classList.contains("bifm-container-vert") && conf.reversePages;
+          if (!reAppend) reAppend = this.container.classList.contains("bifm-container-vert") && conf.reversePages;
           this.container.classList.add("bifm-container-hori");
           this.container.classList.remove("bifm-container-vert");
           break;
       }
       if (reAppend) {
         this.container.innerHTML = "";
+        this.intersectingElements = [];
+        this.renderingElements = [];
         const queue = this.getChapter(this.chapterIndex).queue;
         this.append(queue);
       } else {

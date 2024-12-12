@@ -1,9 +1,8 @@
-import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, conf, saveConf } from "../config";
+import { ConfigBooleanType, ConfigNumberType, ConfigSelectType, ReadMode, conf, saveConf } from "../config";
 import EBUS from "../event-bus";
 import { IMGFetcherQueue } from "../fetcher-queue";
 import { IdleLoader } from "../idle-loader";
 import parseKey from "../utils/keyboard";
-import queryCSSRules from "../utils/query-cssrules";
 import q from "../utils/query-element";
 import relocateElement from "../utils/relocate-element";
 import createSiteProfilePanel from "./site-profiles";
@@ -16,8 +15,26 @@ import { createStyleCustomPanel } from "./style-custom-panel";
 
 export type Events = ReturnType<typeof initEvents>;
 
-export type KeyboardInBigImageModeId = "step-image-prev" | "step-image-next" | "exit-big-image-mode" | "step-to-first-image" | "step-to-last-image" | "scale-image-increase" | "scale-image-decrease" | "scroll-image-up" | "scroll-image-down" | "toggle-auto-play";
-export type KeyboardInFullViewGridId = "open-big-image-mode" | "pause-auto-load-temporarily" | "exit-full-view-grid" | "columns-increase" | "columns-decrease" | "toggle-auto-play" | "retry-fetch-next-page" | "resize-flow-vision";
+export type KeyboardInBigImageModeId = "step-image-prev"
+  | "step-image-next"
+  | "exit-big-image-mode"
+  | "step-to-first-image"
+  | "step-to-last-image"
+  | "scale-image-increase"
+  | "scale-image-decrease"
+  | "scroll-image-up"
+  | "scroll-image-down"
+  | "toggle-auto-play"
+  | "round-read-mode"
+  | "toggle-reverse-pages";
+export type KeyboardInFullViewGridId = "open-big-image-mode"
+  | "pause-auto-load-temporarily"
+  | "exit-full-view-grid"
+  | "columns-increase"
+  | "columns-decrease"
+  | "toggle-auto-play"
+  | "retry-fetch-next-page"
+  | "resize-flow-vision";
 export type KeyboardInMainId = "open-full-view-grid" | "start-download";
 export type KeyboardEvents = {
   inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
@@ -84,10 +101,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       IL.abort(0, conf.restartIdleLoader / 3);
     }
     if (key === "reversePages") {
-      const rule = queryCSSRules(HTML.styleSheet, ".bifm-flex");
-      if (rule) {
-        rule.style.flexDirection = conf.reversePages ? "row-reverse" : "row";
-      }
+      BIFM.changeLayout(true);
     }
     // TODO
     // if (key === "magnifier") {
@@ -260,6 +274,24 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       "toggle-auto-play": new KeyboardDesc(
         ["p"],
         () => EBUS.emit("toggle-auto-play")
+      ),
+      "round-read-mode": new KeyboardDesc(
+        ["alt+t"],
+        () => {
+          const readModeList: ReadMode[] = ["pagination", "continuous", "horizontal"];
+          const index = (readModeList.indexOf(conf.readMode) + 1) % readModeList.length;
+          conf.readMode = readModeList[index];
+          saveConf(conf);
+          BIFM.changeLayout();
+        }, true
+      ),
+      "toggle-reverse-pages": new KeyboardDesc(
+        ["alt+r"],
+        () => {
+          conf.reversePages = !conf.reversePages;
+          saveConf(conf);
+          BIFM.changeLayout(true);
+        }, true
       ),
     };
     const inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc> = {

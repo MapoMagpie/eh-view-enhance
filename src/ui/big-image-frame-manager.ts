@@ -355,24 +355,26 @@ export class BigImageFrameManager {
     }
   }
 
-  changeLayout() {
+  changeLayout($reAppend?: boolean) {
     this.resetScaleBigImages(true);
-    let reAppend = false;
+    let reAppend = $reAppend ?? false;
     switch (conf.readMode) {
       case "continuous":
-        reAppend = this.container.classList.contains("bifm-container-hori") && conf.reversePages;
+        if (!reAppend) reAppend = this.container.classList.contains("bifm-container-hori") && conf.reversePages;
         this.container.classList.add("bifm-container-vert");
         this.container.classList.remove("bifm-container-hori");
         break;
       case "pagination":
       case "horizontal":
-        reAppend = this.container.classList.contains("bifm-container-vert") && conf.reversePages;
+        if (!reAppend) reAppend = this.container.classList.contains("bifm-container-vert") && conf.reversePages;
         this.container.classList.add("bifm-container-hori");
         this.container.classList.remove("bifm-container-vert");
         break;
     }
     if (reAppend) {
       this.container.innerHTML = "";
+      this.intersectingElements = [];
+      this.renderingElements = [];
       const queue = this.getChapter(this.chapterIndex).queue;
       this.append(queue);
     } else {

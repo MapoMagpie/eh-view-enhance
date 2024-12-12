@@ -89,6 +89,18 @@ const keyboardCustom: KeyboardCustom = {
       '자동 재생 시작/중지',
       'Alternar reproducción automática'
     ),
+    'round-read-mode': new I18nValue(
+      'Switch Reading mode (Loop)',
+      '切换阅读模式(循环)',
+      '읽기 모드 전환(루프)',
+      'Cambiar modo de lectura (bucle)'
+    ),
+    'toggle-reverse-pages': new I18nValue(
+      'Toggle Pages Reverse',
+      '切换阅读方向',
+      '페이지 반전 전환',
+      'Alternar páginas hacia atrás'
+    )
   },
   inFullViewGrid: {
     'open-big-image-mode': new I18nValue(

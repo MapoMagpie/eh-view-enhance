@@ -417,18 +417,3 @@ export function getDisplayText(): DisplayText {
   return { ...DEFAULT_DISPLAY_TEXT, ...conf.displayText };
 }
 
-export function presetDisplayText(): DisplayText {
-  return {
-    entry: "<(✥)>",
-    collapse: ".)(.",
-    config: "⚙",
-    download: "⮋",
-    autoPagePause: "------",
-    chapters: "🎴",
-    autoPagePlay: "▶",
-    fin: "⑇",
-    pagination: "🗐",
-    continuous: "🗏⭭",
-    horizontal: "⭭🗏"
-  };
-}

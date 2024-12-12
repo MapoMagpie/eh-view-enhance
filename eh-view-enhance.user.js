@@ -1361,21 +1361,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   function getDisplayText() {
     return { ...DEFAULT_DISPLAY_TEXT, ...conf.displayText };
   }
-  function presetDisplayText() {
-    return {
-      entry: "<(✥)>",
-      collapse: ".)(.",
-      config: "⚙",
-      download: "⮋",
-      autoPagePause: "------",
-      chapters: "🎴",
-      autoPagePlay: "▶",
-      fin: "⑇",
-      pagination: "🗐",
-      continuous: "🗏⭭",
-      horizontal: "⭭🗏"
-    };
-  }
 
   function evLog(level, msg, ...info) {
     if (level === "debug" && !conf.debug) return;
@@ -6764,7 +6749,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   <div class="b-main-item">
       <div id="read-mode-select"
       ><a class="b-main-option b-main-option-selected s-pickable" data-key="pagination" data-value="pagination">${displayText.pagination}</a
-      ><a class="b-main-option s-pickable" data-key="continuous" data-value="continuous">${displayText.continuous}</a></div>
+      ><a class="b-main-option s-pickable" data-key="continuous" data-value="continuous">${displayText.continuous}</a
+      ><a class="b-main-option s-pickable" data-key="horizontal" data-value="horizontal">${displayText.horizontal}</a></div>
   </div>
   <div class="b-main-item">
       <span>
@@ -6800,6 +6786,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         <span id="b-main-btn-custom-confirm" class="ehvp-custom-btn ehvp-custom-btn-green">&nbspOk&nbsp</span>
         <span id="b-main-btn-custom-reset" class="ehvp-custom-btn ehvp-custom-btn-plain">&nbspReset&nbsp</span>
         <span id="b-main-btn-custom-preset1" class="ehvp-custom-btn ehvp-custom-btn-plain">&nbspPreset1&nbsp</span>
+        <span id="b-main-btn-custom-preset2" class="ehvp-custom-btn ehvp-custom-btn-plain">&nbspPreset2&nbsp</span>
       </div>
       <div><span style="font-size:0.6em;color:#888;">${i18n.controlBarStyleTooltip.get()}</span></div>
     </div>
@@ -6843,7 +6830,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const btnCustomInput = fullPanel.querySelector("#b-main-btn-custom-input");
     const btnCustomConfirm = fullPanel.querySelector("#b-main-btn-custom-confirm");
     const btnCustomReset = fullPanel.querySelector("#b-main-btn-custom-reset");
-    const btnCustomPreset1 = fullPanel.querySelector("#b-main-btn-custom-preset1");
     const confirm = () => {
       const value = btnCustomInput.value;
       btnCustomInput.value = "";
@@ -6862,12 +6848,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       controlBarContainer.innerHTML = createControlBar();
       initPickable();
     });
-    btnCustomPreset1.addEventListener("click", () => {
-      conf.displayText = presetDisplayText();
-      saveConf(conf);
-      controlBarContainer.innerHTML = createControlBar();
-      initPickable();
-    });
+    for (let i = 0; i < 2; i++) {
+      const btnCustomPreset = fullPanel.querySelector(`#b-main-btn-custom-preset${i + 1}`);
+      btnCustomPreset.addEventListener("click", () => {
+        conf.displayText = displayTextPreset(i);
+        saveConf(conf);
+        controlBarContainer.innerHTML = createControlBar();
+        initPickable();
+      });
+    }
     const styleCustomInput = fullPanel.querySelector("#style-custom-input");
     const styleCustomConfirm = fullPanel.querySelector("#style-custom-confirm");
     styleCustomInput.addEventListener("keydown", (ev) => {
@@ -6903,75 +6892,124 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   function stylePreset(index) {
     const list = [
       `.ehvp-root {
-  --ehvp-background-color: #29313dd1;
-  --ehvp-fvg-background: #29313e;
-  --ehvp-border: 1px solid #ffcd4d;
-  --ehvp-font-color: #ffccae;
-  --ehvp-img-fetched: #fff67a;
-  --ehvp-img-failed: #f00;
+  --ehvp-background-color: #393939db;
+  --ehvp-fvg-background: #000000;
+  --ehvp-border: none;
+  --ehvp-font-color: #fff;
+  --ehvp-img-fetched: #95ff97;
+  --ehvp-img-failed: red;
   --ehvp-img-init: #ffffff;
-  --ehvp-img-box-shadow: -3px 4px 4px 0px #000000;
-  --ehvp-panel-border: 2px solid #000;
-  --ehvp-panel-box-shadow: -2px -2px 3px #f3ff7e;
-  font-size: 16px;
-}
-/* hide tooltips */
-.p-tooltip {
-  display: none;
-}`,
-      `.ehvp-root {
-  --ehvp-background-color: #ebebeba0;
-  --ehvp-fvg-background: #cccccc88;
-  --ehvp-border: 1px solid #ff2ec9;
-  --ehvp-font-color: #ff2ec9;
-  --ehvp-img-fetched: #fba4fa;
-  --ehvp-img-failed: #f00;
-  --ehvp-img-init: #586b6c;
-  --ehvp-img-box-shadow: -3px 4px 4px 0px #3d243d;
-  --ehvp-panel-border: 2px solid #000;
-  --ehvp-panel-box-shadow: -3px -3px 3px #3d243d;
-  font-size: 16px;
-}
-/* hide tooltips */
-.p-tooltip {
-  display: none;
-}`,
-      `.ehvp-root {
-  --ehvp-background-color: #29313e;
-  --ehvp-fvg-background: #29313e;
-  --ehvp-border: 1px solid #00000000;
-  --ehvp-font-color: #ff5ec3;
-  --ehvp-img-fetched: #fba4fa;
-  --ehvp-img-failed: #f00;
-  --ehvp-img-init: #586b6c;
-  --ehvp-img-box-shadow: -3px 4px 4px 0px #ffffff00;
-  --ehvp-panel-border: 2px solid #000;
-  --ehvp-panel-box-shadow: -3px -3px 3px #ffffff00;
-  font-size: 16px;
-}
-/* hide tooltips */
-.p-tooltip {
-  display: none;
-}`,
-      `.ehvp-root {
-  --ehvp-background-color: #333366;
-  --ehvp-border: 1px solid #333366;
-  --ehvp-font-color: #eeeeee;
-  --ehvp-img-fetched: #ffffff;
-  --ehvp-img-failed: #f00;
-  --ehvp-img-init: #29313e;
+  --ehvp-img-fetching: #00000000;
+  --ehvp-img-node-border-radius: 0px;
   --ehvp-img-box-shadow: none;
-  --ehvp-panel-border: 2px solid #000;
-  --ehvp-panel-box-shadow: -3px -3px 5px #ecb3ec;
+  --ehvp-panel-border: none;
+  --ehvp-panel-box-shadow: none;
+  --ehvp-bifm-img-gap: 2px;
+  --ehvp-bifm-background: #000000c4;
+  --ehvp-clickable-color-hover: #90ea90;
+  --ehvp-autopage-progress-background: #ffffffd0;
   font-size: 16px;
-  /* --ehvp-fvg-background: url('some image url here'); */
+  font-family: Poppins,sans-serif;
 }
-/* hide tooltips */
-.p-tooltip {
-  display: none;
+/** override any style here, make the big image have a green border */
+/**
+.bifm-container > div {
+  border: 2px solid green;
+}
+/*`,
+      `.ehvp-root {
+  --ehvp-background-color: #ffffff;
+  --ehvp-fvg-background: #ffffff;
+  --ehvp-border: 2px solid #760098;
+  --ehvp-font-color: #760098;
+  --ehvp-img-fetched: #d96cff;
+  --ehvp-img-failed: red;
+  --ehvp-img-init: #000000;
+  --ehvp-img-fetching: #ffffff70;
+  --ehvp-img-node-border-radius: 4px;
+  --ehvp-img-box-shadow: 0px 2px 2px 0px #785174;
+  --ehvp-panel-border: 2px solid #760098;
+  --ehvp-panel-box-shadow: none;
+  --ehvp-bifm-img-gap: 2px;
+  --ehvp-bifm-background: #919191b0;
+  --ehvp-clickable-color-hover: #ff87ba;
+  --ehvp-autopage-progress-background: #760098d0;
+  font-size: 16px;
+  font-family: Poppins, sans-serif;
+}`,
+      `.ehvp-root {
+  --ehvp-background-color: #000000c9;
+  --ehvp-fvg-background: #000000;
+  --ehvp-border: 2px solid #ffe637;
+  --ehvp-font-color: #ffe637;
+  --ehvp-img-fetched: #ffe637;
+  --ehvp-img-failed: red;
+  --ehvp-img-init: #fff;
+  --ehvp-img-fetching: #00000000;
+  --ehvp-img-node-border-radius: 0px;
+  --ehvp-img-box-shadow: none;
+  --ehvp-panel-border: 2px solid #ffe637;
+  --ehvp-panel-box-shadow: none;
+  --ehvp-bifm-img-gap: 2px;
+  --ehvp-bifm-background: #000000d6;
+  --ehvp-clickable-color-hover: #90ea90;
+  --ehvp-autopage-progress-background: #ffe637d0;
+  font-size: 16px;
+  font-family: Poppins, sans-serif;
+}`,
+      `.ehvp-root {
+  --ehvp-background-color: #ffffff;
+  --ehvp-fvg-background: #ffffff;
+  --ehvp-border: 2px solid #000000;
+  --ehvp-font-color: #000000;
+  --ehvp-img-fetched: #000000;
+  --ehvp-img-failed: red;
+  --ehvp-img-init: #ffffff;
+  --ehvp-img-fetching: #ffffff70;
+  --ehvp-img-node-border-radius: 4px;
+  --ehvp-img-box-shadow: 0px 2px 2px 0px #000000;
+  --ehvp-panel-border: 2px solid #000000;
+  --ehvp-panel-box-shadow: none;
+  --ehvp-bifm-img-gap: 2px;
+  --ehvp-bifm-background: #919191b0;
+  --ehvp-clickable-color-hover: #ff0000;
+  --ehvp-autopage-progress-background: #000000d0;
+  font-size: 16px;
+  font-family: Poppins, sans-serif;
 }`
     ];
     return list[index] ?? "";
+  }
+  function displayTextPreset(index) {
+    const list = [
+      {
+        entry: "ENTER",
+        collapse: "X",
+        config: "C",
+        download: "D",
+        chapters: "CH.",
+        fin: "F",
+        pagination: "P",
+        continuous: "C",
+        horizontal: "H",
+        autoPagePlay: "PLAY",
+        autoPagePause: "PAUSE"
+      },
+      {
+        entry: "<✿>",
+        collapse: ">✴<",
+        config: "☸",
+        download: "⬇",
+        chapters: "CH.",
+        fin: "⬇",
+        pagination: "❏",
+        continuous: "⇅",
+        horizontal: "⇆",
+        autoPagePlay: "⊳",
+        autoPagePause: "⇢⇢⇢"
+      }
+    ];
+    return list[index] ?? {};
   }
 
   class KeyboardDesc {
@@ -7790,6 +7828,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   --ehvp-img-box-shadow: -3px 4px 4px 0px #3d243d;
   --ehvp-panel-border: none;
   --ehvp-panel-box-shadow: none;
+  --ehvp-bifm-img-gap: 2px;
+  --ehvp-bifm-background: #000000d6;
+  --ehvp-clickable-color-hover: #90ea90;
+  --ehvp-autopage-progress-background: #ffffffd0;
   font-size: 16px;
   font-family: Poppins,sans-serif;
 }
@@ -7881,6 +7923,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   box-sizing: border-box;
   background-color: var(--ehvp-img-init);
   border-radius: var(--ehvp-img-node-border-radius);
+  box-shadow: var(--ehvp-img-box-shadow);
 }
 .fvg-sub-container {
   display: flex;
@@ -8015,10 +8058,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   overflow: auto;
   scrollbar-width: none;
   z-index: 2001;
-  background-color: #000000d6;
+  background: var(--ehvp-bifm-background);
   display: flex;
 }
-.bifm-container { }
+.bifm-container > div {
+  box-sizing: border-box;
+}
 .bifm-container-vert {
   width: ${conf.imgScale}%;
   height: fit-content;
@@ -8032,19 +8077,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   flex-wrap: nowrap;
 }
 .bifm-container-vert > div {
-  margin: 2px 0px;
+  margin: var(--ehvp-bifm-img-gap) 0px;
 }
 .bifm-container-hori > div {
-  margin: 0px 2px;
+  margin: 0px var(--ehvp-bifm-img-gap);
 }
-/**
-.bifm-container > div {
-  border: 1px solid red;
-}
-.bifm-container > div:hover {
-  border: 1px solid green;
-}
-*/
 .bifm-img {
   width: 100%;
   height: 100%;
@@ -8093,7 +8130,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   white-space: nowrap;
 }
 .clickable:hover {
-  color: #90ea90 !important;
+  color: var(--ehvp-clickable-color-hover) !important;
 }
 .p-collapse {
   height: 0px !important;
@@ -8306,7 +8343,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .p-tooltip .p-tooltiptext {
   display: none;
   max-width: 34em;
-  background-color: #000000df;
+  background-color: var(--ehvp-background-color);
   color: var(--ehvp-font-color);
   border-radius: 6px;
   position: fixed;
@@ -8666,6 +8703,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .s-pickable:hover {
   border: 1px solid red;
   filter: brightness(150%);
+}
+#auto-page-progress {
+  height: 100%;
+  width: 0%;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  background: var(--ehvp-autopage-progress-background);
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .ehvp-root {
@@ -9237,7 +9282,7 @@ ${chapters.map((c, i) => `<div><label>
         </div>
         <a id="auto-page-btn" class="b-main-item clickable" hidden data-status="paused" data-display-texts="${dt.autoPagePlay},${dt.autoPagePause}">
            <span>${dt.autoPagePlay}</span>
-           <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #cd8e8e;"></div>
+           <div id="auto-page-progress"></div>
         </a>
         <a id="config-panel-btn" class="b-main-item clickable" hidden>${dt.config}</a>
         <a id="downloader-panel-btn" class="b-main-item clickable" hidden>${dt.download}</a>

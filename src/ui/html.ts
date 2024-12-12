@@ -48,7 +48,7 @@ export function createHTML() {
         </div>
         <a id="auto-page-btn" class="b-main-item clickable" hidden data-status="paused" data-display-texts="${dt.autoPagePlay},${dt.autoPagePause}">
            <span>${dt.autoPagePlay}</span>
-           <div id="auto-page-progress" style="z-index: -1; height: 100%; width: 0%; position: absolute; top: 0px; left: 0px; background-color: #cd8e8e;"></div>
+           <div id="auto-page-progress"></div>
         </a>
         <a id="config-panel-btn" class="b-main-item clickable" hidden>${dt.config}</a>
         <a id="downloader-panel-btn" class="b-main-item clickable" hidden>${dt.download}</a>

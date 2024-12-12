@@ -16,6 +16,10 @@ export function styleCSS() {
   --ehvp-img-box-shadow: -3px 4px 4px 0px #3d243d;
   --ehvp-panel-border: none;
   --ehvp-panel-box-shadow: none;
+  --ehvp-bifm-img-gap: 2px;
+  --ehvp-bifm-background: #000000d6;
+  --ehvp-clickable-color-hover: #90ea90;
+  --ehvp-autopage-progress-background: #ffffffd0;
   font-size: 16px;
   font-family: Poppins,sans-serif;
 }
@@ -107,6 +111,7 @@ export function styleCSS() {
   box-sizing: border-box;
   background-color: var(--ehvp-img-init);
   border-radius: var(--ehvp-img-node-border-radius);
+  box-shadow: var(--ehvp-img-box-shadow);
 }
 .fvg-sub-container {
   display: flex;
@@ -241,10 +246,12 @@ export function styleCSS() {
   overflow: auto;
   scrollbar-width: none;
   z-index: 2001;
-  background-color: #000000d6;
+  background: var(--ehvp-bifm-background);
   display: flex;
 }
-.bifm-container { }
+.bifm-container > div {
+  box-sizing: border-box;
+}
 .bifm-container-vert {
   width: ${conf.imgScale}%;
   height: fit-content;
@@ -258,19 +265,11 @@ export function styleCSS() {
   flex-wrap: nowrap;
 }
 .bifm-container-vert > div {
-  margin: 2px 0px;
+  margin: var(--ehvp-bifm-img-gap) 0px;
 }
 .bifm-container-hori > div {
-  margin: 0px 2px;
+  margin: 0px var(--ehvp-bifm-img-gap);
 }
-/**
-.bifm-container > div {
-  border: 1px solid red;
-}
-.bifm-container > div:hover {
-  border: 1px solid green;
-}
-*/
 .bifm-img {
   width: 100%;
   height: 100%;
@@ -319,7 +318,7 @@ export function styleCSS() {
   white-space: nowrap;
 }
 .clickable:hover {
-  color: #90ea90 !important;
+  color: var(--ehvp-clickable-color-hover) !important;
 }
 .p-collapse {
   height: 0px !important;
@@ -532,7 +531,7 @@ export function styleCSS() {
 .p-tooltip .p-tooltiptext {
   display: none;
   max-width: 34em;
-  background-color: #000000df;
+  background-color: var(--ehvp-background-color);
   color: var(--ehvp-font-color);
   border-radius: 6px;
   position: fixed;
@@ -892,6 +891,14 @@ export function styleCSS() {
 .s-pickable:hover {
   border: 1px solid red;
   filter: brightness(150%);
+}
+#auto-page-progress {
+  height: 100%;
+  width: 0%;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  background: var(--ehvp-autopage-progress-background);
 }
 @media (max-width: ${isMobile ? "1440px" : "720px"}) {
   .ehvp-root {

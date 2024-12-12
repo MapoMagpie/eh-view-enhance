@@ -79,7 +79,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         }
       }
     }
-    if (!value) return;
+    if (value === undefined) return;
     conf[key] = value;
     const inputElement = q<HTMLInputElement>(`#${key}Input`, HTML.config.panel);
     inputElement.value = conf[key].toString();

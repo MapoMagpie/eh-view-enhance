@@ -1,5 +1,6 @@
 import { KeyboardInBigImageModeId, KeyboardInFullViewGridId, KeyboardInMainId } from '../ui/event';
 
+
 const getI18nIndex = (lang: string) => {
   if (lang.startsWith('zh')) return 1;
   if (lang.startsWith('ko')) return 2;
@@ -11,416 +12,284 @@ const lang = navigator.language;
 const i18nIndex = getI18nIndex(lang);
 
 export class I18nValue extends Array<string> {
-  constructor(...value: string[]) {
-    super(...value);
+  constructor(langs: Langs) {
+    super(...langs);
   }
   get() {
     return this[i18nIndex];
   }
 }
-type KeyboardCustom = {
-  inMain: Record<KeyboardInMainId, I18nValue>;
-  inFullViewGrid: Record<KeyboardInFullViewGridId, I18nValue>;
-  inBigImageMode: Record<KeyboardInBigImageModeId, I18nValue>;
-};
-const keyboardCustom: KeyboardCustom = {
-  inMain: {
-    'open-full-view-grid': new I18nValue('Enter Read Mode', '进入阅读模式', '읽기 모드 시작', 'Entrar en modo de lectura'),
-    'start-download': new I18nValue('Start Download', '开始下载', '다운로드 시작', 'Iniciar Descarga')
-  },
-  inBigImageMode: {
-    'step-image-prev': new I18nValue(
-      'Go Prev Image',
-      '切换到上一张图片',
-      '이전 이미지',
-      'Ir a la imagen anterior'
-    ),
-    'step-image-next': new I18nValue(
-      'Go Next Image',
-      '切换到下一张图片',
-      '다음 이미지',
-      'Ir a la imagen siguiente'
-    ),
-    'exit-big-image-mode': new I18nValue(
-      'Exit Big Image Mode',
-      '退出大图模式',
-      '이미지 크게 보기 종료',
-      'Salir del modo de imagen grande'
-    ),
-    'step-to-first-image': new I18nValue(
-      'Go First Image',
-      '跳转到第一张图片',
-      '첫 이미지로 이동',
-      'Ir a la primera imagen'
-    ),
-    'step-to-last-image': new I18nValue(
-      'Go Last Image',
-      '跳转到最后一张图片',
-      '마지막 이미지로 이동',
-      'Ir a la última imagen'
-    ),
-    'scale-image-increase': new I18nValue(
-      'Increase Image Scale',
-      '放大图片',
-      '이미지 확대',
-      'Aumentar la escala de la imagen'
-    ),
-    'scale-image-decrease': new I18nValue(
-      'Decrease Image Scale',
-      '缩小图片',
-      '이미지 축소',
-      'Disminuir la escala de la imagen'
-    ),
-    'scroll-image-up': new I18nValue(
-      'Scroll Image Up (Please Keep Default Keys)',
-      '向上滚动图片 (请保留默认按键)',
-      '이미지 위로 스크롤 (기본 키는 그대로 두십시오)',
-      'Desplazar la imagen hacia arriba (Por favor, mantener las teclas predeterminadas)'
-    ),
-    'scroll-image-down': new I18nValue(
-      'Scroll Image Down (Please Keep Default Keys)',
-      '向下滚动图片 (请保留默认按键)',
-      '이미지 아래로 스크롤 (기본 키는 그대로 두십시오)',
-      'Desplazar la imagen hacia abajo (Por favor, mantener las teclas predeterminadas)'
-    ),
-    'toggle-auto-play': new I18nValue(
-      'Toggle Auto Play',
-      '切换自动播放',
-      '자동 재생 시작/중지',
-      'Alternar reproducción automática'
-    ),
-    'round-read-mode': new I18nValue(
-      'Switch Reading mode (Loop)',
-      '切换阅读模式(循环)',
-      '읽기 모드 전환(루프)',
-      'Cambiar modo de lectura (bucle)'
-    ),
-    'toggle-reverse-pages': new I18nValue(
-      'Toggle Pages Reverse',
-      '切换阅读方向',
-      '페이지 반전 전환',
-      'Alternar páginas hacia atrás'
-    )
-  },
-  inFullViewGrid: {
-    'open-big-image-mode': new I18nValue(
-      'Enter Big Image Mode',
-      '进入大图阅读模式',
-      '이미지 크게 보기',
-      'Entrar al modo de imagen grande'
-    ),
-    'pause-auto-load-temporarily': new I18nValue(
-      'Pause Auto Load Temporarily',
-      '临时停止自动加载',
-      '자동 이미지 로딩 일시 중지',
-      'Pausar carga automática temporalmente'
-    ),
-    'exit-full-view-grid': new I18nValue(
-      'Exit Read Mode',
-      '退出阅读模式',
-      '읽기 모드 종료',
-      'Salir del modo de lectura'
-    ),
-    'columns-increase': new I18nValue(
-      'Increase Columns ',
-      '增加每行数量',
-      '열 수 늘리기',
-      'Aumentar columnas'
-    ),
-    'columns-decrease': new I18nValue(
-      'Decrease Columns ',
-      '减少每行数量',
-      '열 수 줄이기',
-      'Disminuir columnas'
-    ),
-    'toggle-auto-play': new I18nValue(
-      'Toggle Auto Play',
-      '切换自动播放',
-      '자동 재생 시작/중지',
-      'Alternar reproducción automática'
-    ),
-    'retry-fetch-next-page': new I18nValue(
-      'Try Fetch Next Page',
-      '重新加载下一分页',
-      '다음 페이지 로딩 재시도',
-      'Intentar cargar la siguiente página'
-    ),
-    'resize-flow-vision': new I18nValue(
-      'Resize Thumbnail Grid Layout',
-      'Resize Thumbnail Grid Layout',
-      'Resize Thumbnail Grid Layout',
-      'Resize Thumbnail Grid Layout'
-    ),
-  },
-};
-export const i18n = {
+type Langs = [string, string, string, string];
+
+const i18nData = {
   // page-helper
-  imageScale: new I18nValue(
+  imageScale: [
     'SCALE',
     '缩放',
     '배율',
     'Escala'
-  ),
-  config: new I18nValue(
+  ],
+  config: [
     'CONF',
     '配置',
     '설정',
     'Ajustes'
-  ),
-  chapters: new I18nValue(
+  ],
+  chapters: [
     'CHAPTERS',
     '章节',
     '챕터',
     'Capítulos'
-  ),
-  autoPagePlay: new I18nValue(
+  ],
+  autoPagePlay: [
     'PLAY',
     '播放',
     '재생',
     'Reproducir'
-  ),
-  autoPagePause: new I18nValue(
+  ],
+  autoPagePause: [
     'PAUSE',
     '暂停',
     '일시 중지',
     'Pausar'
-  ),
-  collapse: new I18nValue(
+  ],
+  collapse: [
     'FOLD',
     '收起',
     '접기',
     'Plegar'
-  ),
+  ],
   // config panel number option
-  colCount: new I18nValue(
+  colCount: [
     'Columns',
     '每行数量',
     '열 수',
     'Columnas'
-  ),
-  colCountTooltip: new I18nValue(
+  ],
+  colCountTooltip: [
     'The number of images per row in the thumbnail list. If the layout is Flow Vision, the final number of images per row will be influenced by the specific aspect ratio of the images.',
     '缩略图列表的每行图片数量。如果布局为自适应视图，最终每行图片数量受图片的具体宽高比影响。',
     '썸네일 목록에서 한 줄에 표시되는 이미지의 개수입니다. 레이아웃이 반응형인 경우, 최종 한 줄에 표시되는 이미지의 개수는 이미지의 구체적인 가로세로 비율에 영향을 받습니다.',
     'El número de imágenes por fila en la lista de miniaturas. Si el diseño es adaptable, el número final de imágenes por fila estará influenciado por la proporción de aspecto específica de las imágenes.'
-  ),
-  rowHeight: new I18nValue(
+  ],
+  rowHeight: [
     'Row Height',
     '每行高度',
     '행 높이',
     'Altura de fila'
-  ),
-  rowHeightTooltip: new I18nValue(
+  ],
+  rowHeightTooltip: [
     'This option is only effective when the layout of the thumbnail list is Flow Vision. The reference height per row, along with the number of images per row, jointly influences the final display effect.',
     '此项仅在缩略图列表的布局为自适应视图时有效。每行的参考高度，和每行数量共同影响最终的展示效果。',
     '이 옵션은 썸네일 목록의 레이아웃이 반응형일 때만 유효합니다. 각 행의 기준 높이는 행당 이미지 개수와 함께 최종 표시 결과에 영향을 미칩니다.',
     'Esta opción solo es efectiva cuando el diseño de la lista de miniaturas es adaptable. La altura de referencia por fila, junto con el número de imágenes por fila, influye en el efecto final de la visualización.'
-  ),
-  threads: new I18nValue(
+  ],
+  threads: [
     'Preload Threads',
     '最大同时加载',
     '동시 로드 수',
     'Hilos de pre-carga'
-  ),
-  threadsTooltip: new I18nValue(
+  ],
+  threadsTooltip: [
     'Max Preload Threads',
     '大图浏览时，每次滚动到下一张时，预加载的图片数量，大于1时体现为越看加载的图片越多，将提升浏览体验。',
     '큰 이미지 모드에서 다음 이미지로 이동할 때 미리 로드할 이미지 수입니다.<br>이 값이 1보다 클 경우, 동시에 로드되는 이미지가 더 많아져서 사용 경험이 향상됩니다.',
     'Hilos máximos de pre-carga'
-  ),
-  downloadThreads: new I18nValue(
+  ],
+  downloadThreads: [
     'Download Threads',
     '最大同时下载',
     '최대 동시 다운로드',
     'Hilos de descarga'
-  ),
-  downloadThreadsTooltip: new I18nValue(
+  ],
+  downloadThreadsTooltip: [
     'Max Download Threads, suggest: <5',
     '下载模式下，同时加载的图片数量，建议小于等于5',
     '다운로드 모드에서 동시에 다운로드할 이미지 수입니다. 5 이하로 설정하는 것이 좋습니다.',
     'Hilos máximos de descarga, sugerido: <5'
-  ),
-  paginationIMGCount: new I18nValue(
+  ],
+  paginationIMGCount: [
     'Images Per Page',
     '每页图片数量',
     '페이지당 이미지 수',
     'Imágenes por página'
-  ),
-  paginationIMGCountTooltip: new I18nValue(
+  ],
+  paginationIMGCountTooltip: [
     'In Pagination Read mode, the number of images displayed on each page',
     '当阅读模式为翻页模式时，每页展示的图片数量',
     '페이지 넘김 모드에서 각 페이지에 표시될 이미지 수입니다.',
     'En el modo de lectura por paginación, el número de imágenes mostradas en cada página'
-  ),
-  timeout: new I18nValue(
+  ],
+  timeout: [
     'Timeout(second)',
     '超时时间(秒)',
     '이미지 로딩 시도 시간 (초)',
     'Tiempo de espera (segundos)'
-  ),
-  preventScrollPageTime: new I18nValue(
+  ],
+  preventScrollPageTime: [
     'Min Paging Time',
     '最小翻页时间',
     '최소 페이지 넘김 시간',
     'Tiempo mínimo de paginación'
-  ),
-  preventScrollPageTimeTooltip: new I18nValue(
+  ],
+  preventScrollPageTimeTooltip: [
     'In Pagination read mode, prevent immediate page flipping when scrolling to the bottom/top to improve the reading experience.<br>Set to 0 to disable this feature,<br>If set to less than 0, page-flipping via scrolling is always disabled, except for the spacebar.<br>measured in milliseconds.',
     '当阅读模式为翻页模式时，滚动浏览时，阻止滚动到底部时立即翻页，提升阅读体验。<br>设置为0时则禁用此功能，单位为毫秒。<br>设置小于0时则永远禁止通过滚动的方式翻页。空格键除外。',
     '페이지 넘김 모드에서 아래/위로 스크롤 시 너무 빨리 페이지가 넘어가는 것을 방지하여 읽기 경험을 개선합니다.<br>0으로 설정하면 이 기능이 비활성화됩니다.<br>0보다 작은 값으로 설정하면 단축키를 제외하고 스크롤을 통한 페이지 넘김이 항상 비활성화됩니다. (밀리초 단위)',
     'En el modo de lectura por paginación, evita el cambio inmediato de página al desplazarse hacia el fondo o la parte superior para mejorar la experiencia de lectura.<br>Establezca en 0 para desactivar esta función,<br>Si se establece en menos de 0, el cambio de página mediante desplazamiento siempre está desactivado, excepto para la barra espaciadora.<br>Medido en milisegundos.'
-  ),
-  autoPageSpeed: new I18nValue(
+  ],
+  autoPageSpeed: [
     'Auto Paging Speed',
     '自动翻页速度',
     '자동 페이지 넘김 속도',
     'Velocidad de paginación automática'
-  ),
-  autoPageSpeedTooltip: new I18nValue(
+  ],
+  autoPageSpeedTooltip: [
     'In Pagination read mode, Auto Page Speed means how many seconds it takes to flip the page automatically.<br>In Continuous read mode, Auto Page Speed means the scrolling speed.',
     '当阅读模式为翻页模式时，自动翻页速度表示为多少秒后翻页。<br>当阅读模式为连续模式时，自动翻页速度表示为滚动速度。',
     '페이지 넘김 모드에서 자동 페이지 넘김 속도는 몇 초 후에 자동으로 페이지가 넘어갈지를 의미합니다.<br>연속 읽기 모드에서 자동 페이지 넘김 속도는 자동 스크롤 속도를 의미합니다.',
     'En el modo de lectura por paginación, la velocidad de página automática indica cuántos segundos toma cambiar la página automáticamente.<br>En el modo de lectura continua, la velocidad de página automática indica la velocidad de desplazamiento.'
-  ),
-  scrollingSpeed: new I18nValue(
+  ],
+  scrollingSpeed: [
     'Scrolling Speed',
     '按键滚动速度',
     '스크롤 속도',
     'Velocidad de desplazamiento'
-  ),
-  scrollingSpeedTooltip: new I18nValue(
+  ],
+  scrollingSpeedTooltip: [
     'The scrolling Speed for Custom KeyBoard Keys for scrolling, not Auto Paging|Scrolling Speed',
     '自定义按键的滚动速度，并不是连续阅读模式下的自动翻页的滚动速度。',
     '단축키를 사용한 스크롤 속도입니다. 자동 페이지 넘김 모드의 스크롤 속도가 아닙니다.',
     'La velocidad de desplazamiento para las teclas del teclado personalizadas para desplazamiento, no para la paginación automática|Velocidad de desplazamiento'
-  ),
+  ],
   // config panel boolean option
-  fetchOriginal: new I18nValue(
+  fetchOriginal: [
     'Raw Image',
     '最佳质量',
     '원본 이미지',
     'Imagen sin procesar'
-  ),
-  fetchOriginalTooltip: new I18nValue(
+  ],
+  fetchOriginalTooltip: [
     'enable will download the original source, cost more traffic and quotas',
     '启用后，将加载未经过压缩的原档文件，下载打包后的体积也与画廊所标体积一致。<br>注意：这将消耗更多的流量与配额，请酌情启用。',
     '활성화하면 원본 파일이 다운로드됩니다. 더 많은 트래픽과 할당량이 소비됩니다.',
     'Activar descargará la fuente original, lo que consumirá más tráfico y cuotas'
-  ),
-  autoLoad: new I18nValue(
+  ],
+  autoLoad: [
     'Auto Load',
     '自动加载',
     '자동 로드',
     'Carga automática'
-  ),
-  autoLoadTooltip: new I18nValue(
+  ],
+  autoLoadTooltip: [
     'Automatically start loading images after entering this script\'s view',
     '进入本脚本的浏览模式后，即使不浏览也会一张接一张的加载图片。直至所有图片加载完毕。',
-    '보기 모드에 진입하면, 사용자가 탐색 중이 아닐 때도 이미지가 하나씩 자동으로 로드됩니다. 모든 이미지가 로드될 때까지 계속됩니다.'
-  ),
-  reversePages: new I18nValue(
+    '보기 모드에 진입하면, 사용자가 탐색 중이 아닐 때도 이미지가 하나씩 자동으로 로드됩니다. 모든 이미지가 로드될 때까지 계속됩니다.',
+    'Comience a cargar imágenes automáticamente después de ingresar a la vista de este script.'
+  ],
+  reversePages: [
     'Reverse Pages',
     '反向翻页',
     '페이지 순서 뒤집기',
     'Revertir páginas'
-  ),
-  reversePagesTooltip: new I18nValue(
+  ],
+  reversePagesTooltip: [
     'Clicking on the side navigation, if enable then reverse paging, which is a reading style similar to Japanese manga where pages are read from right to left.',
     '点击侧边导航时，是否反向翻页，反向翻页类似日本漫画那样的从右到左的阅读方式。',
     '측면 내비게이션을 클릭했을 때 이미지들을 거꾸로 배치할 지 선택합니다. 일본 만화처럼 오른쪽에서 왼쪽으로 읽는 스타일의 이미지에 적용하면 좋습니다.',
     'Hacer clic en la navegación lateral, si está habilitado, revertirá la paginación, que es un estilo de lectura similar al manga japonés, donde las páginas se leen de derecha a izquierda.'
-  ),
-  autoPlay: new I18nValue(
+  ],
+  autoPlay: [
     'Auto Page',
     '自动翻页',
     '자동 페이지 넘김',
     'Paginación automática'
-  ),
-  autoPlayTooltip: new I18nValue(
+  ],
+  autoPlayTooltip: [
     'Auto Page when entering the big image readmode.',
     '当阅读大图时，开启自动播放模式。',
     '이미지 크게 보기 모드에 들어가면 바로 자동 페이지 넘김을 활성화합니다.',
     'Paginación automática al entrar en el modo de lectura de imagen grande.'
-  ),
-  autoLoadInBackground: new I18nValue(
+  ],
+  autoLoadInBackground: [
     'Keep Loading',
     '后台加载',
     '백그라운드 로딩',
     'Sigue cargando'
-  ),
-  autoLoadInBackgroundTooltip: new I18nValue(
+  ],
+  autoLoadInBackgroundTooltip: [
     'Keep Auto-Loading after the tab loses focus',
     '当标签页失去焦点后保持自动加载。',
     '사용자가 다른 창을 볼 때도 자동 로딩을 계속합니다.',
     'Mantener la carga automática después de que la pestaña pierda el enfoque'
-  ),
-  autoOpen: new I18nValue(
+  ],
+  autoOpen: [
     'Auto Open',
     '自动展开',
     '자동 이미지 열기',
     'Abrir automáticamente'
-  ),
-  autoOpenTooltip: new I18nValue(
+  ],
+  autoOpenTooltip: [
     'Automatically open after the gallery page is loaded',
     '进入画廊页面后，自动展开阅读视图。',
     '갤러리 페이지가 로드된 후 첫 페이지를 자동으로 엽니다.',
     'Abrir automáticamente después de que la página de la galería se cargue'
-  ),
-  autoCollapsePanel: new I18nValue(
+  ],
+  autoCollapsePanel: [
     'Auto Fold Control Panel',
     '自动收起控制面板',
     '설정 창 자동으로 닫기',
     'Plegar automáticamente el panel de control'
-  ),
-  autoCollapsePanelTooltip: new I18nValue(
+  ],
+  autoCollapsePanelTooltip: [
     'When the mouse is moved out of the control panel, the control panel will automatically fold. If disabled, the display of the control panel can only be toggled through the button on the control bar.',
     '当鼠标移出控制面板时，自动收起控制面板。禁用此选项后，只能通过控制栏上的按钮切换控制面板的显示。',
     '마우스가 설정 창이나 컨트롤 바를 벗어나면 설정 창이 자동으로 닫힙니다. 비활성화된 경우, 컨트롤 바의 버튼을 통해서만 창을 여닫을 수 있습니다.',
     'Cuando el mouse se mueve fuera del panel de control, este se plegará automáticamente. Si está desactivado, la visualización del panel de control solo se puede alternar mediante el botón en la barra de control.'
-  ),
-  magnifier: new I18nValue(
+  ],
+  magnifier: [
     'Magnifier',
     '放大镜',
     '돋보기',
     'Lupa'
-  ),
-  magnifierTooltip: new I18nValue(
+  ],
+  magnifierTooltip: [
     'In the pagination reading mode, you can temporarily zoom in on an image by dragging it with the mouse click, and the image will follow the movement of the cursor.',
     '在翻页阅读模式下，你可以通过鼠标左键拖动图片临时放大图片以及图片跟随指针移动。',
     'Pagination 읽기 모드에서 마우스 클릭으로 이미지를 드래그하면 일시적으로 이미지를 확대할 수 있으며, 이미지가 마우스 커서의 움직임을 따라 이동합니다.',
     'En el modo de lectura por paginación, puedes hacer un zoom temporal en una imagen arrastrándola con el clic del mouse, y la imagen seguirá el movimiento del cursor.'
-  ),
-  autoEnterBig: new I18nValue(
+  ],
+  autoEnterBig: [
     'Auto Big',
     '自动大图',
     '이미지 바로 보기',
     'Auto Grande'
-  ),
-  autoEnterBigTooltip: new I18nValue(
+  ],
+  autoEnterBigTooltip: [
     "Directly enter the Big image view when the script's entry is clicked or auto-opened",
     '点击脚本入口或自动打开脚本后直接进入大图阅读视图。',
     '이미지 뷰어가 열리면 즉시 큰 이미지 보기 모드로 전환됩니다.',
     'Entrar directamente en la vista de imagen grande cuando se haga clic en la entrada del script o se abra automáticamente'
-  ),
-  hdThumbnails: new I18nValue(
+  ],
+  hdThumbnails: [
     "HD Thumbnails",
     "高清缩略图",
     "HD 썸네일",
     "Miniaturas HD",
-  ),
-  hdThumbnailsTooltip: new I18nValue(
+  ],
+  hdThumbnailsTooltip: [
     "When the large image is loaded, whether to resample a clearer image from the large image as a thumbnail, will affect performance.",
     "当图片加载完毕后，是否从源图重新采样更加清晰的图片作为缩略图，此项会影响性能。",
     "큰 이미지가 로드될 때 큰 이미지에서 보다 선명한 이미지를 썸네일로 리샘플링할지 여부가 성능에 영향을 미칩니다.",
     "Cuando se carga la imagen grande, el hecho de volver a muestrear una imagen más clara de la imagen grande como miniatura afectará el rendimiento.",
-  ),
-  pixivJustCurrPage: new I18nValue(
+  ],
+  pixivJustCurrPage: [
     'Pixiv Only Load Current Page',
     'Pixiv仅加载当前作品页',
     'Pixiv 현재 페이지만 로드',
     'Pixiv: Cargar solo la página actual'
-  ),
-  pixivJustCurrPageTooltip: new I18nValue(
+  ],
+  pixivJustCurrPageTooltip: [
     "In Pixiv, if the current page is on a artwork page, only load the images from current page. Disable this option or the current page is on the artist's homepage, all images by that author will be loaded. <br>" +
     'Note: You can continue loading all the remaining images by the author by scrolling on the page or pressing "Try Fetch Next Page" key after disabling this option.',
     '在Pixiv中，如果当前页是作品页则只加载当前页中的图片，如果该选项禁用或者当前页是作者主页，则加载该作者所有的作品。<br>' +
@@ -429,87 +298,87 @@ export const i18n = {
     '참고: 이 옵션을 비활성화한 후, 페이지를 스크롤하거나 "다음 페이지 로딩 재시도" 키를 눌러 작가의 나머지 이미지를 계속 로드할 수 있습니다.',
     'En Pixiv, si la página actual está en una página de una obra, solo se cargarán las imágenes de la página actual. Desactive esta opción si la página actual está en la página de inicio del artista; en ese caso, se cargarán todas las imágenes de ese autor. <br>' +
     'Nota: Puedes continuar cargando todas las imágenes restantes del autor desplazándote por la página o presionando la tecla "Intentar cargar la siguiente página" después de desactivar esta opción.'
-  ),
+  ],
   // config panel select option
-  readMode: new I18nValue(
+  readMode: [
     'Read Mode',
     '阅读模式',
     '읽기 모드',
     'Modo de lectura'
-  ),
-  readModeTooltip: new I18nValue(
+  ],
+  readModeTooltip: [
     'Switch to the next picture when scrolling, otherwise read continuously',
     '滚动时切换到下一张图片，否则连续阅读',
     '스크롤 시 다음 이미지로 전환하거나, 이미지들을 연속으로 배치합니다.',
     'Cambiar a la siguiente imagen al desplazarse, de lo contrario, leer de manera continua'
-  ),
-  stickyMouse: new I18nValue(
+  ],
+  stickyMouse: [
     'Sticky Mouse',
     '黏糊糊鼠标',
     '마우스 고정',
     'Mouse adhesivo'
-  ),
-  stickyMouseTooltip: new I18nValue(
+  ],
+  stickyMouseTooltip: [
     'In pagination reading mode, scroll a single image automatically by moving the mouse.',
     '非连续阅读模式下，通过鼠标移动来自动滚动单张图片。',
     '페이지 읽기 모드에서 마우스 커서를 움직여 하나의 이미지를 자동으로 스크롤합니다.',
     'En el modo de lectura por paginación, desplaza una sola imagen automáticamente moviendo el mouse.'
-  ),
-  minifyPageHelper: new I18nValue(
+  ],
+  minifyPageHelper: [
     'Minify Control Bar',
     '最小化控制栏',
     '컨트롤 바 최소화',
     'Minimizar barra de control'
-  ),
-  minifyPageHelperTooltip: new I18nValue(
+  ],
+  minifyPageHelperTooltip: [
     'Minify Control Bar',
     '最小化控制栏',
     '언제 컨트롤 바를 최소화할지 선택합니다.',
     'Minimizar barra de control'
-  ),
-  hitomiFormat: new I18nValue(
+  ],
+  hitomiFormat: [
     'Hitomi Image Format',
     'Hitomi 图片格式',
     'Hitomi 이미지 형식',
     'Formato de imagen de Hitomi'
-  ),
-  hitomiFormatTooltip: new I18nValue(
+  ],
+  hitomiFormatTooltip: [
     'In Hitomi, Fetch images by the format.<br>if Auto then try Avif > Jxl > Webp, Requires Refresh',
     '在Hitomi中的源图格式。<br>如果是Auto，则优先获取Avif > Jxl > Webp，修改后需要刷新生效。',
     'Hitomi에서 이미지를 어떤 종류의 파일로 가져올 지 선택합니다.<br>Auto 설정 시 Avif > Jxl > Webp 순으로 시도하며, 변경 후 새로고침이 필요합니다.',
     'En Hitomi, obtener imágenes por formato.<br>Si está en automático, intentará Avif > Jxl > Webp. Requiere actualización.'
-  ),
-  ehentaiTitlePrefer: new I18nValue(
+  ],
+  ehentaiTitlePrefer: [
     'EHentai Prefer Title',
     'EHentai标题语言',
     'EHentai 선호 제목',
     'Preferir título en EHentai'
-  ),
-  ehentaiTitlePreferTooltip: new I18nValue(
+  ],
+  ehentaiTitlePreferTooltip: [
     'Many galleries have both an English/Romanized title and a title in Japanese script. <br>Which one do you want to use as the archive filename?',
     '许多图库都同时拥有英文/罗马音标题和日文标题，<br>您希望下载时哪个作为文件名？',
     '많은 갤러리가 영어/로마자 제목과 일본어 제목을 모두 가지고 있습니다. <br>어떤 것을 아카이브 파일 이름으로 사용할지 선택할 수 있습니다.',
     'Muchas galerías tienen tanto un título en inglés/romanizado como un título en script japonés.<br>¿Cuál quieres usar como nombre de archivo?'
-  ),
-  reverseMultipleImagesPost: new I18nValue(
+  ],
+  reverseMultipleImagesPost: [
     'Descending Images In Post',
     '反转推文图片顺序',
     '포스트 이미지 내림차순 정렬',
     'Imágenes descendentes en la publicación'
-  ),
-  reverseMultipleImagesPostTooltip: new I18nValue(
+  ],
+  reverseMultipleImagesPostTooltip: [
     'Reverse order for post with multiple images attatched',
     '反转推文图片顺序',
     '여러 이미지가 첨부된 포스트 내 이미지들의 순서를 역순으로 정렬합니다.',
     'Orden inverso para publicaciones con múltiples imágenes adjuntas'
-  ),
-  filenameOrder: new I18nValue(
+  ],
+  filenameOrder: [
     'Filename Order',
     '文件名排序',
     '파일명 순서',
     'Orden de nombres de archivo'
-  ),
-  filenameOrderTooltip: new I18nValue(
+  ],
+  filenameOrderTooltip: [
     `Filename Sorting Rules for Downloaded Files:
 <br>  Auto: Detect whether the original filenames are consistent with the reading order under natural sorting (Windows). If consistent, keep the original filenames; otherwise, prepend a number to the original filenames to ensure the correct order.
 <br>  Numbers: Ignore the original filenames and rename the files directly according to the reading order.
@@ -530,161 +399,162 @@ export const i18n = {
 <br>  Numbers: Ignora los nombres de archivo originales y renombra los archivos directamente según el orden de lectura.
 <br>  Original: Conserva únicamente los nombres de archivo originales sin garantizar el orden de lectura, lo que puede resultar en sobrescribir archivos con el mismo nombre.
 <br>  Alphabetically: Detecta si los nombres de archivo originales son consistentes con el orden de lectura bajo el orden alfabético (Linux). Si son consistentes, conserva los nombres de archivo originales; de lo contrario, antepone un número a los nombres originales para garantizar el orden correcto. `,
-  ),
+  ],
 
-  dragToMove: new I18nValue(
+  dragToMove: [
     'Drag to Move the control bar',
     '拖动移动',
     '드래그해서 컨트롤 바 이동',
     'Arrastra para mover la barra de control'
-  ),
-  resetDownloaded: new I18nValue(
+  ],
+  resetDownloaded: [
     'Reset Downloaded Images',
     '重置已下载的图片',
     '다운로드한 이미지 초기화',
     'Restablecer imágenes descargadas'
-  ),
-  resetDownloadedConfirm: new I18nValue(
+  ],
+  resetDownloadedConfirm: [
     'You will reset Downloaded Images!',
     '已下载的图片将会被重置为未下载！',
     '이미지들은 다운로드하지 않은 상태로 초기화됩니다!',
     '¡Vas a restablecer las imágenes descargadas!'
-  ),
-  resetFailed: new I18nValue(
+  ],
+  resetFailed: [
     'Reset Failed Images',
     '重置下载错误的图片',
     '로딩 실패한 이미지 초기화',
     'Restablecer imágenes fallidas'
-  ),
-  showHelp: new I18nValue(
+  ],
+  showHelp: [
     'Help',
     '帮助',
     '도움말',
     'Ayuda'
-  ),
-  showKeyboard: new I18nValue(
+  ],
+  showKeyboard: [
     'Keyboard',
     '快捷键',
     '단축키',
     'Teclado'
-  ),
-  showSiteProfiles: new I18nValue(
+  ],
+  showSiteProfiles: [
     'Site Profiles',
     '站点配置',
     '사이트 설정',
     'Perfiles del sitio'
-  ),
-  showStyleCustom: new I18nValue(
+  ],
+  showStyleCustom: [
     'Style',
     '样式',
     '스타일',
     'Estilo'
-  ),
-  controlBarStyleTooltip: new I18nValue(
+  ],
+  controlBarStyleTooltip: [
     'Click on an item to modify its display text, such as emoji or personalized text. Changes will take effect after restarting.',
     '点击某项后修改其显示文本，比如emoji或个性文字，也许svg，重启后生效。',
-    '아이템을 클릭하여 이모티콘이나 텍스트 등을 수정할 수 있습니다. 변경 사항은 재시작 후 적용됩니다.'
-  ),
-  letUsStar: new I18nValue(
+    '아이템을 클릭하여 이모티콘이나 텍스트 등을 수정할 수 있습니다. 변경 사항은 재시작 후 적용됩니다.',
+    'Haga clic en un elemento para modificar el texto que se muestra, como emoji o texto personalizado. Los cambios entrarán en vigor después de reiniciar.'
+  ],
+  letUsStar: [
     "Let's Star",
     '点星',
     '별 눌러줘',
     'Presiona la estrella'
-  ),
+  ],
 
   // download panel
-  download: new I18nValue(
+  download: [
     'DL',
     '下载',
     '다운로드',
     'Descargar'
-  ),
-  forceDownload: new I18nValue(
+  ],
+  forceDownload: [
     'Take Loaded',
     '获取已下载的',
     '다운로드된 이미지 가져오기',
     'Tomar cargado'
-  ),
-  downloadStart: new I18nValue(
+  ],
+  downloadStart: [
     'Start Download',
     '开始下载',
     '다운로드 시작',
     'Comenzar descarga'
-  ),
-  downloading: new I18nValue(
+  ],
+  downloading: [
     'Downloading...',
     '下载中...',
     '다운로드 중...',
     'Descargando...'
-  ),
-  downloadFailed: new I18nValue(
+  ],
+  downloadFailed: [
     'Failed(Retry)',
     '下载失败(重试)',
     '실패(재시도)',
     'Fallido(Reintentar)'
-  ),
-  downloaded: new I18nValue(
+  ],
+  downloaded: [
     'Downloaded',
     '下载完成',
     '다운로드 완료',
     'Descargado'
-  ),
-  packaging: new I18nValue(
+  ],
+  packaging: [
     'Packaging...',
     '打包中...',
     '압축 중...',
     'Empaquetando...'
-  ),
-  status: new I18nValue(
+  ],
+  status: [
     'Status',
     '状态',
     '상태',
     'Estado'
-  ),
-  selectChapters: new I18nValue(
+  ],
+  selectChapters: [
     'Select Chapters',
     '章节选择',
     '챕터 선택',
     'Seleccionar capítulos'
-  ),
-  cherryPick: new I18nValue(
+  ],
+  cherryPick: [
     'Cherry Pick',
     '范围选择',
     '범위 선택',
     'Seleccionar individualmente'
-  ),
+  ],
 
-  enable: new I18nValue(
+  enable: [
     'Enable',
     '启用',
     '활성화',
     'Habilitar'
-  ),
-  enableTooltips: new I18nValue(
+  ],
+  enableTooltips: [
     'Enable the script on this site.',
     '在此站点上启用本脚本的功能。',
     '선택된 사이트에서만 스크립트를 활성화합니다.',
     'Habilitar el script en este sitio.'
-  ),
-  enableAutoOpen: new I18nValue(
+  ],
+  enableAutoOpen: [
     'Auto Open',
     '自动打开',
     '자동 크게 보기',
     'Apertura automática'
-  ),
-  enableAutoOpenTooltips: new I18nValue(
+  ],
+  enableAutoOpenTooltips: [
     'Automatically open the interface of this script when entering the corresponding page.',
     '当进入对应的生效页面后，自动打开本脚本界面。',
     '해당 페이지에 들어갈 때 이 스크립트의 인터페이스를 자동으로 엽니다.',
     'Abrir automáticamente la interfaz de este script al ingresar a la página correspondiente.'
-  ),
-  enableFlowVision: new I18nValue(
+  ],
+  enableFlowVision: [
     'Flow Vision',
     '自适应视图',
     'Flow Vision',
     'Flow Vision'
-  ),
-  enableFlowVisionTooltips: new I18nValue(
+  ],
+  enableFlowVisionTooltips: [
     `Enable a new thumbnail list layout where the images in each row have uniform height, but the number of images per row is automatically adjusted. 
     <br>The overall appearance is more compact and comfortable, suitable for illustration-based websites with irregular image aspect ratios.
     <br>Note: Since some websites cannot retrieve image aspect ratio information, the effect may be impacted.`,
@@ -697,15 +567,15 @@ export const i18n = {
     `Activar un nuevo diseño de lista de miniaturas donde las imágenes en cada fila tienen altura uniforme, pero el número de imágenes por fila se ajusta automáticamente. 
     <br>La apariencia general es más compacta y cómoda, adecuada para sitios web basados en ilustraciones con relaciones de aspecto de imagen irregulares.
     <br>Nota: Dado que algunos sitios web no pueden recuperar la información de la relación de aspecto de las imágenes, el efecto puede verse afectado.`
-  ),
-  addRegexp: new I18nValue(
+  ],
+  addRegexp: [
     'Add Work URL Regexp',
     '添加生效地址规则',
     'URL 정규식 추가',
     'Agregar expresión regular de URL'
-  ),
+  ],
 
-  help: new I18nValue(
+  help: [
     `
 <h2>[How to Use? Where is the Entry?]</h2>
 <p>The script typically activates on gallery homepages or artist homepages. For example, on E-Hentai, it activates on the gallery detail page, or on Twitter, it activates on the user&#39;s homepage or tweets.</p>
@@ -1007,7 +877,170 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
 <li>Al usar Firefox para abrir la página principal de Twitter en una nueva pestaña y luego navegar a la página principal del usuario, el script no se activa y requiere actualizar la página.</li>
 <li>En Firefox, la función de descarga no funciona en el dominio twitter.com. Firefox no redirige twitter.com a x.com cuando se abre en una nueva pestaña. Debes usar x.com en lugar de twitter.com.</li>
 </ul>
-`
-  ),
-  keyboardCustom: keyboardCustom,
+`,
+  ],
+} satisfies Record<string, Langs>;
+type I18nKeys = keyof (typeof i18nData);
+
+const kbInMainData: Record<KeyboardInMainId, Langs> = {
+  'open-full-view-grid': [
+    'Enter Read Mode',
+    '进入阅读模式',
+    '읽기 모드 시작',
+    'Entrar en modo de lectura'
+  ],
+  'start-download': [
+    'Start Download',
+    '开始下载',
+    '다운로드 시작',
+    'Iniciar Descarga'
+  ]
+};
+
+const kbInBigImageModeData: Record<KeyboardInBigImageModeId, Langs> = {
+  'step-image-prev': [
+    'Go Prev Image',
+    '切换到上一张图片',
+    '이전 이미지',
+    'Ir a la imagen anterior'
+  ],
+  'step-image-next': [
+    'Go Next Image',
+    '切换到下一张图片',
+    '다음 이미지',
+    'Ir a la imagen siguiente'
+  ],
+  'exit-big-image-mode': [
+    'Exit Big Image Mode',
+    '退出大图模式',
+    '이미지 크게 보기 종료',
+    'Salir del modo de imagen grande'
+  ],
+  'step-to-first-image': [
+    'Go First Image',
+    '跳转到第一张图片',
+    '첫 이미지로 이동',
+    'Ir a la primera imagen'
+  ],
+  'step-to-last-image': [
+    'Go Last Image',
+    '跳转到最后一张图片',
+    '마지막 이미지로 이동',
+    'Ir a la última imagen'
+  ],
+  'scale-image-increase': [
+    'Increase Image Scale',
+    '放大图片',
+    '이미지 확대',
+    'Aumentar la escala de la imagen'
+  ],
+  'scale-image-decrease': [
+    'Decrease Image Scale',
+    '缩小图片',
+    '이미지 축소',
+    'Disminuir la escala de la imagen'
+  ],
+  'scroll-image-up': [
+    'Scroll Image Up (Please Keep Default Keys)',
+    '向上滚动图片 (请保留默认按键)',
+    '이미지 위로 스크롤 (기본 키는 그대로 두십시오)',
+    'Desplazar la imagen hacia arriba (Por favor, mantener las teclas predeterminadas)'
+  ],
+  'scroll-image-down': [
+    'Scroll Image Down (Please Keep Default Keys)',
+    '向下滚动图片 (请保留默认按键)',
+    '이미지 아래로 스크롤 (기본 키는 그대로 두십시오)',
+    'Desplazar la imagen hacia abajo (Por favor, mantener las teclas predeterminadas)'
+  ],
+  'toggle-auto-play': [
+    'Toggle Auto Play',
+    '切换自动播放',
+    '자동 재생 시작/중지',
+    'Alternar reproducción automática'
+  ],
+  'round-read-mode': [
+    'Switch Reading mode (Loop)',
+    '切换阅读模式(循环)',
+    '읽기 모드 전환(루프)',
+    'Cambiar modo de lectura (bucle)'
+  ],
+  'toggle-reverse-pages': [
+    'Toggle Pages Reverse',
+    '切换阅读方向',
+    '페이지 반전 전환',
+    'Alternar páginas hacia atrás'
+  ]
+};
+
+const kbInFullViewGridData: Record<KeyboardInFullViewGridId, Langs> = {
+  'open-big-image-mode': [
+    'Enter Big Image Mode',
+    '进入大图阅读模式',
+    '이미지 크게 보기',
+    'Entrar al modo de imagen grande'
+  ],
+  'pause-auto-load-temporarily': [
+    'Pause Auto Load Temporarily',
+    '临时停止自动加载',
+    '자동 이미지 로딩 일시 중지',
+    'Pausar carga automática temporalmente'
+  ],
+  'exit-full-view-grid': [
+    'Exit Read Mode',
+    '退出阅读模式',
+    '읽기 모드 종료',
+    'Salir del modo de lectura'
+  ],
+  'columns-increase': [
+    'Increase Columns ',
+    '增加每行数量',
+    '열 수 늘리기',
+    'Aumentar columnas'
+  ],
+  'columns-decrease': [
+    'Decrease Columns ',
+    '减少每行数量',
+    '열 수 줄이기',
+    'Disminuir columnas'
+  ],
+  'toggle-auto-play': [
+    'Toggle Auto Play',
+    '切换自动播放',
+    '자동 재생 시작/중지',
+    'Alternar reproducción automática'
+  ],
+  'retry-fetch-next-page': [
+    'Try Fetch Next Page',
+    '重新加载下一分页',
+    '다음 페이지 로딩 재시도',
+    'Intentar cargar la siguiente página'
+  ],
+  'resize-flow-vision': [
+    'Resize Thumbnail Grid Layout',
+    'Resize Thumbnail Grid Layout',
+    'Resize Thumbnail Grid Layout',
+    'Resize Thumbnail Grid Layout'
+  ],
+};
+
+// type KBInMainKeys = keyof (typeof kbInMainData);
+// type KBInFullViewGridKeys = keyof (typeof kbInFullViewGridData);
+// type KBInBigImageModeKeys = keyof (typeof kbInBigImageModeData);
+
+function convert<T extends string>(data: Record<T, Langs>): Record<T, I18nValue> {
+  const entries = Object.entries<Langs>(data);
+  const ret = entries.reduce<Record<string, I18nValue>>((prev, [k, v]) => {
+    prev[k] = new I18nValue(v);
+    return prev;
+  }, {});
+  return ret as Record<T, I18nValue>;
+}
+
+export const i18n = {
+  ...(convert<I18nKeys>(i18nData)),
+  keyboard: {
+    inMain: convert<KeyboardInMainId>(kbInMainData),
+    inFullViewGrid: convert<KeyboardInFullViewGridId>(kbInFullViewGridData),
+    inBigImageMode: convert<KeyboardInBigImageModeId>(kbInBigImageModeData),
+  }
 };

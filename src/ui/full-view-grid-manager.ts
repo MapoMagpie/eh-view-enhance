@@ -227,7 +227,6 @@ class FlowVisionLayout extends Layout {
     this.root.appendChild(container);
     return container;
   }
-  // FIXME: change chapter will lose image nodes;
   append(nodes: E[]): void {
     for (const node of nodes) {
       node.element.style.marginLeft = this.base.gap + "px";

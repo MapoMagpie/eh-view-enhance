@@ -7592,7 +7592,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.root.appendChild(container);
       return container;
     }
-    // FIXME: change chapter will lose image nodes;
     append(nodes) {
       for (const node of nodes) {
         node.element.style.marginLeft = this.base.gap + "px";

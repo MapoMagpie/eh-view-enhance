@@ -1,4 +1,4 @@
-import { conf, Oriented, saveConf } from "../config";
+import { conf, IS_MOBILE, Oriented, saveConf } from "../config";
 import { FetchState, IMGFetcher } from "../img-fetcher";
 import { Debouncer } from "../utils/debouncer";
 import { sleep } from "../utils/sleep";
@@ -43,6 +43,7 @@ export class BigImageFrameManager {
   scrollerX: Scroller;
   lastMouse?: { x: number, y: number };
   pageNumInChapter: number[] = [];
+  oriented: Oriented = "next";
 
   constructor(HTML: Elements, getChapter: (index: number) => Chapter) {
     this.html = HTML;
@@ -200,7 +201,7 @@ export class BigImageFrameManager {
 
   initEvent() {
     this.root.addEventListener("wheel", (event) => this.onWheel(event));
-    this.root.addEventListener("scroll", () => this.onScroll());
+    this.root.addEventListener("scroll", (event) => this.onScroll(event), { passive: false });
     this.root.addEventListener("contextmenu", (event) => event.preventDefault());
     // for click
     this.root.addEventListener("mousedown", (mdevt) => {
@@ -229,6 +230,7 @@ export class BigImageFrameManager {
           moved = true;
           return;
         };
+        if (IS_MOBILE) return;
         if (!moved) { // first move
           // temporarily zoom if img not scale
           if (conf.magnifier && conf.imgScale === 100) {
@@ -251,24 +253,29 @@ export class BigImageFrameManager {
     });
     // touch
     new TouchManager(this.root, {
+      start: () => {
+        if (conf.readMode === "pagination") {
+          this.root.style.overflow = "hidden";
+        }
+      },
       swipe: (direction) => {
         if (conf.readMode === "continuous" || conf.readMode === "horizontal") return;
-        const oriented: Oriented = (() => {
+        // if (direction === "L" || direction === "R") return; // Disable horizontal swiping
+        this.oriented = (() => {
           switch (direction) {
-            case "L":
-              return conf.reversePages ? "next" : "prev";
-            case "R":
-              return conf.reversePages ? "prev" : "next";
-            case "U":
-              return "next";
-            case "D":
-              return "prev";
+            case "L": return conf.reversePages ? "next" : "prev";
+            case "R": return conf.reversePages ? "prev" : "next";
+            case "U": return "next";
+            case "D": return "prev";
           }
         })();
-        if (conf.imgScale === 100) {
-          this.stepNext(oriented);
-        } else if (this.checkOverflow() && !this.tryPreventStep()) {
-          this.stepNext(oriented);
+        // if (conf.imgScale === 100) {
+        // } else if (this.checkOverflow() && !this.tryPreventStep()) {
+        //   this.stepNext(this.oriented);
+        // }
+        this.stepNext(this.oriented);
+        if (conf.readMode === "pagination") {
+          this.root.style.overflow = "";
         }
       },
     });
@@ -302,13 +309,13 @@ export class BigImageFrameManager {
     EBUS.emit("bifm-on-show");
   }
 
-  setNow(imf: IMGFetcher, oriented?: Oriented) {
+  setNow(imf: IMGFetcher) {
     if (this.visible) {
       this.jumpTo(imf.index);
     }
     this.pageNumInChapter[this.chapterIndex] = imf.index;
     this.currentIndex = imf.index;
-    EBUS.emit("ifq-do", imf.index, imf, oriented ?? "next");
+    EBUS.emit("ifq-do", imf.index, imf, this.oriented ?? "next");
     this.lastMouse = undefined;
     this.currLoadingState.clear();
     this.flushLoadingHelper();
@@ -421,6 +428,7 @@ export class BigImageFrameManager {
   }
 
   stepNext(oriented: Oriented, fixStep: number = 0, current?: number) {
+    this.oriented = oriented;
     let index = current || this.currentIndex;
     if (index === undefined || isNaN(index)) return;
     const queue = this.getChapter(this.chapterIndex)?.queue;
@@ -437,10 +445,10 @@ export class BigImageFrameManager {
     }
     if (!queue[index]) return
     this.resetPreventStep();
-    this.setNow(queue[index], oriented);
+    this.setNow(queue[index]);
   }
 
-  checkCurrent(oriented: Oriented = "next") {
+  checkCurrent() {
     const rootRect = this.root.getBoundingClientRect();
     const isCenter: (rect: DOMRect, rootRect: DOMRect) => boolean = (() => {
       if (conf.readMode === "continuous") {
@@ -456,7 +464,7 @@ export class BigImageFrameManager {
         const imf = this.getIMF(element);
         if (imf === null) continue;
         if (imf.index === this.currentIndex) continue;
-        EBUS.emit("ifq-do", imf.index, imf, oriented);
+        EBUS.emit("ifq-do", imf.index, imf, this.oriented);
         this.currentIndex = imf.index;
         if (element.firstElementChild) {
           this.tryPlayVideo(element.firstElementChild as HTMLElement);
@@ -467,7 +475,8 @@ export class BigImageFrameManager {
   }
 
   // limit scrollTop or scrollLeft
-  onScroll() {
+  onScroll(_event: Event) {
+    // console.log("scrolling, ", evt);
     switch (conf.readMode) {
       case "continuous": {
         const [first, last] = [
@@ -516,6 +525,9 @@ export class BigImageFrameManager {
         break;
       }
     }
+    if (conf.readMode !== "pagination") {
+      this.debouncer.addEvent("bifm-on-wheel", () => this.checkCurrent(), 69);
+    }
   }
 
   onWheel(event: WheelEvent, noPrevent?: boolean, customScrolling?: boolean, noCallback?: boolean) {
@@ -525,27 +537,28 @@ export class BigImageFrameManager {
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
       return;
     }
-    const [oriented, negative]: [Oriented, Oriented] = event.deltaY > 0 ? ["next", "prev"] : ["prev", "next"];
+    const [o, negative]: [Oriented, Oriented] = event.deltaY > 0 ? ["next", "prev"] : ["prev", "next"];
+    this.oriented = o;
     switch (conf.readMode) {
       case "pagination": {
         const over = this.checkOverflow();
-        const [$ori, $neg] = conf.reversePages ? [negative, oriented] : [oriented, negative];
-        if (over[oriented].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) { // reached boundary, step next
+        const [$ori, $neg] = conf.reversePages ? [negative, this.oriented] : [this.oriented, negative];
+        if (over[this.oriented].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) { // reached boundary, step next
           event.preventDefault();
           if (!noPrevent) {
             if (over[$neg].overX > 0 || over[negative].overY > 0) {
               if (this.tryPreventStep()) break;
             }
           }
-          this.stepNext(oriented);
+          this.stepNext(this.oriented);
           break;
         }
-        let fix = oriented === "next" ? 1 : -1;
-        if (customScrolling && over[oriented].overY > 0) {
-          this.scrollerY.scroll(Math.min(over[oriented].overY, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
+        let fix = this.oriented === "next" ? 1 : -1;
+        if (customScrolling && over[this.oriented].overY > 0) {
+          this.scrollerY.scroll(Math.min(over[this.oriented].overY, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
         }
         fix = fix * (conf.reversePages ? -1 : 1);
-        if (over[oriented].overY - 1 <= 0 && over[$ori].overX > 0) { // should scroll
+        if (over[this.oriented].overY - 1 <= 0 && over[$ori].overX > 0) { // should scroll
           this.scrollerX.scroll(Math.min(over[$ori].overX, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
         }
         break;
@@ -561,9 +574,6 @@ export class BigImageFrameManager {
         }
         break;
       }
-    }
-    if (conf.readMode !== "pagination") {
-      this.debouncer.addEvent("bifm-on-wheel", () => this.checkCurrent(oriented), 100);
     }
   }
 
@@ -718,8 +728,7 @@ export class BigImageFrameManager {
   }
 
   resetScaleBigImages(syncConf: boolean) {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-    const percent = (conf.readMode !== "continuous" || isMobile) ? 100 : 80;
+    const percent = (conf.readMode !== "continuous" || IS_MOBILE) ? 100 : 80;
     this.scaleBigImages(1, 0, percent, syncConf);
   }
 

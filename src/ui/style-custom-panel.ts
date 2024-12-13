@@ -1,4 +1,4 @@
-import { DisplayText, conf, getDisplayText, saveConf } from "../config";
+import { DisplayText, IS_MOBILE, conf, getDisplayText, saveConf } from "../config";
 import { i18n } from "../utils/i18n";
 import icons from "../utils/icons";
 
@@ -196,7 +196,7 @@ function stylePreset(index: number) {
   --ehvp-bifm-background: #000000c4;
   --ehvp-clickable-color-hover: #90ea90;
   --ehvp-autopage-progress-background: #ffffffd0;
-  font-size: 16px;
+  ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins,sans-serif;
 }
 /** override any style here, make the big image have a green border */
@@ -222,7 +222,7 @@ function stylePreset(index: number) {
   --ehvp-bifm-background: #919191b0;
   --ehvp-clickable-color-hover: #ff87ba;
   --ehvp-autopage-progress-background: #760098d0;
-  font-size: 16px;
+  ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins, sans-serif;
 }`,
     `.ehvp-root {
@@ -242,7 +242,7 @@ function stylePreset(index: number) {
   --ehvp-bifm-background: #000000d6;
   --ehvp-clickable-color-hover: #90ea90;
   --ehvp-autopage-progress-background: #ffe637d0;
-  font-size: 16px;
+  ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins, sans-serif;
 }`,
     `.ehvp-root {
@@ -262,7 +262,7 @@ function stylePreset(index: number) {
   --ehvp-bifm-background: #919191b0;
   --ehvp-clickable-color-hover: #ff0000;
   --ehvp-autopage-progress-background: #000000d0;
-  font-size: 16px;
+  ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins, sans-serif;
 }`,
   ];

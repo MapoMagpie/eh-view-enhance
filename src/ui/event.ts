@@ -88,7 +88,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     }
     if (key === "paginationIMGCount") {
       q("#paginationInput", HTML.paginationAdjustBar).textContent = conf.paginationIMGCount.toString();
-      BIFM.setNow(IFQ[IFQ.currIndex], "next");
+      BIFM.setNow(IFQ[IFQ.currIndex]);
     }
     saveConf(conf);
   }

@@ -1,7 +1,7 @@
 import { conf } from "../config";
+import { IS_MOBILE } from "../config";
 
 export function styleCSS() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
   const css = `
 .ehvp-root {
   --ehvp-background-color: #333343bb;
@@ -900,7 +900,7 @@ export function styleCSS() {
   left: 0px;
   background: var(--ehvp-autopage-progress-background);
 }
-@media (max-width: ${isMobile ? "1440px" : "720px"}) {
+@media (max-width: ${IS_MOBILE ? "1440px" : "720px"}) {
   .ehvp-root {
     font-size: 4cqw;
   }
@@ -920,7 +920,9 @@ export function styleCSS() {
     font-size: 1.3em;
     margin-top: 0.2em;
   }
-  #pagination-adjust-bar {
+  #pagination-adjust-bar,
+  #scale-bar
+  {
     display: none;
   }
   .p-panel {
@@ -952,6 +954,15 @@ export function styleCSS() {
   }
   .chapter-thumbnail {
     display: none;
+  }
+  .bifm-container-hori > div {
+    width: 100vw;
+    display: flex;
+  }
+  .bifm-container-hori > div > .bifm-img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
   }
 }
 `;

@@ -1120,6 +1120,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }));
   }
 
+  const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
   function defaultColumns() {
     const screenWidth = window.screen.width;
     return screenWidth > 2500 ? 7 : screenWidth > 1900 ? 6 : screenWidth > 700 ? 5 : 3;
@@ -1157,7 +1158,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       archiveVolumeSize: 1200,
       pixivConvertTo: "GIF",
       autoCollapsePanel: true,
-      minifyPageHelper: "inBigMode",
+      minifyPageHelper: IS_MOBILE ? "never" : "inBigMode",
       keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
       siteProfiles: {},
       muted: false,
@@ -6908,7 +6909,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   --ehvp-bifm-background: #000000c4;
   --ehvp-clickable-color-hover: #90ea90;
   --ehvp-autopage-progress-background: #ffffffd0;
-  font-size: 16px;
+  ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins,sans-serif;
 }
 /** override any style here, make the big image have a green border */
@@ -6934,7 +6935,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   --ehvp-bifm-background: #919191b0;
   --ehvp-clickable-color-hover: #ff87ba;
   --ehvp-autopage-progress-background: #760098d0;
-  font-size: 16px;
+  ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins, sans-serif;
 }`,
       `.ehvp-root {
@@ -6954,7 +6955,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   --ehvp-bifm-background: #000000d6;
   --ehvp-clickable-color-hover: #90ea90;
   --ehvp-autopage-progress-background: #ffe637d0;
-  font-size: 16px;
+  ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins, sans-serif;
 }`,
       `.ehvp-root {
@@ -6974,7 +6975,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   --ehvp-bifm-background: #919191b0;
   --ehvp-clickable-color-hover: #ff0000;
   --ehvp-autopage-progress-background: #000000d0;
-  font-size: 16px;
+  ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins, sans-serif;
 }`
     ];
@@ -7056,7 +7057,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
       if (key === "paginationIMGCount") {
         q("#paginationInput", HTML.paginationAdjustBar).textContent = conf.paginationIMGCount.toString();
-        BIFM.setNow(IFQ[IFQ.currIndex], "next");
+        BIFM.setNow(IFQ[IFQ.currIndex]);
       }
       saveConf(conf);
     }
@@ -7591,6 +7592,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.root.appendChild(container);
       return container;
     }
+    // FIXME: change chapter will lose image nodes;
     append(nodes) {
       for (const node of nodes) {
         node.element.style.marginLeft = this.base.gap + "px";
@@ -7813,7 +7815,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 
   function styleCSS() {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
     const css = `
 .ehvp-root {
   --ehvp-background-color: #333343bb;
@@ -8712,7 +8713,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   left: 0px;
   background: var(--ehvp-autopage-progress-background);
 }
-@media (max-width: ${isMobile ? "1440px" : "720px"}) {
+@media (max-width: ${IS_MOBILE ? "1440px" : "720px"}) {
   .ehvp-root {
     font-size: 4cqw;
   }
@@ -8732,7 +8733,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     font-size: 1.3em;
     margin-top: 0.2em;
   }
-  #pagination-adjust-bar {
+  #pagination-adjust-bar,
+  #scale-bar
+  {
     display: none;
   }
   .p-panel {
@@ -8764,6 +8767,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
   .chapter-thumbnail {
     display: none;
+  }
+  .bifm-container-hori > div {
+    width: 100vw;
+    display: flex;
+  }
+  .bifm-container-hori > div > .bifm-img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
   }
 }
 `;
@@ -9938,6 +9950,7 @@ ${chapters.map((c, i) => `<div><label>
     scrollerX;
     lastMouse;
     pageNumInChapter = [];
+    oriented = "next";
     constructor(HTML, getChapter) {
       this.html = HTML;
       this.root = HTML.bigImageFrame;
@@ -10078,7 +10091,7 @@ ${chapters.map((c, i) => `<div><label>
     }
     initEvent() {
       this.root.addEventListener("wheel", (event) => this.onWheel(event));
-      this.root.addEventListener("scroll", () => this.onScroll());
+      this.root.addEventListener("scroll", (event) => this.onScroll(event), { passive: false });
       this.root.addEventListener("contextmenu", (event) => event.preventDefault());
       this.root.addEventListener("mousedown", (mdevt) => {
         if (mdevt.button !== 0) return;
@@ -10103,6 +10116,7 @@ ${chapters.map((c, i) => `<div><label>
             moved = true;
             return;
           }
+          if (IS_MOBILE) return;
           if (!moved) {
             if (conf.magnifier && conf.imgScale === 100) {
               this.scaleBigImages(5, 0, 150, false);
@@ -10122,9 +10136,14 @@ ${chapters.map((c, i) => `<div><label>
         }, { signal: abort.signal });
       });
       new TouchManager(this.root, {
+        start: () => {
+          if (conf.readMode === "pagination") {
+            this.root.style.overflow = "hidden";
+          }
+        },
         swipe: (direction) => {
           if (conf.readMode === "continuous" || conf.readMode === "horizontal") return;
-          const oriented = (() => {
+          this.oriented = (() => {
             switch (direction) {
               case "L":
                 return conf.reversePages ? "next" : "prev";
@@ -10136,10 +10155,9 @@ ${chapters.map((c, i) => `<div><label>
                 return "prev";
             }
           })();
-          if (conf.imgScale === 100) {
-            this.stepNext(oriented);
-          } else if (this.checkOverflow() && !this.tryPreventStep()) {
-            this.stepNext(oriented);
+          this.stepNext(this.oriented);
+          if (conf.readMode === "pagination") {
+            this.root.style.overflow = "";
           }
         }
       });
@@ -10167,13 +10185,13 @@ ${chapters.map((c, i) => `<div><label>
       this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => imf.chapterIndex === this.chapterIndex && this.setNow(imf), 100);
       EBUS.emit("bifm-on-show");
     }
-    setNow(imf, oriented) {
+    setNow(imf) {
       if (this.visible) {
         this.jumpTo(imf.index);
       }
       this.pageNumInChapter[this.chapterIndex] = imf.index;
       this.currentIndex = imf.index;
-      EBUS.emit("ifq-do", imf.index, imf, oriented ?? "next");
+      EBUS.emit("ifq-do", imf.index, imf, this.oriented ?? "next");
       this.lastMouse = void 0;
       this.currLoadingState.clear();
       this.flushLoadingHelper();
@@ -10282,6 +10300,7 @@ ${chapters.map((c, i) => `<div><label>
       }
     }
     stepNext(oriented, fixStep = 0, current) {
+      this.oriented = oriented;
       let index = current || this.currentIndex;
       if (index === void 0 || isNaN(index)) return;
       const queue = this.getChapter(this.chapterIndex)?.queue;
@@ -10297,9 +10316,9 @@ ${chapters.map((c, i) => `<div><label>
       }
       if (!queue[index]) return;
       this.resetPreventStep();
-      this.setNow(queue[index], oriented);
+      this.setNow(queue[index]);
     }
-    checkCurrent(oriented = "next") {
+    checkCurrent() {
       const rootRect = this.root.getBoundingClientRect();
       const isCenter = (() => {
         if (conf.readMode === "continuous") {
@@ -10314,7 +10333,7 @@ ${chapters.map((c, i) => `<div><label>
           const imf = this.getIMF(element);
           if (imf === null) continue;
           if (imf.index === this.currentIndex) continue;
-          EBUS.emit("ifq-do", imf.index, imf, oriented);
+          EBUS.emit("ifq-do", imf.index, imf, this.oriented);
           this.currentIndex = imf.index;
           if (element.firstElementChild) {
             this.tryPlayVideo(element.firstElementChild);
@@ -10324,7 +10343,7 @@ ${chapters.map((c, i) => `<div><label>
       }
     }
     // limit scrollTop or scrollLeft
-    onScroll() {
+    onScroll(_event) {
       switch (conf.readMode) {
         case "continuous": {
           const [first, last] = [
@@ -10373,6 +10392,9 @@ ${chapters.map((c, i) => `<div><label>
           break;
         }
       }
+      if (conf.readMode !== "pagination") {
+        this.debouncer.addEvent("bifm-on-wheel", () => this.checkCurrent(), 69);
+      }
     }
     onWheel(event, noPrevent, customScrolling, noCallback) {
       if (!noCallback) this.callbackOnWheel?.(event);
@@ -10381,27 +10403,28 @@ ${chapters.map((c, i) => `<div><label>
         this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
         return;
       }
-      const [oriented, negative] = event.deltaY > 0 ? ["next", "prev"] : ["prev", "next"];
+      const [o, negative] = event.deltaY > 0 ? ["next", "prev"] : ["prev", "next"];
+      this.oriented = o;
       switch (conf.readMode) {
         case "pagination": {
           const over = this.checkOverflow();
-          const [$ori, $neg] = conf.reversePages ? [negative, oriented] : [oriented, negative];
-          if (over[oriented].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) {
+          const [$ori, $neg] = conf.reversePages ? [negative, this.oriented] : [this.oriented, negative];
+          if (over[this.oriented].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) {
             event.preventDefault();
             if (!noPrevent) {
               if (over[$neg].overX > 0 || over[negative].overY > 0) {
                 if (this.tryPreventStep()) break;
               }
             }
-            this.stepNext(oriented);
+            this.stepNext(this.oriented);
             break;
           }
-          let fix = oriented === "next" ? 1 : -1;
-          if (customScrolling && over[oriented].overY > 0) {
-            this.scrollerY.scroll(Math.min(over[oriented].overY, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
+          let fix = this.oriented === "next" ? 1 : -1;
+          if (customScrolling && over[this.oriented].overY > 0) {
+            this.scrollerY.scroll(Math.min(over[this.oriented].overY, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
           }
           fix = fix * (conf.reversePages ? -1 : 1);
-          if (over[oriented].overY - 1 <= 0 && over[$ori].overX > 0) {
+          if (over[this.oriented].overY - 1 <= 0 && over[$ori].overX > 0) {
             this.scrollerX.scroll(Math.min(over[$ori].overX, Math.abs(event.deltaY * 3)) * fix, Math.abs(Math.ceil(event.deltaY / 4)));
           }
           break;
@@ -10417,9 +10440,6 @@ ${chapters.map((c, i) => `<div><label>
           }
           break;
         }
-      }
-      if (conf.readMode !== "pagination") {
-        this.debouncer.addEvent("bifm-on-wheel", () => this.checkCurrent(oriented), 100);
       }
     }
     resetPreventStep(fin) {
@@ -10566,8 +10586,7 @@ ${chapters.map((c, i) => `<div><label>
       return newPercent;
     }
     resetScaleBigImages(syncConf) {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-      const percent = conf.readMode !== "continuous" || isMobile ? 100 : 80;
+      const percent = conf.readMode !== "continuous" || IS_MOBILE ? 100 : 80;
       this.scaleBigImages(1, 0, percent, syncConf);
     }
     flushLoadingHelper() {

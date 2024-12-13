@@ -4,6 +4,8 @@ import { i18n } from "./utils/i18n";
 import icons from "./utils/icons";
 import { uuid } from "./utils/random";
 
+export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+
 export type Oriented = "prev" | "next";
 
 export type SiteProfile = {
@@ -147,7 +149,7 @@ function defaultConf(): Config {
     archiveVolumeSize: 1200,
     pixivConvertTo: "GIF",
     autoCollapsePanel: true,
-    minifyPageHelper: "inBigMode",
+    minifyPageHelper: IS_MOBILE ? "never" : "inBigMode",
     keyboards: { inBigImageMode: {}, inFullViewGrid: {}, inMain: {} },
     siteProfiles: {},
     muted: false,
@@ -416,4 +418,3 @@ const DEFAULT_DISPLAY_TEXT: DisplayText = {
 export function getDisplayText(): DisplayText {
   return { ...DEFAULT_DISPLAY_TEXT, ...conf.displayText };
 }
-

@@ -7706,6 +7706,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return true;
     }
     reset() {
+      this.lastRow = void 0;
       this.root.innerHTML = "";
     }
     visibleRange() {

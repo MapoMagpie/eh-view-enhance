@@ -343,6 +343,7 @@ class FlowVisionLayout extends Layout {
     return true;
   }
   reset(): void {
+    this.lastRow = undefined;
     this.root.innerHTML = "";
   }
   visibleRange(): [HTMLElement, HTMLElement] {

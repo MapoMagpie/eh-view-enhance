@@ -4,6 +4,7 @@ import ImageNode from "./img-node";
 import { Matcher, OriginMeta } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
+import { i18n } from "./utils/i18n";
 import { xhrWapper } from "./utils/query";
 
 export type DownloadState = {
@@ -244,7 +245,13 @@ export class IMGFetcher {
           resolve(data);
         },
         onerror: function(response) {
-          reject(new Error(`response status:${response.status}, error:${response.error}, response:${response.response}`));
+          // "Refused to connect to "https://ba.hitomi.la/avif/123/456/789.avif": URL is not permitted"
+          if (response.status === 0 && response.error?.includes("URL is not permitted")) {
+            const domain = response.error.match(/(https?:\/\/.*?)\/.*/)?.[1] ?? "";
+            reject(new Error(i18n.failFetchReason1.get().replace("{{domain}}", domain)));
+          } else {
+            reject(new Error(`response status:${response.status}, error:${response.error}, response:${response.response}`));
+          }
         },
         onprogress: function(response) {
           imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });

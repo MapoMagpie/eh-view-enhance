@@ -589,6 +589,12 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     'URL 정규식 추가',
     'Agregar expresión regular de URL'
   ],
+  failFetchReason1: [
+    'Refused to connect {{domain}}(origin image url), Please check the domain blacklist: Tampermonkey > Comic Looms > Settings > XHR Security > User domain blacklist',
+    '被拒绝连接{{domain}}(大图地址)，请检查域名黑名单: Tampermonkey(篡改猴) > 漫画织机 > 设置 > XHR Security >  User domain blacklist',
+    'Refused to connect {{domain}}(origin image url), Please check the domain blacklist: Tampermonkey > Comic Looms > Settings > XHR Security > User domain blacklist',
+    'Refused to connect {{domain}}(origin image url), Please check the domain blacklist: Tampermonkey > Comic Looms > Settings > XHR Security > User domain blacklist',
+  ],
 
   help: [
     `

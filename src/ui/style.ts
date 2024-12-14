@@ -181,9 +181,6 @@ export function styleCSS() {
 }
 .img-node-error-hint {
   color: #8a0000;
-  bottom: 3px;
-  left: 3px;
-  width: calc(100% - 6px);
 }
 .img-fetched {
   background-color: var(--ehvp-img-fetched);

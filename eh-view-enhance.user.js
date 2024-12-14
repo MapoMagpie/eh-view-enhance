@@ -632,6 +632,12 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`
       "URL 정규식 추가",
       "Agregar expresión regular de URL"
     ],
+    failFetchReason1: [
+      "Refused to connect {{domain}}(origin image url), Please check the domain blacklist: Tampermonkey > Comic Looms > Settings > XHR Security > User domain blacklist",
+      "被拒绝连接{{domain}}(大图地址)，请检查域名黑名单: Tampermonkey(篡改猴) > 漫画织机 > 设置 > XHR Security >  User domain blacklist",
+      "Refused to connect {{domain}}(origin image url), Please check the domain blacklist: Tampermonkey > Comic Looms > Settings > XHR Security > User domain blacklist",
+      "Refused to connect {{domain}}(origin image url), Please check the domain blacklist: Tampermonkey > Comic Looms > Settings > XHR Security > User domain blacklist"
+    ],
     help: [
       `
 <h2>[How to Use? Where is the Entry?]</h2>
@@ -1692,7 +1698,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
             resolve(data);
           },
           onerror: function(response) {
-            reject(new Error(`response status:${response.status}, error:${response.error}, response:${response.response}`));
+            if (response.status === 0 && response.error?.includes("URL is not permitted")) {
+              const domain = response.error.match(/(https?:\/\/.*?)\/.*/)?.[1] ?? "";
+              reject(new Error(i18n.failFetchReason1.get().replace("{{domain}}", domain)));
+            } else {
+              reject(new Error(`response status:${response.status}, error:${response.error}, response:${response.response}`));
+            }
           },
           onprogress: function(response) {
             imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
@@ -8003,9 +8014,6 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .img-node-error-hint {
   color: #8a0000;
-  bottom: 3px;
-  left: 3px;
-  width: calc(100% - 6px);
 }
 .img-fetched {
   background-color: var(--ehvp-img-fetched);

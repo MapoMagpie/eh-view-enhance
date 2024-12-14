@@ -9987,12 +9987,11 @@ ${chapters.map((c, i) => `<div><label>
         if (imf.chapterIndex !== this.chapterIndex) return;
         this.currLoadingState.delete(index);
         this.debouncer.addEvent("FLUSH-LOADING-HELPER", () => this.flushLoadingHelper(), 20);
-        if (!this.visible || !success) return;
+        if (!success) return;
         const current = this.renderingElements.find((element) => parseIndex(element) === index);
-        if (current) {
-          current.innerHTML = "";
-          current.appendChild(this.newMediaNode(imf));
-        }
+        if (!current) return;
+        current.innerHTML = "";
+        current.appendChild(this.newMediaNode(imf));
       });
       EBUS.subscribe("imf-resize", (imf) => {
         if (imf.chapterIndex !== this.chapterIndex) return;
@@ -10025,7 +10024,9 @@ ${chapters.map((c, i) => `<div><label>
         const currOffsetLeft = current.offsetLeft;
         const currScrollLeft = this.root.scrollLeft;
         element.style.aspectRatio = imf.ratio().toString();
-        if (currOffsetLeft !== current.offsetLeft) {
+        if (conf.readMode === "pagination" && imf.index === this.currentIndex) {
+          this.jumpTo(this.currentIndex);
+        } else if (currOffsetLeft !== current.offsetLeft) {
           this.root.scrollLeft = current.offsetLeft - (currOffsetLeft - currScrollLeft);
         }
       }

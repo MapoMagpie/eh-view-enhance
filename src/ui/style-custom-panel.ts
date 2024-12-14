@@ -180,22 +180,23 @@ export function createStyleCustomPanel(root: HTMLElement) {
 function stylePreset(index: number) {
   const list = [
     `.ehvp-root {
-  --ehvp-background-color: #393939db;
-  --ehvp-fvg-background: #000000;
-  --ehvp-border: none;
-  --ehvp-font-color: #fff;
+  --ehvp-theme-bg-color: #393939db;
+  --ehvp-theme-font-color: #fff;
+  --ehvp-thumbnail-list-bg: #000000;
+  --ehvp-thumbnail-border-size: 2px;
+  --ehvp-thumbnail-border-radius: 0px;
+  --ehvp-thumbnail-box-shadow: none;
   --ehvp-img-fetched: #95ff97;
   --ehvp-img-failed: red;
   --ehvp-img-init: #ffffff;
   --ehvp-img-fetching: #00000000;
-  --ehvp-img-node-border-radius: 0px;
-  --ehvp-img-box-shadow: none;
+  --ehvp-controlbar-border: none;
   --ehvp-panel-border: none;
   --ehvp-panel-box-shadow: none;
-  --ehvp-bifm-img-gap: 2px;
-  --ehvp-bifm-background: #000000c4;
+  --ehvp-big-images-gap: 2px;
+  --ehvp-big-images-bg: #000000c4;
   --ehvp-clickable-color-hover: #90ea90;
-  --ehvp-autopage-progress-background: #ffffffd0;
+  --ehvp-playing-progress-bar-color: #ffffffd0;
   ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins,sans-serif;
 }
@@ -206,62 +207,65 @@ function stylePreset(index: number) {
 }
 /*`,
     `.ehvp-root {
-  --ehvp-background-color: #ffffff;
-  --ehvp-fvg-background: #ffffff;
-  --ehvp-border: 2px solid #760098;
-  --ehvp-font-color: #760098;
+  --ehvp-theme-bg-color: #ffffff;
+  --ehvp-theme-font-color: #760098;
+  --ehvp-thumbnail-list-bg: #ffffff;
+  --ehvp-thumbnail-border-size: 2px;
+  --ehvp-thumbnail-border-radius: 4px;
+  --ehvp-thumbnail-box-shadow: 0px 2px 2px 0px #785174;
   --ehvp-img-fetched: #d96cff;
   --ehvp-img-failed: red;
   --ehvp-img-init: #000000;
   --ehvp-img-fetching: #ffffff70;
-  --ehvp-img-node-border-radius: 4px;
-  --ehvp-img-box-shadow: 0px 2px 2px 0px #785174;
+  --ehvp-controlbar-border: 2px solid #760098;
   --ehvp-panel-border: 2px solid #760098;
   --ehvp-panel-box-shadow: none;
-  --ehvp-bifm-img-gap: 2px;
-  --ehvp-bifm-background: #919191b0;
+  --ehvp-big-images-gap: 2px;
+  --ehvp-big-images-bg: #919191b0;
   --ehvp-clickable-color-hover: #ff87ba;
-  --ehvp-autopage-progress-background: #760098d0;
+  --ehvp-playing-progress-bar-color: #760098d0;
   ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins, sans-serif;
 }`,
     `.ehvp-root {
-  --ehvp-background-color: #000000c9;
-  --ehvp-fvg-background: #000000;
-  --ehvp-border: 2px solid #ffe637;
-  --ehvp-font-color: #ffe637;
+  --ehvp-theme-bg-color: #000000c9;
+  --ehvp-theme-font-color: #ffe637;
+  --ehvp-thumbnail-list-bg: #000000;
+  --ehvp-thumbnail-border-size: 2px;
+  --ehvp-thumbnail-border-radius: 0px;
+  --ehvp-thumbnail-box-shadow: none;
   --ehvp-img-fetched: #ffe637;
   --ehvp-img-failed: red;
   --ehvp-img-init: #fff;
   --ehvp-img-fetching: #00000000;
-  --ehvp-img-node-border-radius: 0px;
-  --ehvp-img-box-shadow: none;
+  --ehvp-controlbar-border: 2px solid #ffe637;
   --ehvp-panel-border: 2px solid #ffe637;
   --ehvp-panel-box-shadow: none;
-  --ehvp-bifm-img-gap: 2px;
-  --ehvp-bifm-background: #000000d6;
+  --ehvp-big-images-gap: 2px;
+  --ehvp-big-images-bg: #000000d6;
   --ehvp-clickable-color-hover: #90ea90;
-  --ehvp-autopage-progress-background: #ffe637d0;
+  --ehvp-playing-progress-bar-color: #ffe637d0;
   ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins, sans-serif;
 }`,
     `.ehvp-root {
-  --ehvp-background-color: #ffffff;
-  --ehvp-fvg-background: #ffffff;
-  --ehvp-border: 2px solid #000000;
-  --ehvp-font-color: #000000;
+  --ehvp-theme-bg-color: #ffffff;
+  --ehvp-theme-font-color: #000000;
+  --ehvp-thumbnail-list-bg: #ffffff;
+  --ehvp-thumbnail-border-size: 2px;
+  --ehvp-thumbnail-border-radius: 4px;
+  --ehvp-thumbnail-box-shadow: 0px 2px 2px 0px #000000;
   --ehvp-img-fetched: #000000;
   --ehvp-img-failed: red;
   --ehvp-img-init: #ffffff;
   --ehvp-img-fetching: #ffffff70;
-  --ehvp-img-node-border-radius: 4px;
-  --ehvp-img-box-shadow: 0px 2px 2px 0px #000000;
+  --ehvp-controlbar-border: 2px solid #000000;
   --ehvp-panel-border: 2px solid #000000;
   --ehvp-panel-box-shadow: none;
-  --ehvp-bifm-img-gap: 2px;
-  --ehvp-bifm-background: #919191b0;
+  --ehvp-big-images-gap: 2px;
+  --ehvp-big-images-bg: #919191b0;
   --ehvp-clickable-color-hover: #ff0000;
-  --ehvp-autopage-progress-background: #000000d0;
+  --ehvp-playing-progress-bar-color: #000000d0;
   ${IS_MOBILE ? "" : "font-size: 16px;"}
   font-family: Poppins, sans-serif;
 }`,

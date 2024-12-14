@@ -272,6 +272,11 @@ function patchConfig(cf: Config): Config | null {
     cf.configPatchVersion = 9;
     changed = true;
   }
+  if (cf.configPatchVersion < 10) {
+    cf.customStyle = "";
+    cf.configPatchVersion = 10;
+    changed = true;
+  }
   return changed ? cf : null;
 }
 

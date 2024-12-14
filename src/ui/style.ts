@@ -4,22 +4,23 @@ import { IS_MOBILE } from "../config";
 export function styleCSS() {
   const css = `
 .ehvp-root {
-  --ehvp-background-color: #333343bb;
-  --ehvp-fvg-background: #000;
-  --ehvp-border: 1px solid #2f7b10;
-  --ehvp-font-color: #fff;
+  --ehvp-theme-bg-color: #333343bb;
+  --ehvp-theme-font-color: #fff;
+  --ehvp-thumbnail-list-bg: #000;
+  --ehvp-thumbnail-border-size: 2px;
+  --ehvp-thumbnail-border-radius: 5px;
+  --ehvp-thumbnail-box-shadow: none;
   --ehvp-img-fetched: #90ffae;
   --ehvp-img-failed: red;
   --ehvp-img-init: #fff;
   --ehvp-img-fetching: #ffffff70;
-  --ehvp-img-node-border-radius: 5px;
-  --ehvp-img-box-shadow: -3px 4px 4px 0px #3d243d;
+  --ehvp-controlbar-border: 1px solid #2f7b10;
   --ehvp-panel-border: none;
   --ehvp-panel-box-shadow: none;
-  --ehvp-bifm-img-gap: 2px;
-  --ehvp-bifm-background: #000000d6;
+  --ehvp-big-images-gap: 2px;
+  --ehvp-big-images-bg: #000000d6;
   --ehvp-clickable-color-hover: #90ea90;
-  --ehvp-autopage-progress-background: #ffffffd0;
+  --ehvp-playing-progress-bar-color: #ffffffd0;
   font-size: 16px;
   font-family: Poppins,sans-serif;
 }
@@ -53,7 +54,7 @@ export function styleCSS() {
   width: 100vw;
   height: 100vh;
   overflow: hidden scroll;
-  background: var(--ehvp-fvg-background);
+  background: var(--ehvp-thumbnail-list-bg);
 }
 .fvg-grid {
   width: 100vw;
@@ -65,11 +66,11 @@ export function styleCSS() {
   overflow: hidden scroll;
   padding: 0.3em;
   box-sizing: border-box;
-  background: var(--ehvp-fvg-background);
+  background: var(--ehvp-thumbnail-list-bg);
 }
 .ehvp-root input, .ehvp-root select {
-  color: var(--ehvp-font-color);
-  background-color: var(--ehvp-background-color);
+  color: var(--ehvp-theme-font-color);
+  background-color: var(--ehvp-theme-bg-color);
   border: 1px solid #000000;
   border-radius: 4px;
   margin: 0px;
@@ -107,11 +108,11 @@ export function styleCSS() {
 }
 .img-node {
   position: relative;
-  padding: 3px;
+  padding: var(--ehvp-thumbnail-border-size);
   box-sizing: border-box;
   background-color: var(--ehvp-img-init);
-  border-radius: var(--ehvp-img-node-border-radius);
-  box-shadow: var(--ehvp-img-box-shadow);
+  border-radius: var(--ehvp-thumbnail-border-radius);
+  box-shadow: var(--ehvp-thumbnail-box-shadow);
 }
 .fvg-sub-container {
   display: flex;
@@ -137,7 +138,7 @@ export function styleCSS() {
 .img-node canvas, .img-node img {
   width: 100%;
   height: 100%;
-  border-radius: var(--ehvp-img-node-border-radius);
+  border-radius: var(--ehvp-thumbnail-border-radius);
 }
 .img-node-numtip {
   position: absolute;
@@ -148,7 +149,7 @@ export function styleCSS() {
   height: 1.8em;
   line-height: 1.8em;
   text-shadow: 0px 0px 3px #000000;
-  color: var(--ehvp-font-color);
+  color: var(--ehvp-theme-font-color);
   display: none;
 }
 .img-node:hover .img-node-numtip {
@@ -193,10 +194,7 @@ export function styleCSS() {
 .img-fetching {
   background-color: var(--ehvp-img-fetching);
 }
-.img-excluded img, .img-excluded canvas {
-  border: 3px solid #777 !important;
-}
-.img-excluded a::after {
+.img-excluded::after {
   content: '';
   position: absolute;
   z-index: 1;
@@ -246,7 +244,7 @@ export function styleCSS() {
   overflow: auto;
   scrollbar-width: none;
   z-index: 2001;
-  background: var(--ehvp-bifm-background);
+  background: var(--ehvp-big-images-bg);
   display: flex;
 }
 .bifm-container > div {
@@ -265,10 +263,10 @@ export function styleCSS() {
   flex-wrap: nowrap;
 }
 .bifm-container-vert > div {
-  margin: var(--ehvp-bifm-img-gap) 0px;
+  margin: var(--ehvp-big-images-gap) 0px;
 }
 .bifm-container-hori > div {
-  margin: 0px var(--ehvp-bifm-img-gap);
+  margin: 0px var(--ehvp-big-images-gap);
 }
 .bifm-img {
   width: 100%;
@@ -298,10 +296,10 @@ export function styleCSS() {
 }
 .p-panel {
   z-index: 2012 !important;
-  background-color: var(--ehvp-background-color);
+  background-color: var(--ehvp-theme-bg-color);
   box-sizing: border-box;
   position: fixed;
-  color: var(--ehvp-font-color);
+  color: var(--ehvp-theme-font-color);
   padding: 3px;
   border-radius: 4px;
   font-weight: 800;
@@ -333,10 +331,10 @@ export function styleCSS() {
 }
 .b-main-item {
   box-sizing: border-box;
-  border: var(--ehvp-border);
+  border: var(--ehvp-controlbar-border);
   border-radius: 4px;
-  background-color: var(--ehvp-background-color);
-  color: var(--ehvp-font-color);
+  background-color: var(--ehvp-theme-bg-color);
+  color: var(--ehvp-theme-font-color);
   font-weight: 800;
   padding: 0em 0.3em;
   margin: 0em 0.2em;
@@ -358,8 +356,8 @@ export function styleCSS() {
   width: 1em;
 }
 .b-main-input {
-  color: var(--ehvp-font-color);
-  background-color: var(--ehvp-background-color);
+  color: var(--ehvp-theme-font-color);
+  background-color: var(--ehvp-theme-bg-color);
   border-radius: 6px;
   display: inline-block;
   text-align: center;
@@ -470,10 +468,10 @@ export function styleCSS() {
   width: 100%;
 }
 .p-btn {
-  color: var(--ehvp-font-color);
+  color: var(--ehvp-theme-font-color);
   cursor: pointer;
   font-weight: 800;
-  background-color: var(--ehvp-background-color);
+  background-color: var(--ehvp-theme-bg-color);
   vertical-align: middle;
   width: 1.5em;
   height: 1.5em;
@@ -531,8 +529,8 @@ export function styleCSS() {
 .p-tooltip .p-tooltiptext {
   display: none;
   max-width: 34em;
-  background-color: var(--ehvp-background-color);
-  color: var(--ehvp-font-color);
+  background-color: var(--ehvp-theme-bg-color);
+  color: var(--ehvp-theme-font-color);
   border-radius: 6px;
   position: fixed;
   z-index: 1;
@@ -551,7 +549,7 @@ export function styleCSS() {
   background-color: #333333a6;
 }
 .page-loading-text {
-  color: var(--ehvp-font-color);
+  color: var(--ehvp-theme-font-color);
   font-size: 6em;
 }
 @keyframes rotate {
@@ -592,7 +590,7 @@ export function styleCSS() {
   top: 0.3em;
   right: 0.3em;
   font-size: 0.8em;
-  color: var(--ehvp-font-color);
+  color: var(--ehvp-theme-font-color);
   text-shadow: 0px 0px 3px #000000;
 }
 .lightgreen { color: #90ea90; }
@@ -613,12 +611,12 @@ export function styleCSS() {
   min-height: 50vh;
   max-width: 80vw;
   max-height: 80vh;
-  background-color: var(--ehvp-background-color);
+  background-color: var(--ehvp-theme-bg-color);
   border: 1px solid #000000;
   display: flex;
   flex-direction: column;
   text-align: start;
-  color: var(--ehvp-font-color);
+  color: var(--ehvp-theme-font-color);
   position: relative;
   user-select: none;
 }
@@ -699,7 +697,7 @@ export function styleCSS() {
   font-size: 1.4em;
 }
 .ehvp-custom-panel-checkbox:hover {
-  border: 1px solid var(--ehvp-font-color);
+  border: 1px solid var(--ehvp-theme-font-color);
 }
 .ehvp-custom-panel-list-item-disable {
   text-decoration: line-through;
@@ -768,7 +766,7 @@ export function styleCSS() {
   background-color: #333333ee;
 }
 .bifm-vid-ctl:hover {
-  background-color: var(--ehvp-background-color);
+  background-color: var(--ehvp-theme-bg-color);
 }
 .bifm-vid-ctl:hover #bifm-vid-ctl-pg {
   height: 0.8em;
@@ -898,7 +896,7 @@ export function styleCSS() {
   position: absolute;
   top: 0px;
   left: 0px;
-  background: var(--ehvp-autopage-progress-background);
+  background: var(--ehvp-playing-progress-bar-color);
 }
 @media (max-width: ${IS_MOBILE ? "1440px" : "720px"}) {
   .ehvp-root {

@@ -9948,10 +9948,8 @@ ${chapters.map((c, i) => `<div><label>
     intersectingElements = [];
     renderingElements = [];
     currentIndex = 0;
-    lockInit;
     preventStep = { currentPreventFinished: false };
     debouncer;
-    throttler;
     callbackOnWheel;
     visible = false;
     html;
@@ -9971,9 +9969,7 @@ ${chapters.map((c, i) => `<div><label>
     constructor(HTML, getChapter) {
       this.html = HTML;
       this.root = HTML.bigImageFrame;
-      this.lockInit = false;
       this.debouncer = new Debouncer();
-      this.throttler = new Debouncer("throttle");
       this.getChapter = getChapter;
       this.scrollerY = new Scroller(this.root);
       this.scrollerX = new Scroller(this.root, void 0, "x");
@@ -10366,6 +10362,7 @@ ${chapters.map((c, i) => `<div><label>
           if (imf.index === this.currentIndex) continue;
           EBUS.emit("ifq-do", imf.index, imf, this.oriented);
           this.currentIndex = imf.index;
+          this.pageNumInChapter[this.chapterIndex] = imf.index;
           if (element.firstElementChild) {
             this.tryPlayVideo(element.firstElementChild);
           }

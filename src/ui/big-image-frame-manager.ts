@@ -21,15 +21,9 @@ export class BigImageFrameManager {
   intersectingElements: HTMLElement[] = [];
   renderingElements: HTMLElement[] = [];
   currentIndex: number = 0;
-
-  lockInit: boolean;
   preventStep: { ele?: HTMLElement, ani?: Animation, currentPreventFinished: boolean } = { currentPreventFinished: false };
-
   debouncer: Debouncer;
-  throttler: Debouncer;
-
   callbackOnWheel?: (event: WheelEvent) => void;
-
   visible: boolean = false;
   html: Elements;
   vidController?: VideoControl;
@@ -50,9 +44,7 @@ export class BigImageFrameManager {
   constructor(HTML: Elements, getChapter: (index: number) => Chapter) {
     this.html = HTML;
     this.root = HTML.bigImageFrame;
-    this.lockInit = false;
     this.debouncer = new Debouncer();
-    this.throttler = new Debouncer("throttle");
     this.getChapter = getChapter;
     this.scrollerY = new Scroller(this.root);
     this.scrollerX = new Scroller(this.root, undefined, "x");
@@ -480,6 +472,7 @@ export class BigImageFrameManager {
         if (imf.index === this.currentIndex) continue;
         EBUS.emit("ifq-do", imf.index, imf, this.oriented);
         this.currentIndex = imf.index;
+        this.pageNumInChapter[this.chapterIndex] = imf.index;
         if (element.firstElementChild) {
           this.tryPlayVideo(element.firstElementChild as HTMLElement);
         }

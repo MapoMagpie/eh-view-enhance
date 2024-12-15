@@ -9955,7 +9955,6 @@ ${chapters.map((c, i) => `<div><label>
     callbackOnWheel;
     visible = false;
     html;
-    frameScrollAbort;
     vidController;
     chapterIndex = 0;
     getChapter;
@@ -9966,6 +9965,9 @@ ${chapters.map((c, i) => `<div><label>
     lastMouse;
     pageNumInChapter = [];
     oriented = "next";
+    // When bifm opens an image, the IntersectionObserver will immediately start detecting and rendering after 50 milliseconds, 
+    // but we want to only start rendering when the corresponding image index is detected.
+    intersectingIndexLock = false;
     constructor(HTML, getChapter) {
       this.html = HTML;
       this.root = HTML.bigImageFrame;
@@ -10056,6 +10058,15 @@ ${chapters.map((c, i) => `<div><label>
         } else {
           const index = this.intersectingElements.indexOf(entry.target);
           if (index > -1) this.intersectingElements.splice(index, 1);
+        }
+      }
+      if (this.intersectingIndexLock) {
+        const hasCurrentIndex = this.intersectingElements.find((elem) => this.currentIndex === parseIndex(elem));
+        if (hasCurrentIndex) {
+          this.intersectingIndexLock = false;
+        } else {
+          console.log("intersecting: return");
+          return;
         }
       }
       this.debouncer.addEvent("rendering-images", () => this.rendering(), 50);
@@ -10190,14 +10201,18 @@ ${chapters.map((c, i) => `<div><label>
       this.visible = false;
       EBUS.emit("bifm-on-hidden");
       this.html.fullViewGrid.focus();
-      this.frameScrollAbort?.abort();
+      this.vidController?.detach();
       this.root.classList.add("big-img-frame-collapse");
+      this.renderingElements.forEach((elem) => elem.innerHTML = "");
+      this.renderingElements = [];
+      this.intersectingIndexLock = false;
     }
     show(imf) {
       this.visible = true;
+      this.currentIndex = imf.index;
+      this.intersectingIndexLock = true;
       this.root.classList.remove("big-img-frame-collapse");
       this.root.focus();
-      this.frameScrollAbort = new AbortController();
       this.debouncer.addEvent("TOGGLE-CHILDREN-D", () => imf.chapterIndex === this.chapterIndex && this.setNow(imf), 100);
       EBUS.emit("bifm-on-show");
     }

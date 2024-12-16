@@ -36,30 +36,30 @@ type Legacy = {
       },
     ],
   },
+  id_str: string,
+  full_text: string,
   possibly_sensitive: boolean,
   possibly_sensitive_editable: boolean,
 }
 type Item = {
-  item: {
-    itemContent: {
-      tweet_results: {
-        result: {
-          legacy?: Legacy,
-          tweet?: {
-            legacy: Legacy,
-          },
-        }
-      },
-    }
+  itemContent: {
+    tweet_results: {
+      result: {
+        legacy?: Legacy,
+        tweet?: {
+          legacy: Legacy,
+        },
+      }
+    },
   }
 }
 type TimelineAddToModule = {
   type: "TimelineAddToModule",
-  moduleItems: Item[],
+  moduleItems: { item: Item }[],
 }
 type TimelineTimelineModule = {
   entryType: "TimelineTimelineModule"
-  items: Item[],
+  items: { item: Item }[],
 }
 type TimelineTimelineCursor = {
   entryType: "TimelineTimelineCursor"
@@ -72,75 +72,118 @@ type TimelineAddEntries = {
     { entryId: string, content: TimelineTimelineCursor | TimelineTimelineModule }
   ]
 }
+type HomeForYouEntries = {
+  type: "TimelineAddEntries",
+  entries: [
+    { entryId: string, content: TimelineTimelineCursor | HomeForYouTweet }
+  ]
+}
+type HomeForYouTweet = Item & {
+  entryType: "TimelineTimelineItem",
+};
+
 type Instructions = [TimelineAddToModule, TimelineAddEntries];
 
-export class TwitterMatcher extends BaseMatcher<Item[]> {
-  name(): string {
-    return "Twitter | X";
-  }
+interface TwitterAPIClient {
+  next(cursor?: string): Promise<[Item[], string | undefined]>;
+}
+
+class TwitterUserMediasAPI implements TwitterAPIClient {
   uuid = uuid();
-  postCount: number = 0;
-  mediaCount: number = 0;
   userID?: string;
 
-  private async fetchUserMedia(cursor?: string): Promise<[Item[], string | undefined]> {
-    if (!this.userID) {
-      this.userID = getUserID();
-    }
+  async next(cursor?: string): Promise<[Item[], string | undefined]> {
+    if (!this.userID) this.userID = getUserID();
     if (!this.userID) throw new Error("Cannot obatained User ID");
     const variables = `{"userId":"${this.userID}","count":20,${cursor ? "\"cursor\":\"" + cursor + "\"," : ""}"includePromotedContent":false,"withClientEventToken":false,"withBirdwatchNotes":false,"withVoice":true,"withV2Timeline":true}`
     const features = "&features=%7B%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_media_interstitial_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
     const url = `${window.location.origin}/i/api/graphql/aQQLnkexAl5z9ec_UgbEIA/UserMedia?variables=${encodeURIComponent(variables)}${features}`;
-    const headers = new Headers();
-
-    headers.set("authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
-    headers.set("Pragma", "no-cache");
-    headers.set("Cache-Control", "no-cache");
-    headers.set("content-type", "application/json");
-    headers.set("x-client-uuid", this.uuid);
-    headers.set("x-twitter-auth-type", "OAuth2Session");
-    headers.set("x-twitter-client-language", "en");
-    headers.set("x-twitter-active-user", "yes");
-    headers.set("x-client-transaction-id", transactionId());
-    headers.set("Sec-Fetch-Dest", "empty");
-    headers.set("Sec-Fetch-Mode", "cors");
-    headers.set("Sec-Fetch-Site", "same-origin");
-    // get cookie for authorization
-    const csrfToken = document.cookie.match(/ct0=(\w+)/)?.[1];
-    if (!csrfToken) throw new Error("Not found csrfToken");
-    headers.set("x-csrf-token", csrfToken);
-
-    const res = await window.fetch(url, { headers, });
+    const res = await window.fetch(url, { headers: createHeader(this.uuid), });
     try {
       const json = await res.json();
       const instructions = json.data.user.result.timeline_v2.timeline.instructions as Instructions;
-      let items: Item[] | undefined;
+      const items: Item[] = [];
       const addToModule = instructions.find(ins => ins.type === "TimelineAddToModule") as TimelineAddToModule | undefined;
       const addEntries = instructions.find(ins => ins.type === "TimelineAddEntries") as TimelineAddEntries | undefined;
       if (!addEntries) {
         throw new Error("Not found TimelineAddEntries");
       }
       if (addToModule) {
-        items = addToModule.moduleItems;
+        addToModule.moduleItems.forEach(i => items.push(i.item));
       }
-      if (!items) {
+      if (items.length === 0) {
         const timelineModule = addEntries.entries.find(entry => entry.content.entryType === "TimelineTimelineModule")?.content as TimelineTimelineModule | undefined;
-        items = timelineModule?.items;
+        timelineModule?.items.forEach(i => items.push(i.item));
       }
-      if (!items) {
-        return [[], undefined]
-      }
-      const timelineCursor = addEntries.entries.find(entry => entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom"))?.content as TimelineTimelineCursor | undefined;
-      return [items, timelineCursor?.value];
+      const cursor = (addEntries.entries.find(entry => entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom"))?.content as TimelineTimelineCursor | undefined)?.value;
+      return [items, cursor];
     } catch (error) {
       throw new Error(`fetchUserMedia error: ${error}`);
+    }
+  }
+
+}
+
+class TwitterHomeForYouAPI implements TwitterAPIClient {
+  uuid = uuid();
+  seenTweetIds: string[] = [];
+
+  async next(cursor?: string): Promise<[Item[], string | undefined]> {
+    const url = `${window.location.origin}/i/api/graphql/Iaj4kAIobIAtigNaYNIOAw/HomeTimeline`;
+    const headers = createHeader(this.uuid);
+    const seenTweetIds = this.seenTweetIds.map(e => "\"" + e + "\"").join(",");
+    const body = `{"variables":{"count":20,${cursor ? "\"cursor\":\"" + cursor + "\"," : ""}
+"includePromotedContent":true,"latestControlAvailable":true,"withCommunity":true, "seenTweetIds":[${seenTweetIds}]},"features":{"profile_label_improvements_pcf_label_in_post_enabled":false,"rweb_tipjar_consumption_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"premium_content_api_read_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"responsive_web_grok_analyze_button_fetch_trends_enabled":true,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"creator_subscriptions_quote_tweet_preview_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false},"queryId":"Iaj4kAIobIAtigNaYNIOAw"}`;
+    const res = await window.fetch(url, { headers, method: "post", body });
+    try {
+      const json = await res.json();
+      const instructions = json.data.home.home_timeline_urt.instructions as Instructions;
+      const entries = instructions.find(ins => ins.type === "TimelineAddEntries") as HomeForYouEntries | undefined;
+      if (!entries) {
+        throw new Error("Not found TimelineAddEntries");
+      }
+      this.seenTweetIds = [];
+      const items: Item[] = [];
+      let cursor: string | undefined;
+      for (const entry of entries.entries) {
+        if (entry.content.entryType === "TimelineTimelineItem" && !entry.entryId.startsWith("promoted-")) {
+          items.push(entry.content);
+          if (entry.content.itemContent.tweet_results.result.legacy?.id_str) {
+            this.seenTweetIds.push(entry.content.itemContent.tweet_results.result.legacy.id_str);
+          }
+        } else if (entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom")) {
+          cursor = entry.content.value;
+        }
+      }
+      return [items, cursor];
+    } catch (error) {
+      throw new Error(`fetchUserMedia error: ${error}`);
+    }
+  }
+
+}
+
+export class TwitterMatcher extends BaseMatcher<Item[]> {
+  name(): string {
+    return "Twitter | X";
+  }
+  postCount: number = 0;
+  mediaCount: number = 0;
+  api: TwitterAPIClient;
+
+  constructor() {
+    super();
+    if (/\/home$/.test(window.location.href)) {
+      this.api = new TwitterHomeForYouAPI();
+    } else {
+      this.api = new TwitterUserMediasAPI();
     }
   }
 
   async *fetchPagesSource(): AsyncGenerator<Item[]> {
     let cursor: string | undefined;
     while (true) {
-      const [mediaPage, nextCursor] = await this.fetchUserMedia(cursor);
+      const [mediaPage, nextCursor] = await this.api.next(cursor);
       cursor = nextCursor || "last";
       if (!mediaPage || mediaPage.length === 0) break;
       yield mediaPage;
@@ -152,7 +195,7 @@ export class TwitterMatcher extends BaseMatcher<Item[]> {
     if (!items) throw new Error("warn: cannot find items");
     const list: ImageNode[] = [];
     for (const item of items) {
-      const mediaList = item?.item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
+      const mediaList = item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
       if (mediaList === undefined) {
         evLog("error", "Not found mediaList: ", item);
         continue;
@@ -199,7 +242,7 @@ export class TwitterMatcher extends BaseMatcher<Item[]> {
   }
 
   workURL(): RegExp {
-    return /(\/x|twitter).com\/(?!(home|explore|notifications|messages)$|i\/|search\?)\w+/
+    return /(\/x|twitter).com\/(?!(explore|notifications|messages)$|i\/|search\?)\w+/
   }
 
   galleryMeta(doc: Document): GalleryMeta {
@@ -215,4 +258,25 @@ function getUserID(): string | undefined {
   if (followBTNs.length === 0) return undefined;
   const theBTN = followBTNs.find(btn => (btn.getAttribute("aria-label") ?? "").toLowerCase().includes(`@${userName.toLowerCase()}`)) || followBTNs[0];
   return theBTN.getAttribute("data-testid")!.match(/(\d+)/)?.[1];
+}
+
+function createHeader(uuid: string): Headers {
+  const headers = new Headers();
+  headers.set("authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA");
+  headers.set("Pragma", "no-cache");
+  headers.set("Cache-Control", "no-cache");
+  headers.set("content-type", "application/json");
+  headers.set("x-client-uuid", uuid);
+  headers.set("x-twitter-auth-type", "OAuth2Session");
+  headers.set("x-twitter-client-language", "en");
+  headers.set("x-twitter-active-user", "yes");
+  headers.set("x-client-transaction-id", transactionId());
+  headers.set("Sec-Fetch-Dest", "empty");
+  headers.set("Sec-Fetch-Mode", "cors");
+  headers.set("Sec-Fetch-Site", "same-origin");
+  // get cookie for authorization
+  const csrfToken = document.cookie.match(/ct0=(\w+)/)?.[1];
+  if (!csrfToken) throw new Error("Not found csrfToken");
+  headers.set("x-csrf-token", csrfToken);
+  return headers;
 }

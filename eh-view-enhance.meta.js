@@ -5,7 +5,7 @@
 // @name:ja            コミック織機
 // @name:ko            만화 베틀
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.9.5
+// @version            4.10.0
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support you in finding the site you are searching for.
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持你正在搜索的站点。

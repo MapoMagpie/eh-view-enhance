@@ -57,7 +57,7 @@ export class PageFetcher {
       c.sourceIter = this.matcher.fetchPagesSource(c);
       c.onclick = (index) => {
         EBUS.emit("pf-change-chapter", index, c);
-        if (this.chapters[index].queue) {
+        if (this.chapters[index].queue.length > 0) {
           this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
         }
         if (!this.queue.downloading?.()) {
@@ -84,11 +84,13 @@ export class PageFetcher {
       evLog("error", "chapter sourceIter is not set!");
       return;
     }
-    const first = await chapter.sourceIter.next();
-    if (!first.done) {
-      await this.appendImages(first.value);
+    if (chapter.queue.length === 0) {
+      const first = await chapter.sourceIter.next();
+      if (!first.done) {
+        await this.appendImages(first.value);
+      }
+      this.appendPages(this.queue.length);
     }
-    this.appendPages(this.queue.length);
   }
 
   // append next page until the queue length is 60 more than finished

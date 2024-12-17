@@ -353,6 +353,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "hdThumbnails", typ: "boolean", gridColumnRange: [6, 11] },
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "pixivJustCurrPage", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
+  { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
   {
     key: "readMode", typ: "select", options: [
       { value: "pagination", display: "Pagination" },
@@ -367,7 +368,6 @@ export const ConfigItems: ConfigItem[] = [
       { value: "never", display: "Never" },
     ]
   },
-  { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
   {
     key: "hitomiFormat", typ: "select", options: [
       { value: "auto", display: "Auto" },

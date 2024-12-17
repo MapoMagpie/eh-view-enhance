@@ -1307,6 +1307,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     { key: "hdThumbnails", typ: "boolean", gridColumnRange: [6, 11] },
     { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
     { key: "pixivJustCurrPage", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
+    { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
     {
       key: "readMode",
       typ: "select",
@@ -1325,7 +1326,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         { value: "never", display: "Never" }
       ]
     },
-    { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
     {
       key: "hitomiFormat",
       typ: "select",
@@ -6172,9 +6172,12 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const variables = `{"userId":"${this.userID}","count":20,${cursor ? '"cursor":"' + cursor + '",' : ""}"includePromotedContent":false,"withClientEventToken":false,"withBirdwatchNotes":false,"withVoice":true,"withV2Timeline":true}`;
       const features = "&features=%7B%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_media_interstitial_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
       const url = `${window.location.origin}/i/api/graphql/aQQLnkexAl5z9ec_UgbEIA/UserMedia?variables=${encodeURIComponent(variables)}${features}`;
-      const res = await window.fetch(url, { headers: createHeader(this.uuid) });
       try {
+        const res = await window.fetch(url, { headers: createHeader(this.uuid) });
         const json = await res.json();
+        if (res.status !== 200 && json?.errors?.[0].message) {
+          throw new Error(json?.errors?.[0].message);
+        }
         const instructions = json.data.user.result.timeline_v2.timeline.instructions;
         const items = [];
         const addToModule = instructions.find((ins) => ins.type === "TimelineAddToModule");
@@ -6192,7 +6195,45 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         const cursor2 = entries.entries.find((entry) => entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom"))?.content?.value;
         return [items, cursor2];
       } catch (error) {
-        throw new Error(`fetchUserMedia error: ${error}`);
+        throw new Error(`twitter api query error: ${error}`);
+      }
+    }
+  }
+  class TwitterListsAPI {
+    uuid = uuid();
+    listID;
+    fetchChapters() {
+      return [{
+        id: 1,
+        title: "User Medias",
+        source: window.location.href,
+        queue: []
+      }];
+    }
+    getListID() {
+      return window.location.href.match(/i\/lists\/(\d+)$/)?.[1];
+    }
+    async next(_chapter, cursor) {
+      if (!this.listID) this.listID = this.getListID();
+      if (!this.listID) throw new Error("Cannot obatained list ID");
+      const variables = `{"listId":"${this.listID}","count":20${cursor ? ',"cursor":"' + cursor + '"' : ""}}`;
+      const features = "&features=%7B%22profile_label_improvements_pcf_label_in_post_enabled%22%3Afalse%2C%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22premium_content_api_read_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22responsive_web_grok_analyze_button_fetch_trends_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D";
+      const url = `${window.location.origin}/i/api/graphql/rTndDGyFlXAmeXR4RfFe1A/ListLatestTweetsTimeline?variables=${encodeURIComponent(variables)}${features}`;
+      try {
+        const res = await window.fetch(url, { headers: createHeader(this.uuid) });
+        const json = await res.json();
+        if (res.status !== 200 && json?.errors?.[0].message) {
+          throw new Error(json?.errors?.[0].message);
+        }
+        const instructions = json.data.list.tweets_timeline.timeline.instructions;
+        const entries = instructions.find((ins) => ins.type === "TimelineAddEntries");
+        if (!entries) {
+          throw new Error("Not found TimelineAddEntries");
+        }
+        const { items, cursor: cursor2 } = homeForYouEntriesToItems(entries);
+        return [items, cursor2];
+      } catch (error) {
+        throw new Error(`twitter api query error: ${error}`);
       }
     }
   }
@@ -6235,31 +6276,21 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           return [url2, body2];
         }
       })();
-      const res = await window.fetch(url, { headers, method: "post", body });
       try {
+        const res = await window.fetch(url, { headers, method: "post", body });
         const json = await res.json();
+        if (res.status !== 200 && json?.errors?.[0].message) {
+          throw new Error(json?.errors?.[0].message);
+        }
         const instructions = json.data.home.home_timeline_urt.instructions;
         const entries = instructions.find((ins) => ins.type === "TimelineAddEntries");
-        if (!entries) {
-          throw new Error("Not found TimelineAddEntries");
-        }
-        this.seenTweetIds[chapter.id] = [];
-        const items = [];
-        let cursor2;
-        for (const entry of entries.entries) {
-          if (entry.content.entryType === "TimelineTimelineItem" && !entry.entryId.startsWith("promoted-")) {
-            items.push(entry.content);
-            if (entry.content.itemContent.tweet_results.result.legacy?.id_str) {
-              this.seenTweetIds[chapter.id].push(entry.content.itemContent.tweet_results.result.legacy.id_str);
-            }
-          } else if (entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom")) {
-            cursor2 = entry.content.value;
-          }
-        }
+        if (!entries) throw new Error("Not found TimelineAddEntries");
+        const { items, ids, cursor: cursor2 } = homeForYouEntriesToItems(entries);
+        this.seenTweetIds[chapter.id] = ids;
         this.chapterCursors[chapter.id] = cursor2;
         return [items, cursor2];
       } catch (error) {
-        throw new Error(`fetchUserMedia error: ${error}`);
+        throw new Error(`twitter api query error: ${error}`);
       }
     }
   }
@@ -6274,6 +6305,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       super();
       if (/\/home$/.test(window.location.href)) {
         this.api = new TwitterHomeForYouAPI();
+      } else if (/i\/lists\/\d+$/.test(window.location.href)) {
+        this.api = new TwitterListsAPI();
       } else {
         this.api = new TwitterUserMediasAPI();
       }
@@ -6340,7 +6373,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return { url: node.originSrc };
     }
     workURL() {
-      return /(\/x|twitter).com\/(?!(explore|notifications|messages)$|i\/|search\?)\w+/;
+      return /(\/x|twitter).com\/(?!(explore|notifications|messages|jobs)$|i\/(?!list)|search\?)\w+/;
     }
     galleryMeta(doc) {
       const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2];
@@ -6372,6 +6405,29 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     if (!csrfToken) throw new Error("Not found csrfToken");
     headers.set("x-csrf-token", csrfToken);
     return headers;
+  }
+  function homeForYouEntriesToItems(entries) {
+    const items = [];
+    const ids = [];
+    let cursor;
+    for (const entry of entries.entries) {
+      if (entry.content.entryType === "TimelineTimelineItem" && !entry.entryId.startsWith("promoted-")) {
+        items.push(entry.content);
+        if (entry.content.itemContent.tweet_results.result.legacy?.id_str) {
+          ids.push(entry.content.itemContent.tweet_results.result.legacy.id_str);
+        }
+      } else if (entry.content.entryType === "TimelineTimelineModule" && entry.content.displayType === "VerticalConversation") {
+        entry.content.items.forEach((i) => {
+          items.push(i.item);
+          if (i.item.itemContent.tweet_results.result.legacy?.id_str) {
+            ids.push(i.item.itemContent.tweet_results.result.legacy?.id_str);
+          }
+        });
+      } else if (entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom")) {
+        cursor = entry.content.value;
+      }
+    }
+    return { items, ids, cursor };
   }
 
   class WnacgMatcher extends BaseMatcher {

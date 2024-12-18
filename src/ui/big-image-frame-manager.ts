@@ -334,12 +334,13 @@ export class BigImageFrameManager {
       const div = document.createElement("div");
       div.style.aspectRatio = node.ratio().toString();
       div.setAttribute("d-index", node.index.toString());
+      div.setAttribute("d-ratio", node.ratio().toString());
       elements.push(div);
       this.observer.observe(div);
     }
     const reverse = conf.readMode !== "continuous" && conf.reversePages;
     if (this.container.childElementCount === 0) {
-      const paddingRatio = (window.innerWidth / 2) / window.innerHeight;
+      const paddingRatio = window.innerWidth / window.innerHeight;
       const start = document.createElement("div");
       start.style.aspectRatio = paddingRatio.toString();
       start.setAttribute("d-index", "-1");
@@ -385,6 +386,7 @@ export class BigImageFrameManager {
     } else {
       for (const elem of Array.from(this.container.children)) {
         (elem as HTMLElement).style.opacity = "";
+        (elem as HTMLElement).style.aspectRatio = elem.getAttribute("d-ratio") ?? "1";
       }
     }
     this.jumpTo(this.currentIndex);
@@ -398,6 +400,11 @@ export class BigImageFrameManager {
         const { showing, hiding } = this.getElements(element);
         showing.forEach(elem => elem.style.opacity = "1");
         hiding.forEach(elem => elem.style.opacity = "0");
+        if (conf.paginationIMGCount === 1) {
+          showing.forEach(elem => elem.style.aspectRatio = (this.root.offsetWidth / this.root.offsetHeight).toString());
+        } else {
+          showing.forEach(elem => elem.style.aspectRatio = elem.getAttribute("d-ratio") ?? "1");
+        }
         const rootW = this.root.offsetWidth;
         const [first, last] = [showing[0], showing[showing.length - 1]];
         const width = last.offsetLeft + last.offsetWidth - first.offsetLeft;

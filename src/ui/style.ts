@@ -264,11 +264,12 @@ export function styleCSS() {
 }
 .bifm-container-hori > div {
   margin: 0px var(--ehvp-big-images-gap);
+  display: flex;
 }
 .bifm-img {
   width: 100%;
-  height: 100%;
-  display: block;
+  height: auto;
+  object-fit: contain;
 }
 #bifm-loading-helper {
   position: fixed;
@@ -952,12 +953,6 @@ export function styleCSS() {
   }
   .bifm-container-hori > div {
     width: 100vw;
-    display: flex;
-  }
-  .bifm-container-hori > div > .bifm-img {
-    width: 100%;
-    height: auto;
-    object-fit: contain;
   }
 }
 `;

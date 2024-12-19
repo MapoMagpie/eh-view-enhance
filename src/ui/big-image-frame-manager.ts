@@ -615,11 +615,12 @@ export class BigImageFrameManager {
   checkOverflow(): { "prev": { overX: number, overY: number }, "next": { overX: number, overY: number }, elements: HTMLElement[] } {
     const showing = Array.from(this.container.querySelectorAll<HTMLElement>("div:not(.bifm-node-hide)"));
     if (showing.length === 0) return { "prev": { overX: 0, overY: 0 }, "next": { overX: 0, overY: 0 }, elements: [] };
+    const leftFix = this.root.getBoundingClientRect().left; // scrollbar margin
     const rectL = showing[0].getBoundingClientRect();
     const rectR = showing[showing.length - 1].getBoundingClientRect();
     return {
       "prev": {
-        overX: Math.round(rectL.left) * -1,
+        overX: Math.round(rectL.left) * -1 + leftFix,
         overY: Math.round(rectL.top) * -1,
       },
       "next": {

@@ -12,6 +12,7 @@ import createKeyboardCustomPanel from "./keyboard-custom";
 import { PageHelper } from "./page-helper";
 import { BigImageFrameManager } from "./big-image-frame-manager";
 import { createStyleCustomPanel } from "./style-custom-panel";
+import queryCSSRules from "../utils/query-cssrules";
 
 export type Events = ReturnType<typeof initEvents>;
 
@@ -88,6 +89,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     }
     if (key === "paginationIMGCount") {
       q("#paginationInput", HTML.paginationAdjustBar).textContent = conf.paginationIMGCount.toString();
+      const imgRule = queryCSSRules(HTML.styleSheet, ".bifm-container-page .bifm-img");
+      if (imgRule) {
+        imgRule.style.maxWidth = (conf.imgScale === 100 && conf.paginationIMGCount === 1) ? "100%" : "";
+      }
       BIFM.setNow(IFQ[IFQ.currIndex]);
     }
     saveConf(conf);
@@ -109,7 +114,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       IL.abort(0, conf.restartIdleLoader / 3);
     }
     if (key === "reversePages") {
-      BIFM.changeLayout(true);
+      BIFM.changeLayout();
     }
     // TODO
     // if (key === "magnifier") {

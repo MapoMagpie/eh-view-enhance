@@ -259,16 +259,35 @@ export function styleCSS() {
   display: flex;
   flex-wrap: nowrap;
 }
+.bifm-container-page {
+  width: fit-content;
+  height: ${conf.imgScale}%;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: nowrap;
+}
 .bifm-container-vert > div {
   margin: var(--ehvp-big-images-gap) 0px;
 }
 .bifm-container-hori > div {
   margin: 0px var(--ehvp-big-images-gap);
+}
+.bifm-container-page > div {
+  height: 100%;
+  margin: 0px var(--ehvp-big-images-gap);
   display: flex;
 }
+.bifm-node-hide {
+  position: fixed;
+  left: -100%;
+  z-index: -1000;
+  opacity: 0;
+}
+.bifm-container-page .bifm-img {
+  ${(conf.imgScale === 100 && conf.paginationIMGCount === 1) ? "max-width: 100%;" : ""}
+}
 .bifm-img {
-  width: 100%;
-  height: auto;
+  height: 100%;
   object-fit: contain;
 }
 #bifm-loading-helper {

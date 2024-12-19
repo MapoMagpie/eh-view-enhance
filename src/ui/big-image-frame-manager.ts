@@ -56,6 +56,8 @@ export class BigImageFrameManager {
         this.container.classList.add("bifm-container-vert");
         break;
       case "pagination":
+        this.container.classList.add("bifm-container-page");
+        break;
       case "horizontal":
         this.container.classList.add("bifm-container-hori");
         break;
@@ -145,7 +147,6 @@ export class BigImageFrameManager {
       if (hasCurrentIndex) {
         this.intersectingIndexLock = false;
       } else {
-        console.log("intersecting: return");
         return;
       }
     }
@@ -241,7 +242,7 @@ export class BigImageFrameManager {
           }
           // calculate current elements total width, for stickyMouse limit
           if (conf.readMode === "pagination") {
-            const { showing } = this.getElements();
+            const showing = this.intersectingElements;
             if (showing.length > 0) {
               elementsWidth = showing[showing.length - 1].offsetLeft + showing[showing.length - 1].offsetWidth - showing[0].offsetLeft;
             }
@@ -316,11 +317,11 @@ export class BigImageFrameManager {
   }
 
   setNow(imf: IMGFetcher) {
+    this.currentIndex = imf.index;
+    this.pageNumInChapter[this.chapterIndex] = imf.index;
     if (this.visible) {
       this.jumpTo(imf.index);
     }
-    this.pageNumInChapter[this.chapterIndex] = imf.index;
-    this.currentIndex = imf.index;
     EBUS.emit("ifq-do", imf.index, imf, this.oriented ?? "next");
     this.lastMouse = undefined;
     this.currLoadingState.clear();
@@ -328,13 +329,13 @@ export class BigImageFrameManager {
   }
 
   append(nodes: IMGFetcher[]) {
+    if (conf.readMode === "pagination") return;
     const elements = [];
     const scrollWidth = this.root.scrollWidth;
     for (const node of nodes) {
       const div = document.createElement("div");
       div.style.aspectRatio = node.ratio().toString();
       div.setAttribute("d-index", node.index.toString());
-      div.setAttribute("d-ratio", node.ratio().toString());
       elements.push(div);
       this.observer.observe(div);
     }
@@ -361,67 +362,50 @@ export class BigImageFrameManager {
     }
   }
 
-  changeLayout($reAppend?: boolean) {
+  changeLayout() {
     this.resetScaleBigImages(true);
-    let reAppend = $reAppend ?? false;
     switch (conf.readMode) {
       case "continuous":
-        if (!reAppend) reAppend = this.container.classList.contains("bifm-container-hori") && conf.reversePages;
+        this.container.classList.remove("bifm-container-hori", "bifm-container-vert", "bifm-container-page");
         this.container.classList.add("bifm-container-vert");
-        this.container.classList.remove("bifm-container-hori");
         break;
       case "pagination":
+        this.container.classList.remove("bifm-container-hori", "bifm-container-vert", "bifm-container-page");
+        this.container.classList.add("bifm-container-page");
+        break;
       case "horizontal":
-        if (!reAppend) reAppend = this.container.classList.contains("bifm-container-vert") && conf.reversePages;
+        this.container.classList.remove("bifm-container-hori", "bifm-container-vert", "bifm-container-page");
         this.container.classList.add("bifm-container-hori");
-        this.container.classList.remove("bifm-container-vert");
         break;
     }
-    if (reAppend) {
-      this.container.innerHTML = "";
-      this.intersectingElements = [];
-      this.renderingElements = [];
-      const queue = this.getChapter(this.chapterIndex).queue;
-      this.append(queue);
-    } else {
-      for (const elem of Array.from(this.container.children)) {
-        (elem as HTMLElement).style.opacity = "";
-        (elem as HTMLElement).style.aspectRatio = elem.getAttribute("d-ratio") ?? "1";
-      }
-    }
+    this.container.innerHTML = "";
+    this.intersectingElements = [];
+    this.renderingElements = [];
+    const queue = this.getChapter(this.chapterIndex).queue;
+    this.append(queue);
     this.jumpTo(this.currentIndex);
   }
 
   jumpTo(index: number) {
-    const element = this.container.querySelector<HTMLElement>(`div[d-index="${index}"]`);
-    if (!element) return;
     switch (conf.readMode) {
       case "pagination": {
-        const { showing, hiding } = this.getElements(element);
-        showing.forEach(elem => elem.style.opacity = "1");
-        hiding.forEach(elem => elem.style.opacity = "0");
-        if (conf.paginationIMGCount === 1) {
-          showing.forEach(elem => elem.style.aspectRatio = (this.root.offsetWidth / this.root.offsetHeight).toString());
-        } else {
-          showing.forEach(elem => elem.style.aspectRatio = elem.getAttribute("d-ratio") ?? "1");
-        }
-        const rootW = this.root.offsetWidth;
-        const [first, last] = [showing[0], showing[showing.length - 1]];
-        const width = last.offsetLeft + last.offsetWidth - first.offsetLeft;
-        let margin = Math.floor((rootW - width) / 2);
-        margin = Math.max(0, margin);
-        if (conf.reversePages) {
-          this.root.scrollLeft = element.offsetLeft - this.root.offsetWidth + element.offsetWidth + margin;
-        } else {
-          this.root.scrollLeft = element.offsetLeft - margin;
+        const showing = this.setElements();
+        if (this.container.offsetWidth > this.root.offsetWidth) {
+          if (conf.reversePages) {
+            this.root.scrollLeft = this.container.offsetWidth - this.root.offsetWidth;
+          } else {
+            this.root.scrollLeft = 0;
+          }
         }
         this.root.scrollTop = 0;
-        if (element.firstElementChild) {
-          this.tryPlayVideo(element.firstElementChild as HTMLElement);
+        if (showing[0].firstElementChild) {
+          this.tryPlayVideo(showing[0].firstElementChild as HTMLElement);
         }
         break;
       }
       case "horizontal": {
+        const element = this.container.querySelector<HTMLElement>(`div[d-index="${index}"]`);
+        if (!element) return;
         if (conf.reversePages) {
           this.root.scrollLeft = element.offsetLeft - this.root.offsetWidth + element.offsetWidth;
         } else {
@@ -430,6 +414,8 @@ export class BigImageFrameManager {
         break;
       }
       case "continuous": {
+        const element = this.container.querySelector<HTMLElement>(`div[d-index="${index}"]`);
+        if (!element) return;
         const rootH = this.root.offsetHeight;
         const height = element.offsetHeight;
         let marginT = index === 0 ? 0 : Math.floor((rootH - height) / 2);
@@ -509,17 +495,17 @@ export class BigImageFrameManager {
         break;
       }
       case "pagination": {
-        const { showing } = this.getElements();
-        const [first, last] = [showing[0] ?? null, showing[showing.length - 1] ?? null];
-        const width = last.offsetLeft + last.offsetWidth - first.offsetLeft;
-        let offsetLeft = first?.offsetLeft ?? 0;
-        const maxLeft = offsetLeft + Math.max(width - this.root.offsetWidth, 0);
-        const minLeft = offsetLeft + Math.min(width - this.root.offsetWidth, 0);
-        if (this.root.scrollLeft > maxLeft) {
-          this.root.scrollLeft = maxLeft;
-        } else if (this.root.scrollLeft < minLeft) {
-          this.root.scrollLeft = minLeft;
-        }
+        // const { showing } = this.getElements();
+        // const [first, last] = [showing[0] ?? null, showing[showing.length - 1] ?? null];
+        // const width = last.offsetLeft + last.offsetWidth - first.offsetLeft;
+        // let offsetLeft = first?.offsetLeft ?? 0;
+        // const maxLeft = offsetLeft + Math.max(width - this.root.offsetWidth, 0);
+        // const minLeft = offsetLeft + Math.min(width - this.root.offsetWidth, 0);
+        // if (this.root.scrollLeft > maxLeft) {
+        //   this.root.scrollLeft = maxLeft;
+        // } else if (this.root.scrollLeft < minLeft) {
+        //   this.root.scrollLeft = minLeft;
+        // }
         break;
       }
       case "horizontal": {
@@ -627,7 +613,7 @@ export class BigImageFrameManager {
   }
 
   checkOverflow(): { "prev": { overX: number, overY: number }, "next": { overX: number, overY: number }, elements: HTMLElement[] } {
-    const { showing } = this.getElements();
+    const showing = Array.from(this.container.querySelectorAll<HTMLElement>("div:not(.bifm-node-hide)"));
     if (showing.length === 0) return { "prev": { overX: 0, overY: 0 }, "next": { overX: 0, overY: 0 }, elements: [] };
     const rectL = showing[0].getBoundingClientRect();
     const rectR = showing[showing.length - 1].getBoundingClientRect();
@@ -705,13 +691,18 @@ export class BigImageFrameManager {
     let newPercent = specifiedPercent ?? (oldPercent + rate * fix);
     switch (conf.readMode) {
       case "pagination": {
-        const scrollLeft = this.root.scrollLeft;
-        const rule = queryCSSRules(this.html.styleSheet, ".bifm-container-hori");
+        const rule = queryCSSRules(this.html.styleSheet, ".bifm-container-page");
         newPercent = Math.max(newPercent, 100);
         newPercent = Math.min(newPercent, 300);
         if (rule) rule.style.height = `${newPercent}%`;
-        this.root.scrollLeft = scrollLeft * (newPercent / oldPercent);
-        this.jumpTo(this.currentIndex);
+        if (conf.paginationIMGCount === 1) {
+          const imgRule = queryCSSRules(this.html.styleSheet, ".bifm-container-page .bifm-img");
+          if (imgRule) {
+            imgRule.style.maxWidth = newPercent > 100 ? "" : "100%";
+          }
+        }
+        // this.root.scrollLeft = scrollLeft * (newPercent / oldPercent);
+        // this.jumpTo(this.currentIndex);
       }
         break;
       case "horizontal": {
@@ -764,41 +755,63 @@ export class BigImageFrameManager {
   }
 
   /**
-  * This method will only be called when readmode is not continuous
-  * get elements, showing will set opacity to 1, hiding will set opacity to 0;
-  * If conf.reversePages is true, the elements in the showing array are still kept in order in the document flow. [31, 30, 29(current)]
+  * This method will only be called when readmode is pagination
   */
-  getElements(element?: HTMLElement): { showing: HTMLElement[], hiding: HTMLElement[] } {
-    element = element || this.container.querySelector<HTMLElement>(`div[d-index="${this.currentIndex}"]`) || undefined;
-    if (!element) return { showing: [], hiding: [] };
-    const showing = [element];
-    const hiding = [];
-    let sibling: HTMLElement | null = element;
-    const getSibling = (next: boolean) => {
-      next = conf.reversePages ? !next : next;
-      return (next ? sibling?.nextElementSibling : sibling?.previousElementSibling) as HTMLElement | null;
-    };
-    let t = 0;
-    while (t < 5) {
-      sibling = getSibling(false);
-      if (!sibling) break;
-      hiding.push(sibling);
-      t++;
-    }
-    sibling = element;
-    t = 0;
-    while (t < 5) {
-      sibling = getSibling(true);
-      if (!sibling) break;
-      if (t < conf.paginationIMGCount - 1 && sibling.getAttribute("d-index") !== "-1") {
-        showing.push(sibling);
-      } else {
-        hiding.push(sibling);
+  setElements() {
+    let elements = Array.from(this.container.childNodes) as HTMLElement[];
+    const imgCount = conf.paginationIMGCount * 3;
+    if (elements.length > imgCount) {
+      const removed = elements.splice(imgCount);
+      removed.forEach(elem => elem.remove());
+    } else {
+      while (elements.length < imgCount) {
+        const div = document.createElement("div");
+        elements.push(div);
       }
-      t++;
     }
-    if (conf.reversePages) showing.reverse();
-    return { showing, hiding };
+    const queue = this.getChapter(this.chapterIndex).queue;
+    let [start, end] = [this.currentIndex - conf.paginationIMGCount, this.currentIndex + conf.paginationIMGCount * 2 - 1];
+    [start, end] = [Math.max(start, 0), Math.min(end, queue.length - 1)];
+
+    const withIndex = elements.map(elem => ({ index: parseIndex(elem), elem })).sort((a, b) => a.index - b.index);
+    const findOrSetIndex = (index: number): [HTMLElement | null, boolean] => {
+      let found = withIndex.findIndex(i => (i.index === index));
+      if (found > -1) return [withIndex.splice(found, 1)[0].elem, false];
+      found = withIndex.findIndex(i => (i.index < start || i.index > end));
+      if (found === -1) return [null, false];
+      const element = withIndex.splice(found, 1)[0];
+      element.elem.setAttribute("d-index", index.toString());
+      return [element.elem, true];
+    };
+    elements = [];
+    const ret = [];
+    for (let i = start; i <= end; i++) {
+      const [elem, reused] = findOrSetIndex(i);
+      if (!elem) throw new Error(`BIFM.setElements cannot found element by index:[${i}], or found empty element`);
+      const showing = i >= this.currentIndex && i < this.currentIndex + conf.paginationIMGCount;
+      elements.push(elem);
+      if (showing) {
+        elem.classList.remove("bifm-node-hide")
+        ret.push(elem);
+      } else {
+        elem.classList.add("bifm-node-hide")
+      }
+      if (reused || elem.childElementCount === 0) {
+        elem.innerHTML = "";
+        elem.appendChild(this.newMediaNode(queue[i]));
+      }
+    }
+    if (conf.reversePages) elements.reverse();
+    this.renderingElements = [...elements];
+    const remain = withIndex.map(i => {
+      i.elem.setAttribute("d-index", "-1");
+      i.elem.innerHTML = "";
+      i.elem.classList.add("bifm-node-hide")
+      return i.elem;
+    });
+    elements.push(...remain);
+    this.container.append(...elements);
+    return ret;
   }
 
 }

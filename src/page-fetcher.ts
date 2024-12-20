@@ -52,7 +52,9 @@ export class PageFetcher {
   }
 
   async init() {
+    this.beforeInit?.();
     this.chapters = await this.matcher.fetchChapters().catch(reason => EBUS.emit("notify-message", "error", reason) || []);
+    this.afterInit?.();
     this.chapters.forEach(c => {
       c.sourceIter = this.matcher.fetchPagesSource(c);
       c.onclick = (index) => {

@@ -2856,7 +2856,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.abortb = true;
     }
     async init() {
+      this.beforeInit?.();
       this.chapters = await this.matcher.fetchChapters().catch((reason) => EBUS.emit("notify-message", "error", reason) || []);
+      this.afterInit?.();
       this.chapters.forEach((c) => {
         c.sourceIter = this.matcher.fetchPagesSource(c);
         c.onclick = (index) => {
@@ -5819,23 +5821,109 @@ duration 0.04`).join("\n");
     }
   }
 
+  class PixivHomeAPI {
+    homeData;
+    thumbnails = {};
+    pids = {};
+    async fetchChapters() {
+      const { error, body } = await window.fetch("https://www.pixiv.net/ajax/top/illust?mode=all&lang=en").then((res) => res.json());
+      if (error) throw new Error("fetch your home data error, check you have already logged in");
+      this.homeData = body;
+      this.thumbnails = body.thumbnails.illust.reduce((prev, curr) => {
+        prev[curr.id] = curr;
+        return prev;
+      }, {});
+      const chapters = [];
+      const byTag = body.page.recommendByTag.reduce((prev, curr) => {
+        prev[curr.tag] = curr.ids;
+        return prev;
+      }, {});
+      this.pids = { "follow": body.page.follow.map((id2) => id2.toString()), "for you": body.page.recommend.ids, ...byTag };
+      let id = 0;
+      for (const [t, pids] of Object.entries(this.pids)) {
+        chapters.push({
+          id,
+          title: t === "follow" ? "Your Following" : "Recommend " + t,
+          source: t,
+          thumbimg: this.thumbnails[pids[0] ?? ""]?.url,
+          queue: []
+        });
+        id++;
+      }
+      return chapters;
+    }
+    async *next(chapter) {
+      const pidList = this.pids[chapter.source];
+      if (pidList.length === 0) {
+        yield [];
+        return;
+      }
+      while (pidList.length > 0) {
+        const pids = pidList.splice(0, 20);
+        yield [{ pids }];
+      }
+    }
+    title() {
+      return "home";
+    }
+  }
+  class PixivArtistWorksAPI {
+    first;
+    author;
+    title() {
+      return this.author ?? "author";
+    }
+    async fetchChapters() {
+      return [{
+        id: 1,
+        title: "Default",
+        source: window.location.href,
+        queue: []
+      }];
+    }
+    async *next(_ch) {
+      this.author = findAuthorID();
+      if (!this.author) throw new Error("Cannot find author id!");
+      this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
+      if (this.first) {
+        yield [{ id: this.author, pids: [this.first] }];
+        while (conf.pixivJustCurrPage) {
+          yield [];
+        }
+      }
+      const res = await window.fetch(`https://www.pixiv.net/ajax/user/${this.author}/profile/all`).then((resp) => resp.json());
+      if (res.error) throw new Error(`Fetch illust list error: ${res.message}`);
+      let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
+      pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+      if (this.first) {
+        const index = pidList.indexOf(this.first);
+        if (index > -1) pidList.splice(index, 1);
+      }
+      while (pidList.length > 0) {
+        const pids = pidList.splice(0, 20);
+        yield [{ id: this.author, pids }];
+      }
+    }
+  }
   const PID_EXTRACT = /\/(\d+)_([a-z]+)\d*\.\w*$/;
   class PixivMatcher extends BaseMatcher {
     name() {
       return "Pixiv";
     }
-    authorID;
+    api;
     meta;
-    pidList = [];
     pageCount = 0;
     works = {};
     ugoiraMetas = {};
-    pageSize = {};
     convertor;
-    first;
     constructor() {
       super();
       this.meta = new GalleryMeta(window.location.href, "UNTITLE");
+      if (/pixiv.net(\/en\/)?$/.test(window.location.href)) {
+        this.api = new PixivHomeAPI();
+      } else {
+        this.api = new PixivArtistWorksAPI();
+      }
     }
     async processData(data, contentType, url) {
       const meta = this.ugoiraMetas[url];
@@ -5867,38 +5955,19 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return blob.arrayBuffer().then((buffer) => [new Uint8Array(buffer), blob.type]);
     }
     workURL() {
-      return /pixiv.net\/(\w*\/)?(artworks|users)\/.*/;
+      return /pixiv.net\/(en\/)?(artworks\/.*|users\/.*|$)/;
     }
     galleryMeta() {
-      this.meta.title = `pixiv_${this.authorID ?? this.first}_w${this.pidList.length}_p${this.pageCount}` || "UNTITLE";
-      if (this.first) {
-        const title = document.querySelector("meta[property='twitter:title']")?.getAttribute("content");
-        if (title) {
-          this.meta.title = `pixiv_${title}`;
-        }
-      }
-      const tags = Object.values(this.works).map((w) => w.tags).flat();
-      this.meta.tags = { "author": [this.authorID || "UNTITLE"], "all": [...new Set(tags)], "pids": this.pidList, "works": Object.values(this.works) };
+      this.meta.title = `pixiv_${this.api.title()}_w${Object.keys(this.works).length}_p${this.pageCount}` || "UNTITLE";
+      this.meta.tags = Object.entries(this.works).reduce((tags, work) => {
+        tags[work[0]] = work[1].tags;
+        return tags;
+      }, {});
       return this.meta;
     }
-    async fetchOriginMeta(node) {
-      const matches = node.href.match(PID_EXTRACT);
-      if (!matches || matches.length < 2) {
-        return { url: node.originSrc };
-      }
-      const pid = matches[1];
-      const p = matches[2];
-      if (this.works[pid]?.illustType === 2 || p === "ugoira") {
-        const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then((resp) => resp.json());
-        this.ugoiraMetas[meta.body.src] = meta;
-        return { url: meta.body.src };
-      } else {
-        return { url: node.originSrc };
-      }
-    }
-    async fetchTagsByPids(pids) {
+    async fetchTagsByPids(authorID, pids) {
       try {
-        const raw = await window.fetch(`https://www.pixiv.net/ajax/user/${this.authorID}/profile/illusts?ids[]=${pids.join("&ids[]=")}&work_category=illustManga&is_first_page=0&lang=en`).then((resp) => resp.json());
+        const raw = await window.fetch(`https://www.pixiv.net/ajax/user/${authorID}/profile/illusts?ids[]=${pids.join("&ids[]=")}&work_category=illustManga&is_first_page=0&lang=en`).then((resp) => resp.json());
         const data = raw;
         if (!data.error) {
           const works = {};
@@ -5921,10 +5990,24 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         evLog("error", "ERROR: fetch tags by pids error: ", error);
       }
     }
-    async parseImgNodes(pids) {
+    fetchChapters() {
+      return this.api.fetchChapters();
+    }
+    fetchPagesSource(chapter) {
+      return this.api.next(chapter);
+    }
+    async parseImgNodes(aps) {
       const list = [];
+      if (aps.length === 0) return list;
+      const pids = [];
+      for (const ap of aps) {
+        if (ap.id) {
+          this.fetchTagsByPids(ap.id, ap.pids);
+        }
+        pids.push(...ap.pids);
+      }
       if (pids.length === 0) return list;
-      this.fetchTagsByPids(pids);
+      pids.sort((a, b) => parseInt(b) - parseInt(a));
       const pageListData = await batchFetch(pids.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
       for (let i = 0; i < pids.length; i++) {
         const pid = pids[i];
@@ -5936,49 +6019,38 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         const digits = data.body.length.toString().length;
         let j = -1;
         for (const p of data.body) {
-          this.pageSize[p.urls.original] = [p.width, p.height];
           let title = p.urls.original.split("/").pop() || `${pid}_p${j.toString().padStart(digits)}.jpg`;
           const matches = p.urls.original.match(PID_EXTRACT);
           if (matches && matches.length > 2 && matches[2] && matches[2] === "ugoira") {
             title = title.replace(/\.\w+$/, ".gif");
           }
           j++;
-          const node = new ImageNode(p.urls.small, p.urls.original, title, void 0, p.urls.original, { w: p.width, h: p.height });
+          const node = new ImageNode(p.urls.small, `${window.location.origin}/artworks/${pid}`, title, void 0, p.urls.original, { w: p.width, h: p.height });
           list.push(node);
         }
       }
       return list;
     }
-    async *fetchPagesSource() {
-      this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
-      if (this.first) {
-        yield [this.first];
-        while (conf.pixivJustCurrPage) {
-          yield [];
-        }
+    async fetchOriginMeta(node) {
+      const matches = node.href.match(PID_EXTRACT);
+      if (!matches || matches.length < 2) {
+        return { url: node.originSrc };
       }
-      const u = document.querySelector("a[data-gtm-value][href*='/users/']")?.href || document.querySelector("a.user-details-icon[href*='/users/']")?.href || window.location.href;
-      const author = /users\/(\d+)/.exec(u)?.[1];
-      if (!author) {
-        throw new Error("Cannot find author id!");
-      }
-      this.authorID = author;
-      const res = await window.fetch(`https://www.pixiv.net/ajax/user/${author}/profile/all`).then((resp) => resp.json());
-      if (res.error) {
-        throw new Error(`Fetch illust list error: ${res.message}`);
-      }
-      let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
-      this.pidList = [...pidList];
-      pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
-      if (this.first) {
-        const index = pidList.indexOf(this.first);
-        if (index > -1) pidList.splice(index, 1);
-      }
-      while (pidList.length > 0) {
-        const pids = pidList.splice(0, 20);
-        yield pids;
+      const pid = matches[1];
+      const p = matches[2];
+      if (this.works[pid]?.illustType === 2 || p === "ugoira") {
+        const meta = await window.fetch(`https://www.pixiv.net/ajax/illust/${pid}/ugoira_meta?lang=en`).then((resp) => resp.json());
+        this.ugoiraMetas[meta.body.src] = meta;
+        return { url: meta.body.src };
+      } else {
+        return { url: node.originSrc };
       }
     }
+  }
+  function findAuthorID() {
+    const u = document.querySelector("a[data-gtm-value][href*='/users/']")?.href || document.querySelector("a.user-details-icon[href*='/users/']")?.href || window.location.href;
+    const author = /users\/(\d+)/.exec(u)?.[1];
+    return author;
   }
 
   class RokuHentaiMatcher extends BaseMatcher {

@@ -6453,7 +6453,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return { url: node.originSrc };
     }
     workURL() {
-      return /(\/x|twitter).com\/(?!(explore|notifications|messages|jobs)$|i\/(?!list)|search\?)\w+/;
+      return /(\/x|twitter).com\/(?!(explore|notifications|messages|jobs|lists)$|i\/(?!list)|search\?)\w+/;
     }
     galleryMeta(doc) {
       const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2];

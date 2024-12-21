@@ -332,7 +332,7 @@ export class TwitterMatcher extends BaseMatcher<Item[]> {
   }
 
   workURL(): RegExp {
-    return /(\/x|twitter).com\/(?!(explore|notifications|messages|jobs)$|i\/(?!list)|search\?)\w+/;
+    return /(\/x|twitter).com\/(?!(explore|notifications|messages|jobs|lists)$|i\/(?!list)|search\?)\w+/;
   }
 
   galleryMeta(doc: Document): GalleryMeta {

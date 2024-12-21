@@ -4464,6 +4464,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
       return retval;
     }
+    // gallery.js#322
     thumbURL(hash) {
       hash = hash.replace(/^.*(..)(.)$/, "$2/$1/" + hash);
       const url = "https://a.hitomi.la/webpsmalltn/" + hash + ".webp";
@@ -4540,10 +4541,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const list = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const ext = this.formats.slice(this.formatIndex).find((format) => file["has" + format] === 1);
+        let ext = this.formats.slice(this.formatIndex).find((format) => file["has" + format] === 1);
         if (!ext) {
+          ext = "webp";
           evLog("error", "no format found: ", files[i]);
-          continue;
         }
         const title = file.name.replace(/\.\w+$/, "");
         const src = this.gg.originURL(file.hash, ext);

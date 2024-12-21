@@ -39,6 +39,7 @@ class HitomiGG {
     return retval;
   }
 
+  // gallery.js#322
   thumbURL(hash: string): string {
     hash = hash.replace(/^.*(..)(.)$/, '$2/$1/' + hash);
     const url = 'https://a.hitomi.la/' + 'webpsmalltn' + '/' + hash + '.' + 'webp';
@@ -140,10 +141,10 @@ export class HitomiMather extends BaseMatcher<GalleryInfo> {
     const list: ImageNode[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const ext = this.formats.slice(this.formatIndex).find(format => ((file as any)["has" + format] === 1));
+      let ext = this.formats.slice(this.formatIndex).find(format => ((file as any)["has" + format] === 1));
       if (!ext) {
+        ext = "webp";
         evLog("error", "no format found: ", files[i]);
-        continue;
       }
       const title = file.name.replace(/\.\w+$/, "");
       const src = this.gg!.originURL(file.hash, ext);

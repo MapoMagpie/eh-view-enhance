@@ -103,7 +103,14 @@ class PixivHomeAPI implements PixivAPI {
     };
     while (pidList.length > 0) {
       const pids = pidList.splice(0, 20);
-      yield [{ pids }];
+      const grouped = pids.reduce<Record<string, string[]>>((prev, curr) => {
+        const userId = this.thumbnails[curr]?.userId ?? "unk";
+        if (!prev[userId]) prev[userId] = [];
+        prev[userId].push(curr);
+        return prev;
+      }, {});
+      const ret = Object.entries(grouped).map(([userID, pids]) => ({ id: userID === "unk" ? undefined : userID, pids }));
+      yield ret;
     }
   }
   title(): string {

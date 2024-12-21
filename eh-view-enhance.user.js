@@ -5861,7 +5861,14 @@ duration 0.04`).join("\n");
       }
       while (pidList.length > 0) {
         const pids = pidList.splice(0, 20);
-        yield [{ pids }];
+        const grouped = pids.reduce((prev, curr) => {
+          const userId = this.thumbnails[curr]?.userId ?? "unk";
+          if (!prev[userId]) prev[userId] = [];
+          prev[userId].push(curr);
+          return prev;
+        }, {});
+        const ret = Object.entries(grouped).map(([userID, pids2]) => ({ id: userID === "unk" ? void 0 : userID, pids: pids2 }));
+        yield ret;
       }
     }
     title() {

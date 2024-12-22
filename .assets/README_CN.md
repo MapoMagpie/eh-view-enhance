@@ -31,7 +31,7 @@
 1. **`前置条件`**：现代浏览器(Firefox\Chrome\Edge...)
 1. **`前置条件`**：安装脚本管理器拓展 [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/)
 1. **`前置条件`**：通畅的网络，点击此处确认能否访问[jsdelivr.net](https://cdn.jsdelivr.net)，以确保脚本能正常运行。
-1. **`安装地址1`**：[GreasyFork](https://greasyfork.org/scripts/397848)，需要登录
+1. **`安装地址1`**：[GreasyFork](https://greasyfork.org/scripts/397848)
 1. **`安装地址2`**：直接访问此处进行安装[`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
 
 ## <a name="multi-site-support">多站点支持</a>

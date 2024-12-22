@@ -4,6 +4,11 @@ El script generalmente se activa en las páginas principales de galerías o en l
 
 Cuando esté activo, aparecerá un ícono de **<🎑>** en la parte inferior izquierda de la página. Haz clic en él para entrar en la interfaz de lectura del script.
 
+## [Algunos problemas no resueltos]
+
+- Al usar Firefox para abrir la página principal de Twitter en una nueva pestaña y luego navegar a la página principal del usuario, el script no se activa y requiere actualizar la página.
+- En Firefox, la función de descarga no funciona en el dominio `twitter.com`. Firefox no redirige `twitter.com` a `x.com` cuando se abre en una nueva pestaña. Debes usar `x.com` en lugar de `twitter.com`.
+
 ## [¿Se puede reubicar el punto de entrada o la barra de control del script?]
 
 ¡Sí! En la parte inferior del panel de configuración, hay una opción de **Arrastrar para mover**. Arrastra el ícono para reposicionar la barra de control en cualquier parte de la página.
@@ -101,8 +106,3 @@ Reporta problemas aquí: [issue](https://github.com/MapoMagpie/eh-view-enhance/i
 ## [¿Cómo reabrir la guía?]
 
 Haz clic en el botón de **Ayuda** en la parte inferior del panel de configuración.
-
-## [Algunos problemas no resueltos]
-
-- Al usar Firefox para abrir la página principal de Twitter en una nueva pestaña y luego navegar a la página principal del usuario, el script no se activa y requiere actualizar la página.
-- En Firefox, la función de descarga no funciona en el dominio `twitter.com`. Firefox no redirige `twitter.com` a `x.com` cuando se abre en una nueva pestaña. Debes usar `x.com` en lugar de `twitter.com`.

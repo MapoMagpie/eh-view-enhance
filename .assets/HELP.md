@@ -4,6 +4,11 @@ The script typically activates on gallery homepages or artist homepages. For exa
 
 When active, a **<🎑>** icon will appear at the bottom left of the page. Click it to enter the script's reading interface.
 
+## [Some Unresolved Issues]
+
+- When using Firefox to browse Twitter|X, after navigating to some pages, you need to refresh the page for this script to work on that page.
+- When using Firefox to browse Twitter|X, the download function of this script may not work.
+
 ## [Can the Script's Entry Point or Control Bar be Relocated?]
 
 Yes! At the bottom of the configuration panel, there's a **Drag to Move** option. Drag the icon to reposition the control bar anywhere on the page.
@@ -101,8 +106,3 @@ Report issues here: [issue](https://github.com/MapoMagpie/eh-view-enhance/issues
 ## [How to Reopen the Guide?]
 
 Click the **Help** button at the bottom of the configuration panel.
-
-## [Some Unresolved Issues]
-
-- When using Firefox to open Twitter's homepage in a new tab, then navigating to the user's homepage, the script doesn't activate and requires page refresh.
-- Still Firefox, Download function not working on domain:`twitter.com`, firefox will not redirect `twitter.com` to `x.com` when open in new tab, you should use `x.com` instead `twitter.com`.

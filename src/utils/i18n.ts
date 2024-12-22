@@ -601,6 +601,11 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
 <h2>[How to Use? Where is the Entry?]</h2>
 <p>The script typically activates on gallery homepages or artist homepages. For example, on E-Hentai, it activates on the gallery detail page, or on Twitter, it activates on the user&#39;s homepage or tweets.</p>
 <p>When active, a <strong>&lt;🎑&gt;</strong> icon will appear at the bottom left of the page. Click it to enter the script&#39;s reading interface.</p>
+<h2 style="color:red;">[Some Unresolved Issues]</h2>
+<ul>
+<li>When using Firefox to browse Twitter|X, after navigating to some pages, you need to refresh the page for this script to work on that page.</li>
+<li>When using Firefox to browse Twitter|X, the download function of this script may not work.</li>
+</ul>
 <h2>[Can the Script&#39;s Entry Point or Control Bar be Relocated?]</h2>
 <p>Yes! At the bottom of the configuration panel, there&#39;s a <strong>Drag to Move</strong> option. Drag the icon to reposition the control bar anywhere on the page.</p>
 <h2>[Can the Script Auto-Open When Navigating to the Corresponding Page?]</h2>
@@ -660,16 +665,16 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
 Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/issues">issue</a></p>
 <h2>[How to Reopen the Guide?]</h2>
 <p>Click the <strong>Help</strong> button at the bottom of the configuration panel.</p>
-<h2>[Some Unresolved Issues]</h2>
-<ul>
-<li>When using Firefox to open Twitter&#39;s homepage in a new tab, then navigating to the user&#39;s homepage, the script doesn&#39;t activate and requires page refresh.</li>
-<li>Still Firefox, Download function not working on twitter.com, firefox will not redirect twitter.com to x.com when open in new tab, you should use x.com instead twitter.com.</li>
-</ul>
 `,
     `
 <h2>[如何使用？入口在哪里？]</h2>
 <p>脚本一般生效于画廊详情页或画家的主页或作品页。比如在E-Hentai上，生效于画廊详情页，或者在Twitter上，生效于推主的主页或推文。</p>
 <p>生效时，在页面的左下方会有一个<strong>&lt;🎑&gt;</strong>图标，点击后即可进入脚本的阅读界面。</p>
+<h2 style="color:red;">[一些未能解决的问题。]</h2>
+<ul>
+<li>使用Firefox浏览Twitter|X时，跳转到某个页面后，需要刷新页面才可以使此脚本在对应的页面生效。</li>
+<li>使用Firefox浏览Twitter|X时，此脚本的下载功能可能无法使用。</li>
+</ul>
 <h2>[脚本的入口或控制栏可以更改位置吗？]</h2>
 <p>可以！在配置面板的下方，有一个<strong>拖拽移动</strong>的选项，对着图标进行拖动，你可以将控制栏移动到页面上的任意位置。</p>
 <h2>[进入对应的页面的，可以自动打开脚本吗？]</h2>
@@ -729,11 +734,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 请在此反馈问题: <a target="_blank" href="https://github.com/MapoMagpie/eh-view-enhance/issues">issue</a></p>
 <h2>[如何再次打开指南？]</h2>
 <p>在配置面板的下方，点击<strong>帮助</strong>按钮。</p>
-<h2>[一些未能解决的问题。]</h2>
-<ul>
-<li>使用Firefox通过新标签页打开Twitter的首页后，然后跳转到推主的主页，脚本无法生效，需要刷新页面。</li>
-<li>使用Firefox打开twitter.com这个域名，下载功能会失效，这可能和Firefox不能自动跳转到x.com有关，你需要停止使用twitter.com这个域名。</li>
-</ul>
 `,
     `
 <h2>[사용 방법? 스크립트는 어떻게 실행되나요?]</h2>
@@ -833,6 +833,11 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <h2>¿Cómo se usa? ¿Dónde está la entrada</h2>
 <p>El script generalmente se activa en las páginas principales de galerías o en las páginas principales de artistas. Por ejemplo, en E-Hentai, se activa en la página de detalles de la galería, o en Twitter, se activa en la página principal del usuario o en los tweets.p>
 <p>Cuando esté activo, aparecerá un ícono de <strong>&lt;🎑&gt;</strong> en la parte inferior izquierda de la página.</p>
+<h2 style="color:red;">[Algunos problemas no resueltos]</h2>
+<ul>
+<li>Al usar Firefox para abrir la página principal de Twitter en una nueva pestaña y luego navegar a la página principal del usuario, el script no se activa y requiere actualizar la página.</li>
+<li>En Firefox, la función de descarga no funciona en el dominio twitter.com. Firefox no redirige twitter.com a x.com cuando se abre en una nueva pestaña. Debes usar x.com en lugar de twitter.com.</li>
+</ul>
 <h2>[¿Se puede reubicar el punto de entrada o la barra de control del script?]</h2>
 <p>¡Sí! En la parte inferior del panel de configuración, hay una opción de <strong>Arrastrar para mover</strong>. Arrastra el ícono para reposicionar la barra de control en cualquier parte de la página.</p>
 <h2>[¿Puede el script abrirse automáticamente al navegar a la página correspondiente?]</h2>
@@ -893,11 +898,6 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/eh-view-enhance/issues'>issue</a></p>
 <h2>[¿Cómo reabrir la guía?]</h2>
 <p>Haz clic en el botón de <strong>Ayuda</strong> en la parte inferior del panel de configuración.</p>
-<h2>[Algunos problemas no resueltos]</h2>
-<ul>
-<li>Al usar Firefox para abrir la página principal de Twitter en una nueva pestaña y luego navegar a la página principal del usuario, el script no se activa y requiere actualizar la página.</li>
-<li>En Firefox, la función de descarga no funciona en el dominio twitter.com. Firefox no redirige twitter.com a x.com cuando se abre en una nueva pestaña. Debes usar x.com en lugar de twitter.com.</li>
-</ul>
 `,
   ],
 } satisfies Record<string, Langs>;

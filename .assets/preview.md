@@ -1,4 +1,4 @@
-![预览1](eh-view-enhance-showcase3.avif)
+![预览1](eh-view-enhance-showcase4.avif)
 
 ![预览2](eh-view-enhance-showcase-1.jpg)
 

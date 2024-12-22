@@ -5,13 +5,13 @@
 ## Index
 
 - [Features](#features)
-- [Multi-site Support](#multi-site-support)
 - [Installation](#installation)
+- [Multi-site Support](#multi-site-support)
 - [Operates](#operates)
 - [Feedback](#feedback)
 
 Preview (if you can't see the image, click [here](./.assets/preview.md)):
-![Preview](./.assets/eh-view-enhance-showcase3.avif 'Preview')
+![Preview](./.assets/eh-view-enhance-showcase4.avif 'Preview')
 
 ## <a name="features">Features</a>
 
@@ -26,15 +26,24 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 - **`Mobile Adaptation`**
   - Requires a browser that supports script manager extensions, such as Firefox Android, Kiwi Browser.
 
+## <a name="installation">Installation</a>
+
+1. **`Prerequisites`**: Modern browser (Firefox\Chrome\Edge...)
+1. **`Prerequisites`**: Installed extension [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/) 
+1. **`Prerequisites`**: click here to check if you can access [jsdelivr.net](https://cdn.jsdelivr.net) to ensure the script runs properly.
+1. **`Installation Link 1`**: [GreasyFork](https://greasyfork.org/scripts/397848), login required
+1. **`Installation Link 2`**: Direct install [here](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+
 ## <a name="multi-site-support">Multi-site Support</a>
 
-Currently supports:
+<details>
+  <summary>Currently supports</summary>
 
 - [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
-- [Twitter|X User Media](https://x.com/NASA/media)
+- [Twitter|X: User's Media, Lists, For you, Following](https://x.com/NASA/media)
 - [Instagram User POSTS](https://www.instagram.com/nasa)
 - [ArtStation User Portfolio](https://www.artstation.com)
-- [pixiv.net](https://pixiv.net) (Artists' illustrations, manga, Ugoria to GIF)
+- [pixiv.net: Artists' illust and manga, Your Homepage](https://pixiv.net)
 - [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (supports multi-chapter selection, note: no thumbnails)
 - [nhentai.net](https://nhentai.net)
 - [hitomi.la](https://hitomi.la)
@@ -44,25 +53,17 @@ Currently supports:
 - [gelbooru.com](https://gelbooru.com)
 - [yande.re](https://yande.re)
 - [konachan.com](https://konachan.com)
-- [Steam Screenshots](https://steamcommunity.com/id/some/screenshots)
+- [Steam: Screenshots](https://steamcommunity.com/id/some/screenshots)
 - [wnacg.com](https://www.wnacg.com)
 - [hentainexus.com](https://hentainexus.com)
 - [koharu.to](https://koharu.to)
 - [manhuagui.com](https://www.manhuagui.com/comic/7580)
-- [mangacopy.com](https://www.mangacopy.com)
-- [copymanga.tv](https://www.copymanga.tv)
+- [mangacopy.com](https://www.mangacopy.com) | [copymanga.tv](https://www.copymanga.tv)
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
 - [akuma.moe](https://akuma.moe)
 
-## <a name="installation">Installation</a>
-
-1. **`Prerequisites`**: Modern browser (Firefox\Chrome\Edge...)
-1. **`Prerequisites`**: Installed extension [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
-1. **`Prerequisites`**: click here to check if you can access [jsdelivr.net](https://cdn.jsdelivr.net) to ensure the script runs properly.
-1. **`Installation Link 1`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), login required
-1. **`Installation Link 2`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), no login required
-1. **`Installation Link 3`**: Direct install [here](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+</details>
 
 ## <a name="operates">Operates</a>
 

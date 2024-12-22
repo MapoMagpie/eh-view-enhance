@@ -5,13 +5,13 @@
 ## 目录
 
 - [特性](#features)
-- [多站点支持](#multi-site-support)
 - [安装](#installation)
+- [多站点支持](#multi-site-support)
 - [操作](#operates)
 - [反馈](#feedback)
 
 预览(如果无法看到图片点[此处](./preview.md)):
-![预览](./eh-view-enhance-showcase3.avif '预览')
+![预览](./eh-view-enhance-showcase4.avif '预览')
 
 ## <a name="features">特性</a>
 
@@ -26,43 +26,44 @@
 - **`移动端优化`**
   - 需要支持脚本管理器拓展的浏览器，如:Firefox Android、Kiwi Browser
 
+## <a name="installation">安装</a>
+
+1. **`前置条件`**：现代浏览器(Firefox\Chrome\Edge...)
+1. **`前置条件`**：安装脚本管理器拓展 [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/)
+1. **`前置条件`**：通畅的网络，点击此处确认能否访问[jsdelivr.net](https://cdn.jsdelivr.net)，以确保脚本能正常运行。
+1. **`安装地址1`**：[GreasyFork](https://greasyfork.org/scripts/397848)，需要登录
+1. **`安装地址2`**：直接访问此处进行安装[`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+
 ## <a name="multi-site-support">多站点支持</a>
 
-现在支持:
+<details>
+  <summary>现在支持</summary>
 
-- [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](https://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
-- [Twitter|X User Media](https://x.com/NASA/media)
+- [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
+- [Twitter|X: 用户媒体, 列表, 主页推荐, Following](https://x.com/NASA/media)
 - [Instagram User POSTS](https://www.instagram.com/nasa)
 - [ArtStation User Portfolio](https://www.artstation.com)
-- [pixiv.net](https://pixiv.net) (作者的插话与漫画，Ugoria 转 GIF)
-- [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (支持多章节选择，注：无缩略图)
+- [pixiv.net: 作者插话与漫画, 你的主页](https://pixiv.net)
+- [禁漫天堂](https://18comic.vip) | [18comic.org](https://18comic.org) (supports multi-chapter selection, note: no thumbnails)
 - [nhentai.net](https://nhentai.net)
 - [hitomi.la](https://hitomi.la)
 - [rule34.xxx](https://rule34.xxx)
 - [imhentai.xxx](https://imhentai.xxx)
 - [danbooru.donmai.us](https://danbooru.donmai.us)
-- [gelbooru.com ](https://gelbooru.com)
+- [gelbooru.com](https://gelbooru.com)
 - [yande.re](https://yande.re)
 - [konachan.com](https://konachan.com)
-- [steam 截图](https://steamcommunity.com/id/some/screenshots)
+- [Steam: Screenshots](https://steamcommunity.com/id/some/screenshots)
 - [wnacg.com](https://www.wnacg.com)
 - [hentainexus.com](https://hentainexus.com)
 - [koharu.to](https://koharu.to)
-- [漫画柜](https://www.manhuagui.com)
-- [拷贝漫画](https://www.mangacopy.com)
-- [copymanga.tv](https://www.copymanga.tv)
+- [漫画柜](https://www.manhuagui.com/comic/7580)
+- [拷贝漫画](https://www.mangacopy.com) | [拷贝漫画](https://www.copymanga.tv)
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
 - [akuma.moe](https://akuma.moe)
 
-## <a name="installation">安装</a>
-
-1. **`前置条件`**：现代浏览器(Firefox\Chrome\Edge...)
-1. **`前置条件`**：安装脚本管理器拓展 [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
-1. **`前置条件`**：通畅的网络，点击此处确认能否访问[jsdelivr.net](https://cdn.jsdelivr.net)，以确保脚本能正常运行。
-1. **`安装地址1`**：[GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance)，需要登录
-1. **`安装地址2`**：[SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance)，不需要登录
-1. **`安装地址3`**：直接访问此处进行安装[`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+</details>
 
 ## <a name="operates">操作</a>
 

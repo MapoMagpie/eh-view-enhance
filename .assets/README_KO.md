@@ -5,13 +5,13 @@
 ## 목차
 
 - [기능](#features)
-- [여러 사이트 지원](#multi-site-support)
 - [설치](#installation)
+- [여러 사이트 지원](#multi-site-support)
 - [작동 방법](#operates)
 - [피드백](#feedback)
 
 미리보기 (이미지가 보이지 않는다면 [여기](./preview.md)를 클릭하세요):
-![미리보기](./eh-view-enhance-showcase3.avif '미리보기')
+![미리보기](./eh-view-enhance-showcase4.avif '미리보기')
 
 ## <a name="features">기능</a>
 
@@ -26,16 +26,25 @@
 - **`모바일 적용`**
   - Firefox Android, Kiwi Browser 등의 스크립트 관리 확장 프로그램을 지원하는 브라우저가 필요합니다.
 
+## <a name="installation">설치</a>
+
+1. **`필수 조건`**: 신식 브라우저 (Firefox\Chrome\Edge...)
+1. **`필수 조건`**: 확장 프로그램 설치 [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/)
+1. **`필수 조건`**: 스크립트가 제대로 작동하는지 확인하려면 [jsdelivr.net](https://cdn.jsdelivr.net)에 접속할 수 있는지 확인하세요.
+1. **`설치 링크 1`**: [GreasyFork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance), 로그인 필요
+1. **`설치 링크 2`**: [여기](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)에서 직접 설치
+
 ## <a name="multi-site-support">다중 사이트 지원</a>
 
-현재 지원하는 사이트:
+<details>
+  <summary>현재 지원하는 사이트</summary>
 
 - [e-hentai.org](https://e-hentai.org) | [exhentai.org](https://exhentai.org) | [onion](http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion)
-- [Twitter|X 사용자 미디어](https://x.com/NASA/media)
+- [Twitter|X: User's Media, Lists, For you, Following](https://x.com/NASA/media)
 - [Instagram User POSTS](https://www.instagram.com/nasa)
 - [ArtStation User Portfolio](https://www.artstation.com)
-- [pixiv.net](https://pixiv.net) (작가의 일러스트, 만화, Ugoria to GIF)
-- [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (다중 챕터 선택 지원, 썸네일 없음)
+- [pixiv.net: Artists' illust and manga, Your Homepage](https://pixiv.net)
+- [18comic.vip](https://18comic.vip) | [18comic.org](https://18comic.org) (supports multi-chapter selection, note: no thumbnails)
 - [nhentai.net](https://nhentai.net)
 - [hitomi.la](https://hitomi.la)
 - [rule34.xxx](https://rule34.xxx)
@@ -44,25 +53,17 @@
 - [gelbooru.com](https://gelbooru.com)
 - [yande.re](https://yande.re)
 - [konachan.com](https://konachan.com)
-- [Steam 스크린샷](https://steamcommunity.com/id/some/screenshots)
+- [Steam: Screenshots](https://steamcommunity.com/id/some/screenshots)
 - [wnacg.com](https://www.wnacg.com)
 - [hentainexus.com](https://hentainexus.com)
 - [koharu.to](https://koharu.to)
 - [manhuagui.com](https://www.manhuagui.com/comic/7580)
-- [mangacopy.com](https://www.mangacopy.com)
-- [copymanga.tv](https://www.copymanga.tv)
+- [mangacopy.com](https://www.mangacopy.com) | [copymanga.tv](https://www.copymanga.tv)
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
 - [akuma.moe](https://akuma.moe)
 
-## <a name="installation">설치</a>
-
-1. **`필수 조건`**: 신식 브라우저 (Firefox\Chrome\Edge...)
-1. **`필수 조건`**: 확장 프로그램 설치 [`TamperMonkey`](https://www.tampermonkey.net/) | [`Violentmonkey`](https://violentmonkey.github.io/)
-1. **`필수 조건`**: 스크립트가 제대로 작동하는지 확인하려면 [jsdelivr.net](https://cdn.jsdelivr.net)에 접속할 수 있는지 확인하세요.
-1. **`설치 링크 1`**: [GreasyFork](https://greasyfork.org/en/scripts/397848-e-hentai-view-enhance), 로그인 필요
-1. **`설치 링크 2`**: [SleazyFork](https://sleazyfork.org/en/scripts/397848-e-hentai-view-enhance), 로그인 필요 없음
-1. **`설치 링크 3`**: [여기](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)에서 직접 설치
+</details>
 
 ## <a name="operates">작동 방법</a>
 

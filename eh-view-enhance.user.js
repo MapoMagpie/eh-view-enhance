@@ -11177,6 +11177,10 @@ ${chapters.map((c, i) => `<div><label>
   function reMain() {
     debouncer.addEvent("LOCATION-CHANGE", () => {
       const newStart = () => {
+        if (window.self !== window.top) {
+          evLog("error", "in iframe");
+          return;
+        }
         if (document.querySelector(".ehvp-base")) return;
         const [matcher, autoOpen, flowVision] = adaptMatcher(window.location.href);
         if (matcher) {

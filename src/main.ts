@@ -14,6 +14,7 @@ import { BigImageFrameManager } from "./ui/big-image-frame-manager";
 import { Debouncer } from "./utils/debouncer";
 import revertMonkeyPatch from "./utils/revert-monkey-patch";
 import { sleep } from "./utils/sleep";
+import { evLog } from "./utils/ev-log";
 
 type DestoryFunc = () => Promise<void>;
 
@@ -108,6 +109,10 @@ const debouncer = new Debouncer();
 function reMain() {
   debouncer.addEvent("LOCATION-CHANGE", () => {
     const newStart = () => {
+      if (window.self !== window.top) {
+        evLog("error", "in iframe");
+        return;
+      }
       if (document.querySelector(".ehvp-base")) return;
       const [matcher, autoOpen, flowVision] = adaptMatcher(window.location.href);
       if (matcher) {

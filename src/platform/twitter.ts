@@ -190,8 +190,9 @@ class TwitterListsAPI implements TwitterAPIClient {
 
 class TwitterHomeForYouAPI implements TwitterAPIClient {
   uuid = uuid();
-  seenTweetIds: Record<number, string[]> = { 1: [], 2: [] };
-  chapterCursors: Record<number, string | undefined> = { 1: undefined, 2: undefined };
+  seenTweetIds: Record<number, string[]> = { 1: [], 2: [], 3: [] };
+  chapterCursors: Record<number, string | undefined> = { 1: undefined, 2: undefined, 3: undefined };
+  myID?: string;
 
   fetchChapters(): Chapter[] {
     return [
@@ -209,6 +210,13 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
         queue: [],
         thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg",
       },
+      {
+        id: 3,
+        title: "Your Likes",
+        source: window.location.href,
+        queue: [],
+        thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg",
+      },
     ];
   }
   async next(chapter: Chapter): Promise<[Item[], string | undefined]> {
@@ -221,23 +229,32 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
         const cursorStr = cursor ? `"cursor":"${cursor}",` : "";
         const body = `{"variables":{"count":20,${cursorStr}"includePromotedContent":true,"latestControlAvailable":true,"requestContext":"launch","withCommunity":true,"seenTweetIds":[${seenTweetIds}]},"features":{"profile_label_improvements_pcf_label_in_post_enabled":false,"rweb_tipjar_consumption_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"premium_content_api_read_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"responsive_web_grok_analyze_button_fetch_trends_enabled":true,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"creator_subscriptions_quote_tweet_preview_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false},"queryId":"Iaj4kAIobIAtigNaYNIOAw"}`;
         return [url, body];
-      } else {
+      } else if (chapter.id === 2) {
         const url = `${window.location.origin}/i/api/graphql/4U9qlz3wQO8Pw1bRGbeR6A/HomeLatestTimeline`;
         const cursorStr = cursor ? `"cursor":"${cursor}",` : "";
         const body = `{"variables":{"count":20,${cursorStr}"includePromotedContent":true,"latestControlAvailable":true,"seenTweetIds":[${seenTweetIds}]},"features":{"profile_label_improvements_pcf_label_in_post_enabled":false,"rweb_tipjar_consumption_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"premium_content_api_read_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"responsive_web_grok_analyze_button_fetch_trends_enabled":true,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"creator_subscriptions_quote_tweet_preview_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false},"queryId":"Iaj4kAIobIAtigNaYNIOAw"}`;
         return [url, body];
+      } else {
+        if (!this.myID) this.myID = getMyID();
+        if (!this.myID) throw new Error("cannot find my id from current page");
+        const cursorStr = cursor ? `"cursor":"${cursor}",` : "";
+        const variables = `{"userId":"${this.myID}","count":20,${cursorStr}"includePromotedContent":false,"withClientEventToken":false,"withBirdwatchNotes":false,"withVoice":true,"withV2Timeline":true}`;
+        const features = "&features=%7B%22profile_label_improvements_pcf_label_in_post_enabled%22%3Afalse%2C%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22premium_content_api_read_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22responsive_web_grok_analyze_button_fetch_trends_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
+        const url = `${window.location.origin}/i/api/graphql/oLLzvV4gwmdq_nhPM4cLwg/Likes?variables=${encodeURIComponent(variables)}${features}`;
+        return [url, ""];
       }
     })();
+
     try {
       const h: Record<string, string> = {};
       headers.forEach((v, k) => { h[k] = v });
       // window.fetch on x.com cannot send post query with body, property "body" no permissions
       const text = await new Promise<string>((resolve, reject) => {
         GM_xmlhttpRequest({
-          method: "POST",
+          method: (body) ? "POST" : "GET",
           url,
           headers: h,
-          data: body,
+          data: (body) ? body : undefined,
           timeout: 20000,
           onload: (event) => resolve(event.response),
           ontimeout: () => reject("timeout"),
@@ -248,10 +265,21 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
       if (json?.errors?.[0].message) {
         throw new Error(json?.errors?.[0].message);
       }
-      if (!json?.data?.home?.home_timeline_urt?.instructions) {
-        throw new Error("cannot found: json?.data?.home?.home_timeline_urt?.instructions");
-      }
-      const instructions = json.data.home.home_timeline_urt.instructions as Instructions;
+      const instructions = (() => {
+        if (chapter.id === 3) {
+          if (!json?.data?.user?.result?.timeline_v2?.timeline?.instructions) {
+            throw new Error("cannot found: json?.data?.user?.result?.timeline_v2?.timeline?.instructions");
+          }
+          const instructions = json.data.user.result.timeline_v2.timeline.instructions as Instructions;
+          return instructions;
+        } else {
+          if (!json?.data?.home?.home_timeline_urt?.instructions) {
+            throw new Error("cannot found: json?.data?.home?.home_timeline_urt?.instructions");
+          }
+          const instructions = json.data.home.home_timeline_urt.instructions as Instructions;
+          return instructions;
+        }
+      })();
       const entries = instructions.find(ins => ins.type === "TimelineAddEntries") as HomeForYouEntries | undefined;
       if (!entries) throw new Error("Not found TimelineAddEntries");
       const { items, ids, cursor } = homeForYouEntriesToItems(entries);
@@ -358,6 +386,12 @@ export class TwitterMatcher extends BaseMatcher<Item[]> {
     return new GalleryMeta(window.location.href, `twitter-${userName || doc.title}-${this.postCount}-${this.mediaCount}`);
   }
 
+}
+
+function getMyID(): string | undefined {
+  return Array.from(document.querySelectorAll("script"))
+    .find((sc) => sc.innerText.startsWith("window.__INITIAL_STATE__"))
+    ?.innerText.match(/"id_str":\s?"(\d+)"/)?.[1];
 }
 
 function getUserID(): string | undefined {

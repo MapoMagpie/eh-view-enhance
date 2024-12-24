@@ -630,6 +630,8 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
 <li>Keyboard shortcuts</li>
 <li>Zoom controls on the control bar: click the -/+ buttons, scroll the mouse wheel over the numbers, or drag the numbers left or right.</li>
 </ul>
+<h2>[How to maintain spacing between large images?]</h2>
+<p>In CONF > Style, modify or add: .ehvp-root { --ehvp-big-images-gap: 2px; }</p>
 <h2>[How to Open Images from a Specific Page?]</h2>
 <p>In the thumbnail list interface, simply type the desired page number on your keyboard (without any prompt) and press Enter or your custom shortcuts.</p>
 <h2>[About the Thumbnail List]</h2>
@@ -712,6 +714,8 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <li>键盘快捷键</li>
 <li>控制栏上的缩放控制，点击-/+按钮，或者在数字上滚动滚轮，或者左右拖动数字。</li>
 </ul>
+<h2>[如何让大图之间保持间隔？]</h2>
+<p>在CONF > Style中，修改或添加 .ehvp-root { --ehvp-big-images-gap: 2px; }</p>
 <h2>[如何打开指定页数的图片？]</h2>
 <p>在缩略图列表界面中，直接在键盘上输入数字(没有提示)，然后按下回车或自定义的快捷键。</p>
 <h2>[关于缩略图列表。]</h2>
@@ -779,6 +783,9 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <li>키보드 단축키</li>
 <li>컨트롤 바의 확대/축소 컨트롤: -/+ 버튼을 클릭하거나, 숫자 위에서 마우스 휠을 스크롤하거나, 숫자를 좌우로 드래그하세요.</li>
 </ul>
+
+<h2>[큰 이미지 간의 간격을 유지하려면 어떻게 해야 하나요?]</h2>
+<p>CONF > Style에서 다음을 수정하거나 추가하세요: .ehvp-root { --ehvp-big-images-gap: 2px; }</p>
 
 <h2>[특정 페이지의 이미지를 열려면 어떻게 해야 하나요?]</h2>
 <p>썸네일 리스트 화면에서 원하는 페이지 번호를 키보드로 입력하고 Enter 키나 사용자 지정 단축키를 누르세요.</p>
@@ -873,9 +880,10 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <ul>
 <li>Clic derecho + rueda del ratón</li>
 <li>Atajos de teclado</li>
-<li><li>Controles de zoom en la barra de control: haz clic en los botones -/+, desplaza la rueda del ratón sobre los números o arrastra los números hacia la izquierda o derecha.</li>
-</li>
+<li>Controles de zoom en la barra de control: haz clic en los botones -/+, desplaza la rueda del ratón sobre los números o arrastra los números hacia la izquierda o derecha.</li>
 </ul>
+<h2>[¿Cómo mantener el espacio entre imágenes grandes?]</h2>
+<p>En CONF > Style, modifique o añada: .ehvp-root { --ehvp-big-images-gap: 2px; }</p>
 <h2>[¿Cómo abrir imágenes de una página específica?]</h2>
 <p>En la interfaz de lista de miniaturas, simplemente escribe el número de página deseado en tu teclado (sin necesidad de un aviso) y presiona Enter o utiliza tus atajos personalizados.</p>
 <h2>[Acerca de la Lista de Miniaturas]</h2>

@@ -17,7 +17,7 @@ export function styleCSS() {
   --ehvp-controlbar-border: 1px solid #2f7b10;
   --ehvp-panel-border: none;
   --ehvp-panel-box-shadow: none;
-  --ehvp-big-images-gap: 2px;
+  --ehvp-big-images-gap: 0px;
   --ehvp-big-images-bg: #000000d6;
   --ehvp-clickable-color-hover: #90ea90;
   --ehvp-playing-progress-bar-color: #ffffffd0;
@@ -289,6 +289,7 @@ export function styleCSS() {
 .bifm-img {
   height: 100%;
   object-fit: contain;
+  display: block;
 }
 #bifm-loading-helper {
   position: fixed;

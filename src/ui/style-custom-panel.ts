@@ -193,7 +193,7 @@ function stylePreset(index: number) {
   --ehvp-controlbar-border: none;
   --ehvp-panel-border: none;
   --ehvp-panel-box-shadow: none;
-  --ehvp-big-images-gap: 2px;
+  --ehvp-big-images-gap: 0px;
   --ehvp-big-images-bg: #000000c4;
   --ehvp-clickable-color-hover: #90ea90;
   --ehvp-playing-progress-bar-color: #ffffffd0;
@@ -220,7 +220,7 @@ function stylePreset(index: number) {
   --ehvp-controlbar-border: 2px solid #760098;
   --ehvp-panel-border: 2px solid #760098;
   --ehvp-panel-box-shadow: none;
-  --ehvp-big-images-gap: 2px;
+  --ehvp-big-images-gap: 0px;
   --ehvp-big-images-bg: #919191b0;
   --ehvp-clickable-color-hover: #ff87ba;
   --ehvp-playing-progress-bar-color: #760098d0;
@@ -241,7 +241,7 @@ function stylePreset(index: number) {
   --ehvp-controlbar-border: 2px solid #ffe637;
   --ehvp-panel-border: 2px solid #ffe637;
   --ehvp-panel-box-shadow: none;
-  --ehvp-big-images-gap: 2px;
+  --ehvp-big-images-gap: 0px;
   --ehvp-big-images-bg: #000000d6;
   --ehvp-clickable-color-hover: #90ea90;
   --ehvp-playing-progress-bar-color: #ffe637d0;
@@ -262,7 +262,7 @@ function stylePreset(index: number) {
   --ehvp-controlbar-border: 2px solid #000000;
   --ehvp-panel-border: 2px solid #000000;
   --ehvp-panel-box-shadow: none;
-  --ehvp-big-images-gap: 2px;
+  --ehvp-big-images-gap: 0px;
   --ehvp-big-images-bg: #919191b0;
   --ehvp-clickable-color-hover: #ff0000;
   --ehvp-playing-progress-bar-color: #000000d0;

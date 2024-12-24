@@ -40,6 +40,9 @@ There are several ways to zoom images in big image reading mode:
 - Keyboard shortcuts
 - Zoom controls on the control bar: click the -/+ buttons, scroll the mouse wheel over the numbers, or drag the numbers left or right.
 
+## [How to maintain spacing between large images?]
+In CONF > Style, modify or add: .ehvp-root { --ehvp-big-images-gap: 2px; }
+
 ## [How to Open Images from a Specific Page?]
 
 In the thumbnail list interface, simply type the desired page number on your keyboard (without any prompt) and press Enter or your custom shortcuts.

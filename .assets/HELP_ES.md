@@ -25,6 +25,9 @@ Hay varias formas de hacer zoom en las imágenes en el modo de lectura de imáge
 - Atajos de teclado
 - Controles de zoom en la barra de control: haz clic en los botones -/+, desplaza la rueda del ratón sobre los números o arrastra los números hacia la izquierda o derecha.
 
+## [¿Cómo mantener el espacio entre imágenes grandes?]
+En CONF > Style, modifique o añada: .ehvp-root { --ehvp-big-images-gap: 2px; }
+
 ## [¿Cómo abrir imágenes de una página específica?]
 
 En la interfaz de lista de miniaturas, simplemente escribe el número de página deseado en tu teclado (sin necesidad de un aviso) y presiona Enter o utiliza tus atajos personalizados.

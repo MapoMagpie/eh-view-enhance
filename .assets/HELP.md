@@ -4,10 +4,25 @@ The script typically activates on gallery homepages or artist homepages. For exa
 
 When active, a **<🎑>** icon will appear at the bottom left of the page. Click it to enter the script's reading interface.
 
-## [Some Unresolved Issues]
+## [Some existing issues and their solutions.]
 
 - When using Firefox to browse Twitter|X, after navigating to some pages, you need to refresh the page for this script to work on that page.
 - When using Firefox to browse Twitter|X, the download function of this script may not work.
+
+### Solution
+These issues are caused by Twitter|X's Content Security Policy (CSP), which disables URL mutation detection and the Zip creation functionality.
+
+You can modify Twitter|X's response header `Content-Security-Policy` to `Content-Security-Policy: object-src '*'` using other extensions.
+
+For example, in the extension `Header Editor`, click the Add button:
+
+- Name: csp-remove (any name);
+- Rule type: Modify response header;
+- Match type: domain;
+- Match rules: x.com;
+- Execute type: normal;
+- Header name: content-security-policy;
+- Header value: object-src '*';
 
 ## [Can the Script's Entry Point or Control Bar be Relocated?]
 

@@ -4,10 +4,24 @@
 
 生效时，在页面的左下方会有一个**<🎑>**图标，点击后即可进入脚本的阅读界面。
 
-## [一些未能解决的问题。]
+## [一些现存的问题，以及解决方式。]
 
-- 使用Firefox浏览Twitter|X时，跳转到某个页面后，需要刷新页面才可以使此脚本在对应的页面生效。
+- 使用Firefox浏览Twitter|X时，跳转到其他页面后，需要刷新才可以使此脚本在该页面生效。
 - 使用Firefox浏览Twitter|X时，此脚本的下载功能可能无法使用。
+### 解决方式
+这些问题是由于Twitter|X的内容安全策略(CSP)导致，它使URL的变动检测和创建Zip功能失效。
+
+可以通过其他拓展修改Twitter|X的响应头`Content-Security-Policy`为`Content-Security-Policy: object-src '*'`
+
+例如在拓展`Header Editor`中，点击添加按钮:
+
+- Name: csp-remove(随意);
+- Rule type: Modify response header;
+- Match type: domain;
+- Match rules: x.com;
+- Execute type: normal;
+- Header name: content-security-policy;
+- Header value: object-src '*';
 
 ## [脚本的入口或控制栏可以更改位置吗？]
 

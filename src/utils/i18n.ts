@@ -601,10 +601,23 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
 <h2>[How to Use? Where is the Entry?]</h2>
 <p>The script typically activates on gallery homepages or artist homepages. For example, on E-Hentai, it activates on the gallery detail page, or on Twitter, it activates on the user&#39;s homepage or tweets.</p>
 <p>When active, a <strong>&lt;🎑&gt;</strong> icon will appear at the bottom left of the page. Click it to enter the script&#39;s reading interface.</p>
-<h2 style="color:red;">[Some Unresolved Issues]</h2>
+<h2 style="color:red;">[Some existing issues and their solutions.]</h2>
 <ul>
 <li>When using Firefox to browse Twitter|X, after navigating to some pages, you need to refresh the page for this script to work on that page.</li>
 <li>When using Firefox to browse Twitter|X, the download function of this script may not work.</li>
+</ul>
+<h4>Solution:</h4>
+<p>These issues are caused by Twitter|X&#39;s Content Security Policy (CSP), which disables URL mutation detection and the Zip creation functionality.</p>
+<p>You can modify Twitter|X&#39;s response header <strong>Content-Security-Policy</strong> to <strong>Content-Security-Policy: object-src '*'</strong> using other extensions.</p>
+<p>For example, in the extension <strong>Header Editor</strong>, click the Add button:</p>
+<ul>
+<li>Name: csp-remove(any name)</li>
+<li>Rule type: Modify response header</li>
+<li>Match type: domain</li>
+<li>Match rules: x.com</li>
+<li>Execute type: normal</li>
+<li>Header name: content-security-policy</li>
+<li>Header value: object-src '*'</li>
 </ul>
 <h2>[Can the Script&#39;s Entry Point or Control Bar be Relocated?]</h2>
 <p>Yes! At the bottom of the configuration panel, there&#39;s a <strong>Drag to Move</strong> option. Drag the icon to reposition the control bar anywhere on the page.</p>
@@ -670,10 +683,23 @@ Report issues here: <a target="_blank" href="https://github.com/MapoMagpie/eh-vi
 <h2>[如何使用？入口在哪里？]</h2>
 <p>脚本一般生效于画廊详情页或画家的主页或作品页。比如在E-Hentai上，生效于画廊详情页，或者在Twitter上，生效于推主的主页或推文。</p>
 <p>生效时，在页面的左下方会有一个<strong>&lt;🎑&gt;</strong>图标，点击后即可进入脚本的阅读界面。</p>
-<h2 style="color:red;">[一些未能解决的问题。]</h2>
+<h2 style="color:red;">[一些现存的问题，以及解决方式。]</h2>
 <ul>
-<li>使用Firefox浏览Twitter|X时，跳转到某个页面后，需要刷新页面才可以使此脚本在对应的页面生效。</li>
+<li>使用Firefox浏览Twitter|X时，跳转到其他页面后，需要刷新才可以使此脚本在该页面生效。</li>
 <li>使用Firefox浏览Twitter|X时，此脚本的下载功能可能无法使用。</li>
+</ul>
+<h4>解决方式:</h4>
+<p>这些问题是由于Twitter|X的内容安全策略(CSP)导致，它使URL的变动检测和创建Zip功能失效。</p>
+<p>可以通过其他拓展修改Twitter|X的响应头<strong>Content-Security-Policy</strong>为<strong>Content-Security-Policy: object-src '*'</strong></p>
+<p>例如在拓展<strong>Header Editor</strong>中，点击添加按钮:</p>
+<ul>
+<li>Name: csp-remove(随意)</li>
+<li>Rule type: Modify response header</li>
+<li>Match type: domain</li>
+<li>Match rules: x.com</li>
+<li>Execute type: normal</li>
+<li>Header name: content-security-policy</li>
+<li>Header value: object-src '*'</li>
 </ul>
 <h2>[脚本的入口或控制栏可以更改位置吗？]</h2>
 <p>可以！在配置面板的下方，有一个<strong>拖拽移动</strong>的选项，对着图标进行拖动，你可以将控制栏移动到页面上的任意位置。</p>

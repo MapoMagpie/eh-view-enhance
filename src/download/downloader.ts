@@ -278,7 +278,11 @@ export class Downloader {
       await save();
       this.done = true;
     } catch (error: any) {
-      EBUS.emit("notify-message", "error", `packaging failed, ${error.toString()}`);
+      let reason = error.toString() as string;
+      if (reason.includes(`autoAllocateChunkSize`)) {
+        reason = "Create Zip archive prevented by The content security policy of this page. Please refer to the CONF > Help for a solution.";
+      }
+      EBUS.emit("notify-message", "error", `packaging failed, ${reason}`);
       throw error;
     } finally {
       this.abort(this.done ? "downloaded" : "downloadFailed");

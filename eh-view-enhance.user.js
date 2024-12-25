@@ -4974,7 +4974,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
       if (!contentKey) throw new Error("cannot find content key");
       try {
-        const decryption = decrypt(contentKey);
+        const decryption = await decrypt(contentKey);
         const images = JSON.parse(decryption);
         const digits = images.length.toString().length;
         return images.map((img, i) => {
@@ -5000,7 +5000,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       if (data.code !== 200) throw new Error("fetch chater detail error: " + data.message);
       let details;
       try {
-        const decryption = decrypt(data.results);
+        const decryption = await decrypt(data.results);
         details = JSON.parse(decryption);
       } catch (error) {
         throw new Error("parse chapter details error: " + error.toString());
@@ -5019,39 +5019,29 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
   }
   const PATH_WORD_REGEX = /\/comic\/(\w*)/;
-  function initCypto() {
-    const c = [];
-    function r(i) {
-      if (c[i]) return c[i].exports;
-      c[i] = {
-        i,
-        l: false,
-        exports: {}
-      };
-      const e = c[i];
-      const wj = webpackJsonp;
-      return wj[0][1][i].call(e.exports, e, e.exports, r), e.l = true, e.exports;
-    }
-    return r(6);
-  }
-  function decrypt(raw) {
-    const dio = "xxxmanga.woo.key";
-    const cypto = initCypto();
-    const str = raw;
-    const header = str.substring(0, 16);
-    const body = str.substring(16, str.length);
-    const dioEn = cypto.enc.Utf8["parse"](dio);
-    const headerEn = cypto.enc.Utf8["parse"](header);
-    const bodyDe = function(b) {
-      const bHex = cypto.enc.Hex.parse(b);
-      const b64 = cypto.enc.Base64.stringify(bHex);
-      return cypto.AES.decrypt(b64, dioEn, {
-        iv: headerEn,
-        mode: cypto.mode["CBC"],
-        padding: cypto.pad.Pkcs7
-      }).toString(cypto["enc"].Utf8).toString();
-    }(body);
-    return bodyDe;
+  async function decrypt(raw) {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const dioKey = encoder.encode("xxxmanga.woo.key");
+    const header = raw.substring(0, 16);
+    const body = raw.substring(16);
+    const iv = encoder.encode(header);
+    const bodyBytes = new Uint8Array(
+      body.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
+    );
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      dioKey,
+      { name: "AES-CBC" },
+      false,
+      ["decrypt"]
+    );
+    const decryptedBytes = await crypto.subtle.decrypt(
+      { name: "AES-CBC", iv },
+      cryptoKey,
+      bodyBytes
+    );
+    return decoder.decode(decryptedBytes);
   }
 
   class MHGMatcher extends BaseMatcher {

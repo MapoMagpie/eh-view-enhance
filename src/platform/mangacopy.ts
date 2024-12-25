@@ -31,7 +31,7 @@ export class MangaCopyMatcher extends BaseMatcher<string> {
     const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
     if (!contentKey) throw new Error("cannot find content key");
     try {
-      const decryption = decrypt(contentKey);
+      const decryption = await decrypt(contentKey);
       const images = JSON.parse(decryption) as { url: string }[];
       const digits = images.length.toString().length;
       return images.map((img, i) => {
@@ -57,7 +57,7 @@ export class MangaCopyMatcher extends BaseMatcher<string> {
     if (data.code !== 200) throw new Error("fetch chater detail error: " + data.message);
     let details: MCChapterDetails;
     try {
-      const decryption = decrypt(data.results);
+      const decryption = await decrypt(data.results);
       details = JSON.parse(decryption);
     } catch (error) {
       throw new Error("parse chapter details error: " + (error as any).toString());
@@ -78,42 +78,72 @@ export class MangaCopyMatcher extends BaseMatcher<string> {
 
 const PATH_WORD_REGEX = /\/comic\/(\w*)/;
 
-function initCypto(): any {
-  const c: { exports: any, i: number, l: boolean }[] = [];
-  function r(i: number) {
-    if (c[i]) return c[i].exports;
-    c[i] = {
-      i: i,
-      l: false,
-      exports: {}
-    };
-    const e = c[i];
-    // @ts-ignore
-    const wj = webpackJsonp;
-    return wj[0][1][i].call(e.exports, e, e.exports, r), e.l = true, e.exports;
-  }
-  return r(6);
+async function decrypt(raw: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  // Key and IV
+  const dioKey = encoder.encode("xxxmanga.woo.key");
+  const header = raw.substring(0, 16); // First 16 characters as IV
+  const body = raw.substring(16); // Rest is the encrypted data
+  const iv = encoder.encode(header);
+  // Decode body from Hex to Uint8Array
+  const bodyBytes = new Uint8Array(
+    body.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+  );
+  // Import the AES key
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    dioKey,
+    { name: "AES-CBC" },
+    false,
+    ["decrypt"]
+  );
+  // Decrypt
+  const decryptedBytes = await crypto.subtle.decrypt(
+    { name: "AES-CBC", iv: iv, },
+    cryptoKey,
+    bodyBytes
+  );
+  // Convert decrypted data to string
+  return decoder.decode(decryptedBytes);
 }
 
-function decrypt(raw: string): string {
-  const dio = "xxxmanga.woo.key";
-  const cypto: any = initCypto();
-  const str = raw;
-  const header = str.substring(0x0, 0x10);
-  const body = str.substring(0x10, str.length);
-  const dioEn = cypto.enc.Utf8["parse"](dio);
-  const headerEn = cypto.enc.Utf8["parse"](header);
-  const bodyDe = (function(b: string) {
-    const bHex = cypto.enc.Hex.parse(b);
-    const b64 = cypto.enc.Base64.stringify(bHex);
-    return cypto.AES.decrypt(b64, dioEn, {
-      iv: headerEn,
-      mode: cypto.mode["CBC"],
-      padding: cypto.pad.Pkcs7,
-    }).toString(cypto["enc"].Utf8).toString();
-  })(body);
-  return bodyDe;
-}
+// function decrypt(raw: string): string {
+//   const dio = "xxxmanga.woo.key";
+//   const cypto: any = initCypto();
+//   const str = raw;
+//   const header = str.substring(0x0, 0x10);
+//   const body = str.substring(0x10, str.length);
+//   const dioEn = cypto.enc.Utf8["parse"](dio);
+//   const headerEn = cypto.enc.Utf8["parse"](header);
+//   const bodyDe = (function(b: string) {
+//     const bHex = cypto.enc.Hex.parse(b);
+//     const b64 = cypto.enc.Base64.stringify(bHex);
+//     return cypto.AES.decrypt(b64, dioEn, {
+//       iv: headerEn,
+//       mode: cypto.mode["CBC"],
+//       padding: cypto.pad.Pkcs7,
+//     }).toString(cypto["enc"].Utf8).toString();
+//   })(body);
+//   return bodyDe;
+// }
+// 
+// function initCypto(): any {
+//   const c: { exports: any, i: number, l: boolean }[] = [];
+//   function r(i: number) {
+//     if (c[i]) return c[i].exports;
+//     c[i] = {
+//       i: i,
+//       l: false,
+//       exports: {}
+//     };
+//     const e = c[i];
+//     // @ts-ignore
+//     const wj = webpackJsonp;
+//     return wj[0][1][i].call(e.exports, e, e.exports, r), e.l = true, e.exports;
+//   }
+//   return r(6);
+// }
 
 type MCGroupInfo = {
   path_word: string,

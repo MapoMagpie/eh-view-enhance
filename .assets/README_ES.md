@@ -56,7 +56,7 @@ Vista previa (si no puedes ver la imagen, haz clic [aqui](./preview.md)):
 - [Steam: Screenshots](https://steamcommunity.com/id/some/screenshots)
 - [wnacg.com](https://www.wnacg.com)
 - [hentainexus.com](https://hentainexus.com)
-- [koharu.to](https://koharu.to)
+- [niyaniya.moe(koharu.to)](https://niyaniya.moe)
 - [manhuagui.com](https://www.manhuagui.com/comic/7580)
 - [mangacopy.com](https://www.mangacopy.com) | [copymanga.tv](https://www.copymanga.tv)
 - [e621.net](https://e621.net)

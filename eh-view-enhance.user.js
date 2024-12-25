@@ -4866,7 +4866,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     };
   }
 
-  const REGEXP_EXTRACT_GALLERY_ID = /koharu.to\/\w+\/(\d+\/\w+)/;
+  const REGEXP_EXTRACT_GALLERY_ID = /niyaniya.moe\/\w+\/(\d+\/\w+)/;
   const NAMESPACE_MAP = {
     0: "misc",
     1: "artist",
@@ -4879,7 +4879,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   };
   class KoharuMatcher extends BaseMatcher {
     name() {
-      return "Koharu";
+      return "niyaniya.moe";
     }
     meta;
     galleryMeta() {
@@ -4904,7 +4904,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         throw new Error("invaild url: " + source);
       }
       const galleryID = matches[1];
-      const detailAPI = `https://api.koharu.to/books/detail/${galleryID}`;
+      const detailAPI = `https://api.niyaniya.moe/books/detail/${galleryID}`;
       const detail = await window.fetch(detailAPI).then((res) => res.json()).then((j) => j).catch((reason) => new Error(reason.toString()));
       if (detail instanceof Error) {
         throw detail;
@@ -4912,7 +4912,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.createMeta(detail);
       const [w, data] = Object.entries(detail.data).sort((a, b) => b[1].size - a[1].size).find(([_, v]) => v.id !== void 0 && v.public_key !== void 0) ?? [void 0, void 0];
       if (w === void 0 && data === void 0) throw new Error("cannot find resolution from gallery detail");
-      const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}?v=${detail.updated_at ?? detail.created_at}&w=${w}`;
+      const dataAPI = `https://api.niyaniya.moe/books/data/${galleryID}/${data.id}/${data.public_key}?v=${detail.updated_at ?? detail.created_at}&w=${w}`;
       const items = await window.fetch(dataAPI).then((res) => res.json()).then((j) => j).catch((reason) => new Error(reason.toString()));
       if (items instanceof Error) {
         throw new Error(`koharu updated their api, ${items.toString()}`);
@@ -4935,13 +4935,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       return { url: node.originSrc };
     }
     workURL() {
-      return /koharu.to\/(g|reader)\/\d+\/\w+/;
+      return /niyaniya.moe\/(g|reader)\/\d+\/\w+/;
     }
     headers() {
       return {
-        "Referer": "https://koharu.to/",
+        "Referer": "https://niyaniya.moe/",
         "Origin": window.location.origin
-        // "TE": "trailers",
       };
     }
   }

@@ -3,7 +3,7 @@ import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
 import { BaseMatcher, OriginMeta } from "./platform";
 
-const REGEXP_EXTRACT_GALLERY_ID = /koharu.to\/\w+\/(\d+\/\w+)/;
+const REGEXP_EXTRACT_GALLERY_ID = /niyaniya.moe\/\w+\/(\d+\/\w+)/;
 
 type BookDataDetail = {
   id?: string, public_key?: string, size: number,
@@ -49,7 +49,7 @@ const NAMESPACE_MAP: Record<number, string> = {
 
 export class KoharuMatcher extends BaseMatcher<string> {
   name(): string {
-    return "Koharu";
+    return "niyaniya.moe";
   }
 
   meta?: GalleryMeta;
@@ -79,7 +79,7 @@ export class KoharuMatcher extends BaseMatcher<string> {
       throw new Error("invaild url: " + source);
     }
     const galleryID = matches[1];
-    const detailAPI = `https://api.koharu.to/books/detail/${galleryID}`;
+    const detailAPI = `https://api.niyaniya.moe/books/detail/${galleryID}`;
     const detail = await window.fetch(detailAPI).then(res => res.json()).then(j => j as BookDetail).catch(reason => new Error(reason.toString()));
     if (detail instanceof Error) {
       throw detail;
@@ -87,7 +87,7 @@ export class KoharuMatcher extends BaseMatcher<string> {
     this.createMeta(detail);
     const [w, data] = Object.entries(detail.data).sort((a, b) => b[1].size - a[1].size).find(([_, v]) => v.id !== undefined && v.public_key !== undefined) ?? [undefined, undefined];
     if (w === undefined && data === undefined) throw new Error("cannot find resolution from gallery detail");
-    const dataAPI = `https://api.koharu.to/books/data/${galleryID}/${data.id}/${data.public_key}?v=${detail.updated_at ?? detail.created_at}&w=${w}`;
+    const dataAPI = `https://api.niyaniya.moe/books/data/${galleryID}/${data.id}/${data.public_key}?v=${detail.updated_at ?? detail.created_at}&w=${w}`;
     const items = await window.fetch(dataAPI).then(res => res.json()).then(j => j as BookData).catch(reason => new Error(reason.toString()));
     if (items instanceof Error) {
       throw new Error(`koharu updated their api, ${items.toString()}`);
@@ -111,14 +111,13 @@ export class KoharuMatcher extends BaseMatcher<string> {
     return { url: node.originSrc! };
   }
   workURL(): RegExp {
-    return /koharu.to\/(g|reader)\/\d+\/\w+/;
+    return /niyaniya.moe\/(g|reader)\/\d+\/\w+/;
   }
 
   headers(): Record<string, string> {
     return {
-      "Referer": "https://koharu.to/",
+      "Referer": "https://niyaniya.moe/",
       "Origin": window.location.origin,
-      // "TE": "trailers",
     }
   }
 

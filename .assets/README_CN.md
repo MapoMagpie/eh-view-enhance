@@ -56,7 +56,7 @@
 - [Steam: Screenshots](https://steamcommunity.com/id/some/screenshots)
 - [wnacg.com](https://www.wnacg.com)
 - [hentainexus.com](https://hentainexus.com)
-- [koharu.to](https://koharu.to)
+- [niyaniya.moe(koharu.to)](https://niyaniya.moe)
 - [漫画柜](https://www.manhuagui.com/comic/7580)
 - [拷贝漫画](https://www.mangacopy.com) | [拷贝漫画](https://www.copymanga.tv)
 - [e621.net](https://e621.net)

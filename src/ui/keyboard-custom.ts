@@ -109,7 +109,8 @@ export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents
     const addKeyBoardDesc = (event: KeyboardEvent | MouseEvent) => {
       event.preventDefault();
       if (event instanceof KeyboardEvent) {
-        if (event.key === "alt" || event.key === "shift" || event.key === "control") return;
+        const checkKey = event.key.toLowerCase();
+        if (checkKey === "alt" || checkKey === "shift" || checkKey === "control" || checkKey === "meta") return;
       }
       const key = parseKey(event);
       if ((conf.keyboards[category] as IDKeys)[id] !== undefined) {
@@ -120,17 +121,19 @@ export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents
       saveConf(conf);
       addKeyboardDescElement(button, category, id, key);
       button.textContent = "+";
+      button.removeEventListener("keyup", addKeyBoardDesc);
+      button.removeEventListener("mouseup", addKeyBoardDesc);
     };
     button.addEventListener("click", (event) => {
       event.preventDefault();
       button.textContent = "Press Key";
-      button.addEventListener("keydown", addKeyBoardDesc, { once: true });
-      button.addEventListener("mousedown", addKeyBoardDesc, { once: true });
+      button.addEventListener("keyup", addKeyBoardDesc, { once: false });
+      button.addEventListener("mouseup", addKeyBoardDesc, { once: false });
     });
     button.addEventListener("mouseleave", () => {
       button.textContent = "+";
-      button.removeEventListener("keydown", addKeyBoardDesc)
-      button.removeEventListener("mousedown", addKeyBoardDesc);
+      button.removeEventListener("keyup", addKeyBoardDesc);
+      button.removeEventListener("mouseup", addKeyBoardDesc);
     });
   });
 }

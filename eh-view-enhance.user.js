@@ -6072,7 +6072,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       return list;
     }
     async fetchOriginMeta(node) {
-      const matches = node.href.match(PID_EXTRACT);
+      const matches = node.originSrc.match(PID_EXTRACT);
       if (!matches || matches.length < 2) {
         return { url: node.originSrc };
       }

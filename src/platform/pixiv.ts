@@ -305,7 +305,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
-    const matches = node.href.match(PID_EXTRACT);
+    const matches = node.originSrc!.match(PID_EXTRACT);
     if (!matches || matches.length < 2) {
       return { url: node.originSrc! }; // cannot extract pid, should throw an error
     }

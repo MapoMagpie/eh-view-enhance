@@ -1508,17 +1508,21 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const batchPromises = batch.map(
         (url, index) => window.fetch(url).then((resp) => {
           if (resp.ok) {
-            switch (respType) {
-              case "text":
-                return resp.text();
-              case "json":
-                return resp.json();
-              case "arraybuffer":
-                return resp.arrayBuffer();
+            try {
+              switch (respType) {
+                case "text":
+                  return resp.text();
+                case "json":
+                  return resp.json();
+                case "arraybuffer":
+                  return resp.arrayBuffer();
+              }
+            } catch (error) {
+              throw new Error(`failed to fetch ${url}: ${resp.status} ${error}`);
             }
           }
           throw new Error(`failed to fetch ${url}: ${resp.status} ${resp.statusText}`);
-        }).then((raw) => results[index + i] = raw)
+        }).then((raw) => results[index + i] = raw).catch((reason) => results[index + i] = new Error(reason))
       );
       await Promise.all(batchPromises);
       i += concurrency;
@@ -3556,6 +3560,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const assets = await batchFetch(projectURLs, 10, "json");
       const ret = [];
       for (const asset of assets) {
+        if (asset instanceof Error) {
+          evLog("error", asset.message);
+          EBUS.emit("notify-message", "error", asset.message, 8e3);
+          continue;
+        }
         this.info.projects++;
         this.tags[asset.slug] = asset.tags;
         for (let i = 0; i < asset.assets.length; i++) {
@@ -6051,8 +6060,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       for (let i = 0; i < pids.length; i++) {
         const pid = pids[i];
         const data = pageListData[i];
-        if (data.error) {
-          throw new Error(`Fetch page list error: ${data.message}`);
+        if (data instanceof Error || data.error) {
+          const reason = `pid:[${pid}], ${data.message}`;
+          evLog("error", reason);
+          EBUS.emit("notify-message", "error", reason, 8e3);
+          continue;
         }
         this.pageCount += data.body.length;
         const digits = data.body.length.toString().length;

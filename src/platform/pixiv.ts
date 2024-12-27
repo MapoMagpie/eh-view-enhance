@@ -7,6 +7,7 @@ import { conf } from "../config";
 import * as zip_js from "@zip.js/zip.js";
 import { batchFetch } from "../utils/query";
 import { Chapter } from "../page-fetcher";
+import EBUS from "../event-bus";
 
 type AuthorPIDs = {
   id?: string,
@@ -284,8 +285,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     for (let i = 0; i < pids.length; i++) {
       const pid = pids[i];
       const data = pageListData[i];
-      if (data.error) {
-        throw new Error(`Fetch page list error: ${data.message}`);
+      if (data instanceof Error || data.error) {
+        const reason = `pid:[${pid}], ${data.message}`;
+        evLog("error", reason);
+        EBUS.emit("notify-message", "error", reason, 8000);
+        continue;
       }
       this.pageCount += data.body.length;
       const digits = data.body.length.toString().length;

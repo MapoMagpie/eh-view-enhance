@@ -1,5 +1,7 @@
 import { GalleryMeta } from "../download/gallery-meta";
+import EBUS from "../event-bus";
 import ImageNode from "../img-node";
+import { evLog } from "../utils/ev-log";
 import { batchFetch } from "../utils/query";
 import { BaseMatcher, OriginMeta } from "./platform";
 
@@ -32,6 +34,11 @@ export class ArtStationMatcher extends BaseMatcher<ArtStationProject[]> {
     const assets = await batchFetch<ArtStationAsset>(projectURLs, 10, "json");
     const ret: ImageNode[] = [];
     for (const asset of assets) {
+      if (asset instanceof Error) {
+        evLog("error", asset.message);
+        EBUS.emit("notify-message", "error", asset.message, 8000);
+        continue;
+      }
       this.info.projects++;
       this.tags[asset.slug] = asset.tags;
       for (let i = 0; i < asset.assets.length; i++) {

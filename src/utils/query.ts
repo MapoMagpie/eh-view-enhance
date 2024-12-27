@@ -49,7 +49,7 @@ export function fetchImage(url: string): Promise<Blob> {
     }, {}, 10 * 1000);
   });
 }
-export async function batchFetch<T>(urls: string[], concurrency: number, respType: "text" | "json" | "arraybuffer" = "text"): Promise<T[]> {
+export async function batchFetch<T>(urls: string[], concurrency: number, respType: "text" | "json" | "arraybuffer" = "text"): Promise<(T | Error)[]> {
   const results = new Array(urls.length);
   let i = 0;
   while (i < urls.length) {
@@ -57,17 +57,21 @@ export async function batchFetch<T>(urls: string[], concurrency: number, respTyp
     const batchPromises = batch.map((url, index) =>
       window.fetch(url).then((resp) => {
         if (resp.ok) {
-          switch (respType) {
-            case "text":
-              return resp.text();
-            case "json":
-              return resp.json();
-            case "arraybuffer":
-              return resp.arrayBuffer();
+          try {
+            switch (respType) {
+              case "text":
+                return resp.text();
+              case "json":
+                return resp.json();
+              case "arraybuffer":
+                return resp.arrayBuffer();
+            }
+          } catch (error) {
+            throw new Error(`failed to fetch ${url}: ${resp.status} ${error}`);
           }
         }
         throw new Error(`failed to fetch ${url}: ${resp.status} ${resp.statusText}`);
-      }).then(raw => results[index + i] = raw)
+      }).then(raw => results[index + i] = raw).catch(reason => results[index + i] = new Error(reason))
     );
     await Promise.all(batchPromises);
     i += concurrency;

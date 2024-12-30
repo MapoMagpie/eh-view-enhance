@@ -1626,7 +1626,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
             case 2 /* DATA */:
               const ret = await this.fetchImageData();
               [this.data, this.contentType] = ret;
-              [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.node.originSrc);
+              [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.node);
               if (this.contentType.startsWith("text")) {
                 const str = new TextDecoder().decode(this.data);
                 evLog("error", "unexpect content:\n", str);
@@ -3250,7 +3250,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     workURLs() {
       return [this.workURL()];
     }
-    async processData(data, contentType, _url) {
+    async processData(data, contentType, _node) {
       return [data, contentType];
     }
     headers() {
@@ -3353,9 +3353,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
       return list;
     }
-    async processData(data, contentType, url) {
+    async processData(data, contentType, node) {
       const reg = /(\d+)\/(\d+)\.(\w+)/;
-      const matches = url.match(reg);
+      const matches = node.originSrc.match(reg);
       const gid = matches[1];
       const scrambleID = 220980;
       if (Number(gid) < scrambleID) return [data, contentType];
@@ -3615,6 +3615,213 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const project = await window.fetch(url).then((res) => res.json());
       return project.data;
     }
+  }
+
+  const EXTRACT_C_DATA = /var C_DATA='(.*?)'/;
+  const CDATA_KEY = "KcmiZ8owmiBoPRMf";
+  function decrypt$1(key, raw) {
+    const cryptoJS = CryptoJS;
+    if (!cryptoJS) throw new Error("cryptoJS undefined");
+    var keyenc = cryptoJS.enc.Utf8.parse(key);
+    var ret = cryptoJS.AES.decrypt(raw, keyenc, {
+      mode: cryptoJS.mode.ECB,
+      padding: cryptoJS.pad.Pkcs7
+    });
+    return cryptoJS.enc.Utf8.stringify(ret).toString();
+  }
+  function parseBase64ToUtf8(raw) {
+    const decodedBytes = Uint8Array.from(atob(raw), (char) => char.charCodeAt(0));
+    const decoder = new TextDecoder();
+    return decoder.decode(decodedBytes);
+  }
+  function initColaMangaKeyMap() {
+    return new Promise((resolve, reject) => {
+      const keymapRaw = window.localStorage.getItem("colamanga-key-map");
+      if (keymapRaw) {
+        try {
+          const keymap = JSON.parse(keymapRaw);
+          resolve(keymap);
+          return;
+        } catch (_) {
+        }
+      }
+      const readerJSURL = "https://www.colamanga.com/js/manga.read.js";
+      const elem = document.createElement("script");
+      elem.addEventListener("load", async () => {
+        try {
+          const text = await window.fetch(readerJSURL).then((res) => res.text());
+          const matches = text.matchAll(/if\(_0x\w+==0x(\w+)\)return _0x5cdd4f\(0x(\w+)\);/gm);
+          const keymap = {};
+          let isEmpty = true;
+          for (const m of matches) {
+            const key = m[1];
+            const index = m[2];
+            const val = _0x79eb(parseInt("0x" + index));
+            keymap[parseInt("0x" + key)] = val;
+            isEmpty = false;
+          }
+          if (isEmpty) throw new Error("cannot init key map from " + readerJSURL);
+          window.localStorage.setItem("colamanga-key-map", JSON.stringify(keymap));
+          resolve(keymap);
+        } catch (reason) {
+          reject(reason);
+        }
+      });
+      elem.src = readerJSURL;
+      elem.type = "text/javascript";
+      document.querySelector("head").append(elem);
+    });
+  }
+  class ColaMangaMatcher extends BaseMatcher {
+    infoMap = {};
+    keymap;
+    name() {
+      return "colamanga";
+    }
+    async fetchChapters() {
+      this.keymap = await initColaMangaKeyMap();
+      const thumbimg = document.querySelector("dt.fed-part-rows > a")?.getAttribute("data-original") || void 0;
+      const list = Array.from(document.querySelectorAll(".fed-part-rows > li > a"));
+      return list.map((a, index) => {
+        return {
+          id: index,
+          title: a.title,
+          source: a.href,
+          queue: [],
+          thumbimg
+        };
+      });
+    }
+    async *fetchPagesSource(source) {
+      yield source.source;
+    }
+    async parseImgNodes(page, _chapterID) {
+      const raw = await window.fetch(page).then((res) => res.text());
+      const cdata = raw.match(EXTRACT_C_DATA)?.[1];
+      if (!cdata) throw new Error("cannot find C_DATA from page: " + page);
+      let infoRaw = decrypt$1(CDATA_KEY, parseBase64ToUtf8(cdata));
+      infoRaw = infoRaw.replace("};", "},");
+      infoRaw = infoRaw.replaceAll("info=", "info:");
+      infoRaw = "{" + infoRaw + "}";
+      infoRaw = infoRaw.replaceAll(/(\w+):/g, '"$1":');
+      const info = JSON.parse(infoRaw);
+      const [count, path] = decryptInfo(info.mh_info.enc_code1, info.mh_info.enc_code2, info.mh_info.mhid);
+      const nodes = [];
+      const href = window.location.origin + info.mh_info.webPath + info.mh_info.pageurl;
+      this.infoMap[href] = info;
+      for (let start = info.mh_info.startimg; start <= parseInt(count); start++) {
+        const [name, url] = getImageURL(start, path, info);
+        nodes.push(new ImageNode("", href, name, void 0, url));
+      }
+      return nodes;
+    }
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
+    }
+    async processData(data, _contentType, node) {
+      const info = this.infoMap[node.href];
+      if (!info) throw new Error("cannot found info from " + node.href);
+      if (info.image_info.imgKey) {
+        const decoded = decodeImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap);
+        return [decoded, _contentType];
+      } else {
+        return [data, _contentType];
+      }
+    }
+    workURL() {
+      return /colamanga.com\/manga-.*\/?$/;
+    }
+    headers() {
+      return {
+        "Referer": window.location.href,
+        "Origin": window.location.origin
+      };
+    }
+  }
+  function convertUint8ArrayToWordArray(data) {
+    let words = [];
+    let i = 0;
+    let len = data.length;
+    while (i < len) {
+      words.push(
+        data[i++] << 24 | data[i++] << 16 | data[i++] << 8 | data[i++]
+      );
+    }
+    return {
+      sigBytes: words.length * 4,
+      words
+    };
+  }
+  function convertWordArrayToUint8Array(data) {
+    const len = data.words.length;
+    const u8_array = new Uint8Array(len << 2);
+    let offset = 0;
+    let word;
+    for (let i = 0; i < len; i++) {
+      word = data.words[i];
+      u8_array[offset++] = word >> 24;
+      u8_array[offset++] = word >> 16 & 255;
+      u8_array[offset++] = word >> 8 & 255;
+      u8_array[offset++] = word & 255;
+    }
+    return u8_array;
+  }
+  function decodeImageData(data, keyType, imgKey, keymap) {
+    let kRaw;
+    if (keyType !== "" && keyType !== "0") {
+      kRaw = keymap[parseInt(keyType)];
+    } else {
+      try {
+        kRaw = decrypt$1("KcmiZ8owmiBoPRMf", imgKey) || decrypt$1("ZIJ0EF9Twsfq8JOY", imgKey);
+      } catch (_) {
+        kRaw = decrypt$1("ZIJ0EF9Twsfq8JOY", imgKey);
+      }
+    }
+    const start = performance.now();
+    const wordArray = convertUint8ArrayToWordArray(data);
+    const encArray = { ciphertext: wordArray };
+    const cryptoJS = CryptoJS;
+    const key = cryptoJS.enc.Utf8.parse(kRaw);
+    const de = cryptoJS.AES.decrypt(encArray, key, {
+      iv: cryptoJS.enc.Utf8.parse("0000000000000000"),
+      mode: cryptoJS.mode.CBC,
+      padding: cryptoJS.pad.Pkcs7
+    });
+    const ret = convertWordArrayToUint8Array(de);
+    const end = performance.now();
+    console.log("colamanga decode image data: ", end - start);
+    return ret;
+  }
+  function decryptInfo(countEncCode, pathEncCode, mhid) {
+    let count;
+    try {
+      count = decrypt$1("dDeIieDgQpwVQZsJ", parseBase64ToUtf8(countEncCode));
+      if (count == "" || isNaN(parseInt(count))) {
+        count = decrypt$1("ahCeZc7ZXoiX7Ljq", parseBase64ToUtf8(countEncCode));
+      }
+    } catch (_error) {
+      count = decrypt$1("ahCeZc7ZXoiX7Ljq", parseBase64ToUtf8(countEncCode));
+    }
+    let path;
+    try {
+      path = decrypt$1("i8XLTfT8Mvu1Fcv2", parseBase64ToUtf8(pathEncCode));
+      if (path == "" || !path.startsWith(mhid + "/")) {
+        path = decrypt$1("BGfhxlJUxlWCgdLZ", parseBase64ToUtf8(pathEncCode));
+      }
+    } catch (_error) {
+      path = decrypt$1("BGfhxlJUxlWCgdLZ", parseBase64ToUtf8(pathEncCode));
+    }
+    return [count, path];
+  }
+  function getImageURL(index, path, info) {
+    const start = (info.mh_info.startimg + index - 1).toString().padStart(4, "0");
+    let imgName = start + ".jpg";
+    if (info.image_info.imgKey != void 0 && info.image_info.imgKey != "") {
+      imgName = start + ".enc.webp";
+    }
+    const host = window.location.host.replace("www.", "");
+    const url = "https://img" + info.mh_info.use_server + "." + host + "/comic/" + encodeURI(path) + imgName;
+    return [imgName, url];
   }
 
   class DanbooruMatcher extends BaseMatcher {
@@ -5973,8 +6180,8 @@ duration 0.04`).join("\n");
         this.api = new PixivArtistWorksAPI();
       }
     }
-    async processData(data, contentType, url) {
-      const meta = this.ugoiraMetas[url];
+    async processData(data, contentType, node) {
+      const meta = this.ugoiraMetas[node.originSrc];
       if (!meta) return [data, contentType];
       const zipReader = new zip_js__namespace.ZipReader(new zip_js__namespace.Uint8ArrayReader(data));
       const start = performance.now();
@@ -6693,7 +6900,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new ArcaMatcher(),
       new ArtStationMatcher(),
       new AkumaMatcher(),
-      new InstagramMatcher()
+      new InstagramMatcher(),
+      new ColaMangaMatcher()
     ];
   }
   function adaptMatcher(url) {
@@ -7044,17 +7252,20 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         saveConf(conf);
         addKeyboardDescElement(button, category, id, key);
         button.textContent = "+";
+        button.removeAttribute("d-pressing");
         button.removeEventListener("keyup", addKeyBoardDesc);
         button.removeEventListener("mouseup", addKeyBoardDesc);
       };
       button.addEventListener("click", (event) => {
         event.preventDefault();
         button.textContent = "Press Key";
+        button.setAttribute("d-pressing", "");
         button.addEventListener("keyup", addKeyBoardDesc, { once: false });
         button.addEventListener("mouseup", addKeyBoardDesc, { once: false });
       });
       button.addEventListener("mouseleave", () => {
         button.textContent = "+";
+        button.removeAttribute("d-pressing");
         button.removeEventListener("keyup", addKeyBoardDesc);
         button.removeEventListener("mouseup", addKeyBoardDesc);
       });
@@ -10454,7 +10665,9 @@ ${chapters.map((c, i) => `<div><label>
     initEvent() {
       this.root.addEventListener("wheel", (event) => this.onWheel(event));
       this.root.addEventListener("scroll", (event) => this.onScroll(event), { passive: false });
-      this.root.addEventListener("contextmenu", (event) => event.preventDefault());
+      this.root.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+      });
       this.root.addEventListener("mousedown", (mdevt) => {
         if (mdevt.button !== 0) return;
         if (mdevt.target.classList.contains("img-land")) return;

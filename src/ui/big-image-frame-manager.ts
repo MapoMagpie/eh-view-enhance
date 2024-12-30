@@ -206,7 +206,9 @@ export class BigImageFrameManager {
   initEvent() {
     this.root.addEventListener("wheel", (event) => this.onWheel(event));
     this.root.addEventListener("scroll", (event) => this.onScroll(event), { passive: false });
-    this.root.addEventListener("contextmenu", (event) => event.preventDefault());
+    this.root.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+    });
     // for click
     this.root.addEventListener("mousedown", (mdevt) => {
       if (mdevt.button !== 0) return;

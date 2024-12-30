@@ -31,7 +31,7 @@ export interface Matcher<P> {
   galleryMeta(doc: Document, chapter?: Chapter): GalleryMeta;
   title(doc: Document): string;
   workURLs(): RegExp[];
-  processData(data: Uint8Array, contentType: string, url: string): Promise<[Uint8Array, string]>;
+  processData(data: Uint8Array, contentType: string, node: ImageNode): Promise<[Uint8Array, string]>;
   headers(): Record<string, string>;
 }
 
@@ -66,7 +66,7 @@ export abstract class BaseMatcher<P> implements Matcher<P> {
     return [this.workURL()];
   }
 
-  async processData(data: Uint8Array, contentType: string, _url: string): Promise<[Uint8Array, string]> {
+  async processData(data: Uint8Array, contentType: string, _node: ImageNode): Promise<[Uint8Array, string]> {
     return [data, contentType];
   }
 

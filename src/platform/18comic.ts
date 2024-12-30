@@ -111,9 +111,9 @@ export class Comic18Matcher extends BaseMatcher<string> {
     return list;
   }
 
-  async processData(data: Uint8Array, contentType: string, url: string): Promise<[Uint8Array, string]> {
+  async processData(data: Uint8Array, contentType: string, node: ImageNode): Promise<[Uint8Array, string]> {
     const reg = /(\d+)\/(\d+)\.(\w+)/;
-    const matches = url.match(reg);
+    const matches = node.originSrc!.match(reg);
     const gid = matches![1];
     // let scrambleID: number = scramble_id;
     const scrambleID = 220980;

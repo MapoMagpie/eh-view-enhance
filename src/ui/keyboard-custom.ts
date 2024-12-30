@@ -96,6 +96,10 @@ export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents
       fullPanel.remove();
     }
   });
+  // fullPanel.addEventListener("contextmenu", (event) => {
+  //   event.preventDefault();
+  //   fullPanel.querySelector(".ehvp-add-keyboard-btn[d-pressing]")?.dispatchEvent(new MouseEvent("mouseup", { button: 3 }));
+  // });
   root.appendChild(fullPanel);
   fullPanel.querySelector(".ehvp-custom-panel-close")!.addEventListener("click", () => fullPanel.remove());
   fullPanel.querySelectorAll<HTMLElement>(".ehvp-add-keyboard-btn").forEach(button => {
@@ -121,17 +125,20 @@ export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents
       saveConf(conf);
       addKeyboardDescElement(button, category, id, key);
       button.textContent = "+";
+      button.removeAttribute("d-pressing");
       button.removeEventListener("keyup", addKeyBoardDesc);
       button.removeEventListener("mouseup", addKeyBoardDesc);
     };
     button.addEventListener("click", (event) => {
       event.preventDefault();
       button.textContent = "Press Key";
+      button.setAttribute("d-pressing", "");
       button.addEventListener("keyup", addKeyBoardDesc, { once: false });
       button.addEventListener("mouseup", addKeyBoardDesc, { once: false });
     });
     button.addEventListener("mouseleave", () => {
       button.textContent = "+";
+      button.removeAttribute("d-pressing");
       button.removeEventListener("keyup", addKeyBoardDesc);
       button.removeEventListener("mouseup", addKeyBoardDesc);
     });

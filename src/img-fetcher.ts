@@ -123,7 +123,7 @@ export class IMGFetcher {
           case FetchState.DATA:
             const ret = await this.fetchImageData();
             [this.data, this.contentType] = ret;
-            [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.node.originSrc!);
+            [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.node);
             if (this.contentType.startsWith("text")) {
               // if (this.data.byteLength < 100000) { // less then 100kb
               const str = new TextDecoder().decode(this.data);

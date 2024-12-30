@@ -3,6 +3,7 @@ import { Comic18Matcher } from "./18comic";
 import { AkumaMatcher } from "./akuma";
 import { ArcaMatcher } from "./arca";
 import { ArtStationMatcher } from "./artstation";
+import { ColaMangaMatcher } from "./colamanga";
 import { DanbooruDonmaiMatcher, E621Matcher, GelBooruMatcher, KonachanMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
 import { EHMatcher } from "./ehentai";
 import { HentaiNexusMatcher } from "./hentainexus";
@@ -47,6 +48,7 @@ export function getMatchers(): Matcher<any>[] {
     new ArtStationMatcher(),
     new AkumaMatcher(),
     new InstagramMatcher(),
+    new ColaMangaMatcher(),
   ];
 }
 

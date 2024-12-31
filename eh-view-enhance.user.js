@@ -3618,7 +3618,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   }
 
   const EXTRACT_C_DATA = /var C_DATA='(.*?)'/;
-  const CDATA_KEY = "KcmiZ8owmiBoPRMf";
   function decrypt$1(key, raw) {
     const cryptoJS = CryptoJS;
     if (!cryptoJS) throw new Error("cryptoJS undefined");
@@ -3650,13 +3649,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       elem.addEventListener("load", async () => {
         try {
           const text = await window.fetch(readerJSURL).then((res) => res.text());
-          const matches = text.matchAll(/if\(_0x\w+==0x(\w+)\)return _0x5cdd4f\(0x(\w+)\);/gm);
+          const matches = text.matchAll(/if\(_0x\w+==0x(\w+)\)return _0x\w+\(0x(\w+)\);/gm);
           const keymap = {};
           let isEmpty = true;
           for (const m of matches) {
             const key = m[1];
             const index = m[2];
-            const val = _0x79eb(parseInt("0x" + index));
+            const val = _0x329c(parseInt("0x" + index));
             keymap[parseInt("0x" + key)] = val;
             isEmpty = false;
           }
@@ -3699,13 +3698,23 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const raw = await window.fetch(page).then((res) => res.text());
       const cdata = raw.match(EXTRACT_C_DATA)?.[1];
       if (!cdata) throw new Error("cannot find C_DATA from page: " + page);
-      let infoRaw = decrypt$1(CDATA_KEY, parseBase64ToUtf8(cdata));
+      let infoRaw;
+      for (const k of ["KcmiZ8owmiBoPRMf", "4uOJvtnq5YYIKZWA"]) {
+        try {
+          infoRaw = decrypt$1(k, parseBase64ToUtf8(cdata));
+          break;
+        } catch (_error) {
+          evLog("error", _error.toString());
+        }
+      }
+      if (!infoRaw) throw new Error("colamanga decrypt C_DATA failed");
       infoRaw = infoRaw.replace("};", "},");
       infoRaw = infoRaw.replaceAll("info=", "info:");
       infoRaw = "{" + infoRaw + "}";
       infoRaw = infoRaw.replaceAll(/(\w+):/g, '"$1":');
       const info = JSON.parse(infoRaw);
       const [count, path] = decryptInfo(info.mh_info.enc_code1, info.mh_info.enc_code2, info.mh_info.mhid);
+      if (count === void 0 || path === void 0) throw new Error("colamanga decrypt mh_info failed");
       const nodes = [];
       const href = window.location.origin + info.mh_info.webPath + info.mh_info.pageurl;
       this.infoMap[href] = info;
@@ -3722,14 +3731,14 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const info = this.infoMap[node.href];
       if (!info) throw new Error("cannot found info from " + node.href);
       if (info.image_info.imgKey) {
-        const decoded = decodeImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap);
+        const decoded = decryptImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap);
         return [decoded, _contentType];
       } else {
         return [data, _contentType];
       }
     }
     workURL() {
-      return /colamanga.com\/manga-.*\/?$/;
+      return /colamanga.com\/manga-\w*\/?$/;
     }
     headers() {
       return {
@@ -3766,18 +3775,20 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     return u8_array;
   }
-  function decodeImageData(data, keyType, imgKey, keymap) {
+  function decryptImageData(data, keyType, imgKey, keymap) {
     let kRaw;
     if (keyType !== "" && keyType !== "0") {
       kRaw = keymap[parseInt(keyType)];
     } else {
-      try {
-        kRaw = decrypt$1("KcmiZ8owmiBoPRMf", imgKey) || decrypt$1("ZIJ0EF9Twsfq8JOY", imgKey);
-      } catch (_) {
-        kRaw = decrypt$1("ZIJ0EF9Twsfq8JOY", imgKey);
+      for (const k of ["4uOJvtnq5YYIKZWA", "KcmiZ8owmiBoPRMf"]) {
+        try {
+          kRaw = decrypt$1(k, imgKey);
+          break;
+        } catch (_error) {
+          evLog("error", _error.toString());
+        }
       }
     }
-    const start = performance.now();
     const wordArray = convertUint8ArrayToWordArray(data);
     const encArray = { ciphertext: wordArray };
     const cryptoJS = CryptoJS;
@@ -3788,28 +3799,32 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       padding: cryptoJS.pad.Pkcs7
     });
     const ret = convertWordArrayToUint8Array(de);
-    const end = performance.now();
-    console.log("colamanga decode image data: ", end - start);
     return ret;
   }
   function decryptInfo(countEncCode, pathEncCode, mhid) {
     let count;
-    try {
-      count = decrypt$1("dDeIieDgQpwVQZsJ", parseBase64ToUtf8(countEncCode));
-      if (count == "" || isNaN(parseInt(count))) {
-        count = decrypt$1("ahCeZc7ZXoiX7Ljq", parseBase64ToUtf8(countEncCode));
+    for (const k of ["dDeIieDgQpwVQZsJ", "54bilXmmMoYBqBcI"]) {
+      try {
+        count = decrypt$1(k, parseBase64ToUtf8(countEncCode));
+        if (count == "" || isNaN(parseInt(count))) {
+          throw new Error("colamanga failed decrypt image count");
+        }
+        break;
+      } catch (_error) {
+        evLog("error", _error.toString());
       }
-    } catch (_error) {
-      count = decrypt$1("ahCeZc7ZXoiX7Ljq", parseBase64ToUtf8(countEncCode));
     }
     let path;
-    try {
-      path = decrypt$1("i8XLTfT8Mvu1Fcv2", parseBase64ToUtf8(pathEncCode));
-      if (path == "" || !path.startsWith(mhid + "/")) {
-        path = decrypt$1("BGfhxlJUxlWCgdLZ", parseBase64ToUtf8(pathEncCode));
+    for (const k of ["lVfo0i0o4g3V78Rt", "i8XLTfT8Mvu1Fcv2"]) {
+      try {
+        path = decrypt$1(k, parseBase64ToUtf8(pathEncCode));
+        if (path == "" || !path.startsWith(mhid + "/")) {
+          throw new Error("colamanga failed decrypt image path");
+        }
+        break;
+      } catch (_error) {
+        evLog("error", _error.toString());
       }
-    } catch (_error) {
-      path = decrypt$1("BGfhxlJUxlWCgdLZ", parseBase64ToUtf8(pathEncCode));
     }
     return [count, path];
   }

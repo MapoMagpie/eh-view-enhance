@@ -1,9 +1,9 @@
 import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
+import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 const EXTRACT_C_DATA = /var C_DATA='(.*?)'/;
-const CDATA_KEY = "KcmiZ8owmiBoPRMf";
 
 function decrypt(key: string, raw: string): string {
   // @ts-ignore
@@ -40,14 +40,14 @@ function initColaMangaKeyMap(): Promise<Record<number, string>> {
       try {
         const text = await window.fetch(readerJSURL).then(res => res.text());
         // const fn = text.match(/^function (\w+)/)?.[1]!;
-        const matches = text.matchAll(/if\(_0x\w+==0x(\w+)\)return _0x5cdd4f\(0x(\w+)\);/gm);
+        const matches = text.matchAll(/if\(_0x\w+==0x(\w+)\)return _0x\w+\(0x(\w+)\);/gm);
         const keymap: Record<number, string> = {};
         let isEmpty = true;
         for (const m of matches) {
           const key = m[1];
           const index = m[2];
           // @ts-ignore
-          const val = _0x79eb(parseInt("0x" + index));
+          const val = _0x329c(parseInt("0x" + index));
           keymap[parseInt("0x" + key)] = val;
           isEmpty = false;
         }
@@ -91,7 +91,16 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
     const raw = await window.fetch(page).then(res => res.text());
     const cdata = raw.match(EXTRACT_C_DATA)?.[1];
     if (!cdata) throw new Error("cannot find C_DATA from page: " + page);
-    let infoRaw = decrypt(CDATA_KEY, parseBase64ToUtf8(cdata));
+    let infoRaw: string | undefined;
+    for (const k of ["KcmiZ8owmiBoPRMf", "4uOJvtnq5YYIKZWA"]) {
+      try {
+        infoRaw = decrypt(k, parseBase64ToUtf8(cdata));
+        break;
+      } catch (_error) {
+        evLog("error", (_error as any).toString());
+      }
+    }
+    if (!infoRaw) throw new Error("colamanga decrypt C_DATA failed");
     // console.log("colamanga info: ", info);
     infoRaw = infoRaw.replace("};", "},");
     infoRaw = infoRaw.replaceAll("info=", "info:");
@@ -99,6 +108,7 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
     infoRaw = infoRaw.replaceAll(/(\w+):/g, "\"$1\":");
     const info = JSON.parse(infoRaw) as Info;
     const [count, path] = decryptInfo(info.mh_info.enc_code1, info.mh_info.enc_code2, info.mh_info.mhid);
+    if (count === undefined || path === undefined) throw new Error("colamanga decrypt mh_info failed");
     const nodes = [];
     const href = window.location.origin + info.mh_info.webPath + info.mh_info.pageurl;
     this.infoMap[href] = info;
@@ -116,14 +126,14 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
     const info = this.infoMap[node.href];
     if (!info) throw new Error("cannot found info from " + node.href);
     if (info.image_info.imgKey) {
-      const decoded = decodeImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap!);
+      const decoded = decryptImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap!);
       return [decoded, _contentType];
     } else {
       return [data, _contentType];
     }
   }
   workURL(): RegExp {
-    return /colamanga.com\/manga-.*\/?$/;
+    return /colamanga.com\/manga-\w*\/?$/;
   }
   headers(): Record<string, string> {
     return {
@@ -198,18 +208,21 @@ function convertWordArrayToUint8Array(data: WordArray): Uint8Array {
   return u8_array;
 }
 
-function decodeImageData(data: Uint8Array, keyType: string, imgKey: string, keymap: Record<number, string>) {
-  let kRaw;
+function decryptImageData(data: Uint8Array, keyType: string, imgKey: string, keymap: Record<number, string>) {
+  let kRaw: string | undefined;
   if (keyType !== "" && keyType !== "0") {
     kRaw = keymap[parseInt(keyType)];
   } else {
-    try {
-      kRaw = decrypt("KcmiZ8owmiBoPRMf", imgKey) || decrypt("ZIJ0EF9Twsfq8JOY", imgKey);
-    } catch (_) {
-      kRaw = decrypt("ZIJ0EF9Twsfq8JOY", imgKey);
+    for (const k of ["KcmiZ8owmiBoPRMf", "4uOJvtnq5YYIKZWA"]) {
+      try {
+        kRaw = decrypt(k, imgKey);
+        break;
+      } catch (_error) {
+        evLog("error", (_error as any).toString());
+      }
     }
   }
-  const start = performance.now();
+  // const start = performance.now();
   const wordArray = convertUint8ArrayToWordArray(data);
   const encArray = { ciphertext: wordArray };
   // @ts-ignore
@@ -221,29 +234,35 @@ function decodeImageData(data: Uint8Array, keyType: string, imgKey: string, keym
     padding: cryptoJS.pad.Pkcs7
   });
   const ret = convertWordArrayToUint8Array(de);
-  const end = performance.now();
-  console.log("colamanga decode image data: ", end - start);
+  // const end = performance.now();
+  // console.log("colamanga decode image data: ", end - start);
   return ret;
 }
 
 function decryptInfo(countEncCode: string, pathEncCode: string, mhid: string) {
-  let count;
-  try {
-    count = decrypt("dDeIieDgQpwVQZsJ", parseBase64ToUtf8(countEncCode));
-    if (count == "" || isNaN(parseInt(count))) {
-      count = decrypt("ahCeZc7ZXoiX7Ljq", parseBase64ToUtf8(countEncCode));
+  let count: string | undefined;
+  for (const k of ["dDeIieDgQpwVQZsJ", "54bilXmmMoYBqBcI"]) {
+    try {
+      count = decrypt(k, parseBase64ToUtf8(countEncCode));
+      if (count == "" || isNaN(parseInt(count))) {
+        throw new Error("colamanga failed decrypt image count");
+      }
+      break;
+    } catch (_error) {
+      evLog("error", (_error as any).toString());
     }
-  } catch (_error) {
-    count = decrypt("ahCeZc7ZXoiX7Ljq", parseBase64ToUtf8(countEncCode));
   }
-  let path;
-  try {
-    path = decrypt("i8XLTfT8Mvu1Fcv2", parseBase64ToUtf8(pathEncCode));
-    if (path == "" || !path.startsWith(mhid + "/")) {
-      path = decrypt("BGfhxlJUxlWCgdLZ", parseBase64ToUtf8(pathEncCode));
+  let path: string | undefined;
+  for (const k of ["lVfo0i0o4g3V78Rt", "i8XLTfT8Mvu1Fcv2"]) {
+    try {
+      path = decrypt(k, parseBase64ToUtf8(pathEncCode));
+      if (path == "" || !path.startsWith(mhid + "/")) {
+        throw new Error("colamanga failed decrypt image path");
+      }
+      break;
+    } catch (_error) {
+      evLog("error", (_error as any).toString());
     }
-  } catch (_error) {
-    path = decrypt("BGfhxlJUxlWCgdLZ", parseBase64ToUtf8(pathEncCode));
   }
   return [count, path];
 }

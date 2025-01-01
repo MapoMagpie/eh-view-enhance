@@ -7,7 +7,7 @@
 // @name:es            Comic Looms
 // @name:ka            Comic Looms
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.10.6
+// @version            4.10.7
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support you in finding the site you are searching for.
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持你正在搜索的站点。
@@ -21,6 +21,15 @@
 // @supportURL         https://github.com/MapoMagpie/eh-view-enhance/issues
 // @downloadURL        https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js
 // @updateURL          https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.meta.js
+// @match              https://*.pixiv.net/*
+// @match              https://steamcommunity.com/*
+// @match              https://twitter.com/*
+// @match              https://x.com/*
+// @match              https://*.instagram.com/*
+// @match              https://*.manhuagui.com/*
+// @match              https://*.mangacopy.com/*
+// @match              https://*.copymanga.tv/*
+// @match              https://*.artstation.com/*
 // @match              *://*/*
 // @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.52/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js

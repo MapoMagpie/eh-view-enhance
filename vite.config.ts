@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import monkey, { cdn } from 'vite-plugin-monkey';
 
-const VERSION = '4.10.6';
+const VERSION = '4.10.7';
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   let downloadURL: string | undefined;
@@ -54,7 +54,38 @@ const _classWorkerURL = URL.createObjectURL(new Blob([decodeBase64(encodedJs)], 
           supportURL: 'https://github.com/MapoMagpie/eh-view-enhance/issues',
           downloadURL,
           updateURL,
-          match: ['*://*/*'],
+          match: [
+            // 'https://exhentai.org/*',
+            // 'https://e-hentai.org/*',
+            // 'http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*',
+            // 'https://nhentai.net/*',
+            // 'https://nhentai.xxx/*',
+            // 'https://hitomi.la/*',
+            // 'https://yande.re/*',
+            // 'https://konachan.com/*',
+            // 'https://rokuhentai.com/*',
+            // 'https://18comic.vip/*',
+            // 'https://rule34.xxx/*',
+            // 'https://imhentai.xxx/*',
+            // 'https://danbooru.donmai.us/*',
+            // 'https://gelbooru.com/*',
+            // 'https://*.wnacg.com/*',
+            // 'https://*.wn**.cc/*',
+            // 'https://hentainexus.com/*',
+            // 'https://koharu.to/*',
+            // 'https://e621.net/*',
+            // 'https://arca.live/*',
+            'https://*.pixiv.net/*',
+            'https://steamcommunity.com/*',
+            'https://twitter.com/*',
+            'https://x.com/*',
+            'https://*.instagram.com/*',
+            'https://*.manhuagui.com/*',
+            'https://*.mangacopy.com/*',
+            'https://*.copymanga.tv/*',
+            'https://*.artstation.com/*',
+            '*://*/*',
+          ],
           name: {
             "": "Comic Looms",
             "zh-CN": "漫画织机",

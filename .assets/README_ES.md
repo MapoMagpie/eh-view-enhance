@@ -62,6 +62,7 @@ Vista previa (si no puedes ver la imagen, haz clic [aqui](./preview.md)):
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
 - [akuma.moe](https://akuma.moe)
+- [colamanga.com](https://www.colamanga.com)
 
 </details>
 

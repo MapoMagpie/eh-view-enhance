@@ -24,41 +24,56 @@ function parseBase64ToUtf8(raw: string): string {
   return decoder.decode(decodedBytes);
 }
 
-function initColaMangaKeyMap(): Promise<Record<number, string>> {
+function initColamangaKeys(): Promise<string[]> {
   return new Promise((resolve, reject) => {
-    const keymapRaw = window.localStorage.getItem("colamanga-key-map");
-    if (keymapRaw) {
-      try {
-        const keymap = JSON.parse(keymapRaw) as Record<number, string>;
-        resolve(keymap);
-        return;
-      } catch (_) { }
-    }
-    const readerJSURL = "https://www.colamanga.com/js/manga.read.js";
+    const jsURL = "https://www.colamanga.com/js/custom.js";
     const elem = document.createElement("script");
     elem.addEventListener("load", async () => {
       try {
-        const text = await window.fetch(readerJSURL).then(res => res.text());
-        // const fn = text.match(/^function (\w+)/)?.[1]!;
-        const matches = text.matchAll(/if\(_0x\w+==0x(\w+)\)return _0x\w+\(0x(\w+)\);/gm);
+        const text = await window.fetch(jsURL).then(res => res.text());
+        const keys = parseKeys(text);
+        resolve(keys);
+      } catch (reason) {
+        reject(reason);
+      }
+    });
+    elem.src = jsURL;
+    elem.type = "text/javascript";
+    document.querySelector("head")!.append(elem);
+  });
+}
+
+function initColaMangaKeyMap(): Promise<Record<number, string>> {
+  return new Promise((resolve, reject) => {
+    const jsURL = "https://www.colamanga.com/js/manga.read.js";
+    const elem = document.createElement("script");
+    elem.addEventListener("load", async () => {
+      try {
+        const text = await window.fetch(jsURL).then(res => res.text());
+        let fun: Function | undefined;
+        const matches = text.matchAll(/if\(_0x\w+==(0x\w+)\)return (_0x\w+)\((0x\w+)\);/gm);
         const keymap: Record<number, string> = {};
         let isEmpty = true;
         for (const m of matches) {
           const key = m[1];
-          const index = m[2];
-          // @ts-ignore
-          const val = _0x329c(parseInt("0x" + index));
-          keymap[parseInt("0x" + key)] = val;
+          const fn = m[2];
+          const pam = m[3];
+          if (!fun) {
+            const name = findTheFunction(text, fn)?.[0]?.[0] ?? fn;
+            console.log("colamanga, the function name: ", name);
+            fun = new Function("p", `return ${name}(p)`);
+          }
+          const val = fun(pam);
+          keymap[parseInt(key)] = val;
           isEmpty = false;
         }
-        if (isEmpty) throw new Error("cannot init key map from " + readerJSURL);
-        window.localStorage.setItem("colamanga-key-map", JSON.stringify(keymap));
+        if (isEmpty) throw new Error("cannot init key map from " + jsURL);
         resolve(keymap);
       } catch (reason) {
         reject(reason);
       }
     });
-    elem.src = readerJSURL;
+    elem.src = jsURL;
     elem.type = "text/javascript";
     document.querySelector("head")!.append(elem);
   });
@@ -67,11 +82,14 @@ function initColaMangaKeyMap(): Promise<Record<number, string>> {
 export class ColaMangaMatcher extends BaseMatcher<string> {
   infoMap: Record<string, Info> = {};
   keymap?: Record<number, string>;
+  keys: string[] = ["dDeIieDgQpwVQZsJ", "54bilXmmMoYBqBcI", "KcmiZ8owmiBoPRMf", "4uOJvtnq5YYIKZWA", "lVfo0i0o4g3V78Rt", "i8XLTfT8Mvu1Fcv2"];
   name(): string {
     return "colamanga";
   }
   async fetchChapters(): Promise<Chapter[]> {
+    this.keys = await initColamangaKeys();
     this.keymap = await initColaMangaKeyMap();
+    // console.log("colamanga keys: ", this.keys);
     const thumbimg = document.querySelector("dt.fed-part-rows > a")?.getAttribute("data-original") || undefined;
     const list = Array.from(document.querySelectorAll<HTMLAnchorElement>(".fed-part-rows > li > a"));
     return list.map<Chapter>((a, index) => {
@@ -92,7 +110,7 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
     const cdata = raw.match(EXTRACT_C_DATA)?.[1];
     if (!cdata) throw new Error("cannot find C_DATA from page: " + page);
     let infoRaw: string | undefined;
-    for (const k of ["KcmiZ8owmiBoPRMf", "4uOJvtnq5YYIKZWA"]) {
+    for (const k of this.keys) {
       try {
         infoRaw = decrypt(k, parseBase64ToUtf8(cdata));
         break;
@@ -107,7 +125,7 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
     infoRaw = "{" + infoRaw + "}";
     infoRaw = infoRaw.replaceAll(/(\w+):/g, "\"$1\":");
     const info = JSON.parse(infoRaw) as Info;
-    const [count, path] = decryptInfo(info.mh_info.enc_code1, info.mh_info.enc_code2, info.mh_info.mhid);
+    const [count, path] = decryptInfo(info.mh_info.enc_code1, info.mh_info.enc_code2, info.mh_info.mhid, this.keys);
     if (count === undefined || path === undefined) throw new Error("colamanga decrypt mh_info failed");
     const nodes = [];
     const href = window.location.origin + info.mh_info.webPath + info.mh_info.pageurl;
@@ -126,7 +144,7 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
     const info = this.infoMap[node.href];
     if (!info) throw new Error("cannot found info from " + node.href);
     if (info.image_info.imgKey) {
-      const decoded = decryptImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap!);
+      const decoded = decryptImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap!, this.keys);
       return [decoded, _contentType];
     } else {
       return [data, _contentType];
@@ -208,12 +226,12 @@ function convertWordArrayToUint8Array(data: WordArray): Uint8Array {
   return u8_array;
 }
 
-function decryptImageData(data: Uint8Array, keyType: string, imgKey: string, keymap: Record<number, string>) {
+function decryptImageData(data: Uint8Array, keyType: string, imgKey: string, keymap: Record<number, string>, keys: string[]) {
   let kRaw: string | undefined;
   if (keyType !== "" && keyType !== "0") {
     kRaw = keymap[parseInt(keyType)];
   } else {
-    for (const k of ["KcmiZ8owmiBoPRMf", "4uOJvtnq5YYIKZWA"]) {
+    for (const k of keys) {
       try {
         kRaw = decrypt(k, imgKey);
         break;
@@ -239,9 +257,9 @@ function decryptImageData(data: Uint8Array, keyType: string, imgKey: string, key
   return ret;
 }
 
-function decryptInfo(countEncCode: string, pathEncCode: string, mhid: string) {
+function decryptInfo(countEncCode: string, pathEncCode: string, mhid: string, keys: string[]) {
   let count: string | undefined;
-  for (const k of ["dDeIieDgQpwVQZsJ", "54bilXmmMoYBqBcI"]) {
+  for (const k of keys) {
     try {
       count = decrypt(k, parseBase64ToUtf8(countEncCode));
       if (count == "" || isNaN(parseInt(count))) {
@@ -253,7 +271,7 @@ function decryptInfo(countEncCode: string, pathEncCode: string, mhid: string) {
     }
   }
   let path: string | undefined;
-  for (const k of ["lVfo0i0o4g3V78Rt", "i8XLTfT8Mvu1Fcv2"]) {
+  for (const k of keys) {
     try {
       path = decrypt(k, parseBase64ToUtf8(pathEncCode));
       if (path == "" || !path.startsWith(mhid + "/")) {
@@ -278,3 +296,40 @@ function getImageURL(index: number, path: string, info: Info) {
   return [imgName, url];
 }
 
+function parseKeys(raw: string) {
+  const regex1 = /window(\[\w+\(0x[^)]+\)\]){2}\(((\w+)(\(0x[^)]+\))?),/gm;
+  const matches = raw.matchAll(regex1);
+  const keys: string[] = [];
+  for (const m of matches) {
+    const kv = m[3];
+    const pv = m[4];
+    if (!kv) continue;
+    for (const [fn, param] of findTheFunction(raw, kv, pv)) {
+      if (fn === null || param === null) continue;
+      const key = new Function("return " + fn + param)();
+      if (keys.includes(key)) continue;
+      keys.push(key);
+    }
+  }
+  return keys;
+}
+
+function findTheFunction(raw: string, val: string, param?: string): [string | null, string | null][] {
+  const reg = new RegExp(val + `=((\\w+)(\\([^)]+\\))?)[,; ]`, "gm");
+  const matches = raw.matchAll(reg);
+  const ret: [string | null, string | null][] = [];
+  let empty = true;
+  for (const m of matches) {
+    empty = false;
+    const k = m[2];
+    const p = m[3];
+    if (p) param = p;
+    if (k) {
+      ret.push(...findTheFunction(raw, k, param));
+    }
+  }
+  if (empty && raw.includes("function " + val)) {
+    ret.push([val, param ?? null]);
+  }
+  return ret;
+}

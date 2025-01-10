@@ -174,9 +174,9 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", event.deltaY > 0 ? -1 : 1, parseInt(HTML.currPageElement.textContent!) - 1));
 
   // Shortcut
-  document.addEventListener("keyup", (event) => events.keyboardEvent(event));
+  document.addEventListener("keydown", (event) => events.keyboardEvent(event));
   document.addEventListener("mouseup", (event) => events.keyboardEvent(event));
-  HTML.fullViewGrid.addEventListener("keyup", (event) => {
+  HTML.fullViewGrid.addEventListener("keydown", (event) => {
     events.fullViewGridKeyBoardEvent(event)
     event.stopPropagation();
   });
@@ -184,7 +184,8 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     events.fullViewGridKeyBoardEvent(event)
     event.stopPropagation();
   });
-  HTML.bigImageFrame.addEventListener("keyup", (event) => {
+  HTML.bigImageFrame.addEventListener("keydown", (event) => {
+    console.log("bigImageFrame: keydown: ", event.key);
     events.bigImageFrameKeyBoardEvent(event);
     event.stopPropagation();
   });

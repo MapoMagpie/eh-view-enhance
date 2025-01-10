@@ -213,17 +213,29 @@
       "페이지 넘김 모드에서 자동 페이지 넘김 속도는 몇 초 후에 자동으로 페이지가 넘어갈지를 의미합니다.<br>연속 읽기 모드에서 자동 페이지 넘김 속도는 자동 스크롤 속도를 의미합니다.",
       "En el modo de lectura por paginación, la velocidad de página automática indica cuántos segundos toma cambiar la página automáticamente.<br>En el modo de lectura continua, la velocidad de página automática indica la velocidad de desplazamiento."
     ],
+    scrollingDelta: [
+      "Scrolling Delta",
+      "滚动距离",
+      "Scrolling Delta",
+      "Scrolling Delta"
+    ],
+    scrollingDeltaTooltip: [
+      "During non-native scrolling (custom keyboard scrolling, horizontal scrolling), the distance of each scroll.",
+      "非浏览器原生的滚动时（按键滚动、横向滚动），每次滚动的距离。",
+      "비기본 스크롤(사용자 정의 키보드 스크롤, 가로 스크롤) 중 각 스크롤의 거리입니다.",
+      "Durante el desplazamiento no nativo (desplazamiento con teclado personalizado, desplazamiento horizontal), la distancia de cada desplazamiento."
+    ],
     scrollingSpeed: [
       "Scrolling Speed",
-      "按键滚动速度",
+      "滚动速度",
       "스크롤 속도",
       "Velocidad de desplazamiento"
     ],
     scrollingSpeedTooltip: [
-      "The scrolling Speed for Custom KeyBoard Keys for scrolling, not Auto Paging|Scrolling Speed",
-      "自定义按键的滚动速度，并不是连续阅读模式下的自动翻页的滚动速度。",
-      "단축키를 사용한 스크롤 속도입니다. 자동 페이지 넘김 모드의 스크롤 속도가 아닙니다.",
-      "La velocidad de desplazamiento para las teclas del teclado personalizadas para desplazamiento, no para la paginación automática|Velocidad de desplazamiento"
+      "During non-native scrolling (custom keyboard scrolling, horizontal scrolling), the speed of scrolling.",
+      "非浏览器原生的滚动时（按键滚动、横向滚动），滚动的速度。",
+      "비기본 스크롤(사용자 정의 키보드 스크롤, 가로 스크롤) 중 스크롤 속도입니다.",
+      "Durante el desplazamiento no nativo (desplazamiento con teclado personalizado, desplazamiento horizontal), la velocidad de desplazamiento."
     ],
     // config panel boolean option
     fetchOriginal: [
@@ -1223,7 +1235,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       autoLoadInBackground: true,
       reverseMultipleImagesPost: true,
       ehentaiTitlePrefer: "japanese",
-      scrollingSpeed: 30,
+      scrollingDelta: 300,
+      scrollingSpeed: 20,
       id: uuid(),
       configPatchVersion: 0,
       displayText: {},
@@ -1341,6 +1354,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     { key: "timeout", typ: "number" },
     { key: "preventScrollPageTime", typ: "number" },
     { key: "autoPageSpeed", typ: "number" },
+    { key: "scrollingDelta", typ: "number" },
     { key: "scrollingSpeed", typ: "number" },
     { key: "fetchOriginal", typ: "boolean", gridColumnRange: [1, 6] },
     { key: "autoLoad", typ: "boolean", gridColumnRange: [6, 11] },
@@ -7666,17 +7680,17 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           autoPageSpeed: [1, 100],
           preventScrollPageTime: [-1, 9e4],
           paginationIMGCount: [1, 3],
+          scrollingDelta: [1, 5e3],
           scrollingSpeed: [1, 100]
         };
-        const mod = key === "preventScrollPageTime" || key === "rowHeight" ? 10 : 1;
+        let mod = 1;
+        if (key === "preventScrollPageTime" || key === "rowHeight" || key === "scrollingDelta") {
+          mod = conf[key] === 1 ? 9 : 10;
+        }
         if (data === "add") {
-          if (conf[key] < range[key][1]) {
-            value = conf[key] + mod;
-          }
+          value = Math.min(conf[key] + mod, range[key][1]);
         } else if (data === "minus") {
-          if (conf[key] > range[key][0]) {
-            value = conf[key] - mod;
-          }
+          value = Math.max(conf[key] - mod, range[key][0]);
         }
       }
       if (value === void 0) return;
@@ -7851,8 +7865,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           ["pageup", "arrowup", "shift+space"],
           (event) => {
             const key = parseKey(event);
+            const noPrevent = ["pageup", "shift+space"].includes(key);
             let customKey = !["pageup", "arrowup", "shift+space"].includes(key);
-            BIFM.onWheel(new WheelEvent("wheel", { deltaY: BIFM.root.offsetHeight / 5 * -1 }), true, customKey);
+            BIFM.onWheel(new WheelEvent("wheel", { deltaY: conf.scrollingDelta * -1 }), noPrevent, customKey, void 0, event);
           },
           true
         ),
@@ -7860,8 +7875,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           ["pagedown", "arrowdown", "space"],
           (event) => {
             const key = parseKey(event);
+            const noPrevent = ["pagedown", "space"].includes(key);
             const customKey = !["pagedown", "arrowdown", "space"].includes(key);
-            BIFM.onWheel(new WheelEvent("wheel", { deltaY: BIFM.root.offsetHeight / 5 }), true, customKey);
+            BIFM.onWheel(new WheelEvent("wheel", { deltaY: conf.scrollingDelta }), noPrevent, customKey, void 0, event);
           },
           true
         ),
@@ -10051,9 +10067,9 @@ ${chapters.map((c, i) => `<div><label>
       EBUS.emit("toggle-main-view", stage === "open");
     });
     HTML.currPageElement.addEventListener("wheel", (event) => BIFM.stepNext(event.deltaY > 0 ? "next" : "prev", event.deltaY > 0 ? -1 : 1, parseInt(HTML.currPageElement.textContent) - 1));
-    document.addEventListener("keyup", (event) => events.keyboardEvent(event));
+    document.addEventListener("keydown", (event) => events.keyboardEvent(event));
     document.addEventListener("mouseup", (event) => events.keyboardEvent(event));
-    HTML.fullViewGrid.addEventListener("keyup", (event) => {
+    HTML.fullViewGrid.addEventListener("keydown", (event) => {
       events.fullViewGridKeyBoardEvent(event);
       event.stopPropagation();
     });
@@ -10061,7 +10077,8 @@ ${chapters.map((c, i) => `<div><label>
       events.fullViewGridKeyBoardEvent(event);
       event.stopPropagation();
     });
-    HTML.bigImageFrame.addEventListener("keyup", (event) => {
+    HTML.bigImageFrame.addEventListener("keydown", (event) => {
+      console.log("bigImageFrame: keydown: ", event.key);
       events.bigImageFrameKeyBoardEvent(event);
       event.stopPropagation();
     });
@@ -10450,13 +10467,12 @@ ${chapters.map((c, i) => `<div><label>
       let resolve;
       const promise = new Promise((r) => resolve = r);
       this.distance = Math.abs(delta);
+      const direction = delta < 0 ? "up" : "down";
+      this.directionChanged = this.lastDirection !== void 0 && this.lastDirection !== direction;
       if (this.scrolling || this.distance <= 0) {
-        this.additional = 0;
         return promise;
       }
       const sign = delta / this.distance;
-      const direction = delta < 0 ? "up" : "down";
-      this.directionChanged = this.lastDirection !== void 0 && this.lastDirection !== direction;
       this.lastDirection = direction;
       this.additional = 0;
       this.scrolling = true;
@@ -10474,9 +10490,7 @@ ${chapters.map((c, i) => `<div><label>
         scrollMargin = Math.max(scrollMargin, 0);
         scrollMargin = Math.min(scrollMargin, this.maxScrollMargin());
         this.setScrollMargin(scrollMargin);
-        if (this.distance <= 0) return scrolled();
-        if (scrollMargin === 0 || scrollMargin === this.maxScrollMargin()) return scrolled();
-        if (this.directionChanged) return scrolled();
+        if (this.distance <= 0 || this.directionChanged || scrollMargin === 0 || scrollMargin === this.maxScrollMargin()) return scrolled();
         window.requestAnimationFrame(doFrame);
       };
       window.requestAnimationFrame(doFrame);
@@ -10740,7 +10754,17 @@ ${chapters.map((c, i) => `<div><label>
       return queue[index] ?? null;
     }
     initEvent() {
-      this.root.addEventListener("wheel", (event) => this.onWheel(event));
+      this.root.addEventListener("wheel", (event) => this.onWheel(
+        new WheelEvent("wheel", {
+          deltaY: conf.scrollingDelta * (event.deltaY < 0 ? -1 : 1),
+          buttons: event.buttons,
+          button: event.button
+        }),
+        void 0,
+        void 0,
+        void 0,
+        event
+      ));
       this.root.addEventListener("scroll", (event) => this.onScroll(event), { passive: false });
       this.root.addEventListener("contextmenu", (event) => {
         event.preventDefault();
@@ -10813,9 +10837,6 @@ ${chapters.map((c, i) => `<div><label>
           }
         }
       });
-    }
-    scroll(y) {
-      this.scrollerY.scroll(y, conf.scrollingSpeed);
     }
     scrollStop() {
       this.scrollerY.scrolling = false;
@@ -11034,10 +11055,14 @@ ${chapters.map((c, i) => `<div><label>
         this.debouncer.addEvent("bifm-on-wheel", () => this.checkCurrent(), 69);
       }
     }
-    onWheel(event, noPrevent, customScrolling, noCallback) {
+    onWheel(event, noPrevent, customScrolling, noCallback, originEvent) {
+      const preventDefault = () => {
+        event.preventDefault();
+        originEvent?.preventDefault();
+      };
       if (!noCallback) this.callbackOnWheel?.(event);
       if (event.buttons === 2) {
-        event.preventDefault();
+        preventDefault();
         this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
         return;
       }
@@ -11048,7 +11073,7 @@ ${chapters.map((c, i) => `<div><label>
           const over = this.checkOverflow();
           const [$ori, $neg] = conf.reversePages ? [negative, this.oriented] : [this.oriented, negative];
           if (over[this.oriented].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) {
-            event.preventDefault();
+            preventDefault();
             if (!noPrevent) {
               if (over[$neg].overX > 0 || over[negative].overY > 0) {
                 if (this.tryPreventStep()) break;
@@ -11068,8 +11093,8 @@ ${chapters.map((c, i) => `<div><label>
           break;
         }
         case "horizontal": {
-          event.preventDefault();
-          this.scrollerX.scroll(event.deltaY * 3 * (conf.reversePages ? -1 : 1), Math.abs(Math.ceil(event.deltaY / 4)));
+          preventDefault();
+          this.scrollerX.scroll(event.deltaY * (conf.reversePages ? -1 : 1), conf.scrollingSpeed);
           break;
         }
         case "continuous": {
@@ -11151,7 +11176,7 @@ ${chapters.map((c, i) => `<div><label>
         return vid;
       } else {
         const img = document.createElement("img");
-        img.decoding = "sync";
+        img.decoding = "async";
         img.classList.add("bifm-img");
         img.draggable = conf.dragImageOut;
         if (imf.stage === FetchState.DONE) {

@@ -67,17 +67,17 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         autoPageSpeed: [1, 100],
         preventScrollPageTime: [-1, 90000],
         paginationIMGCount: [1, 3],
+        scrollingDelta: [1, 5000],
         scrollingSpeed: [1, 100],
       };
-      const mod = (key === "preventScrollPageTime" || key === "rowHeight") ? 10 : 1;
+      let mod = 1;
+      if (key === "preventScrollPageTime" || key === "rowHeight" || key === "scrollingDelta") {
+        mod = conf[key] === 1 ? 9 : 10;
+      };
       if (data === "add") {
-        if (conf[key] < range[key][1]) {
-          value = conf[key] + mod;
-        }
+        value = Math.min(conf[key] + mod, range[key][1]);
       } else if (data === "minus") {
-        if (conf[key] > range[key][0]) {
-          value = conf[key] - mod;
-        }
+        value = Math.max(conf[key] - mod, range[key][0]);
       }
     }
     if (value === undefined) return;
@@ -276,16 +276,18 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         ["pageup", "arrowup", "shift+space"],
         (event) => {
           const key = parseKey(event);
+          const noPrevent = ["pageup", "shift+space"].includes(key);
           let customKey = !["pageup", "arrowup", "shift+space"].includes(key);
-          BIFM.onWheel(new WheelEvent("wheel", { deltaY: BIFM.root.offsetHeight / 5 * -1 }), true, customKey);
+          BIFM.onWheel(new WheelEvent("wheel", { deltaY: conf.scrollingDelta * -1 }), noPrevent, customKey, undefined, event);
         }, true
       ),
       "scroll-image-down": new KeyboardDesc(
         ["pagedown", "arrowdown", "space"],
         (event) => {
           const key = parseKey(event);
+          const noPrevent = ["pagedown", "space"].includes(key);
           const customKey = !["pagedown", "arrowdown", "space"].includes(key);
-          BIFM.onWheel(new WheelEvent("wheel", { deltaY: BIFM.root.offsetHeight / 5 }), true, customKey);
+          BIFM.onWheel(new WheelEvent("wheel", { deltaY: conf.scrollingDelta }), noPrevent, customKey, undefined, event);
         }, true
       ),
       "toggle-auto-play": new KeyboardDesc(

@@ -204,7 +204,15 @@ export class BigImageFrameManager {
   }
 
   initEvent() {
-    this.root.addEventListener("wheel", (event) => this.onWheel(event));
+    this.root.addEventListener("wheel", (event) => this.onWheel(
+      new WheelEvent("wheel", {
+        deltaY: conf.scrollingDelta * (event.deltaY < 0 ? -1 : 1),
+        buttons: event.buttons, button: event.button,
+      }),
+      undefined,
+      undefined,
+      undefined,
+      event));
     this.root.addEventListener("scroll", (event) => this.onScroll(event), { passive: false });
     this.root.addEventListener("contextmenu", (event) => {
       event.preventDefault();
@@ -285,10 +293,6 @@ export class BigImageFrameManager {
         }
       },
     });
-  }
-
-  scroll(y: number) {
-    this.scrollerY.scroll(y, conf.scrollingSpeed);
   }
 
   scrollStop() {
@@ -532,10 +536,14 @@ export class BigImageFrameManager {
     }
   }
 
-  onWheel(event: WheelEvent, noPrevent?: boolean, customScrolling?: boolean, noCallback?: boolean) {
+  onWheel(event: WheelEvent, noPrevent?: boolean, customScrolling?: boolean, noCallback?: boolean, originEvent?: Event) {
+    const preventDefault = () => {
+      event.preventDefault();
+      originEvent?.preventDefault();
+    }
     if (!noCallback) this.callbackOnWheel?.(event);
     if (event.buttons === 2) {
-      event.preventDefault();
+      preventDefault();
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);
       return;
     }
@@ -546,7 +554,7 @@ export class BigImageFrameManager {
         const over = this.checkOverflow();
         const [$ori, $neg] = conf.reversePages ? [negative, this.oriented] : [this.oriented, negative];
         if (over[this.oriented].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) { // reached boundary, step next
-          event.preventDefault();
+          preventDefault();
           if (!noPrevent) {
             if (over[$neg].overX > 0 || over[negative].overY > 0) {
               if (this.tryPreventStep()) break;
@@ -566,8 +574,8 @@ export class BigImageFrameManager {
         break;
       }
       case "horizontal": {
-        event.preventDefault();
-        this.scrollerX.scroll(event.deltaY * 3 * (conf.reversePages ? -1 : 1), Math.abs(Math.ceil(event.deltaY / 4)));
+        preventDefault();
+        this.scrollerX.scroll(event.deltaY * (conf.reversePages ? -1 : 1), conf.scrollingSpeed);
         break;
       }
       case "continuous": {
@@ -656,7 +664,7 @@ export class BigImageFrameManager {
       return vid;
     } else {
       const img = document.createElement("img");
-      img.decoding = "sync";
+      img.decoding = "async";
       img.classList.add("bifm-img");
       // img.draggable = !(conf.magnifier && conf.readMode !== "continuous");
       img.draggable = conf.dragImageOut;

@@ -150,17 +150,29 @@ const i18nData = {
     '페이지 넘김 모드에서 자동 페이지 넘김 속도는 몇 초 후에 자동으로 페이지가 넘어갈지를 의미합니다.<br>연속 읽기 모드에서 자동 페이지 넘김 속도는 자동 스크롤 속도를 의미합니다.',
     'En el modo de lectura por paginación, la velocidad de página automática indica cuántos segundos toma cambiar la página automáticamente.<br>En el modo de lectura continua, la velocidad de página automática indica la velocidad de desplazamiento.'
   ],
+  scrollingDelta: [
+    'Scrolling Delta',
+    '滚动距离',
+    'Scrolling Delta',
+    'Scrolling Delta'
+  ],
+  scrollingDeltaTooltip: [
+    'During non-native scrolling (custom keyboard scrolling, horizontal scrolling), the distance of each scroll.',
+    '非浏览器原生的滚动时（按键滚动、横向滚动），每次滚动的距离。',
+    '비기본 스크롤(사용자 정의 키보드 스크롤, 가로 스크롤) 중 각 스크롤의 거리입니다.',
+    'Durante el desplazamiento no nativo (desplazamiento con teclado personalizado, desplazamiento horizontal), la distancia de cada desplazamiento.'
+  ],
   scrollingSpeed: [
     'Scrolling Speed',
-    '按键滚动速度',
+    '滚动速度',
     '스크롤 속도',
     'Velocidad de desplazamiento'
   ],
   scrollingSpeedTooltip: [
-    'The scrolling Speed for Custom KeyBoard Keys for scrolling, not Auto Paging|Scrolling Speed',
-    '自定义按键的滚动速度，并不是连续阅读模式下的自动翻页的滚动速度。',
-    '단축키를 사용한 스크롤 속도입니다. 자동 페이지 넘김 모드의 스크롤 속도가 아닙니다.',
-    'La velocidad de desplazamiento para las teclas del teclado personalizadas para desplazamiento, no para la paginación automática|Velocidad de desplazamiento'
+    'During non-native scrolling (custom keyboard scrolling, horizontal scrolling), the speed of scrolling.',
+    '非浏览器原生的滚动时（按键滚动、横向滚动），滚动的速度。',
+    '비기본 스크롤(사용자 정의 키보드 스크롤, 가로 스크롤) 중 스크롤 속도입니다.',
+    'Durante el desplazamiento no nativo (desplazamiento con teclado personalizado, desplazamiento horizontal), la velocidad de desplazamiento.'
   ],
   // config panel boolean option
   fetchOriginal: [

@@ -95,6 +95,8 @@ export type Config = {
   reverseMultipleImagesPost: boolean,
   /** Many galleries have both an English/Romanized title and a title in Japanese script. Which gallery name would you like as archive filename?  */
   ehentaiTitlePrefer: "english" | "japanese",
+  /** Custom key scrolling delta */
+  scrollingDelta: number,
   /** Custom key scrolling speed */
   scrollingSpeed: number,
   id: string,
@@ -161,7 +163,8 @@ function defaultConf(): Config {
     autoLoadInBackground: true,
     reverseMultipleImagesPost: true,
     ehentaiTitlePrefer: "japanese",
-    scrollingSpeed: 30,
+    scrollingDelta: 300,
+    scrollingSpeed: 20,
     id: uuid(),
     configPatchVersion: 0,
     displayText: {},
@@ -292,6 +295,7 @@ export type ConfigNumberType = "colCount"
   | "autoPageSpeed"
   | "preventScrollPageTime"
   | "paginationIMGCount"
+  | "scrollingDelta"
   | "scrollingSpeed"
   ;
 export type ConfigBooleanType = "fetchOriginal"
@@ -340,6 +344,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "timeout", typ: "number" },
   { key: "preventScrollPageTime", typ: "number" },
   { key: "autoPageSpeed", typ: "number" },
+  { key: "scrollingDelta", typ: "number" },
   { key: "scrollingSpeed", typ: "number" },
   { key: "fetchOriginal", typ: "boolean", gridColumnRange: [1, 6] },
   { key: "autoLoad", typ: "boolean", gridColumnRange: [6, 11] },

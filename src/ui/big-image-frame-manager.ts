@@ -248,7 +248,7 @@ export class BigImageFrameManager {
         if (!moved) { // first move
           // temporarily zoom if img not scale
           if (conf.magnifier && conf.imgScale === 100) {
-            this.scaleBigImages(5, 0, 150, false);
+            this.scaleBigImages(1, 0, 150, false);
           }
           // calculate current elements total width, for stickyMouse limit
           if (conf.readMode === "pagination") {
@@ -697,9 +697,9 @@ export class BigImageFrameManager {
    * @param specifiedPercent: directly set width percent 
    * @param syncConf: sync to config, default = true 
    */
-  scaleBigImages(fix: number, rate: number, specifiedPercent?: number, syncConf?: boolean): number {
+  scaleBigImages(fix: 1 | -1, rate: number, specifiedPercent?: number, syncConf?: boolean): number {
     let oldPercent = conf.imgScale;
-    let newPercent = specifiedPercent ?? (oldPercent + rate * fix);
+    let newPercent = specifiedPercent ?? (oldPercent + (rate * fix));
     switch (conf.readMode) {
       case "pagination": {
         const rule = queryCSSRules(this.html.styleSheet, ".bifm-container-page");
@@ -948,7 +948,7 @@ function stickyMouse(element: HTMLElement, event: MouseEvent, lastMouse: { x: nu
   if (overflowX > 0) {
     const rateX = (conf.readMode !== "pagination") ? 1 : overflowX / (element.offsetWidth / 4) * 3;
     let scrollLeft = element.scrollLeft + distanceX * rateX;
-    console.log(`overflow ${overflowX}, element.offsetWidth / 4: ${element.offsetWidth / 4}, rateX: ${rateX}, scrollLeft: ${scrollLeft}, distanceX: ${distanceX}`);
+    // console.log(`overflow ${overflowX}, element.offsetWidth / 4: ${element.offsetWidth / 4}, rateX: ${rateX}, scrollLeft: ${scrollLeft}, distanceX: ${distanceX}`);
     element.scrollLeft = scrollLeft;
   }
 }

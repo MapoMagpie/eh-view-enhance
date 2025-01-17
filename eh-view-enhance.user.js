@@ -1309,6 +1309,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       cf.readMode = "pagination";
       changed = true;
     }
+    if (cf.imgScale === void 0 || isNaN(cf.imgScale) || cf.imgScale === 0) {
+      cf.imgScale = cf.readMode === "continuous" ? 80 : 100;
+      changed = true;
+    }
     const newCf = patchConfig(cf);
     if (newCf) {
       cf = newCf;
@@ -10129,8 +10133,9 @@ ${chapters.map((c, i) => `<div><label>
     q("#paginationInput", HTML.pageHelper).addEventListener("wheel", (event) => events.modNumberConfigEvent("paginationIMGCount", event.deltaY < 0 ? "add" : "minus"));
     q("#scaleInput", HTML.pageHelper).addEventListener("mousedown", (event) => {
       const element = event.target;
-      const scale = conf.imgScale || (conf.readMode === "pagination" ? 100 : 80);
+      const scale = conf.imgScale || (conf.readMode === "continuous" ? 80 : 100);
       dragElementWithLine(event, element, { y: true }, (data) => {
+        if (data.distance === 0) return;
         const fix = (data.direction & 3) === 1 ? 1 : -1;
         BIFM.scaleBigImages(1, 0, Math.floor(scale + data.distance * 0.6 * fix));
         element.textContent = conf.imgScale.toString();
@@ -10795,7 +10800,7 @@ ${chapters.map((c, i) => `<div><label>
           if (IS_MOBILE) return;
           if (!moved) {
             if (conf.magnifier && conf.imgScale === 100) {
-              this.scaleBigImages(5, 0, 150, false);
+              this.scaleBigImages(1, 0, 150, false);
             }
             if (conf.readMode === "pagination") {
               const showing = this.intersectingElements;
@@ -11439,7 +11444,6 @@ ${chapters.map((c, i) => `<div><label>
     if (overflowX > 0) {
       const rateX = conf.readMode !== "pagination" ? 1 : overflowX / (element.offsetWidth / 4) * 3;
       let scrollLeft = element.scrollLeft + distanceX * rateX;
-      console.log(`overflow ${overflowX}, element.offsetWidth / 4: ${element.offsetWidth / 4}, rateX: ${rateX}, scrollLeft: ${scrollLeft}, distanceX: ${distanceX}`);
       element.scrollLeft = scrollLeft;
     }
   }

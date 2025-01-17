@@ -250,6 +250,10 @@ function confHealthCheck(cf: Config): Config {
     cf.readMode = "pagination";
     changed = true;
   }
+  if (cf.imgScale === undefined || isNaN(cf.imgScale) || cf.imgScale === 0) {
+    cf.imgScale = cf.readMode === "continuous" ? 80 : 100;
+    changed = true;
+  }
   const newCf = patchConfig(cf);
   if (newCf) {
     cf = newCf;

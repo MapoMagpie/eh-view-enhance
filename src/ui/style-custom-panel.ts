@@ -205,7 +205,7 @@ function stylePreset(index: number) {
 .bifm-container > div {
   border: 2px solid green;
 }
-/*`,
+*/`,
     `.ehvp-root {
   --ehvp-theme-bg-color: #ffffff;
   --ehvp-theme-font-color: #760098;

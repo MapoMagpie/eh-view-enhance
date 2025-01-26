@@ -53,6 +53,8 @@ export type Config = {
   pageHelperAbRight: string
   /** 图片缩放比例 eg: 80, means 80% */
   imgScale: number
+  /** 默认图片缩放比例，仅限连续阅读模式下。*/
+  defaultImgScaleModeC: number
   /** 自动翻页间隔 */
   autoPageSpeed: number
   /** 自动开始 */
@@ -143,6 +145,7 @@ function defaultConf(): Config {
     pageHelperAbBottom: "20px",
     pageHelperAbRight: "unset",
     imgScale: 100,
+    defaultImgScaleModeC: 60,
     autoPageSpeed: 5, // pagination readmode = 5, continuous readmode = 1
     autoPlay: false,
     hdThumbnails: false,
@@ -251,7 +254,7 @@ function confHealthCheck(cf: Config): Config {
     changed = true;
   }
   if (cf.imgScale === undefined || isNaN(cf.imgScale) || cf.imgScale === 0) {
-    cf.imgScale = cf.readMode === "continuous" ? 80 : 100;
+    cf.imgScale = cf.readMode === "continuous" ? cf.defaultImgScaleModeC : 100;
     changed = true;
   }
   const newCf = patchConfig(cf);

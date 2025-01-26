@@ -1214,6 +1214,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       pageHelperAbBottom: "20px",
       pageHelperAbRight: "unset",
       imgScale: 100,
+      defaultImgScaleModeC: 60,
       autoPageSpeed: 5,
       // pagination readmode = 5, continuous readmode = 1
       autoPlay: false,
@@ -1310,7 +1311,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       changed = true;
     }
     if (cf.imgScale === void 0 || isNaN(cf.imgScale) || cf.imgScale === 0) {
-      cf.imgScale = cf.readMode === "continuous" ? 80 : 100;
+      cf.imgScale = cf.readMode === "continuous" ? cf.defaultImgScaleModeC : 100;
       changed = true;
     }
     const newCf = patchConfig(cf);
@@ -10133,7 +10134,7 @@ ${chapters.map((c, i) => `<div><label>
     q("#paginationInput", HTML.pageHelper).addEventListener("wheel", (event) => events.modNumberConfigEvent("paginationIMGCount", event.deltaY < 0 ? "add" : "minus"));
     q("#scaleInput", HTML.pageHelper).addEventListener("mousedown", (event) => {
       const element = event.target;
-      const scale = conf.imgScale || (conf.readMode === "continuous" ? 80 : 100);
+      const scale = conf.imgScale || (conf.readMode === "continuous" ? conf.defaultImgScaleModeC : 100);
       dragElementWithLine(event, element, { y: true }, (data) => {
         if (data.distance === 0) return;
         const fix = (data.direction & 3) === 1 ? 1 : -1;
@@ -11258,7 +11259,7 @@ ${chapters.map((c, i) => `<div><label>
       return newPercent;
     }
     resetScaleBigImages(syncConf) {
-      const percent = conf.readMode !== "continuous" || IS_MOBILE ? 100 : 80;
+      const percent = conf.readMode !== "continuous" || IS_MOBILE ? 100 : conf.defaultImgScaleModeC;
       this.scaleBigImages(1, 0, percent, syncConf);
     }
     flushLoadingHelper() {

@@ -744,7 +744,7 @@ export class BigImageFrameManager {
   }
 
   resetScaleBigImages(syncConf: boolean) {
-    const percent = (conf.readMode !== "continuous" || IS_MOBILE) ? 100 : 80;
+    const percent = (conf.readMode !== "continuous" || IS_MOBILE) ? 100 : conf.defaultImgScaleModeC;
     this.scaleBigImages(1, 0, percent, syncConf);
   }
 

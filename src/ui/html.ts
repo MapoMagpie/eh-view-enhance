@@ -242,7 +242,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
 
   q("#scaleInput", HTML.pageHelper).addEventListener("mousedown", (event) => {
     const element = event.target as HTMLElement;
-    const scale = conf.imgScale || (conf.readMode === "continuous" ? 80 : 100);
+    const scale = conf.imgScale || (conf.readMode === "continuous" ? conf.defaultImgScaleModeC : 100);
     dragElementWithLine(event, element, { y: true }, (data) => {
       if (data.distance === 0) return;
       const fix = (data.direction & 3) === 1 ? 1 : -1; // 4bit: UDLR,  data.direction & 3 means remove UD

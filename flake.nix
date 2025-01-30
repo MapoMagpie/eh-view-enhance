@@ -18,6 +18,7 @@
           nodejs_23
           typescript-language-server
         ];
+        shellHook = "exec zsh";
       };
     };
 }

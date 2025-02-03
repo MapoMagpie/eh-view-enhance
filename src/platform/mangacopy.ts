@@ -1,6 +1,7 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
+import { simpleFetch } from "../utils/query";
 import { BaseMatcher, OriginMeta } from "./platform";
 
 export class MangaCopyMatcher extends BaseMatcher<string> {
@@ -26,7 +27,7 @@ export class MangaCopyMatcher extends BaseMatcher<string> {
     yield source.source;
   }
   async parseImgNodes(source: string): Promise<ImageNode[]> {
-    const raw = await window.fetch(source).then(resp => resp.text());
+    const raw = await simpleFetch(source, "text", { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36" });
     const doc = new DOMParser().parseFromString(raw, "text/html");
     const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
     if (!contentKey) throw new Error("cannot find content key");
@@ -51,28 +52,46 @@ export class MangaCopyMatcher extends BaseMatcher<string> {
     const thumbimg = document.querySelector<HTMLImageElement>(".comicParticulars-left-img > img[data-src]")?.getAttribute("data-src") || undefined;
     const pathWord = window.location.href.match(PATH_WORD_REGEX)?.[1];
     if (!pathWord) throw new Error("cannot match comic id");
-    const url = `${window.location.origin}/comicdetail/${pathWord}/chapters`;
-    const data = await window.fetch(url).then<{ code: number, message: string, results: string }>(res => res.json()).catch(reason => new Error(reason.toString()));
-    if (data instanceof Error) throw new Error("fetch chapter detail error: " + data.toString());
-    if (data.code !== 200) throw new Error("fetch chater detail error: " + data.message);
-    let details: MCChapterDetails;
-    try {
-      const decryption = await decrypt(data.results);
-      details = JSON.parse(decryption);
-    } catch (error) {
-      throw new Error("parse chapter details error: " + (error as any).toString());
-    }
-    const origin = window.location.origin;
-    return [...details.groups.default.chapters, ...(details.groups.tankobon?.chapters ?? [])].map((ch, i) => {
-      this.chapterCount++;
-      return {
-        id: i + 1,
-        title: ch.name,
-        source: `${origin}/comic/${pathWord}/chapter/${ch.id}`,
-        queue: [],
-        thumbimg,
+    const comicInfoURL = `https://api.mangacopy.com/api/v3/comic2/${pathWord}?platform=1&_update=true`;
+    const comicInfo = await window.fetch(comicInfoURL).then<{ code: number, message: string, results: MCAPIComicDetail }>(res => res.json()).catch(reason => new Error(reason.toString()));
+    if (comicInfo instanceof Error || !comicInfo.results.groups) throw new Error("fetch comic detail error: " + comicInfo.toString());
+    if (comicInfo.code !== 200) throw new Error("fetch comic detail error: " + comicInfo.message);
+
+    const chapters = [];
+    // fetch all chapters by group
+    const groups = comicInfo.results.groups;
+    let chapterCount = 0;
+    for (const group in groups) {
+      let offset = 0;
+      while (true) {
+        const chaptersURL = `https://api.mangacopy.com/api/v3/comic/${pathWord}/group/${groups[group].path_word}/chapters?limit=100&offset=${offset}&_update=true`;
+        const data = await window.fetch(chaptersURL).then<{ code: number, message: string, results: MCAPIChapterResult }>(res => res.json()).catch(reason => new Error(reason.toString()));
+        if (data instanceof Error) throw new Error("fetch chapters error: " + data.toString());
+        if (data.code !== 200) throw new Error("fetch chaters error: " + data.message);
+        const result = data.results;
+        offset += result.list.length;
+        for (const ch of result.list) {
+          chapters.push({
+            id: chapterCount++,
+            title: group === "default" ? ch.name : `${groups[group].name}-${ch.name}`,
+            // source: `https://api.mangacopy.com/api/v3/comic/${pathWord}/chapter2/${ch.uuid}?platform=1&_update=true`,
+            source: `${window.location.origin}/comic/${pathWord}/chapter/${ch.uuid}`,
+            queue: [],
+            thumbimg,
+          });
+        }
+        if (offset >= result.total) break;
       }
-    });
+    }
+    return chapters;
+
+    // let details: MCChapterDetails;
+    // try {
+    //   const decryption = await decrypt(data.results);
+    //   details = JSON.parse(decryption);
+    // } catch (error) {
+    //   throw new Error("parse chapter details error: " + (error as any).toString());
+    // }
   }
 }
 
@@ -145,21 +164,51 @@ async function decrypt(raw: string): Promise<string> {
 //   return r(6);
 // }
 
-type MCGroupInfo = {
-  path_word: string,
-  count: number,
-  name: string,
-  chapters: MCChapter[],
-  last_chapter: MCLastChapter,
-}
+// type MCGroupInfo = {
+//   path_word: string,
+//   count: number,
+//   name: string,
+//   chapters: MCChapter[],
+//   last_chapter: MCLastChapter,
+// }
 
-type MCChapter = {
-  type: number,
-  name: string,
-  id: string
-}
+// type MCChapter = {
+//   type: number,
+//   name: string,
+//   id: string
+// }
 
-type MCLastChapter = {
+// type MCLastChapter = {
+//   index: number,
+//   uuid: string,
+//   count: number,
+//   ordered: number,
+//   size: number,
+//   name: string,
+//   comic_id: string,
+//   comic_path_word: string,
+//   group_id?: string,
+//   group_path_word: string,
+//   type: number,
+//   img_type: number,
+//   news: string,
+//   datetime_created: string,
+//   prev?: string,
+//   next?: string,
+// }
+
+// type MCChapterDetails = {
+//   build: {
+//     path_word: string,
+//     type: { id: number, name: string }[]
+//   },
+//   groups: {
+//     default: MCGroupInfo,
+//     tankobon: MCGroupInfo,
+//   }
+// }
+
+type MCAPIChapter = {
   index: number,
   uuid: string,
   count: number,
@@ -168,7 +217,7 @@ type MCLastChapter = {
   name: string,
   comic_id: string,
   comic_path_word: string,
-  group_id?: string,
+  group_id: string,
   group_path_word: string,
   type: number,
   img_type: number,
@@ -178,81 +227,41 @@ type MCLastChapter = {
   next?: string,
 }
 
-type MCChapterDetails = {
-  build: {
-    path_word: string,
-    type: { id: number, name: string }[]
-  },
-  groups: {
-    default: MCGroupInfo,
-    tankobon: MCGroupInfo,
-  }
+type MCAPIChapterResult = {
+  total: number,
+  limit: number,
+  offset: number,
+  list: MCAPIChapter[],
 }
 
-// const a = {
-//   "build": {
-//     "path_word": "eldenringhuangjinshuzhilu",
-//     "type": [
-//       { "id": 1, "name": "\\u8a71" },
-//       { "id": 2, "name": "\\u5377" },
-//       { "id": 3, "name": "\\u756a\\u5916\\u7bc7" }]
-//   },
-//   "groups": {
-//     "default": {
-//       "path_word": "default",
-//       "count": 48,
-//       "name": "\\u9ed8\\u8a8d",
-//       "chapters": [
-//         { "type": 1, "name": "\\u7b2c01\\u8bdd", "id": "abbab208 - 2c32- 11ed - ac9b-024352452ce0" },
-//         { "type": 1, "name": "\\u7b2c02\\u8bdd", "id": "af0ba516-2c32 - 11ed - ac9b-024352452ce0" },
-//       ],
-//       "last_chapter": {
-//         "index": 47,
-//         "uuid": "c984abfa - 39c7 - 11ef - 96d1 - 3f487b7d9a9a",
-//         "count": 48,
-//         "ordered": 460,
-//         "size": 20,
-//         "name": "\\u7b2c46\\u8bdd",
-//         "comic_id": "a2c8545c - 2c32 - 11ed - ac9b-024352452ce0",
-//         "comic_path_word": "eldenringhuangjinshuzhilu",
-//         "group_id": null,
-//         "group_path_word": "default ",
-//         "type": 1,
-//         "img_type": 1,
-//         "news": "success",
-//         "datetime_created": "2024-07-04",
-//         "prev": "271634bc - 2df9 - 11ef - 9302 - 3f487b7d9a9a",
-//         "next": null
-//       }
-//     },
-//     "tankobon": {
-//       "path_word": "tankobon",
-//       "count": 4,
-//       "name": "\\u5355\\u884c\\u672c",
-//       "chapters": [
-//         { "type": 2, "name": "\\u7b2c01\\u5377", "id": "b85b2186 - d55b - 11ee- bdc6 - 55b00c27fb36" },
-//         { "type": 2, "name": "\\u7b2c02\\u5377", "id": "c319160a - d55b - 11ee - bdc6 - 55b00c27fb36" },
-//         { "type": 2, "name": "\\u7b2c03\\u5377", "id": "c56dfdf4 - 24ec - 11ef - 8eac - 3f487b7d9a9a" },
-//         { "type": 2, "name": "\\u7b2c04\\u5377", "id": "e89cb286 - 4b2d - 11ef - 9fe0 - 3f487b7d9a9a" }
-//       ],
-//       "last_chapter": {
-//         "index": 3,
-//         "uuid": "e89cb286 - 4b2d - 11ef - 9fe0 - 3f487b7d9a9a",
-//         "count": 4,
-//         "ordered": 40,
-//         "size": 168,
-//         "name": "\\u7b2c04\\u5377",
-//         "comic_id": "a2c8545c - 2c32 - 11ed - ac9b-024352452ce0",
-//         "comic_path_word": "eldenringhuangjinshuzhilu",
-//         "group_id": "556d186c - c54a - 11e8 - 878d-024352452ce0",
-//         "group_path_word": "tankobon",
-//         "type": 2,
-//         "img_type": 1,
-//         "news": "success",
-//         "datetime_created": "2024-07 - 26",
-//         "prev": "c56dfdf4 - 24ec - 11ef - 8eac - 3f487b7d9a9a",
-//         "next": null
-//       }
-//     }
-//   }
-// }
+type MCAPIComicDetail = {
+  is_banned: boolean,
+  is_lock: boolean,
+  is_login: boolean,
+  is_mobile_bind: boolean,
+  is_vip: boolean,
+  comic: {
+    uuid: string,
+    ban: string,
+    name: string,
+    alias: string,
+    path_word: string,
+    free_type: {
+      display: string,
+      value: number,
+    },
+    brief: string, // description
+    cover: string, // thumbnail image
+    last_chapter: {
+      uuid: string,
+      name: string,
+    }
+  },
+  groups: Record<string, MCGroupInfo>,
+}
+
+type MCGroupInfo = {
+  path_word: string,
+  count: number,
+  name: string,
+}

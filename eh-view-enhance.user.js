@@ -1520,12 +1520,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       ...cb
     })?.abort;
   }
-  function fetchImage(url) {
+  function simpleFetch(url, respType, headers) {
     return new Promise((resolve, reject) => {
-      xhrWapper(url, "blob", {
+      xhrWapper(url, respType, {
         onload: (response) => resolve(response.response),
         onerror: (error) => reject(error)
-      }, {}, 10 * 1e3);
+      }, headers ?? {}, 10 * 1e3);
     });
   }
   async function batchFetch(urls, concurrency, respType = "text") {
@@ -4363,7 +4363,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     let data;
     for (let i = 0; i < 3; i++) {
       try {
-        data = await fetchImage(url);
+        data = await simpleFetch(url, "blob");
         break;
       } catch (err) {
       }
@@ -5280,7 +5280,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       yield source.source;
     }
     async parseImgNodes(source) {
-      const raw = await window.fetch(source).then((resp) => resp.text());
+      const raw = await simpleFetch(source, "text", { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36" });
       const doc = new DOMParser().parseFromString(raw, "text/html");
       const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
       if (!contentKey) throw new Error("cannot find content key");
@@ -5305,28 +5305,36 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const thumbimg = document.querySelector(".comicParticulars-left-img > img[data-src]")?.getAttribute("data-src") || void 0;
       const pathWord = window.location.href.match(PATH_WORD_REGEX)?.[1];
       if (!pathWord) throw new Error("cannot match comic id");
-      const url = `${window.location.origin}/comicdetail/${pathWord}/chapters`;
-      const data = await window.fetch(url).then((res) => res.json()).catch((reason) => new Error(reason.toString()));
-      if (data instanceof Error) throw new Error("fetch chapter detail error: " + data.toString());
-      if (data.code !== 200) throw new Error("fetch chater detail error: " + data.message);
-      let details;
-      try {
-        const decryption = await decrypt(data.results);
-        details = JSON.parse(decryption);
-      } catch (error) {
-        throw new Error("parse chapter details error: " + error.toString());
+      const comicInfoURL = `https://api.mangacopy.com/api/v3/comic2/${pathWord}?platform=1&_update=true`;
+      const comicInfo = await window.fetch(comicInfoURL).then((res) => res.json()).catch((reason) => new Error(reason.toString()));
+      if (comicInfo instanceof Error || !comicInfo.results.groups) throw new Error("fetch comic detail error: " + comicInfo.toString());
+      if (comicInfo.code !== 200) throw new Error("fetch comic detail error: " + comicInfo.message);
+      const chapters = [];
+      const groups = comicInfo.results.groups;
+      let chapterCount = 0;
+      for (const group in groups) {
+        let offset = 0;
+        while (true) {
+          const chaptersURL = `https://api.mangacopy.com/api/v3/comic/${pathWord}/group/${groups[group].path_word}/chapters?limit=100&offset=${offset}&_update=true`;
+          const data = await window.fetch(chaptersURL).then((res) => res.json()).catch((reason) => new Error(reason.toString()));
+          if (data instanceof Error) throw new Error("fetch chapters error: " + data.toString());
+          if (data.code !== 200) throw new Error("fetch chaters error: " + data.message);
+          const result = data.results;
+          offset += result.list.length;
+          for (const ch of result.list) {
+            chapters.push({
+              id: chapterCount++,
+              title: group === "default" ? ch.name : `${groups[group].name}-${ch.name}`,
+              // source: `https://api.mangacopy.com/api/v3/comic/${pathWord}/chapter2/${ch.uuid}?platform=1&_update=true`,
+              source: `${window.location.origin}/comic/${pathWord}/chapter/${ch.uuid}`,
+              queue: [],
+              thumbimg
+            });
+          }
+          if (offset >= result.total) break;
+        }
       }
-      const origin = window.location.origin;
-      return [...details.groups.default.chapters, ...details.groups.tankobon?.chapters ?? []].map((ch, i) => {
-        this.chapterCount++;
-        return {
-          id: i + 1,
-          title: ch.name,
-          source: `${origin}/comic/${pathWord}/chapter/${ch.id}`,
-          queue: [],
-          thumbimg
-        };
-      });
+      return chapters;
     }
   }
   const PATH_WORD_REGEX = /\/comic\/(\w*)/;

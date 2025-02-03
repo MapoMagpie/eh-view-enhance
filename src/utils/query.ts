@@ -1,6 +1,6 @@
 import { GM_xmlhttpRequest, GmXhrRequest } from "$";
 
-type RespType = keyof {
+type Resp = {
   text: string;
   json: any;
   arraybuffer: ArrayBuffer;
@@ -8,6 +8,7 @@ type RespType = keyof {
   document: Document;
   stream: ReadableStream<Uint8Array>;
 };
+type RespType = keyof Resp;
 
 type EventListener<T extends RespType> = Pick<GmXhrRequest<unknown, T>, "onload" | "onprogress" | "onerror" | "ontimeout" | "onloadstart">;
 
@@ -41,12 +42,12 @@ export function xhrWapper<T extends RespType>(url: string, respType: T, cb: Even
 // "Sec-Fetch-Mode": "cors",
 // "Sec-Fetch-Site": "cross-site",
 
-export function fetchImage(url: string): Promise<Blob> {
+export function simpleFetch<T extends RespType>(url: string, respType: T, headers?: Record<string, string>): Promise<Resp[T]> {
   return new Promise((resolve, reject) => {
-    xhrWapper(url, "blob", {
+    xhrWapper<T>(url, respType, {
       onload: (response) => resolve(response.response),
       onerror: (error) => reject(error)
-    }, {}, 10 * 1000);
+    }, headers ?? {}, 10 * 1000);
   });
 }
 export async function batchFetch<T>(urls: string[], concurrency: number, respType: "text" | "json" | "arraybuffer" = "text"): Promise<(T | Error)[]> {

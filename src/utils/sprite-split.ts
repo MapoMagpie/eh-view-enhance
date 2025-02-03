@@ -1,4 +1,4 @@
-import { fetchImage } from "./query";
+import { simpleFetch } from "./query";
 
 export type ImagePosition = {
   x: number;
@@ -33,7 +33,7 @@ export async function splitImagesFromUrl(url: string, positions: ImagePosition[]
   let data: Blob | undefined;
   for (let i = 0; i < 3; i++) {
     try {
-      data = await fetchImage(url);
+      data = await simpleFetch(url, "blob");
       break;
     } catch (err) { }
   }

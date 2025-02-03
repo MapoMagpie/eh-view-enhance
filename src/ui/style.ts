@@ -191,16 +191,8 @@ export function styleCSS() {
 .img-fetching {
   background-color: var(--ehvp-img-fetching);
 }
-.img-excluded::after {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  bottom: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
-  /**aspect-ratio: 1;*/
-  background-color: #333333b0;
+.img-excluded {
+  filter: brightness(0.3);
 }
 .img-fetching::after {
   content: '';

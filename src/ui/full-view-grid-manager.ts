@@ -74,9 +74,7 @@ export class FullViewGridManager {
       this.tryExtend();
     }, 400));
     this.root.addEventListener("click", (event) => {
-      if (event.target === HTML.fullViewGrid
-        || (event.target as HTMLElement).classList.contains("img-node")
-        || (event.target as HTMLElement).classList.contains("fvg-sub-container")
+      if (event.target === HTML.fullViewGrid || (event.target as HTMLElement).classList.contains("fvg-sub-container")
       ) {
         EBUS.emit("toggle-main-view", false);
       }

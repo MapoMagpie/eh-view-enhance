@@ -25,8 +25,8 @@ export function styleCSS() {
   font-family: Poppins,sans-serif;
 }
 .ehvp-root {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   background-color: #000;
   position: fixed;
   top: 0px;
@@ -51,14 +51,14 @@ export function styleCSS() {
   height: 0;
 }
 .fvg-flow {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   overflow: hidden scroll;
   background: var(--ehvp-thumbnail-list-bg);
 }
 .fvg-grid {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   display: grid;
   align-content: start;
   grid-gap: 0.7em;
@@ -226,8 +226,8 @@ export function styleCSS() {
 }
 .big-img-frame {
   position: fixed;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   top: 0;
   right: 0;
   overflow: auto;
@@ -430,8 +430,8 @@ export function styleCSS() {
   width: 34em;
   height: 18em;
   display: flex;
-  max-height: 80vh;
-  max-width: 100vw;
+  max-height: 80%;
+  max-width: 100%;
 }
 .p-chapters-large {
   width: 45em;
@@ -554,8 +554,8 @@ export function styleCSS() {
   pointer-events: none;
 }
 .page-loading {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   justify-content: center;
   align-items: center;
   background-color: #333333a6;
@@ -608,8 +608,8 @@ export function styleCSS() {
 .lightgreen { color: #90ea90; }
 .ehvp-full-panel {
   position: fixed;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   background-color: #000000e8;
   z-index: 3000;
   display: flex;
@@ -936,14 +936,14 @@ export function styleCSS() {
     display: none;
   }
   .p-panel {
-    width: 100vw;
+    width: 100%;
     font-size: 5cqw;
   }
   .p-chapters {
-    width: 100vw;
+    width: 100%;
   }
   .ehvp-custom-panel {
-    max-width: 100vw;
+    max-width: 100%;
   }
   .ehvp-root input, .ehvp-root select {
     width: 2em;
@@ -966,7 +966,7 @@ export function styleCSS() {
     display: none;
   }
   .bifm-container-hori > div {
-    width: 100vw;
+    width: 100%;
   }
 }
 `;

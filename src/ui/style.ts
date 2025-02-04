@@ -430,6 +430,8 @@ export function styleCSS() {
   width: 34em;
   height: 18em;
   display: flex;
+  max-height: 80vh;
+  max-width: 100vw;
 }
 .p-chapters-large {
   width: 45em;

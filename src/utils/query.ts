@@ -1,19 +1,12 @@
-import { GM_xmlhttpRequest, GmXhrRequest } from "$";
+import { GM_xmlhttpRequest, GmResponseType, GmResponseTypeMap, GmXmlhttpRequestOption, } from "$";
 
-type Resp = {
-  text: string;
-  json: any;
-  arraybuffer: ArrayBuffer;
-  blob: Blob;
-  document: Document;
-  stream: ReadableStream<Uint8Array>;
-};
-type RespType = keyof Resp;
+type Option<T extends GmResponseType> = GmXmlhttpRequestOption<T, GmResponseTypeMap[GmResponseType]>;
 
-type EventListener<T extends RespType> = Pick<GmXhrRequest<unknown, T>, "onload" | "onprogress" | "onerror" | "ontimeout" | "onloadstart">;
+type EventListener<T extends GmResponseType> = Pick<Option<T>, "onload" | "onprogress" | "onerror" | "ontimeout" | "onloadstart">;
 
-export function xhrWapper<T extends RespType>(url: string, respType: T, cb: EventListener<T>, headers: Record<string, string>, timeout?: number): (() => void) | undefined {
-  return GM_xmlhttpRequest<unknown, T>({
+export function xhrWapper<T extends GmResponseType>(url: string, respType: T, cb: EventListener<keyof GmResponseTypeMap>, headers: Record<string, string>, timeout?: number): (() => void) | undefined {
+  // const onload = cb.onload;
+  return GM_xmlhttpRequest<GmResponseType, any>({
     method: "GET",
     url,
     timeout: timeout || 600000,
@@ -42,7 +35,7 @@ export function xhrWapper<T extends RespType>(url: string, respType: T, cb: Even
 // "Sec-Fetch-Mode": "cors",
 // "Sec-Fetch-Site": "cross-site",
 
-export function simpleFetch<T extends RespType>(url: string, respType: T, headers?: Record<string, string>): Promise<Resp[T]> {
+export function simpleFetch<T extends GmResponseType>(url: string, respType: T, headers?: Record<string, string>): Promise<GmResponseTypeMap[T]> {
   return new Promise((resolve, reject) => {
     xhrWapper<T>(url, respType, {
       onload: (response) => resolve(response.response),

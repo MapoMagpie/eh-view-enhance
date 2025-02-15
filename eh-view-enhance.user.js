@@ -31,7 +31,7 @@
 // @match              https://*.copymanga.tv/*
 // @match              https://*.artstation.com/*
 // @match              *://*/*
-// @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.52/dist/zip-full.min.js
+// @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.57/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
 // @connect            *
@@ -63,7 +63,6 @@
 
   const zip_js__namespace = /*#__PURE__*/_interopNamespaceDefault(zip_js);
 
-  // src/native/alias.ts
   var _GM_getValue = /* @__PURE__ */ (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
   var _GM_setValue = /* @__PURE__ */ (() => typeof GM_setValue != "undefined" ? GM_setValue : void 0)();
   var _GM_xmlhttpRequest = /* @__PURE__ */ (() => typeof GM_xmlhttpRequest != "undefined" ? GM_xmlhttpRequest : void 0)();
@@ -1157,16 +1156,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
   };
 
-  const bookIcon = `📖`;
   const moonViewCeremony = `<🎑>`;
-  const sixPointedStar = `🔯`;
-  const entryIcon = `⍇⍈`;
   const zoomIcon = `⇱⇲`;
   const icons = {
-    bookIcon,
     moonViewCeremony,
-    sixPointedStar,
-    entryIcon,
     zoomIcon
   };
 
@@ -5683,6 +5676,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   (function (FFMessageType) {
       FFMessageType["LOAD"] = "LOAD";
       FFMessageType["EXEC"] = "EXEC";
+      FFMessageType["FFPROBE"] = "FFPROBE";
       FFMessageType["WRITE_FILE"] = "WRITE_FILE";
       FFMessageType["READ_FILE"] = "READ_FILE";
       FFMessageType["DELETE_FILE"] = "DELETE_FILE";
@@ -5744,6 +5738,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
                       case FFMessageType.MOUNT:
                       case FFMessageType.UNMOUNT:
                       case FFMessageType.EXEC:
+                      case FFMessageType.FFPROBE:
                       case FFMessageType.WRITE_FILE:
                       case FFMessageType.READ_FILE:
                       case FFMessageType.DELETE_FILE:
@@ -5856,6 +5851,34 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
        */
       timeout = -1, { signal } = {}) => this.#send({
           type: FFMessageType.EXEC,
+          data: { args, timeout },
+      }, undefined, signal);
+      /**
+       * Execute ffprobe command.
+       *
+       * @example
+       * ```ts
+       * const ffmpeg = new FFmpeg();
+       * await ffmpeg.load();
+       * await ffmpeg.writeFile("video.avi", ...);
+       * // Getting duration of a video in seconds: ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 video.avi -o output.txt
+       * await ffmpeg.ffprobe(["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", "video.avi", "-o", "output.txt"]);
+       * const data = ffmpeg.readFile("output.txt");
+       * ```
+       *
+       * @returns `0` if no error, `!= 0` if timeout (1) or error.
+       * @category FFmpeg
+       */
+      ffprobe = (
+      /** ffprobe command line args */
+      args, 
+      /**
+       * milliseconds to wait before stopping the command execution.
+       *
+       * @defaultValue -1
+       */
+      timeout = -1, { signal } = {}) => this.#send({
+          type: FFMessageType.FFPROBE,
           data: { args, timeout },
       }, undefined, signal);
       /**
@@ -5985,6 +6008,16 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           data: { path },
       }, undefined, signal);
   }
+
+  var FFFSType;
+  (function (FFFSType) {
+      FFFSType["MEMFS"] = "MEMFS";
+      FFFSType["NODEFS"] = "NODEFS";
+      FFFSType["NODERAWFS"] = "NODERAWFS";
+      FFFSType["IDBFS"] = "IDBFS";
+      FFFSType["WORKERFS"] = "WORKERFS";
+      FFFSType["PROXYFS"] = "PROXYFS";
+  })(FFFSType || (FFFSType = {}));
 
   const ERROR_RESPONSE_BODY_READER = new Error("failed to get response body reader");
   const ERROR_INCOMPLETED_DOWNLOAD = new Error("failed to complete download");
@@ -10137,7 +10170,7 @@ ${chapters.map((c, i) => `<div><label>
     q("#scaleInput", HTML.pageHelper).addEventListener("mousedown", (event) => {
       const element = event.target;
       const scale = conf.imgScale || (conf.readMode === "continuous" ? conf.defaultImgScaleModeC : 100);
-      dragElementWithLine(event, element, { y: true }, (data) => {
+      dragElementWithLine(event, element, { }, (data) => {
         if (data.distance === 0) return;
         const fix = (data.direction & 3) === 1 ? 1 : -1;
         BIFM.scaleBigImages(1, 0, Math.floor(scale + data.distance * 0.6 * fix));

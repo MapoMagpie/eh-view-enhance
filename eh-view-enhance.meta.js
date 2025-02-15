@@ -31,7 +31,7 @@
 // @match              https://*.copymanga.tv/*
 // @match              https://*.artstation.com/*
 // @match              *://*/*
-// @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.52/dist/zip-full.min.js
+// @require            https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.57/dist/zip-full.min.js
 // @require            https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js
 // @require            https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js
 // @connect            *

@@ -234,34 +234,38 @@ export class IMGFetcher {
           abort?.();
         }, conf.timeout * 1000);
       };
-      abort = xhrWapper(imgFetcher.node.originSrc!, "blob", {
-        onload: function(response) {
-          const data = response.response;
-          try {
-            imgFetcher.setDownloadState({ readyState: response.readyState });
-          } catch (error) {
-            evLog("error", "warn: fetch big image data onload setDownloadState error:", error);
+      try {
+        abort = xhrWapper(imgFetcher.node.originSrc!, "blob", {
+          onload: function(response) {
+            const data = response.response;
+            try {
+              imgFetcher.setDownloadState({ readyState: response.readyState });
+            } catch (error) {
+              evLog("error", "warn: fetch big image data onload setDownloadState error:", error);
+            }
+            resolve(data);
+          },
+          onerror: function(response) {
+            // "Refused to connect to "https://ba.hitomi.la/avif/123/456/789.avif": URL is not permitted"
+            if (response.status === 0 && response.error?.includes("URL is not permitted")) {
+              const domain = response.error.match(/(https?:\/\/.*?)\/.*/)?.[1] ?? "";
+              reject(new Error(i18n.failFetchReason1.get().replace("{{domain}}", domain)));
+            } else {
+              reject(new Error(`response status:${response.status}, error:${response.error}, response:${response.response}`));
+            }
+          },
+          onprogress: function(response) {
+            imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
+            timeout();
+          },
+          onloadstart: function() {
+            imgFetcher.setDownloadState(imgFetcher.downloadState);
           }
-          resolve(data);
-        },
-        onerror: function(response) {
-          // "Refused to connect to "https://ba.hitomi.la/avif/123/456/789.avif": URL is not permitted"
-          if (response.status === 0 && response.error?.includes("URL is not permitted")) {
-            const domain = response.error.match(/(https?:\/\/.*?)\/.*/)?.[1] ?? "";
-            reject(new Error(i18n.failFetchReason1.get().replace("{{domain}}", domain)));
-          } else {
-            reject(new Error(`response status:${response.status}, error:${response.error}, response:${response.response}`));
-          }
-        },
-        onprogress: function(response) {
-          imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
-          timeout();
-        },
-        onloadstart: function() {
-          imgFetcher.setDownloadState(imgFetcher.downloadState);
-        }
-      }, this.matcher.headers());
-      timeout();
+        }, this.matcher.headers());
+        timeout();
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 

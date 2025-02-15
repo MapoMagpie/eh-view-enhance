@@ -5,7 +5,7 @@ type Option<T extends GmResponseType> = GmXmlhttpRequestOption<T, GmResponseType
 type EventListener<T extends GmResponseType> = Pick<Option<T>, "onload" | "onprogress" | "onerror" | "ontimeout" | "onloadstart">;
 
 export function xhrWapper<T extends GmResponseType>(url: string, respType: T, cb: EventListener<keyof GmResponseTypeMap>, headers: Record<string, string>, timeout?: number): (() => void) | undefined {
-  // const onload = cb.onload;
+  if (GM_xmlhttpRequest === undefined) throw new Error("your userscript manager does not support Gm_xmlhttpRequest api");
   return GM_xmlhttpRequest<GmResponseType, any>({
     method: "GET",
     url,
@@ -13,7 +13,6 @@ export function xhrWapper<T extends GmResponseType>(url: string, respType: T, cb
     responseType: respType,
     nocache: false,
     revalidate: false,
-    // fetch: false,
     headers: {
       "Referer": window.location.href,
       "Cache-Control": "public, max-age=2592000, immutable",
@@ -37,10 +36,14 @@ export function xhrWapper<T extends GmResponseType>(url: string, respType: T, cb
 
 export function simpleFetch<T extends GmResponseType>(url: string, respType: T, headers?: Record<string, string>): Promise<GmResponseTypeMap[T]> {
   return new Promise((resolve, reject) => {
-    xhrWapper<T>(url, respType, {
-      onload: (response) => resolve(response.response),
-      onerror: (error) => reject(error)
-    }, headers ?? {}, 10 * 1000);
+    try {
+      xhrWapper<T>(url, respType, {
+        onload: (response) => resolve(response.response),
+        onerror: (error) => reject(error)
+      }, headers ?? {}, 10 * 1000);
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 export async function batchFetch<T>(urls: string[], concurrency: number, respType: "text" | "json" | "arraybuffer" = "text"): Promise<(T | Error)[]> {

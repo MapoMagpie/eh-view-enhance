@@ -1497,6 +1497,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   }
 
   function xhrWapper(url, respType, cb, headers, timeout) {
+    if (_GM_xmlhttpRequest === void 0) throw new Error("your userscript manager does not support Gm_xmlhttpRequest api");
     return _GM_xmlhttpRequest({
       method: "GET",
       url,
@@ -1504,7 +1505,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       responseType: respType,
       nocache: false,
       revalidate: false,
-      // fetch: false,
       headers: {
         "Referer": window.location.href,
         "Cache-Control": "public, max-age=2592000, immutable",
@@ -1515,10 +1515,14 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   }
   function simpleFetch(url, respType, headers) {
     return new Promise((resolve, reject) => {
-      xhrWapper(url, respType, {
-        onload: (response) => resolve(response.response),
-        onerror: (error) => reject(error)
-      }, headers ?? {}, 10 * 1e3);
+      try {
+        xhrWapper(url, respType, {
+          onload: (response) => resolve(response.response),
+          onerror: (error) => reject(error)
+        }, headers ?? {}, 10 * 1e3);
+      } catch (error) {
+        reject(error);
+      }
     });
   }
   async function batchFetch(urls, concurrency, respType = "text") {
@@ -1750,33 +1754,37 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
             abort?.();
           }, conf.timeout * 1e3);
         };
-        abort = xhrWapper(imgFetcher.node.originSrc, "blob", {
-          onload: function(response) {
-            const data = response.response;
-            try {
-              imgFetcher.setDownloadState({ readyState: response.readyState });
-            } catch (error) {
-              evLog("error", "warn: fetch big image data onload setDownloadState error:", error);
+        try {
+          abort = xhrWapper(imgFetcher.node.originSrc, "blob", {
+            onload: function(response) {
+              const data = response.response;
+              try {
+                imgFetcher.setDownloadState({ readyState: response.readyState });
+              } catch (error) {
+                evLog("error", "warn: fetch big image data onload setDownloadState error:", error);
+              }
+              resolve(data);
+            },
+            onerror: function(response) {
+              if (response.status === 0 && response.error?.includes("URL is not permitted")) {
+                const domain = response.error.match(/(https?:\/\/.*?)\/.*/)?.[1] ?? "";
+                reject(new Error(i18n.failFetchReason1.get().replace("{{domain}}", domain)));
+              } else {
+                reject(new Error(`response status:${response.status}, error:${response.error}, response:${response.response}`));
+              }
+            },
+            onprogress: function(response) {
+              imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
+              timeout();
+            },
+            onloadstart: function() {
+              imgFetcher.setDownloadState(imgFetcher.downloadState);
             }
-            resolve(data);
-          },
-          onerror: function(response) {
-            if (response.status === 0 && response.error?.includes("URL is not permitted")) {
-              const domain = response.error.match(/(https?:\/\/.*?)\/.*/)?.[1] ?? "";
-              reject(new Error(i18n.failFetchReason1.get().replace("{{domain}}", domain)));
-            } else {
-              reject(new Error(`response status:${response.status}, error:${response.error}, response:${response.response}`));
-            }
-          },
-          onprogress: function(response) {
-            imgFetcher.setDownloadState({ total: response.total, loaded: response.loaded, readyState: response.readyState });
-            timeout();
-          },
-          onloadstart: function() {
-            imgFetcher.setDownloadState(imgFetcher.downloadState);
-          }
-        }, this.matcher.headers());
-        timeout();
+          }, this.matcher.headers());
+          timeout();
+        } catch (error) {
+          reject(error);
+        }
       });
     }
   }

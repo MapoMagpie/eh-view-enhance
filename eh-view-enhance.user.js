@@ -2922,6 +2922,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         }
       });
       EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
+      EBUS.subscribe("pf-retry-extend", () => !this.queue.downloading?.() && this.appendNextPage(true));
       EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
     }
     appendToView(total, nodes, chapterIndex, done) {
@@ -2966,7 +2967,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       if (chapter.queue.length === 0) {
         const first = await chapter.sourceIter.next();
         if (!first.done) {
-          await this.appendImages(first.value);
+          if (first.value.error) throw first.value.error;
+          await this.appendImages(first.value.value);
         }
         this.appendPages(this.queue.length);
       }
@@ -2978,11 +2980,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         if (!await this.appendNextPage()) break;
       }
     }
-    async appendNextPage() {
+    async appendNextPage(force) {
       if (this.appendPageLock) return false;
       try {
         this.appendPageLock = true;
         const chapter = this.chapters[this.chapterIndex];
+        if (force) chapter.done = false;
         if (chapter.done || this.abortb) return false;
         const next = await chapter.sourceIter.next();
         if (next.done) {
@@ -2990,7 +2993,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           this.appendToView(this.queue.length, [], this.chapterIndex, true);
           return false;
         } else {
-          return await this.appendImages(next.value);
+          if (next.value.error) {
+            chapter.done = true;
+            throw next.value.error;
+          }
+          return await this.appendImages(next.value.value);
         }
       } catch (error) {
         evLog("error", "PageFetcher:appendNextPage error: ", error);
@@ -3000,9 +3007,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         this.appendPageLock = false;
       }
     }
-    async appendImages(page) {
+    async appendImages(pageSource) {
       try {
-        const nodes = await this.obtainImageNodeList(page);
+        const nodes = await this.obtainImageNodeList(pageSource);
         if (this.abortb) return false;
         if (nodes.length === 0) return false;
         const len = this.queue.length;
@@ -3020,12 +3027,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
     }
     //从文档的字符串中创建缩略图元素列表
-    async obtainImageNodeList(page) {
+    async obtainImageNodeList(pageSource) {
       let tryTimes = 0;
       let err;
       while (tryTimes < 3) {
         try {
-          return await this.matcher.parseImgNodes(page, this.chapters[this.chapterIndex].id);
+          return await this.matcher.parseImgNodes(pageSource, this.chapters[this.chapterIndex].id);
         } catch (error) {
           evLog("error", "warn: parse image nodes failed, retrying: ", error);
           tryTimes++;
@@ -3260,6 +3267,20 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
   }
 
+  class Result {
+    value;
+    error;
+    static ok(value) {
+      return {
+        value
+      };
+    }
+    static err(error) {
+      return {
+        error
+      };
+    }
+  }
   class BaseMatcher {
     async fetchChapters() {
       return [{
@@ -3364,7 +3385,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       return ret;
     }
     async *fetchPagesSource(chapter) {
-      yield chapter.source;
+      yield Result.ok(chapter.source);
     }
     async parseImgNodes(source) {
       const list = [];
@@ -3472,7 +3493,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       if (!pagRaw) throw new Error("cannot get page info");
       const pag = JSON.parse(pagRaw.replaceAll(/(\w+) :/g, '"$1":'));
       let idx = pag.idx;
-      yield document;
+      yield Result.ok(document);
       while (idx * pag.stp < pag.cnt) {
         const res = await window.fetch(pag.act, {
           headers: {
@@ -3484,9 +3505,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           method: "POST",
           body: `index=${idx}`
         });
-        if (!res.ok) throw new Error(`fetch thumbnails failed, status: ${res.statusText}`);
+        if (!res.ok) yield Result.err(new Error(`fetch thumbnails failed, status: ${res.statusText}`));
         idx++;
-        yield res.text().then((text) => new DOMParser().parseFromString(text, "text/html"));
+        yield Result.ok(await res.text().then((text) => new DOMParser().parseFromString(text, "text/html")));
       }
     }
     async parseImgNodes(doc) {
@@ -3519,7 +3540,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       return "Arcalive";
     }
     async *fetchPagesSource() {
-      yield document;
+      yield Result.ok(document);
     }
     async parseImgNodes(doc) {
       const imageString = ".article-content img:not(.arca-emoticon):not(.twemoji)";
@@ -3579,9 +3600,14 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       let page = 0;
       while (true) {
         page++;
-        const projects = await this.fetchProjects(username, id.toString(), page);
-        if (!projects || projects.length === 0) break;
-        yield projects;
+        try {
+          const projects = await this.fetchProjects(username, id.toString(), page);
+          if (!projects || projects.length === 0) break;
+          yield Result.ok(projects);
+        } catch (error) {
+          page--;
+          yield Result.err(error);
+        }
       }
     }
     async parseImgNodes(projects) {
@@ -3738,7 +3764,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       });
     }
     async *fetchPagesSource(source) {
-      yield source.source;
+      yield Result.ok(source.source);
     }
     async parseImgNodes(page, _chapterID) {
       const raw = await window.fetch(page).then((res) => res.text());
@@ -3931,7 +3957,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     async *fetchPagesSource() {
       let doc = document;
       this.blacklistTags = this.getBlacklist(doc);
-      yield doc;
+      yield Result.ok(doc);
       let tryTimes = 0;
       while (true) {
         const url = this.nextPage(doc);
@@ -3940,11 +3966,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
         } catch (e) {
           tryTimes++;
-          if (tryTimes > 3) throw new Error(`fetch next page failed, ${e}`);
+          if (tryTimes > 3) yield Result.err(new Error(`fetch next page failed, ${e}`));
           continue;
         }
         tryTimes = 0;
-        yield doc;
+        yield Result.ok(doc);
       }
     }
     async fetchOriginMeta(node) {
@@ -4107,7 +4133,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     async *fetchPagesSource() {
       let doc = document;
-      yield doc;
+      yield Result.ok(doc);
       let tryTimes = 0;
       while (true) {
         const url = doc.querySelector("#paginator a.next_page")?.href;
@@ -4120,7 +4146,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           continue;
         }
         tryTimes = 0;
-        yield doc;
+        yield Result.ok(doc);
       }
     }
     async parseImgNodes(doc) {
@@ -4177,7 +4203,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     async *fetchPagesSource() {
       let doc = document;
-      yield doc;
+      yield Result.ok(doc);
       let tryTimes = 0;
       while (true) {
         const url = doc.querySelector("#paginator a.next_page")?.href;
@@ -4190,7 +4216,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           continue;
         }
         tryTimes = 0;
-        yield doc;
+        yield Result.ok(doc);
       }
     }
     async parseImgNodes(doc) {
@@ -4578,12 +4604,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const doc = document;
       const fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
       if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
-        yield window.location.href;
+        yield Result.ok(window.location.href);
         return;
       }
       const pages = Array.from(doc.querySelectorAll(".gtb td a")).filter((a) => a.getAttribute("href")).map((a) => a.getAttribute("href"));
       if (pages.length === 0) {
-        throw new Error("未获取到分页元素！");
+        throw new Error("cannot found next page elements");
       }
       let lastPage = 0;
       let url;
@@ -4596,13 +4622,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         }
       }
       if (!url) {
-        throw new Error("未获取到分页元素！x2");
+        throw new Error("cannot found next page elements again");
       }
       url.searchParams.delete("p");
-      yield url.href;
+      yield Result.ok(url.href);
       for (let p = 1; p < lastPage + 1; p++) {
         url.searchParams.set("p", p.toString());
-        yield url.href;
+        yield Result.ok(url.href);
       }
     }
     async fetchOriginMeta(node, retry) {
@@ -4676,7 +4702,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     // readDirection?: string;
     async *fetchPagesSource() {
       this.meta = this.pasrseGalleryMeta(document);
-      yield document;
+      yield Result.ok(document);
     }
     async parseImgNodes(doc) {
       const result = [];
@@ -4889,7 +4915,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
       const info = JSON.parse(infoRaw);
       this.setGalleryMeta(info, galleryID, chapter);
-      yield info;
+      yield Result.ok(info);
     }
     async parseImgNodes(info) {
       const files = info.files;
@@ -4985,7 +5011,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const gthRaw = Array.from(document.querySelectorAll("script")).find((s) => s.textContent?.trimStart().startsWith("var g_th"))?.textContent?.match(/\('(\{.*?\})'\)/)?.[1];
       if (!gthRaw) throw new Error("cannot match gallery images info");
       this.gth = JSON.parse(gthRaw);
-      yield null;
+      yield Result.ok(null);
     }
     galleryMeta(doc) {
       const title = doc.querySelector(".right_details > h1")?.textContent || void 0;
@@ -5036,10 +5062,14 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.config = parseConfig();
       let cursor = null;
       while (true) {
-        const [nodes, pageInfo] = await this.fetchPosts(cursor);
-        cursor = pageInfo.end_cursor;
-        yield nodes;
-        if (!pageInfo.has_next_page) break;
+        try {
+          const [nodes, pageInfo] = await this.fetchPosts(cursor);
+          cursor = pageInfo.end_cursor;
+          yield Result.ok(nodes);
+          if (!pageInfo.has_next_page) break;
+        } catch (error) {
+          yield Result.err(error);
+        }
       }
     }
     async parseImgNodes(nodes) {
@@ -5199,7 +5229,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       return this.meta || new GalleryMeta(window.location.href, "koharu-unknows");
     }
     async *fetchPagesSource(source) {
-      yield source.source;
+      yield Result.ok(source.source);
     }
     createMeta(detail) {
       const tags = detail.tags.reduce((map, tag) => {
@@ -5278,7 +5308,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       return this.meta;
     }
     async *fetchPagesSource(source) {
-      yield source.source;
+      yield Result.ok(source.source);
     }
     async parseImgNodes(source) {
       const raw = await simpleFetch(source, "text", { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36" });
@@ -5383,7 +5413,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       return this.meta;
     }
     async *fetchPagesSource(source) {
-      yield source.source;
+      yield Result.ok(source.source);
     }
     async parseImgNodes(source) {
       const docRaw = await window.fetch(source).then((res) => res.text());
@@ -5609,7 +5639,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       return ret;
     }
     async *fetchPagesSource() {
-      yield document;
+      yield Result.ok(document);
     }
   }
   class NHxxxMatcher extends BaseMatcher {
@@ -5635,7 +5665,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     async *fetchPagesSource() {
       this.parseMeta();
-      yield document;
+      yield Result.ok(document);
     }
     async parseImgNodes(page) {
       const doc = page;
@@ -6248,7 +6278,7 @@ duration 0.04`).join("\n");
     async *next(chapter) {
       const pidList = this.pids[chapter.source];
       if (pidList.length === 0) {
-        yield [];
+        yield Result.ok([]);
         return;
       }
       while (pidList.length > 0) {
@@ -6260,7 +6290,7 @@ duration 0.04`).join("\n");
           return prev;
         }, {});
         const ret = Object.entries(grouped).map(([userID, pids2]) => ({ id: userID === "unk" ? void 0 : userID, pids: pids2 }));
-        yield ret;
+        yield Result.ok(ret);
       }
     }
     title() {
@@ -6286,9 +6316,9 @@ duration 0.04`).join("\n");
       if (!this.author) throw new Error("Cannot find author id!");
       this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
       if (this.first) {
-        yield [{ id: this.author, pids: [this.first] }];
+        yield Result.ok([{ id: this.author, pids: [this.first] }]);
         while (conf.pixivJustCurrPage) {
-          yield [];
+          yield Result.ok([]);
         }
       }
       const res = await window.fetch(`https://www.pixiv.net/ajax/user/${this.author}/profile/all`).then((resp) => resp.json());
@@ -6301,7 +6331,7 @@ duration 0.04`).join("\n");
       }
       while (pidList.length > 0) {
         const pids = pidList.splice(0, 20);
-        yield [{ id: this.author, pids }];
+        yield Result.ok([{ id: this.author, pids }]);
       }
     }
   }
@@ -6525,7 +6555,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         this.sprites.push({ src, pos: { x, y, width, height } });
       }
       for (let i = 0; i < this.imgCount; i += 20) {
-        yield [i, Math.min(i + 20, this.imgCount)];
+        yield Result.ok([i, Math.min(i + 20, this.imgCount)]);
       }
     }
     async fetchThumbnail(index) {
@@ -6617,10 +6647,10 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       if (totalPages > 0) {
         for (let p = 1; p <= totalPages; p++) {
           url.searchParams.set("p", p.toString());
-          yield url.href;
+          yield Result.ok(url.href);
         }
       } else {
-        yield url.href;
+        yield Result.ok(url.href);
       }
     }
     parseGalleryMeta() {
@@ -6648,7 +6678,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const features = "&features=%7B%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_media_interstitial_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
       const url = `${window.location.origin}/i/api/graphql/aQQLnkexAl5z9ec_UgbEIA/UserMedia?variables=${encodeURIComponent(variables)}${features}`;
       try {
-        const res = await window.fetch(url, { headers: createHeader(this.uuid) });
+        const res = await window.fetch(url, { headers: createHeader(this.uuid), signal: AbortSignal.timeout(1e4) });
         const json = await res.json();
         if (res.status !== 200 && json?.errors?.[0].message) {
           throw new Error(json?.errors?.[0].message);
@@ -6695,7 +6725,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const features = "&features=%7B%22profile_label_improvements_pcf_label_in_post_enabled%22%3Afalse%2C%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22premium_content_api_read_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22responsive_web_grok_analyze_button_fetch_trends_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D";
       const url = `${window.location.origin}/i/api/graphql/rTndDGyFlXAmeXR4RfFe1A/ListLatestTweetsTimeline?variables=${encodeURIComponent(variables)}${features}`;
       try {
-        const res = await window.fetch(url, { headers: createHeader(this.uuid) });
+        const res = await window.fetch(url, { headers: createHeader(this.uuid), signal: AbortSignal.timeout(1e4) });
         const json = await res.json();
         if (res.status !== 200 && json?.errors?.[0].message) {
           throw new Error(json?.errors?.[0].message);
@@ -6837,11 +6867,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     async *fetchPagesSource(chapter) {
       let cursor;
       while (true) {
-        const [mediaPage, nextCursor] = await this.api.next(chapter, cursor);
-        cursor = nextCursor || "last";
-        if (!mediaPage || mediaPage.length === 0) break;
-        yield mediaPage;
-        if (!nextCursor) break;
+        try {
+          const [mediaPage, nextCursor] = await this.api.next(chapter, cursor);
+          cursor = nextCursor || "last";
+          if (!mediaPage || mediaPage.length === 0) break;
+          yield Result.ok(mediaPage);
+          if (!nextCursor) break;
+        } catch (error) {
+          yield Result.err(error);
+        }
       }
     }
     async parseImgNodes(items) {
@@ -6967,13 +7001,13 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.baseURL = `${window.location.origin}/photos-index-page-1-aid-${id}.html`;
       let doc = await window.fetch(this.baseURL).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       this.meta = this.pasrseGalleryMeta(doc);
-      yield doc;
+      yield Result.ok(doc);
       while (true) {
         const next = doc.querySelector(".paginator > .next > a");
         if (!next) break;
         const url = next.href;
         doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-        yield doc;
+        yield Result.ok(doc);
       }
     }
     async parseImgNodes(doc) {
@@ -7998,7 +8032,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         ),
         "retry-fetch-next-page": new KeyboardDesc(
           ["shift+n"],
-          () => EBUS.emit("pf-try-extend")
+          () => EBUS.emit("pf-retry-extend")
         ),
         "resize-flow-vision": new KeyboardDesc(
           ["shift+v"],

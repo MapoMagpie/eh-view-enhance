@@ -3,7 +3,7 @@ import EBUS from "../event-bus";
 import ImageNode from "../img-node";
 import { evLog } from "../utils/ev-log";
 import { batchFetch } from "../utils/query";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 export class ArtStationMatcher extends BaseMatcher<ArtStationProject[]> {
   pageData: Map<string, ArtStationProject[]> = new Map();
@@ -17,16 +17,21 @@ export class ArtStationMatcher extends BaseMatcher<ArtStationProject[]> {
     meta.tags = this.tags;
     return meta;
   }
-  async *fetchPagesSource(): AsyncGenerator<ArtStationProject[]> {
+  async *fetchPagesSource(): AsyncGenerator<Result<ArtStationProject[]>> {
     // find artist id;
     const { id, username } = await this.fetchArtistInfo();
     this.info.username = username;
     let page = 0;
     while (true) {
       page++;
-      const projects = await this.fetchProjects(username, id.toString(), page);
-      if (!projects || projects.length === 0) break;
-      yield projects;
+      try {
+        const projects = await this.fetchProjects(username, id.toString(), page);
+        if (!projects || projects.length === 0) break;
+        yield Result.ok(projects);
+      } catch (error) {
+        page--;
+        yield Result.err(error as Error);
+      }
     }
   }
   async parseImgNodes(projects: ArtStationProject[]): Promise<ImageNode[]> {

@@ -1,7 +1,7 @@
 import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 const EXTRACT_C_DATA = /var C_DATA='(.*?)'/;
 
@@ -102,8 +102,8 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
       };
     });
   }
-  async *fetchPagesSource(source: Chapter): AsyncGenerator<string> {
-    yield source.source;
+  async *fetchPagesSource(source: Chapter): AsyncGenerator<Result<string>> {
+    yield Result.ok(source.source);
   }
   async parseImgNodes(page: string, _chapterID?: number): Promise<ImageNode[]> {
     const raw = await window.fetch(page).then(res => res.text());

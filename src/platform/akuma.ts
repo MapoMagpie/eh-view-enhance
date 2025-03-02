@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, Result, OriginMeta } from "./platform";
 
 export class AkumaMatcher extends BaseMatcher<Document> {
   originImages?: string[];
@@ -32,7 +32,7 @@ export class AkumaMatcher extends BaseMatcher<Document> {
       }, {});
     return meta;
   }
-  async *fetchPagesSource(): AsyncGenerator<Document> {
+  async *fetchPagesSource(): AsyncGenerator<Result<Document>> {
     // fetch origin images;
     const csrf = document.querySelector<HTMLMetaElement>("meta[name='csrf-token'][content]")?.content;
     if (!csrf) throw new Error("cannot get csrf token form this page");
@@ -47,7 +47,7 @@ export class AkumaMatcher extends BaseMatcher<Document> {
     if (!pagRaw) throw new Error("cannot get page info");
     const pag = JSON.parse(pagRaw.replaceAll(/(\w+) :/g, "\"$1\":")) as { act: string, cnt: number, idx: number, stp: number };
     let idx = pag.idx;
-    yield document;
+    yield Result.ok(document);
     while (idx * pag.stp < pag.cnt) {
       const res = await window.fetch(pag.act, {
         headers: {
@@ -59,9 +59,9 @@ export class AkumaMatcher extends BaseMatcher<Document> {
         method: "POST",
         body: `index=${idx}`
       })
-      if (!res.ok) throw new Error(`fetch thumbnails failed, status: ${res.statusText}`);
+      if (!res.ok) yield Result.err(new Error(`fetch thumbnails failed, status: ${res.statusText}`));
       idx++;
-      yield res.text().then(text => new DOMParser().parseFromString(text, "text/html"));
+      yield Result.ok(await res.text().then(text => new DOMParser().parseFromString(text, "text/html")));
     }
   }
   async parseImgNodes(doc: Document): Promise<ImageNode[]> {

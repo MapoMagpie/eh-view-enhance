@@ -1,7 +1,7 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 const REGEXP_EXTRACT_GALLERY_ID = /niyaniya.moe\/\w+\/(\d+\/\w+)/;
 
@@ -58,8 +58,8 @@ export class KoharuMatcher extends BaseMatcher<string> {
     return this.meta || new GalleryMeta(window.location.href, "koharu-unknows");
   }
 
-  async *fetchPagesSource(source: Chapter): AsyncGenerator<string> {
-    yield source.source;
+  async *fetchPagesSource(source: Chapter): AsyncGenerator<Result<string>> {
+    yield Result.ok(source.source);
   }
 
   createMeta(detail: BookDetail) {

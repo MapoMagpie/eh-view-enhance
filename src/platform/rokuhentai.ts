@@ -1,7 +1,7 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { ImagePosition, splitImagesFromUrl } from "../utils/sprite-split";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 export class RokuHentaiMatcher extends BaseMatcher<[number, number]> {
   name(): string {
@@ -54,7 +54,7 @@ export class RokuHentaiMatcher extends BaseMatcher<[number, number]> {
     return list;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<[number, number]> {
+  async *fetchPagesSource(): AsyncGenerator<Result<[number, number]>> {
     const doc = document;
     const imgCount = parseInt(doc.querySelector(".mdc-typography--caption")?.textContent || "");
     if (isNaN(imgCount)) {
@@ -79,7 +79,7 @@ export class RokuHentaiMatcher extends BaseMatcher<[number, number]> {
     }
     // split to range by 20 from image count
     for (let i = 0; i < this.imgCount; i += 20) {
-      yield [i, Math.min(i + 20, this.imgCount)];
+      yield Result.ok([i, Math.min(i + 20, this.imgCount)]);
     }
   }
 

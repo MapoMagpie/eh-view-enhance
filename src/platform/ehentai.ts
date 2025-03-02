@@ -3,7 +3,7 @@ import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { evLog } from "../utils/ev-log";
 import { parseImagePositions, splitImagesFromUrl } from "../utils/sprite-split";
-import { BaseMatcher, OriginMeta, } from "./platform";
+import { BaseMatcher, OriginMeta, Result, } from "./platform";
 
 // EHMatcher
 const regulars = {
@@ -225,19 +225,19 @@ export class EHMatcher extends BaseMatcher<string> {
     return list;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<string> {
+  async *fetchPagesSource(): AsyncGenerator<Result<string>> {
     // const doc = await window.fetch(chapter.source).then((resp) => resp.text()).then(raw => new DOMParser().parseFromString(raw, "text/html"));
     const doc = document;
     const fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
     // MPV
     if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
-      yield window.location.href;
+      yield Result.ok(window.location.href);
       return;
     }
     // Normal
     const pages = Array.from(doc.querySelectorAll(".gtb td a")).filter(a => a.getAttribute("href")).map(a => a.getAttribute("href")!);
     if (pages.length === 0) {
-      throw new Error("未获取到分页元素！");
+      throw new Error("cannot found next page elements");
     }
     let lastPage = 0;
     let url: URL | undefined;
@@ -250,13 +250,13 @@ export class EHMatcher extends BaseMatcher<string> {
       }
     }
     if (!url) {
-      throw new Error("未获取到分页元素！x2");
+      throw new Error("cannot found next page elements again");
     }
     url.searchParams.delete("p");
-    yield url.href;
+    yield Result.ok(url.href);
     for (let p = 1; p < lastPage + 1; p++) {
       url.searchParams.set("p", p.toString());
-      yield url.href;
+      yield Result.ok(url.href);
     }
   }
 

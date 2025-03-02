@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import { evLog } from "../utils/ev-log";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 import { FFmpegConvertor } from "../utils/ffmpeg";
 import ImageNode from "../img-node";
 import { conf } from "../config";
@@ -50,7 +50,7 @@ type UgoiraMeta = {
 
 interface PixivAPI {
   fetchChapters(): Promise<Chapter[]>;
-  next(source: Chapter): AsyncGenerator<AuthorPIDs[]>;
+  next(source: Chapter): AsyncGenerator<Result<AuthorPIDs[]>>;
   title(): string;
 }
 type PixivTop = {
@@ -96,10 +96,10 @@ class PixivHomeAPI implements PixivAPI {
     };
     return chapters;
   }
-  async *next(chapter: Chapter): AsyncGenerator<AuthorPIDs[]> {
+  async *next(chapter: Chapter): AsyncGenerator<Result<AuthorPIDs[]>> {
     const pidList = this.pids[chapter.source];
     if (pidList.length === 0) {
-      yield [];
+      yield Result.ok([]);
       return;
     };
     while (pidList.length > 0) {
@@ -111,7 +111,7 @@ class PixivHomeAPI implements PixivAPI {
         return prev;
       }, {});
       const ret = Object.entries(grouped).map(([userID, pids]) => ({ id: userID === "unk" ? undefined : userID, pids }));
-      yield ret;
+      yield Result.ok(ret);
     }
   }
   title(): string {
@@ -134,14 +134,14 @@ class PixivArtistWorksAPI implements PixivAPI {
       queue: [],
     }];
   }
-  async *next(_ch: Chapter): AsyncGenerator<AuthorPIDs[]> {
+  async *next(_ch: Chapter): AsyncGenerator<Result<AuthorPIDs[]>> {
     this.author = findAuthorID();
     if (!this.author) throw new Error("Cannot find author id!");
     this.first = window.location.href.match(/artworks\/(\d+)$/)?.[1];
     if (this.first) {
-      yield [{ id: this.author, pids: [this.first] }];
+      yield Result.ok([{ id: this.author, pids: [this.first] }]);
       while (conf.pixivJustCurrPage) {
-        yield [];
+        yield Result.ok([]);
       }
     }
     // request all illusts from https://www.pixiv.net/ajax/user/{author}/profile/all
@@ -156,7 +156,7 @@ class PixivArtistWorksAPI implements PixivAPI {
     }
     while (pidList.length > 0) {
       const pids = pidList.splice(0, 20);
-      yield [{ id: this.author, pids }];
+      yield Result.ok([{ id: this.author, pids }]);
     }
   }
 }
@@ -263,7 +263,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     return this.api.fetchChapters();
   }
 
-  fetchPagesSource(chapter: Chapter): AsyncGenerator<AuthorPIDs[]> {
+  fetchPagesSource(chapter: Chapter): AsyncGenerator<Result<AuthorPIDs[]>> {
     return this.api.next(chapter);
   }
 

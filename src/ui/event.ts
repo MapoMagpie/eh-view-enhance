@@ -350,7 +350,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       ),
       "retry-fetch-next-page": new KeyboardDesc(
         ["shift+n"],
-        () => EBUS.emit("pf-try-extend")
+        () => EBUS.emit("pf-retry-extend")
       ),
       "resize-flow-vision": new KeyboardDesc(
         ["shift+v"],

@@ -2,7 +2,7 @@ import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
 import { simpleFetch } from "../utils/query";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 export class MangaCopyMatcher extends BaseMatcher<string> {
   name(): string {
@@ -23,8 +23,8 @@ export class MangaCopyMatcher extends BaseMatcher<string> {
     this.meta = new GalleryMeta(window.location.href, title);
     return this.meta;
   }
-  async *fetchPagesSource(source: Chapter): AsyncGenerator<string> {
-    yield source.source;
+  async *fetchPagesSource(source: Chapter): AsyncGenerator<Result<string>> {
+    yield Result.ok(source.source);
   }
   async parseImgNodes(source: string): Promise<ImageNode[]> {
     const raw = await simpleFetch(source, "text", { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36" });

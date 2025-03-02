@@ -2,7 +2,7 @@ import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
 import ImageNode from "./img-node";
-import { Matcher } from "./platform/platform";
+import { Matcher, Result } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
 
@@ -12,7 +12,7 @@ export type Chapter = {
   source: string; // url
   queue: IMGFetcher[];
   thumbimg?: string;
-  sourceIter?: AsyncGenerator<any>;
+  sourceIter?: AsyncGenerator<Result<any>>;
   done?: boolean;
   onclick?: (index: number) => void;
 }
@@ -40,6 +40,7 @@ export class PageFetcher {
     });
     // triggered when scrolling
     EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
+    EBUS.subscribe("pf-retry-extend", () => !this.queue.downloading?.() && this.appendNextPage(true));
     EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
   }
 
@@ -89,7 +90,8 @@ export class PageFetcher {
     if (chapter.queue.length === 0) {
       const first = await chapter.sourceIter.next();
       if (!first.done) {
-        await this.appendImages(first.value);
+        if (first.value.error) throw first.value.error;
+        await this.appendImages(first.value.value);
       }
       this.appendPages(this.queue.length);
     }
@@ -103,11 +105,12 @@ export class PageFetcher {
     }
   }
 
-  async appendNextPage(): Promise<boolean> {
+  async appendNextPage(force?: boolean): Promise<boolean> {
     if (this.appendPageLock) return false;
     try {
       this.appendPageLock = true;
       const chapter = this.chapters[this.chapterIndex];
+      if (force) chapter.done = false; // FIXME: reset the iter
       if (chapter.done || this.abortb) return false;
       const next = await chapter.sourceIter!.next();
       if (next.done) {
@@ -115,7 +118,11 @@ export class PageFetcher {
         this.appendToView(this.queue.length, [], this.chapterIndex, true);
         return false;
       } else {
-        return await this.appendImages(next.value);
+        if (next.value.error) {
+          chapter.done = true;
+          throw next.value.error;
+        }
+        return await this.appendImages(next.value.value);
       }
     } catch (error) {
       evLog("error", "PageFetcher:appendNextPage error: ", error);
@@ -126,9 +133,9 @@ export class PageFetcher {
     }
   }
 
-  async appendImages(page: any): Promise<boolean> {
+  async appendImages(pageSource: any): Promise<boolean> {
     try {
-      const nodes = await this.obtainImageNodeList(page);
+      const nodes = await this.obtainImageNodeList(pageSource);
       if (this.abortb) return false;
       if (nodes.length === 0) return false;
       const len = this.queue.length;
@@ -147,12 +154,12 @@ export class PageFetcher {
   }
 
   //从文档的字符串中创建缩略图元素列表
-  async obtainImageNodeList(page: any): Promise<ImageNode[]> {
+  async obtainImageNodeList(pageSource: any): Promise<ImageNode[]> {
     let tryTimes = 0;
     let err: any;
     while (tryTimes < 3) {
       try {
-        return await this.matcher.parseImgNodes(page, this.chapters[this.chapterIndex].id);
+        return await this.matcher.parseImgNodes(pageSource, this.chapters[this.chapterIndex].id);
       } catch (error) {
         evLog("error", "warn: parse image nodes failed, retrying: ", error)
         tryTimes++;

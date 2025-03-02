@@ -1,19 +1,23 @@
 import ImageNode from "../img-node";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 export class InstagramMatcher extends BaseMatcher<EdgeNode[]> {
   config?: InstagramConfig;
   name(): string {
     return "Instagram";
   }
-  async *fetchPagesSource(): AsyncGenerator<EdgeNode[]> {
+  async *fetchPagesSource(): AsyncGenerator<Result<EdgeNode[]>> {
     this.config = parseConfig();
     let cursor: string | null = null;
     while (true) {
-      const [nodes, pageInfo] = await this.fetchPosts(cursor);
-      cursor = pageInfo.end_cursor;
-      yield nodes;
-      if (!pageInfo.has_next_page) break;
+      try {
+        const [nodes, pageInfo] = await this.fetchPosts(cursor);
+        cursor = pageInfo.end_cursor;
+        yield Result.ok(nodes);
+        if (!pageInfo.has_next_page) break;
+      } catch (error) {
+        yield Result.err(error as Error);
+      }
     }
   }
   async parseImgNodes(nodes: EdgeNode[]): Promise<ImageNode[]> {

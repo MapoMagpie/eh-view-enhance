@@ -3,7 +3,7 @@ import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 
 class HitomiGG {
@@ -121,7 +121,7 @@ export class HitomiMather extends BaseMatcher<GalleryInfo> {
     return ret;
   }
 
-  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<GalleryInfo> {
+  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<Result<GalleryInfo>> {
     const url = chapter.source;
     const galleryID = url.match(/([0-9]+)(?:\.html)/)?.[1];
     if (!galleryID) {
@@ -133,7 +133,7 @@ export class HitomiMather extends BaseMatcher<GalleryInfo> {
     }
     const info: GalleryInfo = JSON.parse(infoRaw);
     this.setGalleryMeta(info, galleryID, chapter);
-    yield info;
+    yield Result.ok(info);
   }
 
   async parseImgNodes(info: GalleryInfo): Promise<ImageNode[]> {

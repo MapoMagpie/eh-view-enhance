@@ -5,7 +5,7 @@ import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { transactionId, uuid } from "../utils/random";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 type Size = {
   h: number,
@@ -117,7 +117,7 @@ class TwitterUserMediasAPI implements TwitterAPIClient {
     const features = "&features=%7B%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_media_interstitial_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
     const url = `${window.location.origin}/i/api/graphql/aQQLnkexAl5z9ec_UgbEIA/UserMedia?variables=${encodeURIComponent(variables)}${features}`;
     try {
-      const res = await window.fetch(url, { headers: createHeader(this.uuid), });
+      const res = await window.fetch(url, { headers: createHeader(this.uuid), signal: AbortSignal.timeout(10000) });
       const json = await res.json();
       if (res.status !== 200 && json?.errors?.[0].message) {
         throw new Error(json?.errors?.[0].message);
@@ -169,7 +169,7 @@ class TwitterListsAPI implements TwitterAPIClient {
     const features = "&features=%7B%22profile_label_improvements_pcf_label_in_post_enabled%22%3Afalse%2C%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22premium_content_api_read_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22responsive_web_grok_analyze_button_fetch_trends_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D";
     const url = `${window.location.origin}/i/api/graphql/rTndDGyFlXAmeXR4RfFe1A/ListLatestTweetsTimeline?variables=${encodeURIComponent(variables)}${features}`;
     try {
-      const res = await window.fetch(url, { headers: createHeader(this.uuid), });
+      const res = await window.fetch(url, { headers: createHeader(this.uuid), signal: AbortSignal.timeout(10000) });
       const json = await res.json();
       if (res.status !== 200 && json?.errors?.[0].message) {
         throw new Error(json?.errors?.[0].message);
@@ -316,14 +316,18 @@ export class TwitterMatcher extends BaseMatcher<Item[]> {
     return this.api.fetchChapters();
   }
 
-  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<Item[]> {
+  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<Result<Item[]>> {
     let cursor: string | undefined;
     while (true) {
-      const [mediaPage, nextCursor] = await this.api.next(chapter, cursor);
-      cursor = nextCursor || "last";
-      if (!mediaPage || mediaPage.length === 0) break;
-      yield mediaPage;
-      if (!nextCursor) break;
+      try {
+        const [mediaPage, nextCursor] = await this.api.next(chapter, cursor);
+        cursor = nextCursor || "last";
+        if (!mediaPage || mediaPage.length === 0) break;
+        yield Result.ok(mediaPage);
+        if (!nextCursor) break;
+      } catch (error) {
+        yield Result.err(error as Error);
+      }
     }
   }
 

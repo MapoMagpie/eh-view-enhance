@@ -2,7 +2,7 @@ import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, Result, OriginMeta } from "./platform";
 
 // TODO: don't reference the md5 on the page, to avoid errors when the script is not loaded
 function toMD5(s: string): string {
@@ -90,8 +90,8 @@ export class Comic18Matcher extends BaseMatcher<string> {
     return ret;
   }
 
-  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<string> {
-    yield chapter.source;
+  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<Result<string>> {
+    yield Result.ok(chapter.source);
   }
 
   async parseImgNodes(source: string): Promise<ImageNode[]> {

@@ -1,7 +1,7 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { sleep } from "../utils/sleep";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 function nhParseExt(str: string): string {
   switch (str.slice(0, 1)) {
@@ -72,8 +72,8 @@ export class NHMatcher extends BaseMatcher<Document> {
     }
     return ret;
   }
-  async *fetchPagesSource(): AsyncGenerator<Document> {
-    yield document;
+  async *fetchPagesSource(): AsyncGenerator<Result<Document>> {
+    yield Result.ok(document);
   }
 
 }
@@ -99,9 +99,9 @@ export class NHxxxMatcher extends BaseMatcher<Document> {
     });
     this.meta = meta;
   }
-  async *fetchPagesSource(): AsyncGenerator<Document> {
+  async *fetchPagesSource(): AsyncGenerator<Result<Document>> {
     this.parseMeta();
-    yield document;
+    yield Result.ok(document);
   }
   async parseImgNodes(page: Document): Promise<ImageNode[]> {
     const doc = page as Document;

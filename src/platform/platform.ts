@@ -9,6 +9,21 @@ export type OriginMeta = {
   href?: string,
 }
 
+export class Result<T> {
+  value?: T;
+  error?: Error;
+  static ok<T>(value: T): Result<T> {
+    return {
+      value,
+    }
+  }
+  static err<T>(error: Error): Result<T> {
+    return {
+      error,
+    }
+  }
+};
+
 export interface Matcher<P> {
   name(): string;
   /**
@@ -18,11 +33,11 @@ export interface Matcher<P> {
   /**
    * step 1: fetch page source
    */
-  fetchPagesSource(chapter: Chapter): AsyncGenerator<P>;
+  fetchPagesSource(chapter: Chapter): AsyncGenerator<Result<P>>;
   /**
    * step 2: parse img nodes from page source
    */
-  parseImgNodes(page: P, chapterID?: number): Promise<ImageNode[] | never>;
+  parseImgNodes(pageSource: P, chapterID?: number): Promise<ImageNode[] | never>;
   /**
    * step 3: fetch origin img url from every single image node's href
    */
@@ -47,8 +62,8 @@ export abstract class BaseMatcher<P> implements Matcher<P> {
   }
 
   abstract name(): string;
-  abstract fetchPagesSource(source: Chapter): AsyncGenerator<P>;
-  abstract parseImgNodes(page: P, chapterID?: number): Promise<ImageNode[]>;
+  abstract fetchPagesSource(source: Chapter): AsyncGenerator<Result<P>>;
+  abstract parseImgNodes(pageSource: P, chapterID?: number): Promise<ImageNode[]>;
   abstract fetchOriginMeta(node: ImageNode, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
   title(doc: Document): string {

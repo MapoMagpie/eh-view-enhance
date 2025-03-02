@@ -1,7 +1,7 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import q from "../utils/query-element";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 export class IMHentaiMatcher extends BaseMatcher<null> {
   name(): string {
@@ -36,7 +36,7 @@ export class IMHentaiMatcher extends BaseMatcher<null> {
     return ret;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<null> {
+  async *fetchPagesSource(): AsyncGenerator<Result<null>> {
     const server = q<HTMLInputElement>("#load_server", document).value;
     const uid = q<HTMLInputElement>("#gallery_id", document).value;
     const gid = q<HTMLInputElement>("#load_id", document).value;
@@ -48,7 +48,7 @@ export class IMHentaiMatcher extends BaseMatcher<null> {
       ?.textContent?.match(/\('(\{.*?\})'\)/)?.[1];
     if (!gthRaw) throw new Error("cannot match gallery images info");
     this.gth = JSON.parse(gthRaw) as Record<string, string>;
-    yield null;
+    yield Result.ok(null);
   }
 
   galleryMeta(doc: Document): GalleryMeta {

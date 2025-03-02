@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 export class WnacgMatcher extends BaseMatcher<Document> {
   name(): string {
@@ -10,7 +10,7 @@ export class WnacgMatcher extends BaseMatcher<Document> {
   meta?: GalleryMeta;
   baseURL?: string;
 
-  async *fetchPagesSource(): AsyncGenerator<Document> {
+  async *fetchPagesSource(): AsyncGenerator<Result<Document>> {
     const id = this.extractIDFromHref(window.location.href);
     if (!id) {
       throw new Error("Cannot find gallery ID");
@@ -18,13 +18,13 @@ export class WnacgMatcher extends BaseMatcher<Document> {
     this.baseURL = `${window.location.origin}/photos-index-page-1-aid-${id}.html`;
     let doc = await window.fetch(this.baseURL).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
     this.meta = this.pasrseGalleryMeta(doc);
-    yield doc;
+    yield Result.ok(doc);
     while (true) {
       const next = doc.querySelector<HTMLAnchorElement>(".paginator > .next > a");
       if (!next) break;
       const url = next.href;
       doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-      yield doc;
+      yield Result.ok(doc);
     }
   }
 

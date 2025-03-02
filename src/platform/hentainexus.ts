@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 type HNImageInfo = {
   image: string,
@@ -20,9 +20,9 @@ export class HentaiNexusMatcher extends BaseMatcher<Document> {
   readerData?: HNImageInfo[];
   // readDirection?: string;
 
-  async *fetchPagesSource(): AsyncGenerator<Document> {
+  async *fetchPagesSource(): AsyncGenerator<Result<Document>> {
     this.meta = this.pasrseGalleryMeta(document);
-    yield document
+    yield Result.ok(document);
   }
 
   async parseImgNodes(doc: Document): Promise<ImageNode[]> {

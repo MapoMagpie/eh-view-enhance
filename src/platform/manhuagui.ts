@@ -1,7 +1,7 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { Chapter, } from "../page-fetcher";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 export class MHGMatcher extends BaseMatcher<string> {
   name(): string {
@@ -21,8 +21,8 @@ export class MHGMatcher extends BaseMatcher<string> {
     this.meta = new GalleryMeta(window.location.href, title);
     return this.meta;
   }
-  async *fetchPagesSource(source: Chapter): AsyncGenerator<string> {
-    yield source.source;
+  async *fetchPagesSource(source: Chapter): AsyncGenerator<Result<string>> {
+    yield Result.ok(source.source);
   }
   async parseImgNodes(source: string): Promise<ImageNode[]> {
     const docRaw = await window.fetch(source).then(res => res.text());

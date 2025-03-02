@@ -2,7 +2,7 @@ import { conf, transient } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { evLog } from "../utils/ev-log";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 
 abstract class DanbooruMatcher extends BaseMatcher<Document> {
@@ -16,10 +16,10 @@ abstract class DanbooruMatcher extends BaseMatcher<Document> {
 
   abstract nextPage(doc: Document): string | null;
 
-  async *fetchPagesSource(): AsyncGenerator<Document> {
+  async *fetchPagesSource(): AsyncGenerator<Result<Document>> {
     let doc = document;
     this.blacklistTags = this.getBlacklist(doc);
-    yield doc;
+    yield Result.ok(doc);
     // find next page
     let tryTimes = 0;
     while (true) {
@@ -29,11 +29,11 @@ abstract class DanbooruMatcher extends BaseMatcher<Document> {
         doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       } catch (e) {
         tryTimes++;
-        if (tryTimes > 3) throw new Error(`fetch next page failed, ${e}`);
+        if (tryTimes > 3) yield Result.err(new Error(`fetch next page failed, ${e}`));
         continue;
       }
       tryTimes = 0;
-      yield doc;
+      yield Result.ok(doc);
     }
   }
 
@@ -229,9 +229,9 @@ export class YandereMatcher extends BaseMatcher<Document> {
     return /yande.re\/post(?!\/show\/.*)/;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<Document> {
+  async *fetchPagesSource(): AsyncGenerator<Result<Document>> {
     let doc = document;
-    yield doc;
+    yield Result.ok(doc);
     // find next page
     let tryTimes = 0;
     while (true) {
@@ -245,7 +245,7 @@ export class YandereMatcher extends BaseMatcher<Document> {
         continue;
       }
       tryTimes = 0;
-      yield doc;
+      yield Result.ok(doc);
     }
   }
 
@@ -307,9 +307,9 @@ export class KonachanMatcher extends BaseMatcher<Document> {
     return /konachan.com\/post(?!\/show\/.*)/;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<Document> {
+  async *fetchPagesSource(): AsyncGenerator<Result<Document>> {
     let doc = document;
-    yield doc;
+    yield Result.ok(doc);
     // find next page
     let tryTimes = 0;
     while (true) {
@@ -323,7 +323,7 @@ export class KonachanMatcher extends BaseMatcher<Document> {
         continue;
       }
       tryTimes = 0;
-      yield doc;
+      yield Result.ok(doc);
     }
   }
   async parseImgNodes(doc: Document): Promise<ImageNode[]> {

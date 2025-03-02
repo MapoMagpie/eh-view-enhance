@@ -1,6 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
-import { BaseMatcher, OriginMeta } from "./platform";
+import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 const STEAM_THUMB_IMG_URL_REGEX = /background-image:\surl\(.*?(h.*\/).*?\)/;
 export class SteamMatcher extends BaseMatcher<string> {
@@ -54,7 +54,7 @@ export class SteamMatcher extends BaseMatcher<string> {
     return list;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<string> {
+  async *fetchPagesSource(): AsyncGenerator<Result<string>> {
     let totalPages = -1;
     document.querySelectorAll(".pagingPageLink").forEach(ele => {
       totalPages = Number(ele.textContent);
@@ -71,10 +71,10 @@ export class SteamMatcher extends BaseMatcher<string> {
     if (totalPages > 0) {
       for (let p = 1; p <= totalPages; p++) {
         url.searchParams.set("p", p.toString());
-        yield url.href;
+        yield Result.ok(url.href);
       }
     } else {
-      yield url.href;
+      yield Result.ok(url.href);
     }
   }
 

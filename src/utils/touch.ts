@@ -1,6 +1,7 @@
 export type Handle = {
   zoom?: (distance: number, ev: TouchEvent) => void;
   swipe?: (direction: "L" | "R" | "D" | "U", ev: TouchEvent) => void;
+  rotate?: (clockwise: boolean, ev: TouchEvent) => void;
   start?: (distance: number, ev: TouchEvent) => void;
   end?: (ev: TouchEvent) => void;
 }
@@ -21,7 +22,7 @@ export class TouchPoint {
   }
 
   distance(other: TouchPoint): number {
-    return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2);
+    return distance({ x: this.x, y: this.y }, { x: other.x, y: other.y });
   }
 
   direction(other: TouchPoint): "L" | "R" | "D" | "U" {
@@ -100,4 +101,9 @@ export class TouchManager {
   }
 
 }
-
+type Point = { x: number, y: number }
+export function distance(start: Point, end: Point): number {
+  const dx = start.x - end.x;
+  const dy = start.y - end.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}

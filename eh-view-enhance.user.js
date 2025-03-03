@@ -10594,7 +10594,7 @@ ${chapters.map((c, i) => `<div><label>
       return new TouchPoint(tp.identifier, tp.clientX, tp.clientY);
     }
     distance(other) {
-      return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2);
+      return distance({ x: this.x, y: this.y }, { x: other.x, y: other.y });
     }
     direction(other) {
       const x = this.x - other.x;
@@ -10623,18 +10623,18 @@ ${chapters.map((c, i) => `<div><label>
     start(ev) {
       this.tpCache = Array.from(ev.targetTouches).map(TouchPoint.from);
       this.trail = [this.tpCache[0]];
-      let distance = 0;
+      let distance2 = 0;
       if (this.tpCache.length === 2) {
-        distance = this.tpCache[0].distance(this.tpCache[1]);
+        distance2 = this.tpCache[0].distance(this.tpCache[1]);
       }
-      this.handlers.start?.(distance, ev);
+      this.handlers.start?.(distance2, ev);
     }
     move(ev) {
       if (this.tpCache.length === 1) {
         const last = this.trail[this.trail.length - 1];
         const tp = TouchPoint.from(ev.targetTouches[0]);
-        const distance = last.distance(tp);
-        if (distance > 30) {
+        const distance2 = last.distance(tp);
+        if (distance2 > 30) {
           this.trail.push(tp);
         }
         return;
@@ -10662,6 +10662,11 @@ ${chapters.map((c, i) => `<div><label>
       this.tpCache = [];
       this.handlers.end?.(ev);
     }
+  }
+  function distance(start, end) {
+    const dx = start.x - end.x;
+    const dy = start.y - end.y;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   class BigImageFrameManager {
@@ -10856,6 +10861,7 @@ ${chapters.map((c, i) => `<div><label>
         if (mdevt.button !== 0) return;
         if (mdevt.target.classList.contains("img-land")) return;
         let moved = false;
+        const start = { x: mdevt.clientX, y: mdevt.clientY };
         let last = { x: mdevt.clientX, y: mdevt.clientY };
         let elementsWidth = void 0;
         const abort = new AbortController();
@@ -10877,6 +10883,8 @@ ${chapters.map((c, i) => `<div><label>
           }
           if (IS_MOBILE) return;
           if (!moved) {
+            const dist = distance(start, { x: mmevt.clientX, y: mmevt.clientY });
+            if (dist < 20) return;
             if (conf.magnifier && conf.imgScale === 100) {
               this.scaleBigImages(1, 0, 150, false);
             }
@@ -11238,8 +11246,8 @@ ${chapters.map((c, i) => `<div><label>
         elements: showing
       };
     }
-    restoreScrollTop(imgNode, distance) {
-      this.root.scrollTop = this.getRealOffsetTop(imgNode) - distance;
+    restoreScrollTop(imgNode, distance2) {
+      this.root.scrollTop = this.getRealOffsetTop(imgNode) - distance2;
     }
     getRealOffsetTop(imgNode) {
       return imgNode.offsetTop;

@@ -9,7 +9,7 @@ import EBUS from "../event-bus";
 import { Chapter } from "../page-fetcher";
 import queryCSSRules from "../utils/query-cssrules";
 import { Scroller } from "../utils/scroller";
-import { TouchManager } from "../utils/touch";
+import { distance, TouchManager } from "../utils/touch";
 import { DEFAULT_THUMBNAIL } from "../img-node";
 
 type MediaElement = HTMLImageElement | HTMLVideoElement;
@@ -222,6 +222,7 @@ export class BigImageFrameManager {
       if (mdevt.button !== 0) return;
       if ((mdevt.target as HTMLElement).classList.contains("img-land")) return;
       let moved = false;
+      const start = { x: mdevt.clientX, y: mdevt.clientY };
       let last = { x: mdevt.clientX, y: mdevt.clientY };
       let elementsWidth: number | undefined = undefined;
       const abort = new AbortController();
@@ -246,6 +247,9 @@ export class BigImageFrameManager {
         };
         if (IS_MOBILE) return;
         if (!moved) { // first move
+          // calculate the distance moved, if the distance is too short then return;
+          const dist = distance(start, { x: mmevt.clientX, y: mmevt.clientY });
+          if (dist < 20) return;
           // temporarily zoom if img not scale
           if (conf.magnifier && conf.imgScale === 100) {
             this.scaleBigImages(1, 0, 150, false);

@@ -304,6 +304,17 @@ export class BigImageFrameManager {
     });
   }
 
+  cherryPickCurrent(exclude: boolean) {
+    EBUS.emit("add-cherry-pick-range", this.chapterIndex, this.currentIndex, !exclude, false);
+    const withRange = conf.readMode === "pagination" && conf.paginationIMGCount > 1;
+    const end = this.currentIndex + conf.paginationIMGCount - 1;
+    if (withRange) {
+      EBUS.emit("add-cherry-pick-range", this.chapterIndex, end, !exclude, true);
+    }
+    const message = `${exclude ? "Excluded" : "Selected"} Image${withRange ? "s" : ""} no.${this.currentIndex + 1}${withRange ? "-" + (end + 1) : ""}`;
+    EBUS.emit("notify-message", "info", message, 1000);
+  }
+
   rotate(clockwise: boolean) {
     const cls = ["bifm-nodes-rotate-90", "bifm-nodes-rotate-180", "bifm-nodes-rotate-270", ""];
     if (!clockwise) cls.reverse();

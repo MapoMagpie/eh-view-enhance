@@ -1093,6 +1093,18 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       "旋转图片",
       "이미지 회전",
       "Girar imagen"
+    ],
+    "cherry-pick-current": [
+      "Cherry Pick Current Images",
+      "选择当前图片",
+      "체리픽 현재 이미지",
+      "Imágenes actuales de Cherry Pick"
+    ],
+    "exclude-current": [
+      "Exclude current images",
+      "排除当前图片",
+      "현재 이미지 제외",
+      "Excluir imágenes actuales"
     ]
   };
   const kbInFullViewGridData = {
@@ -7997,6 +8009,16 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           ["alt+o"],
           () => EBUS.emit("bifm-rotate-image"),
           true
+        ),
+        "cherry-pick-current": new KeyboardDesc(
+          ["alt+z"],
+          () => BIFM.cherryPickCurrent(false),
+          true
+        ),
+        "exclude-current": new KeyboardDesc(
+          ["alt+shift+z"],
+          () => BIFM.cherryPickCurrent(true),
+          true
         )
       };
       const inFullViewGrid = {
@@ -10987,6 +11009,16 @@ ${chapters.map((c, i) => `<div><label>
         rotate: (_clockwise, _angle) => {
         }
       });
+    }
+    cherryPickCurrent(exclude) {
+      EBUS.emit("add-cherry-pick-range", this.chapterIndex, this.currentIndex, !exclude, false);
+      const withRange = conf.readMode === "pagination" && conf.paginationIMGCount > 1;
+      const end = this.currentIndex + conf.paginationIMGCount - 1;
+      if (withRange) {
+        EBUS.emit("add-cherry-pick-range", this.chapterIndex, end, !exclude, true);
+      }
+      const message = `${exclude ? "Excluded" : "Selected"} Image${withRange ? "s" : ""} no.${this.currentIndex + 1}${withRange ? "-" + (end + 1) : ""}`;
+      EBUS.emit("notify-message", "info", message, 1e3);
     }
     rotate(clockwise) {
       const cls = ["bifm-nodes-rotate-90", "bifm-nodes-rotate-180", "bifm-nodes-rotate-270", ""];

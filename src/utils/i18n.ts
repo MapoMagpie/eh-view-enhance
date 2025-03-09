@@ -1043,6 +1043,18 @@ const kbInBigImageModeData: Record<KeyboardInBigImageModeId, Langs> = {
     '이미지 회전',
     'Girar imagen'
   ],
+  'cherry-pick-current': [
+    'Cherry Pick Current Images',
+    '选择当前图片',
+    '체리픽 현재 이미지',
+    'Imágenes actuales de Cherry Pick'
+  ],
+  'exclude-current': [
+    'Exclude current images',
+    '排除当前图片',
+    '현재 이미지 제외',
+    'Excluir imágenes actuales'
+  ],
 };
 
 const kbInFullViewGridData: Record<KeyboardInFullViewGridId, Langs> = {

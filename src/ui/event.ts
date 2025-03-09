@@ -28,7 +28,9 @@ export type KeyboardInBigImageModeId = "step-image-prev"
   | "toggle-auto-play"
   | "round-read-mode"
   | "toggle-reverse-pages"
-  | "rotate-image";
+  | "rotate-image"
+  | "cherry-pick-current"
+  | "exclude-current";
 export type KeyboardInFullViewGridId = "open-big-image-mode"
   | "pause-auto-load-temporarily"
   | "exit-full-view-grid"
@@ -310,6 +312,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       "rotate-image": new KeyboardDesc(
         ["alt+o"],
         () => EBUS.emit("bifm-rotate-image"), true
+      ),
+      "cherry-pick-current": new KeyboardDesc(
+        ["alt+z"],
+        () => BIFM.cherryPickCurrent(false), true
+      ),
+      "exclude-current": new KeyboardDesc(
+        ["alt+shift+z"],
+        () => BIFM.cherryPickCurrent(true), true
       ),
     };
     const inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc> = {

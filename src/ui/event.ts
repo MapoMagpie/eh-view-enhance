@@ -27,7 +27,8 @@ export type KeyboardInBigImageModeId = "step-image-prev"
   | "scroll-image-down"
   | "toggle-auto-play"
   | "round-read-mode"
-  | "toggle-reverse-pages";
+  | "toggle-reverse-pages"
+  | "rotate-image";
 export type KeyboardInFullViewGridId = "open-big-image-mode"
   | "pause-auto-load-temporarily"
   | "exit-full-view-grid"
@@ -305,6 +306,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       "toggle-reverse-pages": new KeyboardDesc(
         ["alt+r"],
         () => modBooleanConfigEvent("reversePages", !conf.reversePages), true
+      ),
+      "rotate-image": new KeyboardDesc(
+        ["alt+o"],
+        () => EBUS.emit("bifm-rotate-image"), true
       ),
     };
     const inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc> = {

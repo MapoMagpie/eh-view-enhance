@@ -283,6 +283,19 @@ export function styleCSS() {
   object-fit: contain;
   display: block;
 }
+.bifm-nodes-rotate-90 .bifm-img {
+  rotate: 90deg;
+  max-width: 100vh;
+  max-height: 100vw;
+}
+.bifm-nodes-rotate-180 .bifm-img {
+  rotate: 180deg;
+}
+.bifm-nodes-rotate-270 .bifm-img {
+  rotate: 270deg;
+  max-width: 100vh;
+  max-height: 100vw;
+}
 #bifm-loading-helper {
   position: fixed;
   z-index: 3000;

@@ -9,7 +9,7 @@ import EBUS from "../event-bus";
 import { Chapter } from "../page-fetcher";
 import queryCSSRules from "../utils/query-cssrules";
 import { Scroller } from "../utils/scroller";
-import { distance, TouchManager } from "../utils/touch";
+import { calculateDistance, TouchManager } from "../utils/touch";
 import { DEFAULT_THUMBNAIL } from "../img-node";
 
 type MediaElement = HTMLImageElement | HTMLVideoElement;
@@ -91,6 +91,7 @@ export class BigImageFrameManager {
       if (imf.chapterIndex !== this.chapterIndex) return;
       this.onResize(imf);
     });
+    EBUS.subscribe("bifm-rotate-image", () => this.rotate(true));
 
     this.loadingHelper = document.createElement("span");
     this.loadingHelper.id = "bifm-loading-helper";
@@ -248,7 +249,7 @@ export class BigImageFrameManager {
         if (IS_MOBILE) return;
         if (!moved) { // first move
           // calculate the distance moved, if the distance is too short then return;
-          const dist = distance(start, { x: mmevt.clientX, y: mmevt.clientY });
+          const dist = calculateDistance(start, { x: mmevt.clientX, y: mmevt.clientY });
           if (dist < 20) return;
           // temporarily zoom if img not scale
           if (conf.magnifier && conf.imgScale === 100) {
@@ -296,7 +297,24 @@ export class BigImageFrameManager {
           this.root.style.overflow = "";
         }
       },
+      rotate: (_clockwise, _angle) => {
+        // TODO: enable touch rotate
+        // if (angle > 70) this.rotate(clockwise);
+      }
     });
+  }
+
+  rotate(clockwise: boolean) {
+    const cls = ["bifm-nodes-rotate-90", "bifm-nodes-rotate-180", "bifm-nodes-rotate-270", ""];
+    if (!clockwise) cls.reverse();
+    let idx = cls.findIndex((c) => this.container.classList.contains(c));
+    if (idx === -1) {
+      idx = clockwise ? 3 : 0;
+    } else {
+      this.container.classList.remove(cls[idx]);
+    }
+    const add = (idx + 1) % 4;
+    if (cls[add] !== "") this.container.classList.add(cls[add]);
   }
 
   scrollStop() {

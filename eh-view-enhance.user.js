@@ -1087,6 +1087,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       "切换阅读方向",
       "페이지 반전 전환",
       "Alternar páginas hacia atrás"
+    ],
+    "rotate-image": [
+      "Rotate Image",
+      "旋转图片",
+      "이미지 회전",
+      "Girar imagen"
     ]
   };
   const kbInFullViewGridData = {
@@ -7986,6 +7992,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           ["alt+r"],
           () => modBooleanConfigEvent("reversePages", !conf.reversePages),
           true
+        ),
+        "rotate-image": new KeyboardDesc(
+          ["alt+o"],
+          () => EBUS.emit("bifm-rotate-image"),
+          true
         )
       };
       const inFullViewGrid = {
@@ -8830,6 +8841,19 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   height: 100%;
   object-fit: contain;
   display: block;
+}
+.bifm-nodes-rotate-90 .bifm-img {
+  rotate: 90deg;
+  max-width: 100vh;
+  max-height: 100vw;
+}
+.bifm-nodes-rotate-180 .bifm-img {
+  rotate: 180deg;
+}
+.bifm-nodes-rotate-270 .bifm-img {
+  rotate: 270deg;
+  max-width: 100vh;
+  max-height: 100vw;
 }
 #bifm-loading-helper {
   position: fixed;
@@ -10594,7 +10618,7 @@ ${chapters.map((c, i) => `<div><label>
       return new TouchPoint(tp.identifier, tp.clientX, tp.clientY);
     }
     distance(other) {
-      return distance({ x: this.x, y: this.y }, { x: other.x, y: other.y });
+      return calculateDistance({ x: this.x, y: this.y }, { x: other.x, y: other.y });
     }
     direction(other) {
       const x = this.x - other.x;
@@ -10610,8 +10634,7 @@ ${chapters.map((c, i) => `<div><label>
   }
   class TouchManager {
     element;
-    tpCache = [];
-    trail = [];
+    trail = {};
     handlers;
     constructor(element, handles) {
       this.element = element;
@@ -10621,52 +10644,85 @@ ${chapters.map((c, i) => `<div><label>
       this.element.addEventListener("touchend", (ev) => this.end(ev));
     }
     start(ev) {
-      this.tpCache = Array.from(ev.targetTouches).map(TouchPoint.from);
-      this.trail = [this.tpCache[0]];
-      let distance2 = 0;
-      if (this.tpCache.length === 2) {
-        distance2 = this.tpCache[0].distance(this.tpCache[1]);
+      const tps = Array.from(ev.targetTouches).map(TouchPoint.from);
+      this.trail = tps.reduce((prev, curr) => {
+        prev[curr.id] = [curr];
+        return prev;
+      }, {});
+      let distance = 0;
+      if (tps.length === 2) {
+        distance = tps[0].distance(tps[1]);
       }
-      this.handlers.start?.(distance2, ev);
+      this.handlers.start?.(distance, ev);
     }
     move(ev) {
-      if (this.tpCache.length === 1) {
-        const last = this.trail[this.trail.length - 1];
-        const tp = TouchPoint.from(ev.targetTouches[0]);
-        const distance2 = last.distance(tp);
-        if (distance2 > 30) {
-          this.trail.push(tp);
+      const tps = Array.from(ev.targetTouches).map(TouchPoint.from);
+      tps.forEach((tp) => {
+        const trail = this.trail[tp.id];
+        const last = trail[trail.length - 1];
+        const distance = last.distance(tp);
+        if (distance > 30) {
+          trail.push(tp);
         }
-        return;
-      }
-      if (this.tpCache.length === 2 && ev.targetTouches.length === 2) {
-        const tp1 = TouchPoint.from(ev.targetTouches[0]);
-        const tp2 = TouchPoint.from(ev.targetTouches[1]);
+      });
+      if (Object.keys(this.trail).length === 2 && tps.length === 2) {
+        const tp1 = tps[0];
+        const tp2 = tps[1];
         this.handlers.zoom?.(tp1.distance(tp2), ev);
         return;
       }
     }
     end(ev) {
-      if (this.tpCache.length === 1 && this.trail.length > 1) {
-        let direction = void 0;
-        for (let i = 0, j = 1; j < this.trail.length; i++, j++) {
-          if (!direction) {
-            direction = this.trail[i].direction(this.trail[j]);
-          } else {
-            if (this.trail[i].direction(this.trail[j]) !== direction) return;
+      const tpKeys = Object.keys(this.trail).map(Number);
+      if (tpKeys.length === 1) {
+        if (this.trail[tpKeys[0]].length > 1) {
+          const trail = this.trail[tpKeys[0]];
+          let direction = void 0;
+          for (let i = 0, j = 1; j < trail.length; i++, j++) {
+            if (!direction) {
+              direction = trail[i].direction(trail[j]);
+            } else {
+              if (trail[i].direction(trail[j]) !== direction) return;
+            }
           }
+          this.handlers.swipe?.(direction, ev);
         }
-        this.handlers.swipe?.(direction, ev);
       }
-      this.trail = [];
-      this.tpCache = [];
+      if (tpKeys.length === 2) {
+        const trail1 = this.trail[tpKeys[0]];
+        const trail2 = this.trail[tpKeys[1]];
+        if (trail1.length > 1 && trail2.length > 1) {
+          const line1 = [trail1[0], trail1[trail1.length - 1]];
+          const line2 = [trail2[0], trail2[trail2.length - 1]];
+          const { angle, clockwise } = calculateAngle(line1, line2);
+          this.handlers.rotate?.(clockwise, angle, ev);
+        }
+      }
+      this.trail = {};
       this.handlers.end?.(ev);
     }
   }
-  function distance(start, end) {
+  function calculateDistance(start, end) {
     const dx = start.x - end.x;
     const dy = start.y - end.y;
     return Math.sqrt(dx * dx + dy * dy);
+  }
+  function calculateAngle(line1, line2) {
+    if (line1.length !== 2 || line2.length !== 2) throw new Error("line1 or line2 length must be 2");
+    [line1, line2].forEach(([start, end]) => {
+      if (start.x === end.x && start.y === end.y) throw new Error(`start at ${start.toString()}, end at ${end.toString()}, not line`);
+    });
+    const vector1 = { x: line1[1].x - line1[0].x, y: line1[1].y - line1[0].y };
+    const vector2 = { x: line2[1].x - line2[0].x, y: line2[1].y - line2[0].y };
+    const dotProduct = vector1.x * vector2.x + vector1.y * vector2.y;
+    const magnitude1 = Math.sqrt(vector1.x ** 2 + vector1.y ** 2);
+    const magnitude2 = Math.sqrt(vector2.x ** 2 + vector2.y ** 2);
+    const cosTheta = dotProduct / (magnitude1 * magnitude2);
+    const angleInRadians = Math.acos(cosTheta);
+    const crossProduct = vector1.x * vector2.y - vector1.y * vector2.x;
+    const clockwise = crossProduct <= 0;
+    const angle = angleInRadians * (180 / Math.PI);
+    return { angle, clockwise };
   }
 
   class BigImageFrameManager {
@@ -10740,6 +10796,7 @@ ${chapters.map((c, i) => `<div><label>
         if (imf.chapterIndex !== this.chapterIndex) return;
         this.onResize(imf);
       });
+      EBUS.subscribe("bifm-rotate-image", () => this.rotate(true));
       this.loadingHelper = document.createElement("span");
       this.loadingHelper.id = "bifm-loading-helper";
       this.root.appendChild(this.loadingHelper);
@@ -10883,7 +10940,7 @@ ${chapters.map((c, i) => `<div><label>
           }
           if (IS_MOBILE) return;
           if (!moved) {
-            const dist = distance(start, { x: mmevt.clientX, y: mmevt.clientY });
+            const dist = calculateDistance(start, { x: mmevt.clientX, y: mmevt.clientY });
             if (dist < 20) return;
             if (conf.magnifier && conf.imgScale === 100) {
               this.scaleBigImages(1, 0, 150, false);
@@ -10926,8 +10983,22 @@ ${chapters.map((c, i) => `<div><label>
           if (conf.readMode === "pagination") {
             this.root.style.overflow = "";
           }
+        },
+        rotate: (_clockwise, _angle) => {
         }
       });
+    }
+    rotate(clockwise) {
+      const cls = ["bifm-nodes-rotate-90", "bifm-nodes-rotate-180", "bifm-nodes-rotate-270", ""];
+      if (!clockwise) cls.reverse();
+      let idx = cls.findIndex((c) => this.container.classList.contains(c));
+      if (idx === -1) {
+        idx = clockwise ? 3 : 0;
+      } else {
+        this.container.classList.remove(cls[idx]);
+      }
+      const add = (idx + 1) % 4;
+      if (cls[add] !== "") this.container.classList.add(cls[add]);
     }
     scrollStop() {
       this.scrollerY.scrolling = false;
@@ -11246,8 +11317,8 @@ ${chapters.map((c, i) => `<div><label>
         elements: showing
       };
     }
-    restoreScrollTop(imgNode, distance2) {
-      this.root.scrollTop = this.getRealOffsetTop(imgNode) - distance2;
+    restoreScrollTop(imgNode, distance) {
+      this.root.scrollTop = this.getRealOffsetTop(imgNode) - distance;
     }
     getRealOffsetTop(imgNode) {
       return imgNode.offsetTop;

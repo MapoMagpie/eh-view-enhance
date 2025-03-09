@@ -40,6 +40,7 @@ export interface Events {
   "downloader-canvas-on-click": (index: number) => void;
   "bifm-on-show": () => void;
   "bifm-on-hidden": () => void;
+  "bifm-rotate-image": () => void;
   "pf-on-appended": (total: number, nodes: IMGFetcher[], chapterIndex: number, done?: boolean) => void;
   "pf-update-chapters": (chapters: Chapter[]) => void;
   "pf-change-chapter": (index: number, chapter: Chapter) => void;

@@ -1036,7 +1036,13 @@ const kbInBigImageModeData: Record<KeyboardInBigImageModeId, Langs> = {
     '切换阅读方向',
     '페이지 반전 전환',
     'Alternar páginas hacia atrás'
-  ]
+  ],
+  'rotate-image': [
+    'Rotate Image',
+    '旋转图片',
+    '이미지 회전',
+    'Girar imagen'
+  ],
 };
 
 const kbInFullViewGridData: Record<KeyboardInFullViewGridId, Langs> = {

@@ -8864,18 +8864,23 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   object-fit: contain;
   display: block;
 }
-.bifm-nodes-rotate-90 .bifm-img {
-  rotate: 90deg;
-  max-width: 100vh;
-  max-height: 100vw;
+.bifm-rotate-90 {
+  transform: rotate(90deg);
+  width: 100vh;
+  height: 100vw;
+  transform-origin: 0px 0px;
+  left: 100vw;
 }
-.bifm-nodes-rotate-180 .bifm-img {
-  rotate: 180deg;
+.bifm-rotate-180 {
+  transform: rotate(180deg);
 }
-.bifm-nodes-rotate-270 .bifm-img {
-  rotate: 270deg;
-  max-width: 100vh;
-  max-height: 100vw;
+.bifm-rotate-270 {
+  transform: rotate(270deg);
+  width: 100vh;
+  height: 100vw;
+  transform-origin: 0px 0px;
+  left: 0px;
+  top: 100vh;
 }
 #bifm-loading-helper {
   position: fixed;
@@ -11021,16 +11026,16 @@ ${chapters.map((c, i) => `<div><label>
       EBUS.emit("notify-message", "info", message, 1e3);
     }
     rotate(clockwise) {
-      const cls = ["bifm-nodes-rotate-90", "bifm-nodes-rotate-180", "bifm-nodes-rotate-270", ""];
+      const cls = ["bifm-rotate-90", "bifm-rotate-180", "bifm-rotate-270", ""];
       if (!clockwise) cls.reverse();
-      let idx = cls.findIndex((c) => this.container.classList.contains(c));
+      let idx = cls.findIndex((c) => this.root.classList.contains(c));
       if (idx === -1) {
         idx = clockwise ? 3 : 0;
       } else {
-        this.container.classList.remove(cls[idx]);
+        this.root.classList.remove(cls[idx]);
       }
       const add = (idx + 1) % 4;
-      if (cls[add] !== "") this.container.classList.add(cls[add]);
+      if (cls[add] !== "") this.root.classList.add(cls[add]);
     }
     scrollStop() {
       this.scrollerY.scrolling = false;
@@ -11266,6 +11271,11 @@ ${chapters.map((c, i) => `<div><label>
         case "pagination": {
           const over = this.checkOverflow();
           const [$ori, $neg] = conf.reversePages ? [negative, this.oriented] : [this.oriented, negative];
+          const rotated = this.root.classList.contains("bifm-rotate-90") || this.root.classList.contains("bifm-rotate-270");
+          if (rotated) {
+            this.stepNext(this.oriented);
+            break;
+          }
           if (over[this.oriented].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) {
             preventDefault();
             if (!noPrevent) {

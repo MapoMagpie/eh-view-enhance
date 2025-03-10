@@ -316,16 +316,16 @@ export class BigImageFrameManager {
   }
 
   rotate(clockwise: boolean) {
-    const cls = ["bifm-nodes-rotate-90", "bifm-nodes-rotate-180", "bifm-nodes-rotate-270", ""];
+    const cls = ["bifm-rotate-90", "bifm-rotate-180", "bifm-rotate-270", ""];
     if (!clockwise) cls.reverse();
-    let idx = cls.findIndex((c) => this.container.classList.contains(c));
+    let idx = cls.findIndex((c) => this.root.classList.contains(c));
     if (idx === -1) {
       idx = clockwise ? 3 : 0;
     } else {
-      this.container.classList.remove(cls[idx]);
+      this.root.classList.remove(cls[idx]);
     }
     const add = (idx + 1) % 4;
-    if (cls[add] !== "") this.container.classList.add(cls[add]);
+    if (cls[add] !== "") this.root.classList.add(cls[add]);
   }
 
   scrollStop() {
@@ -586,6 +586,11 @@ export class BigImageFrameManager {
       case "pagination": {
         const over = this.checkOverflow();
         const [$ori, $neg] = conf.reversePages ? [negative, this.oriented] : [this.oriented, negative];
+        const rotated = this.root.classList.contains("bifm-rotate-90") || this.root.classList.contains("bifm-rotate-270");
+        if (rotated) {
+          this.stepNext(this.oriented);
+          break;
+        }
         if (over[this.oriented].overY - 1 <= 0 && over[$ori].overX - 1 <= 0) { // reached boundary, step next
           preventDefault();
           if (!noPrevent) {

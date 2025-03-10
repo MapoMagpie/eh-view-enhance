@@ -4098,7 +4098,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     queryList(doc) {
       if (window.location.search.includes("page=favorites")) {
-        return Array.from(doc.querySelectorAll("#content > .thumb > a"));
+        return Array.from(doc.querySelectorAll("#content .thumb a"));
       } else {
         return Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
       }

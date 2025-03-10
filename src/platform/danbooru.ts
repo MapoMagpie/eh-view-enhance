@@ -162,7 +162,7 @@ export class Rule34Matcher extends DanbooruMatcher {
   }
   queryList(doc: Document): HTMLElement[] {
     if (window.location.search.includes("page=favorites")) {
-      return Array.from(doc.querySelectorAll("#content > .thumb > a"));
+      return Array.from(doc.querySelectorAll("#content .thumb a"));
     } else {
       return Array.from(doc.querySelectorAll(".image-list > .thumb:not(.blacklisted-image) > a"));
     }

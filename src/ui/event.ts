@@ -38,7 +38,8 @@ export type KeyboardInFullViewGridId = "open-big-image-mode"
   | "columns-decrease"
   | "toggle-auto-play"
   | "retry-fetch-next-page"
-  | "resize-flow-vision";
+  | "resize-flow-vision"
+  | "start-download";
 export type KeyboardInMainId = "open-full-view-grid" | "start-download";
 export type KeyboardEvents = {
   inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
@@ -298,7 +299,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         () => EBUS.emit("toggle-auto-play")
       ),
       "round-read-mode": new KeyboardDesc(
-        ["alt+t"],
+        ["alt+m"],
         () => {
           const readModeList: ReadMode[] = ["pagination", "continuous", "horizontal"];
           const index = (readModeList.indexOf(conf.readMode) + 1) % readModeList.length;
@@ -306,19 +307,19 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         }, true
       ),
       "toggle-reverse-pages": new KeyboardDesc(
-        ["alt+r"],
+        ["alt+f"],
         () => modBooleanConfigEvent("reversePages", !conf.reversePages), true
       ),
       "rotate-image": new KeyboardDesc(
-        ["alt+o"],
+        ["alt+r"],
         () => EBUS.emit("bifm-rotate-image"), true
       ),
       "cherry-pick-current": new KeyboardDesc(
-        ["alt+z"],
+        ["alt+x"],
         () => BIFM.cherryPickCurrent(false), true
       ),
       "exclude-current": new KeyboardDesc(
-        ["alt+shift+z"],
+        ["shift+alt+x"],
         () => BIFM.cherryPickCurrent(true), true
       ),
     };
@@ -336,7 +337,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         }
       ),
       "pause-auto-load-temporarily": new KeyboardDesc(
-        ["ctrl+p"],
+        ["alt+p"],
         () => {
           IL.autoLoad = !IL.autoLoad;
           if (IL.autoLoad) {
@@ -364,13 +365,16 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         () => EBUS.emit("toggle-auto-play")
       ),
       "retry-fetch-next-page": new KeyboardDesc(
-        ["shift+n"],
+        ["alt+n"],
         () => EBUS.emit("pf-retry-extend")
       ),
       "resize-flow-vision": new KeyboardDesc(
-        ["shift+v"],
+        ["alt+r"],
         () => EBUS.emit("fvg-flow-vision-resize")
       ),
+      "start-download": new KeyboardDesc(
+        ["shift+alt+d"],
+        () => EBUS.emit("start-download", () => PH.minify("exit", false))),
     };
     const inMain: Record<KeyboardInMainId, KeyboardDesc> = {
       "open-full-view-grid": new KeyboardDesc(["enter"], () => {
@@ -379,7 +383,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
         EBUS.emit("toggle-main-view", true)
       }, true),
-      "start-download": new KeyboardDesc(["ctrl+alt+d"], () => {
+      "start-download": new KeyboardDesc(["alt+shift+d"], () => {
         EBUS.emit("start-download", () => PH.minify("exit", false));
       }, true),
     };

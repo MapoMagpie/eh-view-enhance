@@ -1001,7 +1001,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
 `
     ]
   };
-  const kbInMainData = {
+  const kbInFullViewGridData = {
     "open-full-view-grid": [
       "Enter Read Mode",
       "进入阅读模式",
@@ -1013,9 +1013,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       "开始下载",
       "다운로드 시작",
       "Iniciar Descarga"
-    ]
-  };
-  const kbInBigImageModeData = {
+    ],
     "step-image-prev": [
       "Go Prev Image",
       "切换到上一张图片",
@@ -1105,9 +1103,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       "排除当前图片",
       "현재 이미지 제외",
       "Excluir imágenes actuales"
-    ]
-  };
-  const kbInFullViewGridData = {
+    ],
     "open-big-image-mode": [
       "Enter Big Image Mode",
       "进入大图阅读模式",
@@ -1138,12 +1134,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       "열 수 줄이기",
       "Disminuir columnas"
     ],
-    "toggle-auto-play": [
-      "Toggle Auto Play",
-      "切换自动播放",
-      "자동 재생 시작/중지",
-      "Alternar reproducción automática"
-    ],
     "retry-fetch-next-page": [
       "Try Fetch Next Page",
       "重新加载下一分页",
@@ -1167,11 +1157,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   }
   const i18n = {
     ...convert(i18nData),
-    keyboard: {
-      inMain: convert(kbInMainData),
-      inFullViewGrid: convert(kbInFullViewGridData),
-      inBigImageMode: convert(kbInBigImageModeData)
-    }
+    keyboard: convert(kbInFullViewGridData)
   };
 
   const moonViewCeremony = `<🎑>`;
@@ -7378,7 +7364,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       ${Object.entries(keyboardEvents.inMain).map(([id]) => `
         <div class="ehvp-custom-panel-item">
          <div class="ehvp-custom-panel-item-title">
-           <span>${i18n.keyboard.inMain[id].get()}</span>
+           <span>${i18n.keyboard[id].get()}</span>
          </div>
          <div class="ehvp-custom-panel-item-values">
            <!-- wait element created from button event -->
@@ -7391,7 +7377,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       ${Object.entries(keyboardEvents.inFullViewGrid).map(([id]) => `
         <div class="ehvp-custom-panel-item">
          <div class="ehvp-custom-panel-item-title">
-           <span>${i18n.keyboard.inFullViewGrid[id].get()}</span>
+           <span>${i18n.keyboard[id].get()}</span>
          </div>
          <div class="ehvp-custom-panel-item-values">
            <!-- wait element created from button event -->
@@ -7404,7 +7390,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       ${Object.entries(keyboardEvents.inBigImageMode).map(([id]) => `
         <div class="ehvp-custom-panel-item">
          <div class="ehvp-custom-panel-item-title">
-           <span>${i18n.keyboard.inBigImageMode[id].get()}</span>
+           <span>${i18n.keyboard[id].get()}</span>
          </div>
          <div class="ehvp-custom-panel-item-values">
            <!-- wait element created from button event -->
@@ -7992,7 +7978,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           () => EBUS.emit("toggle-auto-play")
         ),
         "round-read-mode": new KeyboardDesc(
-          ["alt+t"],
+          ["alt+m"],
           () => {
             const readModeList = ["pagination", "continuous", "horizontal"];
             const index = (readModeList.indexOf(conf.readMode) + 1) % readModeList.length;
@@ -8001,22 +7987,22 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           true
         ),
         "toggle-reverse-pages": new KeyboardDesc(
-          ["alt+r"],
+          ["alt+f"],
           () => modBooleanConfigEvent("reversePages", !conf.reversePages),
           true
         ),
         "rotate-image": new KeyboardDesc(
-          ["alt+o"],
+          ["alt+r"],
           () => EBUS.emit("bifm-rotate-image"),
           true
         ),
         "cherry-pick-current": new KeyboardDesc(
-          ["alt+z"],
+          ["alt+x"],
           () => BIFM.cherryPickCurrent(false),
           true
         ),
         "exclude-current": new KeyboardDesc(
-          ["alt+shift+z"],
+          ["shift+alt+x"],
           () => BIFM.cherryPickCurrent(true),
           true
         )
@@ -8036,7 +8022,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           }
         ),
         "pause-auto-load-temporarily": new KeyboardDesc(
-          ["ctrl+p"],
+          ["alt+p"],
           () => {
             IL.autoLoad = !IL.autoLoad;
             if (IL.autoLoad) {
@@ -8064,12 +8050,16 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           () => EBUS.emit("toggle-auto-play")
         ),
         "retry-fetch-next-page": new KeyboardDesc(
-          ["shift+n"],
+          ["alt+n"],
           () => EBUS.emit("pf-retry-extend")
         ),
         "resize-flow-vision": new KeyboardDesc(
-          ["shift+v"],
+          ["alt+r"],
           () => EBUS.emit("fvg-flow-vision-resize")
+        ),
+        "start-download": new KeyboardDesc(
+          ["shift+alt+d"],
+          () => EBUS.emit("start-download", () => PH.minify("exit", false))
         )
       };
       const inMain = {
@@ -8078,7 +8068,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
           EBUS.emit("toggle-main-view", true);
         }, true),
-        "start-download": new KeyboardDesc(["ctrl+alt+d"], () => {
+        "start-download": new KeyboardDesc(["alt+shift+d"], () => {
           EBUS.emit("start-download", () => PH.minify("exit", false));
         }, true)
       };

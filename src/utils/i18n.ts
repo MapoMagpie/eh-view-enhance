@@ -949,7 +949,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
 } satisfies Record<string, Langs>;
 type I18nKeys = keyof (typeof i18nData);
 
-const kbInMainData: Record<KeyboardInMainId, Langs> = {
+const kbInFullViewGridData: Record<KeyboardInFullViewGridId | KeyboardInBigImageModeId | KeyboardInMainId, Langs> = {
   'open-full-view-grid': [
     'Enter Read Mode',
     '进入阅读模式',
@@ -961,10 +961,7 @@ const kbInMainData: Record<KeyboardInMainId, Langs> = {
     '开始下载',
     '다운로드 시작',
     'Iniciar Descarga'
-  ]
-};
-
-const kbInBigImageModeData: Record<KeyboardInBigImageModeId, Langs> = {
+  ],
   'step-image-prev': [
     'Go Prev Image',
     '切换到上一张图片',
@@ -1055,9 +1052,6 @@ const kbInBigImageModeData: Record<KeyboardInBigImageModeId, Langs> = {
     '현재 이미지 제외',
     'Excluir imágenes actuales'
   ],
-};
-
-const kbInFullViewGridData: Record<KeyboardInFullViewGridId, Langs> = {
   'open-big-image-mode': [
     'Enter Big Image Mode',
     '进入大图阅读模式',
@@ -1088,12 +1082,6 @@ const kbInFullViewGridData: Record<KeyboardInFullViewGridId, Langs> = {
     '열 수 줄이기',
     'Disminuir columnas'
   ],
-  'toggle-auto-play': [
-    'Toggle Auto Play',
-    '切换自动播放',
-    '자동 재생 시작/중지',
-    'Alternar reproducción automática'
-  ],
   'retry-fetch-next-page': [
     'Try Fetch Next Page',
     '重新加载下一分页',
@@ -1123,9 +1111,6 @@ function convert<T extends string>(data: Record<T, Langs>): Record<T, I18nValue>
 
 export const i18n = {
   ...(convert<I18nKeys>(i18nData)),
-  keyboard: {
-    inMain: convert<KeyboardInMainId>(kbInMainData),
-    inFullViewGrid: convert<KeyboardInFullViewGridId>(kbInFullViewGridData),
-    inBigImageMode: convert<KeyboardInBigImageModeId>(kbInBigImageModeData),
-  }
+  keyboard: convert<KeyboardInFullViewGridId | KeyboardInBigImageModeId | KeyboardInMainId>(kbInFullViewGridData),
+
 };

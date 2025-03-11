@@ -9,7 +9,7 @@ type IDKeys = { [key in ID]?: string[] }
 type IDDesc = { [key in ID]: KeyboardDesc }
 
 
-export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents, root: HTMLElement) {
+export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents, root: HTMLElement, onclose?: () => void) {
 
   function addKeyboardDescElement(button: HTMLElement, category: Category, id: ID, key: string) {
     const str = `<span data-id="${id}" data-key="${key}" class="ehvp-custom-panel-item-value"><span>${key}</span><span class="ehvp-custom-btn ehvp-custom-btn-plain" style="padding:0;border:none;">&nbspx&nbsp</span></span>`;
@@ -91,17 +91,17 @@ export default function createKeyboardCustomPanel(keyboardEvents: KeyboardEvents
   const fullPanel = document.createElement("div");
   fullPanel.classList.add("ehvp-full-panel");
   fullPanel.innerHTML = HTML_STR;
+  const close = () => {
+    fullPanel.remove();
+    onclose?.();
+  };
   fullPanel.addEventListener("click", (event) => {
     if ((event.target as HTMLElement).classList.contains("ehvp-full-panel")) {
-      fullPanel.remove();
+      close();
     }
   });
-  // fullPanel.addEventListener("contextmenu", (event) => {
-  //   event.preventDefault();
-  //   fullPanel.querySelector(".ehvp-add-keyboard-btn[d-pressing]")?.dispatchEvent(new MouseEvent("mouseup", { button: 3 }));
-  // });
   root.appendChild(fullPanel);
-  fullPanel.querySelector(".ehvp-custom-panel-close")!.addEventListener("click", () => fullPanel.remove());
+  fullPanel.querySelector(".ehvp-custom-panel-close")!.addEventListener("click", close);
   fullPanel.querySelectorAll<HTMLElement>(".ehvp-add-keyboard-btn").forEach(button => {
     const category = button.getAttribute("data-cate") as Category;
     const id = button.getAttribute("data-id") as ID;

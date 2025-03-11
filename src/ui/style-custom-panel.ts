@@ -49,7 +49,7 @@ function createControlBar() {
 </div>`
 }
 
-export function createStyleCustomPanel(root: HTMLElement) {
+export function createStyleCustomPanel(root: HTMLElement, onclose?: () => void) {
   const HTML_STR = `
 <div class="ehvp-custom-panel" style="min-width:30vw;">
   <div class="ehvp-custom-panel-title">
@@ -85,13 +85,17 @@ export function createStyleCustomPanel(root: HTMLElement) {
   const fullPanel = document.createElement("div");
   fullPanel.classList.add("ehvp-full-panel");
   fullPanel.innerHTML = HTML_STR;
+  const close = () => {
+    fullPanel.remove();
+    onclose?.();
+  };
   fullPanel.addEventListener("click", (event) => {
     if ((event.target as HTMLElement).classList.contains("ehvp-full-panel")) {
-      fullPanel.remove();
+      close();
     }
   });
   root.appendChild(fullPanel);
-  fullPanel.querySelector(".ehvp-custom-panel-close")!.addEventListener("click", () => fullPanel.remove());
+  fullPanel.querySelector(".ehvp-custom-panel-close")!.addEventListener("click", close);
 
   const controlBarContainer = fullPanel.querySelector("#control-bar-example-container")!;
 

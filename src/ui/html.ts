@@ -139,7 +139,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     if (BIFM.visible) {
       HTML.bigImageFrame.focus();
     } else {
-      HTML.root.focus();
+      HTML.fullViewGrid.focus();
     }
   }
   Object.entries(panelElements).forEach(([key, elements]) => {
@@ -185,7 +185,6 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     event.stopPropagation();
   });
   HTML.bigImageFrame.addEventListener("keydown", (event) => {
-    console.log("bigImageFrame: keydown: ", event.key);
     events.bigImageFrameKeyBoardEvent(event);
     event.stopPropagation();
   });

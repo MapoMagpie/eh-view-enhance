@@ -7162,7 +7162,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       });
     });
   }
-  function createSiteProfilePanel(root) {
+  function createSiteProfilePanel(root, onclose) {
     const matchers = getMatchers();
     const listItems = matchers.map((matcher) => {
       const name = matcher.name();
@@ -7206,13 +7206,17 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const fullPanel = document.createElement("div");
     fullPanel.classList.add("ehvp-full-panel");
     fullPanel.innerHTML = HTML_STR;
+    const close = () => {
+      fullPanel.remove();
+      onclose?.();
+    };
     fullPanel.addEventListener("click", (event) => {
       if (event.target.classList.contains("ehvp-full-panel")) {
-        fullPanel.remove();
+        close();
       }
     });
     root.appendChild(fullPanel);
-    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", () => fullPanel.remove());
+    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", close);
     const siteProfiles = conf.siteProfiles;
     matchers.forEach((matcher) => {
       const name = matcher.name();
@@ -7303,7 +7307,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     });
   }
 
-  function createHelpPanel(root) {
+  function createHelpPanel(root, onclose) {
     const HTML_STR = `
 <div class="ehvp-custom-panel">
   <div class="ehvp-custom-panel-title">
@@ -7318,16 +7322,20 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const fullPanel = document.createElement("div");
     fullPanel.classList.add("ehvp-full-panel");
     fullPanel.innerHTML = HTML_STR;
+    const close = () => {
+      fullPanel.remove();
+      onclose?.();
+    };
     fullPanel.addEventListener("click", (event) => {
       if (event.target.classList.contains("ehvp-full-panel")) {
-        fullPanel.remove();
+        close();
       }
     });
     root.appendChild(fullPanel);
-    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", () => fullPanel.remove());
+    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", close);
   }
 
-  function createKeyboardCustomPanel(keyboardEvents, root) {
+  function createKeyboardCustomPanel(keyboardEvents, root, onclose) {
     function addKeyboardDescElement(button, category, id, key) {
       const str = `<span data-id="${id}" data-key="${key}" class="ehvp-custom-panel-item-value"><span>${key}</span><span class="ehvp-custom-btn ehvp-custom-btn-plain" style="padding:0;border:none;">&nbspx&nbsp</span></span>`;
       const tamplate = document.createElement("div");
@@ -7405,13 +7413,17 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const fullPanel = document.createElement("div");
     fullPanel.classList.add("ehvp-full-panel");
     fullPanel.innerHTML = HTML_STR;
+    const close = () => {
+      fullPanel.remove();
+      onclose?.();
+    };
     fullPanel.addEventListener("click", (event) => {
       if (event.target.classList.contains("ehvp-full-panel")) {
-        fullPanel.remove();
+        close();
       }
     });
     root.appendChild(fullPanel);
-    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", () => fullPanel.remove());
+    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", close);
     fullPanel.querySelectorAll(".ehvp-add-keyboard-btn").forEach((button) => {
       const category = button.getAttribute("data-cate");
       const id = button.getAttribute("data-id");
@@ -7501,7 +7513,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   </div>
 </div>`;
   }
-  function createStyleCustomPanel(root) {
+  function createStyleCustomPanel(root, onclose) {
     const HTML_STR = `
 <div class="ehvp-custom-panel" style="min-width:30vw;">
   <div class="ehvp-custom-panel-title">
@@ -7537,13 +7549,17 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const fullPanel = document.createElement("div");
     fullPanel.classList.add("ehvp-full-panel");
     fullPanel.innerHTML = HTML_STR;
+    const close = () => {
+      fullPanel.remove();
+      onclose?.();
+    };
     fullPanel.addEventListener("click", (event) => {
       if (event.target.classList.contains("ehvp-full-panel")) {
-        fullPanel.remove();
+        close();
       }
     });
     root.appendChild(fullPanel);
-    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", () => fullPanel.remove());
+    fullPanel.querySelector(".ehvp-custom-panel-close").addEventListener("click", close);
     const controlBarContainer = fullPanel.querySelector("#control-bar-example-container");
     let pickedKey = void 0;
     controlBarContainer.innerHTML = createControlBar();
@@ -8059,7 +8075,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         ),
         "start-download": new KeyboardDesc(
           ["shift+alt+d"],
-          () => EBUS.emit("start-download", () => PH.minify("exit", false))
+          () => EBUS.emit("start-download", () => PH.minify("fullViewGrid", false))
         )
       };
       const inMain = {
@@ -8117,17 +8133,20 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       if (!desc.noPreventDefault) event.preventDefault();
       desc.cb(event);
     }
+    function focus() {
+      BIFM.visible ? HTML.bigImageFrame.focus() : HTML.fullViewGrid.focus();
+    }
     function showGuideEvent() {
-      createHelpPanel(HTML.root);
+      createHelpPanel(HTML.root, focus);
     }
     function showKeyboardCustomEvent() {
-      createKeyboardCustomPanel(keyboardEvents, HTML.root);
+      createKeyboardCustomPanel(keyboardEvents, HTML.root, focus);
     }
     function showSiteProfilesEvent() {
-      createSiteProfilePanel(HTML.root);
+      createSiteProfilePanel(HTML.root, focus);
     }
     function showStyleCustomEvent() {
-      createStyleCustomPanel(HTML.root);
+      createStyleCustomPanel(HTML.root, focus);
     }
     return {
       modNumberConfigEvent,
@@ -10161,7 +10180,7 @@ ${chapters.map((c, i) => `<div><label>
       if (BIFM.visible) {
         HTML.bigImageFrame.focus();
       } else {
-        HTML.root.focus();
+        HTML.fullViewGrid.focus();
       }
     }
     Object.entries(panelElements).forEach(([key, elements]) => {
@@ -10201,7 +10220,6 @@ ${chapters.map((c, i) => `<div><label>
       event.stopPropagation();
     });
     HTML.bigImageFrame.addEventListener("keydown", (event) => {
-      console.log("bigImageFrame: keydown: ", event.key);
       events.bigImageFrameKeyBoardEvent(event);
       event.stopPropagation();
     });

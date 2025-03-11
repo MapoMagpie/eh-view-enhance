@@ -374,7 +374,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       ),
       "start-download": new KeyboardDesc(
         ["shift+alt+d"],
-        () => EBUS.emit("start-download", () => PH.minify("exit", false))),
+        () => EBUS.emit("start-download", () => PH.minify("fullViewGrid", false))),
     };
     const inMain: Record<KeyboardInMainId, KeyboardDesc> = {
       "open-full-view-grid": new KeyboardDesc(["enter"], () => {
@@ -438,21 +438,25 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     desc.cb(event);
   }
 
+  function focus() {
+    BIFM.visible ? HTML.bigImageFrame.focus() : HTML.fullViewGrid.focus();
+  }
+
   // 显示简易指南事件
   function showGuideEvent() {
-    createHelpPanel(HTML.root);
+    createHelpPanel(HTML.root, focus);
   }
 
   function showKeyboardCustomEvent() {
-    createKeyboardCustomPanel(keyboardEvents, HTML.root);
+    createKeyboardCustomPanel(keyboardEvents, HTML.root, focus);
   }
 
   function showSiteProfilesEvent() {
-    createSiteProfilePanel(HTML.root);
+    createSiteProfilePanel(HTML.root, focus);
   }
 
   function showStyleCustomEvent() {
-    createStyleCustomPanel(HTML.root);
+    createStyleCustomPanel(HTML.root, focus);
   }
 
   return {

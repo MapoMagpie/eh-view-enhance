@@ -33,7 +33,7 @@ function createWorkURLs(workURLs: string[], container: HTMLElement, onRemove: (v
   });
 }
 
-export default function createSiteProfilePanel(root: HTMLElement) {
+export default function createSiteProfilePanel(root: HTMLElement, onclose?: () => void) {
   const matchers = getMatchers();
   const listItems = matchers.map((matcher) => {
     const name = matcher.name();
@@ -77,13 +77,17 @@ export default function createSiteProfilePanel(root: HTMLElement) {
   const fullPanel = document.createElement("div");
   fullPanel.classList.add("ehvp-full-panel");
   fullPanel.innerHTML = HTML_STR;
+  const close = () => {
+    fullPanel.remove();
+    onclose?.();
+  };
   fullPanel.addEventListener("click", (event) => {
     if ((event.target as HTMLElement).classList.contains("ehvp-full-panel")) {
-      fullPanel.remove();
+      close();
     }
   });
   root.appendChild(fullPanel);
-  fullPanel.querySelector(".ehvp-custom-panel-close")!.addEventListener("click", () => fullPanel.remove());
+  fullPanel.querySelector(".ehvp-custom-panel-close")!.addEventListener("click", close);
 
   const siteProfiles = conf.siteProfiles;
   matchers.forEach(matcher => {

@@ -3103,6 +3103,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     picked = true;
     debouncer = new Debouncer();
     rect;
+    tags;
     constructor(thumbnailSrc, href, title, delaySRC, originSrc, wh) {
       this.thumbnailSrc = thumbnailSrc;
       this.href = href;
@@ -3110,6 +3111,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.delaySRC = delaySRC;
       this.originSrc = originSrc;
       this.rect = wh;
+      this.tags = /* @__PURE__ */ new Set();
+    }
+    setTags(...tags) {
+      tags.forEach(this.tags.add);
+    }
+    hasTag(tag) {
+      return this.tags.has(tag);
     }
     create() {
       this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
@@ -4397,6 +4405,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         data = await simpleFetch(url, "blob");
         break;
       } catch (err) {
+        evLog("error", "fetch thumbnail failed, ", err);
       }
     }
     if (!data) throw new Error("load sprite image error");
@@ -7057,6 +7066,92 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
+  class YabaiMatcher extends BaseMatcher {
+    meta;
+    name() {
+      return "Yabai.si";
+    }
+    workURL() {
+      return /yabai.si\/g\/\w+\/?$/;
+    }
+    title() {
+      return this.meta?.title ?? document.title;
+    }
+    galleryMeta() {
+      return this.meta;
+    }
+    async *fetchPagesSource() {
+      const data = await this.query(window.location.href + "/read", `{"page":1}`);
+      if (data.props?.pages?.data?.list) {
+        const list = data.props?.pages?.data;
+        yield Result.ok(list);
+      } else {
+        throw new Error("cannot fetch pages");
+      }
+    }
+    async parseImgNodes(raw) {
+      const items = this.buildList(raw);
+      if (items.length === 0) throw new Error("cannot build list from gallery data");
+      const page = Math.ceil(raw.count / 20);
+      const data = await this.query(window.location.href, `{"page":${page}}`);
+      const thumbnails = data.props?.post?.data?.page_list;
+      if (!thumbnails) {
+        throw new Error("cannot fetch thumbnails");
+      }
+      const meta = data.props?.post?.data;
+      if (meta) this.meta = this.buildGalleryMeta(meta);
+      const ret = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const thumb = thumbnails[i];
+        ret.push(new ImageNode(thumb, item.url, `${item.name}.${item.ext}`, void 0, item.url));
+      }
+      return ret;
+    }
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
+    }
+    buildGalleryMeta(data) {
+      const meta = new GalleryMeta(data.url, data.name);
+      meta.originTitle = data.alt_name;
+      meta.tags = {
+        flag: [data.flag],
+        category: [data.category],
+        date: [data.date],
+        ...data.tags
+      };
+      return meta;
+    }
+    // buildList in app.js
+    buildList(data) {
+      const list = data.list;
+      const urls = [];
+      for (let r = 0; r < data.count; r++) {
+        const index = parseInt(list.head[r]) - 1;
+        const name = list.head[r].padStart(4, "0");
+        const url = "".concat(list.root, "/").concat(list.code.toString(), "/").concat(name, "-").concat(list.hash[r], "-").concat(list.rand[r], ".").concat(list.type[r]);
+        urls[index] = { url, name, ext: list.type[r] };
+      }
+      return urls;
+    }
+    async query(url, body) {
+      const csrf = document.cookie.match(/XSRF-TOKEN=(.*)?;?/)?.[1];
+      if (!csrf) throw new Error("cannot get csrf token form cookie");
+      const res = await window.fetch(url, {
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-Inertia": "true",
+          "X-Inertia-Version": transactionId(),
+          "X-XSRF-TOKEN": decodeURIComponent(csrf)
+        },
+        "body": body,
+        "method": "POST"
+      });
+      return await res.json();
+    }
+  }
+
   function getMatchers() {
     return [
       new EHMatcher(),
@@ -7084,7 +7179,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new ArtStationMatcher(),
       new AkumaMatcher(),
       new InstagramMatcher(),
-      new ColaMangaMatcher()
+      new ColaMangaMatcher(),
+      new YabaiMatcher()
     ];
   }
   function adaptMatcher(url) {

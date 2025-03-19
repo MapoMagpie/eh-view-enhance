@@ -20,6 +20,7 @@ import { RokuHentaiMatcher } from "./rokuhentai";
 import { SteamMatcher } from "./steam";
 import { TwitterMatcher } from "./twitter";
 import { WnacgMatcher } from "./wnacg";
+import { YabaiMatcher } from "./yabai";
 
 export function getMatchers(): Matcher<any>[] {
   return [
@@ -49,6 +50,7 @@ export function getMatchers(): Matcher<any>[] {
     new AkumaMatcher(),
     new InstagramMatcher(),
     new ColaMangaMatcher(),
+    new YabaiMatcher(),
   ];
 }
 

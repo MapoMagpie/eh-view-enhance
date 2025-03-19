@@ -63,6 +63,7 @@
 - [arca.live](https://arca.live)
 - [akuma.moe](https://akuma.moe)
 - [colamanga.com](https://www.colamanga.com)
+- [yabai.si](https://yabai.si)
 
 </details>
 

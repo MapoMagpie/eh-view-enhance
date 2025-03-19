@@ -25,6 +25,38 @@ type Rect = {
 type Onfailed = (reason: string, source?: string, error?: Error) => void;
 type OnResize = () => void;
 
+type TagCategory = "mime-type" | "misc" | "author" | "language";
+
+export class Tag {
+  category: TagCategory;
+  value: string;
+  constructor(category: TagCategory, value: string) {
+    this.category = category;
+    this.value = value;
+  }
+  static fromRaw(raw: string): Tag {
+    const split = raw.indexOf(":");
+    if (split !== -1) {
+      return new Tag(raw.slice(0, split) as TagCategory, raw.slice(split + 1))
+    } else {
+      return new Tag("misc", raw);
+    }
+  }
+  static from(category: string, value: string): Tag {
+    return new Tag(category as TagCategory, value);
+  }
+
+  toString(): string {
+    return `${this.category}:"${this.value}"`;
+  }
+
+  search(_term: string): number {
+    // TODO
+    return 1;
+  }
+
+}
+
 export default class ImageNode {
   root?: HTMLElement;
   thumbnailSrc: string;
@@ -42,6 +74,7 @@ export default class ImageNode {
   picked: boolean = true;
   private debouncer: Debouncer = new Debouncer();
   rect?: Rect;
+  tags: Set<Tag>;
   constructor(thumbnailSrc: string, href: string, title: string, delaySRC?: Promise<string>, originSrc?: string, wh?: { w: number, h: number }) {
     this.thumbnailSrc = thumbnailSrc;
     this.href = href;
@@ -49,6 +82,15 @@ export default class ImageNode {
     this.delaySRC = delaySRC;
     this.originSrc = originSrc;
     this.rect = wh;
+    this.tags = new Set();
+  }
+
+  setTags(...tags: Tag[]) {
+    tags.forEach(this.tags.add);
+  }
+
+  hasTag(tag: Tag) {
+    return this.tags.has(tag);
   }
 
   create(): HTMLElement {

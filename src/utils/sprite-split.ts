@@ -1,3 +1,4 @@
+import { evLog } from "./ev-log";
 import { simpleFetch } from "./query";
 
 export type ImagePosition = {
@@ -35,7 +36,9 @@ export async function splitImagesFromUrl(url: string, positions: ImagePosition[]
     try {
       data = await simpleFetch(url, "blob");
       break;
-    } catch (err) { }
+    } catch (err) {
+      evLog("error", "fetch thumbnail failed, ", err);
+    }
   }
   if (!data) throw new Error("load sprite image error");
   url = URL.createObjectURL(data);

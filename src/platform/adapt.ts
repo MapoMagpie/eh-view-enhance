@@ -6,6 +6,7 @@ import { ArtStationMatcher } from "./artstation";
 import { ColaMangaMatcher } from "./colamanga";
 import { DanbooruDonmaiMatcher, E621Matcher, GelBooruMatcher, KonachanMatcher, Rule34Matcher, YandereMatcher } from "./danbooru";
 import { EHMatcher } from "./ehentai";
+import { Hanime1Matcher } from "./hanime1";
 import { HentaiNexusMatcher } from "./hentainexus";
 import { HitomiMather } from "./hitomi";
 import { IMHentaiMatcher } from "./im-hentai";
@@ -51,6 +52,7 @@ export function getMatchers(): Matcher<any>[] {
     new InstagramMatcher(),
     new ColaMangaMatcher(),
     new YabaiMatcher(),
+    new Hanime1Matcher(),
   ];
 }
 

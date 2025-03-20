@@ -64,6 +64,7 @@ Vista previa (si no puedes ver la imagen, haz clic [aqui](./preview.md)):
 - [akuma.moe](https://akuma.moe)
 - [colamanga.com](https://www.colamanga.com)
 - [yabai.si](https://yabai.si)
+- [hanime1.me](https://hanime1.me/comics)
 
 </details>
 

@@ -4703,6 +4703,65 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     return wh;
   }
 
+  class Hanime1Matcher extends BaseMatcher {
+    meta;
+    galleryMeta() {
+      return this.meta;
+    }
+    name() {
+      return "hanime1.me";
+    }
+    parseMeta() {
+      const title = document.querySelector(".comics-panel-margin h3.title")?.textContent?.replaceAll(/\s/g, "");
+      const originTItle = document.querySelector(".comics-panel-margin h4.title")?.textContent?.replaceAll(/\s/g, "");
+      const meta = new GalleryMeta(window.location.href, title ?? document.title);
+      meta.originTitle = originTItle ?? void 0;
+      Array.from(document.querySelectorAll(".comics-panel-margin .comics-metadata-margin-top h5")).forEach((ele) => {
+        let cat = ele.firstChild?.textContent ?? "misc";
+        cat = cat.trim().replace(/：:/, "");
+        const tags = Array.from(ele.querySelectorAll("a")).map((t) => t.textContent?.trim()).filter(Boolean);
+        meta.tags[cat] = tags;
+      });
+      this.meta = meta;
+    }
+    async *fetchPagesSource() {
+      this.parseMeta();
+      yield Result.ok(document);
+    }
+    async parseImgNodes(doc) {
+      const items = Array.from(doc.querySelectorAll(".comics-panel-margin > a"));
+      const item0 = items[0];
+      const f = { j: "jpg", p: "png", g: "gif", w: "webp" };
+      let prefix = "", extensions = void 0;
+      if (item0) {
+        const page0 = await window.fetch(item0.href).then((res) => res.text()).then((raw2) => new DOMParser().parseFromString(raw2, "text/html"));
+        const img = page0.querySelector("#comic-content-wrapper img");
+        prefix = img?.getAttribute("prefix") ?? img?.getAttribute("data-prefix") ?? "";
+        const raw = page0.querySelector("#comic-content-wrapper script")?.textContent?.match(/extensions.innerHTML = '(.*)?'/)?.[1]?.replaceAll("&quot;", '"');
+        extensions = raw ? JSON.parse(raw) : void 0;
+      }
+      const digits = items.length.toString().length;
+      return items.map((item, index) => {
+        const href = item.href;
+        const thumb = item.querySelector("img")?.getAttribute("data-srcset") || "";
+        const fk = extensions?.[index] ?? "j";
+        const ext = f[fk] ?? "jpg";
+        const src = prefix ? prefix + (index + 1) + "." + ext : void 0;
+        return new ImageNode(thumb, href, (index + 1).toString().padStart(digits, "0") + "." + ext, void 0, src);
+      });
+    }
+    async fetchOriginMeta(node) {
+      if (node.originSrc) return { url: node.originSrc };
+      const page0 = await window.fetch(node.href).then((res) => res.text()).then((raw) => new DOMParser().parseFromString(raw, "text/html"));
+      const img = page0.querySelector("#comic-content-wrapper img");
+      if (!img) throw new Error("cannot find img from " + node.href);
+      return { url: img.src };
+    }
+    workURL() {
+      return /hanime1.me\/comic\/\d+\/?$/;
+    }
+  }
+
   const REGEXP_EXTRACT_INIT_ARGUMENTS = /initReader\("(.*?)\",\s?"(.*?)",\s?(.*?)\)/;
   const REGEXP_EXTRACT_HASH = /read\/\d+\/(\d+)$/;
   class HentaiNexusMatcher extends BaseMatcher {
@@ -7180,7 +7239,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new AkumaMatcher(),
       new InstagramMatcher(),
       new ColaMangaMatcher(),
-      new YabaiMatcher()
+      new YabaiMatcher(),
+      new Hanime1Matcher()
     ];
   }
   function adaptMatcher(url) {

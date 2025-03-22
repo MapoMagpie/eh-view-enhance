@@ -3104,6 +3104,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     debouncer = new Debouncer();
     rect;
     tags;
+    imgIndex;
     constructor(thumbnailSrc, href, title, delaySRC, originSrc, wh) {
       this.thumbnailSrc = thumbnailSrc;
       this.href = href;
@@ -7065,12 +7066,16 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     meta;
     baseURL;
+    galleryURL;
+    galleryImageList = [];
     async *fetchPagesSource() {
       const id = this.extractIDFromHref(window.location.href);
       if (!id) {
         throw new Error("Cannot find gallery ID");
       }
       this.baseURL = `${window.location.origin}/photos-index-page-1-aid-${id}.html`;
+      this.galleryURL = `${window.location.origin}/photos-gallery-aid-${id}.html`;
+      await this.requestGalleryImages(this.galleryURL);
       let doc = await window.fetch(this.baseURL).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       this.meta = this.pasrseGalleryMeta(doc);
       yield Result.ok(doc);
@@ -7083,19 +7088,32 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
     }
     async parseImgNodes(doc) {
+      let pageNum = this.extractPageNum(doc);
       const result = [];
       const list = Array.from(doc.querySelectorAll(".grid > .gallary_wrap > .cc > li"));
-      for (const li of list) {
+      const listSize = list.length;
+      for (let index = 0; index < list.length; index++) {
+        const li = list[index];
         const anchor = li.querySelector(".pic_box > a");
         if (!anchor) continue;
         const img = anchor.querySelector("img");
         if (!img) continue;
         const title = li.querySelector(".title > .name")?.textContent || "unknown";
-        result.push(new ImageNode(img.src, anchor.href, title));
+        let imgNode = new ImageNode(img.src, anchor.href, title);
+        imgNode.imgIndex = (pageNum - 1) * listSize + index;
+        result.push(imgNode);
       }
       return result;
     }
     async fetchOriginMeta(node) {
+      let idx = node.imgIndex;
+      if (idx != null && idx >= 0) {
+        let img2 = this.galleryImageList[idx];
+        console.log(`idx = ${idx}, img = ${img2}`);
+        const url2 = img2.url;
+        const title2 = img2.caption;
+        return { url: url2, title: title2 };
+      }
       const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       const img = doc.querySelector("#picarea");
       if (!img) throw new Error(`Cannot find #picarea from ${node.href}`);
@@ -7122,6 +7140,46 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const description = Array.from(doc.querySelector(".asTB > .asTBcell.uwconn > p")?.childNodes || []).map((e) => e.textContent).filter(Boolean);
       meta.tags = { "tags": tags, "description": description };
       return meta;
+    }
+    extractPageNum(doc) {
+      let t = doc.querySelector(".paginator > .thispage")?.textContent;
+      if (t) {
+        return parseInt(t);
+      }
+      return 0;
+    }
+    requestGalleryImages(galleryURL) {
+      return new Promise((resolve, reject) => {
+        window.fetch(galleryURL).then((res) => res.text()).then((text) => {
+          let js = "";
+          for (let line of text.split("\n")) {
+            line = line.replace('document.writeln("', "");
+            line = line.replace('");', "");
+            if (line.includes("var imglist")) {
+              line = line.replace("var imglist = ", "");
+              line = line.replaceAll("fast_img_host+\\", "");
+              line = line.replaceAll("\\", "");
+              js += line;
+            }
+          }
+          console.log(js);
+          console.log("js eval 1");
+          var imglist = this.extractUrlsAndCaptions(js);
+          console.log("js eval 2");
+          console.log(imglist);
+          this.galleryImageList = imglist;
+          resolve();
+        }).catch(reject);
+      });
+    }
+    extractUrlsAndCaptions(inputStr) {
+      const regex = /url:\s*"(.*?)",\s*caption:\s*"(.*?)"/gs;
+      let match;
+      const results = [];
+      while ((match = regex.exec(inputStr)) !== null) {
+        results.push({ url: match[1], caption: match[2] });
+      }
+      return results;
     }
   }
 

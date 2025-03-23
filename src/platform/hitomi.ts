@@ -6,8 +6,9 @@ import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 
+const CONTENT_DOMAIN = "gold-usergeneratedcontent.net";
 class HitomiGG {
-  base: string = "a"
+  base?: string = undefined
   b: string
   m: Function;
   constructor(b: string, m: string) {
@@ -21,20 +22,28 @@ class HitomiGG {
     const m = /(..)(.)$/.exec(h)!;
     return parseInt(m[2] + m[1], 16).toString(10);
   }
-  subdomain_from_url(url: string, base: string) {
-    let retval = 'b';
-    if (base) {
-      retval = base;
+  subdomain_from_url(url: string, base: string | undefined, dir: string) {
+    let retval = '';
+    if (!base) {
+      if (dir === 'webp') {
+        retval = 'w';
+      } else if (dir === 'avif') {
+        retval = 'a';
+      }
     }
-    const b = 16;
-    const r = /\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])/;
-    const m = r.exec(url);
+    let b = 16;
+    let r = /\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])/;
+    let m = r.exec(url);
     if (!m) {
-      return 'a';
+      return retval;
     }
-    const g = parseInt(m[2] + m[1], b);
+    let g = parseInt(m[2] + m[1], b);
     if (!isNaN(g)) {
-      retval = String.fromCharCode(97 + this.m(g)) + retval;
+      if (base) {
+        retval = String.fromCharCode(97 + this.m(g)) + base;
+      } else {
+        retval = retval + (1 + this.m(g));
+      }
     }
     return retval;
   }
@@ -42,13 +51,19 @@ class HitomiGG {
   // gallery.js#322
   thumbURL(hash: string): string {
     hash = hash.replace(/^.*(..)(.)$/, '$2/$1/' + hash);
-    const url = 'https://a.hitomi.la/' + 'webpsmalltn' + '/' + hash + '.' + 'webp';
-    return url.replace(/\/\/..?\.hitomi\.la\//, '//' + this.subdomain_from_url(url, 'tn') + '.hitomi.la/');
+    const url = 'https://a.' + CONTENT_DOMAIN + '/' + 'webpsmalltn' + '/' + hash + '.' + 'webp';
+    return url.replace(/\/\/..?\.(?:gold-usergeneratedcontent\.net|hitomi\.la)\//, '//' + this.subdomain_from_url(url, 'tn', "webp") + '.' + CONTENT_DOMAIN + '/');
   }
 
   originURL(hash: string, ext: string): string {
-    let url = 'https://a.hitomi.la/' + ext + '/' + this.b + this.s(hash) + '/' + hash + '.' + ext;
-    url = url.replace(/\/\/..?\.hitomi\.la\//, '//' + this.subdomain_from_url(url, this.base) + '.hitomi.la/');
+    let dir = ext;
+    if (dir === "webp" || dir === "avif") {
+      dir = "";
+    } else {
+      dir += "/"
+    }
+    let url = 'https://a.' + CONTENT_DOMAIN + '/' + dir + this.b + this.s(hash) + '/' + hash + '.' + ext;
+    url = url.replace(/\/\/..?\.(?:gold-usergeneratedcontent\.net|hitomi\.la)\//, '//' + this.subdomain_from_url(url, this.base, ext) + '.' + CONTENT_DOMAIN + '/');
     return url;
   }
 }
@@ -93,7 +108,7 @@ export class HitomiMather extends BaseMatcher<GalleryInfo> {
       throw new Error("invalid hitomi format: " + conf.hitomiFormat);
     }
     // fetch gg.js
-    const ggRaw = await window.fetch("https://ltn.hitomi.la/gg.js").then(resp => resp.text());
+    const ggRaw = await window.fetch(`https://ltn.${CONTENT_DOMAIN}/gg.js?_=${Date.now()}`).then(resp => resp.text());
     this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)![1], GG_M_REGEX.exec(ggRaw)![1]);
     const ret: Chapter[] = [];
     ret.push({
@@ -127,7 +142,7 @@ export class HitomiMather extends BaseMatcher<GalleryInfo> {
     if (!galleryID) {
       throw new Error("cannot query hitomi gallery id");
     }
-    const infoRaw = await window.fetch(`https://ltn.hitomi.la/galleries/${galleryID}.js`).then(resp => resp.text()).then(text => text.replace("var galleryinfo = ", ""));
+    const infoRaw = await window.fetch(`https://ltn.${CONTENT_DOMAIN}/galleries/${galleryID}.js`).then(resp => resp.text()).then(text => text.replace("var galleryinfo = ", ""));
     if (!infoRaw) {
       throw new Error("cannot query hitomi gallery info");
     }

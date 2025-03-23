@@ -7065,42 +7065,32 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     meta;
     baseURL;
+    galleryURL;
     async *fetchPagesSource() {
       const id = this.extractIDFromHref(window.location.href);
       if (!id) {
         throw new Error("Cannot find gallery ID");
       }
       this.baseURL = `${window.location.origin}/photos-index-page-1-aid-${id}.html`;
+      this.galleryURL = `${window.location.origin}/photos-gallery-aid-${id}.html`;
       let doc = await window.fetch(this.baseURL).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       this.meta = this.pasrseGalleryMeta(doc);
-      yield Result.ok(doc);
-      while (true) {
-        const next = doc.querySelector(".paginator > .next > a");
-        if (!next) break;
-        const url = next.href;
-        doc = await window.fetch(url).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-        yield Result.ok(doc);
-      }
+      let galleryImageList = await this.requestGalleryImages(this.galleryURL);
+      yield Result.ok(galleryImageList);
     }
-    async parseImgNodes(doc) {
+    async parseImgNodes(list) {
       const result = [];
-      const list = Array.from(doc.querySelectorAll(".grid > .gallary_wrap > .cc > li"));
-      for (const li of list) {
-        const anchor = li.querySelector(".pic_box > a");
-        if (!anchor) continue;
-        const img = anchor.querySelector("img");
-        if (!img) continue;
-        const title = li.querySelector(".title > .name")?.textContent || "unknown";
-        result.push(new ImageNode(img.src, anchor.href, title));
+      for (let index = 0; index < list.length; index++) {
+        const img = list[index];
+        let imgNode = new ImageNode("", img.url, img.caption, void 0, img.url);
+        result.push(imgNode);
       }
       return result;
     }
     async fetchOriginMeta(node) {
-      const doc = await window.fetch(node.href).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-      const img = doc.querySelector("#picarea");
-      if (!img) throw new Error(`Cannot find #picarea from ${node.href}`);
-      const url = img.src;
-      const title = url.split("/").pop();
+      const url = node.originSrc ?? node.thumbnailSrc;
+      const ext = url.includes(".") ? url.split(".").pop() : "jpg";
+      const title = node.title.replace("[", "").replace("]", "") + "." + ext;
       return { url, title };
     }
     workURL() {
@@ -7122,6 +7112,55 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const description = Array.from(doc.querySelector(".asTB > .asTBcell.uwconn > p")?.childNodes || []).map((e) => e.textContent).filter(Boolean);
       meta.tags = { "tags": tags, "description": description };
       return meta;
+    }
+    async requestGalleryImages(galleryURL) {
+      const text = await window.fetch(galleryURL).then((res) => res.text());
+      let js = "";
+      for (let line of text.split("\n")) {
+        line = line.replace('document.writeln("', "");
+        line = line.replace('");', "");
+        if (line.includes("var imglist")) {
+          line = line.replace("var imglist = ", "");
+          line = line.replaceAll("fast_img_host+\\", "");
+          line = line.replaceAll("\\", "");
+          js += line;
+        }
+      }
+      return this.extractUrlsAndCaptions(js);
+    }
+    /*
+    document.writeln("	<script type=\"text/javascript\"> ");
+    document.writeln("		var sns_sys_id = '';");
+    document.writeln("		var sns_view_point_token = '';");
+    document.writeln("		var hash = window.location.hash;");
+    document.writeln("		if(!hash){");
+    document.writeln("			hash = 0;");
+    document.writeln("		}else{");
+    document.writeln("			hash = parseInt(hash.replace(\"#\",\"\")) - 1;");
+    document.writeln("		}");
+    document.writeln("		var fast_img_host=\"\";");
+    document.writeln("		var imglist = [{ url: fast_img_host+\"//img5.qy0.ru/data/2940/25/001.jpg\", caption: \"[001]\"},{ url: fast_img_host+\"/themes/weitu/images/bg/shoucang.jpg\", caption: \"喜歡紳士漫畫的同學請加入收藏哦！\"}];");
+    document.writeln("");
+    document.writeln("		$(function(){");
+    document.writeln("			imgscroll.beLoad($(\"#img_list\"),imglist,hash);");
+    document.writeln("		});");
+    document.writeln("	
+    <\/script>
+    ");
+    */
+    extractUrlsAndCaptions(inputStr) {
+      const regex = /url:\s*"(.*?)",\s*caption:\s*"(.*?)"/gs;
+      let match;
+      const results = [];
+      while ((match = regex.exec(inputStr)) !== null) {
+        results.push({ url: match[1], caption: match[2] });
+      }
+      if (results.length > 0) {
+        if (results[results.length - 1].caption.includes("加入收藏")) {
+          results.pop();
+        }
+      }
+      return results;
     }
   }
 

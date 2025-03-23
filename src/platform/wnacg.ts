@@ -41,7 +41,8 @@ export class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
 
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
     const url = node.originSrc ?? node.thumbnailSrc;
-    const title = node.title;
+    const ext = url.includes(".") ? url.split(".").pop() : "jpg";
+    const title = node.title.replace("[", "").replace("]", "") + "." + ext;
     return { url, title }
   }
 

@@ -7089,7 +7089,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
     async fetchOriginMeta(node) {
       const url = node.originSrc ?? node.thumbnailSrc;
-      const title = node.title;
+      const ext = url.includes(".") ? url.split(".").pop() : "jpg";
+      const title = node.title.replace("[", "").replace("]", "") + "." + ext;
       return { url, title };
     }
     workURL() {

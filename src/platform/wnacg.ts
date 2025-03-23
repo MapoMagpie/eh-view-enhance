@@ -2,7 +2,7 @@ import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import { BaseMatcher, OriginMeta, Result } from "./platform";
 
-export class WnacgMatcher extends BaseMatcher< GalleryImage[]> {
+export class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
   name(): string {
     return "绅士漫画"
   }
@@ -33,18 +33,13 @@ export class WnacgMatcher extends BaseMatcher< GalleryImage[]> {
 
     for (let index = 0; index < list.length; index++) {
       const img = list[index];
-
-      let imgNode = new ImageNode(img.url, img.url, img.caption);
-      imgNode.originSrc = img.url;
-      imgNode.imgIndex = index;
-
+      let imgNode = new ImageNode("", img.url, img.caption, undefined, img.url);
       result.push(imgNode);
     }
     return result;
   }
 
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
-    
     const url = node.originSrc ?? node.thumbnailSrc;
     const title = node.title;
     return { url, title }
@@ -74,50 +69,42 @@ export class WnacgMatcher extends BaseMatcher< GalleryImage[]> {
     return meta;
   }
 
-  private requestGalleryImages(galleryURL: string): Promise<GalleryImage[]> {
-    return new Promise<GalleryImage[]>((resolve, reject) => {
-      window.fetch(galleryURL)
-        .then((res) => res.text())
-        .then((text) => {
-          /*
-document.writeln("	<script type=\"text/javascript\">
-    ");
-document.writeln("		var sns_sys_id = '';");
-document.writeln("		var sns_view_point_token = '';");
-document.writeln("		var hash = window.location.hash;");
-document.writeln("		if(!hash){");
-document.writeln("			hash = 0;");
-document.writeln("		}else{");
-document.writeln("			hash = parseInt(hash.replace(\"#\",\"\")) - 1;");
-document.writeln("		}");
-document.writeln("		var fast_img_host=\"\";");
-document.writeln("		var imglist = [{ url: fast_img_host+\"//img5.qy0.ru/data/2940/25/001.jpg\", caption: \"[001]\"},{ url: fast_img_host+\"/themes/weitu/images/bg/shoucang.jpg\", caption: \"喜歡紳士漫畫的同學請加入收藏哦！\"}];");
-document.writeln("");
-document.writeln("		$(function(){");
-document.writeln("			imgscroll.beLoad($(\"#img_list\"),imglist,hash);");
-document.writeln("		});");
-document.writeln("	
-</script>
-");
-*/
-          let js = "";
-          for (let line of text.split("\n")) {
-            line = line.replace("document.writeln(\"", "");
-            line = line.replace("\");", "");
-            if (line.includes("var imglist")) {
-              line = line.replace("var imglist = ", "");
-              line = line.replaceAll("fast_img_host+\\", "");
-              line = line.replaceAll("\\", "");
-              js += line;
-            }
-          }
-          var imglist = this.extractUrlsAndCaptions(js);
-          console.log(imglist);
-          resolve(imglist);
-        }).catch(reject);
-    })
+  private async requestGalleryImages(galleryURL: string): Promise<GalleryImage[]> {
+    const text = await window.fetch(galleryURL).then((res) => res.text());
+    let js = "";
+    for (let line of text.split("\n")) {
+      line = line.replace("document.writeln(\"", "");
+      line = line.replace("\");", "");
+      if (line.includes("var imglist")) {
+        line = line.replace("var imglist = ", "");
+        line = line.replaceAll("fast_img_host+\\", "");
+        line = line.replaceAll("\\", "");
+        js += line;
+      }
+    }
+    return this.extractUrlsAndCaptions(js);
   }
 
+  /*
+  document.writeln("	<script type=\"text/javascript\"> ");
+  document.writeln("		var sns_sys_id = '';");
+  document.writeln("		var sns_view_point_token = '';");
+  document.writeln("		var hash = window.location.hash;");
+  document.writeln("		if(!hash){");
+  document.writeln("			hash = 0;");
+  document.writeln("		}else{");
+  document.writeln("			hash = parseInt(hash.replace(\"#\",\"\")) - 1;");
+  document.writeln("		}");
+  document.writeln("		var fast_img_host=\"\";");
+  document.writeln("		var imglist = [{ url: fast_img_host+\"//img5.qy0.ru/data/2940/25/001.jpg\", caption: \"[001]\"},{ url: fast_img_host+\"/themes/weitu/images/bg/shoucang.jpg\", caption: \"喜歡紳士漫畫的同學請加入收藏哦！\"}];");
+  document.writeln("");
+  document.writeln("		$(function(){");
+  document.writeln("			imgscroll.beLoad($(\"#img_list\"),imglist,hash);");
+  document.writeln("		});");
+  document.writeln("	
+  </script>
+  ");
+  */
 
   private extractUrlsAndCaptions(inputStr: string) {
     const regex = /url:\s*"(.*?)",\s*caption:\s*"(.*?)"/gs;
@@ -139,11 +126,7 @@ document.writeln("
 
 }
 
-class GalleryImage {
+type GalleryImage = {
   url: string;
   caption: string;
-  constructor(url: string, caption: string) {
-    this.url = url;
-    this.caption = caption;
-  }
 }

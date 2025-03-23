@@ -3104,7 +3104,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     debouncer = new Debouncer();
     rect;
     tags;
-    imgIndex;
     constructor(thumbnailSrc, href, title, delaySRC, originSrc, wh) {
       this.thumbnailSrc = thumbnailSrc;
       this.href = href;
@@ -7083,9 +7082,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const result = [];
       for (let index = 0; index < list.length; index++) {
         const img = list[index];
-        let imgNode = new ImageNode(img.url, img.url, img.caption);
-        imgNode.originSrc = img.url;
-        imgNode.imgIndex = index;
+        let imgNode = new ImageNode("", img.url, img.caption, void 0, img.url);
         result.push(imgNode);
       }
       return result;
@@ -7115,26 +7112,41 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       meta.tags = { "tags": tags, "description": description };
       return meta;
     }
-    requestGalleryImages(galleryURL) {
-      return new Promise((resolve, reject) => {
-        window.fetch(galleryURL).then((res) => res.text()).then((text) => {
-          let js = "";
-          for (let line of text.split("\n")) {
-            line = line.replace('document.writeln("', "");
-            line = line.replace('");', "");
-            if (line.includes("var imglist")) {
-              line = line.replace("var imglist = ", "");
-              line = line.replaceAll("fast_img_host+\\", "");
-              line = line.replaceAll("\\", "");
-              js += line;
-            }
-          }
-          var imglist = this.extractUrlsAndCaptions(js);
-          console.log(imglist);
-          resolve(imglist);
-        }).catch(reject);
-      });
+    async requestGalleryImages(galleryURL) {
+      const text = await window.fetch(galleryURL).then((res) => res.text());
+      let js = "";
+      for (let line of text.split("\n")) {
+        line = line.replace('document.writeln("', "");
+        line = line.replace('");', "");
+        if (line.includes("var imglist")) {
+          line = line.replace("var imglist = ", "");
+          line = line.replaceAll("fast_img_host+\\", "");
+          line = line.replaceAll("\\", "");
+          js += line;
+        }
+      }
+      return this.extractUrlsAndCaptions(js);
     }
+    /*
+    document.writeln("	<script type=\"text/javascript\"> ");
+    document.writeln("		var sns_sys_id = '';");
+    document.writeln("		var sns_view_point_token = '';");
+    document.writeln("		var hash = window.location.hash;");
+    document.writeln("		if(!hash){");
+    document.writeln("			hash = 0;");
+    document.writeln("		}else{");
+    document.writeln("			hash = parseInt(hash.replace(\"#\",\"\")) - 1;");
+    document.writeln("		}");
+    document.writeln("		var fast_img_host=\"\";");
+    document.writeln("		var imglist = [{ url: fast_img_host+\"//img5.qy0.ru/data/2940/25/001.jpg\", caption: \"[001]\"},{ url: fast_img_host+\"/themes/weitu/images/bg/shoucang.jpg\", caption: \"喜歡紳士漫畫的同學請加入收藏哦！\"}];");
+    document.writeln("");
+    document.writeln("		$(function(){");
+    document.writeln("			imgscroll.beLoad($(\"#img_list\"),imglist,hash);");
+    document.writeln("		});");
+    document.writeln("	
+    <\/script>
+    ");
+    */
     extractUrlsAndCaptions(inputStr) {
       const regex = /url:\s*"(.*?)",\s*caption:\s*"(.*?)"/gs;
       let match;

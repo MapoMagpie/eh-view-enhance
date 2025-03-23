@@ -75,7 +75,6 @@ export default class ImageNode {
   private debouncer: Debouncer = new Debouncer();
   rect?: Rect;
   tags: Set<Tag>;
-  imgIndex?: number;
   constructor(thumbnailSrc: string, href: string, title: string, delaySRC?: Promise<string>, originSrc?: string, wh?: { w: number, h: number }) {
     this.thumbnailSrc = thumbnailSrc;
     this.href = href;

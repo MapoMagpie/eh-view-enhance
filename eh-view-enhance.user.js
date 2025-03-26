@@ -5651,6 +5651,68 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     return JSON.parse(dataStr);
   }
 
+  class MyComicMatcher extends BaseMatcher {
+    meta;
+    name() {
+      return "My Comic";
+    }
+    workURL() {
+      return /mycomic.com\/(\w+\/)?comics\/\d+$/;
+    }
+    galleryMeta(doc) {
+      return this.meta ?? super.galleryMeta(doc);
+    }
+    initGalleryMeta() {
+      const title = document.querySelector(".grow > div[data-flux-heading]")?.textContent ?? document.title;
+      this.meta = new GalleryMeta(window.location.href, title);
+    }
+    async fetchChapters() {
+      this.initGalleryMeta();
+      const volumes = Array.from(document.querySelectorAll(".mt-8.mb-12 > div[x-data]"));
+      const result = [];
+      for (const vol of volumes) {
+        let raw = vol.getAttribute("x-data");
+        if (raw) {
+          raw = raw.replace(/,\n\s*toggleSorting\(\) \{.*?\},/gms, "");
+          raw = raw.replaceAll(/(chapters|decending)/g, '"$1"');
+        }
+        const data = JSON.parse(raw ?? "{}");
+        let volName = vol.querySelector(".text-lg > div")?.textContent ?? "";
+        volName = volName ? volName + "-" : "";
+        if (!data.chapters) continue;
+        const chs = data.chapters.map((ch) => {
+          return { id: ch.id, title: volName + ch.title, source: `https://mycomic.com/cn/chapters/${ch.id}`, queue: [] };
+        });
+        result.push(...chs);
+      }
+      return result;
+    }
+    async *fetchPagesSource(ch) {
+      const doc = await window.fetch(ch.source).then((res) => res.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      yield Result.ok(doc);
+    }
+    async parseImgNodes(doc, _chapterID) {
+      const imgs = Array.from(doc.querySelectorAll(".\\-mx-6 > img[x-ref]"));
+      const imgNodes = [];
+      const digits = imgs.length.toString().length;
+      for (let i = 0; i < imgs.length; i++) {
+        const img = imgs[i];
+        const src = img.getAttribute("src") || img.getAttribute("data-src");
+        if (!src) {
+          evLog("error", `cannot find imgage src, `, img);
+          continue;
+        }
+        const ext = src.split(".").pop();
+        const title = (i + 1).toString().padStart(digits, "0") + "." + ext;
+        imgNodes.push(new ImageNode("", src, title, void 0, src, { w: img.width, h: img.height }));
+      }
+      return imgNodes;
+    }
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
+    }
+  }
+
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -7294,7 +7356,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new InstagramMatcher(),
       new ColaMangaMatcher(),
       new YabaiMatcher(),
-      new Hanime1Matcher()
+      new Hanime1Matcher(),
+      new MyComicMatcher()
     ];
   }
   function adaptMatcher(url) {

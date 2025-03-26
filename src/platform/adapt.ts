@@ -14,6 +14,7 @@ import { InstagramMatcher } from "./instagram";
 import { KoharuMatcher } from "./koharo";
 import { MangaCopyMatcher } from "./mangacopy";
 import { MHGMatcher } from "./manhuagui";
+import { MyComicMatcher } from "./mycomic";
 import { NHMatcher, NHxxxMatcher } from "./nhentai";
 import { PixivMatcher } from "./pixiv";
 import { Matcher } from "./platform";
@@ -53,6 +54,7 @@ export function getMatchers(): Matcher<any>[] {
     new ColaMangaMatcher(),
     new YabaiMatcher(),
     new Hanime1Matcher(),
+    new MyComicMatcher(),
   ];
 }
 

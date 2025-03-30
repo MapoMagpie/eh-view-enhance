@@ -10787,7 +10787,10 @@ ${chapters.map((c, i) => `<div><label>
         this.flushUI(state, true);
       }, { signal: this.abort.signal });
       element.onwaiting = () => evLog("debug", "onwaiting");
-      element.loop = true;
+      element.onended = () => {
+        element.fastSeek(0);
+        element.play();
+      };
       element.muted = conf.muted || false;
       element.volume = (conf.volume || 30) / 100;
       if (!this.paused) {

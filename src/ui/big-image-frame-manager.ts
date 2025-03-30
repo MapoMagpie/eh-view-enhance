@@ -693,6 +693,7 @@ export class BigImageFrameManager {
       vid.classList.add("bifm-img");
       vid.classList.add("bifm-vid");
       vid.draggable = conf.dragImageOut;
+      // vid.preload = "none";
       vid.onloadeddata = () => {
         if (this.visible && imf.index === this.currentIndex) {
           this.tryPlayVideo(vid);

@@ -105,7 +105,11 @@ export class VideoControl {
     }, { signal: this.abort.signal });
     // why onwaiting triggered when approaching the end of video?
     element.onwaiting = () => evLog("debug", "onwaiting");
-    element.loop = true;
+    element.onended = () => {
+      element.fastSeek(0)
+      element.play();
+    };
+    // element.loop = true;
     element.muted = conf.muted || false;
     element.volume = (conf.volume || 30) / 100;
 

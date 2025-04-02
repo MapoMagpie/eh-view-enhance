@@ -14,7 +14,7 @@ import { evLog } from "../utils/ev-log";
 import { DownloaderPanel } from "../ui/downloader-panel";
 import { i18n } from "../utils/i18n";
 
-const FILENAME_INVALIDCHAR = /[\\/:*?"<>|\n]/g;
+const FILENAME_INVALIDCHAR = /[\\/:*?"<>|\n\t]/g;
 export class Downloader {
   meta: (ch: Chapter) => GalleryMeta;
   title: () => string;
@@ -252,9 +252,9 @@ export class Downloader {
         let directory = (() => {
           if (singleChapter) return "";
           if (chapter.title instanceof Array) {
-            return chapter.title.join("_").replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
+            return chapter.title.join("_").replaceAll(FILENAME_INVALIDCHAR, "_").replaceAll(/\s+/g, " ") + separator;
           } else {
-            return chapter.title.replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
+            return chapter.title.replaceAll(FILENAME_INVALIDCHAR, "_").replaceAll(/\s+/g, " ") + separator;
           }
         })();
         directory = shrinkFilename(directory, 200);

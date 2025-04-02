@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import monkey, { cdn } from 'vite-plugin-monkey';
 
-const VERSION = '4.10.16';
+const VERSION = '4.10.17';
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   let downloadURL: string | undefined;

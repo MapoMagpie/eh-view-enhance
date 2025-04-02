@@ -159,7 +159,21 @@ export class Comic18Matcher extends BaseMatcher<string> {
     return this.meta;
   }
   // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
-  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
-    return { url: node.originSrc! };
+  async fetchOriginMeta(node: ImageNode, retry: boolean): Promise<OriginMeta> {
+    let src = node.originSrc!;
+    if (retry) {
+      // extract cdn-msp number
+      const matches = src.match(/\/\/cdn-msp(\d)?\./);
+      let num = 1;
+      if (matches !== null && matches.length > 0) {
+        num = parseInt(matches[1] ?? "1");
+        if (isNaN(num)) num = 1;
+        num++;
+        num = num % 3;
+        num = num === 0 ? num = 3 : num;
+      }
+      src = src.replace(/\/\/cdn-msp(\d)?\./, `//cdn-msp${num === 1 ? "" : num}.`);
+    }
+    return { url: src };
   }
 }

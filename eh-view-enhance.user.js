@@ -2201,7 +2201,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
   }
 
-  const FILENAME_INVALIDCHAR = /[\\/:*?"<>|\n]/g;
+  const FILENAME_INVALIDCHAR = /[\\/:*?"<>|\n\t]/g;
   class Downloader {
     meta;
     title;
@@ -2413,9 +2413,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           let directory = (() => {
             if (singleChapter) return "";
             if (chapter.title instanceof Array) {
-              return chapter.title.join("_").replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
+              return chapter.title.join("_").replaceAll(FILENAME_INVALIDCHAR, "_").replaceAll(/\s+/g, " ") + separator;
             } else {
-              return chapter.title.replaceAll(FILENAME_INVALIDCHAR, "_") + separator;
+              return chapter.title.replaceAll(FILENAME_INVALIDCHAR, "_").replaceAll(/\s+/g, " ") + separator;
             }
           })();
           directory = shrinkFilename(directory, 200);
@@ -3460,8 +3460,21 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       return this.meta;
     }
     // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
-    async fetchOriginMeta(node) {
-      return { url: node.originSrc };
+    async fetchOriginMeta(node, retry) {
+      let src = node.originSrc;
+      if (retry) {
+        const matches = src.match(/\/\/cdn-msp(\d)?\./);
+        let num = 1;
+        if (matches !== null && matches.length > 0) {
+          num = parseInt(matches[1] ?? "1");
+          if (isNaN(num)) num = 1;
+          num++;
+          num = num % 3;
+          num = num === 0 ? num = 3 : num;
+        }
+        src = src.replace(/\/\/cdn-msp(\d)?\./, `//cdn-msp${num === 1 ? "" : num}.`);
+      }
+      return { url: src };
     }
   }
 

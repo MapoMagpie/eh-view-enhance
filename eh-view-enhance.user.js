@@ -10801,7 +10801,7 @@ ${chapters.map((c, i) => `<div><label>
       }, { signal: this.abort.signal });
       element.onwaiting = () => evLog("debug", "onwaiting");
       element.onended = () => {
-        element.fastSeek(0);
+        element.currentTime = 0;
         element.play();
       };
       element.muted = conf.muted || false;

@@ -106,7 +106,7 @@ export class VideoControl {
     // why onwaiting triggered when approaching the end of video?
     element.onwaiting = () => evLog("debug", "onwaiting");
     element.onended = () => {
-      element.fastSeek(0)
+      element.currentTime = 0;
       element.play();
     };
     // element.loop = true;

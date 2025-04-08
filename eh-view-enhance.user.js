@@ -7,7 +7,7 @@
 // @name:es            Comic Looms
 // @name:ka            Comic Looms
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.10.17
+// @version            4.10.18
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support you in finding the site you are searching for.
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持你正在搜索的站点。
@@ -9378,6 +9378,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   overflow: hidden;
   width: 24em;
   height: 32em;
+  max-height: 75vh;
   border: var(--ehvp-panel-border);
   box-shadow: var(--ehvp-panel-box-shadow);
 }

@@ -334,6 +334,7 @@ export function styleCSS() {
   overflow: hidden;
   width: 24em;
   height: 32em;
+  max-height: 75vh;
   border: var(--ehvp-panel-border);
   box-shadow: var(--ehvp-panel-box-shadow);
 }

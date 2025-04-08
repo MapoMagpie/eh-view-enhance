@@ -5309,6 +5309,173 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     };
   }
 
+  class KemonoListAbstract {
+    async *next() {
+      const url = new URL(window.location.href);
+      let page = parseInt(url.searchParams.get("o") ?? "0");
+      page = isNaN(page) ? 0 : page;
+      const query = url.searchParams.get("q");
+      while (true) {
+        const ret = await window.fetch(this.getURL(page, query)).then((res) => res.json());
+        if (ret.error) {
+          yield Result.err(new Error(ret.error));
+        }
+        const results = this.getPosts(ret);
+        if (!results || results.length === 0) break;
+        page += results.length;
+        const serverMap = kemonoServerPathMap(this.getList(ret));
+        if (serverMap.size > 0) {
+          results.forEach((r) => {
+            if (r.file?.path) r.file.server = serverMap.get(r.file.path);
+            if (r.attachments && r.attachments.length > 0) {
+              r.attachments.forEach((a) => {
+                if (a.path) a.server = serverMap.get(a.path);
+              });
+            }
+          });
+        }
+        yield Result.ok(results);
+        if (results.length < 50) break;
+      }
+    }
+  }
+  class KemonoListArtist extends KemonoListAbstract {
+    getURL(pages, query) {
+      const url = new URL(window.location.href);
+      const u = new URL(`${url.origin}/api/v1/${url.pathname}/posts-legacy`);
+      if (pages > 0) {
+        u.searchParams.set("o", pages.toString());
+      }
+      if (query) {
+        u.searchParams.set("q", query);
+      }
+      return u.href;
+    }
+    getList(response) {
+      const list = [...response.result_previews ?? [], ...response.result_attachments ?? []];
+      return list.flat(1);
+    }
+    getPosts(res) {
+      return res.results;
+    }
+  }
+  class KemonoListPosts extends KemonoListAbstract {
+    getPosts(res) {
+      return res.posts;
+    }
+    getURL(pages, query) {
+      const url = new URL(window.location.href);
+      const u = new URL(`${url.origin}/api/v1/${url.pathname}`);
+      if (pages > 0) {
+        u.searchParams.set("o", pages.toString());
+      }
+      if (query) {
+        u.searchParams.set("q", query);
+      }
+      return u.href;
+    }
+    getList() {
+      return [];
+    }
+  }
+  class KemonoListSinglePost extends KemonoListAbstract {
+    getPosts(res) {
+      if (res?.post) return [res.post];
+      return [];
+    }
+    getURL() {
+      return `${window.location.origin}/api/v1/${window.location.pathname}`;
+    }
+    getList(response) {
+      return [...response.previews ?? [], ...response.attachments ?? []];
+    }
+  }
+  class KemonoMatcher extends BaseMatcher {
+    list;
+    constructor() {
+      super();
+      if (window.location.href.includes("/posts")) {
+        this.list = new KemonoListPosts();
+      } else if (/user\/\w+/.test(window.location.href)) {
+        if (/post\/\w+/.test(window.location.href)) {
+          this.list = new KemonoListSinglePost();
+        } else {
+          this.list = new KemonoListArtist();
+        }
+      }
+    }
+    name() {
+      return "Kemono";
+    }
+    fetchPagesSource(_ch) {
+      if (!this.list) {
+        throw new Error("Current path is not supported");
+      }
+      return this.list.next();
+    }
+    async parseImgNodes(results) {
+      const nodes = [];
+      const newImageNode = (id, user, service, path, name, server) => {
+        const thumb = `https://img.kemono.su/thumbnail/data/${path}`;
+        const href = `https://kemono.su/${service}/user/${user}/post/${id}`;
+        let src = server ? `${server}/data/${path}?f=${name}` : void 0;
+        const node = new ImageNode(thumb, href, name, void 0, src);
+        if (path.indexOf(".mp4") > 1) {
+          node.mimeType = "video/mp4";
+          node.thumbnailSrc = "";
+        }
+        const ext = path.split(".").pop() ?? "";
+        if (["zip", "pdf", "txt", "7z", "rar"].includes(ext)) {
+          return void 0;
+        }
+        return node;
+      };
+      const chunks = [];
+      for (const res of results) {
+        const list = [];
+        if (res.file?.path) list.push(res.file);
+        list.push(...res.attachments ?? []);
+        chunks.push({ res, list, needFetchPost: !list[0]?.server && list.length > 0 });
+      }
+      await this.batchFetchPathServerMap(chunks);
+      for (const chunk of chunks) {
+        for (const file of chunk.list) {
+          if (!file.path) continue;
+          const node = newImageNode(chunk.res.id, chunk.res.user, chunk.res.service, file.path, file.name, file.server);
+          if (node) nodes.push(node);
+        }
+      }
+      return nodes;
+    }
+    async fetchOriginMeta(node) {
+      if (!node.originSrc) throw new Error("cannot find kemono image file: " + node.href);
+      return { url: node.originSrc };
+    }
+    workURL() {
+      return /kemono.su\/(\w+\/user\/\w+(\/post\/\w+)?|posts)(\?\w=.*)?$/;
+    }
+    async batchFetchPathServerMap(chunks) {
+      const urls = chunks.filter((chunk) => chunk.needFetchPost).map(
+        (chunk) => `${window.location.origin}/api/v1/${chunk.res.service}/user/${chunk.res.user}/post/${chunk.res.id}`
+      );
+      const infos = await batchFetch(urls, 10, "json");
+      const list = infos.reduce((list2, info) => {
+        return [...list2, ...[...info.previews ?? [], ...info.attachments ?? []]];
+      }, []);
+      const map = kemonoServerPathMap(list);
+      chunks.filter((chunk) => chunk.needFetchPost).forEach((chunk) => chunk.list.forEach((file) => file.server = file.path ? map.get(file.path) : void 0));
+    }
+  }
+  function kemonoServerPathMap(list) {
+    const map = /* @__PURE__ */ new Map();
+    for (const info of list ?? []) {
+      if (info.path && info.server) {
+        map.set(info.path, info.server);
+      }
+    }
+    return map;
+  }
+
   const REGEXP_EXTRACT_GALLERY_ID = /niyaniya.moe\/\w+\/(\d+\/\w+)/;
   const NAMESPACE_MAP = {
     0: "misc",
@@ -7370,7 +7537,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new ColaMangaMatcher(),
       new YabaiMatcher(),
       new Hanime1Matcher(),
-      new MyComicMatcher()
+      new MyComicMatcher(),
+      new KemonoMatcher()
     ];
   }
   function adaptMatcher(url) {

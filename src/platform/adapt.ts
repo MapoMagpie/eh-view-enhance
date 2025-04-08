@@ -11,6 +11,7 @@ import { HentaiNexusMatcher } from "./hentainexus";
 import { HitomiMather } from "./hitomi";
 import { IMHentaiMatcher } from "./im-hentai";
 import { InstagramMatcher } from "./instagram";
+import { KemonoMatcher } from "./kemono";
 import { KoharuMatcher } from "./koharo";
 import { MangaCopyMatcher } from "./mangacopy";
 import { MHGMatcher } from "./manhuagui";
@@ -55,6 +56,7 @@ export function getMatchers(): Matcher<any>[] {
     new YabaiMatcher(),
     new Hanime1Matcher(),
     new MyComicMatcher(),
+    new KemonoMatcher(),
   ];
 }
 

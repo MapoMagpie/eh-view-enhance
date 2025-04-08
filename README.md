@@ -66,6 +66,7 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 - [yabai.si](https://yabai.si)
 - [hanime1.me](https://hanime1.me/comics)
 - [mycomic.com](https://mycomic.com)
+- [kemono.su](https://kemono.su)
 
 </details>
 

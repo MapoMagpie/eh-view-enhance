@@ -111,7 +111,7 @@ export class VideoControl {
     };
     // element.loop = true;
     element.muted = conf.muted || false;
-    element.volume = (conf.volume || 30) / 100;
+    element.volume = Math.min(1, (conf.volume || 30) / 100);
 
     if (!this.paused) {
       element.play();
@@ -153,9 +153,9 @@ export class VideoControl {
     onMouse(this.ui.volumeProgress, (percent) => {
       const vid = this.getVideoElement();
       if (!vid) return;
-      conf.volume = percent;
+      conf.volume = Math.min(100, percent);
       saveConf(conf);
-      vid.volume = conf.volume / 100;
+      vid.volume = Math.min(1, conf.volume / 100);
       this.flushUI(state);
     }, this.abort.signal);
   }

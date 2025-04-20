@@ -5425,7 +5425,24 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           node.thumbnailSrc = "";
         }
         const ext = path.split(".").pop() ?? "";
-        if (["zip", "pdf", "txt", "7z", "rar"].includes(ext)) {
+        if (![
+          "jpeg",
+          "jpg",
+          "png",
+          "gif",
+          "webp",
+          "bmp",
+          "avif",
+          "jxl",
+          "mp4",
+          "webm",
+          "ogg",
+          "ogv",
+          "mov",
+          "avi",
+          "mkv",
+          "av1"
+        ].includes(ext)) {
           return void 0;
         }
         return node;

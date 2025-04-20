@@ -159,9 +159,10 @@ export class KemonoMatcher extends BaseMatcher<KemonoResult[]> {
         node.mimeType = "video/mp4";
         node.thumbnailSrc = "";
       }
-      // if attachment is a zip file, just skip;
+      // if attachment is not media file, just skip;
       const ext = path.split(".").pop() ?? "";
-      if (["zip", "pdf", "txt", "7z", "rar"].includes(ext)) {
+      if (!["jpeg", "jpg", "png", "gif", "webp", "bmp", "avif", "jxl",
+        "mp4", "webm", "ogg", "ogv", "mov", "avi", "mkv", "av1"].includes(ext)) {
         return undefined;
       }
       return node;

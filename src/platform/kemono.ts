@@ -1,3 +1,4 @@
+import { conf } from "../config";
 import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
 import { batchFetch } from "../utils/query";
@@ -161,9 +162,10 @@ export class KemonoMatcher extends BaseMatcher<KemonoResult[]> {
       }
       // if attachment is not media file, just skip;
       const ext = path.split(".").pop() ?? "";
-      if (!["jpeg", "jpg", "png", "gif", "webp", "bmp", "avif", "jxl",
-        "mp4", "webm", "ogg", "ogv", "mov", "avi", "mkv", "av1"].includes(ext)) {
-        return undefined;
+      if (!PICTURE_EXTENSION.includes(ext)) {
+        if (conf.excludeVideo || !VIDEO_EXTENSION.includes(ext)) {
+          return undefined;
+        }
       }
       return node;
     }
@@ -216,3 +218,5 @@ function kemonoServerPathMap(list: any[]): Map<string, string> {
   return map;
 }
 
+const PICTURE_EXTENSION = ["jpeg", "jpg", "png", "gif", "webp", "bmp", "avif", "jxl"];
+const VIDEO_EXTENSION = ["mp4", "webm", "ogg", "ogv", "mov", "avi", "mkv", "av1"];

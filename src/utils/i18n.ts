@@ -399,6 +399,18 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     '여러 이미지가 첨부된 포스트 내 이미지들의 순서를 역순으로 정렬합니다.',
     'Orden inverso para publicaciones con múltiples imágenes adjuntas'
   ],
+  excludeVideo: [
+    'Exclude Videos',
+    '排除视频',
+    '비디오 제외',
+    'Excluir videos'
+  ],
+  excludeVideoTooltip: [
+    'Exclude videos, now only applies to x.com and kemono.su.',
+    '排除视频，现在仅作用于x.com和kemono.su',
+    '비디오 제외, 현재 x.com과 kemono.su에만 적용됩니다.',
+    'Excluir videos, ahora solo se aplica a x.com y kemono.su.'
+  ],
   filenameOrder: [
     'Filename Order',
     '文件名排序',

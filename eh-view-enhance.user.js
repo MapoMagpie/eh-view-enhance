@@ -457,6 +457,18 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`
       "여러 이미지가 첨부된 포스트 내 이미지들의 순서를 역순으로 정렬합니다.",
       "Orden inverso para publicaciones con múltiples imágenes adjuntas"
     ],
+    excludeVideo: [
+      "Exclude Videos",
+      "排除视频",
+      "비디오 제외",
+      "Excluir videos"
+    ],
+    excludeVideoTooltip: [
+      "Exclude videos, now only applies to x.com and kemono.su.",
+      "排除视频，现在仅作用于x.com和kemono.su",
+      "비디오 제외, 현재 x.com과 kemono.su에만 적용됩니다.",
+      "Excluir videos, ahora solo se aplica a x.com y kemono.su."
+    ],
     filenameOrder: [
       "Filename Order",
       "文件名排序",
@@ -1243,7 +1255,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       autoEnterBig: false,
       pixivJustCurrPage: false,
       filenameOrder: "auto",
-      dragImageOut: false
+      dragImageOut: false,
+      excludeVideo: false
     };
   }
   const CONF_VERSION = "4.4.0";
@@ -1371,6 +1384,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
     { key: "pixivJustCurrPage", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
     { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
+    { key: "excludeVideo", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com|kemono.su)\// },
     {
       key: "readMode",
       typ: "select",
@@ -5425,25 +5439,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           node.thumbnailSrc = "";
         }
         const ext = path.split(".").pop() ?? "";
-        if (![
-          "jpeg",
-          "jpg",
-          "png",
-          "gif",
-          "webp",
-          "bmp",
-          "avif",
-          "jxl",
-          "mp4",
-          "webm",
-          "ogg",
-          "ogv",
-          "mov",
-          "avi",
-          "mkv",
-          "av1"
-        ].includes(ext)) {
-          return void 0;
+        if (!PICTURE_EXTENSION.includes(ext)) {
+          if (conf.excludeVideo || !VIDEO_EXTENSION.includes(ext)) {
+            return void 0;
+          }
         }
         return node;
       };
@@ -5492,6 +5491,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     return map;
   }
+  const PICTURE_EXTENSION = ["jpeg", "jpg", "png", "gif", "webp", "bmp", "avif", "jxl"];
+  const VIDEO_EXTENSION = ["mp4", "webm", "ogg", "ogv", "mov", "avi", "mkv", "av1"];
 
   const REGEXP_EXTRACT_GALLERY_ID = /niyaniya.moe\/\w+\/(\d+\/\w+)/;
   const NAMESPACE_MAP = {
@@ -7241,6 +7242,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         }
         for (let i = 0; i < mediaList.length; i++) {
           const media = mediaList[i];
+          if (conf.excludeVideo && media.type === "video") {
+            continue;
+          }
           if (media.type !== "video" && media.type !== "photo" && media.type !== "animated_gif") {
             evLog("error", `Not supported media type: ${media.type}`);
             continue;

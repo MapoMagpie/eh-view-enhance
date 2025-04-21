@@ -349,6 +349,9 @@ export class TwitterMatcher extends BaseMatcher<Item[]> {
       }
       for (let i = 0; i < mediaList.length; i++) {
         const media = mediaList[i];
+        if (conf.excludeVideo && media.type === "video") {
+          continue;
+        }
         if (media.type !== "video" && media.type !== "photo" && media.type !== "animated_gif") {
           evLog("error", `Not supported media type: ${media.type}`);
           continue;

@@ -113,6 +113,7 @@ export type Config = {
   pixivJustCurrPage: boolean,
   filenameOrder: "auto" | "numbers" | "original" | "alphabetically",
   dragImageOut: boolean,
+  excludeVideo: boolean,
 };
 
 function defaultColumns() {
@@ -177,6 +178,7 @@ function defaultConf(): Config {
     pixivJustCurrPage: false,
     filenameOrder: "auto",
     dragImageOut: false,
+    excludeVideo: false,
   };
 }
 
@@ -318,6 +320,7 @@ export type ConfigBooleanType = "fetchOriginal"
   | "pixivJustCurrPage"
   | "hdThumbnails"
   | "dragImageOut"
+  | "excludeVideo"
   ;
 export type ConfigSelectType = "readMode"
   | "minifyPageHelper"
@@ -366,6 +369,7 @@ export const ConfigItems: ConfigItem[] = [
   { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
   { key: "pixivJustCurrPage", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
   { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
+  { key: "excludeVideo", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com|kemono.su)\// },
   {
     key: "readMode", typ: "select", options: [
       { value: "pagination", display: "Pagination" },

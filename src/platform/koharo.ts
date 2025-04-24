@@ -110,6 +110,7 @@ export class KoharuMatcher extends BaseMatcher<string> {
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
     return { url: node.originSrc! };
   }
+  // FIXME this site is no longer working
   workURL(): RegExp {
     return /niyaniya.moe\/(g|reader)\/\d+\/\w+/;
   }

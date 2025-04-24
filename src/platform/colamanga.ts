@@ -79,6 +79,7 @@ function initColaMangaKeyMap(): Promise<Record<number, string>> {
   });
 }
 
+// FIXME unknown chapter occurs in download panel
 export class ColaMangaMatcher extends BaseMatcher<string> {
   infoMap: Record<string, Info> = {};
   keymap?: Record<number, string>;
@@ -91,7 +92,7 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
     this.keymap = await initColaMangaKeyMap();
     // console.log("colamanga keys: ", this.keys);
     const thumbimg = document.querySelector("dt.fed-part-rows > a")?.getAttribute("data-original") || undefined;
-    const list = Array.from(document.querySelectorAll<HTMLAnchorElement>(".fed-part-rows > li > a"));
+    const list = Array.from(document.querySelectorAll<HTMLAnchorElement>(".all_data_list .fed-part-rows > li > a"));
     return list.map<Chapter>((a, index) => {
       return {
         id: index,

@@ -139,12 +139,12 @@ export class Comic18Matcher extends BaseMatcher<string> {
     return /(18|jm)comic.*?\/album\/\d+/;
   }
 
-  galleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(): GalleryMeta {
     if (this.meta) return this.meta;
-    const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
+    const title = document.querySelector(".panel-heading h2")?.textContent || document.title || "UNTITLE";
     this.meta = new GalleryMeta(window.location.href, title);
     this.meta.originTitle = title;
-    const tagTrList = doc.querySelectorAll<HTMLElement>("div.tag-block > span");
+    const tagTrList = document.querySelectorAll<HTMLElement>("div.tag-block > span");
     const tags: Record<string, string[]> = {};
     tagTrList.forEach((tr) => {
       const cat = tr.getAttribute("data-type")?.trim();
@@ -158,6 +158,7 @@ export class Comic18Matcher extends BaseMatcher<string> {
     this.meta.tags = tags;
     return this.meta;
   }
+
   // https://cdn-msp.18comic.org/media/photos/529221/00004.gif
   async fetchOriginMeta(node: ImageNode, retry: boolean): Promise<OriginMeta> {
     let src = node.originSrc!;

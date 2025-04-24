@@ -607,10 +607,10 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`
       "Estado"
     ],
     selectChapters: [
-      "Select Chapters",
-      "章节选择",
-      "챕터 선택",
-      "Seleccionar capítulos"
+      "Chapters",
+      "章节",
+      "챕터",
+      "capítulos"
     ],
     cherryPick: [
       "Cherry Pick",
@@ -2285,8 +2285,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.idleLoader.cherryPick = () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick();
       this.canvas = new DownloaderCanvas(this.panel.canvas, queue, () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick());
       this.pageFetcher = pageFetcher;
-      this.meta = (ch) => matcher.galleryMeta(document, ch);
-      this.title = () => matcher.title(document);
+      this.meta = (chapter) => matcher.galleryMeta(chapter);
+      this.title = (chapters) => matcher.title(chapters);
       this.downloading = false;
       this.queue.downloading = () => this.downloading;
       EBUS.subscribe("ifq-on-finished-report", (_, queue2) => {
@@ -2415,7 +2415,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     async download(chapters) {
       try {
-        const archiveName = this.title().replaceAll(FILENAME_INVALIDCHAR, "_");
+        const archiveName = this.title(chapters).replaceAll(FILENAME_INVALIDCHAR, "_");
         const separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
         const singleChapter = chapters.length === 1;
         this.panel.flushUI("packaging");
@@ -2942,12 +2942,37 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
       EBUS.subscribe("pf-retry-extend", () => !this.queue.downloading?.() && this.appendNextPage(true));
       EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
+      EBUS.subscribe("pf-append-chapters", (url) => this.appendNewChapters(url).then(() => this.chapters));
     }
     appendToView(total, nodes, chapterIndex, done) {
       EBUS.emit("pf-on-appended", total, nodes, chapterIndex, done);
     }
     abort() {
       this.abortb = true;
+    }
+    async appendNewChapters(url) {
+      try {
+        const chapters = await this.matcher.appendNewChapters(url, this.chapters);
+        if (chapters && chapters.length > 0) {
+          chapters.forEach((c) => {
+            c.sourceIter = this.matcher.fetchPagesSource(c);
+            c.onclick = (index) => {
+              EBUS.emit("pf-change-chapter", index, c);
+              if (this.chapters[index].queue.length > 0) {
+                this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
+              }
+              if (!this.queue.downloading?.()) {
+                this.beforeInit?.();
+                this.changeChapter(index).then(this.afterInit).catch(this.onFailed);
+              }
+            };
+          });
+          this.chapters.push(...chapters);
+          EBUS.emit("pf-update-chapters", this.chapters, true);
+        }
+      } catch (error) {
+        EBUS.emit("notify-message", "error", `${error}`);
+      }
     }
     async init() {
       this.beforeInit?.();
@@ -3310,18 +3335,18 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   class BaseMatcher {
     async fetchChapters() {
       return [{
-        id: 1,
+        id: 0,
         title: "Default",
         source: window.location.href,
         queue: []
       }];
     }
-    title(doc) {
-      const meta = this.galleryMeta(doc);
+    title(chapter) {
+      const meta = this.galleryMeta(chapter[0]);
       return meta.originTitle || meta.title || "unknown";
     }
-    galleryMeta(doc, _chapter) {
-      return new GalleryMeta(window.location.href, doc.title || "unknown");
+    galleryMeta(_chapter) {
+      return new GalleryMeta(window.location.href, document.title || "unknown");
     }
     workURLs() {
       return [this.workURL()];
@@ -3331,6 +3356,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     headers() {
       return {};
+    }
+    appendNewChapters(_url, _old) {
+      throw new Error("this site does not support add new chapters yet");
     }
   }
 
@@ -3454,12 +3482,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     workURL() {
       return /(18|jm)comic.*?\/album\/\d+/;
     }
-    galleryMeta(doc) {
+    galleryMeta() {
       if (this.meta) return this.meta;
-      const title = doc.querySelector(".panel-heading h1")?.textContent || "UNTITLE";
+      const title = document.querySelector(".panel-heading h2")?.textContent || document.title || "UNTITLE";
       this.meta = new GalleryMeta(window.location.href, title);
       this.meta.originTitle = title;
-      const tagTrList = doc.querySelectorAll("div.tag-block > span");
+      const tagTrList = document.querySelectorAll("div.tag-block > span");
       const tags = {};
       tagTrList.forEach((tr) => {
         const cat = tr.getAttribute("data-type")?.trim();
@@ -3500,11 +3528,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       return "Akuma.moe";
     }
     title() {
-      return this.galleryMeta(document).title;
+      return this.galleryMeta().title;
     }
-    galleryMeta(doc) {
+    galleryMeta() {
       if (!this.meta) {
-        this.meta = this.initGalleryMeta(doc);
+        this.meta = this.initGalleryMeta(document);
       }
       return this.meta;
     }
@@ -3791,7 +3819,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.keys = await initColamangaKeys();
       this.keymap = await initColaMangaKeyMap();
       const thumbimg = document.querySelector("dt.fed-part-rows > a")?.getAttribute("data-original") || void 0;
-      const list = Array.from(document.querySelectorAll(".fed-part-rows > li > a"));
+      const list = Array.from(document.querySelectorAll(".all_data_list .fed-part-rows > li > a"));
       return list.map((a, index) => {
         return {
           id: index,
@@ -4465,21 +4493,27 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     name() {
       return "e-hentai";
     }
-    meta;
+    docMap = {};
     // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
     workURL() {
       return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
     }
-    title(doc) {
-      const meta = this.meta || this.galleryMeta(doc);
+    title(chapters) {
+      const meta = chapters[0].meta || this.galleryMeta(chapters[0]);
+      let title = "";
       if (conf.ehentaiTitlePrefer === "japanese") {
-        return meta.originTitle || meta.title || "UNTITLE";
+        title = meta.originTitle || meta.title || "UNTITLE";
       } else {
-        return meta.title || meta.originTitle || "UNTITLE";
+        title = meta.title || meta.originTitle || "UNTITLE";
       }
+      if (chapters.length > 1) {
+        title += "+" + chapters.length + "chapters";
+      }
+      return title;
     }
-    galleryMeta(doc) {
-      if (this.meta) return this.meta;
+    galleryMeta(chapter) {
+      if (chapter.meta) return chapter.meta;
+      const doc = this.docMap[chapter.id];
       const titleList = doc.querySelectorAll("#gd2 h1");
       let title;
       let originTitle;
@@ -4489,8 +4523,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           originTitle = titleList[1].textContent || void 0;
         }
       }
-      this.meta = new GalleryMeta(window.location.href, title || "UNTITLE");
-      this.meta.originTitle = originTitle;
+      chapter.meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+      chapter.meta.originTitle = originTitle;
       const tagTrList = doc.querySelectorAll("#taglist tr");
       const tags = {};
       tagTrList.forEach((tr) => {
@@ -4504,8 +4538,36 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           tags[cat.replace(":", "")] = list;
         }
       });
-      this.meta.tags = tags;
-      return this.meta;
+      chapter.meta.tags = tags;
+      return chapter.meta;
+    }
+    async fetchChapters() {
+      const chapter = {
+        id: 0,
+        title: "Default",
+        source: window.location.href,
+        queue: []
+      };
+      this.docMap[0] = document;
+      this.galleryMeta(chapter);
+      chapter.title = chapter.meta.title;
+      return [chapter];
+    }
+    async appendNewChapters(url, old) {
+      if (!this.workURL().test(url)) throw new Error("invaild gallery url");
+      const doc = await window.fetch(url).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      let lastID = old[old.length - 1]?.id || 0;
+      lastID = lastID + 1;
+      const chapter = {
+        id: lastID,
+        title: "NewChapter-" + lastID,
+        source: url,
+        queue: []
+      };
+      this.docMap[lastID] = doc;
+      this.galleryMeta(chapter);
+      chapter.title = chapter.meta.title;
+      return [chapter];
     }
     async parseImgNodes(source) {
       const list = [];
@@ -4640,8 +4702,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
       return list;
     }
-    async *fetchPagesSource() {
-      const doc = document;
+    async *fetchPagesSource(chapter) {
+      const doc = this.docMap[chapter.id];
       const fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
       if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
         yield Result.ok(window.location.href);
@@ -4837,8 +4899,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     workURL() {
       return /hentainexus.com\/view\/\d+/;
     }
-    galleryMeta(doc) {
-      return this.meta || super.galleryMeta(doc);
+    galleryMeta(chapter) {
+      return this.meta || super.galleryMeta(chapter);
     }
     pasrseGalleryMeta(doc) {
       const title = doc.querySelector("h1.title")?.textContent || "UNTITLED";
@@ -5063,7 +5125,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         this.meta[chapter.id].tags[key] = info[key];
       }
     }
-    galleryMeta(_, chapter) {
+    galleryMeta(chapter) {
       return this.meta[chapter.id];
     }
     title() {
@@ -5127,13 +5189,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.gth = JSON.parse(gthRaw);
       yield Result.ok(null);
     }
-    galleryMeta(doc) {
-      const title = doc.querySelector(".right_details > h1")?.textContent || void 0;
-      const originTitle = doc.querySelector(".right_details > p.subtitle")?.textContent || void 0;
+    galleryMeta() {
+      const title = document.querySelector(".right_details > h1")?.textContent || void 0;
+      const originTitle = document.querySelector(".right_details > p.subtitle")?.textContent || void 0;
       const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
       meta.originTitle = originTitle;
       meta.tags = {};
-      const list = Array.from(doc.querySelectorAll(".galleries_info > li"));
+      const list = Array.from(document.querySelectorAll(".galleries_info > li"));
       for (const li of list) {
         let cat = li.querySelector(".tags_text")?.textContent;
         if (!cat) continue;
@@ -5172,6 +5234,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     name() {
       return "Instagram";
     }
+    // FIXME: instagram not change the title after hashchanged (chapter: Chapter[]): string { }
     async *fetchPagesSource() {
       this.config = parseConfig();
       let cursor = null;
@@ -5562,6 +5625,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     async fetchOriginMeta(node) {
       return { url: node.originSrc };
     }
+    // FIXME this site is no longer working
     workURL() {
       return /niyaniya.moe\/(g|reader)\/\d+\/\w+/;
     }
@@ -5857,8 +5921,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     workURL() {
       return /mycomic.com\/(\w+\/)?comics\/\d+$/;
     }
-    galleryMeta(doc) {
-      return this.meta ?? super.galleryMeta(doc);
+    galleryMeta(chapter) {
+      return this.meta ?? super.galleryMeta(chapter);
     }
     initGalleryMeta() {
       const title = document.querySelector(".grow > div[data-flux-heading]")?.textContent ?? document.title;
@@ -6844,11 +6908,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     workURL() {
       return /rokuhentai.com\/\w+$/;
     }
-    galleryMeta(doc) {
-      const title = doc.querySelector(".site-manga-info__title-text")?.textContent || "UNTITLE";
+    galleryMeta() {
+      const title = document.querySelector(".site-manga-info__title-text")?.textContent || "UNTITLE";
       const meta = new GalleryMeta(window.location.href, title);
       meta.originTitle = title;
-      const tagTrList = doc.querySelectorAll("div.mdc-chip .site-tag-count");
+      const tagTrList = document.querySelectorAll("div.mdc-chip .site-tag-count");
       const tags = {};
       tagTrList.forEach((tr) => {
         const splits = tr.getAttribute("data-tag")?.trim().split(":");
@@ -7281,9 +7345,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     workURL() {
       return /(\/x|twitter).com\/(?!(explore|notifications|messages|jobs|lists)$|i\/(?!list)|search\?)\w+/;
     }
-    galleryMeta(doc) {
+    galleryMeta() {
       const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2];
-      return new GalleryMeta(window.location.href, `twitter-${userName || doc.title}-${this.postCount}-${this.mediaCount}`);
+      return new GalleryMeta(window.location.href, `twitter-${userName || document.title}-${this.postCount}-${this.mediaCount}`);
     }
   }
   function getMyID() {
@@ -7376,8 +7440,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     workURL() {
       return /(wnacg.com|wn\d{2}.cc)\/photos-index/;
     }
-    galleryMeta(doc) {
-      return this.meta || super.galleryMeta(doc);
+    galleryMeta(chapter) {
+      return this.meta || super.galleryMeta(chapter);
     }
     // https://www.hm19.lol/photos-index-page-1-aid-253297.html
     extractIDFromHref(href) {
@@ -10060,6 +10124,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   }
 
   class DownloaderPanel {
+    root;
     panel;
     canvas;
     tabStatus;
@@ -10073,6 +10138,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     startBTN;
     btn;
     constructor(root) {
+      this.root = root;
       this.btn = q("#downloader-panel-btn", root);
       this.panel = q("#downloader-panel", root);
       this.canvas = q("#downloader-canvas", root);
@@ -10168,14 +10234,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     createChapterSelectList(chapters, selectedChapters) {
       const selectAll = chapters.length === 1;
       this.chaptersElement.innerHTML = `
-<div>
-  <span id="download-chapters-select-all" class="clickable">Select All</span>
-  <span id="download-chapters-unselect-all" class="clickable">Unselect All</span>
-</div>
-${chapters.map((c, i) => `<div><label>
-  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || selectedChapters.find((sel) => sel.index === i) ? "checked" : ""} />
-  <span>${c.title}</span></label></div>`).join("")}
-`;
+      <div>
+        <span id="download-chapters-select-all" class="clickable">Select All</span>
+        <span id="download-chapters-unselect-all" class="clickable">Unselect All</span>
+        <span id="download-chapters-add-new" class="clickable">Add New Chapters</span>
+      </div>
+      ${chapters.map((c, i) => `<div><label>
+        <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || selectedChapters.find((sel) => sel.index === i) ? "checked" : ""} />
+        <span>${c.title}</span></label></div>`).join("")}`;
       [["#download-chapters-select-all", true], ["#download-chapters-unselect-all", false]].forEach(
         ([id, checked]) => this.chaptersElement.querySelector(id)?.addEventListener(
           "click",
@@ -10185,6 +10251,39 @@ ${chapters.map((c, i) => `<div><label>
           })
         )
       );
+      this.chaptersElement.querySelector("#download-chapters-add-new")?.addEventListener("click", (event) => {
+        function modal(root, target, inner, onComfirm) {
+          const div = document.createElement("div");
+          div.style.position = "fixed";
+          div.style.zIndex = "2100";
+          div.style.padding = "3px";
+          div.style.backgroundColor = "var(--ehvp-theme-bg-color)";
+          div.style.border = "var(--ehvp-panel-border)";
+          div.style.borderRadius = "5px";
+          div.innerHTML = `
+          <div style="display: flex; justify-content: center; margin: 10px 2px;">${inner}</div>
+          <div style="display: flex; justify-content: center;">
+            <button class="ehvp-custom-btn ehvp-modal-btn-cancel" style="background-color: gray;">Cancel</button>
+            <button class="ehvp-custom-btn ehvp-modal-btn-confirm" style="background-color: var(--ehvp-clickable-color-hover);">Confirm</button>
+          </div>
+        `;
+          root.appendChild(div);
+          div.querySelector(".ehvp-modal-btn-cancel")?.addEventListener("click", () => div.remove());
+          div.querySelector(".ehvp-modal-btn-confirm")?.addEventListener("click", () => onComfirm(div).finally(() => div.remove()));
+          relocateElement(div, target, root.offsetWidth, root.offsetHeight);
+        }
+        modal(
+          this.root,
+          event.target,
+          `<input id="download-chapters-add-input" style="width: 250px; background-color: #ffffff80;" placeholder="https://example.com" />`,
+          async (div) => {
+            const value = div.querySelector("#download-chapters-add-input")?.value;
+            if (!value) return;
+            const future = EBUS.emit("pf-append-chapters", value);
+            if (future) await future;
+          }
+        );
+      });
     }
     selectedChapters() {
       const idSet = /* @__PURE__ */ new Set();
@@ -10431,7 +10530,6 @@ ${chapters.map((c, i) => `<div><label>
     thumbnailImg;
     thumbnailCanvas;
     listContainer;
-    first = false;
     constructor(root) {
       this.root = root;
       this.panel = q("#chapters-panel", root);
@@ -10439,9 +10537,9 @@ ${chapters.map((c, i) => `<div><label>
       this.thumbnailImg = q("#chapter-thumbnail-image", root);
       this.thumbnailCanvas = q("#chapter-thumbnail-canvas", root);
       this.listContainer = q("#chapter-list", root);
-      EBUS.subscribe("pf-update-chapters", (chapters) => {
+      EBUS.subscribe("pf-update-chapters", (chapters, slient) => {
         this.updateChapterList(chapters);
-        if (chapters.length > 1) {
+        if (chapters.length > 1 && !slient) {
           this.relocateToCenter();
         }
       });
@@ -10449,6 +10547,7 @@ ${chapters.map((c, i) => `<div><label>
     }
     updateChapterList(chapters) {
       const ul = this.listContainer.firstElementChild;
+      ul.innerHTML = "";
       chapters.forEach((ch, i) => {
         const li = document.createElement("div");
         let title = "";
@@ -10462,8 +10561,7 @@ ${chapters.map((c, i) => `<div><label>
         li.classList.add("chapter-list-item");
         li.addEventListener("click", () => {
           ch.onclick?.(i);
-          if (this.first) {
-            this.first = false;
+          if (this.panel.classList.contains("p-panel-large")) {
             this.panel.classList.add("p-collapse");
             this.panel.classList.remove("p-panel-large");
             this.panel.classList.remove("p-chapters-large");
@@ -10475,7 +10573,6 @@ ${chapters.map((c, i) => `<div><label>
       this.updateChapterThumbnail(chapters[0]);
     }
     relocateToCenter() {
-      this.first = true;
       this.panel.classList.remove("p-collapse");
       this.panel.classList.add("p-panel-large");
       this.panel.classList.add("p-chapters-large");

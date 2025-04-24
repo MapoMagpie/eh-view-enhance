@@ -10,11 +10,11 @@ export class AkumaMatcher extends BaseMatcher<Document> {
     return "Akuma.moe"
   }
   title(): string {
-    return this.galleryMeta(document).title!;
+    return this.galleryMeta().title!;
   }
-  galleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(): GalleryMeta {
     if (!this.meta) {
-      this.meta = this.initGalleryMeta(doc);
+      this.meta = this.initGalleryMeta(document);
     }
     return this.meta!;
   }

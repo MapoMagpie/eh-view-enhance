@@ -391,9 +391,9 @@ export class TwitterMatcher extends BaseMatcher<Item[]> {
     return /(\/x|twitter).com\/(?!(explore|notifications|messages|jobs|lists)$|i\/(?!list)|search\?)\w+/;
   }
 
-  galleryMeta(doc: Document): GalleryMeta {
+  galleryMeta(): GalleryMeta {
     const userName = window.location.href.match(/(twitter|x).com\/(\w+)\/?/)?.[2];
-    return new GalleryMeta(window.location.href, `twitter-${userName || doc.title}-${this.postCount}-${this.mediaCount}`);
+    return new GalleryMeta(window.location.href, `twitter-${userName || document.title}-${this.postCount}-${this.mediaCount}`);
   }
 
 }

@@ -1,3 +1,4 @@
+import { GalleryMeta } from "./download/gallery-meta";
 import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { IMGFetcher } from "./img-fetcher";
@@ -15,6 +16,7 @@ export type Chapter = {
   sourceIter?: AsyncGenerator<Result<any>>;
   done?: boolean;
   onclick?: (index: number) => void;
+  meta?: GalleryMeta;
 }
 
 export class PageFetcher {
@@ -42,6 +44,7 @@ export class PageFetcher {
     EBUS.subscribe("pf-try-extend", () => debouncer.addEvent("APPEND-NEXT-PAGES", () => !this.queue.downloading?.() && this.appendNextPage(), 5));
     EBUS.subscribe("pf-retry-extend", () => !this.queue.downloading?.() && this.appendNextPage(true));
     EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
+    EBUS.subscribe("pf-append-chapters", (url) => this.appendNewChapters(url).then(() => this.chapters));
   }
 
   appendToView(total: number, nodes: IMGFetcher[], chapterIndex: number, done?: boolean) {
@@ -50,6 +53,31 @@ export class PageFetcher {
 
   abort() {
     this.abortb = true;
+  }
+
+  async appendNewChapters(url: string) {
+    try {
+      const chapters = await this.matcher.appendNewChapters(url, this.chapters);
+      if (chapters && chapters.length > 0) {
+        chapters.forEach(c => {
+          c.sourceIter = this.matcher.fetchPagesSource(c);
+          c.onclick = (index) => {
+            EBUS.emit("pf-change-chapter", index, c);
+            if (this.chapters[index].queue.length > 0) {
+              this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
+            }
+            if (!this.queue.downloading?.()) {
+              this.beforeInit?.();
+              this.changeChapter(index).then(this.afterInit).catch(this.onFailed);
+            }
+          };
+        });
+        this.chapters.push(...chapters);
+        EBUS.emit("pf-update-chapters", this.chapters, true);
+      }
+    } catch (error) {
+      EBUS.emit("notify-message", "error", `${error}`);
+    }
   }
 
   async init() {

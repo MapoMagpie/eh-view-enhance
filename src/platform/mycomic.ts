@@ -17,8 +17,8 @@ export class MyComicMatcher extends BaseMatcher<Document> {
   workURL(): RegExp {
     return /mycomic.com\/(\w+\/)?comics\/\d+$/;
   }
-  galleryMeta(doc: Document): GalleryMeta {
-    return this.meta ?? super.galleryMeta(doc);
+  galleryMeta(chapter: Chapter): GalleryMeta {
+    return this.meta ?? super.galleryMeta(chapter);
   }
 
   initGalleryMeta() {

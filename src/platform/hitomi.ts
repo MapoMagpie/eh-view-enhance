@@ -186,7 +186,7 @@ export class HitomiMather extends BaseMatcher<GalleryInfo> {
     }
   }
 
-  galleryMeta(_: Document, chapter: Chapter): GalleryMeta {
+  galleryMeta(chapter: Chapter): GalleryMeta {
     return this.meta[chapter.id];
   }
 

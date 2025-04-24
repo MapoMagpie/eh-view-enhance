@@ -43,18 +43,19 @@ export interface Matcher<P> {
    */
   fetchOriginMeta(node: ImageNode, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
-  galleryMeta(doc: Document, chapter?: Chapter): GalleryMeta;
-  title(doc: Document): string;
+  galleryMeta(chapter: Chapter): GalleryMeta;
+  title(chapter: Chapter[]): string;
   workURLs(): RegExp[];
   processData(data: Uint8Array, contentType: string, node: ImageNode): Promise<[Uint8Array, string]>;
   headers(): Record<string, string>;
+  appendNewChapters(url: string, old: Chapter[]): Promise<Chapter[]>;
 }
 
 export abstract class BaseMatcher<P> implements Matcher<P> {
 
   async fetchChapters(): Promise<Chapter[]> {
     return [{
-      id: 1,
+      id: 0,
       title: "Default",
       source: window.location.href,
       queue: [],
@@ -66,13 +67,13 @@ export abstract class BaseMatcher<P> implements Matcher<P> {
   abstract parseImgNodes(pageSource: P, chapterID?: number): Promise<ImageNode[]>;
   abstract fetchOriginMeta(node: ImageNode, retry: boolean, chapterID?: number): Promise<OriginMeta>;
 
-  title(doc: Document): string {
-    const meta = this.galleryMeta(doc);
+  title(chapter: Chapter[]): string {
+    const meta = this.galleryMeta(chapter[0]);
     return meta.originTitle || meta.title || "unknown";
   }
 
-  galleryMeta(doc: Document, _chapter?: Chapter): GalleryMeta {
-    return new GalleryMeta(window.location.href, doc.title || "unknown");
+  galleryMeta(_chapter: Chapter): GalleryMeta {
+    return new GalleryMeta(window.location.href, document.title || "unknown");
   }
 
   abstract workURL(): RegExp;
@@ -87,6 +88,10 @@ export abstract class BaseMatcher<P> implements Matcher<P> {
 
   headers(): Record<string, string> {
     return {};
+  }
+
+  appendNewChapters(_url: string, _old: Chapter[]): Promise<Chapter[]> {
+    throw new Error("this site does not support add new chapters yet");
   }
 
 }

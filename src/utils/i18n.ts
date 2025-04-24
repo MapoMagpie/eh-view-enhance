@@ -551,10 +551,10 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     'Estado'
   ],
   selectChapters: [
-    'Select Chapters',
-    '章节选择',
-    '챕터 선택',
-    'Seleccionar capítulos'
+    'Chapters',
+    '章节',
+    '챕터',
+    'capítulos'
   ],
   cherryPick: [
     'Cherry Pick',

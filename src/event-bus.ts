@@ -42,8 +42,9 @@ export interface Events {
   "bifm-on-hidden": () => void;
   "bifm-rotate-image": () => void;
   "pf-on-appended": (total: number, nodes: IMGFetcher[], chapterIndex: number, done?: boolean) => void;
-  "pf-update-chapters": (chapters: Chapter[]) => void;
+  "pf-update-chapters": (chapters: Chapter[], slient?: boolean) => void;
   "pf-change-chapter": (index: number, chapter: Chapter) => void;
+  "pf-append-chapters": (url: string) => Promise<Chapter[]>;
   "pf-try-extend": () => void;
   "pf-retry-extend": () => void;
   "imf-on-finished": (index: number, success: boolean, imf: IMGFetcher) => void;

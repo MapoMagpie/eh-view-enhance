@@ -3,11 +3,13 @@ import EBUS from "../event-bus";
 import { Chapter } from "../page-fetcher";
 import { i18n } from "../utils/i18n";
 import q from "../utils/query-element";
+import relocateElement from "../utils/relocate-element";
 
 type TabID = "status" | "chapters" | "cherry-pick";
 
 export class DownloaderPanel {
 
+  root: HTMLElement;
   panel: HTMLElement;
   canvas: HTMLCanvasElement;
   tabStatus: HTMLElement;
@@ -22,6 +24,7 @@ export class DownloaderPanel {
   btn: HTMLElement
 
   constructor(root: HTMLElement) {
+    this.root = root;
     this.btn = q("#downloader-panel-btn", root);
     this.panel = q("#downloader-panel", root);
     this.canvas = q<HTMLCanvasElement>("#downloader-canvas", root);
@@ -123,22 +126,54 @@ export class DownloaderPanel {
   createChapterSelectList(chapters: Chapter[], selectedChapters: ChapterStat[]) {
     const selectAll = chapters.length === 1;
     this.chaptersElement.innerHTML = `
-<div>
-  <span id="download-chapters-select-all" class="clickable">Select All</span>
-  <span id="download-chapters-unselect-all" class="clickable">Unselect All</span>
-</div>
-${chapters.map((c, i) => `<div><label>
-  <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || selectedChapters.find(sel => sel.index === i) ? "checked" : ""} />
-  <span>${c.title}</span></label></div>`).join("")}
-`;
+      <div>
+        <span id="download-chapters-select-all" class="clickable">Select All</span>
+        <span id="download-chapters-unselect-all" class="clickable">Unselect All</span>
+        <span id="download-chapters-add-new" class="clickable">Add New Chapters</span>
+      </div>
+      ${chapters.map((c, i) => `<div><label>
+        <input type="checkbox" id="ch-${c.id}" value="${c.id}" ${selectAll || selectedChapters.find(sel => sel.index === i) ? "checked" : ""} />
+        <span>${c.title}</span></label></div>`).join("")}`;
+
     ([["#download-chapters-select-all", true], ["#download-chapters-unselect-all", false]] as [string, boolean][]).forEach(([id, checked]) =>
-      this.chaptersElement.querySelector<HTMLInputElement>(id)?.addEventListener("click", () =>
+      this.chaptersElement.querySelector<HTMLElement>(id)?.addEventListener("click", () =>
         chapters.forEach(c => {
           const checkbox = this.chaptersElement.querySelector<HTMLInputElement>("#ch-" + c.id);
           if (checkbox) checkbox.checked = checked;
         })
       )
     );
+    this.chaptersElement.querySelector<HTMLElement>("#download-chapters-add-new")?.addEventListener("click", (event) => {
+      function modal(root: HTMLElement, target: HTMLElement, inner: string, onComfirm: (div: HTMLDivElement) => Promise<void>) {
+        const div = document.createElement("div");
+        div.style.position = "fixed";
+        div.style.zIndex = "2100";
+        div.style.padding = "3px";
+        div.style.backgroundColor = "var(--ehvp-theme-bg-color)";
+        div.style.border = "var(--ehvp-panel-border)";
+        div.style.borderRadius = "5px";
+        div.innerHTML = `
+          <div style="display: flex; justify-content: center; margin: 10px 2px;">${inner}</div>
+          <div style="display: flex; justify-content: center;">
+            <button class="ehvp-custom-btn ehvp-modal-btn-cancel" style="background-color: gray;">Cancel</button>
+            <button class="ehvp-custom-btn ehvp-modal-btn-confirm" style="background-color: var(--ehvp-clickable-color-hover);">Confirm</button>
+          </div>
+        `;
+        root.appendChild(div);
+        div.querySelector<HTMLButtonElement>(".ehvp-modal-btn-cancel")?.addEventListener("click", () => div.remove());
+        div.querySelector<HTMLButtonElement>(".ehvp-modal-btn-confirm")?.addEventListener("click", () => onComfirm(div).finally(() => div.remove()));
+        relocateElement(div, target, root.offsetWidth, root.offsetHeight);
+      }
+      modal(this.root, event.target as HTMLElement,
+        `<input id="download-chapters-add-input" style="width: 250px; background-color: #ffffff80;" placeholder="https://example.com" />`,
+        async (div) => {
+          const value = div.querySelector<HTMLInputElement>("#download-chapters-add-input")?.value;
+          if (!value) return;
+          const future = EBUS.emit("pf-append-chapters", value);
+          if (future) await future;
+          // this.createChapterSelectList
+        });
+    });
   }
 
   selectedChapters() {

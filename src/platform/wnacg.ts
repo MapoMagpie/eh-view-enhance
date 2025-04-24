@@ -1,5 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { Chapter } from "../page-fetcher";
 import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 export class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
@@ -50,8 +51,8 @@ export class WnacgMatcher extends BaseMatcher<GalleryImage[]> {
     return /(wnacg.com|wn\d{2}.cc)\/photos-index/;
   }
 
-  galleryMeta(doc: Document): GalleryMeta {
-    return this.meta || super.galleryMeta(doc);
+  galleryMeta(chapter: Chapter): GalleryMeta {
+    return this.meta || super.galleryMeta(chapter);
   }
 
   // https://www.hm19.lol/photos-index-page-1-aid-253297.html

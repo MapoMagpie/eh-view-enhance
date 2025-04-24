@@ -51,13 +51,13 @@ export class IMHentaiMatcher extends BaseMatcher<null> {
     yield Result.ok(null);
   }
 
-  galleryMeta(doc: Document): GalleryMeta {
-    const title = doc.querySelector(".right_details > h1")?.textContent || undefined;
-    const originTitle = doc.querySelector(".right_details > p.subtitle")?.textContent || undefined;
+  galleryMeta(): GalleryMeta {
+    const title = document.querySelector(".right_details > h1")?.textContent || undefined;
+    const originTitle = document.querySelector(".right_details > p.subtitle")?.textContent || undefined;
     const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
     meta.originTitle = originTitle;
     meta.tags = {};
-    const list = Array.from(doc.querySelectorAll<HTMLElement>(".galleries_info > li"));
+    const list = Array.from(document.querySelectorAll<HTMLElement>(".galleries_info > li"));
     for (const li of list) {
       let cat = li.querySelector(".tags_text")?.textContent;
       if (!cat) continue;

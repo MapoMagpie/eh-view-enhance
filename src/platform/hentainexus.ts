@@ -1,5 +1,6 @@
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { Chapter } from "../page-fetcher";
 import { BaseMatcher, OriginMeta, Result } from "./platform";
 
 type HNImageInfo = {
@@ -63,8 +64,8 @@ export class HentaiNexusMatcher extends BaseMatcher<Document> {
     return /hentainexus.com\/view\/\d+/;
   }
 
-  galleryMeta(doc: Document): GalleryMeta {
-    return this.meta || super.galleryMeta(doc);
+  galleryMeta(chapter: Chapter): GalleryMeta {
+    return this.meta || super.galleryMeta(chapter);
   }
 
   private pasrseGalleryMeta(doc: Document): GalleryMeta {

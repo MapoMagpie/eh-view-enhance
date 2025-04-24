@@ -16,11 +16,11 @@ export class RokuHentaiMatcher extends BaseMatcher<[number, number]> {
     return /rokuhentai.com\/\w+$/;
   }
 
-  galleryMeta(doc: Document): GalleryMeta {
-    const title = doc.querySelector(".site-manga-info__title-text")?.textContent || "UNTITLE";
+  galleryMeta(): GalleryMeta {
+    const title = document.querySelector(".site-manga-info__title-text")?.textContent || "UNTITLE";
     const meta = new GalleryMeta(window.location.href, title);
     meta.originTitle = title;
-    const tagTrList = doc.querySelectorAll<HTMLElement>("div.mdc-chip .site-tag-count");
+    const tagTrList = document.querySelectorAll<HTMLElement>("div.mdc-chip .site-tag-count");
     const tags: Record<string, string[]> = {};
     tagTrList.forEach((tr) => {
       const splits = tr.getAttribute("data-tag")?.trim().split(":");

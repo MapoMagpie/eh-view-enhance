@@ -11,7 +11,6 @@ export class ChaptersPanel {
   thumbnailImg: HTMLImageElement;
   thumbnailCanvas: HTMLCanvasElement;
   listContainer: HTMLElement;
-  first: boolean = false;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -21,9 +20,9 @@ export class ChaptersPanel {
     this.thumbnailCanvas = q("#chapter-thumbnail-canvas", root);
     this.listContainer = q("#chapter-list", root);
 
-    EBUS.subscribe("pf-update-chapters", (chapters) => {
+    EBUS.subscribe("pf-update-chapters", (chapters, slient) => {
       this.updateChapterList(chapters);
-      if (chapters.length > 1) {
+      if (chapters.length > 1 && !slient) {
         this.relocateToCenter();
       }
     });
@@ -32,6 +31,7 @@ export class ChaptersPanel {
 
   updateChapterList(chapters: Chapter[]) {
     const ul = this.listContainer.firstElementChild as HTMLElement;
+    ul.innerHTML = "";
     chapters.forEach((ch, i) => {
       const li = document.createElement("div");
       let title = "";
@@ -45,8 +45,7 @@ export class ChaptersPanel {
       li.classList.add("chapter-list-item");
       li.addEventListener("click", () => {
         ch.onclick?.(i);
-        if (this.first) {
-          this.first = false;
+        if (this.panel.classList.contains("p-panel-large")) {
           this.panel.classList.add("p-collapse");
           this.panel.classList.remove("p-panel-large");
           this.panel.classList.remove("p-chapters-large");
@@ -59,7 +58,6 @@ export class ChaptersPanel {
   }
 
   relocateToCenter() {
-    this.first = true;
     this.panel.classList.remove("p-collapse");
     this.panel.classList.add("p-panel-large");
     this.panel.classList.add("p-chapters-large");

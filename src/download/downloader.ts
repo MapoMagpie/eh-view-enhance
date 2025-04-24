@@ -16,8 +16,8 @@ import { i18n } from "../utils/i18n";
 
 const FILENAME_INVALIDCHAR = /[\\/:*?"<>|\n\t]/g;
 export class Downloader {
-  meta: (ch: Chapter) => GalleryMeta;
-  title: () => string;
+  meta: (chapter: Chapter) => GalleryMeta;
+  title: (chapters: Chapter[]) => string;
   downloading: boolean;
   queue: IMGFetcherQueue;
   idleLoader: IdleLoader;
@@ -85,8 +85,8 @@ export class Downloader {
     this.idleLoader.cherryPick = () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick();
     this.canvas = new DownloaderCanvas(this.panel.canvas, queue, () => this.cherryPicks[this.queue.chapterIndex] || new CherryPick());
     this.pageFetcher = pageFetcher;
-    this.meta = (ch: Chapter) => matcher.galleryMeta(document, ch);
-    this.title = () => matcher.title(document);
+    this.meta = (chapter: Chapter) => matcher.galleryMeta(chapter);
+    this.title = (chapters: Chapter[]) => matcher.title(chapters);
     this.downloading = false;
     this.queue.downloading = () => this.downloading;
 
@@ -240,7 +240,7 @@ export class Downloader {
 
   async download(chapters: Chapter[]) {
     try {
-      const archiveName = this.title().replaceAll(FILENAME_INVALIDCHAR, "_");
+      const archiveName = this.title(chapters).replaceAll(FILENAME_INVALIDCHAR, "_");
       const separator = navigator.userAgent.indexOf("Win") !== -1 ? "\\" : "/";
       const singleChapter = chapters.length === 1;
       this.panel.flushUI("packaging");

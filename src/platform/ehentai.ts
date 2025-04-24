@@ -1,6 +1,7 @@
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
+import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { parseImagePositions, splitImagesFromUrl } from "../utils/sprite-split";
 import { BaseMatcher, OriginMeta, Result, } from "./platform";
@@ -42,23 +43,29 @@ export class EHMatcher extends BaseMatcher<string> {
   name(): string {
     return "e-hentai"
   }
-  meta?: GalleryMeta;
+  docMap: Record<number, Document> = {};
   // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
   workURL(): RegExp {
     return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
   }
 
-  title(doc: Document): string {
-    const meta = this.meta || this.galleryMeta(doc);
+  title(chapters: Chapter[]): string {
+    const meta = chapters[0].meta || this.galleryMeta(chapters[0]);
+    let title = "";
     if (conf.ehentaiTitlePrefer === "japanese") {
-      return meta.originTitle || meta.title || "UNTITLE";
+      title = meta.originTitle || meta.title || "UNTITLE";
     } else {
-      return meta.title || meta.originTitle || "UNTITLE";
+      title = meta.title || meta.originTitle || "UNTITLE";
     }
+    if (chapters.length > 1) {
+      title += ("+" + chapters.length + "chapters");
+    }
+    return title;
   }
 
-  galleryMeta(doc: Document): GalleryMeta {
-    if (this.meta) return this.meta;
+  galleryMeta(chapter: Chapter): GalleryMeta {
+    if (chapter.meta) return chapter.meta;
+    const doc = this.docMap[chapter.id];
     const titleList = doc.querySelectorAll<HTMLElement>("#gd2 h1");
     let title: string | undefined;
     let originTitle: string | undefined;
@@ -68,8 +75,8 @@ export class EHMatcher extends BaseMatcher<string> {
         originTitle = titleList[1].textContent || undefined;
       }
     }
-    this.meta = new GalleryMeta(window.location.href, title || "UNTITLE");
-    this.meta.originTitle = originTitle;
+    chapter.meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+    chapter.meta.originTitle = originTitle;
     const tagTrList = doc.querySelectorAll<HTMLElement>("#taglist tr");
     const tags: Record<string, string[]> = {};
     tagTrList.forEach((tr) => {
@@ -83,8 +90,39 @@ export class EHMatcher extends BaseMatcher<string> {
         tags[cat.replace(":", "")] = list;
       }
     });
-    this.meta.tags = tags;
-    return this.meta;
+    chapter.meta.tags = tags;
+    return chapter.meta;
+  }
+
+  async fetchChapters(): Promise<Chapter[]> {
+    const chapter: Chapter = {
+      id: 0,
+      title: "Default",
+      source: window.location.href,
+      queue: [],
+    };
+    this.docMap[0] = document;
+    this.galleryMeta(chapter);
+    chapter.title = chapter.meta!.title!;
+    return [chapter];
+  }
+
+  async appendNewChapters(url: string, old: Chapter[]): Promise<Chapter[]> {
+    // check url is legal
+    if (!this.workURL().test(url)) throw new Error("invaild gallery url");
+    const doc = await window.fetch(url).then((response) => response.text()).then(text => new DOMParser().parseFromString(text, "text/html"));
+    let lastID = old[old.length - 1]?.id || 0;
+    lastID = lastID + 1;
+    const chapter: Chapter = {
+      id: lastID,
+      title: "NewChapter-" + lastID,
+      source: url,
+      queue: [],
+    };
+    this.docMap[lastID] = doc;
+    this.galleryMeta(chapter);
+    chapter.title = chapter.meta!.title!;
+    return [chapter];
   }
 
   async parseImgNodes(source: string): Promise<ImageNode[] | never> {
@@ -225,9 +263,9 @@ export class EHMatcher extends BaseMatcher<string> {
     return list;
   }
 
-  async *fetchPagesSource(): AsyncGenerator<Result<string>> {
-    // const doc = await window.fetch(chapter.source).then((resp) => resp.text()).then(raw => new DOMParser().parseFromString(raw, "text/html"));
-    const doc = document;
+  async *fetchPagesSource(chapter: Chapter): AsyncGenerator<Result<string>> {
+    const doc = this.docMap[chapter.id];
+    // const doc = document;
     const fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
     // MPV
     if (fristImageHref && regulars.isMPV.test(fristImageHref)) {

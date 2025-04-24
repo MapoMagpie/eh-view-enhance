@@ -6,6 +6,7 @@ export class InstagramMatcher extends BaseMatcher<EdgeNode[]> {
   name(): string {
     return "Instagram";
   }
+  // FIXME: instagram not change the title after hashchanged (chapter: Chapter[]): string { }
   async *fetchPagesSource(): AsyncGenerator<Result<EdgeNode[]>> {
     this.config = parseConfig();
     let cursor: string | null = null;

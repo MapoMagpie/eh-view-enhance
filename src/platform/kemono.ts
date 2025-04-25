@@ -49,13 +49,21 @@ abstract class KemonoListAbstract implements KemonoList {
       const results = this.getPosts(ret);
       if (!results || results.length === 0) break;
       page += results.length;
-      const serverMap = kemonoServerPathMap(this.getList(ret));
-      if (serverMap.size > 0) {
+      const infoMap = kemonoInfoPathMap(this.getList(ret));
+      if (infoMap.size > 0) {
         results.forEach(r => {
-          if (r.file?.path) r.file.server = serverMap.get(r.file.path);
+          if (r.file?.path) {
+            const info = infoMap.get(r.file.path);
+            r.file.name = info?.name;
+            r.file.server = info?.server;
+          }
           if (r.attachments && r.attachments.length > 0) {
             r.attachments.forEach(a => {
-              if (a.path) a.server = serverMap.get(a.path);
+              if (a.path) {
+                const info = infoMap.get(a.path);
+                a.name = info?.name;
+                a.server = info?.server;
+              }
             })
           }
         })
@@ -151,7 +159,7 @@ export class KemonoMatcher extends BaseMatcher<KemonoResult[]> {
   }
   async parseImgNodes(results: KemonoResult[]): Promise<ImageNode[]> {
     const nodes = [];
-    const newImageNode = (id: string, user: string, service: string, path: string, name: string, server?: string) => {
+    const newImageNode = (id: string, user: string, service: string, path: string, name: string, server: string) => {
       const thumb = `https://img.kemono.su/thumbnail/data/${path}`;
       const href = `https://kemono.su/${service}/user/${user}/post/${id}`;
       let src = server ? `${server}/data/${path}?f=${name}` : undefined;
@@ -180,7 +188,8 @@ export class KemonoMatcher extends BaseMatcher<KemonoResult[]> {
     for (const chunk of chunks) {
       for (const file of chunk.list) {
         if (!file.path) continue;
-        const node = newImageNode(chunk.res.id, chunk.res.user, chunk.res.service, file.path, file.name!, file.server);
+        if (!file.name || !file.server) throw new Error("cannot find image or video name and server");
+        const node = newImageNode(chunk.res.id, chunk.res.user, chunk.res.service, file.path, file.name, file.server);
         if (node) nodes.push(node);
       }
     }
@@ -202,17 +211,23 @@ export class KemonoMatcher extends BaseMatcher<KemonoResult[]> {
     const list = infos.reduce((list, info) => {
       return [...list, ...[...(info.previews ?? []), ...(info.attachments ?? [])]];
     }, []);
-    const map = kemonoServerPathMap(list);
-    chunks.filter(chunk => chunk.needFetchPost).forEach(chunk => chunk.list.forEach(file => file.server = file.path ? map.get(file.path) : undefined));
+    const map = kemonoInfoPathMap(list);
+    chunks.filter(chunk => chunk.needFetchPost).forEach(chunk => chunk.list.forEach(file => {
+      if (file.path) {
+        const info = map.get(file.path);
+        file.name = info?.name;
+        file.server = info?.server;
+      }
+    }));
   }
 
 }
 
-function kemonoServerPathMap(list: any[]): Map<string, string> {
+function kemonoInfoPathMap(list: any[]): Map<string, { name: string, server: string }> {
   const map = new Map();
   for (const info of (list ?? [])) {
     if (info.path && info.server) {
-      map.set(info.path, info.server);
+      map.set(info.path, { server: info.server, name: info.name });
     }
   }
   return map;

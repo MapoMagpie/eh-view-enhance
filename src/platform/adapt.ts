@@ -15,6 +15,7 @@ import { KemonoMatcher } from "./kemono";
 import { KoharuMatcher } from "./koharo";
 import { MangaCopyMatcher } from "./mangacopy";
 import { MHGMatcher } from "./manhuagui";
+import { MiniServeMatcher } from "./miniserve";
 import { MyComicMatcher } from "./mycomic";
 import { NHMatcher, NHxxxMatcher } from "./nhentai";
 import { PixivMatcher } from "./pixiv";
@@ -57,6 +58,7 @@ export function getMatchers(): Matcher<any>[] {
     new Hanime1Matcher(),
     new MyComicMatcher(),
     new KemonoMatcher(),
+    new MiniServeMatcher(),
   ];
 }
 

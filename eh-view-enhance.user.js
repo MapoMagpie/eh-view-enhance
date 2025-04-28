@@ -5386,6 +5386,15 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     };
   }
 
+  const PICTURE_EXTENSION = ["jpeg", "jpg", "png", "gif", "webp", "bmp", "avif", "jxl"];
+  const VIDEO_EXTENSION = ["mp4", "webm", "ogg", "ogv", "mov", "avi", "mkv", "av1"];
+  function isImage(ext) {
+    return PICTURE_EXTENSION.includes(ext);
+  }
+  function isVideo(ext) {
+    return VIDEO_EXTENSION.includes(ext);
+  }
+
   class KemonoListAbstract {
     async *next() {
       const url = new URL(window.location.href);
@@ -5510,8 +5519,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           node.thumbnailSrc = "";
         }
         const ext = path.split(".").pop() ?? "";
-        if (!PICTURE_EXTENSION.includes(ext)) {
-          if (conf.excludeVideo || !VIDEO_EXTENSION.includes(ext)) {
+        if (!isImage(ext)) {
+          if (conf.excludeVideo || !isVideo(ext)) {
             return void 0;
           }
         }
@@ -5569,8 +5578,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     return map;
   }
-  const PICTURE_EXTENSION = ["jpeg", "jpg", "png", "gif", "webp", "bmp", "avif", "jxl"];
-  const VIDEO_EXTENSION = ["mp4", "webm", "ogg", "ogv", "mov", "avi", "mkv", "av1"];
 
   const REGEXP_EXTRACT_GALLERY_ID = /niyaniya.moe\/\w+\/(\d+\/\w+)/;
   const NAMESPACE_MAP = {
@@ -5926,6 +5933,64 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
     const dataStr = tamplate.replace(new RegExp("\\b\\w+\\b", "g"), (key) => d[key]);
     return JSON.parse(dataStr);
+  }
+
+  class MiniServeMatcher extends BaseMatcher {
+    map = /* @__PURE__ */ new Map();
+    name() {
+      return "Mini Serve";
+    }
+    async fetchChapters() {
+      const list = Array.from(document.querySelectorAll("table tbody a.file"));
+      const chapters = [];
+      let id = 0;
+      for (const a of list) {
+        const href = a.href;
+        const ext = href.split(".").pop();
+        if (ext === "zip") {
+          chapters.push({
+            id,
+            title: a.textContent ?? "unknown-" + id,
+            source: href,
+            queue: []
+          });
+          id++;
+        }
+      }
+      return chapters;
+    }
+    async *fetchPagesSource(source) {
+      yield Result.ok(source.source);
+    }
+    async parseImgNodes(href, chapterID) {
+      const blob = await window.fetch(href).then((res) => res.blob());
+      const zipReader = new zip_js__namespace.ZipReader(new zip_js__namespace.BlobReader(blob));
+      const entries = await zipReader.getEntries();
+      const map = /* @__PURE__ */ new Map();
+      this.map.set(chapterID, map);
+      return entries.filter((e) => e.filename.split(".").pop() !== "json").map((e) => {
+        const promise = e.getData(new zip_js__namespace.BlobWriter());
+        map.set(e.filename, promise);
+        const ext = e.filename.split(".").pop() ?? "jpg";
+        const node = new ImageNode("", e.filename, e.filename, void 0);
+        node.mimeType = isVideo(ext) ? "video/mp4" : void 0;
+        return node;
+      });
+    }
+    async fetchOriginMeta(node, _retry, chapterID) {
+      const dataPromise = this.map.get(chapterID)?.get(node.href);
+      if (!dataPromise) throw new Error("cannot read image from zip");
+      const data = await dataPromise;
+      return { url: URL.createObjectURL(data) };
+    }
+    async processData(data, contentType, node) {
+      const ext = node.href.split(".").pop() ?? "jpg";
+      if (isVideo(ext)) return [data, "video/mp4"];
+      return [data, contentType];
+    }
+    workURL() {
+      return /.*:41021/;
+    }
   }
 
   class MyComicMatcher extends BaseMatcher {
@@ -7640,7 +7705,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new YabaiMatcher(),
       new Hanime1Matcher(),
       new MyComicMatcher(),
-      new KemonoMatcher()
+      new KemonoMatcher(),
+      new MiniServeMatcher()
     ];
   }
   function adaptMatcher(url) {

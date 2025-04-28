@@ -5968,7 +5968,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const entries = await zipReader.getEntries();
       const map = /* @__PURE__ */ new Map();
       this.map.set(chapterID, map);
-      return entries.filter((e) => e.filename.split(".").pop() !== "json").map((e) => {
+      return entries.filter(
+        (e) => {
+          const ext = e.filename.split(".").pop() ?? "jpg";
+          return isImage(ext) || isVideo(ext);
+        }
+      ).map((e) => {
         const promise = e.getData(new zip_js__namespace.BlobWriter());
         map.set(e.filename, promise);
         const ext = e.filename.split(".").pop() ?? "jpg";

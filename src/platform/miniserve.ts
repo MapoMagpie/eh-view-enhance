@@ -1,6 +1,6 @@
 import ImageNode from "../img-node";
 import { Chapter } from "../page-fetcher";
-import { isVideo } from "../utils/media_helper";
+import { isImage, isVideo } from "../utils/media_helper";
 import { BaseMatcher, OriginMeta, Result } from "./platform";
 import * as zip_js from "@zip.js/zip.js";
 
@@ -37,7 +37,11 @@ export class MiniServeMatcher extends BaseMatcher<string> {
     const entries = await zipReader.getEntries();
     const map = new Map<string, Promise<Blob>>;
     this.map.set(chapterID, map);
-    return entries.filter(e => e.filename.split(".").pop() !== "json").map(e => {
+    return entries.filter(e => {
+      const ext = e.filename.split(".").pop() ?? "jpg";
+      return isImage(ext) || isVideo(ext);
+    }
+    ).map(e => {
       const promise = e.getData!(new zip_js.BlobWriter());
       map.set(e.filename, promise);
       const ext = e.filename.split(".").pop() ?? "jpg";

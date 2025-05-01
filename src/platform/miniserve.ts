@@ -46,7 +46,11 @@ export class MiniServeMatcher extends BaseMatcher<string> {
       map.set(e.filename, promise);
       const ext = e.filename.split(".").pop() ?? "jpg";
       const node = new ImageNode("", e.filename, e.filename, undefined);
-      node.mimeType = isVideo(ext) ? "video/mp4" : undefined;
+      if (isImage(ext)) {
+        node.mimeType = "image/" + ext;
+      } else if (isVideo(ext)) {
+        node.mimeType = "video/" + ext;
+      }
       return node;
     });
   }
@@ -56,10 +60,8 @@ export class MiniServeMatcher extends BaseMatcher<string> {
     const data = await dataPromise;
     return { url: URL.createObjectURL(data) };
   }
-  async processData(data: Uint8Array, contentType: string, node: ImageNode): Promise<[Uint8Array, string]> {
-    const ext = node.href.split(".").pop() ?? "jpg";
-    if (isVideo(ext)) return [data, "video/mp4"];
-    return [data, contentType];
+  async processData(data: Uint8Array, _contentType: string, node: ImageNode): Promise<[Uint8Array, string]> {
+    return [data, node.mimeType!];
   }
   workURL(): RegExp {
     return /.*:41021/;

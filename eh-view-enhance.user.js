@@ -5978,7 +5978,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         map.set(e.filename, promise);
         const ext = e.filename.split(".").pop() ?? "jpg";
         const node = new ImageNode("", e.filename, e.filename, void 0);
-        node.mimeType = isVideo(ext) ? "video/mp4" : void 0;
+        if (isImage(ext)) {
+          node.mimeType = "image/" + ext;
+        } else if (isVideo(ext)) {
+          node.mimeType = "video/" + ext;
+        }
         return node;
       });
     }
@@ -5988,10 +5992,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const data = await dataPromise;
       return { url: URL.createObjectURL(data) };
     }
-    async processData(data, contentType, node) {
-      const ext = node.href.split(".").pop() ?? "jpg";
-      if (isVideo(ext)) return [data, "video/mp4"];
-      return [data, contentType];
+    async processData(data, _contentType, node) {
+      return [data, node.mimeType];
     }
     workURL() {
       return /.*:41021/;

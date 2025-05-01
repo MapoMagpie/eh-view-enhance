@@ -263,6 +263,16 @@ export class Downloader {
         files.push(...ret);
       }
       const zip = new Zip({ volumeSize: 1024 * 1024 * (conf.archiveVolumeSize || 1500) });
+      // const zip = new Zip({ volumeSize: 1024 * 1024 * 4000 });
+      // for (let i = 0; i < 50; i++) {
+      //   const buffer = new ArrayBuffer(100 * 1024 * 1024);
+      //   const chunk = new Uint8Array(buffer);
+      //   zip.add({
+      //     stream: () => Promise.resolve(uint8ArrayToReadableStream(chunk)),
+      //     size: () => chunk.byteLength,
+      //     name: (i + 1) + ".jpg",
+      //   });
+      // }
       files.forEach((file) => zip.add(file));
       const save = async () => {
         let readable;

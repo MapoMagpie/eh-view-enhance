@@ -1,4 +1,4 @@
-import { conf, getDisplayText, saveConf } from "../config";
+import { conf, getDisplayText, resetConf, saveConf } from "../config";
 import { Downloader } from "../download/downloader";
 import { dragElement, dragElementWithLine } from "../utils/drag-element";
 import q from "../utils/query-element";
@@ -109,6 +109,7 @@ export function createHTML() {
     showKeyboardCustomElement: q("#show-keyboard-custom-element", root),
     showSiteProfilesElement: q("#show-site-profiles-element", root),
     showStyleCustomElement: q("#show-style-custom-element", root),
+    resetConfigElement: q("#reset-config-element", root),
     imgLandLeft: q("#img-land-left", root),
     imgLandRight: q("#img-land-right", root),
     autoPageBTN: q("#auto-page-btn", root),
@@ -206,6 +207,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
   HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
   HTML.showSiteProfilesElement.addEventListener("click", events.showSiteProfilesEvent);
   HTML.showStyleCustomElement.addEventListener("click", events.showStyleCustomEvent);
+  HTML.resetConfigElement.addEventListener("click", resetConf);
 
   dragElement(HTML.pageHelper, {
     onFinish: () => {

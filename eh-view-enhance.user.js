@@ -551,6 +551,12 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`
       "아이템을 클릭하여 이모티콘이나 텍스트 등을 수정할 수 있습니다. 변경 사항은 재시작 후 적용됩니다.",
       "Haga clic en un elemento para modificar el texto que se muestra, como emoji o texto personalizado. Los cambios entrarán en vigor después de reiniciar."
     ],
+    resetConfig: [
+      "Reset Config",
+      "重置配置",
+      "구성 재설정",
+      "Restablecer configuración"
+    ],
     letUsStar: [
       "Let's Star",
       "点星",
@@ -1354,6 +1360,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       changed = true;
     }
     return changed ? cf : null;
+  }
+  function resetConf() {
+    if (confirm(i18n.resetConfig.get() + " ?")) saveConf(defaultConf());
   }
   function saveConf(c) {
     storage.setItem(CONFIG_KEY, JSON.stringify(c));
@@ -10573,6 +10582,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
          <a id="show-keyboard-custom-element" class="clickable" style="border: 1px dotted #fff; padding: 0px 3px;">${i18n.showKeyboard.get()}</a>
          <a id="show-site-profiles-element" class="clickable" style="border: 1px dotted #fff; padding: 0px 3px;">${i18n.showSiteProfiles.get()}</a>
          <a id="show-style-custom-element" class="clickable" style="border: 1px dotted #fff; padding: 0px 3px;">${i18n.showStyleCustom.get()}</a>
+         <a id="reset-config-element" class="clickable" style="border: 1px dotted #fff; padding: 0px 3px;">${i18n.resetConfig.get()}</a>
          <a class="clickable" style="border: 1px dotted #fff; padding: 0px 3px;" href="https://github.com/MapoMagpie/eh-view-enhance" target="_blank">${i18n.letUsStar.get()}</a>
     </div>
 </div>`;
@@ -10817,6 +10827,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       showKeyboardCustomElement: q("#show-keyboard-custom-element", root),
       showSiteProfilesElement: q("#show-site-profiles-element", root),
       showStyleCustomElement: q("#show-style-custom-element", root),
+      resetConfigElement: q("#reset-config-element", root),
       imgLandLeft: q("#img-land-left", root),
       imgLandRight: q("#img-land-right", root),
       autoPageBTN: q("#auto-page-btn", root),
@@ -10903,6 +10914,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     HTML.showKeyboardCustomElement.addEventListener("click", events.showKeyboardCustomEvent);
     HTML.showSiteProfilesElement.addEventListener("click", events.showSiteProfilesEvent);
     HTML.showStyleCustomElement.addEventListener("click", events.showStyleCustomEvent);
+    HTML.resetConfigElement.addEventListener("click", resetConf);
     dragElement(HTML.pageHelper, {
       onFinish: () => {
         conf.pageHelperAbTop = HTML.pageHelper.style.top;

@@ -494,6 +494,12 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     '아이템을 클릭하여 이모티콘이나 텍스트 등을 수정할 수 있습니다. 변경 사항은 재시작 후 적용됩니다.',
     'Haga clic en un elemento para modificar el texto que se muestra, como emoji o texto personalizado. Los cambios entrarán en vigor después de reiniciar.'
   ],
+  resetConfig: [
+    "Reset Config",
+    "重置配置",
+    "구성 재설정",
+    "Restablecer configuración",
+  ],
   letUsStar: [
     "Let's Star",
     '点星',

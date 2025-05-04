@@ -292,6 +292,9 @@ function patchConfig(cf: Config): Config | null {
   return changed ? cf : null;
 }
 
+export function resetConf() {
+  if (confirm(i18n.resetConfig.get() + " ?")) saveConf(defaultConf());
+}
 export function saveConf(c: Config) {
   storage.setItem(CONFIG_KEY, JSON.stringify(c));
 }

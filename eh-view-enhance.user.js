@@ -5947,7 +5947,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       for (const a of list) {
         const href = a.href;
         const ext = href.split(".").pop();
-        if (ext === "zip") {
+        if (ext?.toLowerCase() === "zip") {
           chapters.push({
             id,
             title: a.textContent ?? "unknown-" + id,
@@ -5957,6 +5957,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           id++;
         }
       }
+      if (chapters.length === 0) throw new Error("can not found zip files");
       return chapters;
     }
     async *fetchPagesSource(source) {

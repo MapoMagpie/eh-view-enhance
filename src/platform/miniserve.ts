@@ -16,7 +16,7 @@ export class MiniServeMatcher extends BaseMatcher<string> {
     for (const a of list) {
       const href = a.href;
       const ext = href.split(".").pop();
-      if (ext === "zip") {
+      if (ext?.toLowerCase() === "zip") {
         chapters.push({
           id: id,
           title: a.textContent ?? ("unknown-" + id),
@@ -26,6 +26,7 @@ export class MiniServeMatcher extends BaseMatcher<string> {
         id++;
       }
     }
+    if (chapters.length === 0) throw new Error("can not found zip files");
     return chapters;
   }
   async *fetchPagesSource(source: Chapter): AsyncGenerator<Result<string>> {

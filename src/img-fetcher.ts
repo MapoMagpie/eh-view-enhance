@@ -42,6 +42,7 @@ export class IMGFetcher {
   chapterIndex: number;
   randomID: string;
   failedReason?: string;
+  abortSignal: (() => void) | undefined = undefined;
 
   constructor(index: number, root: ImageNode, matcher: Matcher<any>, chapterIndex: number) {
     this.index = index;
@@ -227,15 +228,14 @@ export class IMGFetcher {
     const imgFetcher = this;
     return new Promise(async (resolve, reject) => {
       const debouncer = new Debouncer();
-      let abort: (() => void) | undefined = undefined;
       const timeout = () => {
         debouncer.addEvent("XHR_TIMEOUT", () => {
+          this.abort();
           reject(new Error("timeout"));
-          abort?.();
         }, conf.timeout * 1000);
       };
       try {
-        abort = xhrWapper(imgFetcher.node.originSrc!, "blob", {
+        this.abortSignal = xhrWapper(imgFetcher.node.originSrc!, "blob", {
           onload: function(response) {
             const data = response.response;
             try {
@@ -243,9 +243,11 @@ export class IMGFetcher {
             } catch (error) {
               evLog("error", "warn: fetch big image data onload setDownloadState error:", error);
             }
+            imgFetcher.abortSignal = undefined;
             resolve(data);
           },
           onerror: function(response) {
+            imgFetcher.abortSignal = undefined;
             // "Refused to connect to "https://ba.hitomi.la/avif/123/456/789.avif": URL is not permitted"
             if (response.status === 0 && response.error?.includes("URL is not permitted")) {
               const domain = response.error.match(/(https?:\/\/.*?)\/.*/)?.[1] ?? "";
@@ -269,5 +271,9 @@ export class IMGFetcher {
     });
   }
 
+  abort() {
+    this.abortSignal?.();
+    this.abortSignal = undefined;
+  }
 }
 

@@ -37,6 +37,15 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
       queue.do(index, oriented);
     });
     EBUS.subscribe("pf-change-chapter", () => queue.forEach(imf => imf.unrender()));
+    EBUS.subscribe("add-cherry-pick-range", (chIndex, index, positive, _shiftKey) => {
+      if (chIndex !== queue.chapterIndex) return;
+      if (positive) return;
+      // TODO: range
+      if (queue[index]?.stage === FetchState.DATA) {
+        queue[index].abort();
+        queue[index].stage = FetchState.URL;
+      }
+    });
     return queue;
   }
 

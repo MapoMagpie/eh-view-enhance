@@ -1616,6 +1616,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     chapterIndex;
     randomID;
     failedReason;
+    abortSignal = void 0;
     constructor(index, root, matcher, chapterIndex) {
       this.index = index;
       this.node = root;
@@ -1786,15 +1787,14 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const imgFetcher = this;
       return new Promise(async (resolve, reject) => {
         const debouncer = new Debouncer();
-        let abort = void 0;
         const timeout = () => {
           debouncer.addEvent("XHR_TIMEOUT", () => {
+            this.abort();
             reject(new Error("timeout"));
-            abort?.();
           }, conf.timeout * 1e3);
         };
         try {
-          abort = xhrWapper(imgFetcher.node.originSrc, "blob", {
+          this.abortSignal = xhrWapper(imgFetcher.node.originSrc, "blob", {
             onload: function(response) {
               const data = response.response;
               try {
@@ -1802,9 +1802,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
               } catch (error) {
                 evLog("error", "warn: fetch big image data onload setDownloadState error:", error);
               }
+              imgFetcher.abortSignal = void 0;
               resolve(data);
             },
             onerror: function(response) {
+              imgFetcher.abortSignal = void 0;
               if (response.status === 0 && response.error?.includes("URL is not permitted")) {
                 const domain = response.error.match(/(https?:\/\/.*?)\/.*/)?.[1] ?? "";
                 reject(new Error(i18n.failFetchReason1.get().replace("{{domain}}", domain)));
@@ -1825,6 +1827,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           reject(error);
         }
       });
+    }
+    abort() {
+      this.abortSignal?.();
+      this.abortSignal = void 0;
     }
   }
 
@@ -2741,6 +2747,14 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         queue.do(index, oriented);
       });
       EBUS.subscribe("pf-change-chapter", () => queue.forEach((imf) => imf.unrender()));
+      EBUS.subscribe("add-cherry-pick-range", (chIndex, index, positive, _shiftKey) => {
+        if (chIndex !== queue.chapterIndex) return;
+        if (positive) return;
+        if (queue[index]?.stage === FetchState.DATA) {
+          queue[index].abort();
+          queue[index].stage = FetchState.URL;
+        }
+      });
       return queue;
     }
     constructor() {

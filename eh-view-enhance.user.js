@@ -7191,41 +7191,76 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     uuid = uuid();
     userID;
     fetchChapters() {
-      return [{
-        id: 1,
-        title: "User Medias",
-        source: window.location.href,
-        queue: []
-      }];
+      if (window.location.href.includes("/media")) {
+        return [{
+          id: 1,
+          title: "User Medias",
+          source: window.location.href,
+          queue: [],
+          thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"
+        }];
+      } else {
+        return [
+          {
+            id: 0,
+            title: "User Posts",
+            source: window.location.href,
+            queue: [],
+            thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"
+          },
+          {
+            id: 1,
+            title: "User Media",
+            source: window.location.href,
+            queue: [],
+            thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"
+          }
+        ];
+      }
     }
-    async next(_chapter, cursor) {
+    async next(chapter, cursor) {
       if (!this.userID) this.userID = getUserID();
       if (!this.userID) throw new Error("Cannot obatained User ID");
-      const variables = `{"userId":"${this.userID}","count":20,${cursor ? '"cursor":"' + cursor + '",' : ""}"includePromotedContent":false,"withClientEventToken":false,"withBirdwatchNotes":false,"withVoice":true,"withV2Timeline":true}`;
-      const features = "&features=%7B%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_media_interstitial_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
-      const url = `${window.location.origin}/i/api/graphql/aQQLnkexAl5z9ec_UgbEIA/UserMedia?variables=${encodeURIComponent(variables)}${features}`;
+      let url = "";
+      if (chapter.id === 0) {
+        const variables = `{"userId":"${this.userID}","count":20,${cursor ? '"cursor":"' + cursor + '",' : ""}"includePromotedContent":true,"withQuickPromoteEligibilityTweetFields":true,"withVoice":true}`;
+        const features = "&features=%7B%22rweb_video_screen_enabled%22%3Afalse%2C%22profile_label_improvements_pcf_label_in_post_enabled%22%3Atrue%2C%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22premium_content_api_read_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22responsive_web_grok_analyze_button_fetch_trends_enabled%22%3Afalse%2C%22responsive_web_grok_analyze_post_followups_enabled%22%3Atrue%2C%22responsive_web_jetfuel_frame%22%3Afalse%2C%22responsive_web_grok_share_attachment_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22responsive_web_grok_show_grok_translated_post%22%3Afalse%2C%22responsive_web_grok_analysis_button_from_backend%22%3Atrue%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_grok_image_annotation_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
+        url = `${window.location.origin}/i/api/graphql/q6xj5bs0hapm9309hexA_g/UserTweets?variables=${encodeURIComponent(variables)}${features}`;
+      } else {
+        const variables = `{"userId":"${this.userID}","count":20,${cursor ? '"cursor":"' + cursor + '",' : ""}"includePromotedContent":false,"withClientEventToken":false,"withBirdwatchNotes":false,"withVoice":true,"withV2Timeline":true}`;
+        const features = "&features=%7B%22rweb_tipjar_consumption_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22communities_web_enable_tweet_community_results_fetch%22%3Atrue%2C%22c9s_tweet_anatomy_moderator_badge_enabled%22%3Atrue%2C%22articles_preview_enabled%22%3Atrue%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Atrue%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22creator_subscriptions_quote_tweet_preview_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_media_interstitial_enabled%22%3Atrue%2C%22rweb_video_timestamps_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withArticlePlainText%22%3Afalse%7D";
+        url = `${window.location.origin}/i/api/graphql/aQQLnkexAl5z9ec_UgbEIA/UserMedia?variables=${encodeURIComponent(variables)}${features}`;
+      }
       try {
         const res = await window.fetch(url, { headers: createHeader(this.uuid), signal: AbortSignal.timeout(1e4) });
         const json = await res.json();
         if (res.status !== 200 && json?.errors?.[0].message) {
           throw new Error(json?.errors?.[0].message);
         }
-        const instructions = json.data.user.result.timeline_v2.timeline.instructions;
-        const items = [];
-        const addToModule = instructions.find((ins) => ins.type === "TimelineAddToModule");
-        const entries = instructions.find((ins) => ins.type === "TimelineAddEntries");
-        if (!entries) {
-          throw new Error("Not found TimelineAddEntries");
+        if (chapter.id === 0) {
+          const instructions = json.data.user.result.timeline.timeline.instructions;
+          const entries = instructions.find((ins) => ins.type === "TimelineAddEntries");
+          if (!entries) throw new Error("Not found TimelineAddEntries");
+          const { items, cursor: cursor2 } = homeForYouEntriesToItems(entries);
+          return [items, cursor2];
+        } else {
+          const instructions = json.data.user.result.timeline_v2.timeline.instructions;
+          const items = [];
+          const addToModule = instructions.find((ins) => ins.type === "TimelineAddToModule");
+          const entries = instructions.find((ins) => ins.type === "TimelineAddEntries");
+          if (!entries) {
+            throw new Error("Not found TimelineAddEntries");
+          }
+          if (addToModule) {
+            addToModule.moduleItems.forEach((i) => items.push(i.item));
+          }
+          if (items.length === 0) {
+            const timelineModule = entries.entries.find((entry) => entry.content.entryType === "TimelineTimelineModule")?.content;
+            timelineModule?.items.forEach((i) => items.push(i.item));
+          }
+          const cursor2 = entries.entries.find((entry) => entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom"))?.content?.value;
+          return [items, cursor2];
         }
-        if (addToModule) {
-          addToModule.moduleItems.forEach((i) => items.push(i.item));
-        }
-        if (items.length === 0) {
-          const timelineModule = entries.entries.find((entry) => entry.content.entryType === "TimelineTimelineModule")?.content;
-          timelineModule?.items.forEach((i) => items.push(i.item));
-        }
-        const cursor2 = entries.entries.find((entry) => entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom"))?.content?.value;
-        return [items, cursor2];
       } catch (error) {
         throw new Error(`twitter api query error: ${error}`);
       }
@@ -7411,9 +7446,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       if (!items) throw new Error("warn: cannot find items");
       const list = [];
       for (const item of items) {
-        const mediaList = item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media;
+        const mediaList = item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media || item?.itemContent?.tweet_results?.result?.legacy?.retweeted_status_result?.result?.legacy?.entities?.media;
         if (mediaList === void 0) {
-          evLog("error", "Not found mediaList: ", item);
+          const user = item.itemContent?.tweet_results?.result?.core?.user_results?.result?.legacy?.name;
+          const rest_id = item.itemContent.tweet_results.result.rest_id;
+          evLog("error", `cannot found mediaList: ${window.location.origin}/${user}/status/${rest_id}`, item);
           continue;
         }
         this.postCount++;
@@ -7505,11 +7542,17 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         if (entry.content.itemContent.tweet_results.result.legacy?.id_str) {
           ids.push(entry.content.itemContent.tweet_results.result.legacy.id_str);
         }
+        if (entry.content.itemContent.tweet_results.result.legacy?.retweeted_status_result?.result?.legacy?.id_str) {
+          ids.push(entry.content.itemContent.tweet_results.result.legacy?.retweeted_status_result?.result?.legacy?.id_str);
+        }
       } else if (entry.content.entryType === "TimelineTimelineModule" && entry.content.displayType === "VerticalConversation") {
         entry.content.items.forEach((i) => {
           items.push(i.item);
           if (i.item.itemContent.tweet_results.result.legacy?.id_str) {
             ids.push(i.item.itemContent.tweet_results.result.legacy?.id_str);
+          }
+          if (i.item.itemContent.tweet_results.result.legacy?.retweeted_status_result?.result?.legacy?.id_str) {
+            ids.push(i.item.itemContent.tweet_results.result.legacy?.retweeted_status_result?.result?.legacy?.id_str);
           }
         });
       } else if (entry.content.entryType === "TimelineTimelineCursor" && entry.entryId.startsWith("cursor-bottom")) {

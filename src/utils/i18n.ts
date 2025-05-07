@@ -1106,6 +1106,18 @@ const kbInFullViewGridData: Record<KeyboardInFullViewGridId | KeyboardInBigImage
     '다음 페이지 로딩 재시도',
     'Intentar cargar la siguiente página'
   ],
+  'go-prev-chapter': [
+    'Switch To Previous Chapter',
+    '切换到上一章节',
+    '이전 장으로 전환',
+    'Cambiar al capítulo anterior',
+  ],
+  'go-next-chapter': [
+    'Switch To Next Chapter',
+    '切换到下一章节',
+    '다음 장으로 전환',
+    'cambiar al siguiente capítulo',
+  ],
   'resize-flow-vision': [
     'Resize Thumbnail Grid Layout',
     'Resize Thumbnail Grid Layout',

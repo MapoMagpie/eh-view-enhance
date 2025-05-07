@@ -1158,6 +1158,18 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       "다음 페이지 로딩 재시도",
       "Intentar cargar la siguiente página"
     ],
+    "go-prev-chapter": [
+      "Switch To Previous Chapter",
+      "切换到上一章节",
+      "이전 장으로 전환",
+      "Cambiar al capítulo anterior"
+    ],
+    "go-next-chapter": [
+      "Switch To Next Chapter",
+      "切换到下一章节",
+      "다음 장으로 전환",
+      "cambiar al siguiente capítulo"
+    ],
     "resize-flow-vision": [
       "Resize Thumbnail Grid Layout",
       "Resize Thumbnail Grid Layout",
@@ -2370,7 +2382,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       try {
         for (const sel of this.selectedChapters) {
           if (!this.downloading) return;
-          await this.pageFetcher.changeChapter(sel.index);
+          await this.pageFetcher.restoreChapter(sel.index);
           this.queue.forEach((imf) => imf.stage === FetchState.FAILED && imf.resetStage());
           if (this.queue.isFinished()) {
             sel.done = true;
@@ -2952,6 +2964,21 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       EBUS.subscribe("pf-retry-extend", () => !this.queue.downloading?.() && this.appendNextPage(true));
       EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
       EBUS.subscribe("pf-append-chapters", (url) => this.appendNewChapters(url).then(() => this.chapters));
+      EBUS.subscribe("pf-step-chapters", (oriented) => {
+        if (oriented === "prev") {
+          const newChapterIndex = this.chapterIndex - 1;
+          if (newChapterIndex < 0) return;
+          this.chapterIndex = newChapterIndex;
+          this.changeToChapter(newChapterIndex);
+          EBUS.emit("notify-message", "info", "switch to chapter: " + this.chapters[newChapterIndex].title, 2e3);
+        } else if (oriented === "next") {
+          const newChapterIndex = this.chapterIndex + 1;
+          if (newChapterIndex >= this.chapters.length) return;
+          this.chapterIndex = newChapterIndex;
+          this.changeToChapter(newChapterIndex);
+          EBUS.emit("notify-message", "info", "switch to chapter: " + this.chapters[newChapterIndex].title, 2e3);
+        }
+      });
     }
     appendToView(total, nodes, chapterIndex, done) {
       EBUS.emit("pf-on-appended", total, nodes, chapterIndex, done);
@@ -2965,16 +2992,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         if (chapters && chapters.length > 0) {
           chapters.forEach((c) => {
             c.sourceIter = this.matcher.fetchPagesSource(c);
-            c.onclick = (index) => {
-              EBUS.emit("pf-change-chapter", index, c);
-              if (this.chapters[index].queue.length > 0) {
-                this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
-              }
-              if (!this.queue.downloading?.()) {
-                this.beforeInit?.();
-                this.changeChapter(index).then(this.afterInit).catch(this.onFailed);
-              }
-            };
+            c.onclick = (index) => this.changeToChapter(index);
           });
           this.chapters.push(...chapters);
           EBUS.emit("pf-update-chapters", this.chapters, true);
@@ -2989,26 +3007,27 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.afterInit?.();
       this.chapters.forEach((c) => {
         c.sourceIter = this.matcher.fetchPagesSource(c);
-        c.onclick = (index) => {
-          EBUS.emit("pf-change-chapter", index, c);
-          if (this.chapters[index].queue.length > 0) {
-            this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
-          }
-          if (!this.queue.downloading?.()) {
-            this.beforeInit?.();
-            this.changeChapter(index).then(this.afterInit).catch(this.onFailed);
-          }
-        };
+        c.onclick = (index) => this.changeToChapter(index);
       });
       EBUS.emit("pf-update-chapters", this.chapters);
       if (this.chapters.length === 1) {
-        this.beforeInit?.();
-        EBUS.emit("pf-change-chapter", 0, this.chapters[0]);
-        await this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
+        this.changeToChapter(0);
       }
     }
-    /// start the chapter by index
-    async changeChapter(index) {
+    changeToChapter(index) {
+      EBUS.emit("pf-change-chapter", index, this.chapters[index]);
+      if (this.chapters[index].queue.length > 0) {
+        this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
+      }
+      if (!this.queue.downloading?.()) {
+        this.beforeInit?.();
+        this.restoreChapter(index).then(this.afterInit).catch(this.onFailed);
+      }
+    }
+    /**
+     * Switch to the specified chapter, and restore the previously loaded elements or load new ones
+    */
+    async restoreChapter(index) {
       this.chapterIndex = index;
       const chapter = this.chapters[this.chapterIndex];
       this.queue.restore(index, chapter.queue);
@@ -8660,6 +8679,16 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           ["shift+alt+x"],
           () => BIFM.cherryPickCurrent(true),
           true
+        ),
+        "go-prev-chapter": new KeyboardDesc(
+          ["shift+alt+w"],
+          () => EBUS.emit("pf-step-chapters", "prev"),
+          true
+        ),
+        "go-next-chapter": new KeyboardDesc(
+          ["alt+w"],
+          () => EBUS.emit("pf-step-chapters", "next"),
+          true
         )
       };
       const inFullViewGrid = {
@@ -8715,6 +8744,16 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         "start-download": new KeyboardDesc(
           ["shift+alt+d"],
           () => EBUS.emit("start-download", () => PH.minify("fullViewGrid", false))
+        ),
+        "go-prev-chapter": new KeyboardDesc(
+          ["shift+alt+w"],
+          () => EBUS.emit("pf-step-chapters", "prev"),
+          true
+        ),
+        "go-next-chapter": new KeyboardDesc(
+          ["alt+w"],
+          () => EBUS.emit("pf-step-chapters", "next"),
+          true
         )
       };
       const inMain = {

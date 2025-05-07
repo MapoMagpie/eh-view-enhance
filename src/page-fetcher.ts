@@ -45,6 +45,21 @@ export class PageFetcher {
     EBUS.subscribe("pf-retry-extend", () => !this.queue.downloading?.() && this.appendNextPage(true));
     EBUS.subscribe("pf-init", (cb) => this.init().then(cb));
     EBUS.subscribe("pf-append-chapters", (url) => this.appendNewChapters(url).then(() => this.chapters));
+    EBUS.subscribe("pf-step-chapters", (oriented) => {
+      if (oriented === "prev") {
+        const newChapterIndex = this.chapterIndex - 1;
+        if (newChapterIndex < 0) return;
+        this.chapterIndex = newChapterIndex;
+        this.changeToChapter(newChapterIndex);
+        EBUS.emit("notify-message", "info", "switch to chapter: " + this.chapters[newChapterIndex].title, 2000);
+      } else if (oriented === "next") {
+        const newChapterIndex = this.chapterIndex + 1;
+        if (newChapterIndex >= this.chapters.length) return;
+        this.chapterIndex = newChapterIndex;
+        this.changeToChapter(newChapterIndex);
+        EBUS.emit("notify-message", "info", "switch to chapter: " + this.chapters[newChapterIndex].title, 2000);
+      }
+    });
   }
 
   appendToView(total: number, nodes: IMGFetcher[], chapterIndex: number, done?: boolean) {
@@ -61,16 +76,7 @@ export class PageFetcher {
       if (chapters && chapters.length > 0) {
         chapters.forEach(c => {
           c.sourceIter = this.matcher.fetchPagesSource(c);
-          c.onclick = (index) => {
-            EBUS.emit("pf-change-chapter", index, c);
-            if (this.chapters[index].queue.length > 0) {
-              this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
-            }
-            if (!this.queue.downloading?.()) {
-              this.beforeInit?.();
-              this.changeChapter(index).then(this.afterInit).catch(this.onFailed);
-            }
-          };
+          c.onclick = (index) => this.changeToChapter(index);
         });
         this.chapters.push(...chapters);
         EBUS.emit("pf-update-chapters", this.chapters, true);
@@ -86,27 +92,29 @@ export class PageFetcher {
     this.afterInit?.();
     this.chapters.forEach(c => {
       c.sourceIter = this.matcher.fetchPagesSource(c);
-      c.onclick = (index) => {
-        EBUS.emit("pf-change-chapter", index, c);
-        if (this.chapters[index].queue.length > 0) {
-          this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
-        }
-        if (!this.queue.downloading?.()) {
-          this.beforeInit?.();
-          this.changeChapter(index).then(this.afterInit).catch(this.onFailed);
-        }
-      };
+      c.onclick = (index) => this.changeToChapter(index);
     });
     EBUS.emit("pf-update-chapters", this.chapters);
     if (this.chapters.length === 1) {
-      this.beforeInit?.();
-      EBUS.emit("pf-change-chapter", 0, this.chapters[0]);
-      await this.changeChapter(0).then(this.afterInit).catch(this.onFailed);
+      this.changeToChapter(0);
     }
   }
 
-  /// start the chapter by index
-  async changeChapter(index: number) {
+  changeToChapter(index: number) {
+    EBUS.emit("pf-change-chapter", index, this.chapters[index]);
+    if (this.chapters[index].queue.length > 0) {
+      this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
+    }
+    if (!this.queue.downloading?.()) {
+      this.beforeInit?.();
+      this.restoreChapter(index).then(this.afterInit).catch(this.onFailed);
+    }
+  }
+
+  /**
+   * Switch to the specified chapter, and restore the previously loaded elements or load new ones
+  */
+  async restoreChapter(index: number) {
     this.chapterIndex = index;
     const chapter = this.chapters[this.chapterIndex];
     this.queue.restore(index, chapter.queue);

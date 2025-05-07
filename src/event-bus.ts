@@ -47,6 +47,7 @@ export interface Events {
   "pf-append-chapters": (url: string) => Promise<Chapter[]>;
   "pf-try-extend": () => void;
   "pf-retry-extend": () => void;
+  "pf-step-chapters": (oriented: Oriented) => void;
   "imf-on-finished": (index: number, success: boolean, imf: IMGFetcher) => void;
   "imf-on-click": (imf: IMGFetcher) => void;
   "imf-download-state-change": (imf: IMGFetcher) => void;

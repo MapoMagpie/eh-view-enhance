@@ -30,7 +30,9 @@ export type KeyboardInBigImageModeId = "step-image-prev"
   | "toggle-reverse-pages"
   | "rotate-image"
   | "cherry-pick-current"
-  | "exclude-current";
+  | "exclude-current"
+  | "go-prev-chapter"
+  | "go-next-chapter";
 export type KeyboardInFullViewGridId = "open-big-image-mode"
   | "pause-auto-load-temporarily"
   | "exit-full-view-grid"
@@ -39,7 +41,9 @@ export type KeyboardInFullViewGridId = "open-big-image-mode"
   | "toggle-auto-play"
   | "retry-fetch-next-page"
   | "resize-flow-vision"
-  | "start-download";
+  | "start-download"
+  | "go-prev-chapter"
+  | "go-next-chapter";
 export type KeyboardInMainId = "open-full-view-grid" | "start-download";
 export type KeyboardEvents = {
   inBigImageMode: Record<KeyboardInBigImageModeId, KeyboardDesc>,
@@ -322,6 +326,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
         ["shift+alt+x"],
         () => BIFM.cherryPickCurrent(true), true
       ),
+      "go-prev-chapter": new KeyboardDesc(
+        ["shift+alt+w"],
+        () => EBUS.emit("pf-step-chapters", "prev"), true
+      ),
+      "go-next-chapter": new KeyboardDesc(
+        ["alt+w"],
+        () => EBUS.emit("pf-step-chapters", "next"), true
+      ),
     };
     const inFullViewGrid: Record<KeyboardInFullViewGridId, KeyboardDesc> = {
       "open-big-image-mode": new KeyboardDesc(
@@ -375,6 +387,14 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       "start-download": new KeyboardDesc(
         ["shift+alt+d"],
         () => EBUS.emit("start-download", () => PH.minify("fullViewGrid", false))),
+      "go-prev-chapter": new KeyboardDesc(
+        ["shift+alt+w"],
+        () => EBUS.emit("pf-step-chapters", "prev"), true
+      ),
+      "go-next-chapter": new KeyboardDesc(
+        ["alt+w"],
+        () => EBUS.emit("pf-step-chapters", "next"), true
+      ),
     };
     const inMain: Record<KeyboardInMainId, KeyboardDesc> = {
       "open-full-view-grid": new KeyboardDesc(["enter"], () => {

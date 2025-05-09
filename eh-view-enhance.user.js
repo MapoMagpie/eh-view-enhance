@@ -378,6 +378,18 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`
       "Pixiv 현재 페이지만 로드",
       "Pixiv: Cargar solo la página actual"
     ],
+    pixivAscendWorks: [
+      "Pixiv Ascending Works",
+      "Pixiv升序排列作品",
+      "Pixiv 오름차순 작품",
+      "Obras Ascendentes Pixiv"
+    ],
+    pixivAscendWorksTooltip: [
+      "Sort the artist's works in ascending order, from oldest to newest. (need refresh)",
+      "将画师的作品以升序方式排序，从旧到新。(需要刷新)",
+      "아티스트의 작품을 오름차순으로 정렬합니다. 오래된 것부터 최신 순으로. (need refresh)",
+      "Ordena las obras del artista en orden ascendente, de las más antiguas a las más recientes. (need refresh)"
+    ],
     pixivJustCurrPageTooltip: [
       `In Pixiv, if the current page is on a artwork page, only load the images from current page. Disable this option or the current page is on the artist's homepage, all images by that author will be loaded. <br>Note: You can continue loading all the remaining images by the author by scrolling on the page or pressing "Try Fetch Next Page" key after disabling this option.`,
       "在Pixiv中，如果当前页是作品页则只加载当前页中的图片，如果该选项禁用或者当前页是作者主页，则加载该作者所有的作品。<br>注：你可以禁用该选项后，然后通过页面滚动或按下Shift+n来继续加载该作者所有的图片。",
@@ -1272,6 +1284,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       magnifier: false,
       autoEnterBig: false,
       pixivJustCurrPage: false,
+      pixivAscendWorks: false,
       filenameOrder: "auto",
       dragImageOut: false,
       excludeVideo: false
@@ -1404,6 +1417,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     { key: "hdThumbnails", typ: "boolean", gridColumnRange: [6, 11] },
     { key: "autoCollapsePanel", typ: "boolean", gridColumnRange: [1, 11] },
     { key: "pixivJustCurrPage", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
+    { key: "pixivAscendWorks", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /pixiv.net/ },
     { key: "reverseMultipleImagesPost", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com)\// },
     { key: "excludeVideo", typ: "boolean", gridColumnRange: [1, 11], displayInSite: /(x.com|twitter.com|kemono.su)\// },
     {
@@ -6865,7 +6879,11 @@ duration 0.04`).join("\n");
       const res = await window.fetch(`https://www.pixiv.net/ajax/user/${this.author}/profile/all`).then((resp) => resp.json());
       if (res.error) throw new Error(`Fetch illust list error: ${res.message}`);
       let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
-      pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+      if (conf.pixivAscendWorks) {
+        pidList = pidList.sort((a, b) => parseInt(a) - parseInt(b));
+      } else {
+        pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+      }
       if (this.first) {
         const index = pidList.indexOf(this.first);
         if (index > -1) pidList.splice(index, 1);
@@ -6978,7 +6996,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         pids.push(...ap.pids);
       }
       if (pids.length === 0) return list;
-      pids.sort((a, b) => parseInt(b) - parseInt(a));
+      if (conf.pixivAscendWorks) {
+        pids.sort((a, b) => parseInt(a) - parseInt(b));
+      } else {
+        pids.sort((a, b) => parseInt(b) - parseInt(a));
+      }
       const pageListData = await batchFetch(pids.map((p) => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
       for (let i = 0; i < pids.length; i++) {
         const pid = pids[i];

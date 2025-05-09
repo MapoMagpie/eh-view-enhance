@@ -316,6 +316,18 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     'Pixiv 현재 페이지만 로드',
     'Pixiv: Cargar solo la página actual'
   ],
+  pixivAscendWorks: [
+    'Pixiv Ascending Works',
+    'Pixiv升序排列作品',
+    'Pixiv 오름차순 작품',
+    'Obras Ascendentes Pixiv'
+  ],
+  pixivAscendWorksTooltip: [
+    'Sort the artist\'s works in ascending order, from oldest to newest. (need refresh)',
+    '将画师的作品以升序方式排序，从旧到新。(需要刷新)',
+    '아티스트의 작품을 오름차순으로 정렬합니다. 오래된 것부터 최신 순으로. (need refresh)',
+    'Ordena las obras del artista en orden ascendente, de las más antiguas a las más recientes. (need refresh)'
+  ],
   pixivJustCurrPageTooltip: [
     "In Pixiv, if the current page is on a artwork page, only load the images from current page. Disable this option or the current page is on the artist's homepage, all images by that author will be loaded. <br>" +
     'Note: You can continue loading all the remaining images by the author by scrolling on the page or pressing "Try Fetch Next Page" key after disabling this option.',

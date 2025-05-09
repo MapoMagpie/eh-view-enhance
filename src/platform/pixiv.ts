@@ -148,7 +148,11 @@ class PixivArtistWorksAPI implements PixivAPI {
     const res = await window.fetch(`https://www.pixiv.net/ajax/user/${this.author}/profile/all`).then(resp => resp.json());
     if (res.error) throw new Error(`Fetch illust list error: ${res.message}`);
     let pidList = [...Object.keys(res.body.illusts), ...Object.keys(res.body.manga)];
-    pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+    if (conf.pixivAscendWorks) {
+      pidList = pidList.sort((a, b) => parseInt(a) - parseInt(b));
+    } else {
+      pidList = pidList.sort((a, b) => parseInt(b) - parseInt(a));
+    }
     // remove this.first from pidList
     if (this.first) {
       const index = pidList.indexOf(this.first);
@@ -279,7 +283,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       pids.push(...ap.pids);
     }
     if (pids.length === 0) return list;
-    pids.sort((a, b) => parseInt(b) - parseInt(a));
+    if (conf.pixivAscendWorks) {
+      pids.sort((a, b) => parseInt(a) - parseInt(b));
+    } else {
+      pids.sort((a, b) => parseInt(b) - parseInt(a));
+    }
     type PageData = { error: boolean, message: string, body: Page[] };
     const pageListData = await batchFetch<PageData>(pids.map(p => `https://www.pixiv.net/ajax/illust/${p}/pages?lang=en`), 5, "json");
     for (let i = 0; i < pids.length; i++) {

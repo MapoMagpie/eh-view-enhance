@@ -8841,7 +8841,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
           EBUS.emit("toggle-main-view", true);
         }, true),
-        "start-download": new KeyboardDesc(["alt+shift+d"], () => {
+        "start-download": new KeyboardDesc(["shift+alt+d"], () => {
           EBUS.emit("start-download", () => PH.minify("exit", false));
         }, true)
       };

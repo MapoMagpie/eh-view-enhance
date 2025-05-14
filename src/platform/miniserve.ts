@@ -16,8 +16,8 @@ export class MiniServeMatcher extends BaseMatcher<string> {
     let id = 1;
     for (const a of list) {
       const href = a.href;
-      const ext = href.split(".").pop();
-      if (ext?.toLowerCase() === "zip") {
+      const ext = href.split(".").pop()?.toLowerCase();
+      if (ext === "zip") {
         chapters.push({
           id: id,
           title: a.textContent ?? ("unknown-" + id),

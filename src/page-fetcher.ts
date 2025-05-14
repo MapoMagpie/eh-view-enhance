@@ -176,7 +176,7 @@ export class PageFetcher {
       if (nodes.length === 0) return false;
       const len = this.queue.length;
       const IFs = nodes.map(
-        (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex)
+        (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex, this.chapters[this.chapterIndex].id)
       );
       this.queue.push(...IFs);
       this.chapters[this.chapterIndex].queue.push(...IFs);

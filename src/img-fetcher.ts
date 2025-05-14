@@ -40,11 +40,12 @@ export class IMGFetcher {
   timeoutId?: number;
   matcher: Matcher<any>;
   chapterIndex: number;
+  chapterID: number;
   randomID: string;
   failedReason?: string;
   abortSignal: (() => void) | undefined = undefined;
 
-  constructor(index: number, root: ImageNode, matcher: Matcher<any>, chapterIndex: number) {
+  constructor(index: number, root: ImageNode, matcher: Matcher<any>, chapterIndex: number, chapterID: number) {
     this.index = index;
     this.node = root;
     this.node.onclick = (event) => {
@@ -59,6 +60,7 @@ export class IMGFetcher {
     this.downloadState = { total: 100, loaded: 0, readyState: 0, };
     this.matcher = matcher;
     this.chapterIndex = chapterIndex;
+    this.chapterID = chapterID;
     this.randomID = chapterIndex + Math.random().toString(16).slice(2) + this.node.href;
   }
 
@@ -161,7 +163,7 @@ export class IMGFetcher {
   }
 
   async fetchOriginMeta(): Promise<OriginMeta> {
-    return await this.matcher.fetchOriginMeta(this.node, this.tryTimes > 0 || this.stage === FetchState.FAILED, this.chapterIndex);
+    return await this.matcher.fetchOriginMeta(this.node, this.tryTimes > 0 || this.stage === FetchState.FAILED, this.chapterID);
   }
 
   async fetchImageData(): Promise<[Uint8Array, string]> {

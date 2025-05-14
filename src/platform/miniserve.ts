@@ -58,13 +58,13 @@ export class MiniServeMatcher extends BaseMatcher<string> {
     const map = new Map<string, Promise<Blob>>;
     this.map.set(chapterID, map);
     return entries.filter(e => {
-      const ext = e.filename.split(".").pop() ?? "jpg";
+      const ext = (e.filename.split(".").pop() ?? "jpg").toLowerCase();
       return isImage(ext) || isVideo(ext);
     }
     ).map(e => {
       const promise = e.getData!(new zip_js.BlobWriter());
       map.set(e.filename, promise);
-      const ext = e.filename.split(".").pop() ?? "jpg";
+      const ext = (e.filename.split(".").pop() ?? "jpg").toLowerCase();
       const node = new ImageNode("", e.filename, e.filename, undefined);
       if (isImage(ext)) {
         node.mimeType = "image/" + ext;

@@ -1628,10 +1628,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     timeoutId;
     matcher;
     chapterIndex;
+    chapterID;
     randomID;
     failedReason;
     abortSignal = void 0;
-    constructor(index, root, matcher, chapterIndex) {
+    constructor(index, root, matcher, chapterIndex, chapterID) {
       this.index = index;
       this.node = root;
       this.node.onclick = (event) => {
@@ -1646,6 +1647,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.downloadState = { total: 100, loaded: 0, readyState: 0 };
       this.matcher = matcher;
       this.chapterIndex = chapterIndex;
+      this.chapterID = chapterID;
       this.randomID = chapterIndex + Math.random().toString(16).slice(2) + this.node.href;
     }
     create() {
@@ -1740,7 +1742,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       throw err;
     }
     async fetchOriginMeta() {
-      return await this.matcher.fetchOriginMeta(this.node, this.tryTimes > 0 || this.stage === 0 /* FAILED */, this.chapterIndex);
+      return await this.matcher.fetchOriginMeta(this.node, this.tryTimes > 0 || this.stage === 0 /* FAILED */, this.chapterID);
     }
     async fetchImageData() {
       const data = await this.fetchBigImage();
@@ -3113,7 +3115,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         if (nodes.length === 0) return false;
         const len = this.queue.length;
         const IFs = nodes.map(
-          (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex)
+          (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex, this.chapters[this.chapterIndex].id)
         );
         this.queue.push(...IFs);
         this.chapters[this.chapterIndex].queue.push(...IFs);
@@ -6045,13 +6047,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.map.set(chapterID, map);
       return entries.filter(
         (e) => {
-          const ext = e.filename.split(".").pop() ?? "jpg";
+          const ext = (e.filename.split(".").pop() ?? "jpg").toLowerCase();
           return isImage(ext) || isVideo(ext);
         }
       ).map((e) => {
         const promise = e.getData(new zip_js__namespace.BlobWriter());
         map.set(e.filename, promise);
-        const ext = e.filename.split(".").pop() ?? "jpg";
+        const ext = (e.filename.split(".").pop() ?? "jpg").toLowerCase();
         const node = new ImageNode("", e.filename, e.filename, void 0);
         if (isImage(ext)) {
           node.mimeType = "image/" + ext;

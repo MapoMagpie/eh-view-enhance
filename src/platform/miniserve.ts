@@ -6,13 +6,14 @@ import * as zip_js from "@zip.js/zip.js";
 
 export class MiniServeMatcher extends BaseMatcher<string> {
   map: Map<number, Map<string, Promise<Blob>>> = new Map();
+  currentDirectorMedias: ImageNode[] = [];
   name(): string {
     return "Mini Serve";
   }
   async fetchChapters(): Promise<Chapter[]> {
     const list = Array.from(document.querySelectorAll<HTMLAnchorElement>("table tbody a.file"));
     const chapters: Chapter[] = [];
-    let id = 0;
+    let id = 1;
     for (const a of list) {
       const href = a.href;
       const ext = href.split(".").pop();
@@ -24,15 +25,33 @@ export class MiniServeMatcher extends BaseMatcher<string> {
           queue: [],
         });
         id++;
+      } else if (isImage(ext ?? "") || isVideo(ext ?? "")) {
+        const node = new ImageNode(a.href, a.href, a.textContent ?? "", undefined, a.href);
+        if (isImage(ext!)) {
+          node.mimeType = "image/" + ext;
+        } else if (isVideo(ext!)) {
+          node.mimeType = "video/" + ext;
+        }
+        this.currentDirectorMedias.push(node);
       }
     }
-    if (chapters.length === 0) throw new Error("can not found zip files");
+    if (this.currentDirectorMedias.length > 0) {
+      chapters.unshift({
+        id: 0,
+        title: "Current Directory",
+        source: "",
+        queue: []
+      });
+    }
+    if (chapters.length === 0) throw new Error("can not found zip files or current directory has empty image list");
     return chapters;
   }
   async *fetchPagesSource(source: Chapter): AsyncGenerator<Result<string>> {
     yield Result.ok(source.source);
   }
   async parseImgNodes(href: string, chapterID: number): Promise<ImageNode[]> {
+    if (!href && this.currentDirectorMedias.length > 0) return this.currentDirectorMedias;
+
     const blob = await window.fetch(href).then(res => res.blob());
     const zipReader = new zip_js.ZipReader(new zip_js.BlobReader(blob));
     const entries = await zipReader.getEntries();
@@ -56,6 +75,9 @@ export class MiniServeMatcher extends BaseMatcher<string> {
     });
   }
   async fetchOriginMeta(node: ImageNode, _retry: boolean, chapterID: number): Promise<OriginMeta> {
+    if (node.originSrc) {
+      return { url: node.originSrc };
+    }
     const dataPromise = this.map.get(chapterID)?.get(node.href);
     if (!dataPromise) throw new Error("cannot read image from zip");
     const data = await dataPromise;

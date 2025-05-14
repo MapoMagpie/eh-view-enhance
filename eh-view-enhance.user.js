@@ -5993,13 +5993,14 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
 
   class MiniServeMatcher extends BaseMatcher {
     map = /* @__PURE__ */ new Map();
+    currentDirectorMedias = [];
     name() {
       return "Mini Serve";
     }
     async fetchChapters() {
       const list = Array.from(document.querySelectorAll("table tbody a.file"));
       const chapters = [];
-      let id = 0;
+      let id = 1;
       for (const a of list) {
         const href = a.href;
         const ext = href.split(".").pop();
@@ -6011,15 +6012,32 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
             queue: []
           });
           id++;
+        } else if (isImage(ext ?? "") || isVideo(ext ?? "")) {
+          const node = new ImageNode(a.href, a.href, a.textContent ?? "", void 0, a.href);
+          if (isImage(ext)) {
+            node.mimeType = "image/" + ext;
+          } else if (isVideo(ext)) {
+            node.mimeType = "video/" + ext;
+          }
+          this.currentDirectorMedias.push(node);
         }
       }
-      if (chapters.length === 0) throw new Error("can not found zip files");
+      if (this.currentDirectorMedias.length > 0) {
+        chapters.unshift({
+          id: 0,
+          title: "Current Directory",
+          source: "",
+          queue: []
+        });
+      }
+      if (chapters.length === 0) throw new Error("can not found zip files or current directory has empty image list");
       return chapters;
     }
     async *fetchPagesSource(source) {
       yield Result.ok(source.source);
     }
     async parseImgNodes(href, chapterID) {
+      if (!href && this.currentDirectorMedias.length > 0) return this.currentDirectorMedias;
       const blob = await window.fetch(href).then((res) => res.blob());
       const zipReader = new zip_js__namespace.ZipReader(new zip_js__namespace.BlobReader(blob));
       const entries = await zipReader.getEntries();
@@ -6044,6 +6062,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       });
     }
     async fetchOriginMeta(node, _retry, chapterID) {
+      if (node.originSrc) {
+        return { url: node.originSrc };
+      }
       const dataPromise = this.map.get(chapterID)?.get(node.href);
       if (!dataPromise) throw new Error("cannot read image from zip");
       const data = await dataPromise;

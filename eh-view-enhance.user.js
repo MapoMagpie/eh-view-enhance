@@ -9720,7 +9720,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 .p-collapse {
   height: 0px !important;
   padding: 0px !important;
-  border: none;
+  border: none !important;
 }
 .b-main {
   display: flex;

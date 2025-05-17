@@ -350,7 +350,7 @@ export function styleCSS() {
 .p-collapse {
   height: 0px !important;
   padding: 0px !important;
-  border: none;
+  border: none !important;
 }
 .b-main {
   display: flex;

@@ -41,6 +41,12 @@ const i18nData = {
     '챕터',
     'Capítulos'
   ],
+  filter: [
+    'FILTER',
+    '过滤',
+    'FILTER',
+    'FILTER'
+  ],
   autoPagePlay: [
     'PLAY',
     '播放',

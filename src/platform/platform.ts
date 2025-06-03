@@ -54,12 +54,7 @@ export interface Matcher<P> {
 export abstract class BaseMatcher<P> implements Matcher<P> {
 
   async fetchChapters(): Promise<Chapter[]> {
-    return [{
-      id: 0,
-      title: "Default",
-      source: window.location.href,
-      queue: [],
-    }];
+    return [new Chapter(0, "Default", window.location.href)];
   }
 
   abstract name(): string;

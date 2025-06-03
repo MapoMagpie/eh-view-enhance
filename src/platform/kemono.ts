@@ -1,6 +1,5 @@
 import { conf } from "../config";
 import ImageNode from "../img-node";
-import { Chapter } from "../page-fetcher";
 import { isImage, isVideo } from "../utils/media_helper";
 import { batchFetch } from "../utils/query";
 import { BaseMatcher, OriginMeta, Result } from "./platform"
@@ -152,7 +151,7 @@ export class KemonoMatcher extends BaseMatcher<KemonoResult[]> {
   name(): string {
     return "Kemono";
   }
-  fetchPagesSource(_ch: Chapter): AsyncGenerator<Result<KemonoResult[]>> {
+  fetchPagesSource(): AsyncGenerator<Result<KemonoResult[]>> {
     if (!this.list) {
       throw new Error("Current path is not supported");
     }

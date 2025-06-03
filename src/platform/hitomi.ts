@@ -111,26 +111,24 @@ export class HitomiMather extends BaseMatcher<GalleryInfo> {
     const ggRaw = await window.fetch(`https://ltn.${CONTENT_DOMAIN}/gg.js?_=${Date.now()}`).then(resp => resp.text());
     this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)![1], GG_M_REGEX.exec(ggRaw)![1]);
     const ret: Chapter[] = [];
-    ret.push({
-      id: 0,
-      title: document.querySelector("#gallery-brand")?.textContent || "default",
-      source: window.location.href,
-      queue: [],
-      thumbimg: document.querySelector<HTMLImageElement>(".content > .cover-column > .cover img")?.src
-    });
+    ret.push(new Chapter(
+      0,
+      document.querySelector("#gallery-brand")?.textContent || "default",
+      window.location.href,
+      document.querySelector<HTMLImageElement>(".content > .cover-column > .cover img")?.src
+    ));
     if (conf.mcInSites?.indexOf("hitomi") === -1) {
       return ret;
     }
     document.querySelectorAll("#related-content > div").forEach((element, i) => {
       const a = element.querySelector<HTMLAnchorElement>("h1.lillie > a");
       if (a) {
-        ret.push({
-          id: i + 1,
-          title: a.textContent || "default-" + (i + 1),
-          source: a.href,
-          queue: [],
-          thumbimg: element.querySelector<HTMLImageElement>("img")?.src
-        });
+        ret.push(new Chapter(
+          i + 1,
+          a.textContent || "default-" + (i + 1),
+          a.href,
+          element.querySelector<HTMLImageElement>("img")?.src
+        ));
       }
     });
     return ret;

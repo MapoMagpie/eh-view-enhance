@@ -95,12 +95,7 @@ export class EHMatcher extends BaseMatcher<string> {
   }
 
   async fetchChapters(): Promise<Chapter[]> {
-    const chapter: Chapter = {
-      id: 0,
-      title: "Default",
-      source: window.location.href,
-      queue: [],
-    };
+    const chapter = new Chapter(0, "Default", window.location.href);
     this.docMap[0] = document;
     this.galleryMeta(chapter);
     chapter.title = chapter.meta!.title!;
@@ -113,12 +108,7 @@ export class EHMatcher extends BaseMatcher<string> {
     const doc = await window.fetch(url).then((response) => response.text()).then(text => new DOMParser().parseFromString(text, "text/html"));
     let lastID = old[old.length - 1]?.id || 0;
     lastID = lastID + 1;
-    const chapter: Chapter = {
-      id: lastID,
-      title: "NewChapter-" + lastID,
-      source: url,
-      queue: [],
-    };
+    const chapter = new Chapter(lastID, "NewChapter-" + lastID, url);
     this.docMap[lastID] = doc;
     this.galleryMeta(chapter);
     chapter.title = chapter.meta!.title!;

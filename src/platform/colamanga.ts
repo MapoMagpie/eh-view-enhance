@@ -93,15 +93,7 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
     // console.log("colamanga keys: ", this.keys);
     const thumbimg = document.querySelector("dt.fed-part-rows > a")?.getAttribute("data-original") || undefined;
     const list = Array.from(document.querySelectorAll<HTMLAnchorElement>(".all_data_list .fed-part-rows > li > a"));
-    return list.map<Chapter>((a, index) => {
-      return {
-        id: index,
-        title: a.title,
-        source: a.href,
-        queue: [],
-        thumbimg,
-      };
-    });
+    return list.map<Chapter>((a, index) => new Chapter(index, a.title, a.href, thumbimg));
   }
   async *fetchPagesSource(source: Chapter): AsyncGenerator<Result<string>> {
     yield Result.ok(source.source);

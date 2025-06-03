@@ -15,16 +15,18 @@ import { Debouncer } from "./utils/debouncer";
 import revertMonkeyPatch from "./utils/revert-monkey-patch";
 import { sleep } from "./utils/sleep";
 import { evLog } from "./utils/ev-log";
+import { Filter } from "./filter";
 
 type DestoryFunc = () => Promise<void>;
 
 function main(MATCHER: Matcher<any>, autoOpen: boolean, flowVision: boolean): DestoryFunc {
-  const HTML = createHTML();
+  const FL: Filter = new Filter();
+  const HTML = createHTML(FL);
   [HTML.fullViewGrid, HTML.bigImageFrame].forEach(e => revertMonkeyPatch(e));
 
   const IFQ: IMGFetcherQueue = IMGFetcherQueue.newQueue();
   const IL: IdleLoader = new IdleLoader(IFQ);
-  const PF: PageFetcher = new PageFetcher(IFQ, MATCHER);
+  const PF: PageFetcher = new PageFetcher(IFQ, MATCHER, FL);
   const DL: Downloader = new Downloader(HTML, IFQ, IL, PF, MATCHER);
 
   // UI Manager

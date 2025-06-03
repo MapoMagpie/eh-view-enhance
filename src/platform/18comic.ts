@@ -58,14 +58,7 @@ export class Comic18Matcher extends BaseMatcher<string> {
         const title = Array.from(ch.querySelector("li")?.childNodes || []).map(n => n.textContent?.trim()).filter(Boolean).map(n => n!);
         const url = new URL(ch.href);
         url.searchParams.set("read_mode", "read-by-page");
-        ret.push({
-          id: i,
-          title,
-          source: url.href,
-          queue: [],
-          thumbimg: thumb?.src,
-        });
-
+        ret.push(new Chapter(i, title, url.href, thumb?.src));
       });
     } else {
       const first = document.querySelector(".visible-lg .read-block")?.firstElementChild as HTMLElement | undefined;
@@ -80,12 +73,7 @@ export class Comic18Matcher extends BaseMatcher<string> {
       if (href.startsWith("#coinbuycomic")) throw new Error("此漫画需要硬币解锁！请点击开始阅读按钮进行解锁。");
       const url = new URL(href);
       url.searchParams.set("read_mode", "read-by-page");
-      ret.push({
-        id: 0,
-        title: "Default",
-        source: url.href,
-        queue: [],
-      });
+      ret.push(new Chapter(0, "Default", url.href));
     }
     return ret;
   }

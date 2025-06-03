@@ -40,9 +40,9 @@ export class MyComicMatcher extends BaseMatcher<Document> {
       let volName = vol.querySelector<HTMLDivElement>(".text-lg > div")?.textContent ?? "";
       volName = volName ? volName + "-" : "";
       if (!data.chapters) continue;
-      const chs = data.chapters.map<Chapter>(ch => {
-        return { id: ch.id, title: volName + ch.title, source: `https://mycomic.com/cn/chapters/${ch.id}`, queue: [] };
-      });
+      const chs = data.chapters.map<Chapter>(ch =>
+        new Chapter(ch.id, volName + ch.title, `https://mycomic.com/cn/chapters/${ch.id}`)
+      );
       result.push(...chs);
     }
     return result;

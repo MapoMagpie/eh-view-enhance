@@ -205,11 +205,11 @@ export class Downloader {
   }
 
   mapToFileLikes(chapter: Chapter, picked: CherryPick, directory: string): FileLike[] {
-    if (!chapter || chapter.queue.length === 0) return [];
+    if (!chapter || chapter.filteredQueue.length === 0) return [];
     let checkTitle: (title: string, index: number) => string;
-    const needNumberTitle = this.needNumberTitle(chapter.queue);
+    const needNumberTitle = this.needNumberTitle(chapter.filteredQueue);
     if (needNumberTitle) {
-      const digits = chapter.queue.length.toString().length;
+      const digits = chapter.filteredQueue.length.toString().length;
       if (conf.filenameOrder === "numbers") {
         checkTitle = (title: string, index: number) => `${index + 1}`.padStart(digits, "0") + "." + title.split(".").pop();
       } else {
@@ -219,7 +219,7 @@ export class Downloader {
       this.filenames.clear();
       checkTitle = (title: string) => deduplicate(this.filenames, title.replaceAll(FILENAME_INVALIDCHAR, "_"));
     }
-    const ret = chapter.queue
+    const ret = chapter.filteredQueue
       .filter((imf, i) => picked.picked(i) && imf.stage === FetchState.DONE && imf.data)
       .map((imf, index) => {
         return {

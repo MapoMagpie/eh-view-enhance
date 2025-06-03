@@ -57,7 +57,7 @@ export class MangaCopyMatcher extends BaseMatcher<string> {
     if (comicInfo instanceof Error || !comicInfo.results.groups) throw new Error("fetch comic detail error: " + comicInfo.toString());
     if (comicInfo.code !== 200) throw new Error("fetch comic detail error: " + comicInfo.message);
 
-    const chapters = [];
+    const chapters: Chapter[] = [];
     // fetch all chapters by group
     const groups = comicInfo.results.groups;
     let chapterCount = 0;
@@ -71,14 +71,13 @@ export class MangaCopyMatcher extends BaseMatcher<string> {
         const result = data.results;
         offset += result.list.length;
         for (const ch of result.list) {
-          chapters.push({
-            id: chapterCount++,
-            title: group === "default" ? ch.name : `${groups[group].name}-${ch.name}`,
+          chapters.push(new Chapter(
+            chapterCount++,
+            group === "default" ? ch.name : `${groups[group].name}-${ch.name}`,
             // source: `https://api.mangacopy.com/api/v3/comic/${pathWord}/chapter2/${ch.uuid}?platform=1&_update=true`,
-            source: `${window.location.origin}/comic/${pathWord}/chapter/${ch.uuid}`,
-            queue: [],
+            `${window.location.origin}/comic/${pathWord}/chapter/${ch.uuid}`,
             thumbimg,
-          });
+          ));
         }
         if (offset >= result.total) break;
       }

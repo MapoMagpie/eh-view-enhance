@@ -121,29 +121,11 @@ class TwitterUserMediasAPI implements TwitterAPIClient {
 
   fetchChapters(): Chapter[] {
     if (window.location.href.includes("/media")) {
-      return [{
-        id: 1,
-        title: "User Medias",
-        source: window.location.href,
-        queue: [],
-        thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg",
-      }];
+      return [new Chapter(1, "User Medias", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg")];
     } else {
       return [
-        {
-          id: 0,
-          title: "User Posts",
-          source: window.location.href,
-          queue: [],
-          thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg",
-        },
-        {
-          id: 1,
-          title: "User Media",
-          source: window.location.href,
-          queue: [],
-          thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg",
-        }
+        new Chapter(0, "User Posts", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
+        new Chapter(1, "User Media", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg")
       ];
     }
   }
@@ -203,12 +185,7 @@ class TwitterListsAPI implements TwitterAPIClient {
   listID?: string;
 
   fetchChapters(): Chapter[] {
-    return [{
-      id: 1,
-      title: "User Medias",
-      source: window.location.href,
-      queue: [],
-    }];
+    return [new Chapter(1, "User Medias", window.location.href)];
   }
 
   getListID() {
@@ -249,27 +226,9 @@ class TwitterHomeForYouAPI implements TwitterAPIClient {
 
   fetchChapters(): Chapter[] {
     return [
-      {
-        id: 1,
-        title: "For you",
-        source: window.location.href,
-        queue: [],
-        thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg",
-      },
-      {
-        id: 2,
-        title: "Following",
-        source: window.location.href,
-        queue: [],
-        thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg",
-      },
-      {
-        id: 3,
-        title: "Your Likes",
-        source: window.location.href,
-        queue: [],
-        thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg",
-      },
+      new Chapter(1, "For you", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
+      new Chapter(2, "Following", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
+      new Chapter(3, "Your Likes", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
     ];
   }
   async next(chapter: Chapter): Promise<[Item[], string | undefined]> {

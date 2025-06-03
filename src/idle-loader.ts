@@ -64,7 +64,7 @@ export class IdleLoader {
     evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
     for (const processingIndex of this.processingIndexList) {
       // start sereval img fetchers, when img fetcher is done, it will triggered event:imf-on-finished
-      this.queue[processingIndex].start(processingIndex);
+      this.queue[processingIndex].start();
     }
   }
 

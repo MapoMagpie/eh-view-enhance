@@ -23,6 +23,7 @@ function createControlBar() {
   <a class="b-main-item s-pickable" data-key="config">${displayText.config}</a>
   <a class="b-main-item s-pickable" data-key="download">${displayText.download}</a>
   <a class="b-main-item s-pickable" data-key="chapters">${displayText.chapters}</a>
+  <a class="b-main-item s-pickable" data-key="filter">${displayText.filter}</a>
   <div class="b-main-item">
       <div id="read-mode-select"
       ><a class="b-main-option b-main-option-selected s-pickable" data-key="pagination" data-value="pagination">${displayText.pagination}</a
@@ -285,6 +286,7 @@ function displayTextPreset(index: number): DisplayText {
       config: "C",
       download: "D",
       chapters: "CH.",
+      filter: "FL.",
       fin: "F",
       pagination: "P",
       continuous: "C",
@@ -298,6 +300,7 @@ function displayTextPreset(index: number): DisplayText {
       config: "☸",
       download: "⬇",
       chapters: "CH.",
+      filter: "⌕",
       fin: "⬇",
       pagination: "❏",
       continuous: "⇅",

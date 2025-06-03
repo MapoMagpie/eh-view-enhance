@@ -1,22 +1,32 @@
 import { GalleryMeta } from "./download/gallery-meta";
 import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
+import { Filter } from "./filter";
 import { IMGFetcher } from "./img-fetcher";
 import ImageNode from "./img-node";
 import { Matcher, Result } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
 
-export type Chapter = {
+export class Chapter {
   id: number;
   title: string | string[];
   source: string; // url
   queue: IMGFetcher[];
+  filteredQueue: IMGFetcher[];
   thumbimg?: string;
   sourceIter?: AsyncGenerator<Result<any>>;
   done?: boolean;
   onclick?: (index: number) => void;
   meta?: GalleryMeta;
+  constructor(id: number, title: string | string[], source: string, thumbimg?: string) {
+    this.id = id;
+    this.title = title;
+    this.source = source;
+    this.queue = [];
+    this.thumbimg = thumbimg;
+    this.filteredQueue = [];
+  }
 }
 
 export class PageFetcher {
@@ -24,14 +34,22 @@ export class PageFetcher {
   chapterIndex: number = 0;
   queue: IMGFetcherQueue;
   matcher: Matcher<any>;
+  filter: Filter;
   beforeInit?: () => void;
   afterInit?: () => void;
   private appendPageLock: boolean = false;
   private abortb: boolean = false;
 
-  constructor(queue: IMGFetcherQueue, matcher: Matcher<any>) {
+  constructor(queue: IMGFetcherQueue, matcher: Matcher<any>, filter: Filter) {
     this.queue = queue;
     this.matcher = matcher;
+    this.filter = filter;
+    this.filter.onChange = () => {
+      this.changeToChapter(this.chapterIndex);
+      // const chapter = this.chapters[this.chapterIndex];
+      // chapter.filteredQueue = filter.filterNodes(chapter.queue);
+      // TODO
+    };
     const debouncer = new Debouncer();
     // triggered then ifq finished
     EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
@@ -49,13 +67,11 @@ export class PageFetcher {
       if (oriented === "prev") {
         const newChapterIndex = this.chapterIndex - 1;
         if (newChapterIndex < 0) return;
-        this.chapterIndex = newChapterIndex;
         this.changeToChapter(newChapterIndex);
         EBUS.emit("notify-message", "info", "switch to chapter: " + this.chapters[newChapterIndex].title, 2000);
       } else if (oriented === "next") {
         const newChapterIndex = this.chapterIndex + 1;
         if (newChapterIndex >= this.chapters.length) return;
-        this.chapterIndex = newChapterIndex;
         this.changeToChapter(newChapterIndex);
         EBUS.emit("notify-message", "info", "switch to chapter: " + this.chapters[newChapterIndex].title, 2000);
       }
@@ -101,9 +117,13 @@ export class PageFetcher {
   }
 
   changeToChapter(index: number) {
+    this.chapterIndex = index;
     EBUS.emit("pf-change-chapter", index, this.chapters[index]);
-    if (this.chapters[index].queue.length > 0) {
-      this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
+    const chapter = this.chapters[index];
+    chapter.filteredQueue = this.filter.filterNodes(chapter.queue, true);
+    chapter.filteredQueue.forEach((node, i) => node.index = i);
+    if (chapter.filteredQueue.length > 0) {
+      this.appendToView(chapter.filteredQueue.length, chapter.filteredQueue, index, this.chapters[index].done);
     }
     if (!this.queue.downloading?.()) {
       this.beforeInit?.();
@@ -117,8 +137,7 @@ export class PageFetcher {
   async restoreChapter(index: number) {
     this.chapterIndex = index;
     const chapter = this.chapters[this.chapterIndex];
-    this.queue.restore(index, chapter.queue);
-
+    this.queue.restore(index, chapter.filteredQueue);
     if (!chapter.sourceIter) {
       evLog("error", "chapter sourceIter is not set!");
       return;
@@ -174,13 +193,16 @@ export class PageFetcher {
       const nodes = await this.obtainImageNodeList(pageSource);
       if (this.abortb) return false;
       if (nodes.length === 0) return false;
-      const len = this.queue.length;
+      const chapter = this.chapters[this.chapterIndex];
+      const len = chapter.filteredQueue.length;
       const IFs = nodes.map(
         (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex, this.chapters[this.chapterIndex].id)
       );
-      this.queue.push(...IFs);
       this.chapters[this.chapterIndex].queue.push(...IFs);
-      this.appendToView(this.queue.length, IFs, this.chapterIndex);
+      const filteredIFs = this.filter.filterNodes(IFs, false);
+      filteredIFs.forEach((node, i) => node.index = len + i);
+      this.queue.push(...filteredIFs);
+      this.appendToView(this.queue.length, filteredIFs, this.chapterIndex);
       return true;
     } catch (error) {
       evLog("error", `page fetcher append images error: `, error);

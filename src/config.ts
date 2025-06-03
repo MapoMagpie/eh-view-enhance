@@ -425,6 +425,7 @@ export type DisplayText = {
   config: string,
   download: string,
   chapters: string,
+  filter: string,
   pagination: string,
   continuous: string,
   horizontal: string,
@@ -439,6 +440,7 @@ const DEFAULT_DISPLAY_TEXT: DisplayText = {
   config: i18n.config.get(),
   download: i18n.download.get(),
   chapters: i18n.chapters.get(),
+  filter: i18n.filter.get(),
   pagination: "PAGE",
   continuous: "CONT",
   horizontal: "HORI"

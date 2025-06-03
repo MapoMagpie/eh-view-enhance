@@ -85,13 +85,12 @@ class PixivHomeAPI implements PixivAPI {
     this.pids = { "follow": body.page.follow.map(id => id.toString()), "for you": body.page.recommend.ids, ...byTag };
     let id = 0;
     for (const [t, pids] of Object.entries(this.pids)) {
-      chapters.push({
-        id: id,
-        title: t === "follow" ? "Your Following" : "Recommend " + t,
-        source: t,
-        thumbimg: this.thumbnails[pids[0] ?? ""]?.url,
-        queue: []
-      });
+      chapters.push(new Chapter(
+        id,
+        t === "follow" ? "Your Following" : "Recommend " + t,
+        t,
+        this.thumbnails[pids[0] ?? ""]?.url,
+      ));
       id++;
     };
     return chapters;
@@ -127,12 +126,7 @@ class PixivArtistWorksAPI implements PixivAPI {
     return this.author ?? "author";
   }
   async fetchChapters(): Promise<Chapter[]> {
-    return [{
-      id: 1,
-      title: "Default",
-      source: window.location.href,
-      queue: [],
-    }];
+    return [new Chapter(1, "Default", window.location.href)];
   }
   async *next(_ch: Chapter): AsyncGenerator<Result<AuthorPIDs[]>> {
     this.author = findAuthorID();

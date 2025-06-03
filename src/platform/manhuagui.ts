@@ -54,15 +54,9 @@ export class MHGMatcher extends BaseMatcher<string> {
       let prefix = findSibling(element, "prev", (e) => e.tagName.toLowerCase() === "h4")?.firstElementChild?.textContent ?? undefined;
       prefix = prefix ? prefix + "-" : "";
       element.querySelectorAll("ul").forEach((ul) => {
-        const ret = Array.from(ul.querySelectorAll<HTMLAnchorElement>("li > a")).reverse().map((element) => {
-          return {
-            id: 0,
-            title: prefix + element.title,
-            source: element.href,
-            queue: [],
-            thumbimg,
-          };
-        });
+        const ret = Array.from(ul.querySelectorAll<HTMLAnchorElement>("li > a")).reverse().map((element) =>
+          new Chapter(0, prefix + element.title, element.href, thumbimg)
+        );
         chapters.push(...ret);
       })
     });

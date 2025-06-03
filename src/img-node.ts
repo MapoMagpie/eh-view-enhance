@@ -1,4 +1,5 @@
 import { conf } from "./config";
+import { Tag } from "./filter";
 import { DownloadState } from "./img-fetcher";
 import { Debouncer } from "./utils/debouncer";
 import { resizing } from "./utils/image-resizing";
@@ -24,38 +25,6 @@ type Rect = {
 
 type Onfailed = (reason: string, source?: string, error?: Error) => void;
 type OnResize = () => void;
-
-type TagCategory = "mime-type" | "misc" | "author" | "language";
-
-export class Tag {
-  category: TagCategory;
-  value: string;
-  constructor(category: TagCategory, value: string) {
-    this.category = category;
-    this.value = value;
-  }
-  static fromRaw(raw: string): Tag {
-    const split = raw.indexOf(":");
-    if (split !== -1) {
-      return new Tag(raw.slice(0, split) as TagCategory, raw.slice(split + 1))
-    } else {
-      return new Tag("misc", raw);
-    }
-  }
-  static from(category: string, value: string): Tag {
-    return new Tag(category as TagCategory, value);
-  }
-
-  toString(): string {
-    return `${this.category}:"${this.value}"`;
-  }
-
-  search(_term: string): number {
-    // TODO
-    return 1;
-  }
-
-}
 
 export default class ImageNode {
   root?: HTMLElement;
@@ -83,14 +52,19 @@ export default class ImageNode {
     this.originSrc = originSrc;
     this.rect = wh;
     this.tags = new Set();
+    let ext = "";
+    if (originSrc) {
+      ext = originSrc.split(".").pop() ?? "";
+    } else if (thumbnailSrc) {
+      ext = thumbnailSrc.split(".").pop() ?? "";
+    }
+    if (ext) {
+      this.tags.add("ext:" + ext);
+    }
   }
 
   setTags(...tags: Tag[]) {
-    tags.forEach(this.tags.add);
-  }
-
-  hasTag(tag: Tag) {
-    return this.tags.has(tag);
+    tags.forEach(t => this.tags.add(t));
   }
 
   create(): HTMLElement {

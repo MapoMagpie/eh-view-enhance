@@ -87,10 +87,10 @@ export class IMGFetcherQueue extends Array<IMGFetcher> {
     // delay 300ms to avoid too many requests, if user scroll quickly on big image, it will cause too many requests
     this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
       console.log("IFQ-EXECUTABLE: ", this.executableQueue);
-      Promise.all(this.executableQueue.splice(0, conf.paginationIMGCount).map(imfIndex => this[imfIndex].start(imfIndex)))
+      Promise.all(this.executableQueue.splice(0, conf.paginationIMGCount).map(imfIndex => this[imfIndex].start()))
         .then(() => {
           const picked = this.cherryPick?.(this.chapterIndex);
-          this.executableQueue.filter(i => !picked || picked.picked(i)).forEach(imfIndex => this[imfIndex].start(imfIndex));
+          this.executableQueue.filter(i => !picked || picked.picked(i)).forEach(imfIndex => this[imfIndex].start());
         });
     }, 300);
   }

@@ -12,10 +12,12 @@ import { DownloaderPanel } from "./downloader-panel";
 import { ConfigPanel } from "./config-panel";
 import EBUS from "../event-bus";
 import { ChaptersPanel } from "./chapters-panel";
+import { FilterPanel } from "./filter-panel";
+import { Filter } from "../filter";
 
 export type Elements = ReturnType<typeof createHTML>;
 
-export function createHTML() {
+export function createHTML(filter: Filter) {
   const base = document.createElement("div");
   const dt = getDisplayText();
   base.id = "ehvp-base";
@@ -37,6 +39,7 @@ export function createHTML() {
         ${ConfigPanel.html()}
         ${DownloaderPanel.html()}
         ${ChaptersPanel.html()}
+        ${FilterPanel.html()}
     </div>
     <div id="b-main" class="b-main">
         <a id="entry-btn" class="b-main-item clickable" data-display-texts="${dt.entry},${dt.collapse}">${dt.entry}</a>
@@ -53,6 +56,7 @@ export function createHTML() {
         <a id="config-panel-btn" class="b-main-item clickable" hidden>${dt.config}</a>
         <a id="downloader-panel-btn" class="b-main-item clickable" hidden>${dt.download}</a>
         <a id="chapters-panel-btn" class="b-main-item clickable" hidden>${dt.chapters}</a>
+        <a id="filter-panel-btn" class="b-main-item clickable" hidden>${dt.filter}</a>
         <div id="read-mode-bar" class="b-main-item" hidden>
             <div id="read-mode-select"
             ><a class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">${dt.pagination}</a
@@ -101,6 +105,7 @@ export function createHTML() {
     configPanelBTN: q("#config-panel-btn", root),
     downloaderPanelBTN: q("#downloader-panel-btn", root),
     chaptersPanelBTN: q("#chapters-panel-btn", root),
+    filterPanelBTN: q("#filter-panel-btn", root),
     entryBTN: q("#entry-btn", root),
     currPageElement: q("#p-curr-page", root),
     totalPageElement: q("#p-total", root),
@@ -118,6 +123,7 @@ export function createHTML() {
     config: new ConfigPanel(root),
     downloader: new DownloaderPanel(root),
     chapters: new ChaptersPanel(root),
+    filter: new FilterPanel(root, filter),
     readModeSelect: q<HTMLDivElement>("#read-mode-select", root),
     paginationAdjustBar: q<HTMLDivElement>("#pagination-adjust-bar", root),
     styleSheet: style.sheet!,
@@ -131,6 +137,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
     "config": { panel: HTML.config.panel, btn: HTML.configPanelBTN },
     "downloader": { panel: HTML.downloader.panel, btn: HTML.downloaderPanelBTN, cb: () => DL.check() },
     "chapters": { panel: HTML.chapters.panel, btn: HTML.chaptersPanelBTN },
+    "filter": { panel: HTML.filter.panel, btn: HTML.filterPanelBTN },
   };
 
   function collapsePanel(panel: HTMLElement) {

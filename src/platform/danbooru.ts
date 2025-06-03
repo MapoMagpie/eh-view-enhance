@@ -402,7 +402,10 @@ export class GelBooruMatcher extends DanbooruMatcher {
       evLog("error", "warn: cannot find href", ele);
       return [null, ""];
     }
-    return [new ImageNode(img.src, href, `${ele.id}.jpg`), img.getAttribute("alt") || ""];
+    const node = new ImageNode(img.src, href, `${ele.id}.jpg`);
+    const tags = img.title.split(" ").map(t => t.trim()).filter(t => (t) && !(t.startsWith("score") || t.startsWith("rating"))).map(t => "tag:" + t);
+    node.setTags(...tags);
+    return [node, img.getAttribute("alt") || ""];
   }
   getOriginalURL(doc: Document): string | null {
     return doc.querySelector("head > meta[property='og:image']")?.getAttribute("content") || null;

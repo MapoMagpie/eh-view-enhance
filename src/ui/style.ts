@@ -921,6 +921,14 @@ export function styleCSS() {
   border: 1px solid red;
   filter: brightness(150%);
 }
+#tag-candidates > .tc-selected {
+  color: red;
+  background-color: #fff;
+}
+#tag-candidates > li:hover {
+  color: green;
+  background-color: #aaa;
+}
 #auto-page-progress {
   height: 100%;
   width: 0%;

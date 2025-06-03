@@ -18,12 +18,7 @@ export class MiniServeMatcher extends BaseMatcher<string> {
       const href = a.href;
       const ext = href.split(".").pop()?.toLowerCase();
       if (ext === "zip") {
-        chapters.push({
-          id: id,
-          title: a.textContent ?? ("unknown-" + id),
-          source: href,
-          queue: [],
-        });
+        chapters.push(new Chapter(id, a.textContent ?? ("unknown-" + id), href));
         id++;
       } else if (isImage(ext ?? "") || isVideo(ext ?? "")) {
         const node = new ImageNode(a.href, a.href, a.textContent ?? "", undefined, a.href);
@@ -36,12 +31,7 @@ export class MiniServeMatcher extends BaseMatcher<string> {
       }
     }
     if (this.currentDirectorMedias.length > 0) {
-      chapters.unshift({
-        id: 0,
-        title: "Current Directory",
-        source: "",
-        queue: []
-      });
+      chapters.unshift(new Chapter(0, "Current Directory", ""));
     }
     if (chapters.length === 0) throw new Error("can not found zip files or current directory has empty image list");
     return chapters;

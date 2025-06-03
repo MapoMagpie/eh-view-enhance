@@ -23,7 +23,7 @@ export class PageHelper {
       }
       this.chapterIndex = index;
       const [total, finished] = (() => {
-        const queue = this.chapters()[index]?.queue;
+        const queue = this.chapters()[index]?.filteredQueue;
         if (!queue) return [0, 0];
         const finished = queue.filter(imf => imf.stage === FetchState.DONE).length;
         return [queue.length, finished];
@@ -35,7 +35,7 @@ export class PageHelper {
     EBUS.subscribe("bifm-on-hidden", () => this.minify("fullViewGrid"));
     EBUS.subscribe("ifq-do", (index, imf) => {
       if (imf.chapterIndex !== this.chapterIndex) return;
-      const queue = this.chapters()[this.chapterIndex]?.queue;
+      const queue = this.chapters()[this.chapterIndex]?.filteredQueue;
       if (!queue) return;
       this.pageNumInChapter[this.chapterIndex] = index;
       this.setPageState({ current: (index + 1).toString() });
@@ -53,7 +53,7 @@ export class PageHelper {
       const ele = event.target as HTMLElement;
       const index = parseInt(ele.textContent || "1") - 1;
       if (this.chapterIndex >= 0) { // this.chapterIndex = -1 means now in chapters selection
-        const queue = this.chapters()[this.chapterIndex]?.queue;
+        const queue = this.chapters()[this.chapterIndex]?.filteredQueue;
         if (!queue || !queue[index]) return;
         EBUS.emit("imf-on-click", queue[index]);
       }
@@ -103,7 +103,7 @@ export class PageHelper {
           return downloading ? ["entry-btn", "page-status", "fin-status"] : ["entry-btn"];
         case 1:
           // hover in fullViewGrid
-          return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "entry-btn"];
+          return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "filter-panel-btn", "entry-btn"];
         case 2:
           // hover in bigImageFrame
           return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "entry-btn", "read-mode-bar", "pagination-adjust-bar", "scale-bar"];

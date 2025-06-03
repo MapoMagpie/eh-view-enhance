@@ -103,6 +103,12 @@
       "챕터",
       "Capítulos"
     ],
+    filter: [
+      "FILTER",
+      "过滤",
+      "FILTER",
+      "FILTER"
+    ],
     autoPagePlay: [
       "PLAY",
       "播放",
@@ -1478,6 +1484,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     config: i18n.config.get(),
     download: i18n.download.get(),
     chapters: i18n.chapters.get(),
+    filter: i18n.filter.get(),
     pagination: "PAGE",
     continuous: "CONT",
     horizontal: "HORI"
@@ -1664,21 +1671,21 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.node.progress(this.downloadState);
       EBUS.emit("imf-download-state-change", this);
     }
-    async start(index) {
+    async start() {
       if (this.lock) return;
       this.lock = true;
       try {
         this.node.changeStyle("fetching");
         await this.fetchImage();
         this.node.changeStyle("fetched");
-        EBUS.emit("imf-on-finished", index, true, this);
+        EBUS.emit("imf-on-finished", this.index, true, this);
         this.failedReason = void 0;
       } catch (error) {
         this.failedReason = error.toString();
         this.node.changeStyle("failed", this.failedReason);
         evLog("error", `IMG-FETCHER ERROR:`, error);
         this.stage = 0 /* FAILED */;
-        EBUS.emit("imf-on-finished", index, false, this);
+        EBUS.emit("imf-on-finished", this.index, false, this);
       } finally {
         this.lock = false;
       }
@@ -2427,11 +2434,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
     }
     mapToFileLikes(chapter, picked, directory) {
-      if (!chapter || chapter.queue.length === 0) return [];
+      if (!chapter || chapter.filteredQueue.length === 0) return [];
       let checkTitle;
-      const needNumberTitle = this.needNumberTitle(chapter.queue);
+      const needNumberTitle = this.needNumberTitle(chapter.filteredQueue);
       if (needNumberTitle) {
-        const digits = chapter.queue.length.toString().length;
+        const digits = chapter.filteredQueue.length.toString().length;
         if (conf.filenameOrder === "numbers") {
           checkTitle = (title, index) => `${index + 1}`.padStart(digits, "0") + "." + title.split(".").pop();
         } else {
@@ -2441,7 +2448,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         this.filenames.clear();
         checkTitle = (title) => deduplicate(this.filenames, title.replaceAll(FILENAME_INVALIDCHAR, "_"));
       }
-      const ret = chapter.queue.filter((imf, i) => picked.picked(i) && imf.stage === FetchState.DONE && imf.data).map((imf, index) => {
+      const ret = chapter.filteredQueue.filter((imf, i) => picked.picked(i) && imf.stage === FetchState.DONE && imf.data).map((imf, index) => {
         return {
           stream: () => Promise.resolve(uint8ArrayToReadableStream(imf.data)),
           size: () => imf.data.byteLength,
@@ -2800,9 +2807,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       if (!this.pushInExecutableQueue(oriented)) return;
       this.debouncer.addEvent("IFQ-EXECUTABLE", () => {
         console.log("IFQ-EXECUTABLE: ", this.executableQueue);
-        Promise.all(this.executableQueue.splice(0, conf.paginationIMGCount).map((imfIndex) => this[imfIndex].start(imfIndex))).then(() => {
+        Promise.all(this.executableQueue.splice(0, conf.paginationIMGCount).map((imfIndex) => this[imfIndex].start())).then(() => {
           const picked = this.cherryPick?.(this.chapterIndex);
-          this.executableQueue.filter((i) => !picked || picked.picked(i)).forEach((imfIndex) => this[imfIndex].start(imfIndex));
+          this.executableQueue.filter((i) => !picked || picked.picked(i)).forEach((imfIndex) => this[imfIndex].start());
         });
       }, 300);
     }
@@ -2905,7 +2912,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       if (this.queue.length === 0) return;
       evLog("info", "Idle Loader start at:" + this.processingIndexList.toString());
       for (const processingIndex of this.processingIndexList) {
-        this.queue[processingIndex].start(processingIndex);
+        this.queue[processingIndex].start();
       }
     }
     checkProcessingIndex() {
@@ -2971,18 +2978,44 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
   }
 
+  class Chapter {
+    id;
+    title;
+    source;
+    // url
+    queue;
+    filteredQueue;
+    thumbimg;
+    sourceIter;
+    done;
+    onclick;
+    meta;
+    constructor(id, title, source, thumbimg) {
+      this.id = id;
+      this.title = title;
+      this.source = source;
+      this.queue = [];
+      this.thumbimg = thumbimg;
+      this.filteredQueue = [];
+    }
+  }
   class PageFetcher {
     chapters = [];
     chapterIndex = 0;
     queue;
     matcher;
+    filter;
     beforeInit;
     afterInit;
     appendPageLock = false;
     abortb = false;
-    constructor(queue, matcher) {
+    constructor(queue, matcher, filter) {
       this.queue = queue;
       this.matcher = matcher;
+      this.filter = filter;
+      this.filter.onChange = () => {
+        this.changeToChapter(this.chapterIndex);
+      };
       const debouncer = new Debouncer();
       EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
       EBUS.subscribe("imf-on-finished", (index, success, imf) => {
@@ -2998,13 +3031,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         if (oriented === "prev") {
           const newChapterIndex = this.chapterIndex - 1;
           if (newChapterIndex < 0) return;
-          this.chapterIndex = newChapterIndex;
           this.changeToChapter(newChapterIndex);
           EBUS.emit("notify-message", "info", "switch to chapter: " + this.chapters[newChapterIndex].title, 2e3);
         } else if (oriented === "next") {
           const newChapterIndex = this.chapterIndex + 1;
           if (newChapterIndex >= this.chapters.length) return;
-          this.chapterIndex = newChapterIndex;
           this.changeToChapter(newChapterIndex);
           EBUS.emit("notify-message", "info", "switch to chapter: " + this.chapters[newChapterIndex].title, 2e3);
         }
@@ -3045,9 +3076,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
     }
     changeToChapter(index) {
+      this.chapterIndex = index;
       EBUS.emit("pf-change-chapter", index, this.chapters[index]);
-      if (this.chapters[index].queue.length > 0) {
-        this.appendToView(this.chapters[index].queue.length, this.chapters[index].queue, index, this.chapters[index].done);
+      const chapter = this.chapters[index];
+      chapter.filteredQueue = this.filter.filterNodes(chapter.queue, true);
+      chapter.filteredQueue.forEach((node, i) => node.index = i);
+      if (chapter.filteredQueue.length > 0) {
+        this.appendToView(chapter.filteredQueue.length, chapter.filteredQueue, index, this.chapters[index].done);
       }
       if (!this.queue.downloading?.()) {
         this.beforeInit?.();
@@ -3060,7 +3095,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     async restoreChapter(index) {
       this.chapterIndex = index;
       const chapter = this.chapters[this.chapterIndex];
-      this.queue.restore(index, chapter.queue);
+      this.queue.restore(index, chapter.filteredQueue);
       if (!chapter.sourceIter) {
         evLog("error", "chapter sourceIter is not set!");
         return;
@@ -3113,13 +3148,16 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         const nodes = await this.obtainImageNodeList(pageSource);
         if (this.abortb) return false;
         if (nodes.length === 0) return false;
-        const len = this.queue.length;
+        const chapter = this.chapters[this.chapterIndex];
+        const len = chapter.filteredQueue.length;
         const IFs = nodes.map(
           (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex, this.chapters[this.chapterIndex].id)
         );
-        this.queue.push(...IFs);
         this.chapters[this.chapterIndex].queue.push(...IFs);
-        this.appendToView(this.queue.length, IFs, this.chapterIndex);
+        const filteredIFs = this.filter.filterNodes(IFs, false);
+        filteredIFs.forEach((node, i) => node.index = len + i);
+        this.queue.push(...filteredIFs);
+        this.appendToView(this.queue.length, filteredIFs, this.chapterIndex);
         return true;
       } catch (error) {
         evLog("error", `page fetcher append images error: `, error);
@@ -3209,12 +3247,18 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.originSrc = originSrc;
       this.rect = wh;
       this.tags = /* @__PURE__ */ new Set();
+      let ext = "";
+      if (originSrc) {
+        ext = originSrc.split(".").pop() ?? "";
+      } else if (thumbnailSrc) {
+        ext = thumbnailSrc.split(".").pop() ?? "";
+      }
+      if (ext) {
+        this.tags.add("ext:" + ext);
+      }
     }
     setTags(...tags) {
-      tags.forEach(this.tags.add);
-    }
-    hasTag(tag) {
-      return this.tags.has(tag);
+      tags.forEach((t) => this.tags.add(t));
     }
     create() {
       this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
@@ -3392,12 +3436,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   }
   class BaseMatcher {
     async fetchChapters() {
-      return [{
-        id: 0,
-        title: "Default",
-        source: window.location.href,
-        queue: []
-      }];
+      return [new Chapter(0, "Default", window.location.href)];
     }
     title(chapter) {
       const meta = this.galleryMeta(chapter[0]);
@@ -3466,13 +3505,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           const title = Array.from(ch.querySelector("li")?.childNodes || []).map((n) => n.textContent?.trim()).filter(Boolean).map((n) => n);
           const url = new URL(ch.href);
           url.searchParams.set("read_mode", "read-by-page");
-          ret.push({
-            id: i,
-            title,
-            source: url.href,
-            queue: [],
-            thumbimg: thumb?.src
-          });
+          ret.push(new Chapter(i, title, url.href, thumb?.src));
         });
       } else {
         const first = document.querySelector(".visible-lg .read-block")?.firstElementChild;
@@ -3487,12 +3520,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         if (href.startsWith("#coinbuycomic")) throw new Error("此漫画需要硬币解锁！请点击开始阅读按钮进行解锁。");
         const url = new URL(href);
         url.searchParams.set("read_mode", "read-by-page");
-        ret.push({
-          id: 0,
-          title: "Default",
-          source: url.href,
-          queue: []
-        });
+        ret.push(new Chapter(0, "Default", url.href));
       }
       return ret;
     }
@@ -3878,15 +3906,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.keymap = await initColaMangaKeyMap();
       const thumbimg = document.querySelector("dt.fed-part-rows > a")?.getAttribute("data-original") || void 0;
       const list = Array.from(document.querySelectorAll(".all_data_list .fed-part-rows > li > a"));
-      return list.map((a, index) => {
-        return {
-          id: index,
-          title: a.title,
-          source: a.href,
-          queue: [],
-          thumbimg
-        };
-      });
+      return list.map((a, index) => new Chapter(index, a.title, a.href, thumbimg));
     }
     async *fetchPagesSource(source) {
       yield Result.ok(source.source);
@@ -4417,7 +4437,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         evLog("error", "warn: cannot find href", ele);
         return [null, ""];
       }
-      return [new ImageNode(img.src, href, `${ele.id}.jpg`), img.getAttribute("alt") || ""];
+      const node = new ImageNode(img.src, href, `${ele.id}.jpg`);
+      const tags = img.title.split(" ").map((t) => t.trim()).filter((t) => t && !(t.startsWith("score") || t.startsWith("rating"))).map((t) => "tag:" + t);
+      node.setTags(...tags);
+      return [node, img.getAttribute("alt") || ""];
     }
     getOriginalURL(doc) {
       return doc.querySelector("head > meta[property='og:image']")?.getAttribute("content") || null;
@@ -4600,12 +4623,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       return chapter.meta;
     }
     async fetchChapters() {
-      const chapter = {
-        id: 0,
-        title: "Default",
-        source: window.location.href,
-        queue: []
-      };
+      const chapter = new Chapter(0, "Default", window.location.href);
       this.docMap[0] = document;
       this.galleryMeta(chapter);
       chapter.title = chapter.meta.title;
@@ -4616,12 +4634,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const doc = await window.fetch(url).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
       let lastID = old[old.length - 1]?.id || 0;
       lastID = lastID + 1;
-      const chapter = {
-        id: lastID,
-        title: "NewChapter-" + lastID,
-        source: url,
-        queue: []
-      };
+      const chapter = new Chapter(lastID, "NewChapter-" + lastID, url);
       this.docMap[lastID] = doc;
       this.galleryMeta(chapter);
       chapter.title = chapter.meta.title;
@@ -5113,26 +5126,24 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const ggRaw = await window.fetch(`https://ltn.${CONTENT_DOMAIN}/gg.js?_=${Date.now()}`).then((resp) => resp.text());
       this.gg = new HitomiGG(GG_B_REGEX.exec(ggRaw)[1], GG_M_REGEX.exec(ggRaw)[1]);
       const ret = [];
-      ret.push({
-        id: 0,
-        title: document.querySelector("#gallery-brand")?.textContent || "default",
-        source: window.location.href,
-        queue: [],
-        thumbimg: document.querySelector(".content > .cover-column > .cover img")?.src
-      });
+      ret.push(new Chapter(
+        0,
+        document.querySelector("#gallery-brand")?.textContent || "default",
+        window.location.href,
+        document.querySelector(".content > .cover-column > .cover img")?.src
+      ));
       if (conf.mcInSites?.indexOf("hitomi") === -1) {
         return ret;
       }
       document.querySelectorAll("#related-content > div").forEach((element, i) => {
         const a = element.querySelector("h1.lillie > a");
         if (a) {
-          ret.push({
-            id: i + 1,
-            title: a.textContent || "default-" + (i + 1),
-            source: a.href,
-            queue: [],
-            thumbimg: element.querySelector("img")?.src
-          });
+          ret.push(new Chapter(
+            i + 1,
+            a.textContent || "default-" + (i + 1),
+            a.href,
+            element.querySelector("img")?.src
+          ));
         }
       });
       return ret;
@@ -5559,7 +5570,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     name() {
       return "Kemono";
     }
-    fetchPagesSource(_ch) {
+    fetchPagesSource() {
       if (!this.list) {
         throw new Error("Current path is not supported");
       }
@@ -5782,14 +5793,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           const result = data.results;
           offset += result.list.length;
           for (const ch of result.list) {
-            chapters.push({
-              id: chapterCount++,
-              title: group === "default" ? ch.name : `${groups[group].name}-${ch.name}`,
+            chapters.push(new Chapter(
+              chapterCount++,
+              group === "default" ? ch.name : `${groups[group].name}-${ch.name}`,
               // source: `https://api.mangacopy.com/api/v3/comic/${pathWord}/chapter2/${ch.uuid}?platform=1&_update=true`,
-              source: `${window.location.origin}/comic/${pathWord}/chapter/${ch.uuid}`,
-              queue: [],
+              `${window.location.origin}/comic/${pathWord}/chapter/${ch.uuid}`,
               thumbimg
-            });
+            ));
           }
           if (offset >= result.total) break;
         }
@@ -5874,15 +5884,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         let prefix = findSibling(element, "prev", (e) => e.tagName.toLowerCase() === "h4")?.firstElementChild?.textContent ?? void 0;
         prefix = prefix ? prefix + "-" : "";
         element.querySelectorAll("ul").forEach((ul) => {
-          const ret = Array.from(ul.querySelectorAll("li > a")).reverse().map((element2) => {
-            return {
-              id: 0,
-              title: prefix + element2.title,
-              source: element2.href,
-              queue: [],
-              thumbimg
-            };
-          });
+          const ret = Array.from(ul.querySelectorAll("li > a")).reverse().map(
+            (element2) => new Chapter(0, prefix + element2.title, element2.href, thumbimg)
+          );
           chapters.push(...ret);
         });
       });
@@ -6007,12 +6011,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         const href = a.href;
         const ext = href.split(".").pop()?.toLowerCase();
         if (ext === "zip") {
-          chapters.push({
-            id,
-            title: a.textContent ?? "unknown-" + id,
-            source: href,
-            queue: []
-          });
+          chapters.push(new Chapter(id, a.textContent ?? "unknown-" + id, href));
           id++;
         } else if (isImage(ext ?? "") || isVideo(ext ?? "")) {
           const node = new ImageNode(a.href, a.href, a.textContent ?? "", void 0, a.href);
@@ -6025,12 +6024,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         }
       }
       if (this.currentDirectorMedias.length > 0) {
-        chapters.unshift({
-          id: 0,
-          title: "Current Directory",
-          source: "",
-          queue: []
-        });
+        chapters.unshift(new Chapter(0, "Current Directory", ""));
       }
       if (chapters.length === 0) throw new Error("can not found zip files or current directory has empty image list");
       return chapters;
@@ -6109,9 +6103,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         let volName = vol.querySelector(".text-lg > div")?.textContent ?? "";
         volName = volName ? volName + "-" : "";
         if (!data.chapters) continue;
-        const chs = data.chapters.map((ch) => {
-          return { id: ch.id, title: volName + ch.title, source: `https://mycomic.com/cn/chapters/${ch.id}`, queue: [] };
-        });
+        const chs = data.chapters.map(
+          (ch) => new Chapter(ch.id, volName + ch.title, `https://mycomic.com/cn/chapters/${ch.id}`)
+        );
         result.push(...chs);
       }
       return result;
@@ -6842,13 +6836,12 @@ duration 0.04`).join("\n");
       this.pids = { "follow": body.page.follow.map((id2) => id2.toString()), "for you": body.page.recommend.ids, ...byTag };
       let id = 0;
       for (const [t, pids] of Object.entries(this.pids)) {
-        chapters.push({
+        chapters.push(new Chapter(
           id,
-          title: t === "follow" ? "Your Following" : "Recommend " + t,
-          source: t,
-          thumbimg: this.thumbnails[pids[0] ?? ""]?.url,
-          queue: []
-        });
+          t === "follow" ? "Your Following" : "Recommend " + t,
+          t,
+          this.thumbnails[pids[0] ?? ""]?.url
+        ));
         id++;
       }
       return chapters;
@@ -6882,12 +6875,7 @@ duration 0.04`).join("\n");
       return this.author ?? "author";
     }
     async fetchChapters() {
-      return [{
-        id: 1,
-        title: "Default",
-        source: window.location.href,
-        queue: []
-      }];
+      return [new Chapter(1, "Default", window.location.href)];
     }
     async *next(_ch) {
       this.author = findAuthorID();
@@ -7251,29 +7239,11 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     userID;
     fetchChapters() {
       if (window.location.href.includes("/media")) {
-        return [{
-          id: 1,
-          title: "User Medias",
-          source: window.location.href,
-          queue: [],
-          thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"
-        }];
+        return [new Chapter(1, "User Medias", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg")];
       } else {
         return [
-          {
-            id: 0,
-            title: "User Posts",
-            source: window.location.href,
-            queue: [],
-            thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"
-          },
-          {
-            id: 1,
-            title: "User Media",
-            source: window.location.href,
-            queue: [],
-            thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"
-          }
+          new Chapter(0, "User Posts", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
+          new Chapter(1, "User Media", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg")
         ];
       }
     }
@@ -7329,12 +7299,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     uuid = uuid();
     listID;
     fetchChapters() {
-      return [{
-        id: 1,
-        title: "User Medias",
-        source: window.location.href,
-        queue: []
-      }];
+      return [new Chapter(1, "User Medias", window.location.href)];
     }
     getListID() {
       return window.location.href.match(/i\/lists\/(\d+)$/)?.[1];
@@ -7370,27 +7335,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     myID;
     fetchChapters() {
       return [
-        {
-          id: 1,
-          title: "For you",
-          source: window.location.href,
-          queue: [],
-          thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"
-        },
-        {
-          id: 2,
-          title: "Following",
-          source: window.location.href,
-          queue: [],
-          thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"
-        },
-        {
-          id: 3,
-          title: "Your Likes",
-          source: window.location.href,
-          queue: [],
-          thumbimg: "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"
-        }
+        new Chapter(1, "For you", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
+        new Chapter(2, "Following", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg"),
+        new Chapter(3, "Your Likes", window.location.href, "https://pbs.twimg.com/profile_images/1683899100922511378/5lY42eHs_bigger.jpg")
       ];
     }
     async next(chapter) {
@@ -8248,6 +8195,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   <a class="b-main-item s-pickable" data-key="config">${displayText.config}</a>
   <a class="b-main-item s-pickable" data-key="download">${displayText.download}</a>
   <a class="b-main-item s-pickable" data-key="chapters">${displayText.chapters}</a>
+  <a class="b-main-item s-pickable" data-key="filter">${displayText.filter}</a>
   <div class="b-main-item">
       <div id="read-mode-select"
       ><a class="b-main-option b-main-option-selected s-pickable" data-key="pagination" data-value="pagination">${displayText.pagination}</a
@@ -8498,6 +8446,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         config: "C",
         download: "D",
         chapters: "CH.",
+        filter: "FL.",
         fin: "F",
         pagination: "P",
         continuous: "C",
@@ -8511,6 +8460,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         config: "☸",
         download: "⬇",
         chapters: "CH.",
+        filter: "⌕",
         fin: "⬇",
         pagination: "❏",
         continuous: "⇅",
@@ -10291,6 +10241,14 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   border: 1px solid red;
   filter: brightness(150%);
 }
+#tag-candidates > .tc-selected {
+  color: red;
+  background-color: #fff;
+}
+#tag-candidates > li:hover {
+  color: green;
+  background-color: #aaa;
+}
 #auto-page-progress {
   height: 100%;
   width: 0%;
@@ -10876,7 +10834,115 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
-  function createHTML() {
+  class FilterPanel {
+    panel;
+    root;
+    filter;
+    input;
+    list;
+    candidates;
+    candidatasFragment;
+    candidateSelectIndex = 0;
+    candidateCached = [];
+    constructor(root, filter) {
+      this.root = root;
+      this.panel = q("#filter-panel", root);
+      this.input = q("#tag-input", this.panel);
+      this.list = q("#tag-list", this.panel);
+      this.candidates = q("#tag-candidates", this.panel);
+      this.candidatasFragment = document.createDocumentFragment();
+      this.filter = filter;
+      this.input.addEventListener("input", () => {
+        this.candidateSelectIndex = 0;
+        this.updateCandidates(false);
+      });
+      this.input.addEventListener("keyup", (ev) => {
+        console.log("keypress ev: ", ev);
+        if (ev.key.toLowerCase() === "arrowup") {
+          this.candidateSelectIndex = this.candidateSelectIndex - 1;
+          this.updateCandidates(true);
+          ev.preventDefault();
+        } else if (ev.key.toLowerCase() === "arrowdown") {
+          this.candidateSelectIndex = this.candidateSelectIndex + 1;
+          this.updateCandidates(true);
+          ev.preventDefault();
+        } else if (ev.key.toLowerCase() === "enter") {
+          const tag = this.candidateCached[this.candidateSelectIndex];
+          this.input.value = "";
+          if (tag) {
+            this.filter.push(true, tag);
+            this.updateFilterValues();
+          }
+          this.candidates.hidden = true;
+        }
+      });
+    }
+    updateCandidates(noCache) {
+      const term = this.input.value.trim();
+      if (!noCache) {
+        this.candidateCached = [...this.filter.allTags].filter((t) => !term || t.includes(term));
+      }
+      if (this.candidateCached.length > 100) {
+        this.candidates.hidden = true;
+        return;
+      }
+      this.candidateSelectIndex = Math.max(0, this.candidateSelectIndex);
+      this.candidateSelectIndex = Math.min(this.candidateCached.length - 1, this.candidateSelectIndex);
+      let selected;
+      for (let i = 0; i < this.candidateCached.length; i++) {
+        const tag = this.candidateCached[i];
+        const li = document.createElement("li");
+        li.textContent = tag.toString();
+        if (i === this.candidateSelectIndex) {
+          li.classList.add("tc-selected");
+          selected = li;
+        }
+        li.addEventListener("click", (ev) => {
+          const tag2 = ev.target.textContent;
+          if (!tag2) return;
+          this.input.value = "";
+          this.filter.push(true, tag2);
+          this.updateFilterValues();
+          this.candidates.hidden = true;
+        });
+        this.candidatasFragment.appendChild(li);
+      }
+      this.candidates.innerHTML = "";
+      this.candidates.append(...Array.from(this.candidatasFragment.childNodes));
+      this.candidates.hidden = false;
+      selected?.scrollIntoView({ block: "center" });
+    }
+    updateFilterValues() {
+      this.list.innerHTML = "";
+      for (const tag of this.filter.values) {
+        const li = document.createElement("li");
+        li.textContent = tag.tag;
+        li.addEventListener("click", (ev) => {
+          const tag2 = ev.target.textContent;
+          if (!tag2) return;
+          this.filter.remove(tag2);
+          this.updateFilterValues();
+        });
+        this.list.appendChild(li);
+      }
+    }
+    static html() {
+      return `
+<div id="filter-panel" class="p-panel p-filter p-collapse">
+    <div style="position: relative;">
+      <input id="tag-input" class="tag-input" style="width:76%; margin-top:0.6em; margin-left: 12%;"/>
+      <div id="tag-candidates" style="position:absolute; width:100%; min-height:1em; max-height:15em; overflow:auto; background-color:#444; margin-top:0; top:100%;" hidden="true"></div>
+    </div>
+    <div>
+      <ul id="tag-list" class="tag-list">
+      <span>Filter the images, unfinished!</span>
+      </ul>
+    </div>
+</div>`;
+    }
+  }
+
+  function createHTML(filter) {
     const base = document.createElement("div");
     const dt = getDisplayText();
     base.id = "ehvp-base";
@@ -10897,6 +10963,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         ${ConfigPanel.html()}
         ${DownloaderPanel.html()}
         ${ChaptersPanel.html()}
+        ${FilterPanel.html()}
     </div>
     <div id="b-main" class="b-main">
         <a id="entry-btn" class="b-main-item clickable" data-display-texts="${dt.entry},${dt.collapse}">${dt.entry}</a>
@@ -10913,6 +10980,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         <a id="config-panel-btn" class="b-main-item clickable" hidden>${dt.config}</a>
         <a id="downloader-panel-btn" class="b-main-item clickable" hidden>${dt.download}</a>
         <a id="chapters-panel-btn" class="b-main-item clickable" hidden>${dt.chapters}</a>
+        <a id="filter-panel-btn" class="b-main-item clickable" hidden>${dt.filter}</a>
         <div id="read-mode-bar" class="b-main-item" hidden>
             <div id="read-mode-select"
             ><a class="b-main-option clickable ${conf.readMode === "pagination" ? "b-main-option-selected" : ""}" data-value="pagination">${dt.pagination}</a
@@ -10960,6 +11028,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       configPanelBTN: q("#config-panel-btn", root),
       downloaderPanelBTN: q("#downloader-panel-btn", root),
       chaptersPanelBTN: q("#chapters-panel-btn", root),
+      filterPanelBTN: q("#filter-panel-btn", root),
       entryBTN: q("#entry-btn", root),
       currPageElement: q("#p-curr-page", root),
       totalPageElement: q("#p-total", root),
@@ -10977,6 +11046,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       config: new ConfigPanel(root),
       downloader: new DownloaderPanel(root),
       chapters: new ChaptersPanel(root),
+      filter: new FilterPanel(root, filter),
       readModeSelect: q("#read-mode-select", root),
       paginationAdjustBar: q("#pagination-adjust-bar", root),
       styleSheet: style.sheet
@@ -10987,7 +11057,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     const panelElements = {
       "config": { panel: HTML.config.panel, btn: HTML.configPanelBTN },
       "downloader": { panel: HTML.downloader.panel, btn: HTML.downloaderPanelBTN, cb: () => DL.check() },
-      "chapters": { panel: HTML.chapters.panel, btn: HTML.chaptersPanelBTN }
+      "chapters": { panel: HTML.chapters.panel, btn: HTML.chaptersPanelBTN },
+      "filter": { panel: HTML.filter.panel, btn: HTML.filterPanelBTN }
     };
     function collapsePanel(panel) {
       if (conf.autoCollapsePanel && !panel.classList.contains("p-panel-large")) {
@@ -11130,7 +11201,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         }
         this.chapterIndex = index;
         const [total, finished] = (() => {
-          const queue = this.chapters()[index]?.queue;
+          const queue = this.chapters()[index]?.filteredQueue;
           if (!queue) return [0, 0];
           const finished2 = queue.filter((imf) => imf.stage === FetchState.DONE).length;
           return [queue.length, finished2];
@@ -11142,7 +11213,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       EBUS.subscribe("bifm-on-hidden", () => this.minify("fullViewGrid"));
       EBUS.subscribe("ifq-do", (index, imf) => {
         if (imf.chapterIndex !== this.chapterIndex) return;
-        const queue = this.chapters()[this.chapterIndex]?.queue;
+        const queue = this.chapters()[this.chapterIndex]?.filteredQueue;
         if (!queue) return;
         this.pageNumInChapter[this.chapterIndex] = index;
         this.setPageState({ current: (index + 1).toString() });
@@ -11160,7 +11231,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         const ele = event.target;
         const index = parseInt(ele.textContent || "1") - 1;
         if (this.chapterIndex >= 0) {
-          const queue = this.chapters()[this.chapterIndex]?.queue;
+          const queue = this.chapters()[this.chapterIndex]?.filteredQueue;
           if (!queue || !queue[index]) return;
           EBUS.emit("imf-on-click", queue[index]);
         }
@@ -11206,7 +11277,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           case 0:
             return downloading ? ["entry-btn", "page-status", "fin-status"] : ["entry-btn"];
           case 1:
-            return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "entry-btn"];
+            return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "filter-panel-btn", "entry-btn"];
           case 2:
             return ["page-status", "fin-status", "auto-page-btn", "config-panel-btn", "downloader-panel-btn", "chapters-panel-btn", "entry-btn", "read-mode-bar", "pagination-adjust-bar", "scale-bar"];
           case 3:
@@ -11750,7 +11821,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     getIMF(element) {
       const index = parseIndex(element);
       if (index === -1 || isNaN(index)) return null;
-      const queue = this.getChapter(this.chapterIndex).queue;
+      const queue = this.getChapter(this.chapterIndex).filteredQueue;
       return queue[index] ?? null;
     }
     initEvent() {
@@ -11952,7 +12023,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.container.innerHTML = "";
       this.intersectingElements = [];
       this.renderingElements = [];
-      const queue = this.getChapter(this.chapterIndex).queue;
+      const queue = this.getChapter(this.chapterIndex).filteredQueue;
       this.append(queue);
       this.jumpTo(this.currentIndex);
     }
@@ -11999,7 +12070,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.oriented = oriented;
       let index = current || this.currentIndex;
       if (index === void 0 || isNaN(index)) return;
-      const queue = this.getChapter(this.chapterIndex)?.queue;
+      const queue = this.getChapter(this.chapterIndex)?.filteredQueue;
       if (!queue || queue.length === 0) return;
       index = oriented === "next" ? index + conf.paginationIMGCount : index - conf.paginationIMGCount;
       if (conf.paginationIMGCount > 1) {
@@ -12318,7 +12389,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           elements.push(div);
         }
       }
-      const queue = this.getChapter(this.chapterIndex).queue;
+      const queue = this.getChapter(this.chapterIndex).filteredQueue;
       let [start, end] = [this.currentIndex - conf.paginationIMGCount, this.currentIndex + conf.paginationIMGCount * 2 - 1];
       [start, end] = [Math.max(start, 0), Math.min(end, queue.length - 1)];
       const withIndex = elements.map((elem) => ({ index: parseIndex(elem), elem })).sort((a, b) => a.index - b.index);
@@ -12405,7 +12476,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const displayTexts = this.button.getAttribute("data-display-texts").split(",");
       this.button.firstElementChild.innerText = displayTexts[1];
       if (!this.bifm.visible) {
-        const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
+        const queue = this.bifm.getChapter(this.bifm.chapterIndex).filteredQueue;
         if (queue.length === 0) return;
         this.bifm.show(queue[this.bifm.currentIndex]);
       }
@@ -12422,7 +12493,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         if (this.status !== "running") {
           break;
         }
-        const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
+        const queue = this.bifm.getChapter(this.bifm.chapterIndex).filteredQueue;
         if (this.bifm.currentIndex < 0 || this.bifm.currentIndex >= queue.length) break;
         if (conf.readMode === "pagination") {
           const curr = this.bifm.container.querySelector(`div[d-index="${this.bifm.currentIndex}"]`)?.firstElementChild;
@@ -12485,12 +12556,54 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     });
   }
 
+  class Filter {
+    values = [];
+    allTags = /* @__PURE__ */ new Set();
+    onChange;
+    filterNodes(imfs, clearAllTags) {
+      let list = imfs;
+      for (const val of this.values) {
+        list = list.filter((imf) => {
+          for (const t of imf.node.tags) {
+            if (t === val.tag) {
+              return true;
+            }
+          }
+          return false;
+        });
+      }
+      if (clearAllTags) {
+        this.allTags.clear();
+      }
+      list.forEach((imf) => imf.node.tags.forEach((tag) => this.allTags.add(tag)));
+      return list;
+    }
+    push(exclude, tag) {
+      const exists = this.values.find((v) => v.tag === tag);
+      if (exists) return;
+      this.values.push({ exclude, tag });
+      this.onChange?.(this);
+    }
+    remove(tag) {
+      const index = this.values.findIndex((v) => v.tag === tag);
+      if (index > -1) {
+        this.values.splice(index, 1);
+        this.onChange?.(this);
+      }
+    }
+    clear() {
+      this.values = [];
+      this.onChange?.(this);
+    }
+  }
+
   function main(MATCHER, autoOpen, flowVision) {
-    const HTML = createHTML();
+    const FL = new Filter();
+    const HTML = createHTML(FL);
     [HTML.fullViewGrid, HTML.bigImageFrame].forEach((e) => revertMonkeyPatch(e));
     const IFQ = IMGFetcherQueue.newQueue();
     const IL = new IdleLoader(IFQ);
-    const PF = new PageFetcher(IFQ, MATCHER);
+    const PF = new PageFetcher(IFQ, MATCHER, FL);
     const DL = new Downloader(HTML, IFQ, IL, PF, MATCHER);
     const PH = new PageHelper(HTML, () => PF.chapters, () => DL.downloading);
     const BIFM = new BigImageFrameManager(HTML, (index) => PF.chapters[index]);

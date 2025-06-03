@@ -200,7 +200,7 @@ export class BigImageFrameManager {
   getIMF(element: HTMLElement): IMGFetcher | null {
     const index = parseIndex(element);
     if (index === -1 || isNaN(index)) return null;
-    const queue = this.getChapter(this.chapterIndex).queue;
+    const queue = this.getChapter(this.chapterIndex).filteredQueue;
     return queue[index] ?? null;
   }
 
@@ -420,7 +420,7 @@ export class BigImageFrameManager {
     this.container.innerHTML = "";
     this.intersectingElements = [];
     this.renderingElements = [];
-    const queue = this.getChapter(this.chapterIndex).queue;
+    const queue = this.getChapter(this.chapterIndex).filteredQueue;
     this.append(queue);
     this.jumpTo(this.currentIndex);
   }
@@ -469,7 +469,7 @@ export class BigImageFrameManager {
     this.oriented = oriented;
     let index = current || this.currentIndex;
     if (index === undefined || isNaN(index)) return;
-    const queue = this.getChapter(this.chapterIndex)?.queue;
+    const queue = this.getChapter(this.chapterIndex)?.filteredQueue;
     if (!queue || queue.length === 0) return;
     index = oriented === "next" ? index + conf.paginationIMGCount : index - conf.paginationIMGCount;
     if (conf.paginationIMGCount > 1) {
@@ -819,7 +819,7 @@ export class BigImageFrameManager {
         elements.push(div);
       }
     }
-    const queue = this.getChapter(this.chapterIndex).queue;
+    const queue = this.getChapter(this.chapterIndex).filteredQueue;
     let [start, end] = [this.currentIndex - conf.paginationIMGCount, this.currentIndex + conf.paginationIMGCount * 2 - 1];
     [start, end] = [Math.max(start, 0), Math.min(end, queue.length - 1)];
 
@@ -912,7 +912,7 @@ class AutoPage {
     const displayTexts = this.button.getAttribute("data-display-texts")!.split(",");
     (this.button.firstElementChild as HTMLSpanElement).innerText = displayTexts[1];
     if (!this.bifm.visible) {
-      const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
+      const queue = this.bifm.getChapter(this.bifm.chapterIndex).filteredQueue;
       if (queue.length === 0) return;
       this.bifm.show(queue[this.bifm.currentIndex]);
     }
@@ -933,7 +933,7 @@ class AutoPage {
 
       // if (this.bifm.elements.curr.length === 0) break;
       // check boundary
-      const queue = this.bifm.getChapter(this.bifm.chapterIndex).queue;
+      const queue = this.bifm.getChapter(this.bifm.chapterIndex).filteredQueue;
       if (this.bifm.currentIndex < 0 || this.bifm.currentIndex >= queue.length) break;
 
       if (conf.readMode === "pagination") {

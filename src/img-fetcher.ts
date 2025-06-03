@@ -80,21 +80,21 @@ export class IMGFetcher {
     EBUS.emit("imf-download-state-change", this);
   }
 
-  async start(index: number) {
+  async start() {
     if (this.lock) return;
     this.lock = true;
     try {
       this.node.changeStyle("fetching");
       await this.fetchImage();
       this.node.changeStyle("fetched");
-      EBUS.emit("imf-on-finished", index, true, this);
+      EBUS.emit("imf-on-finished", this.index, true, this);
       this.failedReason = undefined;
     } catch (error) {
       this.failedReason = (error as Error).toString();
       this.node.changeStyle("failed", this.failedReason);
       evLog("error", `IMG-FETCHER ERROR:`, error);
       this.stage = FetchState.FAILED;
-      EBUS.emit("imf-on-finished", index, false, this);
+      EBUS.emit("imf-on-finished", this.index, false, this);
       // TODO: show error on image
     } finally {
       this.lock = false;

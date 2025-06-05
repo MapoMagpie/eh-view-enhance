@@ -400,7 +400,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       "open-full-view-grid": new KeyboardDesc(["enter"], () => {
         // check focus element is not input Elements
         const activeElement = document.activeElement;
-        if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
+        if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLSelectElement) return;
         EBUS.emit("toggle-main-view", true)
       }, true),
       "start-download": new KeyboardDesc(["shift+alt+d"], () => {

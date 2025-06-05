@@ -8848,7 +8848,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       const inMain = {
         "open-full-view-grid": new KeyboardDesc(["enter"], () => {
           const activeElement = document.activeElement;
-          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLSelectElement) return;
+          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLSelectElement) return;
           EBUS.emit("toggle-main-view", true);
         }, true),
         "start-download": new KeyboardDesc(["shift+alt+d"], () => {

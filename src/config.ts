@@ -406,7 +406,7 @@ export const ConfigItems: ConfigItem[] = [
     key: "ehentaiTitlePrefer", typ: "select", options: [
       { value: "english", display: "English" },
       { value: "japanese", display: "Japanese" },
-    ], displayInSite: /e[-x]hentai(.*)?.(org|onion)\//
+    ], displayInSite: /e[-x]hentai(.*)?.(org|onion)\/|imhentai.xxx/
   },
   {
     key: "filenameOrder", typ: "select", options: [

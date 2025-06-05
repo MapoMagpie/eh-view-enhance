@@ -452,10 +452,10 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`
       "En Hitomi, obtener imágenes por formato.<br>Si está en automático, intentará Avif > Jxl > Webp. Requiere actualización."
     ],
     ehentaiTitlePrefer: [
-      "EHentai Prefer Title",
-      "EHentai标题语言",
-      "EHentai 선호 제목",
-      "Preferir título en EHentai"
+      "Title Language Prefer",
+      "标题语言偏好",
+      "제목 언어 선호",
+      "Idioma del título preferido"
     ],
     ehentaiTitlePreferTooltip: [
       "Many galleries have both an English/Romanized title and a title in Japanese script. <br>Which one do you want to use as the archive filename?",
@@ -1463,7 +1463,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         { value: "english", display: "English" },
         { value: "japanese", display: "Japanese" }
       ],
-      displayInSite: /e[-x]hentai(.*)?.(org|onion)\//
+      displayInSite: /e[-x]hentai(.*)?.(org|onion)\/|imhentai.xxx/
     },
     {
       key: "filenameOrder",
@@ -5244,6 +5244,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     name() {
       return "im-hentai";
     }
+    meta;
     data;
     gth;
     async fetchOriginMeta(node, _) {
@@ -5282,7 +5283,18 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.gth = JSON.parse(gthRaw);
       yield Result.ok(null);
     }
+    title() {
+      const meta = this.galleryMeta();
+      let title = "";
+      if (conf.ehentaiTitlePrefer === "japanese") {
+        title = meta.originTitle || meta.title || "UNTITLE";
+      } else {
+        title = meta.title || meta.originTitle || "UNTITLE";
+      }
+      return title;
+    }
     galleryMeta() {
+      if (this.meta) return this.meta;
       const title = document.querySelector(".right_details > h1")?.textContent || void 0;
       const originTitle = document.querySelector(".right_details > p.subtitle")?.textContent || void 0;
       const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
@@ -5297,7 +5309,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         const tags = Array.from(li.querySelectorAll("a.tag")).map((a) => a.firstChild?.textContent?.trim()).filter((v) => Boolean(v));
         meta.tags[cat] = tags;
       }
-      return meta;
+      this.meta = meta;
+      return this.meta;
     }
     workURL() {
       return /imhentai.xxx\/gallery\/\d+\//;

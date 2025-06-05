@@ -394,10 +394,10 @@ pero desactivará la lupa y la capacidad de arrastrar y mover imágenes.`,
     'En Hitomi, obtener imágenes por formato.<br>Si está en automático, intentará Avif > Jxl > Webp. Requiere actualización.'
   ],
   ehentaiTitlePrefer: [
-    'EHentai Prefer Title',
-    'EHentai标题语言',
-    'EHentai 선호 제목',
-    'Preferir título en EHentai'
+    'Title Language Prefer',
+    '标题语言偏好',
+    '제목 언어 선호',
+    'Idioma del título preferido'
   ],
   ehentaiTitlePreferTooltip: [
     'Many galleries have both an English/Romanized title and a title in Japanese script. <br>Which one do you want to use as the archive filename?',

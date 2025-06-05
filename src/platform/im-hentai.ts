@@ -1,3 +1,4 @@
+import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
 import ImageNode from "../img-node";
 import q from "../utils/query-element";
@@ -7,6 +8,7 @@ export class IMHentaiMatcher extends BaseMatcher<null> {
   name(): string {
     return "im-hentai";
   }
+  meta?: GalleryMeta;
   data?: { server: string, uid: string, gid: string, imgDir: string, total: number };
   gth?: Record<string, string>;
 
@@ -51,7 +53,19 @@ export class IMHentaiMatcher extends BaseMatcher<null> {
     yield Result.ok(null);
   }
 
+  title(): string {
+    const meta = this.galleryMeta();
+    let title = "";
+    if (conf.ehentaiTitlePrefer === "japanese") {
+      title = meta.originTitle || meta.title || "UNTITLE";
+    } else {
+      title = meta.title || meta.originTitle || "UNTITLE";
+    }
+    return title;
+  }
+
   galleryMeta(): GalleryMeta {
+    if (this.meta) return this.meta;
     const title = document.querySelector(".right_details > h1")?.textContent || undefined;
     const originTitle = document.querySelector(".right_details > p.subtitle")?.textContent || undefined;
     const meta = new GalleryMeta(window.location.href, title || "UNTITLE");
@@ -66,7 +80,8 @@ export class IMHentaiMatcher extends BaseMatcher<null> {
       const tags = Array.from(li.querySelectorAll("a.tag")).map(a => a.firstChild?.textContent?.trim()).filter(v => Boolean(v));
       meta.tags[cat] = tags;
     }
-    return meta;
+    this.meta = meta;
+    return this.meta;
   }
 
   workURL(): RegExp {

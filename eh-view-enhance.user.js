@@ -1293,7 +1293,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       pixivAscendWorks: false,
       filenameOrder: "auto",
       dragImageOut: false,
-      excludeVideo: false
+      excludeVideo: false,
+      enableFilter: false
     };
   }
   const CONF_VERSION = "4.4.0";
@@ -1702,6 +1703,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
             case 1 /* URL */:
               const meta = await this.fetchOriginMeta();
               this.node.originSrc = meta.url;
+              this.node.updateTagByExtension();
               if (meta.title) {
                 this.node.title = meta.title;
                 if (this.node.imgElement) {
@@ -1715,6 +1717,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
               const ret = await this.fetchImageData();
               [this.data, this.contentType] = ret;
               [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.node);
+              this.node.updateTagByPrefix("mime:" + (this.contentType ?? "unknown"));
               if (this.contentType.startsWith("text")) {
                 const str = new TextDecoder().decode(this.data);
                 evLog("error", "unexpect content:\n", str);
@@ -3013,9 +3016,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.queue = queue;
       this.matcher = matcher;
       this.filter = filter;
-      this.filter.onChange = () => {
-        this.changeToChapter(this.chapterIndex);
-      };
+      this.filter.onChange = () => this.changeToChapter(this.chapterIndex);
       const debouncer = new Debouncer();
       EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
       EBUS.subscribe("imf-on-finished", (index, success, imf) => {
@@ -3039,6 +3040,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           this.changeToChapter(newChapterIndex);
           EBUS.emit("notify-message", "info", "switch to chapter: " + this.chapters[newChapterIndex].title, 2e3);
         }
+      });
+      EBUS.subscribe("filter-update-all-tags", async () => {
+        const chapter = this.chapters[this.chapterIndex];
+        const set = /* @__PURE__ */ new Set();
+        chapter.filteredQueue.forEach((imf) => imf.node.tags.forEach((t) => set.add(t)));
+        this.filter.allTags = set;
       });
     }
     appendToView(total, nodes, chapterIndex, done) {
@@ -3221,6 +3228,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   const OVERLAY_TIP = document.createElement("div");
   OVERLAY_TIP.classList.add("overlay-tip");
   OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
+  const EXTENSION_REGEXP = /\.(\w+)[^\/]*$|twimg.*format=(\w+)/;
   class ImageNode {
     root;
     thumbnailSrc;
@@ -3231,7 +3239,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     canvasElement;
     canvasCtx;
     delaySRC;
-    originSrc;
+    _originSrc;
     blobSrc;
     mimeType;
     downloadBar;
@@ -3239,26 +3247,42 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     debouncer = new Debouncer();
     rect;
     tags;
+    get originSrc() {
+      return this._originSrc;
+    }
+    set originSrc(v) {
+      this._originSrc = v;
+      this.updateTagByExtension();
+    }
     constructor(thumbnailSrc, href, title, delaySRC, originSrc, wh) {
-      this.thumbnailSrc = thumbnailSrc;
       this.href = href;
       this.title = title;
       this.delaySRC = delaySRC;
-      this.originSrc = originSrc;
       this.rect = wh;
       this.tags = /* @__PURE__ */ new Set();
-      let ext = "";
-      if (originSrc) {
-        ext = originSrc.split(".").pop() ?? "";
-      } else if (thumbnailSrc) {
-        ext = thumbnailSrc.split(".").pop() ?? "";
-      }
-      if (ext) {
-        this.tags.add("ext:" + ext);
-      }
+      this.thumbnailSrc = thumbnailSrc;
+      this.originSrc = originSrc;
     }
     setTags(...tags) {
       tags.forEach((t) => this.tags.add(t));
+    }
+    updateTagByExtension() {
+      let src = this.originSrc || this.thumbnailSrc;
+      if (!src) return;
+      const ext = src.match(EXTENSION_REGEXP)?.find((match, i) => i > 0 && match);
+      if (ext) {
+        this.updateTagByPrefix("ext:" + ext);
+      }
+    }
+    updateTagByPrefix(tag) {
+      if (this.tags.has(tag)) return;
+      const prefix = tag.split(":").shift();
+      if (!prefix) return;
+      const found = this.tags.entries().find(([t]) => t.startsWith(prefix));
+      if (found?.[0]) {
+        this.tags.delete(found?.[0]);
+      }
+      this.tags.add(tag);
     }
     create() {
       this.root = DEFAULT_NODE_TEMPLATE.cloneNode(true);
@@ -10852,6 +10876,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       this.candidates = q("#tag-candidates", this.panel);
       this.candidatasFragment = document.createDocumentFragment();
       this.filter = filter;
+      this.input.addEventListener("click", () => EBUS.emit("filter-update-all-tags"));
       this.input.addEventListener("input", () => {
         this.candidateSelectIndex = 0;
         this.updateCandidates(false);
@@ -10878,11 +10903,15 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       });
     }
     updateCandidates(noCache) {
+      if (this.input.value.length === 0) {
+        this.candidates.hidden = true;
+        return;
+      }
       const term = this.input.value.trim();
       if (!noCache) {
         this.candidateCached = [...this.filter.allTags].filter((t) => !term || t.includes(term));
       }
-      if (this.candidateCached.length > 100) {
+      if (this.candidateCached.length > 500) {
         this.candidates.hidden = true;
         return;
       }
@@ -11287,6 +11316,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
       const filter = (id) => {
         if (id === "chapters-panel-btn") return this.chapters().length > 1;
+        if (id === "filter-panel-btn") return conf.enableFilter;
         if (id === "auto-page-btn" && level[0] === 3) return this.html.pageHelper.querySelector("#auto-page-btn")?.getAttribute("data-status") === "playing";
         if (id === "pagination-adjust-bar") return conf.readMode === "pagination";
         return true;
@@ -12561,6 +12591,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     allTags = /* @__PURE__ */ new Set();
     onChange;
     filterNodes(imfs, clearAllTags) {
+      if (!conf.enableFilter) return imfs;
       let list = imfs;
       for (const val of this.values) {
         list = list.filter((imf) => {

@@ -116,6 +116,7 @@ export type Config = {
   filenameOrder: "auto" | "numbers" | "original" | "alphabetically",
   dragImageOut: boolean,
   excludeVideo: boolean,
+  enableFilter: boolean,
 };
 
 function defaultColumns() {
@@ -182,6 +183,7 @@ function defaultConf(): Config {
     filenameOrder: "auto",
     dragImageOut: false,
     excludeVideo: false,
+    enableFilter: false,
   };
 }
 

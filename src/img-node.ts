@@ -18,6 +18,8 @@ const OVERLAY_TIP = document.createElement("div");
 OVERLAY_TIP.classList.add("overlay-tip");
 OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
 
+const EXTENSION_REGEXP = /\.(\w+)[^\/]*$|twimg.*format=(\w+)/;
+
 type Rect = {
   w: number;
   h: number;
@@ -36,7 +38,7 @@ export default class ImageNode {
   canvasElement?: HTMLCanvasElement;
   canvasCtx?: CanvasRenderingContext2D;
   delaySRC?: Promise<string>;
-  originSrc?: string;
+  private _originSrc?: string;
   blobSrc?: string;
   mimeType?: string;
   private downloadBar?: HTMLElement;
@@ -44,27 +46,48 @@ export default class ImageNode {
   private debouncer: Debouncer = new Debouncer();
   rect?: Rect;
   tags: Set<Tag>;
+
+  get originSrc() {
+    return this._originSrc;
+  }
+
+  set originSrc(v: string | undefined) {
+    this._originSrc = v;
+    this.updateTagByExtension();
+  }
+
   constructor(thumbnailSrc: string, href: string, title: string, delaySRC?: Promise<string>, originSrc?: string, wh?: { w: number, h: number }) {
-    this.thumbnailSrc = thumbnailSrc;
     this.href = href;
     this.title = title;
     this.delaySRC = delaySRC;
-    this.originSrc = originSrc;
     this.rect = wh;
     this.tags = new Set();
-    let ext = "";
-    if (originSrc) {
-      ext = originSrc.split(".").pop() ?? "";
-    } else if (thumbnailSrc) {
-      ext = thumbnailSrc.split(".").pop() ?? "";
-    }
-    if (ext) {
-      this.tags.add("ext:" + ext);
-    }
+    this.thumbnailSrc = thumbnailSrc;
+    this.originSrc = originSrc;
   }
 
   setTags(...tags: Tag[]) {
     tags.forEach(t => this.tags.add(t));
+  }
+
+  updateTagByExtension() {
+    let src = this.originSrc || this.thumbnailSrc;
+    if (!src) return;
+    const ext = src.match(EXTENSION_REGEXP)?.find((match, i) => i > 0 && match);
+    if (ext) {
+      this.updateTagByPrefix("ext:" + ext);
+    }
+  }
+
+  updateTagByPrefix(tag: Tag) {
+    if (this.tags.has(tag)) return;
+    const prefix = tag.split(":").shift();
+    if (!prefix) return;
+    const found = this.tags.entries().find(([t]) => t.startsWith(prefix));
+    if (found?.[0]) {
+      this.tags.delete(found?.[0]);
+    }
+    this.tags.add(tag);
   }
 
   create(): HTMLElement {

@@ -1,3 +1,4 @@
+import EBUS from "../event-bus";
 import { Filter } from "../filter";
 import q from "../utils/query-element";
 
@@ -21,6 +22,7 @@ export class FilterPanel {
     this.candidates = q("#tag-candidates", this.panel);
     this.candidatasFragment = document.createDocumentFragment();
     this.filter = filter;
+    this.input.addEventListener("click", () => EBUS.emit("filter-update-all-tags"));
     this.input.addEventListener("input", () => {
       this.candidateSelectIndex = 0;
       this.updateCandidates(false);
@@ -48,15 +50,19 @@ export class FilterPanel {
   }
 
   updateCandidates(noCache: boolean) {
+    if (this.input.value.length === 0) {
+      this.candidates.hidden = true;
+      return;
+    }
     const term = this.input.value.trim();
     // if (!term || term.length < 2) {
     //   this.candidates.hidden = true;
     //   return;
     // };
     if (!noCache) {
-      this.candidateCached = [...this.filter.allTags].filter(t => !term || t.includes(term));
+      this.candidateCached = [...this.filter.allTags].filter(t => !term || t.includes(term)); // TODO: fuzzy search
     }
-    if (this.candidateCached.length > 100) {
+    if (this.candidateCached.length > 500) {
       this.candidates.hidden = true;
       return;
     }

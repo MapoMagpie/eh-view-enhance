@@ -114,6 +114,7 @@ export class IMGFetcher {
           case FetchState.URL:
             const meta = await this.fetchOriginMeta();
             this.node.originSrc = meta.url;
+            this.node.updateTagByExtension();
             if (meta.title) {
               this.node.title = meta.title;
               if (this.node.imgElement) {
@@ -127,6 +128,7 @@ export class IMGFetcher {
             const ret = await this.fetchImageData();
             [this.data, this.contentType] = ret;
             [this.data, this.contentType] = await this.matcher.processData(this.data, this.contentType, this.node);
+            this.node.updateTagByPrefix("mime:" + (this.contentType ?? "unknown"));
             if (this.contentType.startsWith("text")) {
               // if (this.data.byteLength < 100000) { // less then 100kb
               const str = new TextDecoder().decode(this.data);

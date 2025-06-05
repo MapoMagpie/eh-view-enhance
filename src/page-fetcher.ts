@@ -44,12 +44,7 @@ export class PageFetcher {
     this.queue = queue;
     this.matcher = matcher;
     this.filter = filter;
-    this.filter.onChange = () => {
-      this.changeToChapter(this.chapterIndex);
-      // const chapter = this.chapters[this.chapterIndex];
-      // chapter.filteredQueue = filter.filterNodes(chapter.queue);
-      // TODO
-    };
+    this.filter.onChange = () => this.changeToChapter(this.chapterIndex);
     const debouncer = new Debouncer();
     // triggered then ifq finished
     EBUS.subscribe("ifq-on-finished-report", (index) => debouncer.addEvent("APPEND-NEXT-PAGES", () => this.appendPages(index), 5));
@@ -75,6 +70,13 @@ export class PageFetcher {
         this.changeToChapter(newChapterIndex);
         EBUS.emit("notify-message", "info", "switch to chapter: " + this.chapters[newChapterIndex].title, 2000);
       }
+    });
+
+    EBUS.subscribe("filter-update-all-tags", async () => {
+      const chapter = this.chapters[this.chapterIndex];
+      const set = new Set<string>();
+      chapter.filteredQueue.forEach(imf => imf.node.tags.forEach(t => set.add(t)));
+      this.filter.allTags = set;
     });
   }
 

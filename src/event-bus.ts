@@ -65,6 +65,7 @@ export interface Events {
   "start-download": (cb: () => void) => void;
   "fvg-flow-vision-resize": () => void;
   "imf-resize": (imf: IMGFetcher) => void;
+  "filter-update-all-tags": () => void;
 }
 
 export type EventID = keyof Events;

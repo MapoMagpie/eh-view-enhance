@@ -1,3 +1,4 @@
+import { conf } from "./config";
 import { IMGFetcher } from "./img-fetcher";
 
 export class Filter {
@@ -5,6 +6,7 @@ export class Filter {
   allTags: Set<Tag> = new Set();
   onChange?: (filter: Filter) => void;
   filterNodes(imfs: IMGFetcher[], clearAllTags: boolean): IMGFetcher[] {
+    if (!conf.enableFilter) return imfs;
     let list = imfs;
     for (const val of this.values) {
       list = list.filter(imf => {

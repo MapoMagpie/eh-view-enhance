@@ -3247,6 +3247,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     debouncer = new Debouncer();
     rect;
     tags;
+    actions = [];
     get originSrc() {
       return this._originSrc;
     }
@@ -4804,7 +4805,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         yield Result.ok(window.location.href);
         return;
       }
-      const pages = Array.from(doc.querySelectorAll(".gtb td a")).filter((a) => a.getAttribute("href")).map((a) => a.getAttribute("href"));
+      const pages = Array.from(doc.querySelectorAll(".gtb td a")).filter((a) => a.href).map((a) => a.href);
       if (pages.length === 0) {
         throw new Error("cannot found next page elements");
       }

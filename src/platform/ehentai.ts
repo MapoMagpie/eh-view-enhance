@@ -263,7 +263,7 @@ export class EHMatcher extends BaseMatcher<string> {
       return;
     }
     // Normal
-    const pages = Array.from(doc.querySelectorAll(".gtb td a")).filter(a => a.getAttribute("href")).map(a => a.getAttribute("href")!);
+    const pages = Array.from(doc.querySelectorAll<HTMLAnchorElement>(".gtb td a")).filter(a => a.href).map(a => a.href);
     if (pages.length === 0) {
       throw new Error("cannot found next page elements");
     }

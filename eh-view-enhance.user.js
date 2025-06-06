@@ -3306,8 +3306,45 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         anchor.addEventListener("click", (event) => {
           event.preventDefault();
           this.onclick(event);
-        });
+        }, { passive: false, capture: false });
       }
+      this.root.addEventListener("mouseenter", () => {
+        if (this.actions.length === 0) return;
+        this.root.addEventListener("mouseleave", () => {
+          if (!this.root.querySelector(".img-node-actions > .img-node-action-btn-processing")) {
+            this.root.querySelector(".img-node-actions")?.remove();
+          }
+        });
+        if (this.root.querySelector(".img-node-actions")) return;
+        const actionContainer = document.createElement("div");
+        actionContainer.classList.add("img-node-actions");
+        for (const action of this.actions) {
+          const actionElem = document.createElement("button");
+          actionElem.classList.add("img-node-action-btn");
+          if (action.done) {
+            actionElem.classList.add("img-node-action-btn-done");
+          }
+          actionElem.textContent = action.icon;
+          actionElem.addEventListener("click", (ev) => {
+            const target = ev.target;
+            target.disabled = true;
+            target.classList.add("img-node-action-btn-processing");
+            action.processing = true;
+            action.func(this).then(() => {
+              target.classList.remove("img-node-action-btn-processing");
+              target.classList.add("img-node-action-btn-done");
+              target.disabled = false;
+              action.done = true;
+            }).catch(() => {
+              target.classList.remove("img-node-action-btn-processing");
+              target.classList.add("img-node-action-btn-error");
+              target.disabled = false;
+            }).finally(() => action.processing = false);
+          }, { passive: false, capture: true });
+          actionContainer.appendChild(actionElem);
+        }
+        this.root.appendChild(actionContainer);
+      });
       return this.root;
     }
     resize(onfailed, onResize) {
@@ -9520,6 +9557,48 @@ before contentType: ${contentType}, after contentType: ${blob.type}
   z-index: 1;
   width: 100%;
   height: 100%;
+}
+.img-node-actions {
+  position: absolute;
+  bottom: 5px;
+  height: 1.2em;
+  left: 0;
+  z-index: 1;
+}
+.img-node-action-btn {
+  line-height: 1.2em;
+  border: 1px solid #efe;
+  text-align: center;
+  border-radius: 5px;
+  color: #efe;
+  font-weight: 900;
+  background-color: #1f1f1fc7;
+  margin-left: 0.3em;
+  text-shadow: #000 1px 0 10px;
+  cursor: pointer;
+}
+.img-node-action-btn:hover {
+  border: 1px solid yellow;
+  color: yellow;
+}
+.img-node-action-btn-processing {
+  animation: btn-rotate 1s linear infinite;
+}
+.img-node-action-btn-done {
+  border: 1px solid #6eff84;
+  color: #6eff84;
+}
+.img-node-action-btn-error {
+  border: 1px solid red;
+  color: red;
+}
+@keyframes btn-rotate {
+	0% {
+    transform: rotate(0.0turn);
+	}
+	100% {
+    transform: rotate(1.0turn);
+	}
 }
 .ehvp-chapter-description, .img-node-error-hint {
   display: block;

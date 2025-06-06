@@ -163,6 +163,48 @@ export function styleCSS() {
   width: 100%;
   height: 100%;
 }
+.img-node-actions {
+  position: absolute;
+  bottom: 5px;
+  height: 1.2em;
+  left: 0;
+  z-index: 1;
+}
+.img-node-action-btn {
+  line-height: 1.2em;
+  border: 1px solid #efe;
+  text-align: center;
+  border-radius: 5px;
+  color: #efe;
+  font-weight: 900;
+  background-color: #1f1f1fc7;
+  margin-left: 0.3em;
+  text-shadow: #000 1px 0 10px;
+  cursor: pointer;
+}
+.img-node-action-btn:hover {
+  border: 1px solid yellow;
+  color: yellow;
+}
+.img-node-action-btn-processing {
+  animation: btn-rotate 1s linear infinite;
+}
+.img-node-action-btn-done {
+  border: 1px solid #6eff84;
+  color: #6eff84;
+}
+.img-node-action-btn-error {
+  border: 1px solid red;
+  color: red;
+}
+@keyframes btn-rotate {
+	0% {
+    transform: rotate(0.0turn);
+	}
+	100% {
+    transform: rotate(1.0turn);
+	}
+}
 .ehvp-chapter-description, .img-node-error-hint {
   display: block;
   position: absolute;

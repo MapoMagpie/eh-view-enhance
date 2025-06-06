@@ -28,6 +28,24 @@ type Rect = {
 type Onfailed = (reason: string, source?: string, error?: Error) => void;
 type OnResize = () => void;
 
+export class NodeAction {
+  icon: string;
+  description: string;
+  func: (node: ImageNode) => Promise<void>;
+  reueable: boolean = false;
+  done: boolean = false;
+  processing: boolean = false;
+  constructor(icon: string, description: string, func: (node: ImageNode) => Promise<void>, reueable?: boolean) {
+    this.icon = icon;
+    this.description = description;
+    this.func = func;
+    this.reueable = reueable ?? false;
+  }
+  async do(imf: ImageNode): Promise<void> {
+    await this.func(imf);
+  }
+}
+
 export default class ImageNode {
   root?: HTMLElement;
   thumbnailSrc: string;
@@ -46,6 +64,7 @@ export default class ImageNode {
   private debouncer: Debouncer = new Debouncer();
   rect?: Rect;
   tags: Set<Tag>;
+  actions: NodeAction[] = [];
 
   get originSrc() {
     return this._originSrc;
@@ -64,6 +83,16 @@ export default class ImageNode {
     this.tags = new Set();
     this.thumbnailSrc = thumbnailSrc;
     this.originSrc = originSrc;
+    // this.actions = [
+    //   new NodeAction("♥", "", async () => {
+    //     await sleep(100);
+    //     EBUS.emit("notify-message", "info", "hello", 1000);
+    //   }),
+    //   new NodeAction("☯", "", async () => {
+    //     await sleep(3000);
+    //     EBUS.emit("notify-message", "info", "world", 1000);
+    //   }),
+    // ];
   }
 
   setTags(...tags: Tag[]) {
@@ -113,8 +142,45 @@ export default class ImageNode {
       anchor.addEventListener("click", (event) => {
         event.preventDefault();
         this.onclick!(event);
-      });
+      }, { passive: false, capture: false });
     }
+    this.root.addEventListener("mouseenter", () => {
+      if (this.actions.length === 0) return;
+      this.root!.addEventListener("mouseleave", () => {
+        if (!this.root!.querySelector(".img-node-actions > .img-node-action-btn-processing")) {
+          this.root!.querySelector(".img-node-actions")?.remove();
+        }
+      });
+      if (this.root!.querySelector(".img-node-actions")) return;
+      const actionContainer = document.createElement("div");
+      actionContainer.classList.add("img-node-actions");
+      for (const action of this.actions) {
+        const actionElem = document.createElement("button");
+        actionElem.classList.add("img-node-action-btn");
+        if (action.done) {
+          actionElem.classList.add("img-node-action-btn-done");
+        }
+        actionElem.textContent = action.icon;
+        actionElem.addEventListener("click", (ev) => {
+          const target = ev.target as HTMLButtonElement;
+          target.disabled = true;
+          target.classList.add("img-node-action-btn-processing");
+          action.processing = true;
+          action.func(this).then(() => {
+            target.classList.remove("img-node-action-btn-processing");
+            target.classList.add("img-node-action-btn-done");
+            target.disabled = false;
+            action.done = true;
+          }).catch(() => {
+            target.classList.remove("img-node-action-btn-processing");
+            target.classList.add("img-node-action-btn-error");
+            target.disabled = false;
+          }).finally(() => action.processing = false);
+        }, { passive: false, capture: true });
+        actionContainer.appendChild(actionElem);
+      }
+      this.root!.appendChild(actionContainer);
+    });
     return this.root;
   }
 

@@ -1,7 +1,7 @@
 import { GM_xmlhttpRequest } from "$";
 import { conf } from "../config";
 import { GalleryMeta } from "../download/gallery-meta";
-import ImageNode from "../img-node";
+import ImageNode, { NodeAction } from "../img-node";
 import { Chapter } from "../page-fetcher";
 import { evLog } from "../utils/ev-log";
 import { transactionId, uuid } from "../utils/random";
@@ -315,6 +315,7 @@ export class TwitterMatcher extends BaseMatcher<Item[]> {
   postCount: number = 0;
   mediaCount: number = 0;
   api: TwitterAPIClient;
+  uuid = uuid();
 
   constructor() {
     super();
@@ -350,15 +351,31 @@ export class TwitterMatcher extends BaseMatcher<Item[]> {
     if (!items) throw new Error("warn: cannot find items");
     const list: ImageNode[] = [];
     for (const item of items) {
-      const mediaList = item?.itemContent?.tweet_results?.result?.legacy?.entities?.media
-        || item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media
-        || item?.itemContent?.tweet_results?.result?.legacy?.retweeted_status_result?.result?.legacy?.entities?.media;
+      const legacy = item?.itemContent?.tweet_results?.result?.legacy
+        || item?.itemContent?.tweet_results?.result?.tweet?.legacy
+        || item?.itemContent?.tweet_results?.result?.legacy?.retweeted_status_result?.result?.legacy;
+      const mediaList = legacy?.entities.media;
       if (mediaList === undefined) {
         const user = item.itemContent?.tweet_results?.result?.core?.user_results?.result?.legacy?.name;
         const rest_id = item.itemContent.tweet_results.result.rest_id;
         evLog("error", `cannot found mediaList: ${window.location.origin}/${user}/status/${rest_id}`, item);
         continue;
       }
+      const tweetID = legacy?.id_str!;
+      const actionLike = new NodeAction("♥", "like this tweet", async () => {
+        await fetch("https://x.com/i/api/graphql/lI07N6Otwv1PhnEgXILM7A/FavoriteTweet", {
+          "headers": createHeader(this.uuid),
+          "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"lI07N6Otwv1PhnEgXILM7A\"}",
+          "method": "POST", "mode": "cors"
+        });
+      });
+      const actionBookmark = new NodeAction("🔖", "bookmark this tweet", async () => {
+        await fetch("https://x.com/i/api/graphql/aoDbu3RHznuiSkQ9aNM67Q/CreateBookmark", {
+          "headers": createHeader(this.uuid),
+          "body": "{\"variables\":{\"tweet_id\":\"" + tweetID + "\"},\"queryId\":\"aoDbu3RHznuiSkQ9aNM67Q\"}",
+          "method": "POST", "mode": "cors"
+        });
+      });
       this.postCount++;
       if (conf.reverseMultipleImagesPost) {
         mediaList.reverse();
@@ -381,6 +398,9 @@ export class TwitterMatcher extends BaseMatcher<Item[]> {
         const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`
         const wh = { w: media.sizes.small.w, h: media.sizes.small.h };
         const node = new ImageNode(src, href, title, undefined, largeSrc, wh);
+        node.actions.push(actionLike);
+        node.actions.push(actionBookmark);
+
         if (media.video_info) {
           let bitrate = 0;
           for (const variant of media.video_info.variants) {

@@ -3229,6 +3229,23 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   OVERLAY_TIP.classList.add("overlay-tip");
   OVERLAY_TIP.innerHTML = `<span>GIF</span>`;
   const EXTENSION_REGEXP = /\.(\w+)[^\/]*$|twimg.*format=(\w+)/;
+  class NodeAction {
+    icon;
+    description;
+    func;
+    reueable = false;
+    done = false;
+    processing = false;
+    constructor(icon, description, func, reueable) {
+      this.icon = icon;
+      this.description = description;
+      this.func = func;
+      this.reueable = reueable ?? false;
+    }
+    async do(imf) {
+      await this.func(imf);
+    }
+  }
   class ImageNode {
     root;
     thumbnailSrc;
@@ -3263,6 +3280,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.tags = /* @__PURE__ */ new Set();
       this.thumbnailSrc = thumbnailSrc;
       this.originSrc = originSrc;
+      if (this.href && this.href.startsWith("http")) {
+        this.actions.push(new NodeAction("🌐", "open the href in new tab", async () => {
+          window.open(this.href, "_blank");
+        }));
+      }
     }
     setTags(...tags) {
       tags.forEach((t) => this.tags.add(t));
@@ -6991,6 +7013,7 @@ duration 0.04`).join("\n");
     works = {};
     ugoiraMetas = {};
     convertor;
+    csrfToken;
     constructor() {
       super();
       this.meta = new GalleryMeta(window.location.href, "UNTITLE");
@@ -7066,6 +7089,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
     }
     fetchChapters() {
+      this.csrfToken = document.querySelector("#__NEXT_DATA__")?.textContent?.match(/\\"api\\":\{\\"token\\":\\"(\w+)\\"/)?.[1];
       return this.api.fetchChapters();
     }
     fetchPagesSource(chapter) {
@@ -7097,6 +7121,37 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           EBUS.emit("notify-message", "error", reason, 8e3);
           continue;
         }
+        const actionLike = new NodeAction("☺", "like this illust", async () => {
+          if (this.csrfToken) {
+            await fetch("https://www.pixiv.net/ajax/illusts/like", {
+              "headers": {
+                "content-type": "application/json; charset=utf-8",
+                "x-csrf-token": this.csrfToken
+              },
+              "body": '{"illust_id":"' + pid + '"}',
+              "method": "POST",
+              "mode": "cors"
+            });
+          } else {
+            EBUS.emit("notify-message", "error", "cannot find csrf_token from this page");
+          }
+        });
+        const actionBookmark = new NodeAction("♥", "bookmark this illust", async () => {
+          if (this.csrfToken) {
+            await fetch("https://www.pixiv.net/ajax/illusts/bookmarks/add", {
+              "credentials": "include",
+              "headers": {
+                "content-type": "application/json; charset=utf-8",
+                "x-csrf-token": this.csrfToken
+              },
+              "body": '{"illust_id":"' + pid + '","restrict":0,"comment":"","tags":[]}',
+              "method": "POST",
+              "mode": "cors"
+            });
+          } else {
+            EBUS.emit("notify-message", "error", "cannot find csrf_token from this page");
+          }
+        });
         this.pageCount += data.body.length;
         const digits = data.body.length.toString().length;
         let j = -1;
@@ -7108,6 +7163,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           }
           j++;
           const node = new ImageNode(p.urls.small, `${window.location.origin}/artworks/${pid}`, title, void 0, p.urls.original, { w: p.width, h: p.height });
+          node.actions.push(actionLike);
+          node.actions.push(actionBookmark);
           list.push(node);
         }
       }
@@ -7496,6 +7553,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     postCount = 0;
     mediaCount = 0;
     api;
+    uuid = uuid();
     constructor() {
       super();
       if (/\/home$/.test(window.location.href)) {
@@ -7527,13 +7585,31 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       if (!items) throw new Error("warn: cannot find items");
       const list = [];
       for (const item of items) {
-        const mediaList = item?.itemContent?.tweet_results?.result?.legacy?.entities?.media || item?.itemContent?.tweet_results?.result?.tweet?.legacy?.entities?.media || item?.itemContent?.tweet_results?.result?.legacy?.retweeted_status_result?.result?.legacy?.entities?.media;
+        const legacy = item?.itemContent?.tweet_results?.result?.legacy || item?.itemContent?.tweet_results?.result?.tweet?.legacy || item?.itemContent?.tweet_results?.result?.legacy?.retweeted_status_result?.result?.legacy;
+        const mediaList = legacy?.entities.media;
         if (mediaList === void 0) {
           const user = item.itemContent?.tweet_results?.result?.core?.user_results?.result?.legacy?.name;
           const rest_id = item.itemContent.tweet_results.result.rest_id;
           evLog("error", `cannot found mediaList: ${window.location.origin}/${user}/status/${rest_id}`, item);
           continue;
         }
+        const tweetID = legacy?.id_str;
+        const actionLike = new NodeAction("♥", "like this tweet", async () => {
+          await fetch("https://x.com/i/api/graphql/lI07N6Otwv1PhnEgXILM7A/FavoriteTweet", {
+            "headers": createHeader(this.uuid),
+            "body": '{"variables":{"tweet_id":"' + tweetID + '"},"queryId":"lI07N6Otwv1PhnEgXILM7A"}',
+            "method": "POST",
+            "mode": "cors"
+          });
+        });
+        const actionBookmark = new NodeAction("🔖", "bookmark this tweet", async () => {
+          await fetch("https://x.com/i/api/graphql/aoDbu3RHznuiSkQ9aNM67Q/CreateBookmark", {
+            "headers": createHeader(this.uuid),
+            "body": '{"variables":{"tweet_id":"' + tweetID + '"},"queryId":"aoDbu3RHznuiSkQ9aNM67Q"}',
+            "method": "POST",
+            "mode": "cors"
+          });
+        });
         this.postCount++;
         if (conf.reverseMultipleImagesPost) {
           mediaList.reverse();
@@ -7556,6 +7632,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           const title = `${media.id_str}-${baseSrc.split("/").pop()}.${ext}`;
           const wh = { w: media.sizes.small.w, h: media.sizes.small.h };
           const node = new ImageNode(src, href, title, void 0, largeSrc, wh);
+          node.actions.push(actionLike);
+          node.actions.push(actionBookmark);
           if (media.video_info) {
             let bitrate = 0;
             for (const variant of media.video_info.variants) {
@@ -9560,7 +9638,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 }
 .img-node-actions {
   position: absolute;
-  bottom: 5px;
+  bottom: 10px;
   height: 1.2em;
   left: 0;
   z-index: 1;

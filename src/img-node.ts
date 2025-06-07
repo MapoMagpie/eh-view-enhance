@@ -83,16 +83,11 @@ export default class ImageNode {
     this.tags = new Set();
     this.thumbnailSrc = thumbnailSrc;
     this.originSrc = originSrc;
-    // this.actions = [
-    //   new NodeAction("♥", "", async () => {
-    //     await sleep(100);
-    //     EBUS.emit("notify-message", "info", "hello", 1000);
-    //   }),
-    //   new NodeAction("☯", "", async () => {
-    //     await sleep(3000);
-    //     EBUS.emit("notify-message", "info", "world", 1000);
-    //   }),
-    // ];
+    if (this.href && this.href.startsWith("http")) {
+      this.actions.push(new NodeAction("🌐", "open the href in new tab", async () => {
+        window.open(this.href, "_blank");
+      }));
+    }
   }
 
   setTags(...tags: Tag[]) {

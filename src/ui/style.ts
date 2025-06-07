@@ -165,7 +165,7 @@ export function styleCSS() {
 }
 .img-node-actions {
   position: absolute;
-  bottom: 5px;
+  bottom: 10px;
   height: 1.2em;
   left: 0;
   z-index: 1;

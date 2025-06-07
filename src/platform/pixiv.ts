@@ -2,7 +2,7 @@ import { GalleryMeta } from "../download/gallery-meta";
 import { evLog } from "../utils/ev-log";
 import { BaseMatcher, OriginMeta, Result } from "./platform";
 import { FFmpegConvertor } from "../utils/ffmpeg";
-import ImageNode from "../img-node";
+import ImageNode, { NodeAction } from "../img-node";
 import { conf } from "../config";
 import * as zip_js from "@zip.js/zip.js";
 import { batchFetch } from "../utils/query";
@@ -171,6 +171,7 @@ export class PixivMatcher extends BaseMatcher<AuthorPIDs[]> {
   works: Record<string, Work> = {};
   ugoiraMetas: Record<string, UgoiraMeta> = {};
   convertor?: FFmpegConvertor;
+  csrfToken?: string;
 
   constructor() {
     super();
@@ -258,6 +259,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
 
 
   fetchChapters(): Promise<Chapter[]> {
+    this.csrfToken = document.querySelector("#__NEXT_DATA__")?.textContent?.match(/\\"api\\":\{\\"token\\":\\"(\w+)\\"/)?.[1];
     return this.api.fetchChapters();
   }
 
@@ -293,6 +295,37 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         EBUS.emit("notify-message", "error", reason, 8000);
         continue;
       }
+      const actionLike = new NodeAction("☺", "like this illust", async () => {
+        if (this.csrfToken) {
+          await fetch("https://www.pixiv.net/ajax/illusts/like", {
+            "headers": {
+              "content-type": "application/json; charset=utf-8",
+              "x-csrf-token": this.csrfToken,
+            },
+            "body": "{\"illust_id\":\"" + pid + "\"}",
+            "method": "POST",
+            "mode": "cors"
+          });
+        } else {
+          EBUS.emit("notify-message", "error", "cannot find csrf_token from this page");
+        }
+      });
+      const actionBookmark = new NodeAction("♥", "bookmark this illust", async () => {
+        if (this.csrfToken) {
+          await fetch("https://www.pixiv.net/ajax/illusts/bookmarks/add", {
+            "credentials": "include",
+            "headers": {
+              "content-type": "application/json; charset=utf-8",
+              "x-csrf-token": this.csrfToken,
+            },
+            "body": "{\"illust_id\":\"" + pid + "\",\"restrict\":0,\"comment\":\"\",\"tags\":[]}",
+            "method": "POST",
+            "mode": "cors"
+          });
+        } else {
+          EBUS.emit("notify-message", "error", "cannot find csrf_token from this page");
+        }
+      });
       this.pageCount += data.body.length;
       const digits = data.body.length.toString().length;
       let j = -1;
@@ -304,6 +337,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         }
         j++;
         const node = new ImageNode(p.urls.small, `${window.location.origin}/artworks/${pid}`, title, undefined, p.urls.original, { w: p.width, h: p.height });
+        node.actions.push(actionLike);
+        node.actions.push(actionBookmark);
         list.push(node);
       }
     }

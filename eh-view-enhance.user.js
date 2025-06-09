@@ -3280,11 +3280,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.tags = /* @__PURE__ */ new Set();
       this.thumbnailSrc = thumbnailSrc;
       this.originSrc = originSrc;
-      if (this.href && this.href.startsWith("http")) {
-        this.actions.push(new NodeAction("🌐", "open the href in new tab", async () => {
-          window.open(this.href, "_blank");
-        }));
-      }
     }
     setTags(...tags) {
       tags.forEach((t) => this.tags.add(t));

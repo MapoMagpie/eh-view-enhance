@@ -152,7 +152,7 @@ export class Downloader {
     this.selectedChapters.length = 0;
     const idSet = this.panel.selectedChapters();
     if (idSet.size === 0) {
-      this.selectedChapters.push({ index: 0, done: false, ...promiseWithResolveAndReject() });
+      this.selectedChapters.push({ index: this.pageFetcher.chapterIndex, done: false, ...promiseWithResolveAndReject() });
     } else {
       this.pageFetcher.chapters.forEach((c, i) => idSet.has(c.id) && this.selectedChapters.push({ index: i, done: false, ...promiseWithResolveAndReject() }));
     }
@@ -201,6 +201,7 @@ export class Downloader {
       evLog("error", "download failed: ", error);
     } finally {
       this.downloading = false;
+      // should clear this.selectedChapters ?
     }
   }
 

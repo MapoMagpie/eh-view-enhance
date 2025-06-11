@@ -2399,7 +2399,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.selectedChapters.length = 0;
       const idSet = this.panel.selectedChapters();
       if (idSet.size === 0) {
-        this.selectedChapters.push({ index: 0, done: false, ...promiseWithResolveAndReject() });
+        this.selectedChapters.push({ index: this.pageFetcher.chapterIndex, done: false, ...promiseWithResolveAndReject() });
       } else {
         this.pageFetcher.chapters.forEach((c, i) => idSet.has(c.id) && this.selectedChapters.push({ index: i, done: false, ...promiseWithResolveAndReject() }));
       }

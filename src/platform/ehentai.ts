@@ -82,7 +82,7 @@ export class EHMatcher extends BaseMatcher<string> {
     tagTrList.forEach((tr) => {
       const tds = tr.childNodes;
       const cat = tds[0].textContent;
-      if (cat) {
+      if (cat && tds[1]) {
         const list: string[] = [];
         tds[1].childNodes.forEach((ele) => {
           if (ele.textContent) list.push(ele.textContent);

@@ -122,7 +122,7 @@ export class PageFetcher {
     this.chapterIndex = index;
     EBUS.emit("pf-change-chapter", index, this.chapters[index]);
     const chapter = this.chapters[index];
-    chapter.filteredQueue = this.filter.filterNodes(chapter.queue, true);
+    chapter.filteredQueue = [...this.filter.filterNodes(chapter.queue, true)];
     chapter.filteredQueue.forEach((node, i) => node.index = i);
     if (chapter.filteredQueue.length > 0) {
       this.appendToView(chapter.filteredQueue.length, chapter.filteredQueue, index, this.chapters[index].done);

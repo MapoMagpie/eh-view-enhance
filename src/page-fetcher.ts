@@ -200,9 +200,10 @@ export class PageFetcher {
       const IFs = nodes.map(
         (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex, this.chapters[this.chapterIndex].id)
       );
-      this.chapters[this.chapterIndex].queue.push(...IFs);
+      chapter.queue.push(...IFs);
       const filteredIFs = this.filter.filterNodes(IFs, false);
       filteredIFs.forEach((node, i) => node.index = len + i);
+      chapter.filteredQueue.push(...filteredIFs);
       this.queue.push(...filteredIFs);
       this.appendToView(this.queue.length, filteredIFs, this.chapterIndex);
       return true;

@@ -3160,9 +3160,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         const IFs = nodes.map(
           (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex, this.chapters[this.chapterIndex].id)
         );
-        this.chapters[this.chapterIndex].queue.push(...IFs);
+        chapter.queue.push(...IFs);
         const filteredIFs = this.filter.filterNodes(IFs, false);
         filteredIFs.forEach((node, i) => node.index = len + i);
+        chapter.filteredQueue.push(...filteredIFs);
         this.queue.push(...filteredIFs);
         this.appendToView(this.queue.length, filteredIFs, this.chapterIndex);
         return true;
@@ -3951,10 +3952,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
           let isEmpty = true;
           for (const m of matches) {
             const key = m[1];
-            const fn = m[2];
+            const fn2 = m[2];
             const pam = m[3];
             if (!fun) {
-              const name = findTheFunction(text, fn)?.[0]?.[0] ?? fn;
+              const name = findTheFunction(text, fn2)?.[0]?.[0] ?? fn2;
               console.log("colamanga, the function name: ", name);
               fun = new Function("p", `return ${name}(p)`);
             }
@@ -3963,7 +3964,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
             isEmpty = false;
           }
           if (isEmpty) throw new Error("cannot init key map from " + jsURL);
-          resolve(keymap);
+          const fn = parseGetActualKeyFunction(text);
+          resolve([keymap, fn]);
         } catch (reason) {
           reject(reason);
         }
@@ -3977,12 +3979,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     infoMap = {};
     keymap;
     keys = ["dDeIieDgQpwVQZsJ", "54bilXmmMoYBqBcI", "KcmiZ8owmiBoPRMf", "4uOJvtnq5YYIKZWA", "lVfo0i0o4g3V78Rt", "i8XLTfT8Mvu1Fcv2"];
+    getActualK;
     name() {
       return "colamanga";
     }
     async fetchChapters() {
       this.keys = await initColamangaKeys();
-      this.keymap = await initColaMangaKeyMap();
+      [this.keymap, this.getActualK] = await initColaMangaKeyMap();
       const thumbimg = document.querySelector("dt.fed-part-rows > a")?.getAttribute("data-original") || void 0;
       const list = Array.from(document.querySelectorAll(".all_data_list .fed-part-rows > li > a"));
       return list.map((a, index) => new Chapter(index, a.title, a.href, thumbimg));
@@ -4027,7 +4030,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       const info = this.infoMap[node.href];
       if (!info) throw new Error("cannot found info from " + node.href);
       if (info.image_info.imgKey) {
-        const decoded = decryptImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap, this.keys);
+        const decoded = this.decryptImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap, this.keys);
         return [decoded, _contentType];
       } else {
         return [data, _contentType];
@@ -4041,6 +4044,33 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         "Referer": window.location.href,
         "Origin": window.location.origin
       };
+    }
+    decryptImageData(data, keyType, imgKey, keymap, keys) {
+      let kRaw;
+      if (keyType !== "" && keyType !== "0") {
+        kRaw = keymap[parseInt(keyType)];
+      } else {
+        for (const k of keys) {
+          try {
+            kRaw = decrypt$1(k, imgKey);
+            break;
+          } catch (_error) {
+            evLog("error", _error.toString());
+          }
+        }
+      }
+      const wordArray = convertUint8ArrayToWordArray(data);
+      const encArray = { ciphertext: wordArray };
+      const cryptoJS = CryptoJS;
+      const actualK = this.getActualK?.(kRaw);
+      const key = cryptoJS.enc.Utf8.parse(actualK);
+      const de = cryptoJS.AES.decrypt(encArray, key, {
+        iv: cryptoJS.enc.Utf8.parse("0000000000000000"),
+        mode: cryptoJS.mode.CBC,
+        padding: cryptoJS.pad.Pkcs7
+      });
+      const ret = convertWordArrayToUint8Array(de);
+      return ret;
     }
   }
   function convertUint8ArrayToWordArray(data) {
@@ -4070,32 +4100,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       u8_array[offset++] = word & 255;
     }
     return u8_array;
-  }
-  function decryptImageData(data, keyType, imgKey, keymap, keys) {
-    let kRaw;
-    if (keyType !== "" && keyType !== "0") {
-      kRaw = keymap[parseInt(keyType)];
-    } else {
-      for (const k of keys) {
-        try {
-          kRaw = decrypt$1(k, imgKey);
-          break;
-        } catch (_error) {
-          evLog("error", _error.toString());
-        }
-      }
-    }
-    const wordArray = convertUint8ArrayToWordArray(data);
-    const encArray = { ciphertext: wordArray };
-    const cryptoJS = CryptoJS;
-    const key = cryptoJS.enc.Utf8.parse(kRaw);
-    const de = cryptoJS.AES.decrypt(encArray, key, {
-      iv: cryptoJS.enc.Utf8.parse("0000000000000000"),
-      mode: cryptoJS.mode.CBC,
-      padding: cryptoJS.pad.Pkcs7
-    });
-    const ret = convertWordArrayToUint8Array(de);
-    return ret;
   }
   function decryptInfo(countEncCode, pathEncCode, mhid, keys) {
     let count;
@@ -4150,6 +4154,15 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
     }
     return keys;
+  }
+  function parseGetActualKeyFunction(raw) {
+    const regex2 = /(eval\(function.*?\)\)\)),_0x/;
+    const evalExpression = raw.match(regex2)?.[1];
+    return new Function("ksddd", `
+        var actualKey = ksddd;
+        ${evalExpression};
+        return actualKey;
+      `);
   }
   function findTheFunction(raw, val, param) {
     const reg = new RegExp(val + `=((\\w+)(\\([^)]+\\))?)[,; ]`, "gm");
@@ -4690,7 +4703,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       tagTrList.forEach((tr) => {
         const tds = tr.childNodes;
         const cat = tds[0].textContent;
-        if (cat) {
+        if (cat && tds[1]) {
           const list = [];
           tds[1].childNodes.forEach((ele) => {
             if (ele.textContent) list.push(ele.textContent);
@@ -5903,7 +5916,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   async function decrypt(raw) {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
-    const dioKey = encoder.encode("xxxmanga.woo.key");
+    const dioKey = encoder.encode("xxxmanga.wol.key");
     const header = raw.substring(0, 16);
     const body = raw.substring(16);
     const iv = encoder.encode(header);

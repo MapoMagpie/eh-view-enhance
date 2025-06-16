@@ -100,7 +100,8 @@ async function decrypt(raw: string): Promise<string> {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
   // Key and IV
-  const dioKey = encoder.encode("xxxmanga.woo.key");
+  // const dioKey = encoder.encode("xxxmanga.woo.key");
+  const dioKey = encoder.encode("xxxmanga.wol.key");
   const header = raw.substring(0, 16); // First 16 characters as IV
   const body = raw.substring(16); // Rest is the encrypted data
   const iv = encoder.encode(header);

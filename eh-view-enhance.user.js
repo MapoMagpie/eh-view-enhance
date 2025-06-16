@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name               Comic Looms
+// @name:en            Comic Looms
 // @name:zh-CN         漫画织机
 // @name:zh-TW         漫畫織機
 // @name:ja            コミック織機
@@ -10,6 +11,7 @@
 // @version            4.10.23
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support you in finding the site you are searching for.
+// @description:en     Manga Viewer + Downloader, Focus on experience and low load on the site. Support you in finding the site you are searching for.
 // @description:zh-CN  漫画阅读 + 下载器，注重体验和对站点的负载控制。支持你正在搜索的站点。
 // @description:zh-TW  漫畫閱讀 + 下載器，注重體驗和對站點的負載控制。支持你正在搜索的站點。
 // @description:ja     サイトのエクスペリエンスと負荷制御に重点を置いたコミック閲覧 + ダウンローダー。あなたが探しているサイトを見つけるのをサポートします。

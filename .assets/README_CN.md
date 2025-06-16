@@ -62,7 +62,7 @@
 - [e621.net](https://e621.net)
 - [arca.live](https://arca.live)
 - [akuma.moe](https://akuma.moe)
-- [colamanga.com](https://www.colamanga.com)
+- [colamanga.com](https://www.colamanga.com) (中止)
 - [yabai.si](https://yabai.si)
 - [hanime1.me](https://hanime1.me/comics)
 - [mycomic.com](https://mycomic.com)

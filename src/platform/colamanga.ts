@@ -43,7 +43,7 @@ function initColamangaKeys(): Promise<string[]> {
   });
 }
 
-function initColaMangaKeyMap(): Promise<Record<number, string>> {
+function initColaMangaKeyMap(): Promise<[Record<number, string>, Function]> {
   return new Promise((resolve, reject) => {
     const jsURL = "https://www.colamanga.com/js/manga.read.js";
     const elem = document.createElement("script");
@@ -68,7 +68,8 @@ function initColaMangaKeyMap(): Promise<Record<number, string>> {
           isEmpty = false;
         }
         if (isEmpty) throw new Error("cannot init key map from " + jsURL);
-        resolve(keymap);
+        const fn = parseGetActualKeyFunction(text);
+        resolve([keymap, fn]);
       } catch (reason) {
         reject(reason);
       }
@@ -84,12 +85,13 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
   infoMap: Record<string, Info> = {};
   keymap?: Record<number, string>;
   keys: string[] = ["dDeIieDgQpwVQZsJ", "54bilXmmMoYBqBcI", "KcmiZ8owmiBoPRMf", "4uOJvtnq5YYIKZWA", "lVfo0i0o4g3V78Rt", "i8XLTfT8Mvu1Fcv2"];
+  getActualK?: Function;
   name(): string {
     return "colamanga";
   }
   async fetchChapters(): Promise<Chapter[]> {
     this.keys = await initColamangaKeys();
-    this.keymap = await initColaMangaKeyMap();
+    [this.keymap, this.getActualK] = await initColaMangaKeyMap();
     // console.log("colamanga keys: ", this.keys);
     const thumbimg = document.querySelector("dt.fed-part-rows > a")?.getAttribute("data-original") || undefined;
     const list = Array.from(document.querySelectorAll<HTMLAnchorElement>(".all_data_list .fed-part-rows > li > a"));
@@ -137,7 +139,7 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
     const info = this.infoMap[node.href];
     if (!info) throw new Error("cannot found info from " + node.href);
     if (info.image_info.imgKey) {
-      const decoded = decryptImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap!, this.keys);
+      const decoded = this.decryptImageData(data, info.image_info.keyType, info.image_info.imgKey, this.keymap!, this.keys);
       return [decoded, _contentType];
     } else {
       return [data, _contentType];
@@ -151,6 +153,37 @@ export class ColaMangaMatcher extends BaseMatcher<string> {
       "Referer": window.location.href,
       "Origin": window.location.origin,
     }
+  }
+  decryptImageData(data: Uint8Array, keyType: string, imgKey: string, keymap: Record<number, string>, keys: string[]) {
+    let kRaw: string | undefined;
+    if (keyType !== "" && keyType !== "0") {
+      kRaw = keymap[parseInt(keyType)];
+    } else {
+      for (const k of keys) {
+        try {
+          kRaw = decrypt(k, imgKey);
+          break;
+        } catch (_error) {
+          evLog("error", (_error as any).toString());
+        }
+      }
+    }
+    // const start = performance.now();
+    const wordArray = convertUint8ArrayToWordArray(data);
+    const encArray = { ciphertext: wordArray };
+    // @ts-ignore
+    const cryptoJS = CryptoJS;
+    const actualK = this.getActualK?.(kRaw);
+    const key = cryptoJS.enc.Utf8.parse(actualK);
+    const de = cryptoJS.AES.decrypt(encArray, key, {
+      iv: cryptoJS.enc.Utf8.parse("0000000000000000"),
+      mode: cryptoJS.mode.CBC,
+      padding: cryptoJS.pad.Pkcs7
+    });
+    const ret = convertWordArrayToUint8Array(de);
+    // const end = performance.now();
+    // console.log("colamanga decode image data: ", end - start);
+    return ret;
   }
 }
 
@@ -219,36 +252,6 @@ function convertWordArrayToUint8Array(data: WordArray): Uint8Array {
   return u8_array;
 }
 
-function decryptImageData(data: Uint8Array, keyType: string, imgKey: string, keymap: Record<number, string>, keys: string[]) {
-  let kRaw: string | undefined;
-  if (keyType !== "" && keyType !== "0") {
-    kRaw = keymap[parseInt(keyType)];
-  } else {
-    for (const k of keys) {
-      try {
-        kRaw = decrypt(k, imgKey);
-        break;
-      } catch (_error) {
-        evLog("error", (_error as any).toString());
-      }
-    }
-  }
-  // const start = performance.now();
-  const wordArray = convertUint8ArrayToWordArray(data);
-  const encArray = { ciphertext: wordArray };
-  // @ts-ignore
-  const cryptoJS = CryptoJS;
-  const key = cryptoJS.enc.Utf8.parse(kRaw);
-  const de = cryptoJS.AES.decrypt(encArray, key, {
-    iv: cryptoJS.enc.Utf8.parse("0000000000000000"),
-    mode: cryptoJS.mode.CBC,
-    padding: cryptoJS.pad.Pkcs7
-  });
-  const ret = convertWordArrayToUint8Array(de);
-  // const end = performance.now();
-  // console.log("colamanga decode image data: ", end - start);
-  return ret;
-}
 
 function decryptInfo(countEncCode: string, pathEncCode: string, mhid: string, keys: string[]) {
   let count: string | undefined;
@@ -305,6 +308,16 @@ function parseKeys(raw: string) {
     }
   }
   return keys;
+}
+
+function parseGetActualKeyFunction(raw: string) {
+  const regex2 = /(eval\(function.*?\)\)\)),_0x/;
+  const evalExpression = raw.match(regex2)?.[1];
+  return new Function("ksddd", `
+        var actualKey = ksddd;
+        ${evalExpression};
+        return actualKey;
+      `);
 }
 
 function findTheFunction(raw: string, val: string, param?: string): [string | null, string | null][] {

@@ -1297,6 +1297,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       dragImageOut: false,
       excludeVideo: false,
       enableFilter: false
+      // imgNodeActions: [],
     };
   }
   const CONF_VERSION = "4.4.0";
@@ -5139,6 +5140,79 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
   }
 
+  const HENTAIZAP_TYPE_MAP = {
+    "j": "jpg",
+    "p": "png",
+    "b": "bmp",
+    "g": "gif",
+    "w": "webp"
+  };
+  class HentaiZapMatcher extends BaseMatcher {
+    meta;
+    name() {
+      return "HentaiZap";
+    }
+    galleryMeta() {
+      if (this.meta) return this.meta;
+      const title = document.querySelector(".gp_top_right > h1")?.textContent ?? document.title;
+      this.meta = new GalleryMeta(window.location.href, title);
+      Array.from(document.querySelectorAll(".gp_top_right_info > ul")).forEach((ul) => {
+        const category = ul.querySelector("span.info_txt")?.textContent?.replace(":", "")?.toLowerCase();
+        if (!category) return;
+        const tags = Array.from(ul.querySelectorAll("a.gp_btn_tag")).map((e) => e.firstChild?.textContent).filter(Boolean);
+        this.meta.tags[category] = tags;
+      });
+      return this.meta;
+    }
+    async *fetchPagesSource() {
+      const gthRaw = Array.from(document.querySelectorAll("script")).find((e) => e.textContent?.trimStart()?.startsWith("var g_th"))?.textContent?.match(/\('(\{.*\})'\)/)?.[1];
+      if (!gthRaw) throw new Error("cannot find g_th");
+      const serverID = document.querySelector("input#load_server")?.value;
+      if (!serverID) throw new Error("cannot find server id");
+      const loadDir = document.querySelector("input#load_dir")?.value;
+      if (!loadDir) throw new Error("cannot find load dir");
+      const galleryID = document.querySelector("input#gallery_id")?.value;
+      if (!galleryID) throw new Error("cannot find gallery id");
+      const loadID = document.querySelector("input#load_id")?.value;
+      if (!loadID) throw new Error("cannot find load id");
+      const loadPages = document.querySelector("input#load_pages")?.value;
+      if (!loadPages) throw new Error("cannot find load pages");
+      const gth = JSON.parse(gthRaw);
+      const info = {
+        serverID,
+        galleryID,
+        loadDir,
+        loadID,
+        loadPages: parseInt(loadPages),
+        images: gth
+      };
+      yield Result.ok(info);
+    }
+    async parseImgNodes(info) {
+      const server = `m${info.serverID}.hentaizap.com`;
+      const nodes = [];
+      const digits = info.loadPages.toString().length;
+      for (let i = 0; i < info.loadPages; i++) {
+        const [t, w, h] = info.images[(i + 1).toString()]?.split(",") ?? [];
+        if (!t || !w || !h) throw new Error("cannot find image g_th: " + (i + 1));
+        const ext = HENTAIZAP_TYPE_MAP[t] ?? "webp";
+        const thumb = `https://${server}/${info.loadDir}/${info.loadID}/${i + 1}t.jpg`;
+        const href = `${window.location.origin}/g/${info.galleryID}/${i + 1}/`;
+        const origin = `https://${server}/${info.loadDir}/${info.loadID}/${i + 1}.${ext}`;
+        const title = (i + 1).toString().padStart(digits, "0");
+        const node = new ImageNode(thumb, href, `${title}.${ext}`, void 0, origin, { w: parseInt(w), h: parseInt(h) });
+        nodes.push(node);
+      }
+      return nodes;
+    }
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
+    }
+    workURL() {
+      return /hentaizap.com\/gallery\/\w+\/?/;
+    }
+  }
+
   const CONTENT_DOMAIN = "gold-usergeneratedcontent.net";
   class HitomiGG {
     base = void 0;
@@ -7954,6 +8028,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new Hanime1Matcher(),
       new MyComicMatcher(),
       new KemonoMatcher(),
+      new HentaiZapMatcher(),
       new MiniServeMatcher()
     ];
   }

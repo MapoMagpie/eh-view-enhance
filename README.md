@@ -67,6 +67,8 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 - [hanime1.me](https://hanime1.me/comics)
 - [mycomic.com](https://mycomic.com)
 - [kemono.su](https://kemono.su)
+- [hentaizap.com](https://hentaizap.com)
+- [miniserve -p 41021](https://github.com/svenstaro/miniserve)
 
 </details>
 

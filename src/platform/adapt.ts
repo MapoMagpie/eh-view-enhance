@@ -8,6 +8,7 @@ import { DanbooruDonmaiMatcher, E621Matcher, GelBooruMatcher, KonachanMatcher, R
 import { EHMatcher } from "./ehentai";
 import { Hanime1Matcher } from "./hanime1";
 import { HentaiNexusMatcher } from "./hentainexus";
+import { HentaiZapMatcher } from "./hentaizap";
 import { HitomiMather } from "./hitomi";
 import { IMHentaiMatcher } from "./im-hentai";
 import { InstagramMatcher } from "./instagram";
@@ -58,6 +59,7 @@ export function getMatchers(): Matcher<any>[] {
     new Hanime1Matcher(),
     new MyComicMatcher(),
     new KemonoMatcher(),
+    new HentaiZapMatcher(),
     new MiniServeMatcher(),
   ];
 }

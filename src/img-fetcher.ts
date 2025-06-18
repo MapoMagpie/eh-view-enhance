@@ -176,10 +176,12 @@ export class IMGFetcher {
     return data.arrayBuffer().then((buffer) => [new Uint8Array(buffer), data.type]);
   }
 
-  render() {
+  render(force?: boolean) {
     const picked = EBUS.emit("imf-check-picked", this.chapterIndex, this.index) ?? this.node.picked;
     const shouldChangeStyle = picked !== this.node.picked;
     this.node.picked = picked;
+    if (force) this.rendered = false;
+
     if (!this.rendered) {
       // evLog("info", `img node [${this.index}] rendered`);
       this.rendered = true;
@@ -187,7 +189,8 @@ export class IMGFetcher {
         evLog("error", "render image failed, " + reason);
         this.rendered = false;
       },
-        () => EBUS.emit("imf-resize", this)
+        () => EBUS.emit("imf-resize", this),
+        force
       );
       this.node.changeStyle(this.stage === FetchState.DONE ? "fetched" : undefined, this.failedReason);
     } else if (shouldChangeStyle) {

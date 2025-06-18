@@ -1,4 +1,5 @@
 import { conf } from "./config";
+import EBUS from "./event-bus";
 import { Tag } from "./filter";
 import { DownloadState } from "./img-fetcher";
 import { Debouncer } from "./utils/debouncer";
@@ -40,9 +41,6 @@ export class NodeAction {
     this.description = description;
     this.func = func;
     this.reueable = reueable ?? false;
-  }
-  async do(imf: ImageNode): Promise<void> {
-    await this.func(imf);
   }
 }
 
@@ -161,10 +159,12 @@ export default class ImageNode {
             target.classList.add("img-node-action-btn-done");
             target.disabled = false;
             action.done = true;
-          }).catch(() => {
+          }).catch((reason) => {
             target.classList.remove("img-node-action-btn-processing");
             target.classList.add("img-node-action-btn-error");
             target.disabled = false;
+            EBUS.emit("notify-message", "error", `execute action [${action.icon}] failed, reason: ${reason}`);
+            console.error(reason);
           }).finally(() => action.processing = false);
         }, { passive: false, capture: true });
         actionContainer.appendChild(actionElem);
@@ -223,10 +223,10 @@ export default class ImageNode {
     return 1;
   }
 
-  render(onfailed: Onfailed, onResize: OnResize) {
+  render(onfailed: Onfailed, onResize: OnResize, force?: boolean) {
     this.debouncer.addEvent("IMG-RENDER", () => {
       if (!this.imgElement) return onfailed("element undefined");
-      let justThumbnail = !conf.hdThumbnails || !this.blobSrc;
+      let justThumbnail = !force && (!conf.hdThumbnails || !this.blobSrc);
       if (this.mimeType === "image/gif" || this.mimeType?.startsWith("video")) {
         const tip = OVERLAY_TIP.cloneNode(true);
         tip.firstChild!.textContent = this.mimeType.split("/")[1].toUpperCase();

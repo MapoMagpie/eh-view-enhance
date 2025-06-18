@@ -1,9 +1,11 @@
+import { GM_xmlhttpRequest } from "$";
+import { conf } from "./config";
 import { GalleryMeta } from "./download/gallery-meta";
 import EBUS from "./event-bus";
 import { IMGFetcherQueue } from "./fetcher-queue";
 import { Filter } from "./filter";
 import { IMGFetcher } from "./img-fetcher";
-import ImageNode from "./img-node";
+import ImageNode, { NodeAction } from "./img-node";
 import { Matcher, Result } from "./platform/platform";
 import { Debouncer } from "./utils/debouncer";
 import { evLog } from "./utils/ev-log";
@@ -37,6 +39,7 @@ export class PageFetcher {
   filter: Filter;
   beforeInit?: () => void;
   afterInit?: () => void;
+  nodeActionDesc: { icon: string; description: string, fun: Function }[] = [];
   private appendPageLock: boolean = false;
   private abortb: boolean = false;
 
@@ -106,6 +109,21 @@ export class PageFetcher {
 
   async init() {
     this.beforeInit?.();
+    try {
+      if (conf.imgNodeActions.length > 0) {
+        const AsyncFunction = async function() { }.constructor;
+        this.nodeActionDesc = conf.imgNodeActions.map(ina => {
+          return {
+            icon: ina.icon,
+            description: ina.description,
+            fun: AsyncFunction("imf", "imn", "gm_xhr", "EBUS", ina.funcBody),
+          }
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      EBUS.emit("notify-message", "error", "cannot create your node actions, " + err);
+    }
     this.chapters = await this.matcher.fetchChapters().catch(reason => EBUS.emit("notify-message", "error", reason) || []);
     this.afterInit?.();
     this.chapters.forEach(c => {
@@ -198,7 +216,24 @@ export class PageFetcher {
       const chapter = this.chapters[this.chapterIndex];
       const len = chapter.filteredQueue.length;
       const IFs = nodes.map(
-        (imgNode, index) => new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex, this.chapters[this.chapterIndex].id)
+        (imgNode, index) => {
+          const imf = new IMGFetcher(index + len, imgNode, this.matcher, this.chapterIndex, this.chapters[this.chapterIndex].id);
+          // add node actions
+          this.nodeActionDesc.forEach(nad => {
+            const f = async (node: ImageNode) => {
+              const result = await nad.fun(imf, node, GM_xmlhttpRequest, EBUS) as { data?: Blob };
+              if (result?.data) {
+                imf.contentType = result.data.type;
+                imf.data = new Uint8Array(await result.data.arrayBuffer());
+                imf.node.blobSrc = URL.createObjectURL(new Blob([imf.data], { type: imf.contentType }));
+                imf.render(true);
+                EBUS.emit("imf-on-finished", imf.index, true, imf);
+              }
+            };
+            imgNode.actions.push(new NodeAction(nad.icon, nad.description, f));
+          });
+          return imf;
+        }
       );
       chapter.queue.push(...IFs);
       const filteredIFs = this.filter.filterNodes(IFs, false);

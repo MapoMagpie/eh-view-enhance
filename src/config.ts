@@ -304,6 +304,11 @@ function patchConfig(cf: Config): Config | null {
     cf.configPatchVersion = 10;
     changed = true;
   }
+  if (cf.configPatchVersion < 11) {
+    cf.siteProfiles["colamanga"] = { enable: false, enableAutoOpen: true, enableFlowVision: true, workURLs: [] };
+    cf.configPatchVersion = 11;
+    changed = true;
+  }
   return changed ? cf : null;
 }
 

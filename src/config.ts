@@ -16,6 +16,13 @@ export type SiteProfile = {
 }
 export type ReadMode = "pagination" | "continuous" | "horizontal";
 
+export type ImageActionDesc = {
+  workon?: string,
+  icon: string,
+  description: string,
+  funcBody: string,
+}
+
 export type Config = {
   /** 每行显示的数量 */
   colCount: number,
@@ -117,7 +124,7 @@ export type Config = {
   dragImageOut: boolean,
   excludeVideo: boolean,
   enableFilter: boolean,
-  imgNodeActions: { workin?: string, icon: string, description: string, funcBody: string }[],
+  imgNodeActions: ImageActionDesc[],
 };
 
 function defaultColumns() {
@@ -266,44 +273,7 @@ function confHealthCheck(cf: Config): Config {
     cf.imgScale = cf.readMode === "continuous" ? cf.defaultImgScaleModeC : 100;
     changed = true;
   }
-  // cf.imgNodeActions = [
-  //   {
-  //     icon: "试", description: "", funcBody: `
-  //     const p = new Promise((resolve, reject) => {
-  //       gm_xhr({
-  //         url: "http://localhost:14001/131609374_p0.jpg",
-  //         method: "GET",
-  //         responseType: "blob",
-  //         timeout: 10 * 1000,
-  //         onload: (ev) => resolve(ev.response),
-  //         onabort: () => reject("abort"),
-  //         onerror: (ev) => reject(ev.error),
-  //         ontimeout: () => reject("timeout"),
-  //       });
-  //     });
-  //     const d = await p;
-  //     const data = new Uint8Array(await d.arrayBuffer());
-  //     return {data};
-  // `},
-  //   {
-  //     icon: "换", description: "", funcBody: `
-  //     const p = new Promise((resolve, reject) => {
-  //       gm_xhr({
-  //         url: "http://localhost:14001/131609374_p0.jpg",
-  //         method: "GET",
-  //         responseType: "blob",
-  //         timeout: 10 * 1000,
-  //         onload: (ev) => resolve(ev.response),
-  //         onabort: () => reject("abort"),
-  //         onerror: (ev) => reject(ev.error),
-  //         ontimeout: () => reject("timeout"),
-  //       });
-  //     });
-  //     const d = await p;
-  //     const data = new Uint8Array(await d.arrayBuffer());
-  //     return {data};
-  // `}
-  // ];
+
   const newCf = patchConfig(cf);
   if (newCf) {
     cf = newCf;

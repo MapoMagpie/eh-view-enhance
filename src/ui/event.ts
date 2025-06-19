@@ -13,6 +13,7 @@ import { PageHelper } from "./page-helper";
 import { BigImageFrameManager } from "./big-image-frame-manager";
 import { createStyleCustomPanel } from "./style-custom-panel";
 import queryCSSRules from "../utils/query-cssrules";
+import { createActionCustomPanel } from "./actions-custom";
 
 export type Events = ReturnType<typeof initEvents>;
 
@@ -479,6 +480,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     createStyleCustomPanel(HTML.root, focus);
   }
 
+  function showActionCustomEvent() {
+    createActionCustomPanel(HTML.root, focus);
+  }
+
   return {
     modNumberConfigEvent,
     modBooleanConfigEvent,
@@ -497,6 +502,7 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
     showKeyboardCustomEvent,
     showSiteProfilesEvent,
     showStyleCustomEvent,
+    showActionCustomEvent,
 
     changeReadModeEvent,
   }

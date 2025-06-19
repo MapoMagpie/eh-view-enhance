@@ -112,7 +112,11 @@ export class PageFetcher {
     try {
       if (conf.imgNodeActions.length > 0) {
         const AsyncFunction = async function() { }.constructor;
-        this.nodeActionDesc = conf.imgNodeActions.map(ina => {
+        this.nodeActionDesc = conf.imgNodeActions.filter(a => {
+          if (!a.workon) return true;
+          const regexp = new RegExp(a.workon);
+          return regexp.exec(window.location.href);
+        }).map(ina => {
           return {
             icon: ina.icon,
             description: ina.description,

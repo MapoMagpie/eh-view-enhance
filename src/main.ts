@@ -144,28 +144,3 @@ setTimeout(() => {
   window.addEventListener("popstate", reMain);
   reMain();
 }, 300);
-
-// import { FetchState, IMGFetcher } from "./img-fetcher";
-// import ImageNode from "./img-node";
-// import { GM_xmlhttpRequest } from "$";
-// async function na(imf: IMGFetcher, imn: ImageNode, gm_xhr: typeof GM_xmlhttpRequest) {
-//   if (imf.stage === FetchState.DONE && imf.data) {
-//     const formData = new FormData();
-//     formData.append("file", new Blob([imf.data]), imn.title);
-//     formData.append("path", "/");
-//     const p = new Promise((resolve, reject) => {
-//       gm_xhr({
-//         url: "http://localhost:14001/upload?path=/",
-//         method: "POST",
-//         timeout: 10 * 1000,
-//         data: formData,
-//         onloadend: () => resolve(undefined),
-//         onload: () => reject("normal"),
-//         onabort: () => reject("abort"),
-//         onerror: (ev) => reject(ev.error),
-//         ontimeout: () => reject("timeout"),
-//       });
-//     });
-//     await p;
-//   }
-// }

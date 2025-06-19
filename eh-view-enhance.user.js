@@ -8,7 +8,7 @@
 // @name:es            Comic Looms
 // @name:ka            Comic Looms
 // @namespace          https://github.com/MapoMagpie/eh-view-enhance
-// @version            4.10.23
+// @version            4.11.0
 // @author             MapoMagpie
 // @description        Manga Viewer + Downloader, Focus on experience and low load on the site. Support you in finding the site you are searching for.
 // @description:en     Manga Viewer + Downloader, Focus on experience and low load on the site. Support you in finding the site you are searching for.
@@ -1452,6 +1452,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     if (cf.configPatchVersion < 10) {
       cf.customStyle = "";
       cf.configPatchVersion = 10;
+      changed = true;
+    }
+    if (cf.configPatchVersion < 11) {
+      cf.siteProfiles["colamanga"] = { enable: false, enableAutoOpen: false, enableFlowVision: true, workURLs: [] };
+      cf.configPatchVersion = 11;
       changed = true;
     }
     return changed ? cf : null;

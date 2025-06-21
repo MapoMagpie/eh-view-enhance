@@ -29,10 +29,12 @@ export class MangaCopyMatcher extends BaseMatcher<string> {
   async parseImgNodes(source: string): Promise<ImageNode[]> {
     const raw = await simpleFetch(source, "text", { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36" });
     const doc = new DOMParser().parseFromString(raw, "text/html");
+    const jojoKey = raw.match(/var jojo\s?=\s?'(.*?)';/)?.[1];
+    if (!jojoKey) throw new Error("cannot find jojoKey for decrypt :(");
     const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
     if (!contentKey) throw new Error("cannot find content key");
     try {
-      const decryption = await decrypt(contentKey);
+      const decryption = await decrypt(contentKey, jojoKey);
       const images = JSON.parse(decryption) as { url: string }[];
       const digits = images.length.toString().length;
       return images.map((img, i) => {
@@ -96,12 +98,12 @@ export class MangaCopyMatcher extends BaseMatcher<string> {
 
 const PATH_WORD_REGEX = /\/comic\/(\w*)/;
 
-async function decrypt(raw: string): Promise<string> {
+async function decrypt(raw: string, jojoKey: string): Promise<string> {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
   // Key and IV
   // const dioKey = encoder.encode("xxxmanga.woo.key");
-  const dioKey = encoder.encode("xxxmanga.wol.key");
+  const jojo = encoder.encode(jojoKey);
   const header = raw.substring(0, 16); // First 16 characters as IV
   const body = raw.substring(16); // Rest is the encrypted data
   const iv = encoder.encode(header);
@@ -112,7 +114,7 @@ async function decrypt(raw: string): Promise<string> {
   // Import the AES key
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
-    dioKey,
+    jojo,
     { name: "AES-CBC" },
     false,
     ["decrypt"]
@@ -162,50 +164,6 @@ async function decrypt(raw: string): Promise<string> {
 //     return wj[0][1][i].call(e.exports, e, e.exports, r), e.l = true, e.exports;
 //   }
 //   return r(6);
-// }
-
-// type MCGroupInfo = {
-//   path_word: string,
-//   count: number,
-//   name: string,
-//   chapters: MCChapter[],
-//   last_chapter: MCLastChapter,
-// }
-
-// type MCChapter = {
-//   type: number,
-//   name: string,
-//   id: string
-// }
-
-// type MCLastChapter = {
-//   index: number,
-//   uuid: string,
-//   count: number,
-//   ordered: number,
-//   size: number,
-//   name: string,
-//   comic_id: string,
-//   comic_path_word: string,
-//   group_id?: string,
-//   group_path_word: string,
-//   type: number,
-//   img_type: number,
-//   news: string,
-//   datetime_created: string,
-//   prev?: string,
-//   next?: string,
-// }
-
-// type MCChapterDetails = {
-//   build: {
-//     path_word: string,
-//     type: { id: number, name: string }[]
-//   },
-//   groups: {
-//     default: MCGroupInfo,
-//     tankobon: MCGroupInfo,
-//   }
 // }
 
 type MCAPIChapter = {

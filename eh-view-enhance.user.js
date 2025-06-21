@@ -1455,7 +1455,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       changed = true;
     }
     if (cf.configPatchVersion < 11) {
-      cf.siteProfiles["colamanga"] = { enable: false, enableAutoOpen: false, enableFlowVision: true, workURLs: [] };
+      cf.siteProfiles["colamanga"] = { enable: false, enableAutoOpen: true, enableFlowVision: true, workURLs: [] };
       cf.configPatchVersion = 11;
       changed = true;
     }
@@ -6037,10 +6037,12 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     async parseImgNodes(source) {
       const raw = await simpleFetch(source, "text", { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36" });
       const doc = new DOMParser().parseFromString(raw, "text/html");
+      const jojoKey = raw.match(/var jojo\s?=\s?'(.*?)';/)?.[1];
+      if (!jojoKey) throw new Error("cannot find jojoKey for decrypt :(");
       const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
       if (!contentKey) throw new Error("cannot find content key");
       try {
-        const decryption = await decrypt(contentKey);
+        const decryption = await decrypt(contentKey, jojoKey);
         const images = JSON.parse(decryption);
         const digits = images.length.toString().length;
         return images.map((img, i) => {
@@ -6092,10 +6094,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
   }
   const PATH_WORD_REGEX = /\/comic\/(\w*)/;
-  async function decrypt(raw) {
+  async function decrypt(raw, jojoKey) {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
-    const dioKey = encoder.encode("xxxmanga.wol.key");
+    const jojo = encoder.encode(jojoKey);
     const header = raw.substring(0, 16);
     const body = raw.substring(16);
     const iv = encoder.encode(header);
@@ -6104,7 +6106,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     );
     const cryptoKey = await crypto.subtle.importKey(
       "raw",
-      dioKey,
+      jojo,
       { name: "AES-CBC" },
       false,
       ["decrypt"]

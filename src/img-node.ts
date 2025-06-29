@@ -100,7 +100,7 @@ export default class ImageNode {
     if (this.tags.has(tag)) return;
     const prefix = tag.split(":").shift();
     if (!prefix) return;
-    const found = this.tags.entries().find(([t]) => t.startsWith(prefix));
+    const found = Array.from(this.tags.entries()).find(([t]) => t.startsWith(prefix));
     if (found?.[0]) {
       this.tags.delete(found?.[0]);
     }

@@ -15,7 +15,7 @@
     {
       devShells."${system}".default = pkgs.mkShell {
         packages = with pkgs; [
-          nodejs_latest
+          nodejs_24
           typescript-language-server
         ];
         shellHook = "exec zsh";

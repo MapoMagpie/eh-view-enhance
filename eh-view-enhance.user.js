@@ -3133,7 +3133,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       if (this.tags.has(tag)) return;
       const prefix = tag.split(":").shift();
       if (!prefix) return;
-      const found = this.tags.entries().find(([t]) => t.startsWith(prefix));
+      const found = Array.from(this.tags.entries()).find(([t]) => t.startsWith(prefix));
       if (found?.[0]) {
         this.tags.delete(found?.[0]);
       }
@@ -3606,6 +3606,48 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     }
   }
 
+  function parseImagePositions(styles) {
+    return styles.map((st) => {
+      const [x, y] = st.backgroundPosition.split(" ").map((v) => Math.abs(parseInt(v)));
+      if (isNaN(x)) throw new Error("invalid background position");
+      return { x, y, width: parseInt(st.width), height: parseInt(st.height) };
+    });
+  }
+  function splitSpriteImage(image, positions) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const result = [];
+    for (const pos of positions) {
+      canvas.width = pos.width;
+      canvas.height = pos.height;
+      ctx.drawImage(image, pos.x, pos.y, pos.width, pos.height, 0, 0, pos.width, pos.height);
+      result.push(canvas.toDataURL());
+    }
+    canvas.remove();
+    return result;
+  }
+  async function splitImagesFromUrl(url, positions) {
+    let data;
+    for (let i = 0; i < 3; i++) {
+      try {
+        data = await simpleFetch(url, "blob");
+        break;
+      } catch (err) {
+        evLog("error", "fetch thumbnail failed, ", err);
+      }
+    }
+    if (!data) throw new Error("load sprite image error");
+    url = URL.createObjectURL(data);
+    const img = await new Promise((resolve, reject) => {
+      const img2 = new Image();
+      img2.onload = () => resolve(img2);
+      img2.onerror = () => reject(new Error("load sprite image error"));
+      img2.src = url;
+    });
+    URL.revokeObjectURL(url);
+    return splitSpriteImage(img, positions);
+  }
+
   class Result {
     value;
     error;
@@ -3643,6 +3685,313 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     appendNewChapters(_url, _old) {
       throw new Error("this site does not support add new chapters yet");
     }
+  }
+
+  const regulars = {
+    /** 有压缩的大图地址 */
+    normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
+    /** 原图地址 */
+    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai(55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad)?\.(org|onion)\/fullimg?[^"\\]*)\"\>/,
+    /** 大图重载地址 */
+    nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
+    /** 是否开启自动多页查看器 */
+    isMPV: /https?:\/\/e[-x]hentai(55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad)?\.(org|onion)\/mpv\/\w+\/\w+\/#page\w/,
+    /** 多页查看器图片列表提取 */
+    mpvImageList: /imagelist\s=\s(\[.*?\])/,
+    /** 精灵图地址提取 */
+    sprite: /url\((.*?)\)/
+  };
+  class EHMatcher extends BaseMatcher {
+    name() {
+      return "e-hentai";
+    }
+    docMap = {};
+    // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
+    workURL() {
+      return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
+    }
+    title(chapters) {
+      const meta = chapters[0].meta || this.galleryMeta(chapters[0]);
+      let title = "";
+      if (conf.ehentaiTitlePrefer === "japanese") {
+        title = meta.originTitle || meta.title || "UNTITLE";
+      } else {
+        title = meta.title || meta.originTitle || "UNTITLE";
+      }
+      if (chapters.length > 1) {
+        title += "+" + chapters.length + "chapters";
+      }
+      return title;
+    }
+    galleryMeta(chapter) {
+      if (chapter.meta) return chapter.meta;
+      const doc = this.docMap[chapter.id];
+      const titleList = doc.querySelectorAll("#gd2 h1");
+      let title;
+      let originTitle;
+      if (titleList && titleList.length > 0) {
+        title = titleList[0].textContent || void 0;
+        if (titleList.length > 1) {
+          originTitle = titleList[1].textContent || void 0;
+        }
+      }
+      chapter.meta = new GalleryMeta(window.location.href, title || "UNTITLE");
+      chapter.meta.originTitle = originTitle;
+      const tagTrList = doc.querySelectorAll("#taglist tr");
+      const tags = {};
+      tagTrList.forEach((tr) => {
+        const tds = tr.childNodes;
+        const cat = tds[0].textContent;
+        if (cat && tds[1]) {
+          const list = [];
+          tds[1].childNodes.forEach((ele) => {
+            if (ele.textContent) list.push(ele.textContent);
+          });
+          tags[cat.replace(":", "")] = list;
+        }
+      });
+      chapter.meta.tags = tags;
+      return chapter.meta;
+    }
+    async fetchChapters() {
+      const chapter = new Chapter(0, "Default", window.location.href);
+      this.docMap[0] = document;
+      this.galleryMeta(chapter);
+      chapter.title = chapter.meta.title;
+      return [chapter];
+    }
+    async appendNewChapters(url, old) {
+      if (!this.workURL().test(url)) throw new Error("invaild gallery url");
+      const doc = await window.fetch(url).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      let lastID = old[old.length - 1]?.id || 0;
+      lastID = lastID + 1;
+      const chapter = new Chapter(lastID, "NewChapter-" + lastID, url);
+      this.docMap[lastID] = doc;
+      this.galleryMeta(chapter);
+      chapter.title = chapter.meta.title;
+      return [chapter];
+    }
+    async parseImgNodes(source) {
+      const list = [];
+      const doc = await window.fetch(source).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+      if (!doc) {
+        throw new Error("warn: eh matcher failed to get document from source page!");
+      }
+      let isSprite = false;
+      let getNodeInfo = (node) => {
+        const anchor = node.firstElementChild;
+        const image = anchor.firstElementChild;
+        const title = image.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg";
+        const ret = {
+          thumbnailImage: image.src,
+          title,
+          href: anchor.getAttribute("href"),
+          wh: extractRectFromSrc(image.src) || { w: 100, h: 100 },
+          style: node.style,
+          backgroundImage: null,
+          delaySrc: void 0
+        };
+        return ret;
+      };
+      let query = doc.querySelectorAll("#gdt .gdtl");
+      if (!query || query.length == 0) {
+        query = doc.querySelectorAll("#gdt .gdtm > div");
+        isSprite = query?.length > 0;
+        getNodeInfo = (node) => {
+          const anchor = node.firstElementChild;
+          const image = anchor.firstElementChild;
+          const title = image.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg";
+          const backgroundImage = node.style.background.match(regulars.sprite)?.[1]?.replaceAll('"', "") || null;
+          const ret = {
+            backgroundImage,
+            title,
+            href: anchor.getAttribute("href"),
+            wh: extractRectFromStyle(node.style) ?? { w: 100, h: 100 },
+            style: node.style,
+            thumbnailImage: "",
+            delaySrc: void 0
+          };
+          return ret;
+        };
+      }
+      if (!query || query.length == 0) {
+        query = doc.querySelectorAll("#gdt > a");
+        isSprite = query?.length > 0;
+        getNodeInfo = (node) => {
+          const anchor = node;
+          let div = anchor.firstElementChild;
+          if (!div.style.background || div.childElementCount > 0) {
+            div = div.firstElementChild;
+          }
+          const title = div.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg";
+          const backgroundImage = div.style.background.match(regulars.sprite)?.[1]?.replaceAll('"', "") || null;
+          const ret = {
+            backgroundImage,
+            title,
+            href: anchor.getAttribute("href"),
+            wh: extractRectFromStyle(div.style) ?? { w: 100, h: 100 },
+            style: div.style,
+            thumbnailImage: "",
+            delaySrc: void 0
+          };
+          return ret;
+        };
+      }
+      if (!query || query.length == 0) {
+        throw new Error("warn: failed query image nodes!");
+      }
+      const nodeInfos = [];
+      const nodes = Array.from(query);
+      const n0 = getNodeInfo(nodes[0]);
+      if (regulars.isMPV.test(n0.href)) {
+        isSprite = true;
+        const mpvDoc = await window.fetch(n0.href).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
+        const imageList = JSON.parse(mpvDoc.querySelector("#pane_outer + script")?.innerHTML.match(regulars.mpvImageList)?.[1] ?? "[]");
+        const thumbnails = Array.from(mpvDoc.querySelectorAll("#pane_thumbs > a > div"));
+        const gid = location.pathname.split("/")[2];
+        for (let i = 0; i < imageList.length; i++) {
+          const info = imageList[i];
+          const backgroundImage = info.t.match(/\((http.*)\)/)?.[1] || null;
+          thumbnails[i].style.background = "url" + info.t;
+          const ni = {
+            backgroundImage,
+            title: info.n,
+            href: `${location.origin}/s/${info.k}/${gid}-${i + 1}`,
+            wh: extractRectFromStyle(thumbnails[i].style) ?? { w: 100, h: 100 },
+            style: thumbnails[i].style,
+            thumbnailImage: "",
+            delaySrc: void 0
+          };
+          nodeInfos.push(ni);
+        }
+      } else {
+        nodes.forEach((node) => nodeInfos.push(getNodeInfo(node)));
+      }
+      if (isSprite) {
+        const spriteURLs = [];
+        for (let i = 0; i < nodeInfos.length; i++) {
+          const info = nodeInfos[i];
+          if (!info.backgroundImage) {
+            evLog("error", "e-hentai miss node, ", info);
+            continue;
+          }
+          if (spriteURLs.length === 0 || spriteURLs[spriteURLs.length - 1].url !== info.backgroundImage) {
+            spriteURLs.push({ url: info.backgroundImage, range: [{ index: i, style: info.style }] });
+          } else {
+            spriteURLs[spriteURLs.length - 1].range.push({ index: i, style: info.style });
+          }
+        }
+        spriteURLs.forEach(({ url, range }) => {
+          url = url.startsWith("http") ? url : window.location.origin + url;
+          if (range.length === 1) {
+            nodeInfos[range[0].index].thumbnailImage = url;
+          } else {
+            const reso = [];
+            for (let i = 0; i < range.length; i++) {
+              nodeInfos[range[i].index].delaySrc = new Promise((resolve, reject) => reso.push({ resolve, reject }));
+            }
+            splitImagesFromUrl(url, parseImagePositions(range.map((n) => n.style))).then((ret) => {
+              for (let i = 0; i < ret.length; i++) {
+                reso[i].resolve(ret[i]);
+              }
+            }).catch((err) => reso.forEach((r) => r.reject(err)));
+          }
+        });
+      }
+      for (let i = 0; i < nodeInfos.length; i++) {
+        const info = nodeInfos[i];
+        list.push(new ImageNode(info.thumbnailImage, info.href, info.title, info.delaySrc, void 0, info.wh));
+      }
+      return list;
+    }
+    async *fetchPagesSource(chapter) {
+      const doc = this.docMap[chapter.id];
+      const fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
+      if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
+        yield Result.ok(window.location.href);
+        return;
+      }
+      const pages = Array.from(doc.querySelectorAll(".gtb td a")).filter((a) => a.href).map((a) => a.href);
+      if (pages.length === 0) {
+        throw new Error("cannot found next page elements");
+      }
+      let lastPage = 0;
+      let url;
+      for (const page of pages) {
+        const u = new URL(page);
+        const num = parseInt(u.searchParams.get("p") || "0");
+        if (num >= lastPage) {
+          lastPage = num;
+          url = u;
+        }
+      }
+      if (!url) {
+        throw new Error("cannot found next page elements again");
+      }
+      url.searchParams.delete("p");
+      yield Result.ok(url.href);
+      for (let p = 1; p < lastPage + 1; p++) {
+        url.searchParams.set("p", p.toString());
+        yield Result.ok(url.href);
+      }
+    }
+    async fetchOriginMeta(node, retry) {
+      const text = await window.fetch(node.href).then((resp) => resp.text()).catch((reason) => new Error(reason));
+      if (text instanceof Error || !text) throw new Error(`fetch source page error, ${text.toString()}`);
+      let src;
+      if (conf.fetchOriginal) {
+        src = regulars.original.exec(text)?.[1].replace(/&amp;/g, "&");
+        const nl = node.href.includes("?") ? node.href.split("?").pop() : void 0;
+        if (src && nl) {
+          src += "?" + nl;
+        }
+      }
+      if (!src) src = regulars.normal.exec(text)?.[1];
+      if (retry) {
+        const nlValue = regulars.nlValue.exec(text)?.[1];
+        if (nlValue) {
+          node.href = node.href + (node.href.includes("?") ? "&" : "?") + "nl=" + nlValue;
+          evLog("info", `IMG-FETCHER retry url:${node.href}`);
+          const newMeta = await this.fetchOriginMeta(node, false);
+          src = newMeta.url;
+        } else {
+          evLog("error", `Cannot matching the nlValue, content: ${text}`);
+        }
+      }
+      if (!src) {
+        evLog("error", "cannot matching the image url from content:\n", text);
+        throw new Error(`cannot matching the image url from content. (the content is showing up in console(F12 open it)`);
+      }
+      if (!src.startsWith("http")) {
+        src = window.location.origin + src;
+      }
+      if (src.endsWith("509.gif")) {
+        throw new Error("509, Image limits Exceeded, Please reset your Quota!");
+      }
+      return { url: src, href: node.href };
+    }
+    async processData(data, contentType) {
+      if (contentType.startsWith("text")) {
+        if (data.byteLength === 1329) {
+          throw new Error('fetching the raw image requires being logged in, please try logging in or disable "raw image"');
+        }
+      }
+      return [data, contentType];
+    }
+  }
+  function extractRectFromSrc(src) {
+    if (!src) return void 0;
+    const matches = src.match(/\/\w+-\d+-(\d+)-(\d+)-/);
+    if (matches && matches.length === 3) {
+      return { w: parseInt(matches[1]), h: parseInt(matches[2]) };
+    } else {
+      return void 0;
+    }
+  }
+  function extractRectFromStyle(style) {
+    const wh = { w: parseInt(style.width), h: parseInt(style.height) };
+    if (isNaN(wh.w) || isNaN(wh.h)) return void 0;
+    return wh;
   }
 
   function toMD5(s) {
@@ -4710,355 +5059,6 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     workURL() {
       return /e621.net\/(posts(?!\/)|$)/;
     }
-  }
-
-  function parseImagePositions(styles) {
-    return styles.map((st) => {
-      const [x, y] = st.backgroundPosition.split(" ").map((v) => Math.abs(parseInt(v)));
-      if (isNaN(x)) throw new Error("invalid background position");
-      return { x, y, width: parseInt(st.width), height: parseInt(st.height) };
-    });
-  }
-  function splitSpriteImage(image, positions) {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const result = [];
-    for (const pos of positions) {
-      canvas.width = pos.width;
-      canvas.height = pos.height;
-      ctx.drawImage(image, pos.x, pos.y, pos.width, pos.height, 0, 0, pos.width, pos.height);
-      result.push(canvas.toDataURL());
-    }
-    canvas.remove();
-    return result;
-  }
-  async function splitImagesFromUrl(url, positions) {
-    let data;
-    for (let i = 0; i < 3; i++) {
-      try {
-        data = await simpleFetch(url, "blob");
-        break;
-      } catch (err) {
-        evLog("error", "fetch thumbnail failed, ", err);
-      }
-    }
-    if (!data) throw new Error("load sprite image error");
-    url = URL.createObjectURL(data);
-    const img = await new Promise((resolve, reject) => {
-      const img2 = new Image();
-      img2.onload = () => resolve(img2);
-      img2.onerror = () => reject(new Error("load sprite image error"));
-      img2.src = url;
-    });
-    URL.revokeObjectURL(url);
-    return splitSpriteImage(img, positions);
-  }
-
-  const regulars = {
-    /** 有压缩的大图地址 */
-    normal: /\<img\sid=\"img\"\ssrc=\"(.*?)\"\sstyle/,
-    /** 原图地址 */
-    original: /\<a\shref=\"(http[s]?:\/\/e[x-]?hentai(55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad)?\.(org|onion)\/fullimg?[^"\\]*)\"\>/,
-    /** 大图重载地址 */
-    nlValue: /\<a\shref=\"\#\"\sid=\"loadfail\"\sonclick=\"return\snl\(\'(.*)\'\)\"\>/,
-    /** 是否开启自动多页查看器 */
-    isMPV: /https?:\/\/e[-x]hentai(55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad)?\.(org|onion)\/mpv\/\w+\/\w+\/#page\w/,
-    /** 多页查看器图片列表提取 */
-    mpvImageList: /imagelist\s=\s(\[.*?\])/,
-    /** 精灵图地址提取 */
-    sprite: /url\((.*?)\)/
-  };
-  class EHMatcher extends BaseMatcher {
-    name() {
-      return "e-hentai";
-    }
-    docMap = {};
-    // "http://exhentai55ld2wyap5juskbm67czulomrouspdacjamjeloj7ugjbsad.onion/*",
-    workURL() {
-      return /e[-x]hentai(.*)?.(org|onion)\/g\/\w+/;
-    }
-    title(chapters) {
-      const meta = chapters[0].meta || this.galleryMeta(chapters[0]);
-      let title = "";
-      if (conf.ehentaiTitlePrefer === "japanese") {
-        title = meta.originTitle || meta.title || "UNTITLE";
-      } else {
-        title = meta.title || meta.originTitle || "UNTITLE";
-      }
-      if (chapters.length > 1) {
-        title += "+" + chapters.length + "chapters";
-      }
-      return title;
-    }
-    galleryMeta(chapter) {
-      if (chapter.meta) return chapter.meta;
-      const doc = this.docMap[chapter.id];
-      const titleList = doc.querySelectorAll("#gd2 h1");
-      let title;
-      let originTitle;
-      if (titleList && titleList.length > 0) {
-        title = titleList[0].textContent || void 0;
-        if (titleList.length > 1) {
-          originTitle = titleList[1].textContent || void 0;
-        }
-      }
-      chapter.meta = new GalleryMeta(window.location.href, title || "UNTITLE");
-      chapter.meta.originTitle = originTitle;
-      const tagTrList = doc.querySelectorAll("#taglist tr");
-      const tags = {};
-      tagTrList.forEach((tr) => {
-        const tds = tr.childNodes;
-        const cat = tds[0].textContent;
-        if (cat && tds[1]) {
-          const list = [];
-          tds[1].childNodes.forEach((ele) => {
-            if (ele.textContent) list.push(ele.textContent);
-          });
-          tags[cat.replace(":", "")] = list;
-        }
-      });
-      chapter.meta.tags = tags;
-      return chapter.meta;
-    }
-    async fetchChapters() {
-      const chapter = new Chapter(0, "Default", window.location.href);
-      this.docMap[0] = document;
-      this.galleryMeta(chapter);
-      chapter.title = chapter.meta.title;
-      return [chapter];
-    }
-    async appendNewChapters(url, old) {
-      if (!this.workURL().test(url)) throw new Error("invaild gallery url");
-      const doc = await window.fetch(url).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-      let lastID = old[old.length - 1]?.id || 0;
-      lastID = lastID + 1;
-      const chapter = new Chapter(lastID, "NewChapter-" + lastID, url);
-      this.docMap[lastID] = doc;
-      this.galleryMeta(chapter);
-      chapter.title = chapter.meta.title;
-      return [chapter];
-    }
-    async parseImgNodes(source) {
-      const list = [];
-      const doc = await window.fetch(source).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-      if (!doc) {
-        throw new Error("warn: eh matcher failed to get document from source page!");
-      }
-      let isSprite = false;
-      let getNodeInfo = (node) => {
-        const anchor = node.firstElementChild;
-        const image = anchor.firstElementChild;
-        const title = image.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg";
-        const ret = {
-          thumbnailImage: image.src,
-          title,
-          href: anchor.getAttribute("href"),
-          wh: extractRectFromSrc(image.src) || { w: 100, h: 100 },
-          style: node.style,
-          backgroundImage: null,
-          delaySrc: void 0
-        };
-        return ret;
-      };
-      let query = doc.querySelectorAll("#gdt .gdtl");
-      if (!query || query.length == 0) {
-        query = doc.querySelectorAll("#gdt .gdtm > div");
-        isSprite = query?.length > 0;
-        getNodeInfo = (node) => {
-          const anchor = node.firstElementChild;
-          const image = anchor.firstElementChild;
-          const title = image.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg";
-          const backgroundImage = node.style.background.match(regulars.sprite)?.[1]?.replaceAll('"', "") || null;
-          const ret = {
-            backgroundImage,
-            title,
-            href: anchor.getAttribute("href"),
-            wh: extractRectFromStyle(node.style) ?? { w: 100, h: 100 },
-            style: node.style,
-            thumbnailImage: "",
-            delaySrc: void 0
-          };
-          return ret;
-        };
-      }
-      if (!query || query.length == 0) {
-        query = doc.querySelectorAll("#gdt > a");
-        isSprite = query?.length > 0;
-        getNodeInfo = (node) => {
-          const anchor = node;
-          let div = anchor.firstElementChild;
-          if (!div.style.background || div.childElementCount > 0) {
-            div = div.firstElementChild;
-          }
-          const title = div.getAttribute("title")?.replace(/Page\s\d+[:_]\s*/, "") || "untitle.jpg";
-          const backgroundImage = div.style.background.match(regulars.sprite)?.[1]?.replaceAll('"', "") || null;
-          const ret = {
-            backgroundImage,
-            title,
-            href: anchor.getAttribute("href"),
-            wh: extractRectFromStyle(div.style) ?? { w: 100, h: 100 },
-            style: div.style,
-            thumbnailImage: "",
-            delaySrc: void 0
-          };
-          return ret;
-        };
-      }
-      if (!query || query.length == 0) {
-        throw new Error("warn: failed query image nodes!");
-      }
-      const nodeInfos = [];
-      const nodes = Array.from(query);
-      const n0 = getNodeInfo(nodes[0]);
-      if (regulars.isMPV.test(n0.href)) {
-        isSprite = true;
-        const mpvDoc = await window.fetch(n0.href).then((response) => response.text()).then((text) => new DOMParser().parseFromString(text, "text/html"));
-        const imageList = JSON.parse(mpvDoc.querySelector("#pane_outer + script")?.innerHTML.match(regulars.mpvImageList)?.[1] ?? "[]");
-        const thumbnails = Array.from(mpvDoc.querySelectorAll("#pane_thumbs > a > div"));
-        const gid = location.pathname.split("/")[2];
-        for (let i = 0; i < imageList.length; i++) {
-          const info = imageList[i];
-          const backgroundImage = info.t.match(/\((http.*)\)/)?.[1] || null;
-          thumbnails[i].style.background = "url" + info.t;
-          const ni = {
-            backgroundImage,
-            title: info.n,
-            href: `${location.origin}/s/${info.k}/${gid}-${i + 1}`,
-            wh: extractRectFromStyle(thumbnails[i].style) ?? { w: 100, h: 100 },
-            style: thumbnails[i].style,
-            thumbnailImage: "",
-            delaySrc: void 0
-          };
-          nodeInfos.push(ni);
-        }
-      } else {
-        nodes.forEach((node) => nodeInfos.push(getNodeInfo(node)));
-      }
-      if (isSprite) {
-        const spriteURLs = [];
-        for (let i = 0; i < nodeInfos.length; i++) {
-          const info = nodeInfos[i];
-          if (!info.backgroundImage) {
-            evLog("error", "e-hentai miss node, ", info);
-            continue;
-          }
-          if (spriteURLs.length === 0 || spriteURLs[spriteURLs.length - 1].url !== info.backgroundImage) {
-            spriteURLs.push({ url: info.backgroundImage, range: [{ index: i, style: info.style }] });
-          } else {
-            spriteURLs[spriteURLs.length - 1].range.push({ index: i, style: info.style });
-          }
-        }
-        spriteURLs.forEach(({ url, range }) => {
-          url = url.startsWith("http") ? url : window.location.origin + url;
-          if (range.length === 1) {
-            nodeInfos[range[0].index].thumbnailImage = url;
-          } else {
-            const reso = [];
-            for (let i = 0; i < range.length; i++) {
-              nodeInfos[range[i].index].delaySrc = new Promise((resolve, reject) => reso.push({ resolve, reject }));
-            }
-            splitImagesFromUrl(url, parseImagePositions(range.map((n) => n.style))).then((ret) => {
-              for (let i = 0; i < ret.length; i++) {
-                reso[i].resolve(ret[i]);
-              }
-            }).catch((err) => reso.forEach((r) => r.reject(err)));
-          }
-        });
-      }
-      for (let i = 0; i < nodeInfos.length; i++) {
-        const info = nodeInfos[i];
-        list.push(new ImageNode(info.thumbnailImage, info.href, info.title, info.delaySrc, void 0, info.wh));
-      }
-      return list;
-    }
-    async *fetchPagesSource(chapter) {
-      const doc = this.docMap[chapter.id];
-      const fristImageHref = doc.querySelector("#gdt a")?.getAttribute("href");
-      if (fristImageHref && regulars.isMPV.test(fristImageHref)) {
-        yield Result.ok(window.location.href);
-        return;
-      }
-      const pages = Array.from(doc.querySelectorAll(".gtb td a")).filter((a) => a.href).map((a) => a.href);
-      if (pages.length === 0) {
-        throw new Error("cannot found next page elements");
-      }
-      let lastPage = 0;
-      let url;
-      for (const page of pages) {
-        const u = new URL(page);
-        const num = parseInt(u.searchParams.get("p") || "0");
-        if (num >= lastPage) {
-          lastPage = num;
-          url = u;
-        }
-      }
-      if (!url) {
-        throw new Error("cannot found next page elements again");
-      }
-      url.searchParams.delete("p");
-      yield Result.ok(url.href);
-      for (let p = 1; p < lastPage + 1; p++) {
-        url.searchParams.set("p", p.toString());
-        yield Result.ok(url.href);
-      }
-    }
-    async fetchOriginMeta(node, retry) {
-      const text = await window.fetch(node.href).then((resp) => resp.text()).catch((reason) => new Error(reason));
-      if (text instanceof Error || !text) throw new Error(`fetch source page error, ${text.toString()}`);
-      let src;
-      if (conf.fetchOriginal) {
-        src = regulars.original.exec(text)?.[1].replace(/&amp;/g, "&");
-        const nl = node.href.includes("?") ? node.href.split("?").pop() : void 0;
-        if (src && nl) {
-          src += "?" + nl;
-        }
-      }
-      if (!src) src = regulars.normal.exec(text)?.[1];
-      if (retry) {
-        const nlValue = regulars.nlValue.exec(text)?.[1];
-        if (nlValue) {
-          node.href = node.href + (node.href.includes("?") ? "&" : "?") + "nl=" + nlValue;
-          evLog("info", `IMG-FETCHER retry url:${node.href}`);
-          const newMeta = await this.fetchOriginMeta(node, false);
-          src = newMeta.url;
-        } else {
-          evLog("error", `Cannot matching the nlValue, content: ${text}`);
-        }
-      }
-      if (!src) {
-        evLog("error", "cannot matching the image url from content:\n", text);
-        throw new Error(`cannot matching the image url from content. (the content is showing up in console(F12 open it)`);
-      }
-      if (!src.startsWith("http")) {
-        src = window.location.origin + src;
-      }
-      if (src.endsWith("509.gif")) {
-        throw new Error("509, Image limits Exceeded, Please reset your Quota!");
-      }
-      return { url: src, href: node.href };
-    }
-    async processData(data, contentType) {
-      if (contentType.startsWith("text")) {
-        if (data.byteLength === 1329) {
-          throw new Error('fetching the raw image requires being logged in, please try logging in or disable "raw image"');
-        }
-      }
-      return [data, contentType];
-    }
-  }
-  function extractRectFromSrc(src) {
-    if (!src) return void 0;
-    const matches = src.match(/\/\w+-\d+-(\d+)-(\d+)-/);
-    if (matches && matches.length === 3) {
-      return { w: parseInt(matches[1]), h: parseInt(matches[2]) };
-    } else {
-      return void 0;
-    }
-  }
-  function extractRectFromStyle(style) {
-    const wh = { w: parseInt(style.width), h: parseInt(style.height) };
-    if (isNaN(wh.w) || isNaN(wh.h)) return void 0;
-    return wh;
   }
 
   class Hanime1Matcher extends BaseMatcher {

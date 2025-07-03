@@ -5006,7 +5006,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
   class E621Matcher extends DanbooruMatcher {
     cache = /* @__PURE__ */ new Map();
     nextPage(doc) {
-      return doc.querySelector(".paginator #paginator-next")?.href ?? null;
+      return doc.querySelector(".pagination #paginator-next")?.href ?? null;
     }
     getOriginalURL() {
       throw new Error("Method not implemented.");
@@ -5029,10 +5029,11 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     toImgNode(ele) {
       const src = ele.getAttribute("data-preview-url");
       if (!src) return [null, ""];
-      const href = `${window.location.origin}/posts/${ele.getAttribute("data-id")}`;
+      const href = ele.getAttribute("data-file-url");
+      if (!href) return [null, ""];
       const tags = ele.getAttribute("data-tags");
       const id = ele.getAttribute("data-id");
-      const normal = ele.getAttribute("data-large-url");
+      const normal = ele.getAttribute("data-sample-url");
       const original = ele.getAttribute("data-file-url");
       const fileExt = ele.getAttribute("data-file-ext") || void 0;
       if (!normal || !original || !id) return [null, ""];

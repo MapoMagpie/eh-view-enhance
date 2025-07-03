@@ -425,7 +425,7 @@ export class GelBooruMatcher extends DanbooruMatcher {
 export class E621Matcher extends DanbooruMatcher {
   cache: Map<string, { normal: string, original: string, id: string, fileExt?: string }> = new Map();
   nextPage(doc: Document): string | null {
-    return doc.querySelector<HTMLAnchorElement>(".paginator #paginator-next")?.href ?? null;
+    return doc.querySelector<HTMLAnchorElement>(".pagination #paginator-next")?.href ?? null;
   }
   getOriginalURL(): string | null {
     throw new Error("Method not implemented.");
@@ -448,10 +448,11 @@ export class E621Matcher extends DanbooruMatcher {
   toImgNode(ele: HTMLElement): [ImageNode | null, string] {
     const src = ele.getAttribute("data-preview-url");
     if (!src) return [null, ""];
-    const href = `${window.location.origin}/posts/${ele.getAttribute("data-id")}`;
+    const href = ele.getAttribute("data-file-url");
+    if (!href) return [null, ""];
     const tags = ele.getAttribute("data-tags");
     const id = ele.getAttribute("data-id");
-    const normal = ele.getAttribute("data-large-url");
+    const normal = ele.getAttribute("data-sample-url");
     const original = ele.getAttribute("data-file-url");
     const fileExt = ele.getAttribute("data-file-ext") || undefined;
     if (!normal || !original || !id) return [null, ""];

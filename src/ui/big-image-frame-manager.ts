@@ -23,7 +23,7 @@ export class BigImageFrameManager {
   currentIndex: number = 0;
   preventStep: { ele?: HTMLElement, ani?: Animation, currentPreventFinished: boolean } = { currentPreventFinished: false };
   debouncer: Debouncer;
-  callbackOnWheel?: (event: WheelEvent) => void;
+  callbackOnWheel?: () => void;
   visible: boolean = false;
   html: Elements;
   vidController?: VideoControl;
@@ -574,7 +574,7 @@ export class BigImageFrameManager {
       event.preventDefault();
       originEvent?.preventDefault();
     }
-    if (!noCallback) this.callbackOnWheel?.(event);
+    if (!noCallback) this.callbackOnWheel?.();
     if (event.buttons === 2) {
       preventDefault();
       this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);

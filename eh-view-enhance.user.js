@@ -9235,11 +9235,17 @@ return {data};
         ),
         "step-image-prev": new KeyboardDesc(
           ["arrowleft"],
-          () => BIFM.stepNext(conf.reversePages ? "next" : "prev")
+          () => {
+            BIFM.callbackOnWheel?.();
+            BIFM.stepNext(conf.reversePages ? "next" : "prev");
+          }
         ),
         "step-image-next": new KeyboardDesc(
           ["arrowright"],
-          () => BIFM.stepNext(conf.reversePages ? "prev" : "next")
+          () => {
+            BIFM.callbackOnWheel?.();
+            BIFM.stepNext(conf.reversePages ? "prev" : "next");
+          }
         ),
         "step-to-first-image": new KeyboardDesc(
           ["home"],
@@ -12791,7 +12797,7 @@ return {data};
         event.preventDefault();
         originEvent?.preventDefault();
       };
-      if (!noCallback) this.callbackOnWheel?.(event);
+      if (!noCallback) this.callbackOnWheel?.();
       if (event.buttons === 2) {
         preventDefault();
         this.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5);

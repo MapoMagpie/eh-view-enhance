@@ -259,11 +259,17 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
       ),
       "step-image-prev": new KeyboardDesc(
         ["arrowleft"],
-        () => BIFM.stepNext(conf.reversePages ? "next" : "prev")
+        () => {
+          BIFM.callbackOnWheel?.();
+          BIFM.stepNext(conf.reversePages ? "next" : "prev");
+        }
       ),
       "step-image-next": new KeyboardDesc(
         ["arrowright"],
-        () => BIFM.stepNext(conf.reversePages ? "prev" : "next")
+        () => {
+          BIFM.callbackOnWheel?.();
+          BIFM.stepNext(conf.reversePages ? "prev" : "next");
+        }
       ),
       "step-to-first-image": new KeyboardDesc(
         ["home"],

@@ -134,10 +134,10 @@ export function initEvents(HTML: Elements, BIFM: BigImageFrameManager, IFQ: IMGF
   function changeReadModeEvent(value?: string) {
     if (value) {
       conf.readMode = value as any;
-      saveConf(conf);
     }
     BIFM.changeLayout();
     conf.autoPageSpeed = conf.readMode === "pagination" ? 5 : 1;
+    saveConf(conf);
     q<HTMLInputElement>("#autoPageSpeedInput", HTML.config.panel).value = conf.autoPageSpeed.toString();
     Array.from(HTML.readModeSelect.querySelectorAll(".b-main-option")).forEach((element) => {
       if (element.getAttribute("data-value") === conf.readMode) {

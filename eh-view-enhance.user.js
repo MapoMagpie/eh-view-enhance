@@ -9127,10 +9127,10 @@ return {data};
     function changeReadModeEvent(value) {
       if (value) {
         conf.readMode = value;
-        saveConf(conf);
       }
       BIFM.changeLayout();
       conf.autoPageSpeed = conf.readMode === "pagination" ? 5 : 1;
+      saveConf(conf);
       q("#autoPageSpeedInput", HTML.config.panel).value = conf.autoPageSpeed.toString();
       Array.from(HTML.readModeSelect.querySelectorAll(".b-main-option")).forEach((element) => {
         if (element.getAttribute("data-value") === conf.readMode) {

@@ -26,6 +26,7 @@ import { SteamMatcher } from "./steam";
 import { TwitterMatcher } from "./twitter";
 import { WnacgMatcher } from "./wnacg";
 import { YabaiMatcher } from "./yabai";
+import { BakamhMatcher } from "./Bakamh";
 
 export function getMatchers(): Matcher<any>[] {
   return [
@@ -61,6 +62,7 @@ export function getMatchers(): Matcher<any>[] {
     new KemonoMatcher(),
     new HentaiZapMatcher(),
     new MiniServeMatcher(),
+    new BakamhMatcher(),
   ];
 }
 

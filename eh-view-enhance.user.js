@@ -8102,6 +8102,55 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
+  class BakamhMatcher extends BaseMatcher {
+    name() {
+      return "Bakamh";
+    }
+    workURL() {
+      return /bakamh.com\/manga\/[^\/]+\/$/;
+    }
+    async fetchChapters() {
+      const elements = Array.from(document.querySelectorAll(".wp-manga-chapter > a"));
+      return elements.map((elem, i) => {
+        const title = elem.textContent?.trim() ?? "untitled-" + (i + 1);
+        return new Chapter(i, title, elem.href);
+      });
+    }
+    async *fetchPagesSource(ch) {
+      yield Result.ok(ch.source);
+    }
+    async parseImgNodes(source) {
+      const doc = await window.fetch(source).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(Error);
+      if (doc instanceof Error) throw doc;
+      const images = Array.from(doc.querySelectorAll(".reading-content > .page-break > img"));
+      if (images.length === 0) throw new Error("cannot find images from chapter: " + source);
+      return images.map((image) => new ImageNode("", source, `${image.id}.${image.src.split(".").pop() ?? "jpg"}`, void 0, image.src));
+    }
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
+    }
+    meta;
+    galleryMeta() {
+      if (this.meta) return this.meta;
+      let title = document.querySelector("#manga-title h1")?.textContent ?? document.title;
+      title = title.replaceAll(/\s/g, "");
+      const meta = new GalleryMeta(window.location.href, title);
+      const items = Array.from(document.querySelectorAll(".post-content > .post-content_item"));
+      items.forEach((item) => {
+        const cate = item.querySelector(".summary-heading")?.textContent?.trim();
+        if (!cate) return;
+        const author = item.querySelector(".summary-content > .author-content > a")?.textContent;
+        if (author) meta.tags[cate] = [author];
+        const genres = item.querySelector(".summary-content > .genres-content > a")?.textContent;
+        if (genres) meta.tags[cate] = [genres];
+        const tags = Array.from(item.querySelectorAll(".summary-content > .tags-content > a")).map((a) => a.textContent).filter(Boolean);
+        if (tags && tags.length > 0) meta.tags[cate] = tags;
+      });
+      this.meta = meta;
+      return this.meta;
+    }
+  }
+
   function getMatchers() {
     return [
       new EHMatcher(),
@@ -8135,7 +8184,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new MyComicMatcher(),
       new KemonoMatcher(),
       new HentaiZapMatcher(),
-      new MiniServeMatcher()
+      new MiniServeMatcher(),
+      new BakamhMatcher()
     ];
   }
   function adaptMatcher(url) {

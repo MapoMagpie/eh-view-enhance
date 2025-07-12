@@ -8151,6 +8151,41 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
+  class MangaParkMatcher extends BaseMatcher {
+    name() {
+      return "MangaPark";
+    }
+    // https://mangapark.net/title/426777-en-i-said-i-d-make-science-content-so-why-are-all-my-fans-witches
+    workURL() {
+      return /mangapark.(net|com)\/title\/[^/]+$/;
+    }
+    async fetchChapters() {
+      const list = Array.from(document.querySelectorAll("div[data-name='chapter-list'] .flex-col > .px-2 > .space-x-1 > a"));
+      return list.map((elem, i) => new Chapter(i, elem.textContent ?? "Chapter" + (i + 1), elem.href));
+    }
+    async *fetchPagesSource(source) {
+      yield Result.ok(source.source);
+    }
+    async parseImgNodes(href) {
+      const doc = await window.fetch(href).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(Error);
+      if (doc instanceof Error) throw doc;
+      const elements = Array.from(doc.querySelectorAll("div[data-name='image-item'] > div"));
+      const digits = elements.length.toString().length;
+      return elements.map((elem, i) => {
+        const src = elem.querySelector("img")?.src;
+        if (!src) throw new Error("cannot find image from chapter: " + href);
+        const ext = src.split(".").pop() ?? "jpg";
+        const title = (i + 1).toString().padStart(digits, "0") + "." + ext;
+        const [w, h] = [parseInt(elem.style.width), parseInt(elem.style.height)];
+        const node = new ImageNode("", href, title, void 0, src, { w, h });
+        return node;
+      });
+    }
+    async fetchOriginMeta(node) {
+      return { url: node.originSrc };
+    }
+  }
+
   function getMatchers() {
     return [
       new EHMatcher(),
@@ -8185,7 +8220,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new KemonoMatcher(),
       new HentaiZapMatcher(),
       new MiniServeMatcher(),
-      new BakamhMatcher()
+      new BakamhMatcher(),
+      new MangaParkMatcher()
     ];
   }
   function adaptMatcher(url) {

@@ -6038,7 +6038,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     async parseImgNodes(source) {
       const raw = await simpleFetch(source, "text", { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36" });
       const doc = new DOMParser().parseFromString(raw, "text/html");
-      const jojoKey = raw.match(/var jojo\s?=\s?'(.*?)';/)?.[1];
+      const jojoKey = raw.match(/var (jojo|ccy)\s?=\s?'(.*?)';/)?.[2];
       if (!jojoKey) throw new Error("cannot find jojoKey for decrypt :(");
       const contentKey = doc.querySelector(".imageData[contentKey]")?.getAttribute("contentKey");
       if (!contentKey) throw new Error("cannot find content key");

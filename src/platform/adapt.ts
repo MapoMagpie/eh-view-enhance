@@ -28,6 +28,7 @@ import { WnacgMatcher } from "./wnacg";
 import { YabaiMatcher } from "./yabai";
 import { BakamhMatcher } from "./Bakamh";
 import { MangaParkMatcher } from "./mangapark";
+import { Hentai3Matcher } from "./3hentai";
 
 export function getMatchers(): Matcher<any>[] {
   return [
@@ -65,6 +66,7 @@ export function getMatchers(): Matcher<any>[] {
     new MiniServeMatcher(),
     new BakamhMatcher(),
     new MangaParkMatcher(),
+    new Hentai3Matcher(),
   ];
 }
 

@@ -8186,6 +8186,74 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
+  class Hentai3Matcher extends BaseMatcher {
+    name() {
+      return "3Hentai";
+    }
+    workURL() {
+      return /3hentai.net\/d\/\d+$/;
+    }
+    async *fetchPagesSource() {
+      yield Result.ok(document);
+    }
+    async parseImgNodes(doc) {
+      const elements = Array.from(doc.querySelectorAll(".single-thumb > a"));
+      const digits = elements.length.toString().length;
+      const nodes = elements.map((elem, i) => {
+        const href = elem.href;
+        const img = elem.querySelector("img.lazy");
+        if (!img) throw new Error("cannot find image element");
+        const thumb = img.getAttribute("data-src") ?? "";
+        const ext = thumb.split(".").pop() ?? "jpg";
+        const title = (i + 1).toString().padStart(digits, "0") + "." + ext;
+        const node = new ImageNode(thumb, href, title, void 0, void 0, { w: img.width, h: img.height });
+        return node;
+      });
+      if (nodes.length === 0) {
+        throw new Error("cannot find images by css selector: .single-thumb > a");
+      }
+      const firstImageDoc = await window.fetch(nodes[0].href).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(Error);
+      if (firstImageDoc instanceof Error) throw firstImageDoc;
+      const scriptElem = Array.from(firstImageDoc.querySelectorAll("script")).find((elem) => elem.textContent?.trimStart().startsWith("var readerPages "));
+      const pagesRaw = scriptElem?.textContent?.match(/var readerPages = JSON\.parse\(atob\("(.*)?\"\)\)/)?.[1];
+      if (pagesRaw) {
+        const pages = JSON.parse(window.atob(pagesRaw));
+        nodes.forEach((node, i) => {
+          const page = pages.pages[(i + 1).toString()];
+          if (!page) return;
+          node.title = page.f ?? node.title;
+          node.originSrc = pages.baseUriImg.replace("%s", page.f);
+          node.rect = { w: page.w, h: page.h };
+        });
+      }
+      return nodes;
+    }
+    async fetchOriginMeta(node) {
+      if (node.originSrc) return { url: node.originSrc };
+      const doc = await window.fetch(node.href).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(Error);
+      if (doc instanceof Error) throw doc;
+      const image = doc.querySelector(".js-main-img");
+      if (!image) throw new Error("cannot find image from: " + node.href);
+      return { url: image.src, title: image.src.split("/").pop() ?? node.title };
+    }
+    meta;
+    galleryMeta() {
+      if (this.meta) return this.meta;
+      const title = document.querySelector("#main-info > h1")?.textContent ?? document.title;
+      const meta = new GalleryMeta(window.location.href, title);
+      Array.from(document.querySelectorAll(".tag-container.field-name")).forEach((elem) => {
+        const cate = elem.firstChild?.textContent?.trim()?.replace(":", "")?.toLowerCase();
+        const filterElem = Array.from(elem.querySelectorAll("span.filter-elem"));
+        if (cate && filterElem.length > 0) {
+          const tags = filterElem.map((elem2) => elem2.textContent?.trim()).filter(Boolean);
+          meta.tags[cate] = tags;
+        }
+      });
+      this.meta = meta;
+      return this.meta;
+    }
+  }
+
   function getMatchers() {
     return [
       new EHMatcher(),
@@ -8221,7 +8289,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new HentaiZapMatcher(),
       new MiniServeMatcher(),
       new BakamhMatcher(),
-      new MangaParkMatcher()
+      new MangaParkMatcher(),
+      new Hentai3Matcher()
     ];
   }
   function adaptMatcher(url) {

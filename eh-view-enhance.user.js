@@ -1654,13 +1654,13 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       }
     });
   }
-  async function batchFetch(urls, concurrency, respType = "text") {
-    const results = new Array(urls.length);
+  async function batchFetch(requests, concurrency, respType = "text") {
+    const results = new Array(requests.length);
     let i = 0;
-    while (i < urls.length) {
-      const batch = urls.slice(i, i + concurrency);
+    while (i < requests.length) {
+      const batch = requests.slice(i, i + concurrency);
       const batchPromises = batch.map(
-        (url, index) => window.fetch(url).then((resp) => {
+        (request, index) => window.fetch(request).then((resp) => {
           if (resp.ok) {
             try {
               switch (respType) {
@@ -1672,10 +1672,10 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
                   return resp.arrayBuffer();
               }
             } catch (error) {
-              throw new Error(`failed to fetch ${url}: ${resp.status} ${error}`);
+              throw new Error(`failed to fetch ${request}: ${resp.status} ${error}`);
             }
           }
-          throw new Error(`failed to fetch ${url}: ${resp.status} ${resp.statusText}`);
+          throw new Error(`failed to fetch ${request}: ${resp.status} ${resp.statusText}`);
         }).then((raw) => results[index + i] = raw).catch((reason) => results[index + i] = new Error(reason))
       );
       await Promise.all(batchPromises);
@@ -8254,6 +8254,88 @@ before contentType: ${contentType}, after contentType: ${blob.type}
     }
   }
 
+  class BilibiliMatcher extends BaseMatcher {
+    name() {
+      return "Bilibili";
+    }
+    workURL() {
+      return /space.bilibili.com\/\d+\/upload\/opus$/;
+    }
+    async *fetchPagesSource() {
+      const host_mid = window.location.href.match(/space.bilibili.com\/(\d+)\//)?.[1];
+      if (!host_mid) throw new Error("cannot find host_mid from " + window.location.href);
+      const webid = document.querySelector("script#__RENDER_DATA__")?.textContent?.match(/%3A%22([\w\.\-_]*)%22/)?.[1];
+      if (!webid) throw new Error("cannot find webid");
+      let offset = "";
+      let page = 1;
+      while (true) {
+        const rid = transactionId();
+        const wts = Date.now().toString();
+        const data = await fetch(`https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/feed/space?host_mid=${host_mid}&page=${page}&offset=${offset}&type=all&web_location=333.1387&w_webid=${webid}&w_rid=${rid}&wts=${wts}`, {
+          "credentials": "include",
+          "headers": {
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-site"
+          },
+          "referrer": window.location.href,
+          "method": "GET",
+          "mode": "cors"
+        }).then((resp) => resp.json());
+        if (data.code !== 0) {
+          yield Result.err(new Error("fetch opus error: " + data.message));
+        }
+        if (data.data.items.length === 0) {
+          yield Result.err(new Error("fetch opus zero"));
+        }
+        if (data.data.has_more) {
+          offset = data.data.offset;
+          page = page + 1;
+          const items = [...data.data.items];
+          while (items.length > 0) {
+            yield Result.ok(items.splice(0, 1));
+          }
+        } else {
+          return;
+        }
+      }
+    }
+    async parseImgNodes(items) {
+      const requestInfos = items.map((item, i) => {
+        return new Request(`https://api.bilibili.com//x/polymer/web-dynamic/v1/opus/detail?id=${item.opus_id}&timezone_offset=${Date.now() - i}`, {
+          "credentials": "include",
+          "headers": {
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-site"
+          },
+          "referrer": item.jump_url,
+          "method": "GET",
+          "mode": "cors"
+        });
+      });
+      const details = await batchFetch(requestInfos, 1, "json");
+      const error = details.find((d) => d instanceof Error);
+      if (error) throw error;
+      if (requestInfos.length !== details.length) throw new Error(`fetch opus detail error, opus count: ${requestInfos.length}, detail count: ${details.length}`);
+      return items.map((item, i) => {
+        const detail = details[i];
+        const content = detail.data?.item.modules.find((modu) => modu.module_type === "MODULE_TYPE_CONTENT");
+        if (!content) throw new Error("cannot find pictures: " + item.jump_url);
+        const pictures = content.module_content.paragraphs.filter((para) => para.pic).map((para) => para.pic.pics).flat();
+        const digits = pictures.length.toString().length;
+        return pictures.map((pic, j) => {
+          const title = item.opus_id + "-" + (j + 1).toString().padStart(digits, "0");
+          return new ImageNode(j === 0 ? item.cover.url : "", item.jump_url, title, void 0, pic.url, { w: pic.width, h: pic.height });
+        });
+      }).flat();
+    }
+    async fetchOriginMeta(node) {
+      const ext = node.originSrc?.split(".").pop() ?? "jpg";
+      return { url: node.originSrc, title: node.title + "." + ext };
+    }
+  }
+
   function getMatchers() {
     return [
       new EHMatcher(),
@@ -8290,7 +8372,8 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       new MiniServeMatcher(),
       new BakamhMatcher(),
       new MangaParkMatcher(),
-      new Hentai3Matcher()
+      new Hentai3Matcher(),
+      new BilibiliMatcher()
     ];
   }
   function adaptMatcher(url) {

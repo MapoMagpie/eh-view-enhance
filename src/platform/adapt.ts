@@ -29,6 +29,7 @@ import { YabaiMatcher } from "./yabai";
 import { BakamhMatcher } from "./Bakamh";
 import { MangaParkMatcher } from "./mangapark";
 import { Hentai3Matcher } from "./3hentai";
+import { BilibiliMatcher } from "./bilibili";
 
 export function getMatchers(): Matcher<any>[] {
   return [
@@ -67,6 +68,7 @@ export function getMatchers(): Matcher<any>[] {
     new BakamhMatcher(),
     new MangaParkMatcher(),
     new Hentai3Matcher(),
+    new BilibiliMatcher(),
   ];
 }
 

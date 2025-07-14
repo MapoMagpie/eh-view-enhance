@@ -46,13 +46,13 @@ export function simpleFetch<T extends GmResponseType>(url: string, respType: T, 
     }
   });
 }
-export async function batchFetch<T>(urls: string[], concurrency: number, respType: "text" | "json" | "arraybuffer" = "text"): Promise<(T | Error)[]> {
-  const results = new Array(urls.length);
+export async function batchFetch<T>(requests: RequestInfo[], concurrency: number, respType: "text" | "json" | "arraybuffer" = "text"): Promise<(T | Error)[]> {
+  const results = new Array(requests.length);
   let i = 0;
-  while (i < urls.length) {
-    const batch = urls.slice(i, i + concurrency);
-    const batchPromises = batch.map((url, index) =>
-      window.fetch(url).then((resp) => {
+  while (i < requests.length) {
+    const batch = requests.slice(i, i + concurrency);
+    const batchPromises = batch.map((request, index) =>
+      window.fetch(request).then((resp) => {
         if (resp.ok) {
           try {
             switch (respType) {
@@ -64,10 +64,10 @@ export async function batchFetch<T>(urls: string[], concurrency: number, respTyp
                 return resp.arrayBuffer();
             }
           } catch (error) {
-            throw new Error(`failed to fetch ${url}: ${resp.status} ${error}`);
+            throw new Error(`failed to fetch ${request}: ${resp.status} ${error}`);
           }
         }
-        throw new Error(`failed to fetch ${url}: ${resp.status} ${resp.statusText}`);
+        throw new Error(`failed to fetch ${request}: ${resp.status} ${resp.statusText}`);
       }).then(raw => results[index + i] = raw).catch(reason => results[index + i] = new Error(reason))
     );
     await Promise.all(batchPromises);

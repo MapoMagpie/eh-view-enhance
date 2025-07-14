@@ -9102,7 +9102,9 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         return;
       }
       try {
-        new Function("imf", "imn", "gm_xhr", "EBUS", funcBody);
+        const AsyncFunction = async function() {
+        }.constructor;
+        AsyncFunction("imf", "imn", "gm_xhr", "EBUS", funcBody);
       } catch (err) {
         confirm("cannot create function (this site limit), " + err);
         return;

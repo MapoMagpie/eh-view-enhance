@@ -1,6 +1,7 @@
 import ImageNode from "../img-node";
 import { batchFetch } from "../utils/query";
 import { transactionId } from "../utils/random";
+import { sleep } from "../utils/sleep";
 import { BaseMatcher, OriginMeta, Result } from "./platform"
 
 export class BilibiliMatcher extends BaseMatcher<BiliBiliOpusItem[]> {
@@ -20,7 +21,6 @@ export class BilibiliMatcher extends BaseMatcher<BiliBiliOpusItem[]> {
     if (!webid) throw new Error("cannot find webid");
     let offset = "";
     let page = 1;
-    // const rid = "169844d7f3716b92c5daea77221b4960";
     while (true) {
       const rid = transactionId();
       const wts = Date.now().toString();
@@ -47,6 +47,7 @@ export class BilibiliMatcher extends BaseMatcher<BiliBiliOpusItem[]> {
         const items = [...data.data.items];
         while (items.length > 0) {
           yield Result.ok(items.splice(0, 1));
+          await sleep(1000);
         }
       } else {
         return;
@@ -55,28 +56,73 @@ export class BilibiliMatcher extends BaseMatcher<BiliBiliOpusItem[]> {
   }
 
   async parseImgNodes(items: BiliBiliOpusItem[]): Promise<ImageNode[]> {
-    const requestInfos = items.map<RequestInfo>((item, i) => {
-      return new Request(`https://api.bilibili.com//x/polymer/web-dynamic/v1/opus/detail?id=${item.opus_id}&timezone_offset=${Date.now() - i}`, {
-        "credentials": "include",
-        "headers": {
-          "Sec-Fetch-Dest": "empty",
-          "Sec-Fetch-Mode": "cors",
-          "Sec-Fetch-Site": "same-site",
-        },
-        "referrer": item.jump_url,
-        "method": "GET",
-        "mode": "cors"
-      });
+    // api
+    // const requestInfos = items.map<RequestInfo>((item, i) => {
+    //   return new Request(`https://api.bilibili.com//x/polymer/web-dynamic/v1/opus/detail?id=${item.opus_id}&timezone_offset=${Date.now() - i}`,
+    //     {
+    //       "credentials": "include",
+    //       "headers": {
+    //         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    //         "Accept-Language": "en-US,en;q=0.7,zh-CN;q=0.3",
+    //         "Upgrade-Insecure-Requests": "1",
+    //         "Sec-Fetch-Dest": "empty",
+    //         "Sec-Fetch-Mode": "cors",
+    //         "Sec-Fetch-Site": "same-site",
+    //         "Priority": "u=0, i",
+    //         "Referrer": item.jump_url.startsWith("http") ? item.jump_url : "https:" + item.jump_url,
+    //         "Host": "api.bilibili.com",
+    //         "Origin": "https://space.bilibili.com",
+    //       },
+    //       "method": "GET",
+    //       "mode": "cors"
+    //     });
+    // });
+    // const details = await batchFetch<BilibiliOPUSDetailResponse>(requestInfos, 1, "json");
+    // const error = details.find(r => r instanceof Error);
+    // if (error) throw error;
+
+    // html
+    const requestInfos = items.map(item => {
+      return new Request(`https://www.bilibili.com/opus/${item.opus_id}?spm_id_from=333.1387.0.0`,
+        {
+          "credentials": "include",
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.7,zh-CN;q=0.3",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "same-site",
+            "Sec-Fetch-User": "?1",
+            "Priority": "u=0, i",
+            "Origin": "https://space.bilibili.com",
+          },
+          "referrer": window.location.href,
+          "method": "GET",
+          // "mode": "cors"
+        }
+      )
     });
-    const details = await batchFetch<BilibiliOPUSDetailResponse>(requestInfos, 1, "json");
-    const error = details.find(d => d instanceof Error);
+    const raws = await batchFetch<string>(requestInfos, 1, "text");
+    const error = raws.find(r => r instanceof Error);
     if (error) throw error;
+    const details = raws.map((raw) => {
+      const j = (raw as string).match(/window.__INITIAL_STATE__=(\{.*\});/)?.[1];
+      if (!j) throw new Error("fetch opus error: cannot find windows.__INITIAL_STATE__");
+      const detail = JSON.parse(j)?.detail as BilibiliOPUSDetail;
+      if (!detail) throw new Error("fetch opus error: cannot find detail from windows.__INITIAL_STATE__");
+      return detail;
+    });
+
     if (requestInfos.length !== details.length) throw new Error(`fetch opus detail error, opus count: ${requestInfos.length}, detail count: ${details.length}`);
     return items.map((item, i) => {
-      const detail = details[i] as BilibiliOPUSDetailResponse;
-      const content = detail.data?.item.modules.find(modu => modu.module_type === "MODULE_TYPE_CONTENT");
-      if (!content) throw new Error("cannot find opus content: " + item.jump_url + " " + detail.message);
-      const pictures = content.module_content.paragraphs.filter(para => para.pic).map(para => para.pic!.pics).flat();
+      const detail = details[i];
+      const pictures = detail.modules.filter(modu => modu.module_type === "MODULE_TYPE_CONTENT" || modu.module_type === "MODULE_TYPE_TOP")
+        .map(modu =>
+          modu.module_top?.display.album.pics
+          ?? modu.module_content?.paragraphs.filter(para => para.pic).map(para => para.pic?.pics ?? []).flat()
+          ?? []).flat();
+      if (!pictures) throw new Error("cannot find opus content: " + item.jump_url);
       const digits = pictures.length.toString().length;
       return pictures.map((pic, j) => {
         const title = item.opus_id + "-" + (j + 1).toString().padStart(digits, "0");
@@ -86,18 +132,6 @@ export class BilibiliMatcher extends BaseMatcher<BiliBiliOpusItem[]> {
   }
 
   async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
-    // const data = await fetch(`https://api.bilibili.com//x/polymer/web-dynamic/v1/opus/detail?id=${node.originSrc}&timezone_offset=${Date.now()}`, {
-    //   "credentials": "include",
-    //   "headers": {
-    //     "Sec-Fetch-Dest": "empty",
-    //     "Sec-Fetch-Mode": "cors",
-    //     "Sec-Fetch-Site": "same-site",
-    //   },
-    //   "referrer": node.href,
-    //   "method": "GET",
-    //   "mode": "cors"
-    // }).then(resp => resp.json());
-    // console.log(data);
     const ext = node.originSrc?.split(".").pop() ?? "jpg";
     return { url: node.originSrc!, title: node.title + "." + ext };
   }
@@ -130,32 +164,45 @@ type BilibiliOPUSResponse = {
   }
 }
 
-type BilibiliOPUSDetailResponse = {
-  code: number,
-  message: string,
-  ttl: number,
-  data: {
-    item: {
-      id_str: string,
-      modules: {
-        module_type: string, // MODULE_TYPE_CONTENT
-        module_content: {
-          paragraphs: {
-            align: number,
-            para_type: number,
-            pic?: {
-              style: number,
-              pics: {
-                height: number,
-                size: number,
-                url: string,
-                live_url?: string,
-                width: number,
-              }[],
-            }
+type BilibiliOPUSDetail = {
+  id_str: string,
+  modules: {
+    module_type: string, // MODULE_TYPE_CONTENT
+    module_top?: {
+      display: {
+        album: {
+          pics: {
+            height: number,
+            size: number,
+            url: string,
+            live_url?: string,
+            width: number,
           }[],
         }
-      }[]
+      }
+    },
+    module_content?: {
+      paragraphs: {
+        align: number,
+        para_type: number,
+        pic?: {
+          style: number,
+          pics: {
+            height: number,
+            size: number,
+            url: string,
+            live_url?: string,
+            width: number,
+          }[],
+        }
+      }[],
     }
-  }
+  }[],
 }
+
+// type BilibiliOPUSDetailResponse = {
+//   code: number,
+//   message: string,
+//   ttl: number,
+//   data?: { item: BilibiliOPUSDetail },
+// }

@@ -1,5 +1,5 @@
 import ImageNode from "../img-node";
-import { batchFetch } from "../utils/query";
+import { simpleFetch } from "../utils/query";
 import { transactionId } from "../utils/random";
 import { sleep } from "../utils/sleep";
 import { BaseMatcher, OriginMeta, Result } from "./platform"
@@ -46,7 +46,7 @@ export class BilibiliMatcher extends BaseMatcher<BiliBiliOpusItem[]> {
         page = page + 1;
         const items = [...data.data.items];
         while (items.length > 0) {
-          yield Result.ok(items.splice(0, 1));
+          yield Result.ok(items.splice(0, 2));
           await sleep(1000);
         }
       } else {
@@ -82,30 +82,52 @@ export class BilibiliMatcher extends BaseMatcher<BiliBiliOpusItem[]> {
     // if (error) throw error;
 
     // html
-    const requestInfos = items.map(item => {
-      return new Request(`https://www.bilibili.com/opus/${item.opus_id}?spm_id_from=333.1387.0.0`,
-        {
-          "credentials": "include",
-          "headers": {
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.7,zh-CN;q=0.3",
-            "Upgrade-Insecure-Requests": "1",
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "same-site",
-            "Sec-Fetch-User": "?1",
-            "Priority": "u=0, i",
-            "Origin": "https://space.bilibili.com",
-          },
-          "referrer": window.location.href,
-          "method": "GET",
-          // "mode": "cors"
-        }
-      )
-    });
-    const raws = await batchFetch<string>(requestInfos, 1, "text");
-    const error = raws.find(r => r instanceof Error);
-    if (error) throw error;
+    // const requestInfos = items.map(item => {
+    //   return new Request(`https://www.bilibili.com/opus/${item.opus_id}?spm_id_from=333.1387.0.0`,
+    //     {
+    //       "credentials": "include",
+    //       "headers": {
+    //         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    //         "Accept-Language": "en-US,en;q=0.7,zh-CN;q=0.3",
+    //         "Upgrade-Insecure-Requests": "1",
+    //         "Sec-Fetch-Dest": "document",
+    //         "Sec-Fetch-Mode": "navigate",
+    //         "Sec-Fetch-Site": "same-site",
+    //         "Sec-Fetch-User": "?1",
+    //         "Priority": "u=0, i",
+    //         "Origin": "https://space.bilibili.com",
+    //         // "Cookie": document.cookie,
+    //       },
+    //       "referrer": window.location.href,
+    //       "method": "GET",
+    //       // "mode": "cors"
+    //     }
+    //   )
+    // });
+
+    const raws = [];
+    for (const item of items) {
+      const raw = await simpleFetch(`https://www.bilibili.com/opus/${item.opus_id}?spm_id_from=333.1387.0.0`, "text", {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.7,zh-CN;q=0.3",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "same-site",
+        "Sec-Fetch-User": "?1",
+        "Priority": "u=0, i",
+        "Origin": "https://space.bilibili.com",
+        "Cookie": document.cookie,
+        "Referrer": window.location.href,
+      });
+      if (raw.match("<title>验证码_哔哩哔哩</title>")) {
+        throw new Error("触发风控，请打开此链接处理验证码：https:" + item.jump_url);
+      }
+      raws.push(raw);
+    }
+    // const raws = await batchFetch<string>(requestInfos, 1, "text");
+    // const error = raws.find(r => r instanceof Error);
+    // if (error) throw error;
     const details = raws.map((raw) => {
       const j = (raw as string).match(/window.__INITIAL_STATE__=(\{.*\});/)?.[1];
       if (!j) throw new Error("fetch opus error: cannot find windows.__INITIAL_STATE__");
@@ -114,7 +136,7 @@ export class BilibiliMatcher extends BaseMatcher<BiliBiliOpusItem[]> {
       return detail;
     });
 
-    if (requestInfos.length !== details.length) throw new Error(`fetch opus detail error, opus count: ${requestInfos.length}, detail count: ${details.length}`);
+    if (items.length !== details.length) throw new Error(`fetch opus detail error, opus count: ${items.length}, detail count: ${details.length}`);
     return items.map((item, i) => {
       const detail = details[i];
       const pictures = detail.modules.filter(modu => modu.module_type === "MODULE_TYPE_CONTENT" || modu.module_type === "MODULE_TYPE_TOP")

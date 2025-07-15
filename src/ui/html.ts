@@ -14,6 +14,7 @@ import EBUS from "../event-bus";
 import { ChaptersPanel } from "./chapters-panel";
 import { FilterPanel } from "./filter-panel";
 import { Filter } from "../filter";
+import { linkify } from "../utils/linkify";
 
 export type Elements = ReturnType<typeof createHTML>;
 
@@ -266,6 +267,7 @@ export function addEventListeners(events: Events, HTML: Elements, BIFM: BigImage
 }
 
 export function showMessage(box: HTMLElement, level: "info" | "error", message: string, duration?: number) {
+  message = linkify(message);
   const element = document.createElement("div");
   element.classList.add("ehvp-message");
   element.innerHTML = `<span ${level === "error" ? "style='color: red;'" : ""}>${message}</span><button>X</button><div class="ehvp-message-duration-bar"></div>`;

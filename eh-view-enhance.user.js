@@ -8293,7 +8293,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
           page = page + 1;
           const items = [...data.data.items];
           while (items.length > 0) {
-            yield Result.ok(items.splice(0, 1));
+            yield Result.ok(items.splice(0, 2));
             await sleep(1e3);
           }
         } else {
@@ -8302,31 +8302,26 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       }
     }
     async parseImgNodes(items) {
-      const requestInfos = items.map((item) => {
-        return new Request(
-          `https://www.bilibili.com/opus/${item.opus_id}?spm_id_from=333.1387.0.0`,
-          {
-            "credentials": "include",
-            "headers": {
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-              "Accept-Language": "en-US,en;q=0.7,zh-CN;q=0.3",
-              "Upgrade-Insecure-Requests": "1",
-              "Sec-Fetch-Dest": "document",
-              "Sec-Fetch-Mode": "navigate",
-              "Sec-Fetch-Site": "same-site",
-              "Sec-Fetch-User": "?1",
-              "Priority": "u=0, i",
-              "Origin": "https://space.bilibili.com"
-            },
-            "referrer": window.location.href,
-            "method": "GET"
-            // "mode": "cors"
-          }
-        );
-      });
-      const raws = await batchFetch(requestInfos, 1, "text");
-      const error = raws.find((r) => r instanceof Error);
-      if (error) throw error;
+      const raws = [];
+      for (const item of items) {
+        const raw = await simpleFetch(`https://www.bilibili.com/opus/${item.opus_id}?spm_id_from=333.1387.0.0`, "text", {
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.7,zh-CN;q=0.3",
+          "Upgrade-Insecure-Requests": "1",
+          "Sec-Fetch-Dest": "document",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Site": "same-site",
+          "Sec-Fetch-User": "?1",
+          "Priority": "u=0, i",
+          "Origin": "https://space.bilibili.com",
+          "Cookie": document.cookie,
+          "Referrer": window.location.href
+        });
+        if (raw.match("<title>验证码_哔哩哔哩</title>")) {
+          throw new Error("触发风控，请打开此链接处理验证码：https:" + item.jump_url);
+        }
+        raws.push(raw);
+      }
       const details = raws.map((raw) => {
         const j = raw.match(/window.__INITIAL_STATE__=(\{.*\});/)?.[1];
         if (!j) throw new Error("fetch opus error: cannot find windows.__INITIAL_STATE__");
@@ -8334,7 +8329,7 @@ before contentType: ${contentType}, after contentType: ${blob.type}
         if (!detail) throw new Error("fetch opus error: cannot find detail from windows.__INITIAL_STATE__");
         return detail;
       });
-      if (requestInfos.length !== details.length) throw new Error(`fetch opus detail error, opus count: ${requestInfos.length}, detail count: ${details.length}`);
+      if (items.length !== details.length) throw new Error(`fetch opus detail error, opus count: ${items.length}, detail count: ${details.length}`);
       return items.map((item, i) => {
         const detail = details[i];
         const pictures = detail.modules.filter((modu) => modu.module_type === "MODULE_TYPE_CONTENT" || modu.module_type === "MODULE_TYPE_TOP").map((modu) => modu.module_top?.display.album.pics ?? modu.module_content?.paragraphs.filter((para) => para.pic).map((para) => para.pic?.pics ?? []).flat() ?? []).flat();
@@ -11834,6 +11829,32 @@ return {data};
     }
   }
 
+  function linkify(text) {
+    const urlRegex = /https?:\/\/[^\s<>"']+/g;
+    return text.replace(urlRegex, (url) => {
+      const escapedUrl = escapeHtml(url);
+      return `<a target="_blank" href="${escapedUrl}">${escapedUrl}</a>`;
+    });
+  }
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (char) => {
+      switch (char) {
+        case "&":
+          return "&amp;";
+        case "<":
+          return "&lt;";
+        case ">":
+          return "&gt;";
+        case '"':
+          return "&quot;";
+        case "'":
+          return "&#39;";
+        default:
+          return char;
+      }
+    });
+  }
+
   function createHTML(filter) {
     const base = document.createElement("div");
     const dt = getDisplayText();
@@ -12065,6 +12086,7 @@ return {data};
     q("#scaleInput", HTML.pageHelper).addEventListener("wheel", (event) => BIFM.scaleBigImages(event.deltaY > 0 ? -1 : 1, 5));
   }
   function showMessage(box, level, message, duration) {
+    message = linkify(message);
     const element = document.createElement("div");
     element.classList.add("ehvp-message");
     element.innerHTML = `<span ${level === "error" ? "style='color: red;'" : ""}>${message}</span><button>X</button><div class="ehvp-message-duration-bar"></div>`;

@@ -14,7 +14,7 @@ export class BakamhMatcher extends BaseMatcher<string> {
   }
 
   async fetchChapters(): Promise<Chapter[]> {
-    const elements = Array.from(document.querySelectorAll<HTMLAnchorElement>(".wp-manga-chapter > a"));
+    const elements = Array.from(document.querySelectorAll<HTMLAnchorElement>(".listing-chapters_wrap li > a"));
     return elements.map((elem, i) => {
       const title = elem.textContent?.trim() ?? ("untitled-" + (i + 1));
       return new Chapter(i, title, elem.href);
@@ -28,7 +28,7 @@ export class BakamhMatcher extends BaseMatcher<string> {
   async parseImgNodes(source: string): Promise<ImageNode[]> {
     const doc = await window.fetch(source).then(resp => resp.text()).then(text => new DOMParser().parseFromString(text, "text/html")).catch(Error);
     if (doc instanceof Error) throw doc;
-    const images = Array.from(doc.querySelectorAll<HTMLImageElement>(".reading-content > .page-break > img"));
+    const images = Array.from(doc.querySelectorAll<HTMLImageElement>(".reading-content > .manga-image-container > img"));
     if (images.length === 0) throw new Error("cannot find images from chapter: " + source);
     return images.map(image => new ImageNode("", source, `${image.id}.${image.src.split(".").pop() ?? "jpg"}`, undefined, image.src));
   }

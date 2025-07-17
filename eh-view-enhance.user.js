@@ -8120,11 +8120,44 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       yield Result.ok(ch.source);
     }
     async parseImgNodes(source) {
-      const doc = await window.fetch(source).then((resp) => resp.text()).then((text) => new DOMParser().parseFromString(text, "text/html")).catch(Error);
-      if (doc instanceof Error) throw doc;
-      const images = Array.from(doc.querySelectorAll(".reading-content > .manga-image-container > img"));
+      const raw = await window.fetch(source).then((resp) => resp.text()).catch(Error);
+      if (raw instanceof Error) throw raw;
+      const queryImages = (docRaw) => {
+        const doc = new DOMParser().parseFromString(docRaw, "text/html");
+        return Array.from(doc.querySelectorAll(".read-container div > img"));
+      };
+      let images = queryImages(raw);
+      if (images.length === 0) {
+        const raw_key_raw = raw.match(/var raw_key\s?\=\s?\[([\d,]*)\];/)?.[1];
+        if (!raw_key_raw) throw new Error("cannot find raw_key from chapter: " + source);
+        const raw_key = raw_key_raw.split(",").map((s) => parseInt(s));
+        const encrypted = raw.match(/var encrypted\s?\=\s?"(\w+)";/)?.[1];
+        if (!encrypted) throw new Error("cannot find encrypted from chapter: " + source);
+        let tag = void 0;
+        let iv_raw = raw.match(/var iv\s?\=\s?\[([\d,]*)\]/)?.[1];
+        if (!iv_raw) {
+          iv_raw = raw.match(/var iv\s?\=\s?new Uint8Array\(\[([\d,]+)\]\)/)?.[1];
+          if (!iv_raw) throw new Error("cannot find iv from chapter: " + source);
+          tag = raw.match(/var tag\s?\=\s?new Uint8Array\(\[([\d,]+)\]\)/)?.[1]?.split(",").map((s) => parseInt(s));
+        }
+        const iv = iv_raw.split(",").map((s) => parseInt(s));
+        try {
+          const docRaw = this.decrypt(raw_key, encrypted, iv, tag);
+          images = queryImages(docRaw);
+        } catch (error) {
+          throw new Error("decrypt failed: " + error);
+        }
+      }
       if (images.length === 0) throw new Error("cannot find images from chapter: " + source);
       return images.map((image) => new ImageNode("", source, `${image.id}.${image.src.split(".").pop() ?? "jpg"}`, void 0, image.src));
+    }
+    headers() {
+      return {
+        "Accept": "image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5",
+        "Accept-Language": "en-US,en;q=0.7,zh-CN;q=0.3",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Referer": "https://bakamh.com/"
+      };
     }
     async fetchOriginMeta(node) {
       return { url: node.originSrc };
@@ -8148,6 +8181,22 @@ before contentType: ${contentType}, after contentType: ${blob.type}
       });
       this.meta = meta;
       return this.meta;
+    }
+    decrypt(raw_key, encrypted, iv, tag) {
+      const fg = forge;
+      const decipher = fg.cipher.createDecipher("AES-OFB", raw_key);
+      if (tag) {
+        decipher.start({ iv: new Uint8Array(iv), tags: new Uint8Array(tag) });
+      } else {
+        decipher.start({ iv });
+      }
+      const u8Data = new Uint8Array(encrypted.match(/.{1,2}/g).map((m) => parseInt(m, 16)));
+      decipher.update(fg.util.createBuffer(u8Data));
+      if (decipher.finish()) {
+        return decipher.output.data;
+      } else {
+        throw new Error("decipher unfinished");
+      }
     }
   }
 

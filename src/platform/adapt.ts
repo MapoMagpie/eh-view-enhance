@@ -26,7 +26,7 @@ import { SteamMatcher } from "./steam";
 import { TwitterMatcher } from "./twitter";
 import { WnacgMatcher } from "./wnacg";
 import { YabaiMatcher } from "./yabai";
-import { BakamhMatcher } from "./Bakamh";
+import { BakamhMatcher } from "./bakamh";
 import { MangaParkMatcher } from "./mangapark";
 import { Hentai3Matcher } from "./3hentai";
 import { BilibiliMatcher } from "./bilibili";

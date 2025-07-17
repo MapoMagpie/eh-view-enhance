@@ -1357,7 +1357,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       dragImageOut: false,
       excludeVideo: false,
       enableFilter: false,
-      imgNodeActions: []
+      imgNodeActions: [],
+      minRatio: 0.5
     };
   }
   const CONF_VERSION = "4.4.0";
@@ -3148,7 +3149,7 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       this.canvasElement = anchor.lastElementChild;
       this.imgElement.setAttribute("title", this.title);
       this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
-      const ratio = this.ratio();
+      const ratio = Math.max(conf.minRatio, this.ratio());
       this.root.style.aspectRatio = ratio.toString();
       this.root.setAttribute("data-ratio", ratio.toString());
       this.canvasElement.width = 512;
@@ -3210,9 +3211,9 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
       if (this.imgElement.src === this.imgElement.getAttribute("data-rendered")) return;
       this.imgElement.onload = null;
       this.imgElement.onerror = null;
-      const oldRatio = this.ratio();
+      const oldRatio = Math.max(conf.minRatio, this.ratio());
       this.rect = { w: this.imgElement.naturalWidth, h: this.imgElement.naturalHeight };
-      const newRatio = this.ratio();
+      const newRatio = Math.max(conf.minRatio, this.ratio());
       const flowVision = this.root.parentElement?.classList.contains("fvg-sub-container");
       if (Math.abs(newRatio - oldRatio) > 0.07) {
         this.root.style.aspectRatio = newRatio.toString();
@@ -3230,11 +3231,40 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
         this.imgElement.src = "";
         this.imgElement.setAttribute("data-rendered", src);
       };
-      if (this.imgElement.src === this.thumbnailSrc || newRatio < 0.1) {
-        this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
+      const cropHeight = this.imgElement.naturalWidth / newRatio;
+      const cropY = (this.imgElement.naturalHeight - cropHeight) / 2;
+      if (this.imgElement.src === this.thumbnailSrc) {
+        this.canvasCtx?.drawImage(
+          this.imgElement,
+          0,
+          cropY,
+          this.imgElement.naturalWidth,
+          cropHeight,
+          0,
+          0,
+          this.canvasElement.width,
+          this.canvasElement.height
+        );
         resized(this.imgElement.src);
       } else {
-        resizing(this.imgElement, this.canvasElement).then(() => window.setTimeout(() => resized(this.imgElement.src), 100)).catch(() => resized(this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height) || ""));
+        const re = (from) => {
+          resizing(from, this.canvasElement).then(() => window.setTimeout(() => resized(this.imgElement.src), 100)).catch(() => resized(this.canvasCtx?.drawImage(
+            this.imgElement,
+            0,
+            cropY,
+            this.imgElement.naturalWidth,
+            cropHeight,
+            0,
+            0,
+            this.canvasElement.width,
+            this.canvasElement.height
+          ) || ""));
+        };
+        if (this.ratio() < conf.minRatio) {
+          createImageBitmap(this.imgElement, 0, cropY, this.imgElement.naturalWidth, cropHeight).then(re);
+        } else {
+          re(this.imgElement);
+        }
       }
     }
     ratio() {

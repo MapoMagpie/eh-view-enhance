@@ -125,6 +125,8 @@ export type Config = {
   excludeVideo: boolean,
   enableFilter: boolean,
   imgNodeActions: ImageActionDesc[],
+  /** minRatio indicates the minimum ratio of thumbnail display to prevent the thumbnail from being too thin. */
+  minRatio: number,
 };
 
 function defaultColumns() {
@@ -193,6 +195,7 @@ function defaultConf(): Config {
     excludeVideo: false,
     enableFilter: false,
     imgNodeActions: [],
+    minRatio: 0.5,
   };
 }
 

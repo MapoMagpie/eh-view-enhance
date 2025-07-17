@@ -117,7 +117,7 @@ export default class ImageNode {
     this.imgElement.setAttribute("title", this.title);
     this.canvasElement.id = "canvas-" + this.title.replaceAll(/[^\w]/g, "_");
 
-    const ratio = this.ratio();
+    const ratio = Math.max(conf.minRatio, this.ratio());
     this.root.style.aspectRatio = ratio.toString();
     this.root.setAttribute("data-ratio", ratio.toString());
     this.canvasElement.width = 512;
@@ -182,9 +182,9 @@ export default class ImageNode {
     this.imgElement.onload = null;
     this.imgElement.onerror = null;
 
-    const oldRatio = this.ratio();
+    const oldRatio = Math.max(conf.minRatio, this.ratio());
     this.rect = { w: this.imgElement.naturalWidth, h: this.imgElement.naturalHeight };
-    const newRatio = this.ratio();
+    const newRatio = Math.max(conf.minRatio, this.ratio());
 
     const flowVision = this.root.parentElement?.classList.contains("fvg-sub-container");
     // console.log("ratio diff: ", Math.abs(newRatio - oldRatio));
@@ -204,15 +204,32 @@ export default class ImageNode {
       this.imgElement!.src = "";
       this.imgElement!.setAttribute("data-rendered", src);
     }
-    if (this.imgElement.src === this.thumbnailSrc || newRatio < 0.1) {
+    const cropHeight = this.imgElement.naturalWidth / newRatio;
+    const cropY = (this.imgElement.naturalHeight - cropHeight) / 2;
+    if (this.imgElement.src === this.thumbnailSrc) {
       // https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image
-      this.canvasCtx?.drawImage(this.imgElement, 0, 0, this.canvasElement.width, this.canvasElement.height);
+      this.canvasCtx?.drawImage(this.imgElement,
+        0, cropY,
+        this.imgElement.naturalWidth, cropHeight,
+        0, 0,
+        this.canvasElement.width, this.canvasElement.height);
       resized(this.imgElement.src);
     } else {
-      // FIXME: pica wasm resizing image lagging if images ratio very low, so if newRatio < 0.1(1/10) use native
-      resizing(this.imgElement, this.canvasElement)
-        .then(() => window.setTimeout(() => resized(this.imgElement!.src), 100))
-        .catch(() => resized(this.canvasCtx?.drawImage(this.imgElement!, 0, 0, this.canvasElement!.width, this.canvasElement!.height) || ""));
+      const re = (from: HTMLImageElement | ImageBitmap) => {
+        // pica wasm resizing image lagging if images ratio very low, so if newRatio < 0.1(1/10) use native
+        resizing(from, this.canvasElement!)
+          .then(() => window.setTimeout(() => resized(this.imgElement!.src), 100))
+          .catch(() => resized(this.canvasCtx?.drawImage(this.imgElement!,
+            0, cropY,
+            this.imgElement!.naturalWidth, cropHeight,
+            0, 0,
+            this.canvasElement!.width, this.canvasElement!.height) || ""));
+      };
+      if (this.ratio() < conf.minRatio) {
+        createImageBitmap(this.imgElement, 0, cropY, this.imgElement.naturalWidth, cropHeight).then(re);
+      } else {
+        re(this.imgElement);
+      }
     }
   }
 

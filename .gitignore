@@ -24,3 +24,8 @@ dist
 *.sln
 *.sw?
 worker-*.js
+
+eh-view-enhance.user.js
+eh-view-enhance.meta.js
+comic-looms.user.js
+comic-looms.meta.js

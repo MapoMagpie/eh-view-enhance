@@ -44,19 +44,30 @@ export class Hanime1Matcher extends BaseMatcher<Document> {
     return items.map((item, index) => {
       const href = item.href;
       const thumb = item.querySelector("img")?.getAttribute("data-srcset") || "";
-      const fk = (extensions?.[index] ?? "j") as keyof (typeof f);
-      const ext = f[fk] ?? "jpg";
-      const src = prefix ? prefix + (index + 1) + "." + ext : undefined;
+      let ext = "jpg";
+      let src = (prefix && extensions) ? `${prefix}${extensions[index]}.${ext}` : undefined;
+      if (prefix && extensions && prefix.includes("nhentai")) {
+        const fk = (extensions?.[index] ?? "j") as keyof (typeof f);
+        ext = f[fk] ?? "jpg";
+        src = `${prefix}${(index + 1)}.${ext}`;
+      }
       return new ImageNode(thumb, href, (index + 1).toString().padStart(digits, "0") + "." + ext, undefined, src);
     });
   }
 
-  async fetchOriginMeta(node: ImageNode): Promise<OriginMeta> {
-    if (node.originSrc) return { url: node.originSrc };
+  async fetchOriginMeta(node: ImageNode, retry: boolean): Promise<OriginMeta> {
+    if (!retry && node.originSrc) return { url: node.originSrc };
     const page0 = await window.fetch(node.href).then(res => res.text()).then(raw => (new DOMParser()).parseFromString(raw, "text/html"));
     const img = page0.querySelector<HTMLImageElement>("#comic-content-wrapper img");
     if (!img) throw new Error("cannot find img from " + node.href);
     return { url: img.src };
+  }
+
+  headers(): Record<string, string> {
+    return {
+      "Origin": "",
+      "Referer": "",
+    }
   }
 
   workURL(): RegExp {

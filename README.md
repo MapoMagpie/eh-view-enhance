@@ -32,7 +32,7 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 1. **`Prerequisites`**: Installed extension [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/) 
 1. **`Prerequisites`**: click here to check if you can access [jsdelivr.net](https://cdn.jsdelivr.net) to ensure the script runs properly.
 1. **`Installation Link 1`**: [GreasyFork](https://greasyfork.org/scripts/397848)
-1. **`Installation Link 2`**: Direct install [here](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+1. **`Installation Link 2`**: Direct install [here](https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.user.js)
 
 ## <a name="multi-site-support">Multi-site Support</a>
 
@@ -69,6 +69,9 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 - [kemono.su](https://kemono.su)
 - [hentaizap.com](https://hentaizap.com)
 - [miniserve -p 41021](https://github.com/svenstaro/miniserve)
+- [mangapark.net](https://mangapark.net)
+- [hentai3.com](https://3hentai.net)
+- [asmhentai.com](https://asmhentai.com)
 
 </details>
 

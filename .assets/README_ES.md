@@ -32,7 +32,7 @@ Vista previa (si no puedes ver la imagen, haz clic [aqui](./preview.md)):
 1. **`Requisitos Previos`**: Extensión instalada [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/)
 1. **`Requisitos Previos`**: Haz clic aquí para verificar si puedes acceder a [jsdelivr.net](https://cdn.jsdelivr.net) para asegurar que el script funcione correctamente.
 1. **`Enlace de Instalación 1`**: [GreasyFork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance)
-1. **`Enlace de Instalación 2`**: Instalación directa [aquí](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+1. **`Enlace de Instalación 2`**: Instalación directa [aquí](https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.user.js)
 
 ## <a name="soporte-multi-sitio">Soporte multi-sitio</a>
 
@@ -69,6 +69,9 @@ Vista previa (si no puedes ver la imagen, haz clic [aqui](./preview.md)):
 - [kemono.su](https://kemono.su)
 - [hentaizap.com](https://hentaizap.com)
 - [miniserve -p 41021](https://github.com/svenstaro/miniserve)
+- [mangapark.net](https://mangapark.net)
+- [hentai3.com](https://3hentai.net)
+- [asmhentai.com](https://asmhentai.com)
 
 </details>
 

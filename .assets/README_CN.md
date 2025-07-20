@@ -32,7 +32,7 @@
 1. **`前置条件`**：安装脚本管理器拓展 [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/)
 1. **`前置条件`**：通畅的网络，点击此处确认能否访问[jsdelivr.net](https://cdn.jsdelivr.net)，以确保脚本能正常运行。
 1. **`安装地址1`**：[GreasyFork](https://greasyfork.org/scripts/397848)
-1. **`安装地址2`**：直接访问此处进行安装[`https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js`](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)
+1. **`安装地址2`**：直接访问此处进行安装[这里](https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.user.js)
 
 ## <a name="multi-site-support">多站点支持</a>
 
@@ -69,6 +69,9 @@
 - [kemono.su](https://kemono.su)
 - [hentaizap.com](https://hentaizap.com)
 - [miniserve -p 41021](https://github.com/svenstaro/miniserve)
+- [mangapark.net](https://mangapark.net)
+- [hentai3.com](https://3hentai.net)
+- [asmhentai.com](https://asmhentai.com)
 
 </details>
 

@@ -32,7 +32,7 @@
 1. **`필수 조건`**: 확장 프로그램 설치 [`Violentmonkey`](https://violentmonkey.github.io/) | [`TamperMonkey`](https://www.tampermonkey.net/)
 1. **`필수 조건`**: 스크립트가 제대로 작동하는지 확인하려면 [jsdelivr.net](https://cdn.jsdelivr.net)에 접속할 수 있는지 확인하세요.
 1. **`설치 링크 1`**: [GreasyFork](https://greasyfork.org/scripts/397848-e-hentai-view-enhance)
-1. **`설치 링크 2`**: [여기](https://github.com/MapoMagpie/eh-view-enhance/raw/master/eh-view-enhance.user.js)에서 직접 설치
+1. **`설치 링크 2`**: [여기](https://github.com/MapoMagpie/comic-looms/releases/latest/download/comic-looms.user.js)에서 직접 설치
 
 ## <a name="multi-site-support">다중 사이트 지원</a>
 
@@ -69,6 +69,9 @@
 - [kemono.su](https://kemono.su)
 - [hentaizap.com](https://hentaizap.com)
 - [miniserve -p 41021](https://github.com/svenstaro/miniserve)
+- [mangapark.net](https://mangapark.net)
+- [hentai3.com](https://3hentai.net)
+- [asmhentai.com](https://asmhentai.com)
 
 </details>
 

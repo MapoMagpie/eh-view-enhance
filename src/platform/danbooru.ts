@@ -448,14 +448,13 @@ export class E621Matcher extends DanbooruMatcher {
   toImgNode(ele: HTMLElement): [ImageNode | null, string] {
     const src = ele.getAttribute("data-preview-url");
     if (!src) return [null, ""];
-    const href = ele.getAttribute("data-file-url");
-    if (!href) return [null, ""];
     const tags = ele.getAttribute("data-tags");
     const id = ele.getAttribute("data-id");
     const normal = ele.getAttribute("data-sample-url");
     const original = ele.getAttribute("data-file-url");
     const fileExt = ele.getAttribute("data-file-ext") || undefined;
     if (!normal || !original || !id) return [null, ""];
+    const href = `${window.location.origin}/posts/${id}`;
     const width = ele.getAttribute("data-width");
     const height = ele.getAttribute("data-height");
     let wh = undefined;
@@ -468,8 +467,9 @@ export class E621Matcher extends DanbooruMatcher {
   cachedOriginMeta(href: string): OriginMeta | null {
     const cached = this.cache.get(href);
     if (!cached) throw new Error("miss origin meta: " + href);
-    if (["webm", "webp", "mp4"].includes(cached.fileExt ?? "bbb") || conf.fetchOriginal) {
-      return { url: cached.original, title: `${cached.id}.${cached.fileExt}` };
+    const ext = cached.fileExt ?? cached.original.split(".").pop() ?? "jpg";
+    if (conf.fetchOriginal || ["webm", "webp", "mp4"].includes(ext)) {
+      return { url: cached.original, title: `${cached.id}.${ext}` };
     }
     return { url: cached.normal, title: `${cached.id}.${cached.normal.split(".").pop()}` };
   }

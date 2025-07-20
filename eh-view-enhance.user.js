@@ -5044,8 +5044,8 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     getNormalURL() {
       throw new Error("Method not implemented.");
     }
-    extractIDFromHref(href) {
-      return href.match(/posts\/(\d+)/)?.[1];
+    extractIDFromHref() {
+      throw new Error("Method not implemented.");
     }
     getBlacklist(doc) {
       const content = doc.querySelector("meta[name='blacklisted-tags']")?.getAttribute("content");
@@ -5059,31 +5059,30 @@ Reporta problemas aquí: <a target='_blank' href='https://github.com/MapoMagpie/
     toImgNode(ele) {
       const src = ele.getAttribute("data-preview-url");
       if (!src) return [null, ""];
-      const href = ele.getAttribute("data-file-url");
-      if (!href) return [null, ""];
       const tags = ele.getAttribute("data-tags");
       const id = ele.getAttribute("data-id");
       const normal = ele.getAttribute("data-sample-url");
       const original = ele.getAttribute("data-file-url");
       const fileExt = ele.getAttribute("data-file-ext") || void 0;
       if (!normal || !original || !id) return [null, ""];
+      const href = `${window.location.origin}/posts/${id}`;
       const width = ele.getAttribute("data-width");
       const height = ele.getAttribute("data-height");
       let wh = void 0;
       if (width && height) {
         wh = { w: parseInt(width), h: parseInt(height) };
       }
-      this.cache.set(id, { normal, original, id, fileExt });
-      return [new ImageNode(src, `/posts/${id}`, `${id}.jpg`, void 0, void 0, wh), tags || ""];
+      this.cache.set(href, { normal, original, id, fileExt });
+      return [new ImageNode(src, href, `${id}.jpg`, void 0, void 0, wh), tags || ""];
     }
     cachedOriginMeta(href) {
-      const id = this.extractIDFromHref(href);
-      const cached = this.cache.get(id);
+      const cached = this.cache.get(href);
       if (!cached) throw new Error("miss origin meta: " + href);
-      if (["webm", "webp", "mp4"].includes(cached.fileExt ?? "bbb") || conf.fetchOriginal) {
-        return { url: cached.original, title: `${id}.${cached.fileExt}` };
+      const ext = cached.fileExt ?? cached.original.split(".").pop() ?? "jpg";
+      if (conf.fetchOriginal || ["webm", "webp", "mp4"].includes(ext)) {
+        return { url: cached.original, title: `${cached.id}.${ext}` };
       }
-      return { url: cached.normal, title: `${id}.${cached.normal.split(".").pop()}` };
+      return { url: cached.normal, title: `${cached.id}.${cached.normal.split(".").pop()}` };
     }
     site() {
       return "e621";

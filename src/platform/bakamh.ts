@@ -14,11 +14,13 @@ export class BakamhMatcher extends BaseMatcher<string> {
   }
 
   async fetchChapters(): Promise<Chapter[]> {
-    const elements = Array.from(document.querySelectorAll<HTMLAnchorElement>(".listing-chapters_wrap li > a"));
-    return elements.map((elem, i) => {
+    const elements = Array.from(document.querySelectorAll<HTMLAnchorElement>(".listing-chapters_wrap li a"));
+    const chapters = elements.map((elem, i) => {
       const title = elem.textContent?.trim() ?? ("untitled-" + (i + 1));
       return new Chapter(i, title, elem.href);
     });
+    if (chapters.length === 0) throw new Error("cannot find chapters by css selector: .listing-chapters_wrap li a");
+    return chapters;
   }
 
   async *fetchPagesSource(ch: Chapter): AsyncGenerator<Result<string>> {

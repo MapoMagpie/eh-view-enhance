@@ -152,8 +152,8 @@ const _classWorkerURL = URL.createObjectURL(new Blob([decodeBase64(encodedJs)], 
           ],
         },
         build: {
-          fileName: 'eh-view-enhance.user.js',
-          metaFileName: 'eh-view-enhance.meta.js',
+          fileName: 'comic-looms.user.js',
+          metaFileName: 'comic-looms.meta.js',
           externalGlobals: {
             "@zip.js/zip.js": cdn.jsdelivr("zip", "dist/zip-full.min.js"),
             "file-saver": cdn.jsdelivr("saveAs", "dist/FileSaver.min.js"),

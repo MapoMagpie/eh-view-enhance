@@ -69,7 +69,6 @@
 - [kemono.su](https://kemono.su)
 - [hentaizap.com](https://hentaizap.com)
 - [miniserve -p 41021](https://github.com/svenstaro/miniserve)
-- [bakamh巴卡漫画.com](https://bakamh.com)
 - [mangapark.net](https://mangapark.net)
 - [hentai3.com](https://3hentai.net)
 - [asmhentai.com](https://asmhentai.com)

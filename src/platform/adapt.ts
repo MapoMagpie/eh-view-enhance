@@ -26,7 +26,6 @@ import { SteamMatcher } from "./steam";
 import { TwitterMatcher } from "./twitter";
 import { WnacgMatcher } from "./wnacg";
 import { YabaiMatcher } from "./yabai";
-import { BakamhMatcher } from "./bakamh";
 import { MangaParkMatcher } from "./mangapark";
 import { Hentai3Matcher } from "./3hentai";
 import { BilibiliMatcher } from "./bilibili";
@@ -66,7 +65,6 @@ export function getMatchers(): Matcher<any>[] {
     new KemonoMatcher(),
     new HentaiZapMatcher(),
     new MiniServeMatcher(),
-    new BakamhMatcher(),
     new MangaParkMatcher(),
     new Hentai3Matcher(),
     new BilibiliMatcher(),

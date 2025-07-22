@@ -72,6 +72,7 @@ Vista previa (si no puedes ver la imagen, haz clic [aqui](./preview.md)):
 - [mangapark.net](https://mangapark.net)
 - [hentai3.com](https://3hentai.net)
 - [asmhentai.com](https://asmhentai.com)
+- [eahentai.com](https://eahentai.com)
 
 </details>
 

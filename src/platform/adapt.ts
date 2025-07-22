@@ -30,6 +30,7 @@ import { MangaParkMatcher } from "./mangapark";
 import { Hentai3Matcher } from "./3hentai";
 import { BilibiliMatcher } from "./bilibili";
 import { AsmHentaiMatcher } from "./asmhentai";
+import { EahentaiMatcher } from "./eahentai";
 
 export function getMatchers(): Matcher<any>[] {
   return [
@@ -69,6 +70,7 @@ export function getMatchers(): Matcher<any>[] {
     new Hentai3Matcher(),
     new BilibiliMatcher(),
     new AsmHentaiMatcher(),
+    new EahentaiMatcher(),
   ];
 }
 

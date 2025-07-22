@@ -73,6 +73,7 @@ Preview (if you can't see the image, click [here](./.assets/preview.md)):
 - [hentai3.com](https://3hentai.net)
 - [asmhentai.com](https://asmhentai.com)
 - [eahentai.com](https://eahentai.com)
+- [bato.to v3x](https://bato.to/v3x)
 
 </details>
 

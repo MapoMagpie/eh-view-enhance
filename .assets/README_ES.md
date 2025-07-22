@@ -73,6 +73,7 @@ Vista previa (si no puedes ver la imagen, haz clic [aqui](./preview.md)):
 - [hentai3.com](https://3hentai.net)
 - [asmhentai.com](https://asmhentai.com)
 - [eahentai.com](https://eahentai.com)
+- [bato.to v3x](https://bato.to/v3x)
 
 </details>
 
